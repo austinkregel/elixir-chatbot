@@ -49,7 +49,6 @@ defmodule Brain.ML.ModelPreflight do
     core =
       [
         {:embedder, validate_embedder()},
-        {:gazetteer, validate_gazetteer()},
         {:pos_model, validate_pos_model()},
         {:sentiment_classifier, validate_simple_classifier_root("sentiment_classifier.term")},
         {:speech_act_classifier, validate_simple_classifier_root("speech_act_classifier.term")},
@@ -86,18 +85,6 @@ defmodule Brain.ML.ModelPreflight do
 
         true ->
           :ok
-      end
-    end)
-  end
-
-  defp validate_gazetteer do
-    path = model_file("gazetteer.term")
-
-    with_term_file(path, fn data ->
-      if is_map(data) and map_size(data) > 0 do
-        :ok
-      else
-        {:error, "Gazetteer: expected non-empty map"}
       end
     end)
   end

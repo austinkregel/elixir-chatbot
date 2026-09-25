@@ -109,23 +109,6 @@ defmodule Brain.ML.TrainerTest do
     end
   end
 
-  describe "build_gazetteer_data/1" do
-    test "returns stats with entry counts" do
-      stats = %{
-        gazetteer_entries: 0,
-        entity_types: 0
-      }
-
-      result = Trainer.build_gazetteer_data(stats)
-
-      assert is_map(result)
-      assert Map.has_key?(result, :gazetteer_entries)
-      assert Map.has_key?(result, :entity_types)
-      assert is_integer(result.gazetteer_entries)
-      assert is_integer(result.entity_types)
-    end
-  end
-
   describe "train_intent_classifier/2 (slow)" do
     @tag :slow
     @tag timeout: 180_000
@@ -189,7 +172,6 @@ defmodule Brain.ML.TrainerTest do
       assert stats.intent_samples > 0
       assert stats.vocab_size > 0
       assert File.exists?(Path.join(models_path, "embedder.term"))
-      assert File.exists?(Path.join(models_path, "gazetteer.term"))
     end
   end
 end

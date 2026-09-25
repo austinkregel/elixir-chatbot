@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.TrainModels do
-  @moduledoc "Mix task to train ML models from training data.\n\n## Usage\n\n    mix train_models [options]\n\n## Options\n\n  --world <id>     Train models for a specific world (default: saves to priv/ml_models/)\n  --intent-only    Train only the intent classifier\n  --entity-only    Train only the entity recognition model\n  --pos-only       Train only the POS tagger model\n  --gazetteer-only Build only the gazetteer lookup tables\n  --skip-gazetteer Skip gazetteer building (faster training)\n  --skip-pos       Skip POS tagger training\n\n## World-Specific Training\n\nWhen --world is specified, models are saved to:\n  priv/training_worlds/{world_id}/models/\n\nThis allows each world to have its own isolated ML models. When no world is\nspecified, models are saved to the default location (priv/ml_models/).\n\n## Examples\n\n    # Train all models for the default location\n    mix train_models\n\n    # Train all models for the \"star_trek\" world\n    mix train_models --world star_trek\n\n    # Train only intent classifier for a world\n    mix train_models --world my_world --intent-only\n\nThis task will:\n- Load intent training data from data/intents/ (or data/training/intents/)\n- Load entity definitions from data/entities/\n- Load supplementary data (cities, artists, emojis) from CSVs\n- Build TF-IDF vectorizer and train intent classifier\n- Train BIO-tagged entity recognition model\n- Train POS tagger from annotated data (if available)\n- Build gazetteer lookup tables for fast entity extraction\n- Save all models to priv/ml_models/ (or world-specific path)\n- Report training statistics and model sizes\n"
+  @moduledoc "Mix task to train ML models from training data.\n\n## Usage\n\n    mix train_models [options]\n\n## Options\n\n  --world <id>     Train models for a specific world (default: saves to priv/ml_models/)\n  --intent-only    Train only the intent classifier\n  --entity-only    Train only the entity recognition model\n  --pos-only       Train only the POS tagger model\n  --skip-pos       Skip POS tagger training\n\n## World-Specific Training\n\nWhen --world is specified, models are saved to:\n  priv/training_worlds/{world_id}/models/\n\nThis allows each world to have its own isolated ML models. When no world is\nspecified, models are saved to the default location (priv/ml_models/).\n\n## Examples\n\n    # Train all models for the default location\n    mix train_models\n\n    # Train all models for the \"star_trek\" world\n    mix train_models --world star_trek\n\n    # Train only intent classifier for a world\n    mix train_models --world my_world --intent-only\n\nThis task will:\n- Load intent training data from data/intents/ (or data/training/intents/)\n- Build TF-IDF vectorizer and train intent classifier\n- Train BIO-tagged entity recognition model\n- Train POS tagger from annotated data (if available)\n- Save all models to priv/ml_models/ (or world-specific path)\n- Report training statistics and model sizes\n"
 
   # World.Persistence is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
@@ -9,7 +9,6 @@ defmodule Mix.Tasks.TrainModels do
   use Mix.Task
   require Logger
   alias Brain.ML.Trainer
-  alias Brain.ML.POSTagger
 
   @shortdoc "Train ML models from training data"
 
@@ -21,8 +20,6 @@ defmodule Mix.Tasks.TrainModels do
           intent_only: :boolean,
           entity_only: :boolean,
           pos_only: :boolean,
-          gazetteer_only: :boolean,
-          skip_gazetteer: :boolean,
           skip_pos: :boolean
         ]
       )
@@ -62,12 +59,6 @@ defmodule Mix.Tasks.TrainModels do
 
         Keyword.get(opts, :pos_only, false) ->
           run_pos_training(models_path)
-
-        Keyword.get(opts, :gazetteer_only, false) ->
-          run_gazetteer_building(models_path)
-
-        Keyword.get(opts, :skip_gazetteer, false) ->
-          run_training_without_gazetteer(models_path)
 
         true ->
           skip_pos = Keyword.get(opts, :skip_pos, false)
@@ -112,33 +103,6 @@ defmodule Mix.Tasks.TrainModels do
     {:ok, stats}
   end
 
-  defp run_gazetteer_building(_models_path) do
-    Mix.shell().info("Building gazetteer lookup tables only...")
-    stats = Trainer.build_gazetteer_data()
-    {:ok, stats}
-  end
-
-  defp run_training_without_gazetteer(models_path) do
-    Mix.shell().info("Training models (skipping gazetteer)...")
-
-    stats = %{
-      intent_samples: 0,
-      vocab_size: 0,
-      entity_model_trained: false
-    }
-
-    {stats, result} = Trainer.train_intent_classifier(stats, models_path: models_path)
-
-    case result do
-      :ok ->
-        stats = Trainer.train_entity_model(stats, models_path: models_path)
-        {:ok, stats}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
   defp run_full_training(skip_pos, models_path) do
     case Trainer.train_and_save(models_path: models_path) do
       {:ok, stats} ->
@@ -146,10 +110,8 @@ defmodule Mix.Tasks.TrainModels do
           if skip_pos do
             stats
           else
-            case run_pos_training_internal(models_path) do
-              {:ok, pos_stats} -> Map.merge(stats, pos_stats)
-              {:error, _reason} -> stats
-            end
+            {:ok, pos_stats} = run_pos_training_internal(models_path)
+            Map.merge(stats, pos_stats)
           end
 
         {:ok, stats}
@@ -164,74 +126,22 @@ defmodule Mix.Tasks.TrainModels do
     run_pos_training_internal(models_path)
   end
 
+  # Trains on the committed EWT fixtures (Brain.Training.POS), which raises
+  # rather than saving a model that cannot beat the lookup baseline.
   defp run_pos_training_internal(models_path) do
-    gold_standard_path = Brain.priv_path("evaluation/intent/gold_standard.json")
+    Mix.shell().info("  Training the POS tagger on the EWT fixtures...")
 
-    Mix.shell().info("  Loading POS training data from gold standard...")
-    sequences = load_pos_from_gold_standard(gold_standard_path)
+    {path, model} =
+      Brain.Training.POS.train_and_save!(out: Path.join(models_path, "pos_model.term"))
 
-    if sequences != [] do
-      Mix.shell().info("  Found #{length(sequences)} POS-annotated sequences from gold standard")
+    Mix.shell().info("  POS model saved to #{path}")
 
-      case POSTagger.train(sequences) do
-        {:ok, model} ->
-          save_path = Path.join(models_path, "pos_model.term")
-
-          case POSTagger.save_model(model, save_path) do
-            {:ok, path} ->
-              Mix.shell().info("  POS model saved to #{path}")
-
-              {:ok,
-               %{
-                 pos_model_trained: true,
-                 pos_tag_count: map_size(model.tag_vocabulary),
-                 pos_feature_count: map_size(model.feature_weights)
-               }}
-
-            {:error, reason} ->
-              Mix.shell().error("  Failed to save POS model: #{reason}")
-              {:error, reason}
-          end
-
-        {:error, reason} ->
-          Mix.shell().error("  POS training failed: #{reason}")
-          {:error, reason}
-      end
-    else
-      Mix.shell().info("  No POS-annotated data in gold standard. Skipping POS training.")
-      Mix.shell().info("  Run: python scripts/enrich_gold_standard_pos.py")
-      {:error, :no_training_data}
-    end
-  end
-
-  defp load_pos_from_gold_standard(gold_standard_path) do
-    case File.read(gold_standard_path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, examples} when is_list(examples) ->
-            examples
-            |> Enum.filter(fn ex ->
-              tokens = ex["tokens"] || []
-              tags = ex["pos_tags"] || []
-              tokens != [] and length(tokens) == length(tags)
-            end)
-            |> Enum.map(fn ex ->
-              %{
-                tokens: ex["tokens"],
-                tags: ex["pos_tags"],
-                source: ex["intent"]
-              }
-            end)
-
-          _ ->
-            Mix.shell().info("  Warning: Could not parse #{gold_standard_path}")
-            []
-        end
-
-      {:error, reason} ->
-        Mix.shell().info("  Warning: Could not read #{gold_standard_path}: #{inspect(reason)}")
-        []
-    end
+    {:ok,
+     %{
+       pos_model_trained: true,
+       pos_accuracy: model.evaluation.accuracy,
+       pos_lookup_baseline: model.evaluation.lookup_baseline
+     }}
   end
 
   defp display_data_sources(training_data_path) do
@@ -269,16 +179,9 @@ defmodule Mix.Tasks.TrainModels do
       Mix.shell().error("  Intents:    NOT FOUND at #{legacy_intents}")
     end
 
-    pos_data_path = Path.join(training_data_path, "training/pos/sequences.json")
-
-    if File.exists?(pos_data_path) do
-      Mix.shell().info("  POS Data:   training/pos/sequences.json")
-    else
-      if File.exists?(enriched_intents) do
-        Mix.shell().info("  POS Data:   (from enriched intents)")
-      else
-        Mix.shell().info("  POS Data:   NOT FOUND (run 'mix migrate_training_data')")
-      end
+    for {split, path} <- Enum.sort(Brain.Training.POS.fixture_paths()) do
+      status = if File.exists?(path), do: Path.relative_to_cwd(path), else: "NOT FOUND (run mix pos.import_ud_ewt)"
+      Mix.shell().info("  POS #{String.pad_trailing(split, 6)} #{status}")
     end
 
     entities_dir = Path.join(training_data_path, "entities")
@@ -367,14 +270,8 @@ defmodule Mix.Tasks.TrainModels do
 
     if Map.get(stats, :pos_model_trained, false) do
       Mix.shell().info("  POS Tagger:")
-      Mix.shell().info("    - Tag vocabulary:   #{Map.get(stats, :pos_tag_count, 0)}")
-      Mix.shell().info("    - Feature count:    #{Map.get(stats, :pos_feature_count, 0)}")
-    end
-
-    if Map.has_key?(stats, :gazetteer_entries) and stats.gazetteer_entries > 0 do
-      Mix.shell().info("  Gazetteer:")
-      Mix.shell().info("    - Total entries:    #{stats.gazetteer_entries}")
-      Mix.shell().info("    - Entity types:     #{stats.entity_types}")
+      Mix.shell().info("    - Test accuracy:    #{Float.round(stats.pos_accuracy * 100, 2)}%")
+      Mix.shell().info("    - Lookup baseline:  #{Float.round(stats.pos_lookup_baseline * 100, 2)}%")
     end
 
     Mix.shell().info("")
@@ -386,7 +283,6 @@ defmodule Mix.Tasks.TrainModels do
     display_model_file(models_path, "classifier.term", "Intent Classifier")
     display_model_file(models_path, "entity_model.term", "Entity Model")
     display_model_file(models_path, "pos_model.term", "POS Tagger")
-    display_model_file(models_path, "gazetteer.term", "Gazetteer")
     display_model_file(models_path, "vectorizer.term", "TF-IDF Vectorizer")
     display_model_file(models_path, "embedder.term", "Embedder Vocabulary")
 
@@ -412,9 +308,6 @@ defmodule Mix.Tasks.TrainModels do
     Mix.shell().error("Please check:")
     Mix.shell().error("  - Training data format and locations")
     Mix.shell().error("  - Dependencies (Nx for tensor operations)")
-    Mix.shell().error("  - Available memory (large gazetteers need RAM)")
-    Mix.shell().error("")
-    Mix.shell().error("Try running with --skip-gazetteer to reduce memory usage")
   end
 
   defp format_duration(ms) when ms < 1000 do

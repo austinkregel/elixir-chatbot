@@ -75,17 +75,26 @@ defmodule Brain.Analysis.PipelineTier3Test do
   end
 
   describe "SRL bio tag generation via pipeline" do
-    test "sentences with verbs get SRL frames" do
+    # These two used to assert only `is_list/1`, which is satisfied by `[]` --
+    # and `[]` is what the pipeline returned for every input on earth, because
+    # `generate_srl_bio_tags/3` tested Penn Treebank tags against a tagger that
+    # emits Universal Dependencies. The whole subsystem was dead and these
+    # tests were green. They now assert the predicate.
+    test "a sentence with a verb gets an SRL frame naming that verb" do
       analysis = Pipeline.analyze_chunk("She quickly ate the pizza")
 
-      # Should have at least attempted SRL
-      assert is_list(analysis.srl_frames)
+      assert [%{predicate: predicate} | _] = analysis.srl_frames,
+             "expected at least one SRL frame, got: #{inspect(analysis.srl_frames)}"
+
+      assert predicate == "ate"
     end
 
-    test "sentence with no verbs produces empty SRL" do
+    test "a sentence with no verb produces no frames" do
       analysis = Pipeline.analyze_chunk("Hello!")
 
-      assert is_list(analysis.srl_frames)
+      assert analysis.srl_frames == [],
+             "a verbless greeting has no predicate to build a frame around, got: " <>
+               inspect(analysis.srl_frames)
     end
   end
 

@@ -46,6 +46,8 @@ defmodule Brain.ML.WeightOptimizer do
   import Nx.Defn
   require Logger
 
+  alias Brain.ML.TrainingSeed
+
   @default_opts [
     population_size: 100,
     max_generations: 200,
@@ -56,7 +58,6 @@ defmodule Brain.ML.WeightOptimizer do
     weight_min: 0.0,
     weight_max: 3.0,
     validation_split: 0.2,
-    seed: {42, 137, 256},
     verbose: true
   ]
 
@@ -89,8 +90,10 @@ defmodule Brain.ML.WeightOptimizer do
   @spec optimize([training_example()], keyword()) :: result()
   def optimize(training_data, opts \\ []) do
     opts = Keyword.merge(@default_opts, opts)
-    {seed_a, seed_b, seed_c} = opts[:seed]
-    :rand.seed(:exsplus, {seed_a, seed_b, seed_c})
+    # Every draw below comes from this state, never the process's, so a run is
+    # reproducible from its seed and does not change what later code draws.
+    seed = Keyword.get_lazy(opts, :seed, &TrainingSeed.get!/0)
+    rand = TrainingSeed.state(seed)
 
     run_id = Keyword.get_lazy(opts, :run_id, &generate_run_id/0)
     classifier = Keyword.get(opts, :classifier, :unknown)
@@ -103,7 +106,9 @@ defmodule Brain.ML.WeightOptimizer do
     end
 
     try do
-      do_optimize(training_data, opts, run_id, classifier, started_at)
+      training_data
+      |> do_optimize(opts, run_id, classifier, started_at, rand)
+      |> Map.put(:training_seed, seed)
     catch
       kind, reason ->
         emit_exception(run_id, classifier, started_at, kind, reason, __STACKTRACE__)
@@ -119,9 +124,9 @@ defmodule Brain.ML.WeightOptimizer do
     "ga-#{ts}-#{rand}"
   end
 
-  defp do_optimize(training_data, opts, run_id, classifier, started_at) do
+  defp do_optimize(training_data, opts, run_id, classifier, started_at, rand) do
     dim = training_data |> List.first() |> elem(0) |> length()
-    {train_set, val_set} = stratified_split(training_data, opts[:validation_split])
+    {train_set, val_set, rand} = stratified_split(training_data, opts[:validation_split], rand)
 
     {train_vecs, train_labels} = unzip_data(train_set)
     {val_vecs, val_labels} = unzip_data(val_set)
@@ -147,7 +152,7 @@ defmodule Brain.ML.WeightOptimizer do
     val_counts_t = build_val_counts(val_label_idx, n_classes)
 
     fisher_weights = compute_fisher_weights(train_vecs, train_labels, dim)
-    population = initialize_population(dim, fisher_weights, opts)
+    {population, rand} = initialize_population(dim, fisher_weights, opts, rand)
 
     if opts[:verbose] do
       Logger.info("WeightOptimizer: population=#{opts[:population_size]}, max_gen=#{opts[:max_generations]}, early_stop=#{opts[:early_stop_generations]}, backend=#{inspect(Nx.default_backend())}")
@@ -167,7 +172,7 @@ defmodule Brain.ML.WeightOptimizer do
       classifier: classifier
     }
 
-    result = evolve(population, ctx, opts)
+    result = evolve(population, ctx, opts, rand)
 
     enriched =
       result
@@ -369,11 +374,12 @@ defmodule Brain.ML.WeightOptimizer do
 
   # ── Evolution loop ──────────────────────────────────────────────────
 
-  defp evolve(population, ctx, opts) do
+  defp evolve(population, ctx, opts, rand) do
     max_gen = opts[:max_generations]
     early_stop = opts[:early_stop_generations]
 
     initial_state = %{
+      rand: rand,
       population: population,
       best_weights: List.first(population),
       best_fitness: 0.0,
@@ -457,30 +463,34 @@ defmodule Brain.ML.WeightOptimizer do
           elites = ranked |> Enum.take(elite_count) |> Enum.map(&elem(&1, 0))
 
           # Catastrophic restart: re-randomize bottom 20% when deeply stale
-          base_pop =
+          {base_pop, rand} =
             if new_stale >= 7 do
               restart_count = div(opts[:population_size], 5)
               keep = ranked |> Enum.take(opts[:population_size] - restart_count) |> Enum.map(&elem(&1, 0))
-              randoms = random_individuals(restart_count, ctx.dim, opts[:weight_min], opts[:weight_max])
-              keep ++ randoms
+
+              {randoms, rand} =
+                random_individuals(restart_count, ctx.dim, opts[:weight_min], opts[:weight_max], state.rand)
+
+              {keep ++ randoms, rand}
             else
-              state.population
+              {state.population, state.rand}
             end
 
           children_needed = opts[:population_size] - elite_count
 
-          children =
-            Enum.map(1..children_needed, fn _ ->
-              parent_a = tournament_select(base_pop, fitnesses, opts[:tournament_size])
-              parent_b = tournament_select(base_pop, fitnesses, opts[:tournament_size])
-              child = uniform_crossover(parent_a, parent_b)
-              mutate(child, m_rate, m_sigma, opts[:weight_min], opts[:weight_max])
+          {children, rand} =
+            Enum.map_reduce(1..children_needed, rand, fn _, rand ->
+              {parent_a, rand} = tournament_select(base_pop, fitnesses, opts[:tournament_size], rand)
+              {parent_b, rand} = tournament_select(base_pop, fitnesses, opts[:tournament_size], rand)
+              {child, rand} = uniform_crossover(parent_a, parent_b, rand)
+              mutate(child, m_rate, m_sigma, opts[:weight_min], opts[:weight_max], rand)
             end)
 
           new_population = elites ++ children
 
           {:cont,
            %{
+             rand: rand,
              population: new_population,
              best_weights: new_best_weights,
              best_fitness: new_best_fitness,
@@ -549,7 +559,10 @@ defmodule Brain.ML.WeightOptimizer do
 
   # ── GA operators ────────────────────────────────────────────────────
 
-  defp initialize_population(dim, fisher_weights, opts) do
+  # Every operator takes the random state and returns it advanced alongside
+  # its result.
+
+  defp initialize_population(dim, fisher_weights, opts, rand) do
     pop_size = opts[:population_size]
     w_min = opts[:weight_min]
     w_max = opts[:weight_max]
@@ -557,66 +570,74 @@ defmodule Brain.ML.WeightOptimizer do
     fisher_individual = Enum.map(fisher_weights, &clamp(&1, w_min, w_max))
     uniform_individual = List.duplicate(1.0, dim)
 
-    random_count = pop_size - 2
+    {randoms, rand} = random_individuals(pop_size - 2, dim, w_min, w_max, rand)
 
-    random_individuals =
-      Enum.map(1..random_count, fn _ ->
-        Enum.map(1..dim, fn _ -> :rand.uniform() * (w_max - w_min) + w_min end)
-      end)
-
-    [fisher_individual, uniform_individual | random_individuals]
+    {[fisher_individual, uniform_individual | randoms], rand}
   end
 
-  defp random_individuals(count, dim, w_min, w_max) do
-    Enum.map(1..count, fn _ ->
-      Enum.map(1..dim, fn _ -> :rand.uniform() * (w_max - w_min) + w_min end)
+  defp random_individuals(count, dim, w_min, w_max, rand) do
+    Enum.map_reduce(1..count, rand, fn _, rand ->
+      Enum.map_reduce(1..dim, rand, fn _, rand ->
+        {u, rand} = :rand.uniform_s(rand)
+        {u * (w_max - w_min) + w_min, rand}
+      end)
     end)
   end
 
-  defp tournament_select(population, fitnesses, tournament_size) do
+  defp tournament_select(population, fitnesses, tournament_size, rand) do
     pop_size = length(population)
     pop_vec = :array.from_list(population)
     fit_vec = :array.from_list(fitnesses)
 
-    best_idx =
-      Enum.max_by(
-        Enum.map(1..tournament_size, fn _ -> :rand.uniform(pop_size) - 1 end),
-        fn i -> :array.get(i, fit_vec) end
-      )
+    {contenders, rand} =
+      Enum.map_reduce(1..tournament_size, rand, fn _, rand ->
+        {pick, rand} = :rand.uniform_s(pop_size, rand)
+        {pick - 1, rand}
+      end)
 
-    :array.get(best_idx, pop_vec)
+    best_idx = Enum.max_by(contenders, fn i -> :array.get(i, fit_vec) end)
+
+    {:array.get(best_idx, pop_vec), rand}
   end
 
-  defp uniform_crossover(parent_a, parent_b) do
-    Enum.zip_with(parent_a, parent_b, fn a, b ->
-      if :rand.uniform() < 0.5, do: a, else: b
+  defp uniform_crossover(parent_a, parent_b, rand) do
+    parent_a
+    |> Enum.zip(parent_b)
+    |> Enum.map_reduce(rand, fn {a, b}, rand ->
+      {u, rand} = :rand.uniform_s(rand)
+      {if(u < 0.5, do: a, else: b), rand}
     end)
   end
 
-  defp mutate(chromosome, mutation_rate, sigma, w_min, w_max) do
-    Enum.map(chromosome, fn gene ->
-      if :rand.uniform() < mutation_rate do
-        clamp(gene + :rand.normal() * sigma, w_min, w_max)
+  defp mutate(chromosome, mutation_rate, sigma, w_min, w_max, rand) do
+    Enum.map_reduce(chromosome, rand, fn gene, rand ->
+      {u, rand} = :rand.uniform_s(rand)
+
+      if u < mutation_rate do
+        {n, rand} = :rand.normal_s(rand)
+        {clamp(gene + n * sigma, w_min, w_max), rand}
       else
-        gene
+        {gene, rand}
       end
     end)
   end
 
   # ── Data utilities ──────────────────────────────────────────────────
 
-  defp stratified_split(data, split_ratio) do
-    by_class = Enum.group_by(data, &elem(&1, 1))
+  defp stratified_split(data, split_ratio, rand) do
+    by_class = data |> Enum.group_by(&elem(&1, 1)) |> Enum.sort_by(&elem(&1, 0))
 
-    {train_acc, val_acc} =
-      Enum.reduce(by_class, {[], []}, fn {_label, examples}, {train, val} ->
-        shuffled = Enum.shuffle(examples)
+    {{train_acc, val_acc}, rand} =
+      Enum.reduce(by_class, {{[], []}, rand}, fn {_label, examples}, {{train, val}, rand} ->
+        {shuffled, rand} = TrainingSeed.shuffle(examples, rand)
         split_point = max(round(length(shuffled) * (1 - split_ratio)), 1)
         {class_train, class_val} = Enum.split(shuffled, split_point)
-        {train ++ class_train, val ++ class_val}
+        {{train ++ class_train, val ++ class_val}, rand}
       end)
 
-    {Enum.shuffle(train_acc), Enum.shuffle(val_acc)}
+    {train, rand} = TrainingSeed.shuffle(train_acc, rand)
+    {val, rand} = TrainingSeed.shuffle(val_acc, rand)
+    {train, val, rand}
   end
 
   defp unzip_data(data) do

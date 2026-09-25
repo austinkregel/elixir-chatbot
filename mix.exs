@@ -50,8 +50,13 @@ defmodule ChatBot.Umbrella.MixProject do
         "ingest_framing_corpus",
         "gen_micro_data",
         "gen_framing_data --corpus gvfc",
-        "train",
+        "gen_lattice_data",
+        "train"
       ],
+
+      # The suites never write to the database outside a test transaction, so
+      # the schema, migrations and seeded lexicon they read are prepared first.
+      test: ["test.prepare", "test"],
 
       # Precommit runs format check, Credo, and tests
       precommit: ["format --check-formatted", "credo --strict", "test"],

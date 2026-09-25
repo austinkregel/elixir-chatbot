@@ -4,7 +4,7 @@ defmodule Brain.ML.NLPPipeline do
   alias Brain.ML
   require Logger
 
-  alias ML.{EntityExtractor, Gazetteer, Tokenizer}
+  alias ML.{EntityExtractor, Tokenizer}
 
   @type pipeline_result :: %{
           intent: String.t(),
@@ -13,41 +13,6 @@ defmodule Brain.ML.NLPPipeline do
           context: String.t(),
           processing_method: :classical
         }
-
-  @doc "Initialize the NLP pipeline by loading all required models and data.\nShould be called at application startup.\n"
-  def init do
-    Logger.info("Initializing NLP pipeline...")
-
-    case Gazetteer.start_link() do
-      {:ok, _pid} ->
-        Logger.info("Gazetteer GenServer started")
-
-      {:error, {:already_started, _pid}} ->
-        Logger.debug("Gazetteer already running")
-
-      {:error, reason} ->
-        Logger.warning("Failed to start Gazetteer GenServer", %{reason: reason})
-    end
-
-    case Gazetteer.load_all() do
-      {:ok, stats} ->
-        Logger.info("Gazetteer loaded", stats)
-
-      {:error, reason} ->
-        Logger.warning("Gazetteer loading failed, will use fallback", %{reason: reason})
-    end
-
-    case EntityExtractor.load_entity_maps() do
-      {:ok, maps} ->
-        Logger.info("Entity maps loaded", %{count: map_size(maps)})
-
-      {:error, reason} ->
-        Logger.warning("Entity maps loading failed", %{reason: reason})
-    end
-
-    Logger.info("NLP pipeline initialization complete")
-    :ok
-  end
 
   @doc """
   Main entry point for text processing using classical NLP.
@@ -209,11 +174,6 @@ defmodule Brain.ML.NLPPipeline do
   def should_use_classical_result?(confidence) do
     threshold = get_confidence_threshold()
     confidence >= threshold
-  end
-
-  @doc "Check if the pipeline is ready (models loaded).\n"
-  def ready? do
-    Gazetteer.loaded?() or EntityExtractor.get_entity_maps() != %{}
   end
 
   defp classify_intent(text) do

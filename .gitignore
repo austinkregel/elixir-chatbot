@@ -120,9 +120,55 @@ apps/brain/test/brain/ml/lexicon/
 apps/brain/test/brain/ml_models/
 apps/brain/data/
 apps/brain/priv/*
+# JSON configs are read at compile time (@external_resource) and must be tracked;
+# models, lexicons, runtime stores, and secrets above stay ignored.
+!apps/brain/priv/analysis/
+!apps/brain/priv/knowledge/
+!apps/brain/priv/response/
+!apps/brain/priv/services/
+apps/brain/priv/knowledge/Echo.json
+# Axis baselines: the frozen pre-rebuild reference point for tasks 081/082, plus
+# the scripts that regenerate them. These must survive a clone or the POS rebuild
+# has no measured before/after to compare against.
+!apps/brain/priv/baselines/
 
-data/
+# Evaluation gold standards train the test models at suite startup
+# (ModelFactory); results, backups, and the large sentiment corpus
+# (which has a small tracked fixture fallback) stay ignored.
+!apps/brain/priv/evaluation/
+apps/brain/priv/evaluation/results/
+apps/brain/priv/evaluation/sentiment/
+apps/brain/priv/evaluation/**/*.bak
+
+# Training fixtures in the task 086 format, and the declared sources they are
+# built from. A fresh clone must train on exactly these (data/ is ignored).
+!apps/brain/priv/training/
+
+# Umbrella-root training data stays local, except the small hand-curated
+# informal-expansions map that InformalExpansions loads at runtime, and the
+# gazetteer's sources: Brain.ML.Gazetteer refuses to start without every one of
+# them, so a clone (and CI) must carry them.
+/data/*
+!/data/informal_expansions.json
+!/data/entities/
+!/data/world-cities.csv
+!/data/us_cities.csv
+!/data/Global Music Artists.csv
+!/data/emojis.csv
+# app-local and test-local data dirs (previously covered by unanchored data/)
+apps/*/data/
+test/data/
 .vscode/
 .idea/
 apps/chat_web/tmp/**/*.json
 apps/chat_web/tmp/*
+
+__pycache__/
+scripts/__pycache__/
+
+.DS_Store
+.openclaw/
+GVFC.zip
+/memory/
+/priv/data_cache/
+apps/brain/tmp/

@@ -10,7 +10,8 @@ defmodule Brain.Response.SurfaceRealizer do
   If Ouro is not loaded, the system raises -- there is no template fallback.
   """
 
-  alias Brain.Response.{Primitive, DecompressorCollector, OuroRealizer}
+  alias Brain.Response.{Primitive, DecompressorCollector, OuroRealizer,
+                         ResponseSystemRouter, PhraseLatticeRealizer, LatticeScorer}
 
   require Logger
 
@@ -25,7 +26,96 @@ defmodule Brain.Response.SurfaceRealizer do
 
   def realize(primitives, opts) when is_list(primitives) do
     analysis = Keyword.get(opts, :analysis)
+    domain = extract_domain(analysis)
 
+    {system, domain_config} = ResponseSystemRouter.route(domain)
+
+    case system do
+      :lattice ->
+        case try_lattice_realization(primitives, analysis, domain_config, opts) do
+          {:ok, _, _} = result -> result
+          _ -> try_synthesizer_fallback(primitives, analysis, opts)
+        end
+
+      :ouro ->
+        try_ouro_or_fallback(primitives, analysis, opts)
+
+      :synthesizer ->
+        try_synthesizer_fallback(primitives, analysis, opts)
+
+      :template ->
+        case try_enriched_fallback(primitives, :template_configured, opts) do
+          {:ok, _, _} = result -> result
+          {:error, _} -> try_synthesizer_fallback(primitives, analysis, opts)
+        end
+    end
+  end
+
+  defp extract_domain(nil), do: nil
+  defp extract_domain(%{intent: intent}) when is_binary(intent) do
+    case String.split(intent, ".", parts: 2) do
+      [domain, _] -> domain
+      _ -> nil
+    end
+  end
+  defp extract_domain(_), do: nil
+
+  defp try_lattice_realization(primitives, analysis, domain_config, opts) do
+    feature_vector = lattice_feature_vector(opts, analysis)
+    intent = lattice_intent(opts, analysis)
+
+    input_sentiment = extract_sentiment(analysis)
+    tone_bias = Map.get(domain_config.tone_vectors, domain_config.tone_bias, List.duplicate(0.5, 10))
+    desired_tone = LatticeScorer.compute_desired_tone(input_sentiment, tone_bias, domain_config.mirror_coefficient)
+
+    lattice_opts =
+      opts
+      |> Keyword.merge(desired_tone: desired_tone)
+      |> Keyword.put(:feature_vector, feature_vector)
+      |> maybe_put_lattice_intent(intent)
+
+    PhraseLatticeRealizer.realize(primitives, lattice_opts)
+  end
+
+  defp lattice_feature_vector(opts, analysis) do
+    case Keyword.get(opts, :feature_vector) do
+      fv when is_list(fv) and fv != [] -> fv
+      _ -> extract_analysis_feature_vector(analysis)
+    end
+  end
+
+  defp lattice_intent(opts, analysis) do
+    case Keyword.get(opts, :intent) do
+      intent when is_binary(intent) and intent != "" -> intent
+      _ -> if analysis, do: Map.get(analysis, :intent), else: nil
+    end
+  end
+
+  defp extract_analysis_feature_vector(nil), do: []
+
+  defp extract_analysis_feature_vector(%{feature_vector: fv}) when is_list(fv), do: fv
+  defp extract_analysis_feature_vector(analysis) when is_map(analysis), do: Map.get(analysis, :feature_vector, [])
+  defp extract_analysis_feature_vector(_), do: []
+
+  defp maybe_put_lattice_intent(opts, intent) when is_binary(intent) and intent != "" do
+    Keyword.put(opts, :intent, intent)
+  end
+
+  defp maybe_put_lattice_intent(opts, _), do: opts
+
+  defp extract_sentiment(nil), do: [0.0, 0.0, 1.0, 0.5, 0.0]
+  defp extract_sentiment(%{sentiment: %{scores: scores}}) when is_map(scores) do
+    [
+      Map.get(scores, :positive, 0.0),
+      Map.get(scores, :negative, 0.0),
+      Map.get(scores, :neutral, 1.0),
+      Map.get(scores, :confidence, 0.5),
+      Map.get(scores, :polarity_magnitude, 0.0)
+    ]
+  end
+  defp extract_sentiment(_), do: [0.0, 0.0, 1.0, 0.5, 0.0]
+
+  defp try_ouro_or_fallback(primitives, analysis, opts) do
     case try_ouro_realization(primitives, analysis, opts) do
       {:ok, :ouro_dry_run, %{messages: messages}} ->
         Logger.info("SurfaceRealizer: dry_run_ouro=true, returning ChatML messages without rendering")
@@ -67,6 +157,31 @@ defmodule Brain.Response.SurfaceRealizer do
       {:ok, rendered, text}
     else
       {:error, original_reason}
+    end
+  end
+
+  defp try_synthesizer_fallback(primitives, analysis, opts) do
+    intent = if analysis, do: Map.get(analysis, :intent), else: nil
+    entities = if analysis, do: Map.get(analysis, :entities, []), else: []
+
+    synth_opts = [
+      confidence: (analysis && Map.get(analysis, :confidence)) || 0.5,
+      context: Keyword.get(opts, :unified_context, %{})
+    ]
+
+    case Brain.Response.Synthesizer.synthesize(intent, entities, synth_opts) do
+      {:ok, text} when is_binary(text) and text != "" ->
+        Logger.info("SurfaceRealizer: template fallback via Synthesizer for #{inspect(intent)}")
+
+        rendered =
+          Enum.map(primitives, fn p ->
+            p |> Primitive.render(text) |> Map.put(:source, :synthesizer_template)
+          end)
+
+        {:ok, rendered, text}
+
+      _ ->
+        {:error, :synthesizer_fallback_failed}
     end
   end
 

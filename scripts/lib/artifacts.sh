@@ -32,7 +32,6 @@ check_term_models() {
     "classifier.term"
     "embedder.term"
     "entity_model.term"
-    "gazetteer.term"
     "sentiment_classifier.term"
     "speech_act_classifier.term"
     "pos_model.term"

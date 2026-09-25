@@ -1,0 +1,34 @@
+{
+  "domain": "factual",
+  "description": "Factual questions and knowledge queries",
+  "response_frames": {
+    "found_answer": [
+      "Based on what I know, $answer.",
+      "From my knowledge, $answer.",
+      "$answer."
+    ],
+    "uncertain_answer": [
+      "I believe $answer, though I'm not entirely certain.",
+      "From what I understand, $answer.",
+      "If I recall correctly, $answer."
+    ],
+    "no_answer": [
+      "I don't have information about that.",
+      "I'm not sure about that topic.",
+      "I don't have enough knowledge to answer that."
+    ]
+  },
+  "entity_verbalizations": {
+    "topic": ["about $value", "regarding $value"],
+    "subject": ["$value"]
+  },
+  "confidence_hedges": {
+    "high": ["", "Definitely,", "Certainly,"],
+    "medium": ["I believe", "I think", "From what I understand,"],
+    "low": ["I'm not sure, but", "Possibly,", "I think, though I'm uncertain,"]
+  },
+  "slot_requirements": {
+    "required": [],
+    "optional": ["topic", "subject"]
+  }
+}

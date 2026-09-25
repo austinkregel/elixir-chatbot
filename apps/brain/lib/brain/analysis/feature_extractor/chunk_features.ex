@@ -168,61 +168,210 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   end
 
   @doc """
+  Names every dimension `extract/2` emits, in emission order.
+
+  This is the single source of truth for the vector's shape. `vector_dimension/0`
+  and `schema_fingerprint/0` both derive from it.
+
+  The width alone was already guarded — `chunk_features_test.exs` asserts
+  `length(extract(...)) == vector_dimension()`, so a group that changed size
+  without updating the total would fail. What was missing is *identity*: a
+  343-float list where nothing says which slot is which cannot be diffed,
+  snapshotted or attributed. When a value moves between two runs there was no
+  way to name the feature that moved, and when the width changes a total tells
+  you only that something did.
+
+  Each entry is `{group, name}`, where `group` is the emission group named in
+  `extract/2` and `name` is unique across the whole vector. `group_widths/0`
+  localises a width change to one group.
+
+  ## Two groups are sized at runtime
+
+  This is a function rather than a module attribute because two groups ask for
+  their width on every extraction:
+
+    * group 10 (`:lexical_domains`) calls `Lexicon.domain_atoms()`
+    * group 23 (`:entity_type_semantics`) calls `TypeHierarchy.parent_types()`
+
+  `EnrichmentFeatures` freezes the *same* domain list at compile time for the
+  group 17 supersenses, so groups 10 and 17 can legitimately disagree in width
+  if the Lexicon data changes without a recompile. That disagreement is now
+  detectable rather than silent — `schema_fingerprint/0` changes when either
+  side moves, and the extractor tests assert the two agree.
+  """
+  @spec dimension_manifest() :: [{atom(), atom()}]
+  def dimension_manifest do
+    in_group(:surface_lexical, [
+      :token_count,
+      :char_count,
+      :avg_word_length,
+      :type_token_ratio,
+      :punct_count,
+      :cap_ratio,
+      :contraction_count,
+      :has_url,
+      :has_quoted,
+      :oov_rate,
+      :content_count,
+      :unique_lemmas
+    ]) ++
+      in_group(:pos_distribution, Enum.map(@all_pos, &:"pos_#{&1}")) ++
+      in_group(:syntactic_structural, [
+        :verb_count,
+        :modal_aux_count,
+        :negation_count,
+        :question_mark,
+        :imperative_score,
+        :declarative_score,
+        :clause_depth,
+        :avg_clause_len,
+        :subordinate_flag,
+        :relative_flag
+      ]) ++
+      in_group(:pronoun_person, [
+        :pron_1st_singular,
+        :pron_1st_plural,
+        :pron_2nd,
+        :pron_3rd,
+        :pron_demonstrative,
+        :pron_interrogative,
+        :pron_reflexive,
+        :pron_possessive
+      ]) ++
+      in_group(:modality_certainty, [
+        :mod_can_could,
+        :mod_will_would,
+        :mod_may_might,
+        :mod_should_must,
+        :mod_conditional,
+        :mod_intensifier,
+        :mod_hedge,
+        :mod_certainty
+      ]) ++
+      in_group(
+        :speech_act,
+        Enum.map(@speech_act_categories, &:"sa_#{&1}") ++
+          Enum.map(@question_subtypes, &:"q_#{&1}") ++
+          [:sa_is_imperative, :sa_is_request]
+      ) ++
+      in_group(
+        :discourse,
+        Enum.map(@addressee_values, &:"addr_#{&1}") ++
+          [:disc_marker_count, :disc_greeting, :disc_farewell, :disc_backchannel]
+      ) ++
+      in_group(:sentiment, [
+        :sent_positive,
+        :sent_negative,
+        :sent_neutral,
+        :sent_confidence,
+        :sent_polarity_magnitude
+      ]) ++
+      in_group(
+        :entity,
+        [:ent_count, :ent_density] ++
+          Enum.map(@entity_types, &:"ent_type_#{&1}") ++
+          [:ent_has_named, :ent_new_entity]
+      ) ++
+      in_group(:lexical_domains, Enum.map(Lexicon.domain_atoms(), &:"ld_#{&1}")) ++
+      in_group(:word_meaning_depth, [
+        :wm_avg_depth,
+        :wm_max_depth,
+        :wm_avg_polysemy,
+        :wm_abstraction_range,
+        :wm_avg_similarity,
+        :wm_antonym_flag
+      ]) ++
+      in_group(
+        :srl_frames,
+        [:srl_frame_count] ++
+          Enum.map(@srl_roles, &:"role_#{&1}") ++
+          [:srl_coverage]
+      ) ++
+      in_group(:memory_context, [
+        :mem_novelty,
+        :mem_similar_episodes,
+        :mem_graph_known,
+        :mem_topic_continuity,
+        :mem_conflict,
+        :mem_combined_confidence
+      ]) ++
+      in_group(:slot_completeness, [
+        :slot_required_count,
+        :slot_filled_count,
+        :slot_fill_ratio,
+        :slot_has_clarification,
+        :slot_missing_required_count,
+        :slot_optional_fill_ratio
+      ]) ++
+      in_group(:wh_target, EnrichmentFeatures.wh_names()) ++
+      in_group(:time_typology, EnrichmentFeatures.time_typology_names()) ++
+      in_group(:verb_supersenses, EnrichmentFeatures.verb_supersense_names()) ++
+      in_group(:noun_supersenses, EnrichmentFeatures.noun_supersense_names()) ++
+      in_group(:adj_adv_supersenses, EnrichmentFeatures.adj_adv_supersense_names()) ++
+      in_group(:conceptnet_edges, EnrichmentFeatures.conceptnet_edge_names()) ++
+      in_group(
+        :selectional_preferences,
+        EnrichmentFeatures.selectional_preference_names()
+      ) ++
+      in_group(
+        :subcategorization_frame,
+        EnrichmentFeatures.subcategorization_frame_names()
+      ) ++
+      in_group(:discourse_markers, EnrichmentFeatures.discourse_marker_names()) ++
+      in_group(
+        :speech_act_wh_interaction,
+        EnrichmentFeatures.speech_act_wh_interaction_names()
+      ) ++
+      in_group(
+        :entity_type_semantics,
+        EnrichmentFeatures.entity_type_semantics_names()
+      )
+  end
+
+  defp in_group(group, names), do: Enum.map(names, &{group, &1})
+
+  @doc """
   Returns the total dimension count of the chunk feature vector.
 
-  Each summand below corresponds to the matching `defp` in this module so
-  the declared total stays in lockstep with what `extract/2` actually
-  produces. A regression test asserts `length(extract(...)) == vector_dimension()`.
+  Derived from `dimension_manifest/0` so the count cannot drift from the
+  names, and neither can drift from emission without a test failing.
   """
-  def vector_dimension do
-    # group 1 — surface/lexical
-    12 +
-      # group 2 — POS distribution (one-hot over @all_pos, 16 tags)
-      16 +
-      # group 3 — syntactic/structural
-      10 +
-      # group 4 — pronoun/person/target
-      8 +
-      # group 5 — modality/certainty
-      8 +
-      # group 6 — speech act: category one-hot + question-subtype one-hot + 2 flags
-      length(@speech_act_categories) + length(@question_subtypes) + 2 +
-      # group 7 — discourse: addressee one-hot + 4 indicator flags
-      length(@addressee_values) + 4 +
-      # group 8 — sentiment
-      5 +
-      # group 9 — entity: count + density + per-type counts + has_named + new_entity
-      2 + length(@entity_types) + 2 +
-      # group 10 — lexical-semantic fingerprint over domains
-      length(Lexicon.domain_atoms()) +
-      # group 11 — word-meaning depth/ambiguity
-      6 +
-      # group 12 — SRL frames: frame_count + per-role flags + coverage
-      1 + length(@srl_roles) + 1 +
-      # group 13 — memory/context
-      6 +
-      # group 14 — slot completeness
-      6 +
-      # group 15 — wh-target type
-      EnrichmentFeatures.wh_dimension() +
-      # group 16 — time-expression typology
-      EnrichmentFeatures.time_typology_dimension() +
-      # group 17 — POS-conditional supersense fingerprints (verb / noun / adj-adv)
-      EnrichmentFeatures.verb_supersense_dimension() +
-      EnrichmentFeatures.noun_supersense_dimension() +
-      EnrichmentFeatures.adj_adv_supersense_dimension() +
-      # group 18 — ConceptNet edge-type fingerprint
-      EnrichmentFeatures.conceptnet_edge_dimension() +
-      # group 19 — verb × argument selectional preferences
-      EnrichmentFeatures.selectional_preferences_dimension() +
-      # group 20 — subcategorization frame (POS-only)
-      EnrichmentFeatures.subcategorization_frame_dimension() +
-      # group 21 — discourse-marker semantic categories
-      EnrichmentFeatures.discourse_markers_dimension() +
-      # group 22 — speech-act × wh-target interaction grid
-      EnrichmentFeatures.speech_act_wh_interaction_dimension() +
-      # group 23 — entity type semantics (parent histogram + coherence + coverage)
-      EnrichmentFeatures.entity_type_semantics_dimension()
+  @spec vector_dimension() :: non_neg_integer()
+  def vector_dimension, do: length(dimension_manifest())
+
+  @doc """
+  Returns the per-group dimension widths as an ordered keyword list.
+
+  Useful for locating which group moved when `vector_dimension/0` changes:
+  a diff of two `group_widths/0` results names the group rather than just
+  reporting a different total.
+  """
+  @spec group_widths() :: [{atom(), non_neg_integer()}]
+  def group_widths do
+    dimension_manifest()
+    |> Enum.chunk_by(fn {group, _name} -> group end)
+    |> Enum.map(fn [{group, _} | _] = chunk -> {group, length(chunk)} end)
+  end
+
+  @doc """
+  Returns a stable digest of the vector's full ordered schema.
+
+  Two feature vectors are only comparable if they were produced under the
+  same fingerprint. Snapshot runs record it so a change in the vector's
+  shape is attributable rather than appearing as a drift in the values --
+  the same reason the sentence splitter's version is recorded alongside the
+  corpus it produced.
+
+  The digest covers names *and* order, so a reordering with identical widths
+  still changes it.
+  """
+  @spec schema_fingerprint() :: String.t()
+  def schema_fingerprint do
+    dimension_manifest()
+    |> Enum.map_join("\n", fn {group, name} -> "#{group}/#{name}" end)
+    |> then(&:crypto.hash(:sha256, &1))
+    |> Base.encode16(case: :lower)
+    |> binary_part(0, 16)
   end
 
   # -- Group 1: Surface/lexical (~12 dims) ------------------------------------

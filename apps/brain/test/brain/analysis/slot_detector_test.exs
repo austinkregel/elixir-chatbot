@@ -42,8 +42,16 @@ defmodule Brain.Analysis.SlotDetectorTest do
 
       result = SlotDetector.detect("smarthome.lights.switch.off", entities)
 
+      # "room" is an entity type, not a slot: no schema in
+      # priv/analysis/intent_registry.json declares a "room" slot, and every
+      # smarthome schema there (smarthome.switch, smarthome.set,
+      # smarthome.device_set) maps a "room" entity onto its "location" slot,
+      # as does the Home Assistant service schema
+      # (Brain.Services.HomeAssistant.slot_schema/0) that answers for the
+      # unregistered "smarthome.lights.switch.off" through its "smarthome"
+      # parent.
       assert SlotResult.get_slot_value(result, "device") == "lights"
-      assert SlotResult.get_slot_value(result, "room") == "kitchen"
+      assert SlotResult.get_slot_value(result, "location") == "kitchen"
     end
 
     test "handles unknown intent gracefully" do
@@ -138,6 +146,29 @@ defmodule Brain.Analysis.SlotDetectorTest do
 
       assert schema == nil
     end
+
+    test "reads the intent registry regardless of the working directory" do
+      # mix test runs from apps/brain, where a path relative to the working
+      # directory happens to resolve. The app and the axis probe run from the
+      # umbrella root, where it does not.
+      original = File.cwd!()
+      on_exit(fn -> File.cd!(original) end)
+      File.cd!(Path.expand("../..", original))
+
+      schema = SlotDetector.get_schema("music.play")
+
+      assert "music_artist" in schema["optional"]
+    end
+  end
+
+  describe "detect/2 for music.play" do
+    test "fills the artist slot from a music_artist entity" do
+      entities = [%{entity_type: "music_artist", value: "The Beatles", confidence: 0.9}]
+
+      result = SlotDetector.detect("music.play", entities)
+
+      assert SlotResult.get_slot_value(result, "music_artist") == "The Beatles"
+    end
   end
 
   describe "suggest_intent_from_entities/1" do
@@ -226,10 +257,10 @@ defmodule Brain.Analysis.SlotDetectorTest do
       assert prompt == "Could you please specify the unknown slot?"
     end
 
-    test "handles slot names with hyphens" do
-      prompt = SlotDetector.get_clarification_prompt("music-artist", "music.play")
+    test "handles compound slot names" do
+      prompt = SlotDetector.get_clarification_prompt("music_artist", "music.play")
 
-      # Should use generic prompt since music.play doesn't have clarification for music-artist
+      # Should use generic prompt since music.play doesn't have clarification for music_artist
       assert prompt == "Could you please specify the music artist?"
     end
 
@@ -324,9 +355,9 @@ defmodule Brain.Analysis.SlotDetectorTest do
       assert SlotResult.get_slot_value(result, "location") == "Owosso"
     end
 
-    test "place-name entity fills location slot via TypeHierarchy compatibility" do
+    test "place_name entity fills location slot via TypeHierarchy compatibility" do
       entities = [
-        %{entity_type: "place-name", value: "Grand Rapids", confidence: 0.9}
+        %{entity_type: "place_name", value: "Grand Rapids", confidence: 0.9}
       ]
 
       result = SlotDetector.detect("weather.query", entities)

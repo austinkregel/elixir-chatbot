@@ -1,0 +1,82 @@
+{
+  "domain": "device",
+  "description": "Smart device control",
+  "response_frames": {
+    "control_device": [
+      "I'll $action the $device for you.",
+      "Setting the $device to $action.",
+      "Done - the $device is now $action."
+    ],
+    "missing_device": [
+      "Which device would you like me to control?",
+      "What device should I adjust?",
+      "Which device are you referring to?"
+    ],
+    "missing_action": [
+      "What would you like me to do with the $device?",
+      "How should I adjust the $device?",
+      "What action should I take on the $device?"
+    ],
+    "missing_both": [
+      "What device would you like me to control, and what should I do with it?",
+      "Which device and what action?"
+    ]
+  },
+  "enriched_response_frames": {
+    "with_device_status": {
+      "condition": "enriched:device_status",
+      "requires_enrichment": ["device_status", "device_name"],
+      "templates": [
+        "The $device_name is currently $device_status.",
+        "Right now, the $device_name is $device_status."
+      ]
+    },
+    "with_brightness": {
+      "condition": "enriched:brightness",
+      "requires_enrichment": ["device_status", "device_name", "brightness"],
+      "templates": [
+        "The $device_name is $device_status at $brightness brightness.",
+        "Currently, the $device_name is set to $brightness."
+      ]
+    },
+    "service_not_configured": {
+      "condition": "service_missing",
+      "requires_enrichment": [],
+      "templates": [
+        "I'd need a smart home connection to control devices. You can set one up in settings.",
+        "Device control isn't configured yet."
+      ]
+    },
+    "service_error": {
+      "condition": "service_error",
+      "requires_enrichment": [],
+      "templates": [
+        "I had trouble reaching the device. It might be offline.",
+        "Couldn't connect to the device right now."
+      ]
+    }
+  },
+  "entity_verbalizations": {
+    "device": ["the $value", "$value"],
+    "action": ["$value", "set to $value"],
+    "room": ["in the $value", "in $value"]
+  },
+  "acknowledgment_prefixes": [
+    "Sure,",
+    "On it,",
+    "Right away,"
+  ],
+  "slot_requirements": {
+    "required": ["device", "action"],
+    "optional": ["room"],
+    "slot_type_aliases": {
+      "device": ["device", "appliance", "light", "switch", "room"]
+    }
+  },
+  "enrichment_service": "home_assistant",
+  "enrichment_fields": {
+    "device_status": {"description": "Current on/off state", "source": "home_assistant"},
+    "device_name": {"description": "Friendly device name", "source": "home_assistant"},
+    "brightness": {"description": "Brightness percentage", "source": "home_assistant"}
+  }
+}

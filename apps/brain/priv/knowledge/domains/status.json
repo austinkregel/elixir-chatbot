@@ -1,0 +1,103 @@
+{
+  "domain": "status",
+  "description": "System status queries and health reports with live data enrichment",
+  "response_frames": {
+    "general_status": [
+      "Let me check on the system status.",
+      "Checking system health now.",
+      "Here's the current system status."
+    ],
+    "diagnostic": [
+      "Running a diagnostic check now.",
+      "Let me run a health check on all systems.",
+      "Performing system diagnostics."
+    ]
+  },
+  "enriched_response_frames": {
+    "status_healthy": {
+      "condition": "enriched:health_status",
+      "requires_enrichment": ["health_status", "health_score", "genservers_running", "genservers_total", "uptime"],
+      "templates": [
+        "System is $health_status — $genservers_running of $genservers_total services running, health score $health_score. Uptime: $uptime.",
+        "All systems $health_status. $genservers_running/$genservers_total GenServers active, scoring $health_score. Been up for $uptime.",
+        "Status: $health_status ($health_score). $genservers_running of $genservers_total services are online. Uptime is $uptime."
+      ]
+    },
+    "status_with_models": {
+      "condition": "enriched:health_status AND enriched:ml_models_summary",
+      "requires_enrichment": ["health_status", "health_score", "genservers_running", "genservers_total", "uptime", "ml_models_summary", "memory_summary"],
+      "templates": [
+        "System is $health_status ($health_score). $genservers_running/$genservers_total services running. ML: $ml_models_summary. Memory: $memory_summary. Uptime: $uptime.",
+        "Health: $health_status at $health_score. $genservers_running of $genservers_total GenServers active. Models: $ml_models_summary. Memory stores hold $memory_summary. Running for $uptime."
+      ]
+    },
+    "diagnostic_enriched": {
+      "condition": "enriched:categories_summary",
+      "requires_enrichment": ["health_status", "health_score", "categories_summary", "ml_models_summary", "services_summary"],
+      "templates": [
+        "Diagnostic complete. Health: $health_status ($health_score). Categories: $categories_summary. Models: $ml_models_summary. Services: $services_summary.",
+        "System diagnostic results — $health_status ($health_score). Breakdown: $categories_summary. ML status: $ml_models_summary. External services: $services_summary."
+      ]
+    },
+    "service_error": {
+      "condition": "enrichment_failed",
+      "templates": [
+        "I'm having trouble gathering system status right now. The monitoring subsystem may be initializing.",
+        "System status check encountered an issue. Some services may still be starting up.",
+        "I couldn't complete the status check right now. Please try again in a moment."
+      ]
+    }
+  },
+  "entity_verbalizations": {
+    "component": ["for $value", "of $value", "about $value"],
+    "category": ["in the $value category", "for $value systems"]
+  },
+  "acknowledgment_prefixes": [
+    "Sure,",
+    "Of course,",
+    "Right,"
+  ],
+  "slot_requirements": {
+    "required": [],
+    "optional": ["component", "category"]
+  },
+  "enrichment_service": "system_status",
+  "enrichment_fields": {
+    "health_status": {
+      "description": "Overall health label (healthy, degraded, warning, critical)",
+      "source": "system_status"
+    },
+    "health_score": {
+      "description": "Numeric health score percentage",
+      "source": "system_status"
+    },
+    "genservers_running": {
+      "description": "Number of running GenServers",
+      "source": "system_status"
+    },
+    "genservers_total": {
+      "description": "Total number of tracked GenServers",
+      "source": "system_status"
+    },
+    "uptime": {
+      "description": "Formatted system uptime",
+      "source": "system_status"
+    },
+    "ml_models_summary": {
+      "description": "Summary of classical and LSTM model readiness",
+      "source": "system_status"
+    },
+    "memory_summary": {
+      "description": "Memory store episode and semantic counts",
+      "source": "system_status"
+    },
+    "services_summary": {
+      "description": "External services configuration status",
+      "source": "system_status"
+    },
+    "categories_summary": {
+      "description": "Per-category GenServer health breakdown",
+      "source": "system_status"
+    }
+  }
+}

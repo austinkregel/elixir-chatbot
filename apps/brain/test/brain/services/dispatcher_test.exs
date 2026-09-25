@@ -152,6 +152,44 @@ defmodule Brain.Services.DispatcherTest do
     end
   end
 
+  describe "find_service/1 Home Assistant routing" do
+    test "routes smarthome.switch to HomeAssistant via supported_domains" do
+      assert Dispatcher.find_service("smarthome.switch") == Brain.Services.HomeAssistant
+    end
+
+    test "routes smarthome.query to HomeAssistant via supported_domains" do
+      assert Dispatcher.find_service("smarthome.query") == Brain.Services.HomeAssistant
+    end
+
+    test "routes device.control to HomeAssistant via supported_domains" do
+      assert Dispatcher.find_service("device.control") == Brain.Services.HomeAssistant
+    end
+
+    test "routes music.play to HomeAssistant via supported_domains" do
+      assert Dispatcher.find_service("music.play") == Brain.Services.HomeAssistant
+    end
+
+    test "routes alarm.set to HomeAssistant via supported_domains" do
+      assert Dispatcher.find_service("alarm.set") == Brain.Services.HomeAssistant
+    end
+
+    test "routes timer.start to HomeAssistant via supported_domains" do
+      assert Dispatcher.find_service("timer.start") == Brain.Services.HomeAssistant
+    end
+  end
+
+  describe "service_schemas/0 Home Assistant domains" do
+    test "includes smarthome domain-level schema" do
+      schemas = Dispatcher.service_schemas()
+      assert Map.has_key?(schemas, "smarthome")
+    end
+
+    test "includes device domain-level schema" do
+      schemas = Dispatcher.service_schemas()
+      assert Map.has_key?(schemas, "device")
+    end
+  end
+
   describe "health_check/2" do
     test "returns error for unknown service" do
       assert {:error, :service_not_found} = Dispatcher.health_check(:unknown_service)

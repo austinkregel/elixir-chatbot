@@ -1,23 +1,35 @@
 defmodule World.EntityPromoter do
   @moduledoc """
-  Periodically scans entity candidates across worlds and auto-promotes
-  frequently-occurring, high-confidence entities to the Gazetteer.
+  Periodically scans entity candidates across worlds and suggests the ones
+  it has seen often enough, and confidently enough, for human review.
 
-  Promotion criteria:
-  - Entity has >= 3 occurrences
-  - Aggregated confidence >= 0.6
-  - Entity type is determined (not "unknown")
+  It never adds to the gazetteer itself: the gazetteer learns only what a
+  reviewer approves (`Brain.Knowledge.ReviewQueue`). Each suggestion is a
+  pending review candidate scoped to its world; once approved, the entity
+  joins that world's gazetteer overlay.
 
-  Uses `Gazetteer.add_to_world/4` for world-scoped isolation.
+  An entity is suggested only when:
+  - it has been observed at least `min_occurrences` times in the world -- the
+    minimum sample before the promoter trusts what it has seen,
+  - its confidence, averaged over those observations, is at least
+    `min_confidence`,
+  - its type is determined (not "unknown"),
+  - it passes the knowledge-graph gate, and
+  - the queue does not already hold it for this world and type, in any
+    status -- so a reviewer is not asked twice, even about something they
+    rejected.
+
+  The thresholds come from `config :world, World.EntityPromoter`.
   Scans every 10 minutes.
   """
 
   use GenServer
   require Logger
 
+  alias Brain.Knowledge.ReviewQueue
+  alias Brain.Knowledge.Types.{Finding, ReviewCandidate, SourceInfo}
+
   @scan_interval_ms 10 * 60 * 1000
-  @min_occurrences 3
-  @min_confidence 0.6
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -43,15 +55,51 @@ defmodule World.EntityPromoter do
     GenServer.cast(name, :scan)
   end
 
+  @doc """
+  Suggests for review every entity among a world's `candidates` that meets
+  the criteria in the moduledoc, and returns the aggregated entities it
+  suggested.
+
+  ## Options
+
+  - `:config` -- keyword list replacing `config :world, World.EntityPromoter`.
+  """
+  @spec suggest(String.t(), [map()], keyword()) :: [map()]
+  def suggest(world_id, candidates, opts \\ []) when is_binary(world_id) and is_list(candidates) do
+    config = Keyword.get_lazy(opts, :config, fn -> Application.fetch_env!(:world, __MODULE__) end)
+    min_occurrences = Keyword.fetch!(config, :min_occurrences)
+    min_confidence = Keyword.fetch!(config, :min_confidence)
+
+    candidates
+    |> World.EntityDiscoverer.aggregate_candidates()
+    |> Enum.filter(fn entity ->
+      entity.occurrences >= min_occurrences and
+        entity.confidence >= min_confidence and
+        entity.inferred_type not in [nil, "unknown"] and
+        not ReviewQueue.has_entity_candidate?(entity.value, entity.inferred_type, world_id) and
+        passes_kg_gate?(entity, world_id)
+    end)
+    |> Enum.map(fn entity ->
+      case ReviewQueue.add(review_candidate(entity, world_id)) do
+        {:ok, _id} ->
+          entity
+
+        {:error, reason} ->
+          raise "EntityPromoter: review queue refused #{inspect(entity.value)} " <>
+                  "(#{entity.inferred_type}) from world #{world_id}: #{inspect(reason)}"
+      end
+    end)
+  end
+
   @impl true
   def init(_opts) do
     Process.send_after(self(), :scan, @scan_interval_ms)
 
     {:ok,
      %{
-       total_promoted: 0,
+       total_suggested: 0,
        last_scan: nil,
-       promoted_entities: []
+       suggested_entities: []
      }}
   end
 
@@ -84,147 +132,44 @@ defmodule World.EntityPromoter do
   # --- Private ---
 
   defp do_scan(state) do
-    if gazetteer_available?() and manager_available?() do
-      worlds = list_worlds()
-
-      promoted =
-        Enum.flat_map(worlds, fn world_id ->
-          scan_world(world_id)
-        end)
-
-      if promoted != [] do
-        Logger.info("EntityPromoter: promoted #{length(promoted)} entities",
-          entities: Enum.map(promoted, & &1.value)
-        )
-      end
-
-      %{
-        state
-        | total_promoted: state.total_promoted + length(promoted),
-          last_scan: DateTime.utc_now(),
-          promoted_entities: (promoted ++ state.promoted_entities) |> Enum.take(100)
-      }
-    else
-      state
-    end
-  rescue
-    e ->
-      Logger.debug("EntityPromoter scan error: #{Exception.message(e)}")
-      state
-  end
-
-  defp scan_world(world_id) do
-    candidates = World.Manager.get_candidates(world_id)
-
-    # Aggregate by entity value
-    aggregated = World.EntityDiscoverer.aggregate_discoveries(candidates)
-
-    # Filter for promotion-eligible entities
-    promotable =
-      Enum.filter(aggregated, fn entity ->
-        entity.occurrences >= @min_occurrences and
-          entity.confidence >= @min_confidence and
-          entity.inferred_type != "unknown" and
-          entity.inferred_type != nil and
-          passes_kg_gate?(entity, world_id)
+    suggested =
+      Enum.flat_map(list_worlds(), fn world_id ->
+        suggest(world_id, World.Manager.get_candidates(world_id))
       end)
 
-    # Promote each eligible entity
-    Enum.flat_map(promotable, fn entity ->
-      case promote_entity(entity, world_id) do
-        :ok -> [entity]
-        _ -> []
-      end
-    end)
-  rescue
-    _ -> []
+    if suggested != [] do
+      Logger.info("EntityPromoter: suggested #{length(suggested)} entities for review",
+        entities: Enum.map(suggested, & &1.value)
+      )
+    end
+
+    %{
+      state
+      | total_suggested: state.total_suggested + length(suggested),
+        last_scan: DateTime.utc_now(),
+        suggested_entities: (suggested ++ state.suggested_entities) |> Enum.take(100)
+    }
   end
 
-  defp promote_entity(entity, world_id) do
-    Brain.ML.Gazetteer.add_to_world(
-      world_id,
-      entity.value,
-      entity.inferred_type,
-      %{
-        source: :auto_promoted,
+  defp review_candidate(entity, world_id) do
+    source =
+      SourceInfo.new("world://#{world_id}/entity_promoter",
+        title: "Entities observed in world #{world_id}"
+      )
+
+    finding =
+      Finding.new("#{entity.value} is a #{entity.inferred_type}", entity.value, source,
+        entity_type: entity.inferred_type,
         confidence: entity.confidence,
-        occurrences: entity.occurrences,
-        promoted_at: DateTime.utc_now()
-      }
-    )
-
-    write_kg_instance(entity, world_id)
-
-    :ok
-  rescue
-    _ -> :error
-  end
-
-  defp write_kg_instance(entity, world_id) do
-    {:ok, type_node} =
-      Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityType", %{
-        name: entity.inferred_type
-      })
-
-    Brain.AtlasIntegration.enrich_existing_node("knowledge_graph", type_node.id, entity.inferred_type)
-
-    {:ok, instance_node} =
-      Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityInstance", %{
-        name: entity.value,
-        type: entity.inferred_type,
-        world_id: world_id,
-        source: "auto_promoted"
-      })
-
-    Brain.AtlasIntegration.find_or_create_edge(
-      "knowledge_graph",
-      instance_node.id,
-      type_node.id,
-      Atlas.Graph.EdgeLabels.instance_of(),
-      %{source: "auto_promoted"}
-    )
-  rescue
-    e ->
-      :telemetry.execute(
-        [:brain, :entity_promoter, :kg_write_failed],
-        %{count: 1},
-        %{entity: entity.value, type: entity.inferred_type, error: Exception.message(e)}
+        raw_context: entity.contexts |> Enum.filter(&is_binary/1) |> Enum.join("\n"),
+        world_id: world_id
       )
 
-      Logger.warning(
-        "EntityPromoter: KG write failed for #{entity.value}: #{Exception.message(e)}"
-      )
-
-      reraise e, __STACKTRACE__
+    ReviewCandidate.new(finding, aggregate_confidence: entity.confidence)
   end
 
   defp list_worlds do
-    World.Manager.list_worlds()
-    |> Enum.map(fn
-      {id, _config} -> id
-      %{id: id} -> id
-      id when is_binary(id) -> id
-      _ -> nil
-    end)
-    |> Enum.reject(&is_nil/1)
-  rescue
-    _ -> []
-  end
-
-  defp gazetteer_available? do
-    try do
-      Brain.ML.Gazetteer.loaded?()
-    catch
-      :exit, _ -> false
-    end
-  rescue
-    _ -> false
-  end
-
-  defp manager_available? do
-    Process.whereis(World.Manager) != nil
-  rescue
-    _ -> false
+    Enum.map(World.Manager.list_worlds(), & &1.id)
   end
 
   defp passes_kg_gate?(entity, _world_id) do

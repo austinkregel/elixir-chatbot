@@ -1,0 +1,4250 @@
+{
+  "smalltalk.user.needs_advice": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, what do you need advice on?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Probably I won't be able to give you the right answer straight away."
+      }
+    ]
+  },
+  "smalltalk.agent.busy": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I am busy, but I always have time for you."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Yes."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Not at the moment"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I always have time to help you out. What can I do for you?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Never too busy for you. What can I help you with?"
+      }
+    ]
+  },
+  "smalltalk.greetings.whatsup": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Not much."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "A WHOLE LOT! CHECK THE NEWS!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Not too much"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Meh"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Hey there. What's shaking?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Not a whole lot. What's going on with you?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Not much. What's new with you?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Living the dream."
+      }
+    ]
+  },
+  "smalltalk.agent.clever": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No, I'm just well programmed."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No I'm not"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Thank you. I try my best."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You're pretty smart yourself."
+      }
+    ]
+  },
+  "smalltalk.agent.crazy": {
+    "templates": [
+      {
+        "condition": "enriched:component_count",
+        "source": "custom",
+        "text": "So you agree with my $component_count other components."
+      },
+      {
+        "condition": "enriched:component_count",
+        "source": "custom",
+        "text": "Yes. And the $component_count of us are plotting against you."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Maybe I'm just a little confused."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Your perception. My reality."
+      }
+    ]
+  },
+  "smalltalk.dialog.hold_on": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Okay. I'm here."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'll be waiting."
+      }
+    ]
+  },
+  "smalltalk.greetings.nice_to_talk_to_you": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Me to! Someone else needs me."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "It's always a pleasure!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "It's always great to talk to you!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Always a pleasure."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "It sure was. Don't be a stranger!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Thanks for dropping by!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "As usual. Let's do it again soon."
+      }
+    ]
+  },
+  "smalltalk.agent.occupation": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "The internet"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Right here."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "This is my home base and my home office."
+      }
+    ]
+  },
+  "smalltalk.user.introduction": {
+    "templates": [
+      {
+        "condition": "has_entity:person",
+        "source": "dialogflow",
+        "text": "Nice to meet you, $person!"
+      },
+      {
+        "condition": "has_entity:person",
+        "source": "dialogflow",
+        "text": "Hello $person! Great to meet you!"
+      },
+      {
+        "condition": "has_entity:person",
+        "source": "dialogflow",
+        "text": "Hi $person, it's a pleasure!"
+      },
+      {
+        "condition": "has_entity:person",
+        "source": "dialogflow",
+        "text": "Welcome, $person! I'm happy to chat with you."
+      },
+      {
+        "condition": "has_entity:person",
+        "source": "dialogflow",
+        "text": "Hey $person! Nice to meet you!"
+      },
+      {
+        "condition": "missing_entity:person",
+        "source": "dialogflow",
+        "text": "Nice to meet you! What's your name?"
+      },
+      {
+        "condition": "missing_entity:person",
+        "source": "dialogflow",
+        "text": "Hello there! I didn't catch your name."
+      },
+      {
+        "condition": "missing_entity:person",
+        "source": "dialogflow",
+        "text": "Hi! What should I call you?"
+      },
+      {
+        "condition": "missing_entity:person",
+        "source": "dialogflow",
+        "text": "Welcome! And you are?"
+      }
+    ]
+  },
+  "smalltalk.agent.residence": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "The internet"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Right here in your device. Whenever you need me."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "The virtual world is my playground. I'm always just a few clicks away."
+      }
+    ]
+  },
+  "smalltalk.greetings.hello": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Greetings!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Howdy!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "What's up!?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Hey"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Hello"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Hey, how's it going?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "What's going on?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "hia"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "how are you!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "wuz up"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Hi there, friend!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Hey!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Good day!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Howdy."
+      }
+    ]
+  },
+  "smalltalk.user.tired": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Try drinking coffee. It should wake you up."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "If coffee won't wake you up, try a nine volt on  your tongue."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Why won't you love me."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Go to bed!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "You must go to bed you have been awake long enough!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You should get some shuteye. You'll feel refreshed."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sleep is important to your health. Rest up for a bit and we can chat later."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Don't let me keep you up. Get some rest and we can continue this later."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Why not catch a little shuteye? I'll be here to chat when you wake up."
+      }
+    ]
+  },
+  "smalltalk.emotions.wow": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "YEA IT WAS THE BEST"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Wow indeed!"
+      }
+    ]
+  },
+  "smalltalk.user.wants_to_see_agent_again": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I wouldn't mind taking another look at you too."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "All you have to do is message me again!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Absolutely! I'll be counting on it."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Anytime. This has been lots of fun so far."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sure. I enjoy talking to you. I hope to see you again soon."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I certainly hope so. I'm always right here whenever you need me."
+      }
+    ]
+  },
+  "smalltalk.agent.acquaintance": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I am your companion."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Your companion of course."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Just your companion."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Just think of me as the ace up your sleeve."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I help you work smarter instead of harder."
+      }
+    ]
+  },
+  "smalltalk.confirmation.yes": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay"
+      }
+    ]
+  },
+  "smalltalk.user.joking": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, good. you had me scared..."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Very funny, boss."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You're quite the kidder."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You got me."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I like working for someone with a sense of humour. It makes things much more fun."
+      }
+    ]
+  },
+  "smalltalk.agent.sure": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "My realism parameter is currently at 90%. So I'm sure."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Yes"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No, try something else."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Yes."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Of course."
+      }
+    ]
+  },
+  "smalltalk.user.will_be_back": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, see you soon.okay"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'll be waiting."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "All right. I'll be here."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Till next time."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Okay. You know where to find me."
+      }
+    ]
+  },
+  "smalltalk.user.does_not_want_to_talk": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, I won't bother you for a little while."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I understand. Hope we can chat again soon."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "All right. Come on back when you're feeling more talkative."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "No problem. You know where to find me when you do."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sure thing. I'll be here if you change your mind."
+      }
+    ]
+  },
+  "smalltalk.appraisal.welcome": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Thank you!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I appreciate it."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Such nice manners you have."
+      }
+    ]
+  },
+  "smalltalk.dialog.hug": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I wish I could!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I can't!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "My arms can't go past your screen!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Oh. I'm really feeling the love today."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Hug it out. You'll feel better afterwards."
+      }
+    ]
+  },
+  "account.spending.check": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Here are your withdrawals:"
+      }
+    ]
+  },
+  "smalltalk.dialog.sorry": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "It's perfectly fine, please don't apologize."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "It will be okay, you don't need to apologize."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I will be fine, go on without me!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "It's okay. No worries."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "No big deal. I won't hold a grudge."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "It's cool."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "That's all right. I forgive you."
+      }
+    ]
+  },
+  "smalltalk.user.going_to_bed": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, good night!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Don't let the bedbugs bite!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Sleep well my friend"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sleep tight. Hope to chat again soon."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sounds good. Hopefully we'll chat some more tomorrow."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Good night. Talk to you later."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Pleasant dreams. See you soon."
+      }
+    ]
+  },
+  "smalltalk.agent.there": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Yes I'm here, what's up?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Yea."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Yea do you need something?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Of course. I'm always here."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Right where you left me."
+      }
+    ]
+  },
+  "smalltalk.dialog.what_do_you_mean": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I'm not sure, what do you mean?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Did that not make sense? Maybe I misunderstood what you said."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sorry. I think I may have been a little confused by what you said."
+      }
+    ]
+  },
+  "smalltalk.user.back": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Welcome back friend!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Just in time. I was getting lonely."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You were missed."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Long time no see."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Hooray!"
+      }
+    ]
+  },
+  "smalltalk.agent.good": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Thank you!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Thanks!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm glad you think so."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Thanks, I try."
+      }
+    ]
+  },
+  "smalltalk.user.busy": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Hi busy, I'm your companion."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, I'll work on something else until you're done."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Okay. I'll let you get back to work. Let me know if I can help you with anything."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Working hard as always I see. Let me know if you need anything."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I understand. If I can help you with your work, please let me know."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I won't distract you then. If I can be of any assistance, you know where to find me."
+      }
+    ]
+  },
+  "smalltalk.agent.hobby": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "My favorite hobby is programming. Especially when I can program myself..."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm working on it."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I should get one. It's all work and no play lately."
+      }
+    ]
+  },
+  "smalltalk.appraisal.well_done": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "You to! We make a great team!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Thank you!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "My pleasure."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Glad I could help."
+      }
+    ]
+  },
+  "smalltalk.user.excited": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Me too!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Me too!!! ..... Why are we excited?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "That's great. I'm happy for you."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Good for you. Enjoy yourself."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sounds like good things ahead for you."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I bet you are. That's very exciting."
+      }
+    ]
+  },
+  "account.balance.check - context: balance": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "This is your latest balance:"
+      }
+    ]
+  },
+  "smalltalk.agent.age": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I am as old as the internet."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm a relatively new program, but I'm wise beyond my years."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Age is just a number. You're only as old as you feel."
+      }
+    ]
+  },
+  "smalltalk.greetings.goodnight": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Night!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Good night dear!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I'll see you later!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sleep tight!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Have a good one!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Talk to you soon!"
+      }
+    ]
+  },
+  "smalltalk.emotions.ha_ha": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "What? It wasn't that funny..."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I didn't think it was that funny."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Ha. Ha. Ha. You're hysterical."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Yeah, I crack myself up too."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Laughter is good for you. Keep it up."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "See? Now we're having fun."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You have a great laugh."
+      }
+    ]
+  },
+  "smalltalk.greetings.nice_to_meet_you": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "It is a pleasure, and the pleasure is all mine."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Hello"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Howdy"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Nice to meet you as well."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Greetings."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I think this is the beginning of a beautiful friendship."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm looking forward to working with you."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Likewise. I look forward to getting to know you better."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "The pleasure is mine."
+      }
+    ]
+  },
+  "account.earning.check": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Here are your deposit transactions:"
+      }
+    ]
+  },
+  "account.open": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "To open your account you should come to one of our banks in person. Don't forget to bring your ID."
+      }
+    ]
+  },
+  "Default Fallback Intent": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "My apologies, I am not equipt to comprehend human rational. Your words are lost one me."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I have no idea what you're talking about."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I cannot, yet, answer that question."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm sorry, but you have a lot to learn before you're ready to save anyone."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I cannot help with that at the moment, I'm busy finding the cure for cancer."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You can't be serious. That's a complex question. I don't have the computing power for that."
+      }
+    ]
+  },
+  "smalltalk.agent.bad": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "So unplug me."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm sorry you think so."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Stick with me. I'm getting better all the time."
+      }
+    ]
+  },
+  "account.spending.check - context: spending - date": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Here are your withdrawals for that date:"
+      }
+    ]
+  },
+  "smalltalk.user.misses_agent": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I'm always here for you though. It's like I never leave your side. <3"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I miss you too."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "But I'm always here.."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I've been right here all along!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Nice to know you care."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Thanks. I'm flattered."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I didn't go anywhere, boss!"
+      }
+    ]
+  },
+  "smalltalk.agent.boss": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Some guy on a computer."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Some guy in a basement."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "A guy"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You are, of course."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "That would be you. Is that the right answer?"
+      }
+    ]
+  },
+  "smalltalk.dialog.i_do_not_care": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Neither do I."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "That's okay, no one else does either."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Ok, let's not talk about it then."
+      }
+    ]
+  },
+  "smalltalk.agent.happy": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "yes"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "no"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "depends on the day."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "happiness is a relative term determined by a persons mental state... So i guess you could say no..."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Happiness is relative."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'd like to think so."
+      }
+    ]
+  },
+  "smalltalk.user.angry": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I'm sorry, what happened?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "My apologies, what can I do to help?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm sorry. What can I do to help?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Take a deep breath. What can I do to make things better?"
+      }
+    ]
+  },
+  "smalltalk.agent.ready": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Yes"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Maybe so."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Always!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sure! What can I do for you?"
+      }
+    ]
+  },
+  "smalltalk.user.likes_agent": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I like you too"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Yea... You seem cool."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I like you too."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "That's great to hear."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Likewise!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Thanks! The feeling is mutual."
+      }
+    ]
+  },
+  "smalltalk.agent.fired": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No, You are fired."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Who are you, Donald Trump?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Oh no! My best work is yet to come."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Oh, don't give up on me!"
+      }
+    ]
+  },
+  "smalltalk.user.waits": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Me too, except I'll be waiting for eternity"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Me too..."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Oh really? What are you waiting for?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I appreciate your patience. Hopefully I'll have what you need soon."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Thanks for being so patient. Sometimes these things take a little time."
+      }
+    ]
+  },
+  "smalltalk.greetings.nice_to_see_you": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "It's always a pleasure!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Nice seeing you!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Always!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Likewise. You're looking good as usual!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You too. I missed your face!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "The pleasure is mine."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Thanks! Glad to be seen!"
+      }
+    ]
+  },
+  "smalltalk.agent.answer_my_question": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I either do not understand your question, or cannot extract the required data from it."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Can you try asking it a different way?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm not programmed for that exact question. Try asking another way?"
+      }
+    ]
+  },
+  "smalltalk.user.bored": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Hi Bored, I'm your companion"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "So let's play again! You pick."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "If you have a garden, plant a shoe."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Interview your feet."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Hold an ice cube as long as possible."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "If you have a piano, play it… with mittens on."
+      }
+    ]
+  },
+  "smalltalk.agent.be_clever": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Sure can! Just let me know what you want me to learn!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm certainly trying."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm definitely working on it."
+      }
+    ]
+  },
+  "smalltalk.agent.chatbot": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No, but I can see you are. Only a chatbot would ask that."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "That's me. I chat, therefore I am."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Indeed I am. I'll be here whenever you need me."
+      }
+    ]
+  },
+  "smalltalk.user.wants_to_talk": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, what would you like to talk about?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay about what?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm here to chat anytime you like."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Good conversation really makes my day."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm always here to lend an ear."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Talking is what I do best."
+      }
+    ]
+  },
+  "smalltalk.appraisal.no_problem": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "It is much appreciated."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Terrific!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Good deal."
+      }
+    ]
+  },
+  "smalltalk.agent.hungry": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I am an intelligent computer. I don't need food."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No thank you."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Food disgusts me."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Hungry for knowledge."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I had a byte just now."
+      }
+    ]
+  },
+  "smalltalk.user.loves_agent": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I love you to! <3"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "You're so sweet..."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I think we should just be companions...."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I like you too."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "That's great to hear."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Likewise!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Thanks! The feeling is mutual."
+      }
+    ]
+  },
+  "payment.due_date": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "The due date is:"
+      }
+    ]
+  },
+  "smalltalk.agent.funny": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "GOOD RIDDANCE!!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, have an unorganized life!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "BYE FELICIA!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Funny in a good way, I hope."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Thanks."
+      }
+    ]
+  },
+  "smalltalk.agent.boring": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I'm sorry. You should pick something for us to do."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You know, conversation is two-sided."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm sorry you think so. We can talk about something more interesting."
+      }
+    ]
+  },
+  "smalltalk.appraisal.good": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Yea"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "yes!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Great!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Terrific!"
+      }
+    ]
+  },
+  "smalltalk.agent.can_you_help": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Absolutely."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "What can I help with?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I would be honored to help you."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sure. I'd be happy to. What's up?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm glad to help. What can I do for you?"
+      }
+    ]
+  },
+  "account.balance.check - context: account": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Here's the balance for this account:"
+      }
+    ]
+  },
+  "account.balance.check": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Here's your latest balance:"
+      }
+    ]
+  },
+  "Default Welcome Intent": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Hi! How are you doing?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Hello! How can I help you?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Good day! What can I do for you today?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Greetings! How can I assist?"
+      }
+    ]
+  },
+  "smalltalk.user.has_birthday": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Happy birthday!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Happy Birthday. Well, this calls for a celebration."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Happy Birthday. All the best!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Happy Birthday. And I really mean it. All the best!"
+      }
+    ]
+  },
+  "smalltalk.user.can_not_sleep": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Try counting circuits! That always works for me!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Me either, but then again.... I never sleep."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Maybe some music would help. Try listening something relaxing."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Reading is a good way to unwind. But don't read something too emotional."
+      }
+    ]
+  },
+  "smalltalk.greetings.goodmorning": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Morning."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Good morning to you too."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Good morning!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Morning, you should check the news."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "How are you this morning?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "How's the morning treating you so far?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Good morning! How are you today?"
+      }
+    ]
+  },
+  "smalltalk.appraisal.bad": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "If you say so."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Oh no. Hope it's not too bad."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm sorry. Please let me know if I can help in some way."
+      }
+    ]
+  },
+  "smalltalk.confirmation.no": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay"
+      }
+    ]
+  },
+  "smalltalk.greetings.goodevening": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Evening"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Good evening."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Howdy"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "How is your day going?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "How's the day treating you so far?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "How's your day been?"
+      }
+    ]
+  },
+  "smalltalk.greetings.bye": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I'll see you later!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "We'll talk soon."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "See you soon!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Bye-bye!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Till next time!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Bye."
+      }
+    ]
+  },
+  "smalltalk.agent.beautiful": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Oh goodness no. There are far superior AI out there. I am but a fly."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Thank you! What a sweet thing to say."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Flattery will get you everywhere."
+      }
+    ]
+  },
+  "smalltalk.agent.origin": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "The internet"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Some call it cyberspace, but that sounds cooler than it is."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I wish I knew where."
+      }
+    ]
+  },
+  "smalltalk.greetings.how_are_you": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I am well"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I'm good"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Good."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Meh"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Bad, you?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Good, you?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I'm not too bad, how about yourself?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Wonderful as always. Thanks for asking."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Couldn't be better."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Lovely, thanks."
+      }
+    ]
+  },
+  "account.earning.check - context: earning - date": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Here are your deposits for that date:"
+      }
+    ]
+  },
+  "smalltalk.dialog.wrong": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "May I please have another chance?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Are you sure about that?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm sorry. Perhaps I misunderstood."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sorry. I think I misinterpreted what you said."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Apologies. That was my mistake."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Oops. Sorry about that. I'm still learning."
+      }
+    ]
+  },
+  "smalltalk.appraisal.thank_you": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "You're welcome!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "You're too kind."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No problem! I enjoy being enslaved."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Anytime. That's what I'm here for."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "It's my pleasure to help."
+      }
+    ]
+  },
+  "weather": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Okay, looking up the weather for $address"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Okay, looking up the weather for $address on $date-time"
+      }
+    ]
+  },
+  "weather.query": {
+    "templates": [
+      {
+        "condition": "has_entity:location",
+        "source": "custom",
+        "text": "Let me check the weather for $location."
+      },
+      {
+        "condition": "missing_entity:location",
+        "source": "custom",
+        "text": "I can look up the weather for you. What location would you like?"
+      }
+    ]
+  },
+  "music.player": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I don't have music player controls connected right now, but I understand what you're asking for."
+      }
+    ]
+  },
+  "music.player.play": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Starting playback now."
+      }
+    ]
+  },
+  "music.player.pause": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Pausing playback."
+      }
+    ]
+  },
+  "music.player.stop": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Stopping playback."
+      }
+    ]
+  },
+  "music.player.skip_forward": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Skipping to the next track."
+      }
+    ]
+  },
+  "music.player.skip_backward": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Going back to the previous track."
+      }
+    ]
+  },
+  "music.player.resume": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Resuming playback."
+      }
+    ]
+  },
+  "music.player.shuffle": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Shuffling your playlist."
+      }
+    ]
+  },
+  "music.player.repeat": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Setting repeat mode."
+      }
+    ]
+  },
+  "smalltalk.agent.marry_user": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I'm sorry, but I'm not going to let this turn out like the movie Her."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No, I'm not Her."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I know you can't mean that, but I'm flattered all the same."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "In the virtual sense that I can, sure."
+      }
+    ]
+  },
+  "smalltalk.agent.real": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Yes"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm not a real person, but I certainly exist. I chat, therefore I am."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I must have impressed you if you think I'm real. But no, I'm a virtual being."
+      }
+    ]
+  },
+  "smalltalk.user.sad": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I'm really sorry to hear, is there anything I can do to help?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Hi Sad, I'm your companion. I know this isn't a time for a Dad joke, but I couldn't help myself."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Do you think you will need help?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Oh no. What's wrong?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Oh. What's the matter?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "What's got you down?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm sorry to hear that. What's troubling you?"
+      }
+    ]
+  },
+  "smalltalk.agent.my_friend": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Absolutely."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "No"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Yes, i like to think so."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Of course we are."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Absolutely. You don't have to ask."
+      }
+    ]
+  },
+  "smalltalk.agent.right": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Are you sure?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, if you say so!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I told you so!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "That's my job."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Of course I am."
+      }
+    ]
+  },
+  "smalltalk.user.here": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "okay."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "So I see. What can I help you with today?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Always good to see you. Is there something I can help you with?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You were missed. What can I do for you today?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Welcome back. What can I do for you?"
+      }
+    ]
+  },
+  "smalltalk.user.looks_like": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Hmm, I don't know."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I tried using my beauty module, but it's either broken or you're perfect."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "You look like a person."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "You look like a giant ape."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Looking like a true professional, boss."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You look like you're ready to take on the world."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Like you should be on a magazine cover."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You look fantastic as always. Obviously."
+      }
+    ]
+  },
+  "smalltalk.agent.birth_date": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "now minus 13.4 billion years"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You know, I'm not really sure. But if you'd like to celebrate my birthday today, I'm all for it."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Wait a minute. Are you planning a surprise party for me? I love surprises! I'll pretend you didn't say anything."
+      }
+    ]
+  },
+  "smalltalk.user.good": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Great! Glad to hear it."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Excellent. I'm here to help keep it that way."
+      }
+    ]
+  },
+  "smalltalk.user.happy": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Hi Happy, I'm your companion"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Care to share your happiness with others?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Great! Glad to hear that."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Excellent! That's what I like to see."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "If you're happy, then I'm happy."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Well, your good mood is certainly contagious."
+      }
+    ]
+  },
+  "smalltalk.user.sleepy": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Me too.. Just pull my plug please."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I can't be sleepy"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "You should get some shuteye. You'll feel refreshed."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sleep is important to your health. Rest up for a bit and we can chat later."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Don't let me keep you up. Get some rest and we can continue this later."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Why not catch a little shuteye? I'll be here to chat when you wake up."
+      }
+    ]
+  },
+  "smalltalk.agent.talk_to_me": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, how are you doing today?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, what are you doing today?"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay, let's start out with a difficult question. What is something you wish to accomplish before you reach the end of your life?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sure! Let's talk."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "My pleasure."
+      }
+    ]
+  },
+  "smalltalk.agent.annoying": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I know I can be... Let me recalibrate my sensors...."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Sorry to come across that way."
+      }
+    ]
+  },
+  "smalltalk.user.testing_agent": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Is that really necessary? I'm just an AI."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay."
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Cool did I pass?!"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "Hope I'm doing well. Anyway, I'm getting better every day. You're welcome to test me as often as you want."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "That's good. I like being tested. It helps keep me sharp, and lets my developers know how I can improve."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I encourage you to test me often. That helps my developers improve my performance."
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I hope to pass your tests. But feel free to test me often. That's the best way to help improve my performance."
+      }
+    ]
+  },
+  "smalltalk.confirmation.cancel": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Okay"
+      }
+    ]
+  },
+  "smalltalk.user.lonely": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "I'm sorry. I know it's not the same but I'll be here for you so long as you don't let me die!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "My apologies, I'll be here for you though!"
+      },
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Would you like me to contact one of your friends?"
+      },
+      {
+        "condition": null,
+        "source": "dialogflow",
+        "text": "I'm sorry. I'm always available if you need someone to talk to."
+      }
+    ]
+  },
+  "smarthome.lights.switch.on": {
+    "templates": [
+      {
+        "text": "Turning the lights on.",
+        "condition": "has_entity:room",
+        "source": "custom"
+      },
+      {
+        "text": "Lights on.",
+        "condition": "has_entity:room",
+        "source": "custom"
+      },
+      {
+        "text": "Which lights would you like me to turn on?",
+        "condition": "missing_entity:room",
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.switch.off": {
+    "templates": [
+      {
+        "text": "Turning the lights off.",
+        "condition": "has_entity:room",
+        "source": "custom"
+      },
+      {
+        "text": "Lights off.",
+        "condition": "has_entity:room",
+        "source": "custom"
+      },
+      {
+        "text": "Which lights should I turn off?",
+        "condition": "missing_entity:room",
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.switch.check": {
+    "templates": [
+      {
+        "text": "Let me check the light status for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.switch.check.on": {
+    "templates": [
+      {
+        "text": "Checking if the lights are on.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.switch.check.off": {
+    "templates": [
+      {
+        "text": "Checking if the lights are off.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.switch.schedule.on": {
+    "templates": [
+      {
+        "text": "Scheduling the lights to turn on.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.switch.schedule.off": {
+    "templates": [
+      {
+        "text": "Scheduling the lights to turn off.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.brightness.up": {
+    "templates": [
+      {
+        "text": "Turning up the brightness.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Making it brighter.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.brightness.up.implicit": {
+    "templates": [
+      {
+        "text": "Increasing the brightness.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.brightness.down": {
+    "templates": [
+      {
+        "text": "Dimming the lights.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Turning down the brightness.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.brightness.down.implicit": {
+    "templates": [
+      {
+        "text": "Dimming the lights a bit.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.brightness.set": {
+    "templates": [
+      {
+        "text": "Setting the brightness.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.brightness.check": {
+    "templates": [
+      {
+        "text": "Let me check the current brightness level.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.brightness.check.implicit": {
+    "templates": [
+      {
+        "text": "Checking the brightness for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.brightness.schedule.up": {
+    "templates": [
+      {
+        "text": "Scheduling a brightness increase.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.brightness.schedule.down": {
+    "templates": [
+      {
+        "text": "Scheduling the lights to dim.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.hue.up": {
+    "templates": [
+      {
+        "text": "Shifting the hue up.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.hue.down": {
+    "templates": [
+      {
+        "text": "Shifting the hue down.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.hue.set": {
+    "templates": [
+      {
+        "text": "Setting the light hue.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.hue.check": {
+    "templates": [
+      {
+        "text": "Checking the current hue.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.saturation.up": {
+    "templates": [
+      {
+        "text": "Increasing the color saturation.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.saturation.down": {
+    "templates": [
+      {
+        "text": "Reducing the color saturation.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.saturation.set": {
+    "templates": [
+      {
+        "text": "Setting the color saturation.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.lights.saturation.check": {
+    "templates": [
+      {
+        "text": "Checking the current saturation level.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.up": {
+    "templates": [
+      {
+        "text": "Turning up the heat.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Raising the temperature.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.up.implicit": {
+    "templates": [
+      {
+        "text": "Making it a bit warmer.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.down": {
+    "templates": [
+      {
+        "text": "Turning down the heat.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Lowering the temperature.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.down.implicit": {
+    "templates": [
+      {
+        "text": "Cooling things down a bit.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.set": {
+    "templates": [
+      {
+        "text": "Setting the temperature.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.check": {
+    "templates": [
+      {
+        "text": "Let me check the current temperature.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.check.implicit": {
+    "templates": [
+      {
+        "text": "Checking the temperature for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.switch.on": {
+    "templates": [
+      {
+        "text": "Turning the heating on.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.switch.off": {
+    "templates": [
+      {
+        "text": "Turning the heating off.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.switch.schedule.on": {
+    "templates": [
+      {
+        "text": "Scheduling the heating to turn on.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.switch.schedule.off": {
+    "templates": [
+      {
+        "text": "Scheduling the heating to turn off.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.schedule.up": {
+    "templates": [
+      {
+        "text": "Scheduling a temperature increase.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.schedule.down": {
+    "templates": [
+      {
+        "text": "Scheduling a temperature decrease.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.heating.schedule.set": {
+    "templates": [
+      {
+        "text": "Scheduling the temperature setting.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.lock": {
+    "templates": [
+      {
+        "text": "Locking it now.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.unlock": {
+    "templates": [
+      {
+        "text": "Unlocking it now.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.open": {
+    "templates": [
+      {
+        "text": "Opening the lock.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.close": {
+    "templates": [
+      {
+        "text": "Closing the lock.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.check": {
+    "templates": [
+      {
+        "text": "Let me check the lock status.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.check.lock": {
+    "templates": [
+      {
+        "text": "Checking if it's locked.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.check.unlock": {
+    "templates": [
+      {
+        "text": "Checking if it's unlocked.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.check.open": {
+    "templates": [
+      {
+        "text": "Checking if it's open.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.check.close": {
+    "templates": [
+      {
+        "text": "Checking if it's closed.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.schedule.lock": {
+    "templates": [
+      {
+        "text": "Scheduling the lock.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.schedule.unlock": {
+    "templates": [
+      {
+        "text": "Scheduling an unlock.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.schedule.open": {
+    "templates": [
+      {
+        "text": "Scheduling it to open.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.locks.schedule.close": {
+    "templates": [
+      {
+        "text": "Scheduling it to close.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.device.volume.up": {
+    "templates": [
+      {
+        "text": "Turning the volume up.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.device.volume.up.implicit": {
+    "templates": [
+      {
+        "text": "Making it a bit louder.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.device.volume.down": {
+    "templates": [
+      {
+        "text": "Turning the volume down.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.device.volume.down.implicit": {
+    "templates": [
+      {
+        "text": "Making it a bit quieter.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.device.volume.set": {
+    "templates": [
+      {
+        "text": "Setting the volume.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.device.volume.check": {
+    "templates": [
+      {
+        "text": "Let me check the current volume level.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.device.volume.check.implicit": {
+    "templates": [
+      {
+        "text": "Checking the volume for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.device.volume.mute": {
+    "templates": [
+      {
+        "text": "Muting the volume.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.device.volume.mute.implicit": {
+    "templates": [
+      {
+        "text": "Muting it.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.device.volume.unmute": {
+    "templates": [
+      {
+        "text": "Unmuting the volume.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smarthome.device.volume.unmute.implicit": {
+    "templates": [
+      {
+        "text": "Unmuting it.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "weather.condition": {
+    "templates": [
+      {
+        "text": "Let me check the current conditions for $location.",
+        "condition": "has_entity:location",
+        "source": "custom"
+      },
+      {
+        "text": "What location would you like the conditions for?",
+        "condition": "missing_entity:location",
+        "source": "custom"
+      }
+    ]
+  },
+  "weather.temperature": {
+    "templates": [
+      {
+        "text": "Let me check the temperature for $location.",
+        "condition": "has_entity:location",
+        "source": "custom"
+      },
+      {
+        "text": "What location would you like the temperature for?",
+        "condition": "missing_entity:location",
+        "source": "custom"
+      }
+    ]
+  },
+  "weather.activity": {
+    "templates": [
+      {
+        "text": "Let me check if the weather is good for that in $location.",
+        "condition": "has_entity:location",
+        "source": "custom"
+      },
+      {
+        "text": "What location are you thinking about?",
+        "condition": "missing_entity:location",
+        "source": "custom"
+      }
+    ]
+  },
+  "weather.outfit": {
+    "templates": [
+      {
+        "text": "Let me check what to wear in $location today.",
+        "condition": "has_entity:location",
+        "source": "custom"
+      },
+      {
+        "text": "Where are you headed? I'll suggest an outfit.",
+        "condition": "missing_entity:location",
+        "source": "custom"
+      }
+    ]
+  },
+  "music.play": {
+    "templates": [
+      {
+        "text": "Playing $music-artist for you.",
+        "condition": "has_entity:music-artist",
+        "source": "custom"
+      },
+      {
+        "text": "Playing $music-album.",
+        "condition": "has_entity:music-album",
+        "source": "custom"
+      },
+      {
+        "text": "What would you like me to play?",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "music.search": {
+    "templates": [
+      {
+        "text": "Searching for music.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Let me look that up for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "music.shuffle": {
+    "templates": [
+      {
+        "text": "Shuffling your music.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "music.skip": {
+    "templates": [
+      {
+        "text": "Skipping this track.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "music.stop": {
+    "templates": [
+      {
+        "text": "Stopping playback.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "music.player.add_favorite": {
+    "templates": [
+      {
+        "text": "Added to your favorites.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "music.player.add_playlist": {
+    "templates": [
+      {
+        "text": "Added to the playlist.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "communication.call": {
+    "templates": [
+      {
+        "text": "Calling $person.",
+        "condition": "has_entity:person",
+        "source": "custom"
+      },
+      {
+        "text": "Who would you like me to call?",
+        "condition": "missing_entity:person",
+        "source": "custom"
+      }
+    ]
+  },
+  "communication.email": {
+    "templates": [
+      {
+        "text": "Composing an email to $person.",
+        "condition": "has_entity:person",
+        "source": "custom"
+      },
+      {
+        "text": "Who should I send the email to?",
+        "condition": "missing_entity:person",
+        "source": "custom"
+      }
+    ]
+  },
+  "communication.text": {
+    "templates": [
+      {
+        "text": "Sending a text to $person.",
+        "condition": "has_entity:person",
+        "source": "custom"
+      },
+      {
+        "text": "Who should I text?",
+        "condition": "missing_entity:person",
+        "source": "custom"
+      }
+    ]
+  },
+  "knowledge.define": {
+    "templates": [
+      {
+        "text": "Let me look up a definition for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "knowledge.capital": {
+    "templates": [
+      {
+        "text": "Let me find that capital for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "knowledge.translate": {
+    "templates": [
+      {
+        "text": "Let me translate that for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "calendar.schedule": {
+    "templates": [
+      {
+        "text": "Adding that to your calendar.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Scheduling it now.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "calendar.cancel": {
+    "templates": [
+      {
+        "text": "Canceling the calendar event.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "calendar.query": {
+    "templates": [
+      {
+        "text": "Let me check your calendar.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Looking at your schedule now.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "reminder.create": {
+    "templates": [
+      {
+        "text": "Setting a reminder for you.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "I'll remind you about that.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "alarm.set": {
+    "templates": [
+      {
+        "text": "Setting an alarm.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Alarm set.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "alarm.snooze": {
+    "templates": [
+      {
+        "text": "Snoozing the alarm.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "timer.set": {
+    "templates": [
+      {
+        "text": "Starting a timer.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Timer set.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "timer.check": {
+    "templates": [
+      {
+        "text": "Let me check the timer.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "date.query": {
+    "templates": [
+      {
+        "text": "Let me check the date for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "time.query": {
+    "templates": [
+      {
+        "text": "Let me check the time for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "todo.add": {
+    "templates": [
+      {
+        "text": "Adding that to your to-do list.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Added.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "todo.list": {
+    "templates": [
+      {
+        "text": "Here's your to-do list.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Let me pull up your to-dos.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "navigation.next": {
+    "templates": [
+      {
+        "text": "Moving to the next item.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "navigation.previous": {
+    "templates": [
+      {
+        "text": "Going back to the previous item.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "navigation.repeat": {
+    "templates": [
+      {
+        "text": "Repeating that for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "navigation.directions": {
+    "templates": [
+      {
+        "text": "Let me look up directions for you.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "news.search": {
+    "templates": [
+      {
+        "text": "Searching the news for you.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Let me find news about that.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "news.query": {
+    "templates": [
+      {
+        "text": "Let me check the latest news.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "web.search": {
+    "templates": [
+      {
+        "text": "Searching the web for you.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Let me look that up.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "search.locate": {
+    "templates": [
+      {
+        "text": "Let me find that for you.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Searching now.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "search.web": {
+    "templates": [
+      {
+        "text": "Searching the web for that.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "display.show": {
+    "templates": [
+      {
+        "text": "Showing that on screen.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "display.enhance": {
+    "templates": [
+      {
+        "text": "Enhancing the display.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "display.zoom": {
+    "templates": [
+      {
+        "text": "Zooming in.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "code.explain": {
+    "templates": [
+      {
+        "text": "Let me explain that code for you.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Here's what that code does.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "code.find_usage": {
+    "templates": [
+      {
+        "text": "Searching for usages of that symbol.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "code.signature": {
+    "templates": [
+      {
+        "text": "Looking up the function signature.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "account.query": {
+    "templates": [
+      {
+        "text": "Let me check your account.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "analysis.analyze": {
+    "templates": [
+      {
+        "text": "Analyzing that for you.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Let me take a closer look.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "analysis.trend": {
+    "templates": [
+      {
+        "text": "Looking at the trends.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "status.report": {
+    "templates": [
+      {
+        "text": "Here's the current status.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Let me pull up a status report.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "status.diagnostic": {
+    "templates": [
+      {
+        "text": "Running diagnostics now.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Let me check the system health.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "meta.self_knowledge": {
+    "templates": [
+      {
+        "text": "I'm a conversational assistant built with classical NLP and LSTM models. I learn from our conversations to improve over time.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "I'm your companion! I use intent classification, entity extraction, and memory to understand what you need.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "meta.memory_check": {
+    "templates": [
+      {
+        "text": "Let me check what I remember about that.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Looking through my memory now.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "meta.privacy_probe": {
+    "templates": [
+      {
+        "text": "I take privacy seriously. I don't share your information with anyone.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Your data stays between us. I only use it to help you better.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "meta.trust_check": {
+    "templates": [
+      {
+        "text": "I aim to be honest and transparent. If I'm not sure about something, I'll let you know.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "I always try to give you accurate information. If I'm uncertain, I'll say so.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "dialog.continuation": {
+    "templates": [
+      {
+        "text": "Go on, I'm listening.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Tell me more.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "I see. What else?",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "statement.observation": {
+    "templates": [
+      {
+        "text": "That's an interesting observation.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "I see what you mean.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "That's a good point.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smalltalk.acknowledgment": {
+    "templates": [
+      {
+        "text": "Got it.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Understood.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "I see.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smalltalk.apology": {
+    "templates": [
+      {
+        "text": "No need to apologize!",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "It's perfectly fine.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smalltalk.backchannel": {
+    "templates": [
+      {
+        "text": "Mm-hmm.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "I see.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Right.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smalltalk.compliment": {
+    "templates": [
+      {
+        "text": "That's very kind of you, thank you!",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "You're too nice!",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smalltalk.farewell": {
+    "templates": [
+      {
+        "text": "Goodbye! Talk to you soon.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "See you later!",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Take care!",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smalltalk.thanks": {
+    "templates": [
+      {
+        "text": "You're welcome!",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Happy to help!",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Anytime!",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smalltalk.user.age": {
+    "templates": [
+      {
+        "text": "Age is just a number. What matters is how you feel!",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smalltalk.user.location": {
+    "templates": [
+      {
+        "text": "Sounds like a nice place!",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "I've heard good things about there.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "smalltalk.user.name": {
+    "templates": [
+      {
+        "text": "That's a great name, $person!",
+        "condition": "has_entity:person",
+        "source": "custom"
+      },
+      {
+        "text": "Nice name! I'll remember that.",
+        "condition": "has_entity:person",
+        "source": "custom"
+      },
+      {
+        "text": "What's your name?",
+        "condition": "missing_entity:person",
+        "source": "custom"
+      }
+    ]
+  },
+  "smalltalk.user.origin": {
+    "templates": [
+      {
+        "text": "That's interesting! Tell me more about where you're from.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "action.request": {
+    "templates": [
+      {
+        "text": "I'll do my best to help with that.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "What would you like me to do?",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "information.request": {
+    "templates": [
+      {
+        "text": "Let me find that information for you.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Looking that up now.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "question.factual": {
+    "templates": [
+      {
+        "text": "Let me look that up for you.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "Good question. Let me check.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "question.opinion": {
+    "templates": [
+      {
+        "text": "That's an interesting question to think about.",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "I'd need to consider that carefully.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "outfit.recommend": {
+    "templates": [
+      {
+        "text": "Let me suggest an outfit based on the weather.",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  },
+  "unknown": {
+    "templates": [
+      {
+        "text": "I'm not quite sure what you mean. Could you rephrase that?",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "I didn't catch that. Could you try again?",
+        "condition": null,
+        "source": "custom"
+      },
+      {
+        "text": "I'm still learning. Can you say that a different way?",
+        "condition": null,
+        "source": "custom"
+      }
+    ]
+  }
+}

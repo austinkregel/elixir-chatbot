@@ -1,5 +1,4 @@
 defmodule Brain.Analysis.RacingAnalyzerTest do
-  alias Brain.ML.EntityExtractor
   alias Brain.Analysis
   use Brain.Test.GraphCase, async: false
 
@@ -8,7 +7,6 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
 
   setup _context do
     start_test_services()
-    EntityExtractor.load_entity_maps()
     :ok
   end
 

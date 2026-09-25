@@ -1,0 +1,146 @@
+{
+  "description": "Entity type groupings, synonyms, hierarchy, disambiguation, and runtime config. Type names are lowercase with underscores; hyphens are not a valid separator.",
+  "type_hierarchy": {
+    "person": ["artist", "name", "given_name", "last_name"],
+    "artist": ["music_artist"],
+    "location": ["city", "room", "place_name", "geo_location", "ambiguous_name_location", "setting", "gpe", "address"],
+    "device": ["lights", "heating", "locks_status", "device_volume", "lock"],
+    "date_time": ["date", "relative_date", "sys_date", "day_name", "sys_time", "year", "start_year", "end_year"],
+    "number": ["final_value", "change_value", "value", "amount", "q", "age"],
+    "media": ["song", "music_album", "playlist", "album", "music_service", "genre", "language"],
+    "music_meta": ["music_sort"],
+    "commerce": ["account", "merchant", "transfer_type"],
+    "measurement": ["temperature", "unit_temperature", "unit"],
+    "communication": ["message_content", "message_type"],
+    "information": ["news_sort", "news_source", "topic", "category", "search_engine", "keyword"],
+    "clothing": ["outfit"],
+    "weather": ["weather_condition", "condition"],
+    "action": ["activity", "recurrence"]
+  },
+  "type_groups": {
+    "location_types": ["location", "city", "room", "ambiguous_name_location", "place_name", "geo_location", "setting", "gpe"],
+    "device_types": ["device", "lights", "heating", "locks_status"],
+    "music_types": ["song", "music_artist", "music_album", "playlist"],
+    "person_types": ["person", "name", "artist", "music_artist", "given_name", "last_name"],
+    "date_types": ["date", "relative_date", "sys_date", "day_name", "year", "start_year", "end_year"],
+    "time_types": ["time", "sys_time"],
+    "numeric_types": ["number", "final_value", "change_value", "value", "amount", "q", "age"]
+  },
+  "type_synonyms": {
+    "location": ["location", "room", "city", "place_name", "geo_location", "setting", "gpe"],
+    "device": ["device", "lights", "heating"],
+    "number": ["number", "value", "temperature", "final_value", "change_value", "amount", "q", "age"]
+  },
+  "disambiguation_groups": {
+    "person_vs_location": ["person", "location"],
+    "device_control": ["device", "lights", "heating", "room"],
+    "weather_entities": ["location", "city"],
+    "music_entities": ["music_artist", "song", "album"]
+  },
+  "compound_entity_types": {
+    "device_volume": {"head": "device", "modifier": "volume"},
+    "weather_condition": {"head": "weather", "modifier": "condition"},
+    "locks_status": {"head": "lock", "modifier": "status"},
+    "music_album": {"head": "album", "modifier": "music"},
+    "music_service": {"head": "service", "modifier": "music"},
+    "music_sort": {"head": "sort", "modifier": "music"},
+    "news_sort": {"head": "sort", "modifier": "news"},
+    "news_source": {"head": "source", "modifier": "news"},
+    "search_engine": {"head": "engine", "modifier": "search"},
+    "sys_date": {"head": "date", "modifier": "system"},
+    "sys_time": {"head": "time", "modifier": "system"},
+    "unit_temperature": {"head": "temperature", "modifier": "unit"},
+    "transfer_type": {"head": "transfer", "modifier": "type"},
+    "message_content": {"head": "message", "modifier": "content"},
+    "message_type": {"head": "message", "modifier": "type"}
+  },
+  "domain_lemmas": {
+    "smarthome": ["home", "automation", "device"],
+    "realtime": ["time", "communication"],
+    "entertainment": ["entertainment", "media"],
+    "weather": ["weather", "climate"],
+    "finance": ["money", "finance", "account"],
+    "travel": ["travel", "transport"],
+    "news": ["news", "information"],
+    "music": ["music", "song", "audio"],
+    "iot": ["device", "sensor", "automation"],
+    "calendar": ["calendar", "schedule", "event"],
+    "email": ["email", "message", "mail"],
+    "general": ["general", "topic"],
+    "qa": ["question", "answer", "knowledge"]
+  },
+  "config": {
+    "default_propn_type": "person",
+    "subject_capable_types": ["object", "thing", "location", "person", "noun"],
+    "temporal_parent_type": "date_time",
+    "temporal_types": ["sys_date", "date", "relative_date", "day", "weekday", "month", "day_name", "month_name", "time", "sys_time"],
+    "month_types": ["month", "month_name"],
+    "mention_pos": {
+      "description": "The UD parts of speech a mention of each entity type takes in a sentence, as Brain.Analysis.EntityTypeScorer weighs the word's tag. A reading whose parts of speech include the tag keeps full weight; any other is weighed down. 'default' is every type not listed. '*' means any part of speech: a title can be any word ('chill' the playlist). Declared from the values in each type's entity file; extend a type here when its data grows a new kind of mention.",
+      "default": ["NOUN", "PROPN"],
+      "lexicon_pos": {
+        "description": "Which tags each part of speech the lexicon counts uses under ('noun', 'verb', 'adj', 'adv', from SemCor) is compatible with.",
+        "noun": ["NOUN", "PROPN"],
+        "verb": ["VERB", "AUX"],
+        "adj": ["ADJ"],
+        "adv": ["ADV"]
+      },
+      "tag_aliases": {
+        "description": "Tags the POS tagger emits that stand for several UD classes the closed-class vocabulary uses.",
+        "CONJ": ["CCONJ", "SCONJ"],
+        "VERB": ["AUX"]
+      },
+      "types": {
+        "sys_date": ["NOUN", "PROPN", "ADV"],
+        "sys_time": ["NUM", "NOUN"],
+        "recurrence": ["NOUN", "PROPN", "ADV", "ADJ"],
+        "color": ["ADJ", "NOUN"],
+        "temperature": ["ADJ", "NOUN"],
+        "locks_status": ["ADJ", "VERB"],
+        "weather_condition": ["NOUN", "ADJ"],
+        "music_sort": ["ADJ", "NOUN", "VERB"],
+        "news_sort": ["ADJ", "NOUN", "VERB"],
+        "topic": ["NOUN", "ADJ"],
+        "condition": ["NOUN", "VERB"],
+        "activity": ["NOUN", "VERB"],
+        "unit_temperature": "*",
+        "song": "*",
+        "music_album": "*",
+        "playlist": "*",
+        "message_content": "*",
+        "news_source": "*"
+      }
+    },
+    "confidence_adjustments": {
+      "device": 0.1,
+      "room": 0.1,
+      "person": 0.1,
+      "location": 0.05,
+      "music_artist": 0.05
+    },
+    "source_priority": {
+      "csv": 3,
+      "json": 2,
+      "atlas": 1,
+      "admin": 1
+    },
+    "pos_tag_roles": {
+      "proper_noun": "PROPN",
+      "verb_tags": ["VERB", "AUX"],
+      "preposition_tag": "ADP",
+      "determiner_tag": "DET",
+      "function_word_tags": ["DET", "ADP", "CONJ", "PART", "PUNCT"]
+    },
+    "ner_label_map": {
+      "per": "person",
+      "person": "person",
+      "loc": "location",
+      "location": "location",
+      "org": "organization",
+      "organization": "organization",
+      "gpe": "location",
+      "date": "date",
+      "time": "time"
+    }
+  }
+}

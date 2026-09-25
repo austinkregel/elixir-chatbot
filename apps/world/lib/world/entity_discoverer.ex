@@ -58,7 +58,33 @@ defmodule World.EntityDiscoverer do
   @doc "Finds entities that appear multiple times across a list of discoveries.\n\nReturns entities sorted by occurrence count, useful for identifying\ncandidates that should be promoted to the gazetteer.\n"
   def aggregate_discoveries(discoveries) when is_list(discoveries) do
     discoveries
-    |> Enum.filter(&((Map.get(&1, :status) || :unknown) == :unknown))
+    |> Enum.filter(&(&1.status == :unknown))
+    |> aggregate_by_value()
+  end
+
+  @doc """
+  Aggregates `World.EntityCandidate`s by value, the same way as discoveries.
+
+  Candidates are not discovery results: they carry no `:status`, because they
+  are already the narrowed thing the promoter accumulates rather than one
+  mention's classification.
+
+  `World.EntityPromoter` used to call `aggregate_discoveries/1` with candidates.
+  Two things went wrong at once. The status filter read
+  `Map.get(&1, :status) || :unknown`, so every candidate passed a gate meant to
+  select *unknown* discoveries -- the fallback hid the mismatch. And the
+  aggregation reads `&1.context`, which candidates from the type-narrowing path
+  did not set, so the promoter died with a `KeyError` on each scan. Measured
+  2026-09-23. The shape is now enforced by `World.EntityCandidate` and the two
+  aggregations are separate functions.
+  """
+  @spec aggregate_candidates([World.EntityCandidate.t()]) :: [map()]
+  def aggregate_candidates(candidates) when is_list(candidates) do
+    aggregate_by_value(candidates)
+  end
+
+  defp aggregate_by_value(observations) do
+    observations
     |> Enum.group_by(&String.downcase(&1.value))
     |> Enum.map(fn {normalized, occurrences} ->
       first = hd(occurrences)

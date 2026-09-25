@@ -5,16 +5,14 @@ defmodule Brain.Epistemic.JTMSTest do
   alias Brain.Epistemic.JTMS
 
   setup do
-    # Ensure JTMS is started and cleared before each test
-    case Process.whereis(JTMS) do
-      nil ->
-        {:ok, _pid} = JTMS.start_link([])
-        :ok
+    unless Process.whereis(JTMS), do: {:ok, _pid} = JTMS.start_link([])
 
-      _pid ->
-        JTMS.clear()
-        :ok
-    end
+    # Empty before each test and empty again after: JTMS holds its nodes and
+    # justifications in GenServer state, which the Sandbox does not roll back,
+    # so this file's nodes would otherwise stay visible for the rest of the
+    # run. Empty is the boot state — `JTMS.init/1` builds the state literally
+    # and loads nothing.
+    Brain.Test.Singletons.reset_epistemic_stores!([:jtms])
   end
 
   describe "node creation" do

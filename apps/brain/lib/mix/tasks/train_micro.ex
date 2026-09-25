@@ -39,6 +39,7 @@ defmodule Mix.Tasks.TrainMicro do
   require Logger
 
   alias Brain.ML.FeatureVectorClassifier
+  alias Brain.ML.MicroProvenance
   alias Brain.ML.ModelStore
   alias Brain.ML.SimpleClassifier
   alias Brain.ML.WeightOptimizer
@@ -82,8 +83,7 @@ defmodule Mix.Tasks.TrainMicro do
           list: :boolean,
           verbose: :boolean,
           publish: :boolean,
-          skip_weight_optimization: :boolean,
-          no_balance: :boolean
+          skip_weight_optimization: :boolean
         ],
         aliases: [o: :only, l: :list, v: :verbose]
       )
@@ -103,11 +103,10 @@ defmodule Mix.Tasks.TrainMicro do
       publish? = opts[:publish] || false
 
       skip_optimization? = opts[:skip_weight_optimization] || false
-      balance? = !(opts[:no_balance] || false)
 
       results =
         Enum.map(names, fn name ->
-          train_classifier(name, output_dir, opts[:verbose] || false, publish?, skip_optimization?, balance?)
+          train_classifier(name, output_dir, opts[:verbose] || false, publish?, skip_optimization?)
         end)
 
       successes = Enum.count(results, fn {status, _, _} -> status == :ok end)
@@ -138,37 +137,64 @@ defmodule Mix.Tasks.TrainMicro do
         priv -> Path.join(priv, "analysis/speech_act_intent_map.json")
       end
 
-    with {:ok, model_bin} <- File.read(intent_model_path),
-         model <- :erlang.binary_to_term(model_bin),
-         {:ok, map_json} <- File.read(intent_map_path),
-         {:ok, intent_map} <- Jason.decode(map_json) do
-      model_labels =
-        case model do
-          %{label_centroids: lc} when is_map(lc) ->
-            lc |> Map.keys() |> Enum.map(&to_string/1) |> MapSet.new()
-
-          _ ->
-            MapSet.new()
-        end
-
-      if MapSet.size(model_labels) > 0 do
-        map_values = intent_map |> Map.values() |> Enum.reject(&(&1 == "unknown")) |> MapSet.new()
-        missing = MapSet.difference(map_values, model_labels)
-
-        if MapSet.size(missing) > 0 do
-          Mix.shell().error(
-            "\n[WARN] speech_act_intent_map.json references intents not in intent_full model: #{inspect(MapSet.to_list(missing))}"
-          )
-        else
-          Mix.shell().info("\n[OK] speech_act_intent_map.json labels validated against intent_full model")
-        end
+    model_bin =
+      case File.read(intent_model_path) do
+        {:ok, bin} -> bin
+        {:error, reason} -> Mix.raise("cannot read #{intent_model_path} to validate labels: #{inspect(reason)}")
       end
+
+    map_json =
+      case File.read(intent_map_path) do
+        {:ok, json} -> json
+        {:error, reason} -> Mix.raise("cannot read #{intent_map_path}: #{inspect(reason)}")
+      end
+
+    intent_map =
+      case Jason.decode(map_json) do
+        {:ok, decoded} -> decoded
+        {:error, reason} -> Mix.raise("#{intent_map_path} is not valid JSON: #{inspect(reason)}")
+      end
+
+    model_labels =
+      case :erlang.binary_to_term(model_bin) do
+        %{label_centroids: lc} when is_map(lc) and map_size(lc) > 0 ->
+          lc |> Map.keys() |> Enum.map(&to_string/1) |> MapSet.new()
+
+        other ->
+          # Previously this produced an empty MapSet and the whole check was
+          # then skipped by `if MapSet.size(model_labels) > 0`, so a model with
+          # no centroids reported no drift rather than reporting that it could
+          # not be checked.
+          Mix.raise(
+            "intent_full model at #{intent_model_path} has no label centroids " <>
+              "(#{inspect(other) |> String.slice(0, 120)}), so its labels cannot be validated"
+          )
+      end
+
+    map_values = intent_map |> Map.values() |> Enum.reject(&(&1 == "unknown")) |> MapSet.new()
+    missing = MapSet.difference(map_values, model_labels)
+
+    if MapSet.size(missing) > 0 do
+      # This used to print "[WARN]" and continue. A phantom label in the map is
+      # a routing target the classifier can never emit, so the speech-act layer
+      # silently never reaches it -- which is task 038. Failing here means the
+      # drift is fixed rather than accumulated.
+      Mix.raise("""
+      speech_act_intent_map.json references #{MapSet.size(missing)} intents the \
+      intent_full model cannot emit:
+
+        #{inspect(MapSet.to_list(missing))}
+
+      Each is a routing target nothing can ever reach. Either the map names \
+      labels that no longer exist, or the model was trained on a corpus missing \
+      them. This was a [WARN] that training continued past; see task 038.
+      """)
     else
-      _ -> :ok
+      Mix.shell().info("\n[OK] speech_act_intent_map.json labels validated against intent_full model")
     end
   end
 
-  defp train_classifier(name, output_dir, verbose, publish?, skip_optimization?, balance?) do
+  defp train_classifier(name, output_dir, verbose, publish?, skip_optimization?) do
     data_path = data_file_path(name)
 
     with {:ok, json} <- read_file(data_path),
@@ -183,9 +209,17 @@ defmodule Mix.Tasks.TrainMicro do
         )
       end
 
-      model = train_model(kind, training_data, skip_optimization?, name, balance?)
+      # Stamped before serialising, so the record is inside the model rather
+      # than in a side-car that has to be kept in sync. This is what
+      # MicroClassifiers checks at load; see Brain.ML.MicroProvenance and task
+      # 072, where the absence of this check let six classifiers run on
+      # inverted features indefinitely.
+      model =
+        train_model(kind, training_data, skip_optimization?, name)
+        |> MicroProvenance.stamp!(name)
+
       model_path = Path.join(output_dir, "#{name}.term")
-      File.write!(model_path, :erlang.term_to_binary(model))
+      File.write!(model_path, Brain.ML.ModelStore.serialize(model))
 
       if publish? do
         remote_key = ModelStore.version_prefix() <> "micro/#{name}.term"
@@ -265,19 +299,17 @@ defmodule Mix.Tasks.TrainMicro do
     {:ok, pairs, :text}
   end
 
-  defp train_model(:feature_vector, training_data, skip_optimization?, name, balance?) do
+  defp train_model(:feature_vector, training_data, skip_optimization?, name) do
     n_classes = training_data |> Enum.map(&elem(&1, 1)) |> Enum.uniq() |> length()
-
-    balance_label = if balance?, do: " (balanced centroids)", else: ""
 
     cond do
       n_classes < 2 ->
         Mix.shell().info("  [#{name}] Only #{n_classes} class — skipping GA (nothing to optimize)")
-        FeatureVectorClassifier.train(training_data, balance: balance?)
+        FeatureVectorClassifier.train(training_data)
 
       skip_optimization? ->
-        Mix.shell().info("  [#{name}] Skipping weight optimization (--skip-weight-optimization)#{balance_label}")
-        FeatureVectorClassifier.train(training_data, balance: balance?)
+        Mix.shell().info("  [#{name}] Skipping weight optimization (--skip-weight-optimization)")
+        FeatureVectorClassifier.train(training_data)
 
       true ->
         Mix.shell().info("  [#{name}] Running GA weight optimization (#{n_classes} classes, balanced fitness)...")
@@ -292,11 +324,11 @@ defmodule Mix.Tasks.TrainMicro do
         alive = Enum.count(result.weights, &(&1 > 0.01))
         Mix.shell().info("  [#{name}] #{alive}/#{length(result.weights)} dimensions active (weight > 0.01)")
 
-        FeatureVectorClassifier.train(training_data, weights: result.weights, balance: balance?)
+        FeatureVectorClassifier.train(training_data, weights: result.weights)
     end
   end
 
-  defp train_model(:text, training_data, _skip_optimization?, _name, _balance?) do
+  defp train_model(:text, training_data, _skip_optimization?, _name) do
     SimpleClassifier.train(training_data)
   end
 
@@ -331,20 +363,10 @@ defmodule Mix.Tasks.TrainMicro do
     Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
   end
 
-  defp data_file_path(name) do
-    priv_dir = :code.priv_dir(:brain) |> to_string()
-
-    umbrella_root =
-      case File.read_link(priv_dir) do
-        {:ok, link_target} ->
-          parent = Path.dirname(priv_dir)
-          real_priv = Path.join(parent, link_target) |> Path.expand()
-          Path.join(real_priv, "../../..") |> Path.expand()
-
-        {:error, _} ->
-          Path.join(priv_dir, "../../../../..") |> Path.expand()
-      end
-
-    Path.join(umbrella_root, "data/classifiers/#{name}.json")
-  end
+  # MicroProvenance owns this path, because it is the same file the load gate
+  # hashes. A trainer that reads one path while the gate hashes another would
+  # stamp a model with provenance for data it did not train on -- which passes
+  # the gate and means nothing. This was a third copy of the umbrella-root
+  # walk-up; Brain.data_path/1 is the one resolver.
+  defp data_file_path(name), do: MicroProvenance.training_data_path(name)
 end

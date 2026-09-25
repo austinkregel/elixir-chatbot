@@ -2,7 +2,6 @@ defmodule Brain.DataDrivenTestSetup do
   @moduledoc "Shared setup for data-driven tests that require ML models and GenServer dependencies.\n"
 
   alias Brain.ML.Gazetteer
-  alias Brain.ML.EntityExtractor
   import Brain.TestHelpers
 
   @doc "Sets up all required services for ML-dependent tests.\nCall this in your test's setup block.\n"
@@ -29,8 +28,7 @@ defmodule Brain.DataDrivenTestSetup do
   end
 
   @doc """
-  Loads ML models via `Brain.Test.ModelFactory` and warms the
-  `EntityExtractor` and `Gazetteer` caches.
+  Loads ML models via `Brain.Test.ModelFactory` and reloads the `Gazetteer`.
 
   Raises if any step fails. We intentionally do not rescue or `catch`
   here -- swallowing setup errors causes the rest of the test suite to
@@ -39,7 +37,6 @@ defmodule Brain.DataDrivenTestSetup do
   """
   def load_ml_models do
     Brain.Test.ModelFactory.train_and_load_test_models()
-    EntityExtractor.load_entity_maps()
     Gazetteer.load_all()
     :ok
   end

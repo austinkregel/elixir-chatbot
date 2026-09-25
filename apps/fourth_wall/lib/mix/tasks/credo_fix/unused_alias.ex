@@ -117,24 +117,30 @@ defmodule Mix.Tasks.CredoFix.UnusedAlias do
     parse_unused_alias_warnings(compile_output, paths)
   end
 
+  # The project the compile runs in: the current one, unless
+  # `config :fourth_wall, credo_fix_compile_dir:` names another. Tests point it
+  # at a scratch project, so running this task can never clean the build the
+  # test run is loading its modules from.
+  defp project_dir do
+    Application.get_env(:fourth_wall, :credo_fix_compile_dir) || File.cwd!()
+  end
+
   defp run_compile do
     # We need to capture compiler warnings. The best way is to run mix compile
-    # in a subprocess with stderr captured. We use `--force` to ensure we get
-    # fresh warnings.
+    # in a subprocess with stderr captured, cleaning first so the warnings are
+    # fresh.
     #
     # Note: Running mix inside mix can be tricky. We use System.cmd which
     # spawns a new OS process, avoiding issues with the Elixir environment.
-    #
-    # First clean to ensure fresh compile
-    _ = System.cmd("mix", ["clean"], stderr_to_stdout: true, cd: File.cwd!())
+    dir = project_dir()
+    env = to_string(Mix.env())
+    cmd_env = [{"MIX_ENV", env}, {"MIX_QUIET", "false"}]
 
-    # Now compile and capture output
-    {output, _exit_code} =
-      System.cmd("mix", ["compile"],
-        stderr_to_stdout: true,
-        cd: File.cwd!(),
-        env: [{"MIX_QUIET", "false"}]
-      )
+    # `--only`: without it `mix clean` deletes every environment's build, not
+    # just the one being recompiled here.
+    _ = System.cmd("mix", ["clean", "--only", env], stderr_to_stdout: true, cd: dir, env: cmd_env)
+
+    {output, _exit_code} = System.cmd("mix", ["compile"], stderr_to_stdout: true, cd: dir, env: cmd_env)
 
     output
   end

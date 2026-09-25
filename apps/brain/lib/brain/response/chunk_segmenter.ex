@@ -8,7 +8,9 @@ defmodule Brain.Response.ChunkSegmenter do
 
   defmodule Chunk do
     @moduledoc "A segmented piece of a response template"
-    defstruct [:text, :type, :embedding, :source_intent]
+    defstruct [:text, :type, :embedding, :source_intent, :tone, :tone_vector,
+               :prototype_vector, :primitive_type, :primitive_variant,
+               slots: [], enrichment_fields: [], conditions: %{}]
   end
 
   @smalltalk_path "priv/knowledge/domains/smalltalk.json"
@@ -64,6 +66,107 @@ defmodule Brain.Response.ChunkSegmenter do
       end)
     end)
   end
+
+  @doc """
+  Segments a template text into typed chunks, preserving $placeholder slot tokens.
+
+  Extracts slot names and enrichment fields from $placeholder patterns before
+  splitting, then attaches them to each resulting chunk.
+  """
+  def segment_with_slots(template_text) when is_binary(template_text) do
+    {slots, enrichment_fields} = extract_slot_info(template_text)
+
+    template_text
+    |> split_into_sentences()
+    |> Enum.map(fn sentence ->
+      chunk = classify_and_embed(sentence)
+      %{chunk | slots: slots, enrichment_fields: enrichment_fields}
+    end)
+    |> Enum.filter(& &1)
+  end
+
+  @doc """
+  Segments a template with slots and associates it with an intent.
+  """
+  def segment_with_slots(template_text, source_intent) when is_binary(template_text) do
+    template_text
+    |> segment_with_slots()
+    |> Enum.map(fn chunk -> %{chunk | source_intent: source_intent} end)
+  end
+
+  @entity_slots MapSet.new(~w(location device user name city state country date time))
+
+  defp extract_slot_info(text) do
+    tokens = Tokenizer.tokenize(text)
+
+    slot_names =
+      tokens
+      |> Enum.chunk_every(2, 1, :discard)
+      |> Enum.filter(fn [t, _next] -> t.text == "$" end)
+      |> Enum.map(fn [_dollar, name_token] -> name_token.normalized || name_token.text end)
+
+    enrichment_fields =
+      Enum.reject(slot_names, fn name -> MapSet.member?(@entity_slots, name) end)
+
+    {slot_names, enrichment_fields}
+  end
+
+  @hedge_words MapSet.new(~w(maybe perhaps possibly might could probably seemingly apparently
+                             arguably presumably supposedly potentially conceivably))
+  @formal_words MapSet.new(~w(furthermore moreover consequently nevertheless accordingly
+                              henceforth whereas hereby therein notwithstanding
+                              pursuant regarding respectfully))
+
+  @doc """
+  Estimates the tone of a chunk based on lexical signals.
+
+  Populates the `:tone` and `:tone_vector` fields. The tone_vector is a
+  10-dimensional vector: [pos, neg, neu, conf, polarity, arousal, warmth,
+  formality, playfulness, directness].
+  """
+  def tag_tone(%Chunk{text: text} = chunk) when is_binary(text) do
+    tokens = Tokenizer.tokenize(text)
+    normalized = Enum.map(tokens, fn t -> t.normalized || t.text end)
+    token_set = MapSet.new(normalized)
+    count = max(length(normalized), 1)
+
+    exclamation_count =
+      Enum.count(tokens, fn t -> t.text == "!" end)
+
+    hedge_count =
+      Enum.count(normalized, fn t -> MapSet.member?(@hedge_words, t) end)
+
+    formal_count =
+      Enum.count(normalized, fn t -> MapSet.member?(@formal_words, t) end)
+
+    has_question = MapSet.member?(token_set, "?")
+
+    arousal = min(1.0, 0.3 + exclamation_count * 0.2)
+    formality = min(1.0, 0.3 + formal_count / count * 2.0)
+    directness = max(0.0, 0.7 - hedge_count / count * 2.0)
+    warmth = if exclamation_count > 0, do: 0.6, else: 0.4
+    playfulness = if exclamation_count > 1, do: 0.5, else: 0.2
+    pos = min(1.0, 0.3 + exclamation_count * 0.1)
+    neg = if has_question and hedge_count > 0, do: 0.3, else: 0.1
+    neu = max(0.0, 1.0 - pos - neg)
+    conf = max(0.0, directness - hedge_count * 0.1)
+    polarity = pos - neg
+
+    tone_vector = [pos, neg, neu, conf, polarity, arousal, warmth, formality, playfulness, directness]
+
+    tone =
+      cond do
+        formality > 0.6 -> :formal
+        arousal > 0.6 -> :enthusiastic
+        directness < 0.4 -> :hedging
+        warmth > 0.5 -> :warm
+        true -> :neutral
+      end
+
+    %{chunk | tone: tone, tone_vector: tone_vector}
+  end
+
+  def tag_tone(%Chunk{} = chunk), do: chunk
 
   @doc "Returns the chunk type seeds used for classification.\n"
   def get_type_seeds do

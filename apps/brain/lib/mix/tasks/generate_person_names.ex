@@ -329,8 +329,7 @@ defmodule Mix.Tasks.GeneratePersonNames do
     Mix.shell().info("Output written to: #{output_path}")
     Mix.shell().info("")
     Mix.shell().info("Next steps:")
-    Mix.shell().info("  1. Run `mix train_models --gazetteer-only` to rebuild the gazetteer")
-    Mix.shell().info("  2. Restart the application to use the new names")
+    Mix.shell().info("  1. Restart the app; the gazetteer is rebuilt from data/entities at startup")
   end
 
   defp download_ssa_data(dest_path) do

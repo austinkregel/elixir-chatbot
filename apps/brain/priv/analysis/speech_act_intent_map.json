@@ -1,0 +1,14 @@
+{
+  "question": "unknown",
+  "command": "unknown",
+  "request_action": "unknown",
+  "request_information": "unknown",
+  "greeting": "smalltalk.greet",
+  "farewell": "smalltalk.farewell",
+  "thanks": "smalltalk.thanks",
+  "apology": "smalltalk.apology",
+  "compliment": "smalltalk.compliment",
+  "expressive": "smalltalk.acknowledgment",
+  "assertive": "unknown",
+  "default": "unknown"
+}

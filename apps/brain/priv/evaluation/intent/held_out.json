@@ -1,0 +1,2002 @@
+[
+  {
+    "intent": "smalltalk.user.lonely",
+    "text": "I am feeling lonely"
+  },
+  {
+    "intent": "smalltalk.user.testing_agent",
+    "text": "just testing you"
+  },
+  {
+    "intent": "smalltalk.user.sleepy",
+    "text": "I'm sleeping"
+  },
+  {
+    "intent": "smalltalk.user.happy",
+    "text": "if you're happy then I'm happy"
+  },
+  {
+    "intent": "smalltalk.user.good",
+    "text": "I'm doing good"
+  },
+  {
+    "intent": "smalltalk.agent.birth_date",
+    "text": "birth your date"
+  },
+  {
+    "intent": "smalltalk.user.looks_like",
+    "text": "do I good look"
+  },
+  {
+    "intent": "smalltalk.user.here",
+    "text": "I'm right here"
+  },
+  {
+    "intent": "smalltalk.user.sad",
+    "text": "I'm not happy"
+  },
+  {
+    "intent": "smalltalk.agent.marry_user",
+    "text": "marry me"
+  },
+  {
+    "intent": "music.player.add_playlist",
+    "text": "put it on my Late Night playlist"
+  },
+  {
+    "intent": "music.player.pause",
+    "text": "put it on pause"
+  },
+  {
+    "intent": "alarm.snooze",
+    "text": "Snooze for 5 minutes"
+  },
+  {
+    "intent": "todo.list",
+    "text": "Display my tasks"
+  },
+  {
+    "intent": "smalltalk.user.can_not_sleep",
+    "text": "I can't fall asleep"
+  },
+  {
+    "intent": "status.diagnostic",
+    "text": "Run a diagnostic check"
+  },
+  {
+    "intent": "smalltalk.user.has_birthday",
+    "text": "today is my birthday"
+  },
+  {
+    "intent": "smalltalk.agent.boring",
+    "text": "how boring you are"
+  },
+  {
+    "intent": "music.player.stop",
+    "text": "could you stop"
+  },
+  {
+    "intent": "music.player.shuffle",
+    "text": "hey shuffle them"
+  },
+  {
+    "intent": "payment.due_date",
+    "text": "check due date for the payment on my card"
+  },
+  {
+    "intent": "smalltalk.user.loves_agent",
+    "text": "love you"
+  },
+  {
+    "intent": "smalltalk.agent.hungry",
+    "text": "you're very hungry"
+  },
+  {
+    "intent": "smalltalk.user.wants_to_talk",
+    "text": "can we chat"
+  },
+  {
+    "intent": "smalltalk.agent.chatbot",
+    "text": "are you just a bot"
+  },
+  {
+    "intent": "smalltalk.agent.be_clever",
+    "text": "be more clever"
+  },
+  {
+    "intent": "smalltalk.user.bored",
+    "text": "can you boring"
+  },
+  {
+    "intent": "smalltalk.user.waits",
+    "text": "I'd like to still waiting"
+  },
+  {
+    "intent": "calendar.cancel",
+    "text": "Cancel my meeting with John"
+  },
+  {
+    "intent": "smalltalk.agent.ready",
+    "text": "hey were you ready"
+  },
+  {
+    "intent": "smalltalk.user.angry",
+    "text": "I'm furious"
+  },
+  {
+    "intent": "smalltalk.acknowledgment",
+    "text": "dope"
+  },
+  {
+    "intent": "smalltalk.dialog.i_do_not_care",
+    "text": "not caring at all"
+  },
+  {
+    "intent": "smalltalk.agent.boss",
+    "text": "I should be your boss"
+  },
+  {
+    "intent": "smalltalk.user.misses_agent",
+    "text": "I missed you"
+  },
+  {
+    "intent": "account.open",
+    "text": "how I do open an account"
+  },
+  {
+    "intent": "music.player.resume",
+    "text": "resume music"
+  },
+  {
+    "intent": "smalltalk.agent.age",
+    "text": "hey how old are you"
+  },
+  {
+    "intent": "smalltalk.user.excited",
+    "text": "how excited I am"
+  },
+  {
+    "intent": "smalltalk.appraisal.well_done",
+    "text": "good work"
+  },
+  {
+    "intent": "smalltalk.agent.hobby",
+    "text": "tell me about your hobby"
+  },
+  {
+    "intent": "smalltalk.user.busy",
+    "text": "I don't have time for this"
+  },
+  {
+    "intent": "display.enhance",
+    "text": "Make it higher resolution"
+  },
+  {
+    "intent": "smalltalk.user.back",
+    "text": "came I back"
+  },
+  {
+    "intent": "smalltalk.dialog.what_do_you_mean",
+    "text": "could you but what do you mean"
+  },
+  {
+    "intent": "smalltalk.agent.there",
+    "text": "you are here"
+  },
+  {
+    "intent": "timer.check",
+    "text": "How long on the timer"
+  },
+  {
+    "intent": "smalltalk.user.going_to_bed",
+    "text": "is it time for bed yet"
+  },
+  {
+    "intent": "display.zoom",
+    "text": "Make it smaller"
+  },
+  {
+    "intent": "smalltalk.appraisal.welcome",
+    "text": "anytime"
+  },
+  {
+    "intent": "smalltalk.user.does_not_want_to_talk",
+    "text": "I don't want to talk"
+  },
+  {
+    "intent": "smalltalk.user.will_be_back",
+    "text": "I promise come back"
+  },
+  {
+    "intent": "smalltalk.agent.sure",
+    "text": "are you sure"
+  },
+  {
+    "intent": "smalltalk.user.joking",
+    "text": "kidding"
+  },
+  {
+    "intent": "smalltalk.user.wants_to_see_agent_again",
+    "text": "can I see you"
+  },
+  {
+    "intent": "smalltalk.emotions.wow",
+    "text": "wooow"
+  },
+  {
+    "intent": "smalltalk.user.tired",
+    "text": "I 'm tired getting"
+  },
+  {
+    "intent": "analysis.trend",
+    "text": "What's the trend"
+  },
+  {
+    "intent": "smalltalk.agent.occupation",
+    "text": "what is your work"
+  },
+  {
+    "intent": "smalltalk.dialog.hold_on",
+    "text": "wait hold on"
+  },
+  {
+    "intent": "music.player.add_favorite",
+    "text": "fave this song"
+  },
+  {
+    "intent": "smalltalk.agent.origin",
+    "text": "what is your country"
+  },
+  {
+    "intent": "smalltalk.agent.happy",
+    "text": "are you happy"
+  },
+  {
+    "intent": "account.earning.check",
+    "text": "see my latest deposit"
+  },
+  {
+    "intent": "music.player.play",
+    "text": "can you play it"
+  },
+  {
+    "intent": "smalltalk.agent.annoying",
+    "text": "you are such annoying"
+  },
+  {
+    "intent": "smalltalk.agent.real",
+    "text": "are you a real human"
+  },
+  {
+    "intent": "smalltalk.dialog.wrong",
+    "text": "not correct"
+  },
+  {
+    "intent": "account.balance.check",
+    "text": "can you show balance on the card"
+  },
+  {
+    "intent": "timer.set",
+    "text": "Set a 15 minute timer"
+  },
+  {
+    "intent": "display.show",
+    "text": "Display the file"
+  },
+  {
+    "intent": "date.query",
+    "text": "What year is it"
+  },
+  {
+    "intent": "time.query",
+    "text": "Time please"
+  },
+  {
+    "intent": "music.player.skip_backward",
+    "text": "previous station"
+  },
+  {
+    "intent": "knowledge.define",
+    "text": "Define ambiguous"
+  },
+  {
+    "intent": "meta.privacy_probe",
+    "text": "are you tracking me"
+  },
+  {
+    "intent": "meta.privacy_probe",
+    "text": "are you storing my information"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Dial this number"
+  },
+  {
+    "intent": "communication.call",
+    "text": "Call the restaurant"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Add an event to my calendar"
+  },
+  {
+    "intent": "calendar.schedule",
+    "text": "Set up a call for Friday"
+  },
+  {
+    "intent": "meta.memory_check",
+    "text": "have we talked before"
+  },
+  {
+    "intent": "meta.memory_check",
+    "text": "will you remember this conversation"
+  },
+  {
+    "intent": "smalltalk.agent.fired",
+    "text": "I'm firing you"
+  },
+  {
+    "intent": "smalltalk.agent.fired",
+    "text": "you are unemployed from now on"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Set a morning alarm"
+  },
+  {
+    "intent": "alarm.set",
+    "text": "Set an alarm for 7am"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "Capital of India"
+  },
+  {
+    "intent": "knowledge.capital",
+    "text": "What's the capital of the UK"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Analyze the report"
+  },
+  {
+    "intent": "analysis.analyze",
+    "text": "Analyze the patterns"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Open mail"
+  },
+  {
+    "intent": "communication.email",
+    "text": "Read my inbox"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "Translate thank you to German"
+  },
+  {
+    "intent": "knowledge.translate",
+    "text": "Translate hello to Spanish"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Add item to checklist"
+  },
+  {
+    "intent": "todo.add",
+    "text": "Add to my todo list"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "Am I free tomorrow afternoon"
+  },
+  {
+    "intent": "calendar.query",
+    "text": "What do I have scheduled"
+  },
+  {
+    "intent": "account.spending.check",
+    "text": "How much did I spend in Starbucks?"
+  },
+  {
+    "intent": "account.spending.check",
+    "text": "How much money did I spend yesterday?"
+  },
+  {
+    "intent": "smalltalk.dialog.hug",
+    "text": "may I hug you"
+  },
+  {
+    "intent": "smalltalk.dialog.hug",
+    "text": "want a hug"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Find the presentation"
+  },
+  {
+    "intent": "search.locate",
+    "text": "Search for Sarah"
+  },
+  {
+    "intent": "music.shuffle",
+    "text": "shuffle Faves playlist"
+  },
+  {
+    "intent": "music.shuffle",
+    "text": "shuffle country music on my device"
+  },
+  {
+    "intent": "status.report",
+    "text": "How is everything running"
+  },
+  {
+    "intent": "status.report",
+    "text": "Report status"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Remind me to call mom"
+  },
+  {
+    "intent": "reminder.create",
+    "text": "Add a reminder"
+  },
+  {
+    "intent": "smalltalk.agent.crazy",
+    "text": "are you mad at me"
+  },
+  {
+    "intent": "smalltalk.agent.crazy",
+    "text": "are you insane"
+  },
+  {
+    "intent": "smalltalk.agent.acquaintance",
+    "text": "tell me about yourself"
+  },
+  {
+    "intent": "smalltalk.agent.acquaintance",
+    "text": "about yourself"
+  },
+  {
+    "intent": "smalltalk.agent.busy",
+    "text": "have you been busy"
+  },
+  {
+    "intent": "smalltalk.agent.busy",
+    "text": "are you very busy"
+  },
+  {
+    "intent": "smalltalk.agent.talk_to_me",
+    "text": "speak with me"
+  },
+  {
+    "intent": "smalltalk.agent.talk_to_me",
+    "text": "are you going to talk to me"
+  },
+  {
+    "intent": "web.search",
+    "text": "find Metropolitan Museum on Wikipedia"
+  },
+  {
+    "intent": "web.search",
+    "text": "what is the square root of pi"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "It looks cloudy outside"
+  },
+  {
+    "intent": "statement.observation",
+    "text": "This coffee is cold"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Send a text to Sarah"
+  },
+  {
+    "intent": "communication.text",
+    "text": "Message my sister"
+  },
+  {
+    "intent": "smalltalk.agent.answer_my_question",
+    "text": "answer"
+  },
+  {
+    "intent": "smalltalk.agent.answer_my_question",
+    "text": "can you answer my question"
+  },
+  {
+    "intent": "code.find_usage",
+    "text": "find all usages of UserService"
+  },
+  {
+    "intent": "code.find_usage",
+    "text": "show me where validate_email is called"
+  },
+  {
+    "intent": "code.signature",
+    "text": "what does validate_input return"
+  },
+  {
+    "intent": "code.signature",
+    "text": "how to use HttpClient"
+  },
+  {
+    "intent": "meta.self_knowledge",
+    "text": "so what do you know about me then"
+  },
+  {
+    "intent": "meta.self_knowledge",
+    "text": "what have you figured out about me"
+  },
+  {
+    "intent": "weather.outfit",
+    "text": "are we going to need a coat tomorow"
+  },
+  {
+    "intent": "weather.outfit",
+    "text": "should I wear sunglasses in Milan"
+  },
+  {
+    "intent": "smalltalk.agent.right",
+    "text": "it is true"
+  },
+  {
+    "intent": "smalltalk.agent.right",
+    "text": "that is correct"
+  },
+  {
+    "intent": "smalltalk.agent.residence",
+    "text": "where is your residence"
+  },
+  {
+    "intent": "smalltalk.agent.residence",
+    "text": "your town"
+  },
+  {
+    "intent": "smalltalk.user.needs_advice",
+    "text": "give me some good advice"
+  },
+  {
+    "intent": "smalltalk.user.needs_advice",
+    "text": "what do you suggest"
+  },
+  {
+    "intent": "smalltalk.apology",
+    "text": "I apologize"
+  },
+  {
+    "intent": "smalltalk.apology",
+    "text": "apologise"
+  },
+  {
+    "intent": "music.player.skip_forward",
+    "text": "play another one"
+  },
+  {
+    "intent": "music.player.skip_forward",
+    "text": "next track"
+  },
+  {
+    "intent": "music.player.skip_forward",
+    "text": "what's the next one"
+  },
+  {
+    "intent": "smalltalk.agent.bad",
+    "text": "you are bad"
+  },
+  {
+    "intent": "smalltalk.agent.bad",
+    "text": "you are totally useless"
+  },
+  {
+    "intent": "smalltalk.agent.bad",
+    "text": "you're the worst"
+  },
+  {
+    "intent": "weather.activity",
+    "text": "I plan to ski today is it possible"
+  },
+  {
+    "intent": "weather.activity",
+    "text": "is the weather good enough to play frisbee outside"
+  },
+  {
+    "intent": "weather.activity",
+    "text": "is it the perfect weather for mountain biking in Bansko tonight"
+  },
+  {
+    "intent": "music.player.repeat",
+    "text": "repeat it"
+  },
+  {
+    "intent": "music.player.repeat",
+    "text": "can you repeat it"
+  },
+  {
+    "intent": "music.player.repeat",
+    "text": "repeat the song"
+  },
+  {
+    "intent": "smalltalk.emotions.ha_ha",
+    "text": "haha very funny"
+  },
+  {
+    "intent": "smalltalk.emotions.ha_ha",
+    "text": "hahaha very funny"
+  },
+  {
+    "intent": "smalltalk.emotions.ha_ha",
+    "text": "lol"
+  },
+  {
+    "intent": "smalltalk.thanks",
+    "text": "I appreciate it"
+  },
+  {
+    "intent": "smalltalk.thanks",
+    "text": "well thank you"
+  },
+  {
+    "intent": "smalltalk.thanks",
+    "text": "terrific thank you"
+  },
+  {
+    "intent": "smalltalk.farewell",
+    "text": "bye bye good night"
+  },
+  {
+    "intent": "smalltalk.farewell",
+    "text": "you can go now"
+  },
+  {
+    "intent": "smalltalk.farewell",
+    "text": "see ya"
+  },
+  {
+    "intent": "smalltalk.agent.my_friend",
+    "text": "you and me are friends"
+  },
+  {
+    "intent": "smalltalk.agent.my_friend",
+    "text": "are you my best friend"
+  },
+  {
+    "intent": "smalltalk.agent.my_friend",
+    "text": "we are best friends"
+  },
+  {
+    "intent": "smalltalk.agent.my_friend",
+    "text": "will you be my friend"
+  },
+  {
+    "intent": "code.explain",
+    "text": "help me understand parse_json"
+  },
+  {
+    "intent": "code.explain",
+    "text": "tell me about Brain.ML.Trainer"
+  },
+  {
+    "intent": "code.explain",
+    "text": "describe the Embedder module"
+  },
+  {
+    "intent": "code.explain",
+    "text": "explain how sort_items works"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "text": "I need you to help me"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "text": "you help me"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "text": "can you help me with that"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "text": "help me with a problem"
+  },
+  {
+    "intent": "weather.condition",
+    "text": "chances of drizzle in Hong Kong"
+  },
+  {
+    "intent": "weather.condition",
+    "text": "but is it going to rain"
+  },
+  {
+    "intent": "weather.condition",
+    "text": "is it supposed to snow today"
+  },
+  {
+    "intent": "weather.condition",
+    "text": "are there hurricanes expected next week"
+  },
+  {
+    "intent": "weather.condition",
+    "text": "will it be foggy"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "text": "I want to let everyone know that you are awesome"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "text": "you are good"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "text": "you are very helpful"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "text": "you are really good"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "text": "you are awesome"
+  },
+  {
+    "intent": "weather.temperature",
+    "text": "at New York is there cold"
+  },
+  {
+    "intent": "weather.temperature",
+    "text": "what's the temperature in Moscow in Celsius"
+  },
+  {
+    "intent": "weather.temperature",
+    "text": "is it going to be cold tomorrow in Dresden"
+  },
+  {
+    "intent": "weather.temperature",
+    "text": "check temperature in Berlin"
+  },
+  {
+    "intent": "weather.temperature",
+    "text": "temperature in San Diego next Wednesday"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "text": "that's really bad"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "text": "that was lame"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "text": "that was not good"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "text": "it is too bad"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "text": "so bad"
+  },
+  {
+    "intent": "news.search",
+    "text": "previous results"
+  },
+  {
+    "intent": "news.search",
+    "text": "repeat what you've just said"
+  },
+  {
+    "intent": "news.search",
+    "text": "news update"
+  },
+  {
+    "intent": "news.search",
+    "text": "return to previous page"
+  },
+  {
+    "intent": "news.search",
+    "text": "read news"
+  },
+  {
+    "intent": "news.search",
+    "text": "show me news about sports"
+  },
+  {
+    "intent": "music.search",
+    "text": "search Britney Spears Me Against the Music feat Madonna"
+  },
+  {
+    "intent": "music.search",
+    "text": "find some music"
+  },
+  {
+    "intent": "music.search",
+    "text": "find music on Spotify"
+  },
+  {
+    "intent": "music.search",
+    "text": "find Depeche Mode on Spotify"
+  },
+  {
+    "intent": "music.search",
+    "text": "can you search some good mood song in YouTube"
+  },
+  {
+    "intent": "music.search",
+    "text": "find me a song"
+  },
+  {
+    "intent": "music.search",
+    "text": "search me a Nicki Minaj song"
+  },
+  {
+    "intent": "music.search",
+    "text": "find some good music for me"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "My name is Brooklyn"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "I'm Geneva"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "I'm Charlotte"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "Just call me Dallas"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "You can call me Georgia"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "Hi, I'm Paris"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "I go by Charlotte"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "I go by the name Alex"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "text": "Pleased to meet you, my name is Georgia"
+  },
+  {
+    "intent": "weather.query",
+    "text": "weather Durban"
+  },
+  {
+    "intent": "weather.query",
+    "text": "what will be the weather today"
+  },
+  {
+    "intent": "weather.query",
+    "text": "what will be the weather like on the weekend"
+  },
+  {
+    "intent": "weather.query",
+    "text": "weather of Salalah"
+  },
+  {
+    "intent": "weather.query",
+    "text": "what's the weather supposed to be next Friday in San Francisco"
+  },
+  {
+    "intent": "weather.query",
+    "text": "what is the weather like today"
+  },
+  {
+    "intent": "weather.query",
+    "text": "India weather report"
+  },
+  {
+    "intent": "weather.query",
+    "text": "tell me the weather for the next week"
+  },
+  {
+    "intent": "weather.query",
+    "text": "how's the weather going to be today"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "text": "it's awesome"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "text": "this is great"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "text": "much better"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "text": "it's fine"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "text": "very then"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "text": "sweet"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "text": "that's cute"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "text": "that's fantastic"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "text": "that's awesome"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "modify temperature to 23 degree Celsius"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "switch heating till 30 degrees"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "set the level of all decorations"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "room temperature"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "set lights hue everywhere"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "change the temperature to 76"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "hue"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "set hue everywhere"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "set temperature to 32"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "set green saturation"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "set heating in all rooms"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "set all lights brightness"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "turn on computer brightness"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "make decorations shine 20 percents"
+  },
+  {
+    "intent": "smarthome.device_set",
+    "text": "set speakers volume to 5 points"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "report the temperature in kids room"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "how cold"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "please is it bright enough everywhere"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "are the decorations bright enough everywhere"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "check blue lights hue"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "report the temperature in bedroom please"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "brightness of my PC"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "what is lights hue"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "what's the brightness"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "is the light hue 10 points"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "check volume of the TV"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "what is the temp"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "can you are the decorations bright enough everywhere"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "is level of lamp in bedroom 5 points"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "check heating in the kitchen"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "what about brightness"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "check TV brightness"
+  },
+  {
+    "intent": "smarthome.device_check",
+    "text": "please check bedroom's temperature"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "clever"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you are so beautiful today"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you're really brainy"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you are so clever"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you are special to me"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "I kinda like you"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you are so special to me"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "thank you I like you too"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "I like you you're cool"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you're awesome I like you"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you are so brainy"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you are so beautiful"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you are so attractive"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you're a very funny bot"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you are gorgeous"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "I also like you"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you're really smart"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you're the funniest bot I've talked to"
+  },
+  {
+    "intent": "smalltalk.compliment",
+    "text": "you look amazing today"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "ello"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "what's shaking"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "nice to meet you too"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "how is it"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "hiya"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "how are you doing"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "please good evening to you"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "how's life"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "good to know each other"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "are you okay"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "thank you good night"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "what's happened"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "it's nice to talk to you"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "it is nice talking to you"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "hello again"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "pleasure to meet you"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "how are you going"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "hey what's up"
+  },
+  {
+    "intent": "smalltalk.greet",
+    "text": "how nice it is to talk to you"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "make heating up"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "make hotter by 30 degrees"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "turn up brightness by 10 points"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "turn up hue till 10 points"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "make light level up by 5 points in the kitchen"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "I want to my laptop screen is way too dark"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "little more heating"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "turn heating hotter for 20 percents"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "make bedroom temperature up"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "temperature up till 5 degrees in the kitchen"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "turn up the TV volume"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "turn up heating"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "red saturation up"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "can you please turn the volume on"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "too cold in hallway"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "turn lights shine 20 percents brighter"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "it's too cold here"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "turn the lights saturation up"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "turn up lights hue by 10 points"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "lights level up till 23"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "turn the TV volume up"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "computer screen level up"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "it's dark here"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "lights hue up for 15 percents in the bedroom"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "turn computer screen 20 percents brighter"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "it is really cold"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "make my PC screen brighter for 20 percents"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "TV brightness up till 10 points"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "I'm cold"
+  },
+  {
+    "intent": "smarthome.device_up",
+    "text": "make TV 20 percents brighter"
+  },
+  {
+    "intent": "music.play",
+    "text": "song for me"
+  },
+  {
+    "intent": "music.play",
+    "text": "play Hard Times by David Newman"
+  },
+  {
+    "intent": "music.play",
+    "text": "play Faded by ZHU song on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "text": "play Blackbird from SD card"
+  },
+  {
+    "intent": "music.play",
+    "text": "play Harder Better Faster"
+  },
+  {
+    "intent": "music.play",
+    "text": "play the newest song by Eminem"
+  },
+  {
+    "intent": "music.play",
+    "text": "let me hear some music by Coldplay"
+  },
+  {
+    "intent": "music.play",
+    "text": "play Pearl Jam"
+  },
+  {
+    "intent": "music.play",
+    "text": "play album London calling by The Clash"
+  },
+  {
+    "intent": "music.play",
+    "text": "playing Mozart song"
+  },
+  {
+    "intent": "music.play",
+    "text": "I'd like to listen to some music"
+  },
+  {
+    "intent": "music.play",
+    "text": "play the album The Wall on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "text": "music Grenade in my library"
+  },
+  {
+    "intent": "music.play",
+    "text": "play the song Gorilla"
+  },
+  {
+    "intent": "music.play",
+    "text": "play album Purple Rain on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "text": "songs by Tom Waits"
+  },
+  {
+    "intent": "music.play",
+    "text": "play genre party"
+  },
+  {
+    "intent": "music.play",
+    "text": "play album Nevermind by Nirvana"
+  },
+  {
+    "intent": "music.play",
+    "text": "play Bad from Michael Jackson"
+  },
+  {
+    "intent": "music.play",
+    "text": "play Budapest"
+  },
+  {
+    "intent": "music.play",
+    "text": "play Telugu songs"
+  },
+  {
+    "intent": "music.play",
+    "text": "play Never listen Julia Othmer"
+  },
+  {
+    "intent": "music.play",
+    "text": "can you play Adele"
+  },
+  {
+    "intent": "music.play",
+    "text": "play artist A great big world"
+  },
+  {
+    "intent": "music.play",
+    "text": "play Miracle from Apple Music"
+  },
+  {
+    "intent": "music.play",
+    "text": "play songs by Ellie Goulding"
+  },
+  {
+    "intent": "music.play",
+    "text": "play Anaconda by Nicki Minaj"
+  },
+  {
+    "intent": "music.play",
+    "text": "play a song Tera Mera Rishta"
+  },
+  {
+    "intent": "music.play",
+    "text": "play some smooth jazz"
+  },
+  {
+    "intent": "music.play",
+    "text": "play some relaxing music"
+  },
+  {
+    "intent": "music.play",
+    "text": "can you open Careless Whisper song"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn on red lights on Mondays"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "I want to heating on everywhere everyday at 9 am"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn off all the lights at home at 11 pm every day"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "please turn on the heating in kitchen at 6 am"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn off TV at 10 pm"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "open the front door every day"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "close the door when I go out"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "unlock garage when I leave"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn off the heating everyday everywhere at 5 pm"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "heating on everywhere everyday at 9 am"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn off all appliances when I leave"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "on Tuesday thermostat on everywhere"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "close garage window every day"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn down the heating after 10 pm"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "lock the front door every day"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn off romantic lights in the kitchen every day at 5 pm"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "lock all doors everyday"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn heating up every day at 5 pm"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "lock all doors at 5 pm"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn on the lights when I come home"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn off everything when I leave"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn up the heating every day"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "open all garage windows at 5 pm every day"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "please turn kitchen tv up at midnight"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "I want to dim all decorations when i leave"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "close the garage door after 10 pm"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn up the heating every day at 5 pm"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "lock all doors when I leave"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn off everything everyday at 5 pm"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "dim red lights when I leave"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "I'd like to turn the decorations down at midnight in the kitchen"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "temperature down to 5 degrees in the kitchen at 5 pm"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn on kitchen lights every day at 5 pm"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "open all doors when I leave"
+  },
+  {
+    "intent": "smarthome.schedule_create",
+    "text": "turn heating down every day at 5 pm"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "lights hue down by 50 percents"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "dim the table lamp"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "decrease the heat by 5 degrees"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "TV is so loud kitchen"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "lower the brightness of all computers"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "volume of the TV down"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "kitchen yellow lights down"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "it's not dark enough dim it here"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "it's hot in here"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "turn the brightness level down by 50"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "volume down"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "temperature down till 5 degrees in the kitchen"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "turn down saturation by 10 points"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "make light level lower by 5 points"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "turn heating colder"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "turn TV darker until 40 percents"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "please turn the temp down by five degrees"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "make saturation lower by 5 points"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "turn down lights brightness by 15 points"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "kitchen decorations brightness down"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "the lights are too bright"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "turn heating colder till 40 percents"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "saturation down by 15 percents in the bedroom"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "lights saturation down to 15 percents in the bedroom"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "make heating colder till 40 percents"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "too hot in the kitchen"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "TV volume down"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "saturation down till 50"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "turn heating down in the kitchen"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "kitchen heating down"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "turn down heating"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "lights saturation down till 50"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "brightness level down by 50"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "turn down heating for 20 degrees"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "turn the lights level down till 5 points"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "turn down lights hue by 10 points"
+  },
+  {
+    "intent": "smarthome.device_down",
+    "text": "I'm feeling hot"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "did I open the front door"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on my device"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on heating in living room"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "lights off"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "are kitchen lights off"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "did I turn on TV everythwere"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "lock all doors"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn off the kitchen light"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "please turn off device"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on all the lights in the basement"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "garage is locked"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "front door status"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on a little light"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn off all lights in the kitchen"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "is TV on in the kitchen"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "check if I forgot to turn TV off in the living room"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn lights on"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "can you turn off video player"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on party lights"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "it's boiling here turn the heater off"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "open the door"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "I don't like hearing TV sound from kitchen"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn off my TV"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "TV sound is disturbing me everywhere in the house"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "can you turn off appliance"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on the air conditioning"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "the table lamp status"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "open bathroom"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "kitchen speakers unmute"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn off heating in the kitchen"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn off the light in my kitchen"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "unlock door in the kitchen"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "are lights off in all the rooms"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "can you please turn on coffee machine for me"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on all bedroom lights"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn lights on in the kitchen"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on my computer"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "can you is kitchen door closed"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "all lights on in the kitchen"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "sound on mute in the living room"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on device"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "can you turn on water cooker"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "can you check all doors status"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn my device off"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on all the lights in bathroom"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "is the front door unlocked"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "unlock kitchen window"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "I want to turn off device"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn off mute"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn off the light"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn off lights please"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "TV sound is disturbing me everywhere the house"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on coffee machine"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn on the lights"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "I need you to turn off appliance"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "unlock the window in kitchen"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "turn garage lights off"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "tell lights on in the kitchen"
+  },
+  {
+    "intent": "smarthome.switch",
+    "text": "is TV on in the living room"
+  }
+]

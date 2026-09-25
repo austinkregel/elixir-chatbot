@@ -1,0 +1,7 @@
+{
+  "description": "Configuration for discourse analysis - bot addressing and attention detection",
+  "bot_names": ["companion", "bot", "assistant", "ai", "echo"],
+  "address_prefixes": ["hey", "hi", "hello", "ok", "okay", "yo"],
+  "attention_words": ["listen", "look", "wait", "hold on"],
+  "polite_markers": ["please", "could you", "would you", "can you"]
+}

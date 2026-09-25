@@ -18,13 +18,19 @@ defmodule Brain.ML.Lexicon do
   @words_table :lexicon_words
   @synsets_table :lexicon_synsets
   @hypernyms_table :lexicon_hypernyms
+  @instances_table :lexicon_instances
   @antonyms_table :lexicon_antonyms
   @morph_table :lexicon_morph
+  @endings_table :lexicon_endings
   @hyp_cache_table :lexicon_hyp_cache
 
   @wordnet_dir "wordnet"
 
-  @required_files ["wn_s.pl", "wn_g.pl", "wn_hyp.pl"]
+  @required_files ["wn_s.pl", "wn_g.pl", "wn_hyp.pl", "wn_ins.pl", "wn_exc.pl", "wn_morphy.pl"]
+
+  # A morphy rule for adjectives ("a") matches head adjectives and
+  # satellites alike, as Princeton's morphy does.
+  @rule_pos %{noun: [:noun], verb: [:verb], adj: [:adj, :adj_satellite]}
 
   # -- Client API -------------------------------------------------------------
 
@@ -122,6 +128,74 @@ defmodule Brain.ML.Lexicon do
     end
   end
 
+  @doc """
+  Returns every ancestor of one synset as `{synset_id, words, distance}`,
+  nearest first. `distance` is the number of edges from the synset, so
+  ancestors reached by different paths at the same distance can be told
+  apart from nearer ones; within one distance they are ordered by synset id.
+
+  Follows both hypernym edges and instance edges, so a named instance
+  reaches its class: Paris reaches "national capital" and "city". Unlike
+  `hypernym_chain/3`, which walks only a word's first sense, this works on a
+  single sense, so each sense of a word can be classified on its own.
+  """
+  def synset_ancestors(synset_id, opts \\ []) when is_integer(synset_id) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    max_depth = Keyword.get(opts, :max_depth, 15)
+
+    collect_ancestors([synset_id], 1, max_depth, name, MapSet.new([synset_id]), [])
+  end
+
+  defp collect_ancestors(_frontier, distance, max_depth, _name, _seen, acc)
+       when distance > max_depth,
+       do: Enum.reverse(acc)
+
+  defp collect_ancestors([], _distance, _max_depth, _name, _seen, acc), do: Enum.reverse(acc)
+
+  defp collect_ancestors(frontier, distance, max_depth, name, seen, acc) do
+    parents =
+      frontier
+      |> Enum.flat_map(fn sid ->
+        hyps = :ets.lookup(table_for(name, :hypernyms), sid)
+        insts = :ets.lookup(table_for(name, :instances), sid)
+        Enum.map(hyps ++ insts, fn {_child, parent} -> parent end)
+      end)
+      |> Enum.uniq()
+      |> Enum.reject(&MapSet.member?(seen, &1))
+      |> Enum.sort()
+
+    seen = Enum.reduce(parents, seen, &MapSet.put(&2, &1))
+
+    acc =
+      Enum.reduce(parents, acc, fn sid, acc ->
+        [{sid, synset_words(sid, name), distance} | acc]
+      end)
+
+    collect_ancestors(parents, distance + 1, max_depth, name, seen, acc)
+  end
+
+  @doc """
+  Returns one synset as `{:ok, %{words: words, definition: gloss, pos: pos}}`,
+  or `:error` when WordNet holds no synset with that id.
+  """
+  def synset(synset_id, name \\ __MODULE__) when is_integer(synset_id) do
+    case :ets.lookup(table_for(name, :synsets), synset_id) do
+      [{^synset_id, words, definition, pos}] -> {:ok, %{words: words, definition: definition, pos: pos}}
+      [] -> :error
+    end
+  end
+
+  @doc """
+  Returns every word WordNet holds, lowercased.
+
+  Used to derive facts from the whole corpus at seed time.
+  """
+  def words(name \\ __MODULE__) do
+    table_for(name, :words)
+    |> :ets.tab2list()
+    |> Enum.map(fn {word, _entries} -> word end)
+  end
+
   @doc "Returns antonyms for a word."
   def antonyms(word, name \\ __MODULE__) when is_binary(word) do
     normalized = String.downcase(word)
@@ -144,13 +218,27 @@ defmodule Brain.ML.Lexicon do
     end
   end
 
+  @doc """
+  Returns every `{word, antonym}` pair WordNet holds.
+
+  Used to derive facts from the whole corpus at seed time, rather than asking
+  about one word at a time. Roughly 8,000 pairs.
+  """
+  def antonym_pairs(name \\ __MODULE__) do
+    table_for(name, :words)
+    |> :ets.tab2list()
+    |> Enum.flat_map(fn {word, _entries} ->
+      Enum.map(antonyms(word, name), &{word, &1})
+    end)
+  end
+
   @doc "Returns the base/lemma form of an inflected word using WordNet morphological exceptions."
   def lemma(word, name \\ __MODULE__) when is_binary(word) do
     normalized = String.downcase(word)
 
-    case :ets.lookup(table_for(name, :morph), normalized) do
-      [{^normalized, base_forms}] -> List.first(base_forms, normalized)
-      _ -> normalized
+    case exception_bases(normalized, name) do
+      [] -> normalized
+      bases -> hd(bases)
     end
   end
 
@@ -158,9 +246,92 @@ defmodule Brain.ML.Lexicon do
   def lemma_all(word, name \\ __MODULE__) when is_binary(word) do
     normalized = String.downcase(word)
 
+    case exception_bases(normalized, name) do
+      [] -> [normalized]
+      bases -> bases
+    end
+  end
+
+  # The base forms the exception list gives for a word, any part of speech.
+  defp exception_bases(normalized, name) do
     case :ets.lookup(table_for(name, :morph), normalized) do
-      [{^normalized, base_forms}] -> base_forms
-      _ -> [normalized]
+      [{^normalized, entries}] -> entries |> Enum.map(fn {base, _pos} -> base end) |> Enum.uniq()
+      _ -> []
+    end
+  end
+
+  @doc """
+  Returns every WordNet lemma `word` can be a form of, as `{lemma, pos}`,
+  the way WordNet's morphy (wn_morphy.pl) finds them.
+
+  Candidates come from the exception list (`mice` -> `mouse`), from every
+  suffix rule that applies (`lights` -> `light`, `cities` -> `city`), and
+  from the word itself. A candidate is kept only when WordNet holds it as a
+  lemma with that part of speech, so `bus` does not become `bu`. Sorted, so
+  the result does not depend on table order.
+
+  Unlike `lemma/1`, which reads only the exception list, this applies the
+  regular suffix rules too.
+  """
+  @spec base_forms(String.t(), atom()) :: [{String.t(), atom()}]
+  def base_forms(word, name \\ __MODULE__) when is_binary(word) do
+    normalized = String.downcase(word)
+
+    exceptions =
+      case :ets.lookup(table_for(name, :morph), normalized) do
+        [{^normalized, entries}] -> entries
+        _ -> []
+      end
+
+    [{:endings, endings}] = :ets.lookup(table_for(name, :endings), :endings)
+
+    by_rule =
+      Enum.flat_map(endings, fn {rule_pos, inflected, base_ending} ->
+        if String.ends_with?(normalized, inflected) and byte_size(normalized) > byte_size(inflected) do
+          stem = binary_part(normalized, 0, byte_size(normalized) - byte_size(inflected))
+          [{stem <> base_ending, rule_pos}]
+        else
+          []
+        end
+      end)
+
+    itself = Enum.map([:noun, :verb, :adj, :adv], &{normalized, &1})
+
+    (exceptions ++ by_rule ++ itself)
+    |> Enum.map(fn {lemma, pos} -> {lemma, normalize_rule_pos(pos)} end)
+    |> Enum.uniq()
+    |> Enum.filter(fn {lemma, pos} -> lemma_with_pos?(lemma, pos, name) end)
+    |> Enum.sort()
+  end
+
+  @doc """
+  The grammatical number of `word` read as a noun: `:plural` when it is an
+  inflected form of a different noun lemma (`lights`, `mice`), `:singular`
+  when it is a noun lemma and no such form, and `nil` when WordNet knows no
+  noun it could be. A word that is both (`glasses`, the eyewear, and the
+  plural of `glass`) reads as `:plural`.
+  """
+  @spec grammatical_number(String.t(), atom()) :: :plural | :singular | nil
+  def grammatical_number(word, name \\ __MODULE__) when is_binary(word) do
+    normalized = String.downcase(word)
+    nouns = for {lemma, :noun} <- base_forms(normalized, name), do: lemma
+
+    cond do
+      Enum.any?(nouns, &(&1 != normalized)) -> :plural
+      normalized in nouns -> :singular
+      true -> nil
+    end
+  end
+
+  defp normalize_rule_pos(pos) when pos in [:adj, :adj_satellite], do: :adj
+  defp normalize_rule_pos(pos), do: pos
+
+  defp lemma_with_pos?(lemma, pos, name) do
+    wanted = Map.get(@rule_pos, pos, [pos])
+
+    case :ets.lookup(table_for(name, :words), lemma) do
+      [{^lemma, entries}] -> Enum.any?(entries, fn {_sid, _w, p, _tc} -> p in wanted end)
+      _ -> false
     end
   end
 
@@ -291,8 +462,10 @@ defmodule Brain.ML.Lexicon do
     load_senses(wordnet_path, tables)
     load_glosses(wordnet_path, tables)
     load_hypernyms(wordnet_path, tables)
+    load_instances(wordnet_path, tables)
     load_antonyms(wordnet_path, tables)
     load_exceptions(wordnet_path, tables)
+    load_endings(wordnet_path, tables)
 
     elapsed = System.monotonic_time(:millisecond) - start_time
 
@@ -369,8 +542,10 @@ defmodule Brain.ML.Lexicon do
       words: create_ets(prefix, @words_table, :set),
       synsets: create_ets(prefix, @synsets_table, :set),
       hypernyms: create_ets(prefix, @hypernyms_table, :bag),
+      instances: create_ets(prefix, @instances_table, :bag),
       antonyms: create_ets(prefix, @antonyms_table, :bag),
       morph: create_ets(prefix, @morph_table, :set),
+      endings: create_ets(prefix, @endings_table, :set),
       hyp_cache: create_ets(prefix, @hyp_cache_table, :set)
     }
   end
@@ -437,6 +612,21 @@ defmodule Brain.ML.Lexicon do
     end)
   end
 
+  # wn_ins.pl links a named instance to its class: Paris is an instance of
+  # "national capital", a person to the kind of person they were. Proper nouns
+  # have no ordinary hypernyms, so without these their ancestry is empty.
+  defp load_instances(path, tables) do
+    instances = WordNetParser.parse_instances(Path.join(path, "wn_ins.pl"))
+
+    if instances == [] do
+      raise "WordNet wn_ins.pl parsed zero instance relations -- file may be corrupt"
+    end
+
+    Enum.each(instances, fn {instance, class} ->
+      :ets.insert(tables.instances, {instance, class})
+    end)
+  end
+
   defp load_antonyms(path, tables) do
     ant_path = Path.join(path, "wn_ant.pl")
 
@@ -449,20 +639,32 @@ defmodule Brain.ML.Lexicon do
     end
   end
 
+  # Irregular forms, keyed by inflected form, each with its base form and the
+  # part of speech the exception is for.
   defp load_exceptions(path, tables) do
-    exc_path = Path.join(path, "wn_exc.pl")
+    exceptions = WordNetParser.parse_exceptions(Path.join(path, "wn_exc.pl"))
 
-    if File.exists?(exc_path) do
-      exceptions = WordNetParser.parse_exceptions(exc_path)
-
-      morph_groups =
-        Enum.group_by(exceptions, fn {inflected, _base, _pos} -> inflected end)
-
-      Enum.each(morph_groups, fn {inflected, entries} ->
-        bases = Enum.map(entries, fn {_inflected, base, _pos} -> base end) |> Enum.uniq()
-        :ets.insert(tables.morph, {inflected, bases})
-      end)
+    if exceptions == [] do
+      raise "WordNet wn_exc.pl parsed zero morphological exceptions -- file may be corrupt"
     end
+
+    exceptions
+    |> Enum.group_by(fn {inflected, _base, _pos} -> inflected end)
+    |> Enum.each(fn {inflected, entries} ->
+      bases = entries |> Enum.map(fn {_inflected, base, pos} -> {base, pos} end) |> Enum.uniq()
+      :ets.insert(tables.morph, {inflected, bases})
+    end)
+  end
+
+  # WordNet's regular suffix rules (wn_morphy.pl), in file order.
+  defp load_endings(path, tables) do
+    endings = WordNetParser.parse_endings(Path.join(path, "wn_morphy.pl"))
+
+    if endings == [] do
+      raise "WordNet wn_morphy.pl parsed zero suffix rules -- file may be corrupt"
+    end
+
+    :ets.insert(tables.endings, {:endings, endings})
   end
 
   defp lookup_synset_ids(normalized_word, nil, name) do
@@ -526,8 +728,10 @@ defmodule Brain.ML.Lexicon do
   defp table_for(__MODULE__, :words), do: @words_table
   defp table_for(__MODULE__, :synsets), do: @synsets_table
   defp table_for(__MODULE__, :hypernyms), do: @hypernyms_table
+  defp table_for(__MODULE__, :instances), do: @instances_table
   defp table_for(__MODULE__, :antonyms), do: @antonyms_table
   defp table_for(__MODULE__, :morph), do: @morph_table
+  defp table_for(__MODULE__, :endings), do: @endings_table
   defp table_for(__MODULE__, :hyp_cache), do: @hyp_cache_table
 
   defp table_for(name, type) when is_atom(name) do

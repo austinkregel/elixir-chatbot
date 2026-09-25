@@ -1,0 +1,76 @@
+{
+  "description": "Connector phrases for weaving multi-chunk responses together",
+  "connectors": {
+    "expressive_to_directive": [
+      "Now, ",
+      "So, ",
+      "Alright, ",
+      ""
+    ],
+    "expressive_to_assertive": [
+      "And ",
+      "Also, ",
+      "By the way, ",
+      ""
+    ],
+    "assertive_to_directive": [
+      "Now, ",
+      "So ",
+      "",
+      "Alright, "
+    ],
+    "assertive_to_assertive": [
+      "Also, ",
+      "Additionally, ",
+      "And ",
+      ""
+    ],
+    "directive_to_assertive": [
+      "Also, ",
+      "And ",
+      ""
+    ],
+    "directive_to_directive": [
+      "And then ",
+      "Also ",
+      ""
+    ],
+    "question_to_expressive": [
+      "By the way, ",
+      "Oh, and ",
+      ""
+    ],
+    "default": [
+      " ",
+      "Also, ",
+      ""
+    ]
+  },
+  "response_starters": {
+    "high_confidence": [
+      "",
+      "",
+      ""
+    ],
+    "medium_confidence": [
+      "I think ",
+      "It seems like ",
+      ""
+    ],
+    "low_confidence": [
+      "I'm not entirely sure, but ",
+      "Based on what I understand, ",
+      "If I'm understanding correctly, "
+    ]
+  },
+  "clarification_prefixes": [
+    "Just to clarify, ",
+    "To help you better, ",
+    "Before I can help, "
+  ],
+  "partial_response_connectors": [
+    "However, ",
+    "But ",
+    "That said, "
+  ]
+}

@@ -26,22 +26,91 @@ config :brain,
     # (apps/brain/priv/ml_models via Application.app_dir)
     models_path: System.get_env("ML_MODELS_PATH") || nil,
     training_data_path: System.get_env("ML_TRAINING_DATA_PATH", Path.expand("../data", __DIR__)),
+    # Recorded training runs (Brain.Training.POSRuns): each run's settings,
+    # learning curve and model snapshots.
+    training_runs_path:
+      System.get_env("ML_TRAINING_RUNS_PATH", Path.expand("../data/training_runs", __DIR__)),
+    # The POS model the test suite loads. Promoted from a recorded run on the
+    # POS training page; the suite never trains it.
+    pos_test_model_path: Path.expand("../apps/brain/test/ml_models/pos_model.term", __DIR__),
     use_gpu: System.get_env("ML_USE_GPU", "true") == "true",
     batch_size: System.get_env("ML_BATCH_SIZE", "1000") |> String.to_integer(),
     max_features: System.get_env("ML_MAX_FEATURES", "5000") |> String.to_integer(),
-    ouro_sequence_length:
-      System.get_env("OURO_SEQUENCE_LENGTH", "4096") |> String.to_integer(),
-    ouro_max_new_tokens:
-      System.get_env("OURO_MAX_NEW_TOKENS", "256") |> String.to_integer(),
+    # Seed for every stochastic training step (k-means++, shuffles, negative
+    # sampling). Training the same data with the same seed produces the same
+    # model; the seed is recorded in the models it produces.
+    training_seed: System.get_env("ML_TRAINING_SEED", "42") |> String.to_integer(),
+    ouro_sequence_length: System.get_env("OURO_SEQUENCE_LENGTH", "4096") |> String.to_integer(),
+    ouro_max_new_tokens: System.get_env("OURO_MAX_NEW_TOKENS", "256") |> String.to_integer(),
     ouro_generation_timeout:
       System.get_env("OURO_GENERATION_TIMEOUT", "120000") |> String.to_integer(),
     ouro_backend:
-      (case System.get_env("OURO_BACKEND", "sidecar") do
-         "bumblebee" -> :bumblebee
-         _ -> :sidecar
-       end),
+      case System.get_env("OURO_BACKEND", "sidecar") do
+        "bumblebee" -> :bumblebee
+        _ -> :sidecar
+      end,
     ouro_api_url: System.get_env("OURO_API_URL", "http://localhost:8100"),
     ouro_model_id: System.get_env("OURO_MODEL_ID", "ByteDance/Ouro-2.6B")
+  ],
+
+  # How Brain.Analysis.EntityTypeScorer weighs the evidence for what a
+  # gazetteer match means. Each value is a likelihood or pseudo-count, not a
+  # score to add; see that module for the model.
+  entity_type_scoring: [
+    # Pseudo-count added to every candidate type's usage count, so a type
+    # never observed in use is unlikely rather than impossible. Not added to
+    # "just an ordinary word", which is only as likely as its observed uses:
+    # a name WordNet never saw is not thereby half likely to be a plain word.
+    prior_smoothing: 1.0,
+    # Probability that a word is typed capitalized when it is not the first
+    # word of a sentence: for a proper name, and for an ordinary word. Their
+    # ratio is how strongly casing tells the two apart. Both are estimates,
+    # not measurements -- chat users often lowercase names, and rarely
+    # capitalize an ordinary word mid-sentence -- and should be replaced by
+    # rates measured from the brain's own conversations.
+    proper_name_capitalized: 0.8,
+    ordinary_word_capitalized: 0.005,
+    # Likelihood of a reading the classified intent has no slot for, relative
+    # to one it does. Small, but not zero, so a strong prior can still
+    # overrule the intent.
+    context_mismatch_likelihood: 0.01,
+    # Likelihood of the word's part-of-speech tag under a reading whose parts
+    # of speech do not include it, relative to one whose do. Not zero: the
+    # tagger is wrong often enough ("light" in "a light meal" tagged NOUN)
+    # that its tag weighs a reading down rather than ruling it out. An
+    # estimate, to be replaced by the tagger's measured error rate.
+    tag_mismatch_likelihood: 0.05
+  ],
+
+  # How many ordinary uses Brain.Lexicon.Seeder records for each
+  # closed-class word ("of", "the", "all"), which WordNet does not count. An
+  # estimate, not a measurement: large enough that a function word is read as
+  # the word it almost always is rather than as a name ("Of", the Turkish
+  # town), and meant to be replaced by frequencies measured from a corpus.
+  closed_class_ordinary_count: 1000,
+
+  # Brain.ML.POSTagger: a BiLSTM over words and characters with a
+  # word-frequency auxiliary head (Plank, Søgaard & Goldberg 2016). Sizes
+  # follow that paper (128-dim words, 100-dim characters, 100 hidden units);
+  # dropout stands in for its Gaussian noise. Training stops when accuracy on
+  # the dev split has not improved for `patience` epochs.
+  pos_tagger: [
+    word_dim: 128,
+    char_dim: 100,
+    char_hidden: 100,
+    word_hidden: 100,
+    dropout: 0.25,
+    # Probability a word seen once in training is replaced by the unknown-word
+    # token, so the model learns to tag words it has never seen.
+    singleton_unk_rate: 0.5,
+    # Longer words keep their first and last half of this many characters.
+    max_word_chars: 20,
+    # Weight of the word-frequency head's loss beside the tag loss.
+    aux_loss_weight: 1.0,
+    batch_size: 32,
+    learning_rate: 1.0e-3,
+    max_epochs: 20,
+    patience: 3
   ],
 
   # Intent promotion (novel intent discovery)
@@ -51,11 +120,14 @@ config :brain,
   kg_signals: [
     enabled: System.get_env("KG_SIGNALS_ENABLED", "true") == "true",
     srl_gating: System.get_env("KG_SIGNALS_SRL_GATING", "true") == "true",
-    consolidation_blend: System.get_env("KG_SIGNALS_CONSOLIDATION_BLEND", "0.6") |> String.to_float(),
+    consolidation_blend:
+      System.get_env("KG_SIGNALS_CONSOLIDATION_BLEND", "0.6") |> String.to_float(),
     memory_rerank: System.get_env("KG_SIGNALS_MEMORY_RERANK", "true") == "true",
     novelty_downweight: System.get_env("KG_SIGNALS_NOVELTY_DOWNWEIGHT", "true") == "true",
-    contradiction_default_kg: System.get_env("KG_SIGNALS_CONTRADICTION_DEFAULT_KG", "true") == "true",
-    entity_promoter_kg_gate: System.get_env("KG_SIGNALS_ENTITY_PROMOTER_KG_GATE", "true") == "true",
+    contradiction_default_kg:
+      System.get_env("KG_SIGNALS_CONTRADICTION_DEFAULT_KG", "true") == "true",
+    entity_promoter_kg_gate:
+      System.get_env("KG_SIGNALS_ENTITY_PROMOTER_KG_GATE", "true") == "true",
     novelty_retraction_window: 7
   ]
 
@@ -67,6 +139,16 @@ config :world,
   # Note: Uses World app's priv directory if not set
   # Resolved at runtime via Application.app_dir(:world, "priv/training_worlds")
   training_worlds_path: System.get_env("TRAINING_WORLDS_PATH") || nil
+
+# When World.EntityPromoter may suggest an entity for human review. It never
+# adds to the gazetteer itself; a reviewer decides.
+config :world, World.EntityPromoter,
+  # Minimum sample: how many times an entity must be observed in a world
+  # before the promoter suggests it at all, so it does not suggest what it
+  # has barely seen.
+  min_occurrences: 3,
+  # Minimum confidence, averaged over those observations.
+  min_confidence: 0.6
 
 # ============================================================================
 # ChatWeb App Configuration

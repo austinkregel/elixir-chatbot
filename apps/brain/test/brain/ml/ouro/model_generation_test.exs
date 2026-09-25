@@ -1,6 +1,10 @@
 defmodule Brain.ML.Ouro.ModelGenerationTest do
   use ExUnit.Case, async: false
 
+  # Exercises the real Ouro model; excluded when the sidecar is disabled
+  # (OURO_ENABLED=false, e.g. CI).
+  @moduletag :requires_ouro
+
   alias Brain.ML.Ouro.Model, as: OuroModel
   alias Brain.ML.Ouro.SidecarLauncher
 

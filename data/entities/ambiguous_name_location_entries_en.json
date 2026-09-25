@@ -1,0 +1,631 @@
+[
+  {
+    "value": "Paris",
+    "synonyms": ["Paris"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Paris", "my name is Paris", "call me Paris", "I am Paris"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "country": "France",
+        "disambiguation_hints": ["from Paris", "in Paris", "to Paris", "at Paris"]
+      }
+    ]
+  },
+  {
+    "value": "Austin",
+    "synonyms": ["Austin"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Austin", "my name is Austin", "call me Austin", "I am Austin"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Texas",
+        "country": "USA",
+        "disambiguation_hints": ["from Austin", "in Austin", "to Austin", "at Austin"]
+      }
+    ]
+  },
+  {
+    "value": "Georgia",
+    "synonyms": ["Georgia"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Georgia", "my name is Georgia", "call me Georgia", "I am Georgia"]
+      },
+      {
+        "entity_type": "state",
+        "confidence": 0.4,
+        "country": "USA",
+        "disambiguation_hints": ["from Georgia", "in Georgia", "to Georgia", "at Georgia"]
+      },
+      {
+        "entity_type": "country",
+        "confidence": 0.3,
+        "disambiguation_hints": ["country of Georgia", "Republic of Georgia"]
+      }
+    ]
+  },
+  {
+    "value": "Charlotte",
+    "synonyms": ["Charlotte"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Charlotte", "my name is Charlotte", "call me Charlotte", "I am Charlotte"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "North Carolina",
+        "country": "USA",
+        "disambiguation_hints": ["from Charlotte", "in Charlotte", "to Charlotte", "at Charlotte"]
+      }
+    ]
+  },
+  {
+    "value": "Dallas",
+    "synonyms": ["Dallas"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Dallas", "my name is Dallas", "call me Dallas", "I am Dallas"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Texas",
+        "country": "USA",
+        "disambiguation_hints": ["from Dallas", "in Dallas", "to Dallas", "at Dallas"]
+      }
+    ]
+  },
+  {
+    "value": "Brooklyn",
+    "synonyms": ["Brooklyn"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Brooklyn", "my name is Brooklyn", "call me Brooklyn", "I am Brooklyn"]
+      },
+      {
+        "entity_type": "borough",
+        "confidence": 0.5,
+        "city": "New York City",
+        "country": "USA",
+        "disambiguation_hints": ["from Brooklyn", "in Brooklyn", "to Brooklyn", "at Brooklyn"]
+      }
+    ]
+  },
+  {
+    "value": "Madison",
+    "synonyms": ["Madison"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Madison", "my name is Madison", "call me Madison", "I am Madison"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Wisconsin",
+        "country": "USA",
+        "disambiguation_hints": ["from Madison", "in Madison", "to Madison", "at Madison"]
+      }
+    ]
+  },
+  {
+    "value": "Sydney",
+    "synonyms": ["Sydney"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Sydney", "my name is Sydney", "call me Sydney", "I am Sydney"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "country": "Australia",
+        "disambiguation_hints": ["from Sydney", "in Sydney", "to Sydney", "at Sydney"]
+      }
+    ]
+  },
+  {
+    "value": "Jordan",
+    "synonyms": ["Jordan"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Jordan", "my name is Jordan", "call me Jordan", "I am Jordan"]
+      },
+      {
+        "entity_type": "country",
+        "confidence": 0.5,
+        "disambiguation_hints": ["from Jordan", "in Jordan", "to Jordan", "at Jordan"]
+      }
+    ]
+  },
+  {
+    "value": "Orlando",
+    "synonyms": ["Orlando"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Orlando", "my name is Orlando", "call me Orlando", "I am Orlando"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Florida",
+        "country": "USA",
+        "disambiguation_hints": ["from Orlando", "in Orlando", "to Orlando", "at Orlando"]
+      }
+    ]
+  },
+  {
+    "value": "Victoria",
+    "synonyms": ["Victoria"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Victoria", "my name is Victoria", "call me Victoria", "I am Victoria"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.4,
+        "country": "Canada",
+        "disambiguation_hints": ["from Victoria", "in Victoria", "to Victoria"]
+      },
+      {
+        "entity_type": "state",
+        "confidence": 0.3,
+        "country": "Australia",
+        "disambiguation_hints": ["Victoria Australia", "state of Victoria"]
+      }
+    ]
+  },
+  {
+    "value": "Regina",
+    "synonyms": ["Regina"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Regina", "my name is Regina", "call me Regina", "I am Regina"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "province": "Saskatchewan",
+        "country": "Canada",
+        "disambiguation_hints": ["from Regina", "in Regina", "to Regina", "at Regina"]
+      }
+    ]
+  },
+  {
+    "value": "Florence",
+    "synonyms": ["Florence"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Florence", "my name is Florence", "call me Florence", "I am Florence"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "country": "Italy",
+        "disambiguation_hints": ["from Florence", "in Florence", "to Florence", "at Florence"]
+      }
+    ]
+  },
+  {
+    "value": "Savannah",
+    "synonyms": ["Savannah"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Savannah", "my name is Savannah", "call me Savannah", "I am Savannah"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Georgia",
+        "country": "USA",
+        "disambiguation_hints": ["from Savannah", "in Savannah", "to Savannah", "at Savannah"]
+      }
+    ]
+  },
+  {
+    "value": "Phoenix",
+    "synonyms": ["Phoenix"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Phoenix", "my name is Phoenix", "call me Phoenix", "I am Phoenix"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Arizona",
+        "country": "USA",
+        "disambiguation_hints": ["from Phoenix", "in Phoenix", "to Phoenix", "at Phoenix"]
+      }
+    ]
+  },
+  {
+    "value": "Chelsea",
+    "synonyms": ["Chelsea"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Chelsea", "my name is Chelsea", "call me Chelsea", "I am Chelsea"]
+      },
+      {
+        "entity_type": "neighborhood",
+        "confidence": 0.5,
+        "city": "London or New York City",
+        "disambiguation_hints": ["from Chelsea", "in Chelsea", "to Chelsea", "at Chelsea"]
+      }
+    ]
+  },
+  {
+    "value": "Hudson",
+    "synonyms": ["Hudson"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Hudson", "my name is Hudson", "call me Hudson", "I am Hudson"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.4,
+        "state": "New York",
+        "country": "USA",
+        "disambiguation_hints": ["from Hudson", "in Hudson", "to Hudson"]
+      },
+      {
+        "entity_type": "river",
+        "confidence": 0.4,
+        "disambiguation_hints": ["Hudson River", "near Hudson", "along Hudson"]
+      }
+    ]
+  },
+  {
+    "value": "Lincoln",
+    "synonyms": ["Lincoln"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Lincoln", "my name is Lincoln", "call me Lincoln", "I am Lincoln"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Nebraska",
+        "country": "USA",
+        "disambiguation_hints": ["from Lincoln", "in Lincoln", "to Lincoln", "at Lincoln"]
+      }
+    ]
+  },
+  {
+    "value": "Mason",
+    "synonyms": ["Mason"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Mason", "my name is Mason", "call me Mason", "I am Mason"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Ohio",
+        "country": "USA",
+        "disambiguation_hints": ["from Mason", "in Mason", "to Mason", "at Mason"]
+      }
+    ]
+  },
+  {
+    "value": "Troy",
+    "synonyms": ["Troy"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Troy", "my name is Troy", "call me Troy", "I am Troy"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Michigan or New York",
+        "country": "USA",
+        "disambiguation_hints": ["from Troy", "in Troy", "to Troy", "at Troy"]
+      }
+    ]
+  },
+  {
+    "value": "Eugene",
+    "synonyms": ["Eugene"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Eugene", "my name is Eugene", "call me Eugene", "I am Eugene"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Oregon",
+        "country": "USA",
+        "disambiguation_hints": ["from Eugene", "in Eugene", "to Eugene", "at Eugene"]
+      }
+    ]
+  },
+  {
+    "value": "Helena",
+    "synonyms": ["Helena"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Helena", "my name is Helena", "call me Helena", "I am Helena"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Montana",
+        "country": "USA",
+        "disambiguation_hints": ["from Helena", "in Helena", "to Helena", "at Helena"]
+      }
+    ]
+  },
+  {
+    "value": "Geneva",
+    "synonyms": ["Geneva"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Geneva", "my name is Geneva", "call me Geneva", "I am Geneva"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "country": "Switzerland",
+        "disambiguation_hints": ["from Geneva", "in Geneva", "to Geneva", "at Geneva"]
+      }
+    ]
+  },
+  {
+    "value": "Virginia",
+    "synonyms": ["Virginia"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Virginia", "my name is Virginia", "call me Virginia", "I am Virginia"]
+      },
+      {
+        "entity_type": "state",
+        "confidence": 0.5,
+        "country": "USA",
+        "disambiguation_hints": ["from Virginia", "in Virginia", "to Virginia", "at Virginia"]
+      }
+    ]
+  },
+  {
+    "value": "Carolina",
+    "synonyms": ["Carolina"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Carolina", "my name is Carolina", "call me Carolina", "I am Carolina"]
+      },
+      {
+        "entity_type": "state",
+        "confidence": 0.5,
+        "country": "USA",
+        "note": "Refers to North or South Carolina",
+        "disambiguation_hints": ["from Carolina", "in Carolina", "to Carolina", "North Carolina", "South Carolina"]
+      }
+    ]
+  },
+  {
+    "value": "Dakota",
+    "synonyms": ["Dakota"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Dakota", "my name is Dakota", "call me Dakota", "I am Dakota"]
+      },
+      {
+        "entity_type": "state",
+        "confidence": 0.5,
+        "country": "USA",
+        "note": "Refers to North or South Dakota",
+        "disambiguation_hints": ["from Dakota", "in Dakota", "to Dakota", "North Dakota", "South Dakota"]
+      }
+    ]
+  },
+  {
+    "value": "Denver",
+    "synonyms": ["Denver"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Denver", "my name is Denver", "call me Denver", "I am Denver"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Colorado",
+        "country": "USA",
+        "disambiguation_hints": ["from Denver", "in Denver", "to Denver", "at Denver"]
+      }
+    ]
+  },
+  {
+    "value": "Memphis",
+    "synonyms": ["Memphis"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Memphis", "my name is Memphis", "call me Memphis", "I am Memphis"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Tennessee",
+        "country": "USA",
+        "disambiguation_hints": ["from Memphis", "in Memphis", "to Memphis", "at Memphis"]
+      }
+    ]
+  },
+  {
+    "value": "London",
+    "synonyms": ["London"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm London", "my name is London", "call me London", "I am London"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "country": "UK",
+        "disambiguation_hints": ["from London", "in London", "to London", "at London"]
+      }
+    ]
+  },
+  {
+    "value": "India",
+    "synonyms": ["India"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm India", "my name is India", "call me India", "I am India"]
+      },
+      {
+        "entity_type": "country",
+        "confidence": 0.5,
+        "disambiguation_hints": ["from India", "in India", "to India", "at India"]
+      }
+    ]
+  },
+  {
+    "value": "Asia",
+    "synonyms": ["Asia"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Asia", "my name is Asia", "call me Asia", "I am Asia"]
+      },
+      {
+        "entity_type": "continent",
+        "confidence": 0.5,
+        "disambiguation_hints": ["from Asia", "in Asia", "to Asia", "across Asia"]
+      }
+    ]
+  },
+  {
+    "value": "Cheyenne",
+    "synonyms": ["Cheyenne"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Cheyenne", "my name is Cheyenne", "call me Cheyenne", "I am Cheyenne"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Wyoming",
+        "country": "USA",
+        "disambiguation_hints": ["from Cheyenne", "in Cheyenne", "to Cheyenne", "at Cheyenne"]
+      }
+    ]
+  },
+  {
+    "value": "Sierra",
+    "synonyms": ["Sierra"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Sierra", "my name is Sierra", "call me Sierra", "I am Sierra"]
+      },
+      {
+        "entity_type": "mountain_range",
+        "confidence": 0.5,
+        "disambiguation_hints": ["from Sierra", "in Sierra", "Sierra Nevada", "Sierra Madre"]
+      }
+    ]
+  },
+  {
+    "value": "Jackson",
+    "synonyms": ["Jackson"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Jackson", "my name is Jackson", "call me Jackson", "I am Jackson"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Mississippi",
+        "country": "USA",
+        "disambiguation_hints": ["from Jackson", "in Jackson", "to Jackson", "at Jackson"]
+      }
+    ]
+  },
+  {
+    "value": "Montgomery",
+    "synonyms": ["Montgomery"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5,
+        "disambiguation_hints": ["I'm Montgomery", "my name is Montgomery", "call me Montgomery", "I am Montgomery"]
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Alabama",
+        "country": "USA",
+        "disambiguation_hints": ["from Montgomery", "in Montgomery", "to Montgomery", "at Montgomery"]
+      }
+    ]
+  }
+]

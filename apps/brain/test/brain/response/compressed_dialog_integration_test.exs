@@ -20,6 +20,10 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
   """
   use ExUnit.Case, async: false
 
+  # Full generation path through SurfaceRealizer/RefinementLoop requires the
+  # Ouro sidecar; excluded when it is disabled (OURO_ENABLED=false, e.g. CI).
+  @moduletag :requires_ouro
+
   alias Brain.Analysis.Pipeline
   alias Brain.Response.{RefinementLoop, Primitive, DiscoursePlanner, ContentSpecifier}
   alias Brain.Response.ResponseEvaluator.Score

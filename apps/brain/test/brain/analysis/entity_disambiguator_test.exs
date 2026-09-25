@@ -79,14 +79,14 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       person_info = %{entity_type: "person", value: "Austin"}
       location_info = %{entity_type: "location", value: "Austin"}
 
+      text = "What is the weather in Austin?"
+
       entities = [
-        %{
-          value: "Austin",
-          match: "Austin",
-          start_pos: 20,
-          end_pos: 26,
-          types: [person_info, location_info]
-        }
+        gazetteer_entity("Austin", [person_info, location_info],
+          start_pos: 23,
+          end_pos: 28,
+          tag: "PROPN"
+        )
       ]
 
       pos_tagged = [
@@ -102,6 +102,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
         discourse: %{indicators: []},
         speech_act: %{category: :directive, sub_type: :question},
         intent: "weather.query",
+        original_text: text,
         world_id: world_id
       }
 
@@ -114,16 +115,16 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
 
     test "prefers music-artist for music intents", %{world_id: world_id} do
       person_info = %{entity_type: "person", value: "Prince"}
-      artist_info = %{entity_type: "music-artist", value: "Prince"}
+      artist_info = %{entity_type: "music_artist", value: "Prince"}
+
+      text = "Play Prince"
 
       entities = [
-        %{
-          value: "Prince",
-          match: "Prince",
+        gazetteer_entity("Prince", [person_info, artist_info],
           start_pos: 5,
-          end_pos: 11,
-          types: [person_info, artist_info]
-        }
+          end_pos: 10,
+          tag: "PROPN"
+        )
       ]
 
       pos_tagged = [{"Play", "VERB"}, {"Prince", "PROPN"}]
@@ -132,6 +133,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
         discourse: %{indicators: []},
         speech_act: %{category: :directive, sub_type: :command},
         intent: "music.play",
+        original_text: text,
         world_id: world_id
       }
 
@@ -139,7 +141,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
 
       assert length(result) == 1
       # For music intent, should prefer music-artist
-      assert hd(result).entity_type == "music-artist"
+      assert hd(result).entity_type == "music_artist"
     end
 
     test "handles empty entities list", %{world_id: world_id} do
@@ -255,11 +257,14 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       person_info = %{entity_type: "person", value: "Test"}
       location_info = %{entity_type: "location", value: "Test"}
 
-      entity = %{
-        value: "Test",
-        types: [person_info, location_info],
-        start_pos: 2
-      }
+      text = "I am Test"
+
+      entity =
+        gazetteer_entity("Test", [person_info, location_info],
+          start_pos: 5,
+          end_pos: 8,
+          tag: "PROPN"
+        )
 
       pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"Test", "PROPN"}]
 
@@ -267,6 +272,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       context_with = %{
         discourse: %{indicators: ["self_referential"]},
         speech_act: %{category: :expressive, sub_type: :greeting},
+        original_text: text,
         world_id: world_id
       }
 
@@ -276,6 +282,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       context_without = %{
         discourse: %{indicators: []},
         speech_act: nil,
+        original_text: text,
         world_id: world_id
       }
 
@@ -288,17 +295,21 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
     end
 
     test "handles nil context values", %{world_id: world_id} do
-      entity = %{
-        value: "Test",
-        types: [%{entity_type: "a"}, %{entity_type: "b"}],
-        start_pos: 0
-      }
+      entity =
+        gazetteer_entity("Test", [%{entity_type: "a"}, %{entity_type: "b"}],
+          start_pos: 0,
+          end_pos: 3,
+          # No tagged tokens to read a head tag from, as the extractor
+          # records when the span's head word has no tag.
+          tag: nil
+        )
 
       # Should not crash with nil values
       result =
         EntityDisambiguator.disambiguate_single(entity, [], %{
           discourse: nil,
           speech_act: nil,
+          original_text: "Test",
           world_id: world_id
         })
 
@@ -339,13 +350,75 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
     end
   end
 
+  describe "lazy atlas boost" do
+    test "skips atlas boost when domain-expected type dominates scoring", %{world_id: world_id} do
+      person_info = %{entity_type: "person", value: "Austin"}
+      location_info = %{entity_type: "location", value: "Austin"}
+
+      text = "What is the weather in Austin?"
+
+      entity =
+        gazetteer_entity("Austin", [person_info, location_info],
+          start_pos: 23,
+          end_pos: 28,
+          tag: "PROPN"
+        )
+
+      pos_tagged = [
+        {"What", "PRON"},
+        {"is", "VERB"},
+        {"the", "DET"},
+        {"weather", "NOUN"},
+        {"in", "ADP"},
+        {"Austin", "PROPN"}
+      ]
+
+      profile = %Brain.Analysis.ChunkProfile{
+        domain: :weather,
+        speech_act_category: :directive,
+        speech_act_subtype: :request_information,
+        derived_label: "weather.request_information"
+      }
+
+      context = %{
+        discourse: %{indicators: []},
+        speech_act: %{category: :directive, sub_type: :request_information},
+        intent: "weather.query",
+        original_text: text,
+        world_id: world_id,
+        profile: profile
+      }
+
+      ref = :telemetry.attach(
+        "test-atlas-cypher-counter",
+        [:brain, :atlas, :cypher],
+        fn _event, _measurements, _metadata, _config ->
+          flunk("Atlas Cypher query was issued when domain scoring was decisive")
+        end,
+        nil
+      )
+
+      result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
+
+      assert result.entity_type == "location"
+
+      :telemetry.detach("test-atlas-cypher-counter")
+    end
+  end
+
   describe "domain-aware disambiguation" do
     test "picks location over room when profile.domain is :weather", %{world_id: world_id} do
+      text = "What's the weather in Owosso?"
+
       entity = %{
         entity_type: "room",
         value: "Owosso",
+        match: "Owosso",
+        start_pos: 22,
+        end_pos: 27,
         confidence: 0.79,
-        source: :gazetteer
+        source: :gazetteer,
+        tag: "PROPN"
       }
 
       pos_tagged = [
@@ -364,6 +437,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
         discourse: %{indicators: []},
         speech_act: %{category: :directive, sub_type: :request_information},
         intent: "weather.request_information",
+        original_text: text,
         world_id: world_id,
         profile: profile
       }
@@ -404,5 +478,27 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       assert result[:entity_type] in ["room", "device", "setting"],
              "Expected smarthome type but got #{result[:entity_type]}"
     end
+  end
+
+  # The entity `Brain.ML.EntityExtractor` hands the disambiguator for a
+  # gazetteer span whose candidate readings are still open
+  # (`entity_extractor.ex:376-387`): `:entity_type` and `:confidence` are not
+  # decided yet, the readings sit in `:types`, and `:match`, `:start_pos` and
+  # `:tag` are the evidence `EntityTypeScorer.mark_position/2` and
+  # `EntityTypeScorer.apply_to/2` score them with. `:start_pos` is a grapheme
+  # offset into the context's `:original_text`, `:end_pos` the offset of the
+  # span's last grapheme, and `:tag` the UD tag of its head word.
+  defp gazetteer_entity(match, types, opts) do
+    %{
+      entity_type: nil,
+      value: match,
+      match: match,
+      start_pos: Keyword.fetch!(opts, :start_pos),
+      end_pos: Keyword.fetch!(opts, :end_pos),
+      confidence: nil,
+      types: types,
+      source: :gazetteer,
+      tag: Keyword.fetch!(opts, :tag)
+    }
   end
 end

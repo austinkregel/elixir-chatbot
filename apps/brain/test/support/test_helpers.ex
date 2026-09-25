@@ -3,7 +3,6 @@ defmodule Brain.TestHelpers do
 
   alias Brain.Analysis.Pipeline
   alias Brain.TestWorldSandbox
-  alias Brain.ML.EntityExtractor
   alias Brain.ML.Gazetteer
   import ExUnit.Callbacks
 
@@ -71,8 +70,6 @@ which starts the full supervision tree.
     if Gazetteer.is_loaded?() == false do
       Gazetteer.load_all()
     end
-
-    EntityExtractor.load_entity_maps()
 
     Brain.Test.ModelFactory.train_and_load_test_models()
 
@@ -414,7 +411,6 @@ this is typically a no-op, but some tests call it directly as a safety check.
         Brain.ML.InformalExpansions,
         Brain.ML.Gazetteer,
         Brain.ML.SentimentClassifierSimple,
-        Brain.ML.EntityExtractor,
         Brain.Response.TemplateStore,
         Brain.Response.TemplateBlender,
         Brain.Analysis.AnalyzerCalibration
@@ -739,38 +735,23 @@ this is typically a no-op, but some tests call it directly as a safety check.
     end
   end
 
+  # Training rows only: this builds the answer key `classify_response_all/2`
+  # scores against, and it must not contain held-out rows.
   defp do_load_gold_standard_intents do
-    gold_standard_path =
-      case :code.priv_dir(:brain) do
-        {:error, _} -> Path.join(["apps", "brain", "priv", "evaluation", "intent", "gold_standard.json"])
-        priv_dir -> Path.join(priv_dir, "evaluation/intent/gold_standard.json")
-      end
+    "intent"
+    |> Brain.ML.EvaluationStore.load_gold_standard(:train)
+    |> Enum.group_by(fn item -> item["intent"] end)
+    |> Enum.map(fn {intent, items} ->
+      texts =
+        items
+        |> Enum.map(fn item -> item["text"] end)
+        |> Enum.filter(&is_binary/1)
+        |> Enum.filter(&(&1 != ""))
 
-    case File.read(gold_standard_path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, data} when is_list(data) ->
-            data
-            |> Enum.group_by(fn item -> item["intent"] end)
-            |> Enum.map(fn {intent, items} ->
-              texts =
-                items
-                |> Enum.map(fn item -> item["text"] end)
-                |> Enum.filter(&is_binary/1)
-                |> Enum.filter(&(&1 != ""))
-
-              {intent, texts}
-            end)
-            |> Enum.filter(fn {intent, texts} -> intent != nil and texts != [] end)
-            |> Map.new()
-
-          _ ->
-            %{}
-        end
-
-      {:error, _} ->
-        %{}
-    end
+      {intent, texts}
+    end)
+    |> Enum.filter(fn {intent, texts} -> intent != nil and texts != [] end)
+    |> Map.new()
   end
 
   defp merge_template_sources(templates, gold_standard) do

@@ -13,6 +13,9 @@ defmodule FourthWall.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      # test/fixtures/compile_sandbox is a project the credo_fix tests compile,
+      # not test files.
+      test_ignore_filters: [~r"^test/fixtures/"],
       # Coverage configuration
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [

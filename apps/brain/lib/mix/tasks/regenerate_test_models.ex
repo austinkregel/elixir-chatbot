@@ -77,7 +77,6 @@ defmodule Mix.Tasks.RegenerateTestModels do
       {"classifier.term", "Intent Classifier"},
       {"entity_model.term", "Entity Model"},
       {"pos_model.term", "POS Tagger"},
-      {"gazetteer.term", "Gazetteer"},
       {"embedder.term", "Embedder Vocabulary"}
     ]
 

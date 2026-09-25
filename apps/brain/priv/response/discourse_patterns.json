@@ -1,0 +1,483 @@
+{
+  "description": "Maps analysis signals to backbone primitive sequences. Each pattern defines the shape of a response for a given communicative situation.",
+  "patterns": {
+    "factual_question": {
+      "match": {
+        "speech_act_category": "directive",
+        "is_question": true,
+        "has_facts": true
+      },
+      "backbone": [
+        {
+          "type": "framing",
+          "variant": "informative"
+        },
+        {
+          "type": "content",
+          "variant": "factual"
+        }
+      ]
+    },
+    "polar_question_confirmed": {
+      "match": {
+        "speech_act_category": "directive",
+        "is_question": true,
+        "fact_alignment": "confirming"
+      },
+      "backbone": [
+        {
+          "type": "framing",
+          "variant": "affirmative"
+        },
+        {
+          "type": "content",
+          "variant": "factual"
+        }
+      ]
+    },
+    "polar_question_disconfirmed": {
+      "match": {
+        "speech_act_category": "directive",
+        "is_question": true,
+        "fact_alignment": "disconfirming"
+      },
+      "backbone": [
+        {
+          "type": "framing",
+          "variant": "negative"
+        },
+        {
+          "type": "content",
+          "variant": "factual"
+        }
+      ]
+    },
+    "question_no_knowledge": {
+      "match": {
+        "speech_act_category": "directive",
+        "is_question": true,
+        "has_facts": false,
+        "response_strategy": "needs_clarification"
+      },
+      "backbone": [
+        {
+          "type": "framing",
+          "variant": "boundary"
+        },
+        {
+          "type": "follow_up",
+          "variant": "clarification"
+        }
+      ]
+    },
+    "action_request_capable": {
+      "match": {
+        "speech_act_category": "directive",
+        "is_imperative": true,
+        "action_capable": true
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "action"
+        },
+        {
+          "type": "content",
+          "variant": "action_result"
+        }
+      ]
+    },
+    "action_request_incapable": {
+      "match": {
+        "speech_act_category": "directive",
+        "is_imperative": true,
+        "action_capable": false
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "general"
+        },
+        {
+          "type": "framing",
+          "variant": "boundary"
+        }
+      ]
+    },
+    "greeting": {
+      "match": {
+        "speech_act_category": "expressive",
+        "sub_type": "greeting"
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "social"
+        },
+        {
+          "type": "follow_up",
+          "variant": "continuation"
+        }
+      ]
+    },
+    "farewell": {
+      "match": {
+        "speech_act_category": "expressive",
+        "sub_type": "farewell"
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "social"
+        }
+      ]
+    },
+    "thanks": {
+      "match": {
+        "speech_act_category": "expressive",
+        "sub_type": "thanks"
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "social"
+        }
+      ]
+    },
+    "apology": {
+      "match": {
+        "speech_act_category": "expressive",
+        "sub_type": "apology"
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "social"
+        }
+      ]
+    },
+    "how_are_you": {
+      "match": {
+        "speech_act_category": "expressive",
+        "sub_type": "how_are_you"
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "social"
+        },
+        {
+          "type": "follow_up",
+          "variant": "continuation"
+        }
+      ]
+    },
+    "sharing_positive": {
+      "match": {
+        "speech_act_category": "assertive",
+        "is_question": false,
+        "sentiment": "positive"
+      },
+      "backbone": [
+        {
+          "type": "attunement",
+          "variant": "interest"
+        },
+        {
+          "type": "content",
+          "variant": "reflective"
+        },
+        {
+          "type": "follow_up",
+          "variant": "elaboration"
+        }
+      ]
+    },
+    "sharing_negative": {
+      "match": {
+        "speech_act_category": "assertive",
+        "is_question": false,
+        "sentiment": "negative"
+      },
+      "backbone": [
+        {
+          "type": "attunement",
+          "variant": "empathy"
+        },
+        {
+          "type": "content",
+          "variant": "reflective"
+        },
+        {
+          "type": "follow_up",
+          "variant": "elaboration"
+        }
+      ]
+    },
+    "sharing_neutral": {
+      "match": {
+        "speech_act_category": "assertive",
+        "is_question": false,
+        "sentiment": "neutral"
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "general"
+        },
+        {
+          "type": "content",
+          "variant": "reflective"
+        },
+        {
+          "type": "follow_up",
+          "variant": "elaboration"
+        }
+      ]
+    },
+    "opinion_request": {
+      "match": {
+        "speech_act_category": "directive",
+        "is_question": true,
+        "intent_domain": "opinion"
+      },
+      "backbone": [
+        {
+          "type": "framing",
+          "variant": "reframe"
+        },
+        {
+          "type": "follow_up",
+          "variant": "elaboration"
+        }
+      ]
+    },
+    "explanation_request_known": {
+      "match": {
+        "speech_act_category": "directive",
+        "is_question": true,
+        "intent_domain": "explanation",
+        "has_facts": true
+      },
+      "backbone": [
+        {
+          "type": "framing",
+          "variant": "informative"
+        },
+        {
+          "type": "content",
+          "variant": "explanatory"
+        }
+      ]
+    },
+    "user_teaching_new": {
+      "match": {
+        "intent_domain": "teaching",
+        "is_update": false
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "learning"
+        },
+        {
+          "type": "follow_up",
+          "variant": "correction_invite"
+        }
+      ]
+    },
+    "user_teaching_update": {
+      "match": {
+        "intent_domain": "teaching",
+        "is_update": true
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "learning"
+        },
+        {
+          "type": "content",
+          "variant": "reflective"
+        }
+      ]
+    },
+    "meta_redirect": {
+      "match": {
+        "intent_domain": "meta",
+        "sentiment": "neutral"
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "repair"
+        },
+        {
+          "type": "content",
+          "variant": "reflective"
+        }
+      ]
+    },
+    "meta_frustrated": {
+      "match": {
+        "intent_domain": "meta",
+        "sentiment": "negative"
+      },
+      "backbone": [
+        {
+          "type": "attunement",
+          "variant": "concern"
+        },
+        {
+          "type": "acknowledgment",
+          "variant": "repair"
+        }
+      ]
+    },
+    "ambiguous_input": {
+      "match": {
+        "response_strategy": "needs_clarification",
+        "low_confidence": true
+      },
+      "backbone": [
+        {
+          "type": "follow_up",
+          "variant": "context_probe"
+        }
+      ]
+    },
+    "creative_playful": {
+      "match": {
+        "intent_domain": "creative"
+      },
+      "backbone": [
+        {
+          "type": "content",
+          "variant": "creative"
+        }
+      ]
+    },
+    "self_knowledge_query": {
+      "match": {
+        "intent_domain": "self_knowledge"
+      },
+      "backbone": [
+        {
+          "type": "content",
+          "variant": "narrative"
+        },
+        {
+          "type": "follow_up",
+          "variant": "correction_invite"
+        }
+      ]
+    },
+    "contradiction_detected": {
+      "match": {
+        "epistemic_status": "contradicted"
+      },
+      "backbone": [
+        {
+          "type": "contradiction_response"
+        },
+        {
+          "type": "follow_up",
+          "variant": "correction_invite"
+        }
+      ]
+    },
+    "missing_slots": {
+      "match": {
+        "response_strategy": "needs_clarification",
+        "has_missing_slots": true
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "general"
+        },
+        {
+          "type": "follow_up",
+          "variant": "clarification"
+        }
+      ]
+    },
+    "default_assertive": {
+      "match": {
+        "speech_act_category": "assertive"
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "general"
+        },
+        {
+          "type": "content",
+          "variant": "reflective"
+        }
+      ]
+    },
+    "default_directive": {
+      "match": {
+        "speech_act_category": "directive"
+      },
+      "backbone": [
+        {
+          "type": "framing",
+          "variant": "informative"
+        },
+        {
+          "type": "follow_up",
+          "variant": "clarification"
+        }
+      ]
+    },
+    "default_fallback": {
+      "match": {},
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "general"
+        },
+        {
+          "type": "follow_up",
+          "variant": "continuation"
+        }
+      ]
+    },
+    "enrichable_question": {
+      "match": {
+        "speech_act_category": "directive",
+        "is_question": true,
+        "has_enrichment": true,
+        "has_facts": false
+      },
+      "backbone": [
+        {
+          "type": "framing",
+          "variant": "informative"
+        },
+        {
+          "type": "content",
+          "variant": "enriched"
+        }
+      ]
+    },
+    "question_general": {
+      "match": {
+        "speech_act_category": "directive",
+        "is_question": true
+      },
+      "backbone": [
+        {
+          "type": "framing",
+          "variant": "informative"
+        },
+        {
+          "type": "follow_up",
+          "variant": "continuation"
+        }
+      ]
+    }
+  }
+}

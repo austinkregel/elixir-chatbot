@@ -1,0 +1,31 @@
+{
+  "description": "Maps system entity types to canonical gold standard types. Derived from NER evaluation confusion matrix analysis. System extracts correct entities but uses more specific subtypes.",
+  "note": "Keys are system entity types and are lowercase with underscores, matching analysis/entity_types.json. Values are the gold standard's own labels and still use hyphens, because evaluation/ner/gold_standard.json has not been regenerated; this table is the boundary between the two vocabularies. When that file is regenerated under the canonical vocabulary, the values become underscored and the hyphen-only entries here disappear.",
+  "version": 3,
+  "system_to_canonical": {
+    "sys_date": "date-time",
+    "relative_date": "date-time",
+    "day_name": "date-time",
+    "month_name": "date-time",
+    "weekday": "date-time",
+    "sys_time": "date-time",
+    "date": "date-time",
+    "date_time": "date-time",
+    "music_album": "album",
+    "music_artist": "artist",
+    "news_source": "source",
+    "music_service": "service",
+    "search_engine": "service",
+    "weather_condition": "condition",
+    "news_sort": "sort",
+    "music_sort": "sort",
+    "heating": "device",
+    "lights": "device",
+    "device_volume": "device-volume",
+    "locks_status": "lock",
+    "unit_temperature": "unit",
+    "place_name": "address",
+    "geo_location": "address",
+    "transfer_type": "account"
+  }
+}

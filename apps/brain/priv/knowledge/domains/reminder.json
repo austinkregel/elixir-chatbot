@@ -1,0 +1,66 @@
+{
+  "domain": "reminder",
+  "description": "Reminder creation and management",
+  "response_frames": {
+    "create_with_date": [
+      "I'll remind you about $content on $date.",
+      "Reminder set for $date: $content.",
+      "Got it - I'll remind you about $content on $date."
+    ],
+    "create_content_only": [
+      "When would you like to be reminded about $content?",
+      "What date or time should I set the reminder for $content?"
+    ],
+    "missing_content": [
+      "What would you like me to remind you about?",
+      "What should the reminder say?",
+      "What do you want to be reminded of?"
+    ]
+  },
+  "enriched_response_frames": {
+    "with_reminder_status": {
+      "condition": "enriched:reminder_set",
+      "requires_enrichment": ["reminder_set", "reminder_text", "reminder_time"],
+      "templates": [
+        "You have a reminder $reminder_set: \"$reminder_text\" at $reminder_time.",
+        "Reminder $reminder_set for $reminder_time: $reminder_text."
+      ]
+    },
+    "service_not_configured": {
+      "condition": "service_missing",
+      "requires_enrichment": [],
+      "templates": [
+        "I'd need a smart home connection to manage reminders.",
+        "Reminder integration isn't configured yet."
+      ]
+    },
+    "service_error": {
+      "condition": "service_error",
+      "requires_enrichment": [],
+      "templates": [
+        "I had trouble setting that reminder. The system might be unavailable.",
+        "Couldn't set the reminder right now."
+      ]
+    }
+  },
+  "entity_verbalizations": {
+    "content": ["about $value", "$value"],
+    "date": ["on $value", "at $value", "for $value"],
+    "time": ["at $value"]
+  },
+  "acknowledgment_prefixes": [
+    "Sure,",
+    "Got it,",
+    "No problem,"
+  ],
+  "slot_requirements": {
+    "required": ["content"],
+    "optional": ["date", "time"]
+  },
+  "enrichment_service": "home_assistant",
+  "enrichment_fields": {
+    "reminder_set": {"description": "Reminder state (set/not set)", "source": "home_assistant"},
+    "reminder_text": {"description": "Reminder content text", "source": "home_assistant"},
+    "reminder_time": {"description": "Reminder trigger time", "source": "home_assistant"}
+  }
+}

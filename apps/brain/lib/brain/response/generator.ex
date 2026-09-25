@@ -24,7 +24,8 @@ defmodule Brain.Response.Generator do
 
       # Build slot map for enrichment from entity list
       slots = build_slot_map_for_enrichment(entities)
-      filled_slots = slots |> Map.keys() |> Enum.map(&to_string/1)
+      slots = if query_text, do: Map.put(slots, :_query_text, query_text), else: slots
+      filled_slots = slots |> Map.keys() |> Enum.reject(fn k -> k in [:_query_text, :_ha_entity_id] end) |> Enum.map(&to_string/1)
       context = Map.put(context, :filled_slots, filled_slots)
 
       # Prepare context with enrichment data (before pipeline, for template conditions)
@@ -37,15 +38,22 @@ defmodule Brain.Response.Generator do
   end
 
   defp build_slot_map_for_enrichment(entities) when is_list(entities) do
-    # Convert entity list to slot map for service dispatching
     Enum.reduce(entities, %{}, fn entity, acc ->
       type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type")
       value = Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :text)
 
       if type && value do
-        # Use lowercase atom for slot name
         slot_name = safe_slot_atom(type)
-        Map.put(acc, slot_name, value)
+        metadata = Map.get(entity, :metadata) || Map.get(entity, "metadata")
+        ha_entity_id = get_ha_entity_id(entity, metadata)
+
+        acc = Map.put(acc, slot_name, value)
+
+        if ha_entity_id do
+          Map.put(acc, :_ha_entity_id, ha_entity_id)
+        else
+          acc
+        end
       else
         acc
       end
@@ -53,6 +61,13 @@ defmodule Brain.Response.Generator do
   end
 
   defp build_slot_map_for_enrichment(_), do: %{}
+
+  defp get_ha_entity_id(entity, metadata) do
+    Map.get(entity, :ha_entity_id) ||
+      Map.get(entity, "ha_entity_id") ||
+      (is_map(metadata) && Map.get(metadata, :ha_entity_id)) ||
+      nil
+  end
 
   defp safe_slot_atom(type) when is_atom(type), do: type
   defp safe_slot_atom(type) when is_binary(type) do

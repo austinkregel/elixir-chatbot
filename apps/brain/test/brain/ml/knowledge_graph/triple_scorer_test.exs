@@ -128,4 +128,36 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorerTest do
       end
     end
   end
+
+  describe "determinism" do
+    test "the same triples and seed always produce the same parameters" do
+      {:ok, _model, first, _vocab, config} = TripleScorer.train(@sample_triples, epochs: 5, seed: 9)
+      {:ok, _model, second, _vocab, _config} = TripleScorer.train(@sample_triples, epochs: 5, seed: 9)
+
+      assert flatten_params(first) == flatten_params(second)
+      assert config.training_seed == 9
+    end
+
+    test "leaves the calling process's random state untouched" do
+      :rand.seed(:exsss, {1, 2, 3})
+      expected = :rand.uniform()
+
+      :rand.seed(:exsss, {1, 2, 3})
+      TripleScorer.train(@sample_triples, epochs: 2, seed: 9)
+
+      assert :rand.uniform() == expected
+    end
+  end
+
+  # Every parameter tensor as a flat list of numbers, keyed by its path.
+  defp flatten_params(%Axon.ModelState{data: data}), do: flatten_params(data)
+
+  defp flatten_params(map) when is_map(map) do
+    map
+    |> Enum.sort_by(&elem(&1, 0))
+    |> Enum.map(fn
+      {key, %Nx.Tensor{} = tensor} -> {key, Nx.to_flat_list(tensor)}
+      {key, nested} -> {key, flatten_params(nested)}
+    end)
+  end
 end

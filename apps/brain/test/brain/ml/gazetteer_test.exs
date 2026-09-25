@@ -4,7 +4,12 @@ defmodule Brain.ML.GazetteerTest do
   alias Brain.ML.Gazetteer
   import Brain.TestHelpers
 
-  setup do
+  # Loading reads the entities human reviewers approved from Atlas, so every
+  # test runs with a sandboxed Atlas connection the gazetteer process shares.
+  setup tags do
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
     ensure_started(Brain.ML.Gazetteer)
     :ok
   end
@@ -16,14 +21,15 @@ defmodule Brain.ML.GazetteerTest do
     end
 
     test "lookup is case-insensitive" do
-      if Gazetteer.loaded?() do
-        _result1 = Gazetteer.lookup("kitchen")
-        _result2 = Gazetteer.lookup("KITCHEN")
-        _result3 = Gazetteer.lookup("Kitchen")
-        assert true
-      else
-        assert true
-      end
+      name = "Zorblax#{System.unique_integer([:positive])}"
+      on_exit(fn -> Gazetteer.remove_entry(name) end)
+      {:ok, _} = Gazetteer.add_reviewed(name, "location")
+
+      found = Gazetteer.lookup(name)
+
+      assert {:ok, _} = found
+      assert Gazetteer.lookup(String.downcase(name)) == found
+      assert Gazetteer.lookup(String.upcase(name)) == found
     end
   end
 
@@ -319,6 +325,12 @@ defmodule Brain.ML.GazetteerTest do
     setup do
       table = :gazetteer_entities
 
+      # These keys hold real entries ("new" is a music_sort word, "New York" an
+      # ambiguous name/location). The table belongs to the running gazetteer,
+      # so put them back rather than leaving this test's readings in it.
+      Brain.Test.Singletons.preserve_ets_keys!(table, ["new", "new york"])
+      Brain.Test.Singletons.preserve_ets_keys!(:gazetteer_prefixes, ["new"])
+
       :ets.insert(table, {"new", [%{entity_type: "person", value: "New", source: :json}]})
       :ets.insert(table, {"new york", [%{entity_type: "location", value: "New York", source: :csv}]})
 
@@ -409,6 +421,51 @@ defmodule Brain.ML.GazetteerTest do
 
       primary = hd(ranked)
       assert Map.get(primary, :entity_type) == "location"
+    end
+  end
+
+  describe "loaded sources" do
+    alias Brain.ML.DataLoaders
+
+    # Other tests in this file modify the shared table, so these reload it
+    # first. That loading happens at startup is checked in test_helper.exs.
+    setup do
+      {:ok, _} = Gazetteer.load_all()
+      :ok
+    end
+
+    test "includes every artist and city in the sources" do
+      {:ok, artists} = DataLoaders.load_artists()
+      {:ok, cities} = DataLoaders.load_cities()
+      artist_keys = artists |> DataLoaders.build_artist_lookup() |> Map.keys()
+      city_keys = cities |> DataLoaders.build_city_lookup() |> Map.keys()
+
+      # Both sources are larger than the 10,000 rows the old build kept.
+      assert length(artist_keys) > 10_000
+      assert length(city_keys) > 10_000
+
+      missing_artists = Enum.reject(artist_keys, &has_type?(&1, "music_artist"))
+      missing_cities = Enum.reject(city_keys, &has_type?(&1, "location"))
+
+      assert missing_artists == [], "#{length(missing_artists)} artists missing"
+      assert missing_cities == [], "#{length(missing_cities)} cities missing"
+    end
+
+    test "keeps a candidate from each source when they share a surface form" do
+      # "door" is a device in the entity data and an emoji name.
+      assert has_type?("door", "device")
+      assert has_type?("door", "emoji")
+
+      # "thursday" is a date in the entity data and a band in the artist data.
+      assert has_type?("thursday", "sys_date")
+      assert has_type?("thursday", "music_artist")
+    end
+  end
+
+  defp has_type?(key, entity_type) do
+    case Gazetteer.lookup(key) do
+      {:ok, infos} -> infos |> List.wrap() |> Enum.any?(&(&1[:entity_type] == entity_type))
+      :not_found -> false
     end
   end
 end

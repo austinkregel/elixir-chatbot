@@ -442,7 +442,7 @@ defmodule Brain.FeatureTest do
         "Got entities: #{inspect(entities)}"
 
       entity_type = artist_entity[:entity_type] || artist_entity["entity_type"]
-      assert entity_type in ["artist", "music-artist", "person"],
+      assert entity_type in ["artist", "music_artist", "person"],
         "Expected entity type to be artist, music-artist, or person, got: #{entity_type}"
 
       assert_has_response(response)

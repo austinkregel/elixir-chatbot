@@ -54,6 +54,56 @@ defmodule Brain do
   end
 
   @doc """
+  Returns a path within the umbrella's top-level `data/` directory.
+
+  `data/` sits above `apps/`, so it cannot be reached through
+  `:code.priv_dir/1` and must not be reached through `File.cwd!/0`: an umbrella
+  run has two working directories, because Mix boots the applications from the
+  umbrella root and then runs each app's tests from `apps/<app>`. A relative
+  `"data/classifiers"` therefore names two different directories in one run —
+  the same trap `config/test.exs` documents at length for `learning_params_path`
+  and `Brain.SnapshotHelper` hit with its snapshots directory.
+
+  This walks up from the resolved priv directory instead, following the symlink
+  Mix creates in `_build` when there is one.
+
+  ## Examples
+
+      Brain.data_path("classifiers")
+      #=> "/path/to/umbrella/data/classifiers"
+  """
+  def data_path(subpath) when is_binary(subpath) do
+    Path.join(umbrella_root(), Path.join("data", subpath))
+  end
+
+  @doc """
+  The umbrella's root directory, resolved from the brain app's priv directory.
+
+  `_build/<env>/lib/brain/priv` is a symlink to `apps/brain/priv` in a normal
+  build, so the number of levels to walk up depends on which of the two the
+  path resolves to. Both cases are handled rather than assuming one.
+  """
+  def umbrella_root do
+    priv = priv_dir()
+
+    case File.read_link(priv) do
+      {:ok, target} ->
+        # `priv` is the _build symlink; follow it to apps/brain/priv, then up
+        # past apps/brain and apps.
+        priv
+        |> Path.dirname()
+        |> Path.join(target)
+        |> Path.expand()
+        |> Path.join("../../..")
+        |> Path.expand()
+
+      {:error, _} ->
+        # Not a symlink: this is _build/<env>/lib/brain/priv itself.
+        Path.expand(Path.join(priv, "../../../../.."))
+    end
+  end
+
+  @doc """
   Starts the Brain GenServer.
 
   ## Arguments
@@ -753,7 +803,7 @@ defmodule Brain do
     user_id = Keyword.get(opts, :user_id)
     entities = Map.get(context, :entities, [])
     extract_and_store_beliefs(input, entities, user_id, conversation_id)
-    feed_entities_to_world(entities, world_id)
+    feed_entities_to_world(entities, world_id, input)
 
     if ml_config[:enabled] and entities != [] and Config.auto_extraction_enabled?() do
       Learner.learn_from_classical_extraction(state.persona.name, entities, input)
@@ -2155,7 +2205,11 @@ defmodule Brain do
       Logger.warning("Failed to extract beliefs: #{inspect(e)}")
   end
 
-  defp feed_entities_to_world(entities, world_id) when is_list(entities) do
+  # `input` is the text the entities were extracted from, and becomes each
+  # candidate's `:context`. Without it World.EntityPromoter died with a KeyError
+  # while aggregating, and a reviewer would have had no text to judge the
+  # suggestion against. Measured 2026-09-23.
+  defp feed_entities_to_world(entities, world_id, input) when is_list(entities) do
     promotable_types = ~w(person location city country organization company place)
     now = DateTime.utc_now()
 
@@ -2171,6 +2225,7 @@ defmodule Brain do
           value: to_string(value),
           inferred_type: type_str,
           confidence: entity[:confidence] || entity["confidence"] || 0.5,
+          context: to_string(input),
           discovered_at: now,
           occurrences: 1
         }
@@ -2187,7 +2242,7 @@ defmodule Brain do
     :ok
   end
 
-  defp feed_entities_to_world(_, _), do: :ok
+  defp feed_entities_to_world(_, _, _), do: :ok
 
   defp is_user_fact?(entity_type) do
     entity_type_str = to_string(entity_type) |> String.downcase()

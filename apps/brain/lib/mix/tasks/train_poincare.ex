@@ -63,15 +63,18 @@ defmodule Mix.Tasks.TrainPoincare do
 
     Mix.shell().info("Training (dim: #{dim}, epochs: #{epochs}, lr: #{lr})...")
 
+    seed = Brain.ML.TrainingSeed.get!()
+
     {:ok, embeddings, entity_to_idx, idx_to_entity} = Embeddings.train(pairs,
       dim: dim,
       epochs: epochs,
       learning_rate: lr,
-      verbose: true
+      verbose: true,
+      seed: seed
     )
 
     output_path = model_path(world_id)
-    Embeddings.save(embeddings, entity_to_idx, idx_to_entity, dim, output_path)
+    Embeddings.save(embeddings, entity_to_idx, idx_to_entity, dim, output_path, training_seed: seed)
     Mix.shell().info("Embeddings saved to #{output_path}")
 
     if opts[:publish] do

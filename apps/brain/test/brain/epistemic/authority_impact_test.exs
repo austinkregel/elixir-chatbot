@@ -17,8 +17,16 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
 
   setup do
     ensure_epistemic_stores_started()
-    BeliefStore.clear()
-    SourceAuthority.clear()
+
+    # Empty before each test and empty again after. Every belief this file adds
+    # also creates a JTMS node, and it drives SourceAuthority credibility with
+    # `record_outcome/2`; all three hold their contents in GenServer state,
+    # which the Sandbox does not roll back. Empty is the boot state for all
+    # three (0 rows in atlas_beliefs and in atlas_source_authority; JTMS loads
+    # nothing at all), and clearing SourceAuthority wipes only its learned
+    # `tracking` counts, not the bootstrap tier profiles these tests read.
+    Brain.Test.Singletons.reset_epistemic_stores!([:beliefs, :jtms, :source_authority])
+
     :ok
   end
 

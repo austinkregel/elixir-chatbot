@@ -1,5 +1,5 @@
 defmodule Brain.ML.Tokenizer do
-  @moduledoc "Unicode-aware tokenization module without regex dependency.\n\nProvides:\n- Word tokenization (unicode-aware)\n- Sentence boundary detection\n- Quoted string preservation\n- Contraction handling\n- Punctuation handling\n- Token position tracking\n"
+  @moduledoc "Unicode-aware tokenization module without regex dependency.\n\nProvides:\n- Word tokenization (unicode-aware)\n- Sentence boundary detection\n- Quoted string preservation\n- Clitic splitting the way the UD English Web Treebank splits them (\"don't\" is \"do\" + \"n't\"; see `Brain.Lexicon.Clitics`)\n- Punctuation handling\n- Token position tracking\n"
 
   @type token :: %{
           text: String.t(),
@@ -15,6 +15,8 @@ defmodule Brain.ML.Tokenizer do
           start_pos: non_neg_integer(),
           end_pos: non_neg_integer()
         }
+  alias Brain.Lexicon.Clitics
+
   @sentence_enders ~c".!?"
   @punctuation ~c",;:\"'()[]{}<>/\\|@#$%^&*+=~`"
 
@@ -51,7 +53,7 @@ defmodule Brain.ML.Tokenizer do
   def tokenize_lemmatized(text, opts \\ []) when is_binary(text) do
     text
     |> tokenize_normalized(opts)
-    |> Enum.map(&Brain.ML.Lexicon.lemma/1)
+    |> Enum.map(&Brain.Lexicon.lemma/1)
   end
 
   @doc "Tokenize text into normalized lowercase words.\nFilters out punctuation and short tokens.\n\nOptions:\n  - :min_length - minimum token length (default: 1)\n  - :include_numbers - include number tokens (default: true)\n  - :expand_contractions - expand contractions before tokenizing (default: false)\n"
@@ -80,7 +82,16 @@ defmodule Brain.ML.Tokenizer do
     |> Enum.map(& &1.normalized)
   end
 
-  @doc "Expand contractions in text to their full forms using heuristics.\n\nThis uses pattern-based rules rather than a lookup table, so it can\nhandle contractions it hasn't seen before by recognizing the suffix patterns:\n\n  - X'm → X am (I'm → I am)\n  - X're → X are (you're → you are, they're → they are)\n  - X'll → X will (I'll → I will, she'll → she will)\n  - X've → X have (I've → I have, could've → could have)\n  - X'd → X would (I'd → I would, he'd → he would)\n  - X's → X is (it's → it is, what's → what is)\n  - Xn't → X not (don't → do not, can't → can not)\n\nSpecial cases like \"won't\" → \"will not\" are handled separately.\n\nThis is useful as a preprocessing step before pattern matching,\nso you only need to match against the canonical forms.\n"
+  @doc """
+  Expand contractions and informal reductions to their full forms by
+  looking each word up in `Brain.ML.InformalExpansions`: "I'm gonna" becomes
+  "I am going to". A word with no entry is left as written.
+
+  Contractions whose clitic means different things in different sentences
+  ("he's": *is*, *has* or the possessive; "she'd": *would* or *had*; see
+  `Brain.Lexicon.Clitics.ambiguous?/1`) have no entry, so they are left for
+  `tokenize/1` to split ("he" + "'s") and the POS tagger to read in context.
+  """
   def expand_contractions(text) when is_binary(text) do
     text
     |> split_preserving_delimiters()
@@ -481,7 +492,32 @@ defmodule Brain.ML.Tokenizer do
     end
   end
 
-  defp tokenize_graphemes([g | rest], acc, current, current_start, pos) do
+  # A clitic is split off its host the way the treebank the POS tagger learns
+  # from splits it: "don't" is "do" + "n't", "Sarah's" is "Sarah" + "'s".
+  defp tokenize_graphemes([g | rest] = graphemes, acc, current, current_start, pos) do
+    case current != "" and Clitics.apostrophe?(g) and Clitics.match(current, rest) do
+      {host, before, after_apostrophe} ->
+        clitic_start = pos - String.length(before)
+        clitic_end = pos + length(after_apostrophe)
+        text = before <> g <> Enum.join(after_apostrophe)
+
+        clitic = %{
+          text: text,
+          normalized: Clitics.canonical(text),
+          start_pos: clitic_start,
+          end_pos: clitic_end,
+          type: :contraction
+        }
+
+        acc = [clitic, make_token(host, current_start, clitic_start - 1) | acc]
+        tokenize_graphemes(Enum.drop(rest, length(after_apostrophe)), acc, "", clitic_end + 1, clitic_end + 1)
+
+      _ ->
+        tokenize_grapheme(graphemes, acc, current, current_start, pos)
+    end
+  end
+
+  defp tokenize_grapheme([g | rest], acc, current, current_start, pos) do
     cond do
       whitespace?(g) ->
         if current != "" do
@@ -532,27 +568,6 @@ defmodule Brain.ML.Tokenizer do
 
         tokenize_graphemes(rest, [emoji_token | acc2], "", pos + 1, pos + 1)
 
-      g == "'" and current != "" ->
-        case check_contraction(rest) do
-          {:contraction, suffix, consumed} ->
-            full_token = current <> "'" <> suffix
-            token_end = pos + String.length(suffix)
-
-            token = %{
-              text: full_token,
-              normalized: String.downcase(full_token),
-              start_pos: current_start,
-              end_pos: token_end,
-              type: :contraction
-            }
-
-            remaining = Enum.drop(rest, consumed)
-            tokenize_graphemes(remaining, [token | acc], "", token_end + 1, token_end + 1)
-
-          :not_contraction ->
-            tokenize_graphemes(rest, acc, current <> g, current_start, pos + 1)
-        end
-
       g == "-" and current != "" ->
         case rest do
           [next | _] when next != "" ->
@@ -578,27 +593,6 @@ defmodule Brain.ML.Tokenizer do
 
         tokenize_graphemes(rest, acc, current <> g, start, pos + 1)
     end
-  end
-
-  defp check_contraction(graphemes) do
-    suffixes = ["t", "re", "ve", "ll", "d", "m", "s"]
-
-    remaining_str = Enum.join(graphemes)
-
-    Enum.find_value(suffixes, :not_contraction, fn suffix ->
-      if String.starts_with?(String.downcase(remaining_str), suffix) do
-        rest_after = String.slice(remaining_str, String.length(suffix)..-1//1)
-
-        if rest_after == "" or not word_char?(String.first(rest_after) || "") do
-          {:contraction, String.slice(remaining_str, 0, String.length(suffix)),
-           String.length(suffix)}
-        else
-          nil
-        end
-      else
-        nil
-      end
-    end)
   end
 
   defp make_token(text, start_pos, end_pos) do

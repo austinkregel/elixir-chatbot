@@ -564,7 +564,7 @@ defmodule Brain.ML.EntityTrainer do
     File.mkdir_p!(models_path)
 
     model_path = Path.join(models_path, "entity_model.term")
-    binary = :erlang.term_to_binary(model)
+    binary = Brain.ML.ModelStore.serialize(model)
 
     case File.write(model_path, binary) do
       :ok ->

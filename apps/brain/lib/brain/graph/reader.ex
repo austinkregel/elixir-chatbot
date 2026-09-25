@@ -18,6 +18,7 @@ defmodule Brain.Graph.Reader do
   """
 
   alias Brain.AtlasIntegration
+  alias Brain.Graph.ContextCache
   alias Atlas.Graph
   alias Atlas.Graph.EdgeLabels
   alias Atlas.Graph.Types.Vertex
@@ -36,6 +37,7 @@ defmodule Brain.Graph.Reader do
   """
   def entity_context(entities, opts \\ []) when is_list(entities) do
     depth = Keyword.get(opts, :depth, 2)
+    world_id = Keyword.get(opts, :world_id, "default")
 
     Enum.map(entities, fn entity ->
       entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type") || "Entity"
@@ -43,17 +45,101 @@ defmodule Brain.Graph.Reader do
 
       label = normalize_label(entity_type)
 
-      case AtlasIntegration.find_node("knowledge_graph", label, value) do
-        {:ok, node} ->
-          neighbors = get_neighbors("knowledge_graph", node.id, depth)
+      case ContextCache.get(world_id, "knowledge_graph", label, value) do
+        {:ok, {node, neighbors}} ->
           %{entity: entity, neighbors: neighbors, node: node}
 
-        _ ->
-          %{entity: entity, neighbors: [], node: nil}
+        :miss ->
+          case fetch_entity_context(label, value, depth) do
+            {node, neighbors} when not is_nil(node) ->
+              ContextCache.put(world_id, "knowledge_graph", label, value, {node, neighbors})
+              %{entity: entity, neighbors: neighbors, node: node}
+
+            # A miss is not cached. `fetch_entity_context/3` cannot tell "no
+            # such entity" from a lookup that failed -- an unavailable graph,
+            # a connection error -- so caching it records a failure as a fact,
+            # for every later reader, until the process that cached it
+            # remembers to purge. Re-reading a genuinely unknown entity costs
+            # one query.
+            _ ->
+              %{entity: entity, neighbors: [], node: nil}
+          end
       end
     end)
   rescue
     _ -> Enum.map(entities, fn e -> %{entity: e, neighbors: [], node: nil} end)
+  end
+
+  @doc """
+  Look up a single entity name across multiple candidate labels in one batch.
+
+  Issues a single Cypher query that matches any of the provided labels,
+  then fetches the neighborhood once for the first match. Returns a map
+  keyed by normalized label: `%{label => %{node: vertex, neighbors: [vertex]}}`.
+  """
+  def entity_context_multi_label(name, labels, opts \\ []) when is_binary(name) and is_list(labels) do
+    depth = Keyword.get(opts, :depth, 2)
+    world_id = Keyword.get(opts, :world_id, "default")
+    escaped = String.replace(to_string(name), "'", "\\'")
+    normalized_labels = Enum.map(labels, &normalize_label/1)
+
+    label_or =
+      normalized_labels
+      |> Enum.map(fn l -> "(n:#{l})" end)
+      |> Enum.join(" OR ")
+
+    query = "MATCH (n) WHERE (#{label_or}) AND n.name = '#{escaped}' RETURN n"
+
+    nodes =
+      case Graph.cypher("knowledge_graph", query) do
+        {:ok, rows} when is_list(rows) ->
+          rows
+          |> Enum.flat_map(fn
+            [%Vertex{} = v] -> [v]
+            _ -> []
+          end)
+
+        _ ->
+          []
+      end
+
+    case nodes do
+      [] ->
+        %{}
+
+      [node | _] ->
+        neighbors = get_neighbors("knowledge_graph", node.id, depth)
+        ContextCache.put(world_id, "knowledge_graph", hd(normalized_labels), name, {node, neighbors})
+
+        Map.new(normalized_labels, fn label ->
+          {label, %{node: node, neighbors: neighbors}}
+        end)
+    end
+  rescue
+    _ -> %{}
+  end
+
+  defp fetch_entity_context(label, value, depth) do
+    case AtlasIntegration.find_node("knowledge_graph", label, value) do
+      {:ok, node} ->
+        neighbors = get_neighbors("knowledge_graph", node.id, depth)
+        {node, neighbors}
+
+      :not_found ->
+        {nil, []}
+
+      # Still degrades — response generation must not block on the graph — but
+      # says so. "The graph is unreachable" and "we have never heard of this
+      # entity" produce the same empty result here and the same hedged reply
+      # downstream, so the difference has to be visible somewhere.
+      {:error, reason} ->
+        Logger.warning("Reader: lookup of #{label} #{inspect(value)} failed: #{inspect(reason)}")
+        {nil, []}
+    end
+  rescue
+    e ->
+      Logger.warning("Reader: lookup of #{label} #{inspect(value)} raised: #{Exception.message(e)}")
+      {nil, []}
   end
 
   @doc """
@@ -74,7 +160,12 @@ defmodule Brain.Graph.Reader do
          {:ok, node_b} <- AtlasIntegration.find_node("knowledge_graph", label_b, name_b) do
       find_path("knowledge_graph", node_a, node_b)
     else
-      _ -> {:error, :not_found}
+      :not_found ->
+        {:error, :not_found}
+
+      {:error, reason} ->
+        Logger.warning("Reader: relationship path lookup failed: #{inspect(reason)}")
+        {:error, :not_found}
     end
   rescue
     _ -> {:error, :not_found}
@@ -136,17 +227,13 @@ defmodule Brain.Graph.Reader do
   end
 
   defp lexicon_query_synonyms(query_text) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      query_text
-      |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
-      |> Enum.flat_map(fn token ->
-        Brain.ML.Lexicon.synonyms(token)
-        |> Enum.take(2)
-      end)
-      |> Enum.uniq()
-    else
-      []
-    end
+    query_text
+    |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
+    |> Enum.flat_map(fn token ->
+      Brain.Lexicon.synonyms(token)
+      |> Enum.take(2)
+    end)
+    |> Enum.uniq()
   end
 
   # ============================================================================

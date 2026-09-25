@@ -282,14 +282,7 @@ defmodule Brain.Response.TemplateBlender do
   end
 
   defp related_intents?(intent_a, intent_b) do
-    parts_a = String.split(intent_a, ".")
-    parts_b = String.split(intent_b, ".")
-
-    if parts_a != [] and parts_b != [] do
-      List.first(parts_a) == List.first(parts_b)
-    else
-      false
-    end
+    Brain.Analysis.IntentUtils.same_domain_prefix?(intent_a, intent_b)
   end
 
   defp compose_response(selected_chunks, context) do

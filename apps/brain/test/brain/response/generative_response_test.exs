@@ -42,7 +42,7 @@ defmodule Brain.Response.GenerativeResponseTest do
     end
 
     test "generates response for music intent with artist" do
-      entities = [%{entity_type: "music-artist", value: "The Beatles"}]
+      entities = [%{entity_type: "music_artist", value: "The Beatles"}]
 
       case Synthesizer.synthesize("music.play", entities, confidence: 0.8) do
         {:ok, response} ->
