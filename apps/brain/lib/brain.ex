@@ -54,6 +54,56 @@ defmodule Brain do
   end
 
   @doc """
+  Returns a path within the umbrella's top-level `data/` directory.
+
+  `data/` sits above `apps/`, so it cannot be reached through
+  `:code.priv_dir/1` and must not be reached through `File.cwd!/0`: an umbrella
+  run has two working directories, because Mix boots the applications from the
+  umbrella root and then runs each app's tests from `apps/<app>`. A relative
+  `"data/classifiers"` therefore names two different directories in one run —
+  the same trap `config/test.exs` documents at length for `learning_params_path`
+  and `Brain.SnapshotHelper` hit with its snapshots directory.
+
+  This walks up from the resolved priv directory instead, following the symlink
+  Mix creates in `_build` when there is one.
+
+  ## Examples
+
+      Brain.data_path("classifiers")
+      #=> "/path/to/umbrella/data/classifiers"
+  """
+  def data_path(subpath) when is_binary(subpath) do
+    Path.join(umbrella_root(), Path.join("data", subpath))
+  end
+
+  @doc """
+  The umbrella's root directory, resolved from the brain app's priv directory.
+
+  `_build/<env>/lib/brain/priv` is a symlink to `apps/brain/priv` in a normal
+  build, so the number of levels to walk up depends on which of the two the
+  path resolves to. Both cases are handled rather than assuming one.
+  """
+  def umbrella_root do
+    priv = priv_dir()
+
+    case File.read_link(priv) do
+      {:ok, target} ->
+        # `priv` is the _build symlink; follow it to apps/brain/priv, then up
+        # past apps/brain and apps.
+        priv
+        |> Path.dirname()
+        |> Path.join(target)
+        |> Path.expand()
+        |> Path.join("../../..")
+        |> Path.expand()
+
+      {:error, _} ->
+        # Not a symlink: this is _build/<env>/lib/brain/priv itself.
+        Path.expand(Path.join(priv, "../../../../.."))
+    end
+  end
+
+  @doc """
   Starts the Brain GenServer.
 
   ## Arguments
