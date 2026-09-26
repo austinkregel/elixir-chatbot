@@ -1,277 +1,400 @@
 defmodule Mix.Tasks.RebuildGoldStandard do
-  @shortdoc "Rebuild intent gold standard using Dialogflow anchoring"
+  @shortdoc "Rebuild the intent gold standard from Dialogflow anchoring only"
+
   @moduledoc """
-  Rebuilds the intent gold standard with a three-layer labeling strategy:
+  Rebuilds `priv/evaluation/intent/gold_standard.json` from `data/intents/`,
+  using Dialogflow as the sole authority.
 
-  1. **Dialogflow anchoring** — exact-match against Dialogflow training phrases
-  2. **Confidence-gated model labels** — for unmatched texts, use the feature-vector
-     classifier when confidence >= 0.7, otherwise mark `"needs_review"`
-  3. **Validation** — warn when a Dialogflow-matched label disagrees with the model
-
-  ## Usage
-
-      mix rebuild_gold_standard              # Dry-run (prints summary only)
-      mix rebuild_gold_standard --save       # Write rebuilt gold standard
-      mix rebuild_gold_standard --verbose    # Show per-entry details
+      mix rebuild_gold_standard                 # dry run, prints the summary
+      mix rebuild_gold_standard --save          # write it
       mix rebuild_gold_standard --save --verbose
+
+  ## What changed, and why (task 079)
+
+  The previous implementation had a three-layer strategy whose **layer 2 asked
+  the intent classifier for a label and wrote the answer as gold** whenever the
+  model was at least 70% confident, with no field distinguishing it from a
+  human- or Dialogflow-anchored label. Measured afterwards: of 4,870 entries,
+  exactly one carried a `status`. The rest were indistinguishable from ground
+  truth whatever produced them.
+
+  What that did to the corpus, measured against
+  `gold_standard.pre-rebuild.json`:
+
+    * 2,398 of 4,867 shared texts had their label changed
+    * **83 labels were destroyed**, 79 of them real Dialogflow intents --
+      `smalltalk.greetings.goodnight`, `.goodmorning`, `.goodevening`,
+      `.nice_to_meet_you` all collapsed into `smalltalk.greet`;
+      `smarthome.device.volume.mute` and `.unmute` into `smarthome.switch`
+    * 405 texts were dropped entirely
+    * the taxonomy fell from 208 labels to 137
+
+  Layer 2 is gone. No model is consulted anywhere in this task. A text with no
+  Dialogflow anchor is not written at all, because there is no longer any
+  mechanism that could invent a label for it.
+
+  ## It now iterates Dialogflow, not the old gold standard
+
+  The previous version walked the *existing* gold standard and relabelled what
+  it found there, so it could never recover a text an earlier run had dropped,
+  and it inherited whatever that run had left behind. This walks
+  `data/intents/*_usersays_en.json` -- 5,274 distinct normalised texts, which
+  covers 100% of both the current and the pre-rebuild corpora.
+
+  ## The label comes from the filename
+
+  Two readers of `data/intents/` disagreed. This task read the `"name"` field
+  of the paired metadata file and downcased it; `.claude/corpus/build_corpus.py`
+  used the filename stem. They produce different strings for the same intent,
+  and the metadata route silently dropped the two usersays files that have no
+  paired metadata (`weather.query`, `test.intent.promotion`).
+
+  The filename is now authoritative, because that is what `utterances.json`,
+  `axis_sample.exs` and every task 081/082 measurement already key on. A
+  ` - context:...` suffix is stripped: per Austin, a hyphenated name is a subset
+  of the unhyphenated one. 273 Dialogflow names reduce to 230 roots this way.
+
+  ## The lights -> device fold
+
+  `smarthome.lights.X` is written as `smarthome.device.X`. Austin's ruling:
+  lights are a specialization of device, and the text alone cannot separate them
+  -- `"brightness up"` is filed under both in Dialogflow. 24 `lights.*` roots
+  fold, 17 onto existing `device.*` roots and 7 creating
+  `device.{hue,saturation}.*`.
+
+  This is also what resolves most of the genuine ambiguities: of 108 texts that
+  map to more than one intent file, the large majority are a `device`/`lights`
+  pair that becomes one label after folding.
+
+  ## Provenance per entry
+
+  Every entry carries `labeled_by` and `source_file`. A gold standard that
+  cannot say where a label came from cannot be trusted, and its absence is
+  exactly what made the layer-2 damage invisible for months.
   """
 
   use Mix.Task
-  require Logger
 
-  alias Brain.Analysis.{FeatureExtractor, Pipeline}
-  alias Brain.ML.{EvaluationStore, MicroClassifiers}
+  alias Brain.ML.EvaluationStore
 
-  @dialogflow_dir Path.join(["data", "intents"])
+  @requirements ["app.config"]
+
+  @switches [save: :boolean, verbose: :boolean]
+
+  @usersays_suffix "_usersays_en.json"
+  @lights_prefix "smarthome.lights."
+  @device_prefix "smarthome.device."
 
   @impl Mix.Task
   def run(args) do
-    Mix.Task.run("app.start")
+    {opts, positional, invalid} = OptionParser.parse(args, strict: @switches)
 
-    save? = "--save" in args
-    verbose? = "--verbose" in args
+    if invalid != [], do: Mix.raise("rebuild_gold_standard: unknown options #{inspect(invalid)}")
 
-    IO.puts("\nAwaiting MicroClassifiers readiness...")
-    MicroClassifiers.await_ready(:infinity)
-    IO.puts("MicroClassifiers ready.\n")
+    if positional != [],
+      do: Mix.raise("rebuild_gold_standard: unexpected arguments #{inspect(positional)}")
 
-    IO.puts(String.duplicate("=", 60))
-    IO.puts("REBUILD INTENT GOLD STANDARD")
-    IO.puts(String.duplicate("=", 60) <> "\n")
+    save? = opts[:save] || false
+    verbose? = opts[:verbose] || false
 
-    dialogflow_map = load_dialogflow_phrases()
-    IO.puts("  Dialogflow: #{map_size(dialogflow_map)} unique phrases loaded\n")
+    banner("REBUILD INTENT GOLD STANDARD (Dialogflow only)")
 
-    gold = EvaluationStore.load_gold_standard("intent")
+    phrases = load_dialogflow!()
+    Mix.shell().info("  #{length(phrases)} usersays phrases across #{count_files(phrases)} intent files")
 
-    if gold == [] do
-      Mix.raise("No gold standard data found. Cannot rebuild.")
-    end
+    {entries, conflicts} = build_entries(phrases)
 
-    IO.puts("  Gold standard: #{length(gold)} entries\n")
-
-    {rebuilt, stats} = rebuild(gold, dialogflow_map, verbose?)
-
-    print_summary(stats, length(gold))
+    report(entries, conflicts, verbose?)
 
     if save? do
-      write_output(rebuilt)
+      write_output!(entries)
+      write_conflict_report!(conflicts)
     else
-      IO.puts("  Dry-run mode. Use --save to write the rebuilt file.\n")
+      Mix.shell().info("\n  Dry run. Pass --save to write.\n")
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Dialogflow loading
-  # ---------------------------------------------------------------------------
+  # -- loading ----------------------------------------------------------------
 
-  defp load_dialogflow_phrases do
-    usersays_files = Path.wildcard(Path.join(@dialogflow_dir, "*_usersays_en.json"))
+  defp load_dialogflow! do
+    dir = Brain.data_path("intents")
 
-    Enum.reduce(usersays_files, %{}, fn usersays_path, acc ->
-      metadata_path = derive_metadata_path(usersays_path)
-      intent_label = read_intent_label(metadata_path)
+    unless File.dir?(dir) do
+      Mix.raise("rebuild_gold_standard: no Dialogflow export at #{dir}")
+    end
 
-      case intent_label do
-        nil ->
-          Logger.warning("No metadata for #{Path.basename(usersays_path)}, skipping")
-          acc
+    files = Path.wildcard(Path.join(dir, "*" <> @usersays_suffix))
 
-        label ->
-          phrases = read_usersays(usersays_path)
+    if files == [] do
+      Mix.raise("rebuild_gold_standard: no *#{@usersays_suffix} files under #{dir}")
+    end
 
-          Enum.reduce(phrases, acc, fn phrase, inner_acc ->
-            key = phrase |> String.downcase() |> String.trim()
-            Map.put_new(inner_acc, key, label)
-          end)
+    fallbacks = fallback_intents(dir)
+
+    phrases =
+      files
+      |> Enum.reject(fn path -> Path.basename(path, @usersays_suffix) in fallbacks end)
+      |> Enum.flat_map(fn path ->
+        label = path |> Path.basename(@usersays_suffix) |> root_label() |> fold_lights()
+        source = Path.basename(path)
+
+        path
+        |> read_phrases!()
+        |> Enum.map(fn text -> %{text: text, norm: normalise(text), label: label, source_file: source} end)
+      end)
+
+    validate_labels!(phrases)
+
+    phrases
+  end
+
+  # Dialogflow's own `fallbackIntent: true` marks the no-match case. It is the
+  # absence of an intent by definition, so its phrases are not training data for
+  # intent classification. This is read out of the export rather than matched
+  # against a name: "Default Fallback Intent" is only its display name, and a
+  # project can rename it.
+  #
+  # Note that `events` is deliberately *not* used as a discriminator, though it
+  # looks like one. `smalltalk.greetings.hello` carries
+  # `events: [{"name": "GOOGLE_ASSISTANT_WELCOME"}]` and is a real intent with
+  # many phrases, so "is triggered by a platform event" and "is not a
+  # classification target" are different properties.
+  defp fallback_intents(dir) do
+    Path.join(dir, "*.json")
+    |> Path.wildcard()
+    |> Enum.reject(&String.ends_with?(&1, @usersays_suffix))
+    |> Enum.filter(fn path ->
+      case path |> File.read!() |> Jason.decode() do
+        {:ok, %{"fallbackIntent" => true}} -> true
+        _ -> false
       end
     end)
+    |> Enum.map(&Path.basename(&1, ".json"))
+    |> MapSet.new()
   end
 
-  defp derive_metadata_path(usersays_path) do
-    usersays_path
-    |> String.replace("_usersays_en.json", ".json")
-  end
+  # A label must be a dotted lowercase identifier of at least two parts:
+  # a domain and something it does. A single bare word names a domain with no
+  # action, and a display name like "Default Welcome Intent" is not an intent
+  # path at all -- neither can be placed in the taxonomy, and placing one anyway
+  # means inventing a mapping. That is how `cleanup_gold_standard` accumulated
+  # 123 hardcoded rename rules whose `@smarthome_consolidation` block reproduces
+  # 96.2% of the collapse task 079 blamed on a classifier.
+  #
+  # No upper bound on depth. Austin described the taxonomy as two to four parts,
+  # but the export contains legitimate five-part intents
+  # (`smarthome.device.switch.schedule.off`,
+  # `smarthome.device.brightness.check.implicit`), so enforcing four would reject
+  # 16 real intents on a literal reading of a description. Whether the depth
+  # should be capped is a question about the taxonomy, not something this loader
+  # gets to decide.
+  #
+  # So this raises and names the offenders instead. The fix belongs in the
+  # export, where the intent is actually named.
+  defp validate_labels!(phrases) do
+    offenders =
+      phrases
+      |> Enum.group_by(& &1.label)
+      |> Enum.reject(fn {label, _} -> dotted_intent?(label) end)
+      |> Enum.map(fn {label, rows} ->
+        sources = rows |> Enum.map(& &1.source_file) |> Enum.uniq() |> Enum.sort()
+        "  #{String.pad_trailing(inspect(label), 32)} #{length(rows)} phrases, from #{length(sources)} file(s): #{Enum.join(Enum.take(sources, 2), ", ")}"
+      end)
+      |> Enum.sort()
 
-  defp read_intent_label(metadata_path) do
-    case File.read(metadata_path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, %{"name" => name}} ->
-            name
-            |> String.downcase()
-            |> String.replace(~r/\s+/, "_")
+    if offenders != [] do
+      Mix.raise("""
+      rebuild_gold_standard: #{length(offenders)} label(s) are not dotted intent paths.
 
-          _ ->
-            nil
-        end
+      #{Enum.join(offenders, "\n")}
 
-      {:error, _} ->
-        nil
+      An intent label must be a dotted lowercase identifier of at least two parts:
+      a domain and something it does. A bare domain names no action, and a display
+      name is not an intent path. Guessing where these belong is the
+      hardcoded-rename-map pattern this rebuild exists to remove.
+
+      Fix them in data/intents/ -- rename the intent, or delete the export files
+      if they are leftovers -- then run this again.
+      """)
     end
   end
 
-  defp read_usersays(path) do
-    case File.read(path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, entries} when is_list(entries) ->
-            Enum.map(entries, fn entry ->
-              entry
-              |> Map.get("data", [])
-              |> Enum.map_join(&Map.get(&1, "text", ""))
-            end)
+  defp dotted_intent?(label) do
+    parts = String.split(label, ".")
 
-          _ ->
-            []
+    length(parts) >= 2 and
+      Enum.all?(parts, fn part -> part != "" and Regex.match?(~r/^[a-z0-9_]+$/, part) end)
+  end
+
+  defp read_phrases!(path) do
+    entries =
+      case path |> File.read!() |> Jason.decode() do
+        {:ok, list} when is_list(list) ->
+          list
+
+        other ->
+          Mix.raise("rebuild_gold_standard: #{path} is not a JSON array: #{inspect(other) |> String.slice(0, 120)}")
+      end
+
+    entries
+    |> Enum.map(fn entry ->
+      entry
+      |> Map.get("data", [])
+      |> Enum.map_join(fn segment -> Map.get(segment, "text", "") end)
+    end)
+    |> Enum.reject(&(String.trim(&1) == ""))
+  end
+
+  # `account.balance.check - context: account` -> `account.balance.check`.
+  # Austin's rule: anything with a hyphenated suffix is a subset of the version
+  # without it, so the suffix names a context, not a distinct intent.
+  defp root_label(name), do: name |> String.split(" - ") |> List.first() |> String.trim()
+
+  defp fold_lights(@lights_prefix <> rest), do: @device_prefix <> rest
+  defp fold_lights(label), do: label
+
+  defp normalise(text), do: text |> String.trim() |> String.downcase() |> String.replace(~r/\s+/, " ")
+
+  # -- building ---------------------------------------------------------------
+
+  defp build_entries(phrases) do
+    grouped = Enum.group_by(phrases, & &1.norm)
+
+    {entries, conflicts} =
+      grouped
+      |> Enum.sort_by(fn {norm, _} -> norm end)
+      |> Enum.map_reduce([], fn {_norm, occurrences}, conflicts ->
+        labels = occurrences |> Enum.map(& &1.label) |> Enum.uniq() |> Enum.sort()
+        first = hd(occurrences)
+        sources = occurrences |> Enum.map(& &1.source_file) |> Enum.uniq() |> Enum.sort()
+
+        case labels do
+          [label] ->
+            entry = %{
+              "text" => first.text,
+              "intent" => label,
+              "labeled_by" => "dialogflow",
+              "source_file" => hd(sources)
+            }
+
+            {entry, conflicts}
+
+          _many ->
+            # Genuinely ambiguous even after folding: the same sentence is filed
+            # under two intents that are not a device/lights pair. Written as
+            # needs_review with every candidate kept, never resolved by guessing
+            # -- resolving it by asking a model is precisely what produced the
+            # corpus this task is repairing.
+            entry = %{
+              "text" => first.text,
+              "intent" => hd(labels),
+              "labeled_by" => "dialogflow",
+              "source_file" => hd(sources),
+              "status" => "needs_review",
+              "candidates" => labels
+            }
+
+            {entry, [%{text: first.text, candidates: labels, sources: sources} | conflicts]}
         end
+      end)
 
-      {:error, _} ->
-        []
+    {entries, Enum.reverse(conflicts)}
+  end
+
+  # -- reporting --------------------------------------------------------------
+
+  defp report(entries, conflicts, verbose?) do
+    labels = entries |> Enum.map(& &1["intent"]) |> Enum.uniq()
+    review = Enum.count(entries, &Map.has_key?(&1, "status"))
+
+    counts = entries |> Enum.frequencies_by(& &1["intent"])
+    sorted = counts |> Map.values() |> Enum.sort()
+    median = Enum.at(sorted, div(length(sorted), 2))
+
+    Mix.shell().info("")
+    Mix.shell().info("  entries              #{length(entries)}")
+    Mix.shell().info("  distinct labels      #{length(labels)}")
+    Mix.shell().info("  needs_review         #{review}")
+    Mix.shell().info("  median per label     #{median}")
+    Mix.shell().info("  labels with <10      #{Enum.count(sorted, &(&1 < 10))}")
+
+    compare_to_pre_rebuild(entries)
+
+    if verbose? and conflicts != [] do
+      Mix.shell().info("\n  Ambiguous after the lights -> device fold:")
+
+      Enum.each(conflicts, fn c ->
+        Mix.shell().info("    #{String.pad_trailing(String.slice(c.text, 0, 44), 46)} #{inspect(c.candidates)}")
+      end)
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Rebuild logic
-  # ---------------------------------------------------------------------------
+  # The pre-rebuild snapshot is an independent witness: it predates the layer-2
+  # contamination and preserves the fine-grained taxonomy. Agreement with it is
+  # the acceptance number task 079 could not specify, because it did not know
+  # the file existed.
+  defp compare_to_pre_rebuild(entries) do
+    path = Path.join(Path.dirname(EvaluationStore.gold_standard_path("intent")), "gold_standard.pre-rebuild.json")
 
-  defp rebuild(gold, dialogflow_map, verbose?) do
-    total = length(gold)
+    if File.exists?(path) do
+      pre =
+        path
+        |> File.read!()
+        |> Jason.decode!()
+        |> Map.new(fn row -> {normalise(row["text"]), fold_lights(row["intent"])} end)
 
-    {entries, stats} =
-      gold
-      |> Enum.with_index(1)
-      |> Enum.map_reduce(
-        %{dialogflow_matched: 0, model_labeled: 0, needs_review: 0, validation_warnings: 0},
-        fn {example, idx}, stats ->
-          if rem(idx, 500) == 0, do: IO.write("\r  Progress: #{idx}/#{total}")
+      shared =
+        entries
+        |> Enum.map(fn e -> {normalise(e["text"]), e["intent"]} end)
+        |> Enum.filter(fn {norm, _} -> Map.has_key?(pre, norm) end)
 
-          text = example["text"]
-          key = text |> String.downcase() |> String.trim()
+      agree = Enum.count(shared, fn {norm, label} -> Map.fetch!(pre, norm) == label end)
+      total = length(shared)
 
-          case Map.get(dialogflow_map, key) do
-            nil ->
-              layer2_result(text, example, stats, verbose?)
+      Mix.shell().info("")
+      Mix.shell().info("  vs gold_standard.pre-rebuild.json (folded the same way):")
+      Mix.shell().info("    shared texts       #{total}")
 
-            df_label ->
-              entry = %{"text" => text, "intent" => df_label}
-              stats = Map.update!(stats, :dialogflow_matched, &(&1 + 1))
-
-              stats = validate_against_model(text, df_label, stats, verbose?)
-
-              if verbose? do
-                IO.puts("  [dialogflow] \"#{truncate(text, 50)}\" => #{df_label}")
-              end
-
-              {entry, stats}
-          end
-        end
+      Mix.shell().info(
+        "    agree              #{agree} (#{Float.round(agree * 100 / max(total, 1), 1)}%)"
       )
-
-    if total >= 500, do: IO.write("\r  Progress: #{total}/#{total}\n")
-
-    {entries, stats}
-  end
-
-  defp layer2_result(text, _example, stats, verbose?) do
-    {label, confidence} = classify_with_model(text)
-
-    if confidence >= 0.7 do
-      entry = %{"text" => text, "intent" => label}
-      stats = Map.update!(stats, :model_labeled, &(&1 + 1))
-
-      if verbose? do
-        IO.puts(
-          "  [model #{Float.round(confidence * 100, 1)}%] \"#{truncate(text, 50)}\" => #{label}"
-        )
-      end
-
-      {entry, stats}
     else
-      entry = %{"text" => text, "intent" => label, "status" => "needs_review"}
-      stats = Map.update!(stats, :needs_review, &(&1 + 1))
-
-      if verbose? do
-        IO.puts(
-          "  [needs_review #{Float.round(confidence * 100, 1)}%] \"#{truncate(text, 50)}\" => #{label}"
-        )
-      end
-
-      {entry, stats}
+      Mix.shell().info("\n  (no pre-rebuild snapshot at #{path} to cross-check against)")
     end
   end
 
-  defp validate_against_model(text, df_label, stats, verbose?) do
-    {model_label, _confidence} = classify_with_model(text)
+  defp count_files(phrases), do: phrases |> Enum.map(& &1.source_file) |> Enum.uniq() |> length()
 
-    if model_label != df_label do
-      stats = Map.update!(stats, :validation_warnings, &(&1 + 1))
+  # -- output -----------------------------------------------------------------
 
-      if verbose? do
-        Logger.warning(
-          "Label mismatch: \"#{truncate(text, 40)}\" dialogflow=#{df_label} model=#{model_label}"
-        )
-      end
+  defp write_output!(entries) do
+    path = EvaluationStore.gold_standard_path("intent")
 
-      stats
-    else
-      stats
-    end
-  end
-
-  defp classify_with_model(text) do
-    analysis = Pipeline.analyze_chunk(text, side_effects: false)
-    {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
-
-    case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
-      {:ok, label, confidence} -> {to_string(label), confidence}
-      _ -> {"unknown", 0.0}
-    end
-  rescue
-    e ->
-      Logger.warning("Classification failed for \"#{truncate(text, 40)}\": #{Exception.message(e)}")
-      {"unknown", 0.0}
-  catch
-    :exit, reason ->
-      Logger.warning("Classification exit for \"#{truncate(text, 40)}\": #{inspect(reason)}")
-      {"unknown", 0.0}
-  end
-
-  # ---------------------------------------------------------------------------
-  # Output
-  # ---------------------------------------------------------------------------
-
-  defp print_summary(stats, total) do
-    IO.puts("\n--- Rebuild Summary ---\n")
-    IO.puts("  Total entries:          #{total}")
-    IO.puts("  Dialogflow matched:     #{stats.dialogflow_matched}")
-    IO.puts("  Model labeled (>=0.7):  #{stats.model_labeled}")
-    IO.puts("  Needs review:           #{stats.needs_review}")
-    IO.puts("  Validation warnings:    #{stats.validation_warnings}")
-
-    pct_anchored = Float.round(stats.dialogflow_matched / max(total, 1) * 100, 1)
-    IO.puts("\n  Dialogflow coverage:    #{pct_anchored}%\n")
-  end
-
-  defp write_output(entries) do
-    output_path = EvaluationStore.gold_standard_path("intent")
-    backup_path = output_path <> ".bak"
-
-    if File.exists?(output_path) do
-      File.cp!(output_path, backup_path)
-      IO.puts("  Backed up original to: #{backup_path}")
+    if File.exists?(path) do
+      stamp = DateTime.utc_now() |> DateTime.to_iso8601() |> String.replace(":", "-")
+      backup = "#{path}.#{stamp}.bak"
+      File.cp!(path, backup)
+      Mix.shell().info("\n  Backed up to #{backup}")
     end
 
-    json = Jason.encode!(entries, pretty: true)
-    File.write!(output_path, json)
-    IO.puts("  Wrote #{length(entries)} entries to: #{output_path}\n")
+    File.write!(path, Jason.encode!(entries, pretty: true) <> "\n")
+    Mix.shell().info("  Wrote #{length(entries)} entries to #{path}")
   end
 
-  defp truncate(text, max_len) do
-    if String.length(text) > max_len do
-      String.slice(text, 0, max_len) <> "..."
-    else
-      text
-    end
+  defp write_conflict_report!(conflicts) do
+    path =
+      EvaluationStore.gold_standard_path("intent")
+      |> Path.dirname()
+      |> Path.join("ambiguous_texts.json")
+
+    File.write!(path, Jason.encode!(conflicts, pretty: true) <> "\n")
+    Mix.shell().info("  Wrote #{length(conflicts)} ambiguous texts to #{path}\n")
+  end
+
+  defp banner(title) do
+    Mix.shell().info("")
+    Mix.shell().info(String.duplicate("=", 64))
+    Mix.shell().info(title)
+    Mix.shell().info(String.duplicate("=", 64))
   end
 end
