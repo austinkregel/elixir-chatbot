@@ -1,14 +1,14 @@
 {
-  "question": "unknown",
+  "apology": "smalltalk.dialog.sorry",
+  "assertive": "unknown",
   "command": "unknown",
+  "compliment": "smalltalk.user.likes_agent",
+  "default": "unknown",
+  "expressive": "unknown",
+  "farewell": "smalltalk.greetings.bye",
+  "greeting": "smalltalk.greetings.hello",
+  "question": "unknown",
   "request_action": "unknown",
   "request_information": "unknown",
-  "greeting": "smalltalk.greet",
-  "farewell": "smalltalk.farewell",
-  "thanks": "smalltalk.thanks",
-  "apology": "smalltalk.apology",
-  "compliment": "smalltalk.compliment",
-  "expressive": "smalltalk.acknowledgment",
-  "assertive": "unknown",
-  "default": "unknown"
+  "thanks": "smalltalk.appraisal.thank_you"
 }
