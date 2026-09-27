@@ -47,6 +47,41 @@
     "required": [],
     "speech_act": "self_expression"
   },
+  "smarthome.device.brightness.down.implicit": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Dim a device after the user says it is too bright",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-brightness"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "request"
+  },
   "meta.self_knowledge": {
     "category": "directive",
     "clarification_templates": {},
@@ -61,9 +96,59 @@
     "required": [],
     "speech_act": "request_information"
   },
+  "smarthome.device.brightness.check.implicit": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Ask whether a device is too dark or bright enough",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "room",
+      "all",
+      "device"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
   "smalltalk.agent.busy": {
     "category": "expressive",
     "clarification_templates": {},
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smalltalk.greetings.whatsup": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User greets the agent informally",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "greeting"
+  },
+  "smalltalk.agent.clever": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User compliments the agent's intelligence",
     "domain": "smalltalk",
     "entity_mappings": {},
     "input_contexts": [],
@@ -178,6 +263,53 @@
     "required": [],
     "speech_act": "general"
   },
+  "smarthome.device.switch.check.off": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Check whether a device is off",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-switch"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "smalltalk.greetings.nice_to_talk_to_you": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User says it was nice talking, closing the conversation",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "farewell"
+  },
   "smalltalk.agent.occupation": {
     "category": "expressive",
     "clarification_templates": {},
@@ -225,6 +357,44 @@
     "required": [],
     "speech_act": "request_information"
   },
+  "smarthome.device.hue.down": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Lower the hue of a light",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "change-value": [
+        "sys.number"
+      ],
+      "color": [
+        "color"
+      ],
+      "device": [
+        "lights"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "change-value",
+      "final-value",
+      "device",
+      "color",
+      "room",
+      "all"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
+  },
   "reminder.create": {
     "category": "directive",
     "clarification_templates": {
@@ -271,6 +441,126 @@
     "required": [],
     "speech_act": "general"
   },
+  "smarthome.device.hue.set": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Set the hue of a light to a specific value or color",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "color": [
+        "color"
+      ],
+      "device": [
+        "lights"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "color",
+      "room",
+      "final-value",
+      "all"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smarthome.device.brightness.up": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Raise the brightness of a device",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "change-value": [
+        "sys.number"
+      ],
+      "device": [
+        "device"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "change-value",
+      "final-value",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-brightness"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smarthome.device.brightness.down": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Lower the brightness of a device",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "change-value": [
+        "sys.number"
+      ],
+      "device": [
+        "device"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "change-value",
+      "final-value",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "room"
+      },
+      {
+        "lifespan": 5,
+        "name": "device-brightness"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
   "status.report": {
     "category": "directive",
     "clarification_templates": {},
@@ -288,6 +578,18 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "request_information"
+  },
+  "smalltalk.greetings.hello": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User greets the agent",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "greeting"
   },
   "music.player.skip_forward": {
     "category": "directive",
@@ -316,6 +618,47 @@
       }
     ],
     "required": []
+  },
+  "smarthome.heating.set": {
+    "category": "directive",
+    "clarification_templates": {
+      "final-value": "How much?"
+    },
+    "description": "Set the heating or thermostat to a specific temperature",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "heating"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "final-value",
+      "device",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "heating"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
   },
   "smalltalk.user.tired": {
     "category": "expressive",
@@ -425,6 +768,36 @@
     "required": [],
     "speech_act": "request"
   },
+  "smarthome.device.brightness.check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Check the current brightness level of a device",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device"
+      ],
+      "room": [
+        "room"
+      ],
+      "value": [
+        "sys.number"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room",
+      "value",
+      "all"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
   "smalltalk.user.joking": {
     "category": "expressive",
     "clarification_templates": {},
@@ -447,6 +820,56 @@
     "required": [],
     "speech_act": "general"
   },
+  "smarthome.heating.switch.off": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Turn the heating off",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "room",
+      "all"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smarthome.device.switch": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Apply a pending switch command to another device or change its color",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "color": [
+        "color"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "color"
+      }
+    ],
+    "optional": [
+      "color"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 1,
+        "name": "color"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
   "smalltalk.user.will_be_back": {
     "category": "expressive",
     "clarification_templates": {},
@@ -458,6 +881,33 @@
     "required": [],
     "speech_act": "self_expression"
   },
+  "smarthome.device.volume.mute": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Mute a device",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "device": [
+        "device-volume"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "room",
+      "device"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-volume"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
   "smalltalk.user.does_not_want_to_talk": {
     "category": "expressive",
     "clarification_templates": {},
@@ -468,6 +918,32 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "self_expression"
+  },
+  "smarthome.device.volume.mute.implicit": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Mute a device after the user says its sound is disturbing them",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device-volume"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "all",
+      "room"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
   },
   "smalltalk.appraisal.welcome": {
     "category": "expressive",
@@ -491,6 +967,82 @@
     "optional": [
       "direction",
       "amount"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smarthome.locks.open": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {
+      "lock": "door"
+    },
+    "description": "Open a door or window",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "lock": [
+        "lock"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "lock",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "schedule"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smarthome.device.hue.up": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Raise the hue of a light",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "change-value": [
+        "sys.number"
+      ],
+      "color": [
+        "color"
+      ],
+      "device": [
+        "lights"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "change-value",
+      "final-value",
+      "color",
+      "room",
+      "all",
+      "device"
     ],
     "output_contexts": [],
     "required": [],
@@ -559,6 +1111,34 @@
     ],
     "required": []
   },
+  "smarthome.device.volume": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Continue a volume adjustment with another device, room, direction, or level",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "device": [
+        "device-volume"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "device-volume"
+      }
+    ],
+    "optional": [
+      "device"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-volume"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
   "music.player.play": {
     "category": "directive",
     "clarification_templates": {},
@@ -586,6 +1166,18 @@
       }
     ],
     "required": []
+  },
+  "smalltalk.dialog.sorry": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User apologizes to the agent",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "apology"
   },
   "smalltalk.user.going_to_bed": {
     "category": "expressive",
@@ -643,6 +1235,37 @@
     "required": [],
     "speech_act": "apology"
   },
+  "smarthome.heating.down.implicit": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "description": "Report that it is too hot, implying the heating should come down",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "all",
+      "room"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "heating"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "statement"
+  },
   "timer.check": {
     "category": "directive",
     "clarification_templates": {},
@@ -661,6 +1284,37 @@
     "required": [],
     "speech_act": "request_information"
   },
+  "smarthome.heating.up.implicit": {
+    "category": "assertive",
+    "clarification_templates": {},
+    "description": "Report that it is too cold, implying the heating should go up",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "heating"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "statement"
+  },
   "smarthome.device_set": {
     "category": "directive",
     "clarification_templates": {
@@ -670,9 +1324,17 @@
     "description": "Set a smart device to a specific value",
     "domain": "smarthome",
     "entity_mappings": {
-      "device": ["device", "appliance"],
-      "location": ["location", "room"],
-      "number": ["number"]
+      "device": [
+        "device",
+        "appliance"
+      ],
+      "location": [
+        "location",
+        "room"
+      ],
+      "number": [
+        "number"
+      ]
     },
     "input_contexts": [
       {
@@ -680,9 +1342,13 @@
         "name": "room"
       }
     ],
-    "optional": ["location"],
+    "optional": [
+      "location"
+    ],
     "output_contexts": [],
-    "required": ["device"],
+    "required": [
+      "device"
+    ],
     "speech_act": "command"
   },
   "calendar.query": {
@@ -791,6 +1457,40 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "self_expression"
+  },
+  "smarthome.device.saturation.check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Check the current saturation of a light",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "color": [
+        "color"
+      ],
+      "device": [
+        "lights"
+      ],
+      "room": [
+        "room"
+      ],
+      "value": [
+        "sys.number"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "room",
+      "value",
+      "all",
+      "color",
+      "device"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
   },
   "display.enhance": {
     "category": "directive",
@@ -910,6 +1610,28 @@
     "required": [],
     "speech_act": "request"
   },
+  "smarthome.device.volume.unmute.implicit": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Unmute a device after the user says they cannot hear it",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "device": [
+        "device-volume"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
   "smalltalk.agent.age": {
     "category": "expressive",
     "clarification_templates": {},
@@ -1000,6 +1722,65 @@
       }
     ],
     "required": []
+  },
+  "smalltalk.greetings.goodnight": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User says good night when leaving",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "farewell"
+  },
+  "smarthome.heating.up": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Raise the heating or target temperature",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "change-value": [
+        "sys.number"
+      ],
+      "device": [
+        "heating"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room",
+      "change-value",
+      "final-value",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "heating"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      },
+      {
+        "lifespan": 3,
+        "name": "schedule"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
   },
   "weather.query": {
     "category": "directive",
@@ -1108,6 +1889,53 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "request"
+  },
+  "smalltalk.greetings.nice_to_meet_you": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User says it is nice to meet the agent",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "greeting"
+  },
+  "smarthome.device.switch.check.on": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Check whether a device is on",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-switch"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "request_information"
   },
   "music.player.resume": {
     "category": "directive",
@@ -1303,6 +2131,33 @@
     "required": [],
     "speech_act": "thanks"
   },
+  "smarthome.device.volume.check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Check the current volume level of a device",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "device": [
+        "device-volume"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "volume-check"
+      }
+    ],
+    "required": [],
+    "speech_act": "request_information"
+  },
   "smalltalk.user.misses_agent": {
     "category": "expressive",
     "clarification_templates": {},
@@ -1354,8 +2209,14 @@
     "description": "Turn a smart device on or off",
     "domain": "smarthome",
     "entity_mappings": {
-      "device": ["device", "appliance"],
-      "location": ["location", "room"]
+      "device": [
+        "device",
+        "appliance"
+      ],
+      "location": [
+        "location",
+        "room"
+      ]
     },
     "input_contexts": [
       {
@@ -1367,7 +2228,9 @@
         "name": "room"
       }
     ],
-    "optional": ["location"],
+    "optional": [
+      "location"
+    ],
     "output_contexts": [
       {
         "lifespan": 5,
@@ -1386,7 +2249,32 @@
         "name": "schedule"
       }
     ],
-    "required": ["device"],
+    "required": [
+      "device"
+    ],
+    "speech_act": "command"
+  },
+  "smarthome.heating": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Adjust the heating to a temperature given as a follow-up",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "final-value": [
+        "sys.number"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "heating"
+      }
+    ],
+    "optional": [
+      "final-value"
+    ],
+    "output_contexts": [],
+    "required": [],
     "speech_act": "command"
   },
   "smalltalk.agent.boss": {
@@ -1400,6 +2288,51 @@
     "required": [],
     "speech_act": "general"
   },
+  "smarthome.device.switch.off": {
+    "category": "directive",
+    "clarification_templates": {
+      "device": "Which device?"
+    },
+    "description": "Turn a device off",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-switch"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      },
+      {
+        "lifespan": 3,
+        "name": "check"
+      },
+      {
+        "lifespan": 3,
+        "name": "schedule"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
   "smalltalk.dialog.i_do_not_care": {
     "category": "expressive",
     "clarification_templates": {},
@@ -1410,6 +2343,47 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "general"
+  },
+  "smarthome.device.brightness.set": {
+    "category": "directive",
+    "clarification_templates": {
+      "final-value": "How much?"
+    },
+    "description": "Set the brightness of a device to a specific level",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "final-value",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "room"
+      },
+      {
+        "lifespan": 5,
+        "name": "device-brightness"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
   },
   "smalltalk.acknowledgment": {
     "category": "expressive",
@@ -1516,6 +2490,41 @@
     "required": [],
     "speech_act": "self_expression"
   },
+  "smarthome.heating.check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Check the current temperature or heating level",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "heating"
+      ],
+      "room": [
+        "room"
+      ],
+      "value": [
+        "sys.number"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room",
+      "value",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "heating"
+      }
+    ],
+    "required": [],
+    "speech_act": "request_information"
+  },
   "smalltalk.agent.ready": {
     "category": "expressive",
     "clarification_templates": {},
@@ -1526,6 +2535,113 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "general"
+  },
+  "smarthome.heating.down": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Lower the heating or target temperature",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "change-value": [
+        "sys.number"
+      ],
+      "device": [
+        "heating"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room",
+      "change-value",
+      "final-value",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "heating"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      },
+      {
+        "lifespan": 3,
+        "name": "schedule"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smarthome.device.volume.check.implicit": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Ask whether a device is too loud",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device-volume"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "all",
+      "room"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "smalltalk.user.likes_agent": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User expressing they like the agent",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "self_expression"
+  },
+  "smarthome.heating.switch.on": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Turn the heating on",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "room",
+      "all"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
   },
   "smalltalk.agent.fired": {
     "category": "expressive",
@@ -1569,6 +2685,41 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "request"
+  },
+  "smarthome.device.volume.up": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Raise the volume of a device",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "change-value": [
+        "sys.number"
+      ],
+      "device": [
+        "device-volume"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room",
+      "change-value",
+      "final-value"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-volume"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
   },
   "meta.memory_check": {
     "category": "directive",
@@ -1638,6 +2789,84 @@
     ],
     "required": [],
     "speech_act": "request"
+  },
+  "smarthome.device.volume.set": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Set the volume of a device to a specific level",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "device": [
+        "device-volume"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "final-value",
+      "room"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-volume"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smalltalk.greetings.nice_to_see_you": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User says it is nice to see the agent",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "greeting"
+  },
+  "smarthome.locks.lock": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Lock a door or window",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "lock": [
+        "lock"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "lock",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "schedule"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
   },
   "smalltalk.agent.answer_my_question": {
     "category": "expressive",
@@ -1729,6 +2958,18 @@
     "required": [],
     "speech_act": "self_expression"
   },
+  "smalltalk.appraisal.no_problem": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User says there is no problem",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "appraisal"
+  },
   "smarthome.device_up": {
     "category": "directive",
     "clarification_templates": {},
@@ -1752,6 +2993,32 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "request"
+  },
+  "smarthome.locks.check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Check the status of doors or windows",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "lock": [
+        "lock"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "lock",
+      "room",
+      "all"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
   },
   "smalltalk.agent.hungry": {
     "category": "expressive",
@@ -1817,6 +3084,44 @@
     ],
     "required": []
   },
+  "smarthome.device.saturation.up": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Raise the saturation of a light",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "change-value": [
+        "sys.number"
+      ],
+      "color": [
+        "color"
+      ],
+      "device": [
+        "lights"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "final-value",
+      "change-value",
+      "device",
+      "color",
+      "room",
+      "all"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
+  },
   "music.player.shuffle": {
     "category": "directive",
     "clarification_templates": {},
@@ -1844,6 +3149,18 @@
       }
     ],
     "required": []
+  },
+  "smalltalk.agent.funny": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User tells the agent it is funny",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
   },
   "music.player.stop": {
     "category": "directive",
@@ -1873,6 +3190,93 @@
     ],
     "required": []
   },
+  "smarthome.device.switch.on": {
+    "category": "directive",
+    "clarification_templates": {
+      "device": "Which device?"
+    },
+    "description": "Turn a device on",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-switch"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      },
+      {
+        "lifespan": 3,
+        "name": "schedule"
+      },
+      {
+        "lifespan": 3,
+        "name": "check"
+      },
+      {
+        "lifespan": 5,
+        "name": "device-brightness"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smarthome.device.saturation.down": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Lower the saturation of a light",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "change-value": [
+        "sys.number"
+      ],
+      "color": [
+        "color"
+      ],
+      "device": [
+        "lights"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "final-value",
+      "change-value",
+      "device",
+      "color",
+      "room",
+      "all"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
+  },
   "smalltalk.agent.boring": {
     "category": "expressive",
     "clarification_templates": {},
@@ -1894,6 +3298,24 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "appraisal"
+  },
+  "smarthome.heating.check.implicit": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Ask whether it is too warm or too cold, without naming a temperature",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "room"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
   },
   "smalltalk.agent.can_you_help": {
     "category": "expressive",
@@ -1963,6 +3385,41 @@
     "required": [],
     "speech_act": "request_information"
   },
+  "smarthome.locks.check.open": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Ask whether a door or window is open",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "lock": [
+        "lock"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "lock",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "open"
+      },
+      {
+        "lifespan": 3,
+        "name": "close"
+      }
+    ],
+    "required": [],
+    "speech_act": "request_information"
+  },
   "smarthome.device_check": {
     "category": "directive",
     "clarification_templates": {},
@@ -1982,6 +3439,74 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "request"
+  },
+  "smarthome.locks.unlock": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {
+      "lock": "door"
+    },
+    "description": "Unlock a door or window",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "lock": [
+        "lock"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "lock",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "schedule"
+      },
+      {
+        "lifespan": 5,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smarthome.device.switch.check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Check the on or off status of a device",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "color": [
+        "color"
+      ],
+      "device": [
+        "lights"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "color",
+      "device",
+      "room",
+      "all"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
   },
   "smarthome.device_down": {
     "category": "directive",
@@ -2086,6 +3611,53 @@
     "required": [],
     "speech_act": "self_expression"
   },
+  "smarthome.device.volume.down": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Lower the volume of a device",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "change-value": [
+        "sys.number"
+      ],
+      "device": [
+        "device-volume"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "change-value",
+      "room",
+      "final-value"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-volume"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smalltalk.greetings.goodmorning": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User greets the agent in the morning",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "greeting"
+  },
   "todo.list": {
     "category": "directive",
     "clarification_templates": {},
@@ -2167,6 +3739,75 @@
     "required": [],
     "speech_act": "appraisal"
   },
+  "smarthome.device.hue.check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Check the current hue of a light",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "color": [
+        "color"
+      ],
+      "device": [
+        "lights"
+      ],
+      "room": [
+        "room"
+      ],
+      "value": [
+        "sys.number"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "room",
+      "value",
+      "all",
+      "color",
+      "device"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "smarthome.locks.close": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Close a door or window",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "lock": [
+        "lock"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "lock",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "schedule"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
   "music.player.pause": {
     "category": "directive",
     "clarification_templates": {},
@@ -2214,6 +3855,18 @@
     "required": [],
     "speech_act": "request_information"
   },
+  "smalltalk.greetings.goodevening": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User greets the agent in the evening",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "greeting"
+  },
   "date.query": {
     "category": "directive",
     "clarification_templates": {},
@@ -2226,6 +3879,30 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "request_information"
+  },
+  "smalltalk.greetings.bye": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User says goodbye",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "farewell"
+  },
+  "smalltalk.agent.beautiful": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User compliments the agent's appearance",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
   },
   "music.player.repeat": {
     "category": "directive",
@@ -2266,6 +3943,149 @@
     "required": [],
     "speech_act": "general"
   },
+  "smarthome.locks.check.lock": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Ask whether a door or window is locked",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "lock": [
+        "lock"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "lock",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "lock"
+      },
+      {
+        "lifespan": 3,
+        "name": "unlock"
+      }
+    ],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "smarthome.device.volume.unmute": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Unmute a device",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "device": [
+        "device-volume"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-volume"
+      }
+    ],
+    "required": [],
+    "speech_act": "command"
+  },
+  "smalltalk.greetings.how_are_you": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User asks how the agent is doing",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "general"
+  },
+  "smarthome.locks.check.unlock": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Ask whether a door or window is unlocked",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "lock": [
+        "lock"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "room",
+      "lock",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "unlock"
+      },
+      {
+        "lifespan": 3,
+        "name": "lock"
+      }
+    ],
+    "required": [],
+    "speech_act": "request_information"
+  },
+  "smarthome.device.saturation.set": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Set the saturation of a light to a specific value",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "color": [
+        "color"
+      ],
+      "device": [
+        "lights"
+      ],
+      "final-value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "final-value",
+      "device",
+      "color",
+      "room",
+      "all"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "command"
+  },
   "smalltalk.dialog.wrong": {
     "category": "expressive",
     "clarification_templates": {},
@@ -2276,6 +4096,53 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "general"
+  },
+  "smalltalk.appraisal.thank_you": {
+    "category": "expressive",
+    "clarification_templates": {},
+    "description": "User thanks the agent",
+    "domain": "smalltalk",
+    "entity_mappings": {},
+    "input_contexts": [],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "thanks"
+  },
+  "smarthome.locks.check.close": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Ask whether a door or window is closed",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "lock": [
+        "lock"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "lock",
+      "all",
+      "room"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 3,
+        "name": "close"
+      },
+      {
+        "lifespan": 3,
+        "name": "open"
+      }
+    ],
+    "required": [],
+    "speech_act": "request_information"
   },
   "weather.condition": {
     "category": "directive",
@@ -2376,6 +4243,28 @@
     "required": [],
     "speech_act": "general"
   },
+  "smarthome.device.volume.up.implicit": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Raise the volume after the user says a device is too quiet",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "device-volume": [
+        "device-volume"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device-volume",
+      "room"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
   "smalltalk.user.sad": {
     "category": "expressive",
     "clarification_templates": {},
@@ -2397,6 +4286,41 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "general"
+  },
+  "smarthome.device.brightness.up.implicit": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Brighten a device after the user says it is too dark",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "room",
+      "all"
+    ],
+    "output_contexts": [
+      {
+        "lifespan": 5,
+        "name": "device-brightness"
+      },
+      {
+        "lifespan": 3,
+        "name": "room"
+      }
+    ],
+    "required": [],
+    "speech_act": "request"
   },
   "smalltalk.agent.right": {
     "category": "expressive",
@@ -2524,6 +4448,32 @@
       }
     ],
     "required": []
+  },
+  "smarthome.device.volume.down.implicit": {
+    "category": "directive",
+    "clarification_templates": {},
+    "description": "Lower the volume after the user says a device is too loud",
+    "domain": "smarthome",
+    "entity_mappings": {
+      "all": [
+        "all"
+      ],
+      "device": [
+        "device-volume"
+      ],
+      "room": [
+        "room"
+      ]
+    },
+    "input_contexts": [],
+    "optional": [
+      "device",
+      "all",
+      "room"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
   },
   "display.show": {
     "category": "directive",
@@ -2716,13 +4666,23 @@
     "description": "General device control command",
     "domain": "device",
     "entity_mappings": {
-      "device": ["device", "appliance"],
-      "location": ["location", "room"]
+      "device": [
+        "device",
+        "appliance"
+      ],
+      "location": [
+        "location",
+        "room"
+      ]
     },
     "input_contexts": [],
-    "optional": ["location"],
+    "optional": [
+      "location"
+    ],
     "output_contexts": [],
-    "required": ["device"],
+    "required": [
+      "device"
+    ],
     "speech_act": "command"
   }
 }
