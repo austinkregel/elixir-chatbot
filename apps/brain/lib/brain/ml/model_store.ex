@@ -150,23 +150,14 @@ defmodule Brain.ML.ModelStore do
   call this before `File.read!` to transparently pull from MinIO when
   running in a container that starts without local model files.
 
-  When the store is **disabled** this is a no-op, because local files are then
-  the intended source and there is nothing to fetch.
+  A no-op when the store is disabled: local files are then the intended source.
+  When it is enabled and the file is missing, a failed fetch raises rather than
+  leaving the caller to discover the absence later.
 
-  When the store is **enabled** and the file is missing, a failed fetch raises.
-  It used to return `:ok`, which meant a configured object store could be
-  unreachable and the only symptom was the model reporting itself unavailable
-  several layers later. A required dependency is required; see the house rule
-  about not routing around one.
-
-  Note this still does not re-verify a file that already exists locally. That
-  is what re-served the stale `format: nil` POS model for months. It is not
-  fixed here because fixing it needs a remote digest to compare against, and
-  `fetch/3` performs no ETag or size check at all -- that is a feature, not a
-  fallback to delete. The in-model provenance gates
-  (`Brain.ML.MicroProvenance.check_current!/3` and
-  `Brain.Training.POS.check_current!/2`) are what now catch a stale local file,
-  at load rather than at download.
+  A file that already exists locally is not re-verified. `fetch/3` performs no
+  ETag or size check, so there is nothing to compare against; a stale local model
+  is caught instead by `Brain.ML.MicroProvenance.check_current!/3` and
+  `Brain.Training.POS.check_current!/2`.
   """
   @spec ensure_local(String.t(), String.t(), keyword()) :: :ok
   def ensure_local(remote_key, local_path, opts \\ []) do

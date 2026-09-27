@@ -68,9 +68,8 @@ defmodule Atlas.Schemas.AxisObservation do
   @doc "The two permitted `status` values."
   def statuses, do: @statuses
 
-  # A defaulted axis with no reason is the gap this table exists to close: it
-  # records that something did not happen without recording why, which is the
-  # state task 081 had to reconstruct by hand.
+  # A defaulted axis with no reason records that something did not happen
+  # without recording why.
   defp validate_reason_accompanies_default(changeset) do
     with "defaulted" <- get_field(changeset, :status),
          nil <- get_field(changeset, :reason) do

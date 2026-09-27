@@ -1,52 +1,32 @@
 defmodule Brain.Analysis.RunProvenance do
   @moduledoc """
-  Captures everything needed to say *why* two measurement runs differ.
+  Describes the environment a measurement run was produced in, so two runs can be
+  compared and a difference attributed to something.
 
-  A snapshot of axis values or feature vectors is only comparable to another
-  snapshot taken under the same conditions. Task 072 is the case in point: six
-  classifiers were trained on feature vectors whose memory dimensions later
-  inverted, and nothing recorded enough about either run to notice. The vector
-  length was unchanged, so no dimension-mismatch error fired; the only way to
-  find it was to recompute a stored vector by hand.
+  Feature vectors and axis values are only comparable across runs that share a
+  feature schema and the state the schema is derived from.
 
-  This module is the record that makes that comparison mechanical. It follows
-  `Brain.Training.POS`, which stamps its fixtures' SHA-256 into the model it
-  trains (`Brain.ML.POSTagger.save_model/2`) and refuses to load a model whose
-  fixtures have moved (`Brain.Training.POS.check_current!/2`). The same idea,
-  widened from one tagger's three fixtures to the whole analysis environment.
+  ## What is recorded
 
-  ## What is recorded, and why each entry earns its place
+  - `git` — the commit, and whether the tree was dirty. A dirty tree means the
+    sha does not identify the code.
+  - `versions` — Elixir and OTP, which affect Nx/EXLA numeric output.
+  - `extractor` — `ChunkFeatures.schema_fingerprint/0` and `group_widths/0`. The
+    fingerprint says whether the vector's schema moved; the widths say which
+    group moved.
+  - `age_graph` — a digest of `TypeHierarchy.parent_types/0`. Feature group 23's
+    width is `length(parent_types()) + 2`, read from an ETS table populated from
+    the AGE graph, so the vector's shape depends on graph state. Group 10 looks
+    like it does too, but `Brain.Lexicon.domain_atoms/0` is a compile-time
+    attribute of 45 entries and cannot move at runtime.
+  - `lexicon` — the domain count and a digest. Group 10 reads it at call time
+    while `EnrichmentFeatures` froze the same list at compile time, so a stale
+    build is visible here.
+  - `models` — SHA-256 per `.term` under the configured models path.
+  - `datasets` — SHA-256 per `data/classifiers/*.json`.
 
-  - **`git`** -- the commit, plus whether the tree was dirty. A dirty tree means
-    the sha does not identify the code, which is worth knowing rather than
-    hiding.
-  - **`versions`** -- Elixir and OTP. Nx/EXLA kernels have changed numeric
-    output across OTP releases before.
-  - **`extractor`** -- `ChunkFeatures.schema_fingerprint/0` and
-    `group_widths/0`. The fingerprint says *whether* the vector's schema moved;
-    the widths say *which group*, which is the difference between a usable
-    bisection and a dead end.
-  - **`age_graph`** -- a digest of `TypeHierarchy.parent_types/0`. This is the
-    entry task 082 asked for and mis-attributed. Group 10's width comes from
-    `Brain.Lexicon.domain_atoms/0`, which is a compile-time attribute of 45
-    hardcoded lexicographer files and cannot move at runtime. Group 23's width
-    is `length(TypeHierarchy.parent_types()) + 2`, read from an ETS table
-    populated from the AGE graph -- so the vector's **width** depends on the
-    same mutable store whose emptying inverted the vector's **values** in task
-    072. Both need to be in the record.
-  - **`lexicon`** -- the domain count and a digest of the atoms. Compile-time
-    today, but group 10 reads it at call time while `EnrichmentFeatures` froze
-    the same list at compile time, so a stale build shows up here.
-  - **`models`** -- SHA-256 per `.term` under the configured models path.
-  - **`datasets`** -- SHA-256 per `data/classifiers/*.json`.
-
-  ## Failure policy
-
-  Every accessor raises rather than recording `nil`. A provenance record with a
-  hole in it is worse than no record, because the hole is invisible at
-  comparison time and the run looks comparable when it is not. `git` is the one
-  place this needs care: an absent `git` binary or a non-repository directory
-  raises, because a run whose code cannot be identified cannot be bisected.
+  Every accessor raises rather than recording `nil`, including `git`: a record
+  with a gap in it reads as comparable when it is not.
   """
 
   alias Brain.Analysis.FeatureExtractor.ChunkFeatures
@@ -204,8 +184,7 @@ defmodule Brain.Analysis.RunProvenance do
   # No emptiness guard here, unlike age_graph!/0: `domain_atoms/0` is a
   # compile-time `@domain_atoms` attribute, and the type checker rejects a `[]`
   # clause against it as unreachable. That it cannot be empty is the same fact
-  # that makes group 10's width fixed, which is why task 082's "runtime WordNet
-  # state" concern belongs to group 23 instead.
+  # that makes group 10's width fixed; group 23 is the runtime-variable one.
   defp lexicon! do
     atoms = Brain.Lexicon.domain_atoms()
     %{domain_count: length(atoms), domains_digest: digest(atoms)}

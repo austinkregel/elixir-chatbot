@@ -161,10 +161,6 @@ defmodule Mix.Tasks.TrainMicro do
           lc |> Map.keys() |> Enum.map(&to_string/1) |> MapSet.new()
 
         other ->
-          # Previously this produced an empty MapSet and the whole check was
-          # then skipped by `if MapSet.size(model_labels) > 0`, so a model with
-          # no centroids reported no drift rather than reporting that it could
-          # not be checked.
           Mix.raise(
             "intent_full model at #{intent_model_path} has no label centroids " <>
               "(#{inspect(other) |> String.slice(0, 120)}), so its labels cannot be validated"
@@ -175,19 +171,16 @@ defmodule Mix.Tasks.TrainMicro do
     missing = MapSet.difference(map_values, model_labels)
 
     if MapSet.size(missing) > 0 do
-      # This used to print "[WARN]" and continue. A phantom label in the map is
-      # a routing target the classifier can never emit, so the speech-act layer
-      # silently never reaches it -- which is task 038. Failing here means the
-      # drift is fixed rather than accumulated.
+      # A label the model cannot emit is a routing target the speech-act layer
+      # can never reach.
       Mix.raise("""
       speech_act_intent_map.json references #{MapSet.size(missing)} intents the \
       intent_full model cannot emit:
 
         #{inspect(MapSet.to_list(missing))}
 
-      Each is a routing target nothing can ever reach. Either the map names \
-      labels that no longer exist, or the model was trained on a corpus missing \
-      them. This was a [WARN] that training continued past; see task 038.
+      Either the map names labels that no longer exist, or the model was trained \
+      on a corpus missing them.
       """)
     else
       Mix.shell().info("\n[OK] speech_act_intent_map.json labels validated against intent_full model")

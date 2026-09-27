@@ -697,19 +697,6 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  # write_model_manifest/1 and its sha256_file/1 helper were removed here.
-  #
-  # The manifest recorded a SHA-256 per model and per training file, and
-  # nothing ever read it -- one writer, zero readers, confirmed by grep. It was
-  # also the wrong shape for the job: only `mix train` wrote it, so
-  # `mix train_micro` drifted it further on every run, and by 2026-09-25 it was
-  # stale on 19 of 26 models and 7 of 17 datasets while reporting a timestamp of
-  # 2026-04-30. Its own write was wrapped in a `rescue` that turned a failure
-  # into a printed line, so training reported success with no manifest at all.
-  #
-  # Brain.ML.MicroProvenance replaces it, stamping the record into each model
-  # and checking it at load, following Brain.Training.POS. A model that carries
-  # its own provenance cannot be separated from it.
   defp display_summary(results, total_duration) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))

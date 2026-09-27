@@ -1,34 +1,12 @@
 defmodule Brain.ML.MicroProvenance do
   @moduledoc """
-  Stamps a micro-classifier with what it was trained on, and refuses to load one
-  whose training data has moved since.
+  Records what a micro-classifier was trained on, and refuses a model whose
+  training data or feature schema has changed since.
 
-  This is task 072's gate. Six feature-vector classifiers — `intent_full`,
-  `intent_domain`, `tense_class`, `aspect_class`, `urgency`, `certainty_level` —
-  were trained on vectors whose memory dimensions later inverted, because those
-  dimensions derive from the AGE knowledge graph and the graph was rebuilt. The
-  model learned "this entity is familiar" and is now fed "this entity is
-  maximally novel" for the same input. Nothing noticed, for three reasons:
-
-    * the vector *length* was unchanged at 343, so no dimension-mismatch error
-      fired;
-    * `apps/brain/priv/ml_models/manifest.json` recorded per-file SHA-256 but
-      **nothing ever read it** — one writer, zero readers;
-    * `mix train_micro` never wrote that manifest at all, so it drifted further
-      every time models were retrained without a full `mix train`.
-
-  ## Why the record lives inside the model
-
-  `Brain.Training.POS` already settled this for the tagger: provenance is
-  stamped into the model term at `Brain.ML.POSTagger.save_model/2` and checked at
-  load by `Brain.Training.POS.check_current!/2`. A side-car manifest has to be
-  kept in sync with two directories by whoever remembers; a model that carries
-  its own provenance cannot be separated from it.
-
-  `Brain.ML.ModelStore.serialize/2` already encodes with `:deterministic`, and
-  its own docs say why — "comparing file hashes compares models". That
-  precondition holds on every write path in the repo, so content hashing is
-  sound here without further work.
+  The record lives inside the `.term` model rather than in a side-car file, so it
+  cannot be separated from the model it describes. `Brain.Training.POS` does the
+  same for the POS tagger. `Brain.ML.ModelStore.serialize/2` encodes
+  deterministically, so a content hash identifies a model.
 
   ## What is recorded
 
@@ -39,14 +17,19 @@ defmodule Brain.ML.MicroProvenance do
         at: "2026-09-25T19:07:46.356907Z"
       }
 
-  `schema_fingerprint` is recorded **only** for `kind: :feature_vector` models.
-  A text classifier consumes strings, not the feature vector, so a fingerprint
-  change cannot affect it — recording one would manufacture a false mismatch
-  every time an unrelated feature dimension was renamed, and the first thing
-  anyone would do about a false mismatch is stop trusting the gate.
+  `schema_fingerprint` is recorded only for `kind: :feature_vector` models. A text
+  classifier consumes strings, so renaming a feature dimension cannot affect it,
+  and recording a fingerprint would make it fail for no reason. Whether a model
+  is feature-vector-backed is read from its own `:kind` field rather than from a
+  list of names.
 
-  Whether a model is feature-vector-backed is read from its own `:kind` field
-  rather than from a list of classifier names, so the two cannot disagree.
+  ## Where the checks run
+
+  `check_inputs!/3` reads only the filesystem and can run anywhere.
+  `check_schema!/3` needs `Brain.Analysis.TypeHierarchy` to be ready, because
+  feature group 23 takes its dimension names from the AGE graph — so the feature
+  vector's schema is not knowable at boot. `Brain.ML.MicroClassifiers` calls both
+  before a model's first classification.
   """
 
   alias Brain.Analysis.FeatureExtractor.ChunkFeatures
@@ -85,12 +68,8 @@ defmodule Brain.ML.MicroProvenance do
   @doc """
   Raises unless `model` was trained on the data as it is now.
 
-  Returns `:ok`. There is deliberately no error-tuple form: a caller that can
-  pattern-match the failure can also choose to ignore it, which is how
-  `manifest.json` ended up with zero readers.
-
-  This is the half of the gate that can run at **load** time. It touches only
-  the filesystem, so it has no dependency on any other process being up.
+  Returns `:ok`; there is no error-tuple form, so a caller cannot choose to
+  ignore a mismatch. Reads only the filesystem.
   """
   @spec check_inputs!(map(), atom() | String.t(), Path.t()) :: :ok
   def check_inputs!(model, name, path) when is_map(model) do
@@ -105,8 +84,8 @@ defmodule Brain.ML.MicroProvenance do
         trained on : #{inspect(recorded)}
         on disk now: #{inspect(current)}
 
-      This is task 072's failure mode: the model's training data changed under
-      it, and until now nothing checked. Retrain with `mix train_micro`.
+      The model's training data changed after it was trained. Retrain with
+      `mix train_micro`.
       """
     end
 
@@ -119,20 +98,11 @@ defmodule Brain.ML.MicroProvenance do
   Only meaningful for `kind: :feature_vector` models; a text classifier passes
   unconditionally.
 
-  **This cannot run at load time**, and the reason is worth stating because it
-  is a finding rather than an inconvenience.
+  Requires `Brain.Analysis.TypeHierarchy` to be ready.
   `ChunkFeatures.schema_fingerprint/0` walks `dimension_manifest/0`, whose group
-  23 resolves its names from `Brain.Analysis.TypeHierarchy.parent_types/0` —
-  an ETS table populated from the AGE graph. `MicroClassifiers` starts earlier
-  in the supervision tree than `TypeHierarchy`, so at load time the fingerprint
-  is not merely unknown, it raises.
-
-  In other words the feature vector's schema is **not knowable at boot**. That
-  is the same runtime dependency that makes the width drift silently, seen from
-  the other side. So this check runs at the first classification instead, which
-  is both the earliest point it is computable — producing a feature vector
-  requires `TypeHierarchy` to be ready — and the first point at which a wrong
-  answer could actually be returned.
+  23 resolves its names from `TypeHierarchy.parent_types/0` — an ETS table
+  populated from the AGE graph — and raises when that table is empty. Call this
+  no earlier than the first classification.
   """
   @spec check_schema!(map(), atom() | String.t(), Path.t()) :: :ok
   def check_schema!(model, name, path) when is_map(model) do

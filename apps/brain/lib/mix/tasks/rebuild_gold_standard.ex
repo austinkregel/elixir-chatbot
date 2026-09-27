@@ -9,68 +9,38 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       mix rebuild_gold_standard --save          # write it
       mix rebuild_gold_standard --save --verbose
 
-  ## What changed, and why (task 079)
+  No model is consulted. Every label comes from the Dialogflow export, so the
+  corpus can be regenerated from `data/intents/` alone.
 
-  The previous implementation had a three-layer strategy whose **layer 2 asked
-  the intent classifier for a label and wrote the answer as gold** whenever the
-  model was at least 70% confident, with no field distinguishing it from a
-  human- or Dialogflow-anchored label. Measured afterwards: of 4,870 entries,
-  exactly one carried a `status`. The rest were indistinguishable from ground
-  truth whatever produced them.
+  ## Where labels come from
 
-  What that did to the corpus, measured against
-  `gold_standard.pre-rebuild.json`:
+  The source is `data/intents/*_usersays_en.json`, and the label is the filename
+  stem — the same key `.claude/corpus/build_corpus.py` uses. The paired metadata
+  file's `"name"` field is not read, because a usersays file can exist without
+  one.
 
-    * 2,398 of 4,867 shared texts had their label changed
-    * **83 labels were destroyed**, 79 of them real Dialogflow intents --
-      `smalltalk.greetings.goodnight`, `.goodmorning`, `.goodevening`,
-      `.nice_to_meet_you` all collapsed into `smalltalk.greet`;
-      `smarthome.device.volume.mute` and `.unmute` into `smarthome.switch`
-    * 405 texts were dropped entirely
-    * the taxonomy fell from 208 labels to 137
+  Two transformations are applied to the stem:
 
-  Layer 2 is gone. No model is consulted anywhere in this task. A text with no
-  Dialogflow anchor is not written at all, because there is no longer any
-  mechanism that could invent a label for it.
+    * a ` - context:...` suffix is stripped, since a hyphenated name denotes a
+      context of the unhyphenated intent rather than a separate one
+    * `smarthome.lights.X` becomes `smarthome.device.X`, lights being a kind of
+      device
 
-  ## It now iterates Dialogflow, not the old gold standard
+  Dialogflow intents marked `fallbackIntent: true` are excluded: that flag means
+  "nothing matched", so the phrases are not examples of an intent. The `events`
+  field is not used for this — `smalltalk.greetings.hello` carries a welcome
+  event and is a real intent.
 
-  The previous version walked the *existing* gold standard and relabelled what
-  it found there, so it could never recover a text an earlier run had dropped,
-  and it inherited whatever that run had left behind. This walks
-  `data/intents/*_usersays_en.json` -- 5,274 distinct normalised texts, which
-  covers 100% of both the current and the pre-rebuild corpora.
+  ## Output
 
-  ## The label comes from the filename
+  Each entry carries `labeled_by` and `source_file`. A text that more than one
+  intent claims, after the transformations above, is written with
+  `status: "needs_review"` and a `candidates` list; it is never resolved by
+  guessing. Ambiguous texts are also written to `ambiguous_texts.json`.
 
-  Two readers of `data/intents/` disagreed. This task read the `"name"` field
-  of the paired metadata file and downcased it; `.claude/corpus/build_corpus.py`
-  used the filename stem. They produce different strings for the same intent,
-  and the metadata route silently dropped the two usersays files that have no
-  paired metadata (`weather.query`, `test.intent.promotion`).
-
-  The filename is now authoritative, because that is what `utterances.json`,
-  `axis_sample.exs` and every task 081/082 measurement already key on. A
-  ` - context:...` suffix is stripped: per Austin, a hyphenated name is a subset
-  of the unhyphenated one. 273 Dialogflow names reduce to 230 roots this way.
-
-  ## The lights -> device fold
-
-  `smarthome.lights.X` is written as `smarthome.device.X`. Austin's ruling:
-  lights are a specialization of device, and the text alone cannot separate them
-  -- `"brightness up"` is filed under both in Dialogflow. 24 `lights.*` roots
-  fold, 17 onto existing `device.*` roots and 7 creating
-  `device.{hue,saturation}.*`.
-
-  This is also what resolves most of the genuine ambiguities: of 108 texts that
-  map to more than one intent file, the large majority are a `device`/`lights`
-  pair that becomes one label after folding.
-
-  ## Provenance per entry
-
-  Every entry carries `labeled_by` and `source_file`. A gold standard that
-  cannot say where a label came from cannot be trusted, and its absence is
-  exactly what made the layer-2 damage invisible for months.
+  A label that is not a dotted lowercase identifier of at least two parts aborts
+  the run, naming the offenders and their files. Mapping such a name onto a real
+  intent is a decision about the taxonomy and belongs in the export, not here.
   """
 
   use Mix.Task
@@ -173,24 +143,11 @@ defmodule Mix.Tasks.RebuildGoldStandard do
     |> MapSet.new()
   end
 
-  # A label must be a dotted lowercase identifier of at least two parts:
-  # a domain and something it does. A single bare word names a domain with no
-  # action, and a display name like "Default Welcome Intent" is not an intent
-  # path at all -- neither can be placed in the taxonomy, and placing one anyway
-  # means inventing a mapping. That is how `cleanup_gold_standard` accumulated
-  # 123 hardcoded rename rules whose `@smarthome_consolidation` block reproduces
-  # 96.2% of the collapse task 079 blamed on a classifier.
+  # Aborts rather than mapping an unplaceable name onto a real intent, which
+  # would be a taxonomy decision made in a loader.
   #
-  # No upper bound on depth. Austin described the taxonomy as two to four parts,
-  # but the export contains legitimate five-part intents
-  # (`smarthome.device.switch.schedule.off`,
-  # `smarthome.device.brightness.check.implicit`), so enforcing four would reject
-  # 16 real intents on a literal reading of a description. Whether the depth
-  # should be capped is a question about the taxonomy, not something this loader
-  # gets to decide.
-  #
-  # So this raises and names the offenders instead. The fix belongs in the
-  # export, where the intent is actually named.
+  # Depth is not capped: the export contains five-part intents such as
+  # `smarthome.device.brightness.check.implicit`.
   defp validate_labels!(phrases) do
     offenders =
       phrases
@@ -208,13 +165,11 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
       #{Enum.join(offenders, "\n")}
 
-      An intent label must be a dotted lowercase identifier of at least two parts:
-      a domain and something it does. A bare domain names no action, and a display
-      name is not an intent path. Guessing where these belong is the
-      hardcoded-rename-map pattern this rebuild exists to remove.
+      An intent label must be a dotted lowercase identifier of at least two
+      parts: a domain and something it does.
 
-      Fix them in data/intents/ -- rename the intent, or delete the export files
-      if they are leftovers -- then run this again.
+      Rename the intent in data/intents/, or delete its export files if they are
+      leftovers, then run this again.
       """)
     end
   end
@@ -245,9 +200,8 @@ defmodule Mix.Tasks.RebuildGoldStandard do
     |> Enum.reject(&(String.trim(&1) == ""))
   end
 
-  # `account.balance.check - context: account` -> `account.balance.check`.
-  # Austin's rule: anything with a hyphenated suffix is a subset of the version
-  # without it, so the suffix names a context, not a distinct intent.
+  # `account.balance.check - context: account` -> `account.balance.check`. The
+  # suffix names a context of the intent, not a separate intent.
   defp root_label(name), do: name |> String.split(" - ") |> List.first() |> String.trim()
 
   defp fold_lights(@lights_prefix <> rest), do: @device_prefix <> rest
@@ -329,10 +283,9 @@ defmodule Mix.Tasks.RebuildGoldStandard do
     end
   end
 
-  # The pre-rebuild snapshot is an independent witness: it predates the layer-2
-  # contamination and preserves the fine-grained taxonomy. Agreement with it is
-  # the acceptance number task 079 could not specify, because it did not know
-  # the file existed.
+  # `gold_standard.pre-rebuild.json` is a separately derived copy of the same
+  # corpus. Agreement with it is a check that this rebuild produces the labels
+  # the export describes; a drop means one of the two has changed.
   defp compare_to_pre_rebuild(entries) do
     path = Path.join(Path.dirname(EvaluationStore.gold_standard_path("intent")), "gold_standard.pre-rebuild.json")
 

@@ -331,13 +331,6 @@ defmodule Brain.Test.ModelFactory do
     {:ok, length(pairs)}
   end
 
-  # minimal_framing_training_pairs/0 was removed here: it built a four-example
-  # synthetic corpus so `micro/framing_class.term` would always exist, and
-  # train_framing_classifier/0 fell back to it whenever the real corpus was
-  # absent. That made every framing assertion in the suite measure the
-  # placeholder instead of the model. Its only caller now raises, so the
-  # generator is dead.
-
   @doc """
   Requires the test POS model: the model promoted to the test suite from a
   recorded run on the POS training page (`Brain.Training.POSRuns.promote!/3`).

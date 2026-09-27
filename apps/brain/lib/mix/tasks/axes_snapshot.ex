@@ -15,9 +15,8 @@ defmodule Mix.Tasks.Axes.Snapshot do
   An untagged run is disposable and prunable. `--tag` promotes a run to a
   durable reference point and requires `--note` saying what it represents; a
   reference point nobody can interpret later is not one. Tagged runs also store
-  the full 343-float feature vector per utterance, so a regression like task 072
-  — three memory dimensions inverting while the vector length stayed 343 — is
-  attributable to a feature rather than only visible as an axis moving.
+  the full 343-float feature vector per utterance, so a change can be attributed
+  to a feature rather than only seen as an axis moving.
 
   ## Why `--corpus` has no default
 
