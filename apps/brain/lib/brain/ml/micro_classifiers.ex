@@ -212,6 +212,24 @@ defmodule Brain.ML.MicroClassifiers do
   end
 
   @doc """
+  Classifiers that were rejected at load because their provenance did not match
+  the current environment, as `%{name => message}`.
+
+  Empty when every model matched. A rejected classifier is absent from `models`,
+  so it answers `{:error, :not_loaded}` rather than predicting from data it was
+  not trained on. `Brain.ML.ModelPreflight.validate_all!/0` turns a non-empty map
+  into a failure.
+  """
+  @spec stale() :: %{atom() => String.t()}
+  def stale do
+    try do
+      GenServer.call(__MODULE__, :stale, 1_000)
+    catch
+      :exit, _ -> %{}
+    end
+  end
+
+  @doc """
   Block until MicroClassifiers is ready, polling every 250ms.
 
   Use `:infinity` for batch/CLI contexts (evaluation tasks, mix commands)
@@ -274,47 +292,19 @@ defmodule Brain.ML.MicroClassifiers do
 
   @impl true
   def init(_opts) do
-    models = load_all_models()
+    {models, stale} = load_all_models()
 
-    # `verified` names the classifiers whose provenance has been checked against
-    # the current environment. Empty at boot; fills on first use. See
-    # verify_model!/2.
-    {:ok, %{models: models, verified: MapSet.new()}}
-  end
-
-  # Checks a model's provenance before its first use, then remembers the result.
-  # Any write that replaces a model clears its entry.
-  #
-  # Deliberately not done in `init/1`, for two reasons:
-  #
-  #   * `ChunkFeatures.schema_fingerprint/0` raises before
-  #     `Brain.Analysis.TypeHierarchy` is ready, and this GenServer starts
-  #     earlier in the supervision tree.
-  #   * `mix train_micro` calls `app.start`, so a load-time gate stops the task
-  #     that replaces a stale model from starting at all.
-  #
-  # Loading a stale model is harmless; returning a prediction from one is not.
-  # Training does not classify -- the feature extractor never calls this module,
-  # and `gen_micro_data` discards the intent the pipeline computes -- so the
-  # regenerate-and-retrain sequence runs with the gate armed.
-  defp verify_model!(state, name) do
-    if MapSet.member?(state.verified, name) do
-      state
-    else
-      :ok =
-        Brain.ML.MicroProvenance.check_current!(
-          Map.fetch!(state.models, name),
-          name,
-          model_file_path(name)
-        )
-
-      %{state | verified: MapSet.put(state.verified, name)}
-    end
+    {:ok, %{models: models, stale: stale}}
   end
 
   @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, all_models_loaded?(state.models), state}
+  end
+
+  @impl true
+  def handle_call(:stale, _from, state) do
+    {:reply, Map.get(state, :stale, %{}), state}
   end
 
   @impl true
@@ -344,8 +334,6 @@ defmodule Brain.ML.MicroClassifiers do
         {:reply, {:error, :not_loaded}, state}
 
       %{kind: :feature_vector} = model ->
-        state = verify_model!(state, name)
-
         case FeatureVectorClassifier.classify(feature_vector, model) do
           {:ok, label, score, _details} ->
             {:reply, {:ok, label, score}, state}
@@ -392,8 +380,6 @@ defmodule Brain.ML.MicroClassifiers do
         {:reply, {:error, :not_loaded}, state}
 
       %{kind: :feature_vector} = model ->
-        state = verify_model!(state, name)
-
         case FeatureVectorClassifier.classify(feature_vector, model) do
           {:ok, label, score, details} ->
             lattice =
@@ -488,29 +474,22 @@ defmodule Brain.ML.MicroClassifiers do
          %{
            state
            | models: Map.put(state.models, name, updated_model),
-             verified: MapSet.delete(state.verified, name)
          }}
     end
   end
 
   @impl true
   def handle_call(:reload, _from, _state) do
-    models = load_all_models()
-    {:reply, :ok, %{models: models, verified: MapSet.new()}}
+    {models, stale} = load_all_models()
+    {:reply, :ok, %{models: models, stale: stale}}
   end
 
   @impl true
   def handle_call({:load_trained_models, models_map}, _from, state) when is_map(models_map) do
     merged = Map.merge(state.models, models_map)
 
-    # A replaced model is unverified again; it must not inherit the verdict of
-    # the model it displaced.
     {:reply, :ok,
-     %{
-       state
-       | models: merged,
-         verified: MapSet.difference(state.verified, MapSet.new(Map.keys(models_map)))
-     }}
+     %{state | models: merged, stale: Map.drop(state.stale, Map.keys(models_map))}}
   end
 
   @impl true
@@ -543,15 +522,29 @@ defmodule Brain.ML.MicroClassifiers do
     Enum.all?(@classifier_names, &Map.has_key?(models, &1))
   end
 
+  # Returns the loaded models and, separately, the reason each rejected model was
+  # rejected. A model whose provenance does not match the current environment is
+  # not loaded, so it cannot answer a classification; `ready?/0` is then false and
+  # `stale/0` says why.
+  #
+  # The verdict is a value rather than an exception on purpose. Raising in `init/1`
+  # stops `mix train_micro` from booting, which is the only thing that can replace
+  # a stale model. Raising inside a `handle_call` is worse: it kills this
+  # GenServer, the supervisor restarts it, the next classification raises again,
+  # and the restart limit takes the brain application down.
   defp load_all_models do
-    Enum.reduce(@classifier_names, %{}, fn name, acc ->
+    Enum.reduce(@classifier_names, {%{}, %{}}, fn name, {loaded, stale} ->
       case load_model(name) do
         {:ok, model} ->
-          Map.put(acc, name, model)
+          {Map.put(loaded, name, model), stale}
+
+        {:error, {:stale, message}} ->
+          Logger.error("MicroClassifiers: #{name} not loaded.\n#{message}")
+          {loaded, Map.put(stale, name, message)}
 
         {:error, reason} ->
           Logger.warning("MicroClassifiers: failed to load #{name}: #{inspect(reason)}")
-          acc
+          {loaded, stale}
       end
     end)
   end
@@ -576,14 +569,24 @@ defmodule Brain.ML.MicroClassifiers do
             {:error, :corrupted_model}
 
           model ->
-            # Provenance is checked on first use, not here. See verify_model!/2.
-            {:ok, model}
+            check_provenance(model, name, model_path)
         end
 
       {:error, _} ->
         Logger.error("MicroClassifiers: no model file for #{name} at #{model_file_path(name)}. Run `mix train_micro` to train.")
         {:error, :no_model_file}
     end
+  end
+
+  # Only the training-data half runs here. `MicroProvenance.check_schema!/3`
+  # needs `Brain.Analysis.TypeHierarchy`, which starts after this GenServer, so
+  # the feature schema is not knowable at load. `Brain.ML.ModelPreflight` checks
+  # that half once the supervision tree is up.
+  defp check_provenance(model, name, path) do
+    Brain.ML.MicroProvenance.check_inputs!(model, name, path)
+    {:ok, model}
+  rescue
+    e in RuntimeError -> {:error, {:stale, Exception.message(e)}}
   end
 
   defp persist_model(name, model) do

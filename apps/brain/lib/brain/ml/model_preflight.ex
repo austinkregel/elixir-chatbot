@@ -133,7 +133,7 @@ defmodule Brain.ML.ModelPreflight do
           if map_size(data.vocabulary) == 0 do
             {:error, "micro/#{name}.term: empty vocabulary"}
           else
-            :ok
+            validate_micro_provenance(data, name, path)
           end
 
         Map.has_key?(data, :label_centroids) ->
@@ -141,13 +141,24 @@ defmodule Brain.ML.ModelPreflight do
           if map_size(data.label_centroids) == 0 do
             {:error, "micro/#{name}.term: empty label_centroids"}
           else
-            :ok
+            validate_micro_provenance(data, name, path)
           end
 
         true ->
           {:error, "micro/#{name}.term: unrecognized model shape"}
       end
     end)
+  end
+
+  # Both halves of the provenance check. This is the only place the feature-schema
+  # half can run: it needs Brain.Analysis.TypeHierarchy, which starts after
+  # Brain.ML.MicroClassifiers, so that GenServer can check the training data at
+  # load but not the schema.
+  defp validate_micro_provenance(model, name, path) do
+    Brain.ML.MicroProvenance.check_current!(model, name, path)
+    :ok
+  rescue
+    e in RuntimeError -> {:error, Exception.message(e)}
   end
 
   defp validate_framing_neutral_centroid do
