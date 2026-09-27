@@ -153,10 +153,43 @@ defmodule Mix.Tasks.GenMicroData do
           "successful in #{elapsed_ms} ms"
       )
 
+      fail_on_missing_vectors!(enriched)
+
       enriched
     else
       entries
     end
+  end
+
+  # A row whose pipeline run failed carries no feature vector, and every
+  # feature-vector classifier silently omits it from training. Raising here keeps
+  # the corpus and the training set the same size, so a model's row count can be
+  # traced back to the gold standard.
+  defp fail_on_missing_vectors!(entries) do
+    failed = Enum.reject(entries, &has_feature_vector?/1)
+
+    if failed != [] do
+      sample =
+        failed
+        |> Enum.take(5)
+        |> Enum.map_join("\n", fn entry ->
+          text = entry["text"] || "(no text)"
+          reason = entry["__pipeline_error"] || "no feature vector and no recorded error"
+          "  #{inspect(String.slice(to_string(text), 0, 60))}\n    #{reason}"
+        end)
+
+      Mix.raise("""
+      #{length(failed)} of #{length(entries)} entries produced no feature vector.
+
+      #{sample}
+
+      Training on the remainder would silently shrink the corpus. Fix the
+      failures, or remove the entries from the gold standard if they are not
+      valid input.
+      """)
+    end
+
+    :ok
   end
 
   # Uses Pipeline.analyze_chunk/2 (single-chunk, no graph/memory side effects)
@@ -511,18 +544,15 @@ defmodule Mix.Tasks.GenMicroData do
     end)
   end
 
-  # Training rows only. This used to read gold_standard.json directly, so the
-  # classifiers were fitted to the same rows `mix evaluate.intent` then scored
-  # them on. Going through EvaluationStore means the held-out split is honoured
-  # here and raises if it has not been carved.
+  # Training rows only, so the classifiers are not fitted to the rows
+  # `mix evaluate.intent` scores them on. Raises if the held-out split has not
+  # been carved.
   defp load_gold_standard do
     Brain.ML.EvaluationStore.load_gold_standard("intent", :train)
   end
 
-  # Brain.data_path/1 owns this resolution. It used to be duplicated here, which
-  # meant the task that *writes* data/classifiers and the code that *reads* it
-  # each resolved the umbrella root independently -- and a reader that disagrees
-  # with the writer reports a missing dataset rather than a wrong path.
+  # Must match the path Brain.ML.MicroProvenance hashes, or a model is stamped
+  # with provenance for a file it did not train on.
   defp output_dir, do: Brain.data_path("classifiers")
 
   defp check_lexicon_data do
