@@ -1,0 +1,84 @@
+{
+  "sources": {
+    "wikipedia.org": {
+      "factual_accuracy": 0.85,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Community-edited encyclopedia with strong editorial oversight"
+    },
+    "reuters.com": {
+      "factual_accuracy": 0.92,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Major international news agency"
+    },
+    "apnews.com": {
+      "factual_accuracy": 0.91,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Associated Press - major news wire service"
+    },
+    "bbc.com": {
+      "factual_accuracy": 0.88,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "British Broadcasting Corporation"
+    },
+    "nature.com": {
+      "factual_accuracy": 0.95,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Peer-reviewed scientific journal"
+    },
+    "arxiv.org": {
+      "factual_accuracy": 0.80,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Preprint server - not peer-reviewed but academically sourced"
+    },
+    "stackoverflow.com": {
+      "factual_accuracy": 0.82,
+      "bias_rating": "center",
+      "trust_tier": "verified",
+      "notes": "Community Q&A for programming, community-moderated"
+    },
+    "nytimes.com": {
+      "factual_accuracy": 0.85,
+      "bias_rating": "center_left",
+      "trust_tier": "verified",
+      "notes": "Major US newspaper"
+    },
+    "foxnews.com": {
+      "factual_accuracy": 0.65,
+      "bias_rating": "right",
+      "trust_tier": "neutral",
+      "notes": "US cable news network, opinion content mixed with news"
+    },
+    "cnn.com": {
+      "factual_accuracy": 0.75,
+      "bias_rating": "center_left",
+      "trust_tier": "neutral",
+      "notes": "US cable news network"
+    },
+    "breitbart.com": {
+      "factual_accuracy": 0.40,
+      "bias_rating": "right",
+      "trust_tier": "untrusted",
+      "notes": "Highly partisan news site"
+    },
+    "infowars.com": {
+      "factual_accuracy": 0.15,
+      "bias_rating": "right",
+      "trust_tier": "blocked",
+      "notes": "Conspiracy theory site, repeatedly debunked claims"
+    }
+  },
+  "blocked_domains": [
+    "theonion.com",
+    "babylonbee.com",
+    "infowars.com",
+    "naturalnews.com",
+    "worldnewsdailyreport.com",
+    "dailycurrant.com"
+  ]
+}

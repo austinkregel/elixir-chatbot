@@ -19,6 +19,10 @@ defmodule Brain.ML.Lexicon.WordNetParser do
     "r" => :adv
   }
 
+  # wn_morphy.pl's rules name only these three; an unknown letter is a
+  # malformed file and fails the fetch.
+  @ending_pos %{"n" => :noun, "v" => :verb, "a" => :adj}
+
   @doc """
   Parses wn_s.pl (word senses).
 
@@ -233,6 +237,28 @@ defmodule Brain.ML.Lexicon.WordNetParser do
             _ ->
               acc
           end
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  @doc """
+  Parses the suffix rules of wn_morphy.pl, WordNet's morphological processor.
+
+  Each rule line: `ending(pos, "inflected_ending", "base_ending").`
+  Example: `ending(n, "ies", "y").` -- "cities" may be "city".
+
+  Returns a list of `{pos, inflected_ending, base_ending}` with `pos` one of
+  `:noun`, `:verb`, `:adj`, in file order. The rest of the file (Prolog
+  clauses that apply the rules) is not data and is skipped.
+  """
+  def parse_endings(path) do
+    path
+    |> stream_lines()
+    |> Enum.reduce([], fn line, acc ->
+      case Regex.run(~r/^ending\((\w),\s*"([^"]*)",\s*"([^"]*)"\)\.\s*$/, line) do
+        [_, pos, inflected, base] -> [{Map.fetch!(@ending_pos, pos), inflected, base} | acc]
+        nil -> acc
       end
     end)
     |> Enum.reverse()

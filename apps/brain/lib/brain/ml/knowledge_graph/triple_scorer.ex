@@ -19,6 +19,7 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   require Logger
 
   alias Brain.ML.Tokenizer
+  alias Brain.ML.TrainingSeed
 
   @default_embedding_dim 64
   @default_hidden_dim 128
@@ -109,34 +110,41 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
       - `:embedding_dim` - Embedding dimension (default: #{@default_embedding_dim})
       - `:hidden_dim` - LSTM hidden dimension (default: #{@default_hidden_dim})
       - `:max_seq_length` - Maximum sequence length (default: #{@default_max_seq_length})
+      - `:seed` - Seed for the LSTM's initial-state key and dropout's key
+        (default: `Brain.ML.TrainingSeed.get!/0`). Axon otherwise seeds both
+        from the clock. A loaded model restores these keys from its saved
+        parameters, so the seed only affects training.
   """
   def build_model(vocab_size, opts \\ []) do
     embedding_dim = Keyword.get(opts, :embedding_dim, @default_embedding_dim)
     hidden_dim = Keyword.get(opts, :hidden_dim, @default_hidden_dim)
     max_seq_length = Keyword.get(opts, :max_seq_length, @default_max_seq_length)
+    seed = Keyword.get_lazy(opts, :seed, &TrainingSeed.get!/0)
 
     input = Axon.input("input", shape: {nil, max_seq_length})
     mask_input = Axon.input("mask", shape: {nil, max_seq_length, 1})
 
-    encoder = input
-    |> Axon.embedding(vocab_size, embedding_dim, name: "embedding")
-    |> Axon.lstm(hidden_dim, name: "lstm")
-    |> then(fn {seq, _state} -> seq end)
+    encoder =
+      input
+      |> Axon.embedding(vocab_size, embedding_dim, name: "embedding")
+      |> Axon.lstm(hidden_dim, name: "lstm", seed: seed)
+      |> then(fn {seq, _state} -> seq end)
 
-    pooled = Axon.layer(
-      fn encoder_out, mask, _opts ->
-        masked = Nx.multiply(encoder_out, mask)
-        sum = Nx.sum(masked, axes: [1])
-        count = Nx.sum(mask, axes: [1]) |> Nx.max(1)
-        Nx.divide(sum, count)
-      end,
-      [encoder, mask_input],
-      name: "masked_mean_pool"
-    )
+    pooled =
+      Axon.layer(
+        fn encoder_out, mask, _opts ->
+          masked = Nx.multiply(encoder_out, mask)
+          sum = Nx.sum(masked, axes: [1])
+          count = Nx.sum(mask, axes: [1]) |> Nx.max(1)
+          Nx.divide(sum, count)
+        end,
+        [encoder, mask_input],
+        name: "masked_mean_pool"
+      )
 
     pooled
     |> Axon.dense(128, activation: :relu, name: "dense1")
-    |> Axon.dropout(rate: 0.3, name: "dropout")
+    |> Axon.dropout(rate: 0.3, name: "dropout", seed: seed)
     |> Axon.dense(1, name: "output")
     |> Axon.sigmoid(name: "score")
   end
@@ -151,43 +159,59 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
       - `:learning_rate` - Learning rate (default: #{@default_learning_rate})
       - `:neg_ratio` - Negative-to-positive ratio (default: 5)
       - `:verbose` - Print per-epoch loss (default: false)
+      - `:seed` - Seed for negative sampling, shuffling, parameter
+        initialization and the model's random keys (default:
+        `Brain.ML.TrainingSeed.get!/0`). Recorded in the config as
+        `:training_seed`.
   """
   def train(positive_triples, opts \\ []) do
     epochs = Keyword.get(opts, :epochs, @default_epochs)
     lr = Keyword.get(opts, :learning_rate, @default_learning_rate)
     neg_ratio = Keyword.get(opts, :neg_ratio, 5)
+    seed = Keyword.get_lazy(opts, :seed, &TrainingSeed.get!/0)
+    rand = TrainingSeed.state(seed)
 
-    entities = positive_triples
-    |> Enum.flat_map(fn {h, _r, t} -> [h, t] end)
-    |> Enum.uniq()
+    entities =
+      positive_triples
+      |> Enum.flat_map(fn {h, _r, t} -> [h, t] end)
+      |> Enum.uniq()
 
     vocab = build_vocab(positive_triples)
     vocab_size = map_size(vocab)
 
-    model = build_model(vocab_size,
-      embedding_dim: Keyword.get(opts, :embedding_dim, @default_embedding_dim),
-      hidden_dim: Keyword.get(opts, :hidden_dim, @default_hidden_dim)
-    )
+    model =
+      build_model(vocab_size,
+        embedding_dim: Keyword.get(opts, :embedding_dim, @default_embedding_dim),
+        hidden_dim: Keyword.get(opts, :hidden_dim, @default_hidden_dim),
+        seed: seed
+      )
 
     positive_set = MapSet.new(positive_triples)
-    negatives = generate_negatives(positive_triples, entities, positive_set, neg_ratio)
+    {negatives, rand} = generate_negatives(positive_triples, entities, positive_set, neg_ratio, rand)
 
-    all_examples = Enum.map(positive_triples, &{&1, 1.0}) ++
-                   Enum.map(negatives, &{&1, 0.0})
+    all_examples =
+      Enum.map(positive_triples, &{&1, 1.0}) ++
+        Enum.map(negatives, &{&1, 0.0})
 
-    shuffled = Enum.shuffle(all_examples)
+    {shuffled, _rand} = TrainingSeed.shuffle(all_examples, rand)
     {inputs, labels} = encode_examples(shuffled, vocab)
 
-    train_data = Stream.repeatedly(fn ->
-      {inputs, labels}
-    end)
+    train_data =
+      Stream.repeatedly(fn ->
+        {inputs, labels}
+      end)
 
     optimizer = Polaris.Optimizers.adam(learning_rate: lr)
     log_interval = if Keyword.get(opts, :verbose, false), do: 1, else: 0
 
-    params = model
-    |> Axon.Loop.trainer(:binary_cross_entropy, optimizer, log: log_interval)
-    |> Axon.Loop.run(train_data, Axon.ModelState.empty(), epochs: epochs, iterations: 1, compiler: EXLA)
+    params =
+      model
+      |> Axon.Loop.trainer(:binary_cross_entropy, optimizer, log: log_interval, seed: seed)
+      |> Axon.Loop.run(train_data, Axon.ModelState.empty(),
+        epochs: epochs,
+        iterations: 1,
+        compiler: EXLA
+      )
 
     params = transfer_to_binary_backend(params)
 
@@ -195,7 +219,8 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
       vocab_size: vocab_size,
       embedding_dim: Keyword.get(opts, :embedding_dim, @default_embedding_dim),
       hidden_dim: Keyword.get(opts, :hidden_dim, @default_hidden_dim),
-      max_seq_length: @default_max_seq_length
+      max_seq_length: @default_max_seq_length,
+      training_seed: seed
     }
 
     {:ok, model, params, vocab, config}
@@ -214,7 +239,7 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
       |> maybe_put(:relation_coverage, Keyword.get(opts, :relation_coverage))
       |> maybe_put(:model_version, Keyword.get(opts, :model_version))
 
-    File.write!(path, :erlang.term_to_binary(data))
+    File.write!(path, Brain.ML.ModelStore.serialize(data))
     :ok
   end
 
@@ -267,12 +292,14 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   end
 
   def handle_call({:score_batch, triples}, _from, state) do
-    scores = Enum.map(triples, fn {h, r, t} ->
-      case do_score(h, r, t, state) do
-        {:ok, s} -> s
-        _ -> 0.5
-      end
-    end)
+    scores =
+      Enum.map(triples, fn {h, r, t} ->
+        case do_score(h, r, t, state) do
+          {:ok, s} -> s
+          _ -> 0.5
+        end
+      end)
+
     {:reply, {:ok, scores}, state}
   end
 
@@ -282,6 +309,7 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
     case try_load("default") do
       {:ok, loaded} ->
         new_version = loaded.model_version
+
         if old_version != new_version do
           Phoenix.PubSub.broadcast(
             Brain.PubSub,
@@ -289,6 +317,7 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
             {:triple_scorer_reloaded, old_version, new_version}
           )
         end
+
         {:reply, :ok, loaded}
 
       {:error, reason} ->
@@ -312,10 +341,11 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
 
     case load_model(path) do
       {:ok, data} ->
-        model = build_model(data.config.vocab_size,
-          embedding_dim: data.config.embedding_dim,
-          hidden_dim: data.config.hidden_dim
-        )
+        model =
+          build_model(data.config.vocab_size,
+            embedding_dim: data.config.embedding_dim,
+            hidden_dim: data.config.hidden_dim
+          )
 
         state = %__MODULE__{
           model: model,
@@ -326,6 +356,7 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
           relation_coverage: Map.get(data, :relation_coverage, %{}),
           model_version: Map.get(data, :model_version)
         }
+
         {:ok, state}
 
       {:error, reason} ->
@@ -337,21 +368,28 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
     text = "[HEAD] #{head} [REL] #{relation} [TAIL] #{tail}"
     {input, mask} = encode_single(text, state.vocab, @default_max_seq_length)
 
-    output = Axon.predict(state.model, state.params, %{
-      "input" => input,
-      "mask" => mask
-    }, compiler: EXLA)
+    output =
+      Axon.predict(
+        state.model,
+        state.params,
+        %{
+          "input" => input,
+          "mask" => mask
+        },
+        compiler: EXLA
+      )
 
     score = output |> Nx.squeeze() |> Nx.to_number()
     {:ok, score}
   end
 
   defp build_vocab(triples) do
-    all_tokens = triples
-    |> Enum.flat_map(fn {h, r, t} ->
-      tokenize_triple("[HEAD] #{h} [REL] #{r} [TAIL] #{t}")
-    end)
-    |> Enum.uniq()
+    all_tokens =
+      triples
+      |> Enum.flat_map(fn {h, r, t} ->
+        tokenize_triple("[HEAD] #{h} [REL] #{r} [TAIL] #{t}")
+      end)
+      |> Enum.uniq()
 
     (@special_tokens ++ all_tokens)
     |> Enum.uniq()
@@ -362,22 +400,27 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   defp encode_examples(examples, vocab) do
     max_len = @default_max_seq_length
 
-    {input_list, label_list} = Enum.unzip(
-      Enum.map(examples, fn {{h, r, t}, label} ->
-        text = "[HEAD] #{h} [REL] #{r} [TAIL] #{t}"
-        tokens = tokenize_triple(text)
+    {input_list, label_list} =
+      Enum.unzip(
+        Enum.map(examples, fn {{h, r, t}, label} ->
+          text = "[HEAD] #{h} [REL] #{r} [TAIL] #{t}"
+          tokens = tokenize_triple(text)
 
-        indices = tokens
-        |> Enum.take(max_len)
-        |> Enum.map(&Map.get(vocab, &1, 0))
+          indices =
+            tokens
+            |> Enum.take(max_len)
+            |> Enum.map(&Map.get(vocab, &1, 0))
 
-        padded = indices ++ List.duplicate(Map.get(vocab, "[PAD]", 0), max_len - length(indices))
-        mask = List.duplicate(1.0, min(length(indices), max_len)) ++
-               List.duplicate(0.0, max_len - min(length(indices), max_len))
+          padded =
+            indices ++ List.duplicate(Map.get(vocab, "[PAD]", 0), max_len - length(indices))
 
-        {%{input: padded, mask: Enum.map(mask, &[&1])}, label}
-      end)
-    )
+          mask =
+            List.duplicate(1.0, min(length(indices), max_len)) ++
+              List.duplicate(0.0, max_len - min(length(indices), max_len))
+
+          {%{input: padded, mask: Enum.map(mask, &[&1])}, label}
+        end)
+      )
 
     inputs = %{
       "input" => Nx.tensor(Enum.map(input_list, & &1.input), type: :s32),
@@ -397,13 +440,16 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   defp encode_single(text, vocab, max_len) do
     tokens = tokenize_triple(text)
 
-    indices = tokens
-    |> Enum.take(max_len)
-    |> Enum.map(&Map.get(vocab, &1, 0))
+    indices =
+      tokens
+      |> Enum.take(max_len)
+      |> Enum.map(&Map.get(vocab, &1, 0))
 
     padded = indices ++ List.duplicate(Map.get(vocab, "[PAD]", 0), max_len - length(indices))
-    mask = List.duplicate(1.0, min(length(indices), max_len)) ++
-           List.duplicate(0.0, max_len - min(length(indices), max_len))
+
+    mask =
+      List.duplicate(1.0, min(length(indices), max_len)) ++
+        List.duplicate(0.0, max_len - min(length(indices), max_len))
 
     input = Nx.tensor([padded], type: :s32)
     mask_tensor = Nx.tensor([Enum.map(mask, &[&1])])
@@ -412,10 +458,11 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   end
 
   defp tokenize_triple(text) do
-    split_pattern = @special_tokens
-    |> Enum.reject(&(&1 == "[PAD]"))
-    |> Enum.map(&Regex.escape/1)
-    |> Enum.join("|")
+    split_pattern =
+      @special_tokens
+      |> Enum.reject(&(&1 == "[PAD]"))
+      |> Enum.map(&Regex.escape/1)
+      |> Enum.join("|")
 
     text
     |> String.split(Regex.compile!("(#{split_pattern})"), include_captures: true, trim: true)
@@ -428,47 +475,71 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
     end)
   end
 
-  defp generate_negatives(positives, entities, positive_set, ratio) do
+  # Negative sampling draws from `rand` and returns it advanced, so the same
+  # seed always yields the same negatives.
+  defp generate_negatives(positives, entities, positive_set, ratio, rand) do
     entity_types = build_entity_type_index(entities)
 
-    Enum.flat_map(positives, fn {h, r, t} ->
+    Enum.flat_map_reduce(positives, rand, fn {h, r, t}, rand ->
       type_constrained_count = div(ratio * 4, 5)
       uniform_count = ratio - type_constrained_count
 
-      type_constrained =
-        generate_type_constrained(h, r, t, entities, entity_types, positive_set, type_constrained_count)
+      {type_constrained, rand} =
+        generate_type_constrained(
+          h,
+          r,
+          t,
+          entities,
+          entity_types,
+          positive_set,
+          type_constrained_count,
+          rand
+        )
 
-      uniform =
-        Stream.repeatedly(fn ->
-          if :rand.uniform() > 0.5 do
-            {Enum.random(entities), r, t}
-          else
-            {h, r, Enum.random(entities)}
-          end
-        end)
-        |> Stream.reject(&MapSet.member?(positive_set, &1))
-        |> Enum.take(uniform_count)
+      {uniform, rand} =
+        sample_corruptions({h, r, t}, entities, entities, positive_set, uniform_count, rand)
 
-      type_constrained ++ uniform
+      {type_constrained ++ uniform, rand}
     end)
   end
 
-  defp generate_type_constrained(h, r, t, entities, entity_types, positive_set, count) do
+  defp generate_type_constrained(h, r, t, entities, entity_types, positive_set, count, rand) do
     h_type = Map.get(entity_types, h)
     t_type = Map.get(entity_types, t)
 
-    h_peers = if h_type, do: Map.get(entity_types, {:type_members, h_type}, entities), else: entities
-    t_peers = if t_type, do: Map.get(entity_types, {:type_members, t_type}, entities), else: entities
+    h_peers =
+      if h_type, do: Map.get(entity_types, {:type_members, h_type}, entities), else: entities
 
-    Stream.repeatedly(fn ->
-      if :rand.uniform() > 0.5 do
-        {Enum.random(h_peers), r, t}
+    t_peers =
+      if t_type, do: Map.get(entity_types, {:type_members, t_type}, entities), else: entities
+
+    sample_corruptions({h, r, t}, h_peers, t_peers, positive_set, count, rand)
+  end
+
+  # Replaces the head (from h_peers) or the tail (from t_peers) with even odds,
+  # skipping any corruption that is itself a positive, until `count` are drawn.
+  defp sample_corruptions(triple, h_peers, t_peers, positive_set, count, rand),
+    do: sample_corruptions(triple, h_peers, t_peers, positive_set, count, rand, [])
+
+  defp sample_corruptions(_triple, _hp, _tp, _set, 0, rand, acc), do: {Enum.reverse(acc), rand}
+
+  defp sample_corruptions({h, r, t} = triple, h_peers, t_peers, set, count, rand, acc) do
+    {coin, rand} = :rand.uniform_s(rand)
+
+    {corrupted, rand} =
+      if coin > 0.5 do
+        {head, rand} = TrainingSeed.pick(h_peers, rand)
+        {{head, r, t}, rand}
       else
-        {h, r, Enum.random(t_peers)}
+        {tail, rand} = TrainingSeed.pick(t_peers, rand)
+        {{h, r, tail}, rand}
       end
-    end)
-    |> Stream.reject(&MapSet.member?(positive_set, &1))
-    |> Enum.take(count)
+
+    if MapSet.member?(set, corrupted) do
+      sample_corruptions(triple, h_peers, t_peers, set, count, rand, acc)
+    else
+      sample_corruptions(triple, h_peers, t_peers, set, count - 1, rand, [corrupted | acc])
+    end
   end
 
   defp build_entity_type_index(entities) do
@@ -508,8 +579,10 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   defp ensure_model_state(params) when is_map(params), do: Axon.ModelState.new(params)
 
   defp transfer_to_binary_backend(%Axon.ModelState{} = model_state) do
-    data = model_state.data
-    |> Map.new(fn {key, value} -> {key, transfer_value(value)} end)
+    data =
+      model_state.data
+      |> Map.new(fn {key, value} -> {key, transfer_value(value)} end)
+
     %{model_state | data: data}
   end
 
@@ -527,8 +600,15 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
 
   defp transfer_value(other), do: other
 
+  # Configured :models_path first (test points it at test/ml_models, where
+  # ModelFactory saves); priv/ml_models when unset (dev/prod).
   defp model_path(world_id) do
-    priv = :code.priv_dir(:brain) |> to_string()
-    Path.join([priv, "ml_models", world_id, "kg_lstm", "triple_scorer.term"])
+    base =
+      case Application.get_env(:brain, :ml, [])[:models_path] do
+        nil -> Path.join(:code.priv_dir(:brain) |> to_string(), "ml_models")
+        path -> path
+      end
+
+    Path.join([base, world_id, "kg_lstm", "triple_scorer.term"])
   end
 end

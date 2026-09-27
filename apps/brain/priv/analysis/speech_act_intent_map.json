@@ -1,0 +1,14 @@
+{
+  "apology": "smalltalk.dialog.sorry",
+  "assertive": "unknown",
+  "command": "unknown",
+  "compliment": "smalltalk.user.likes_agent",
+  "default": "unknown",
+  "expressive": "unknown",
+  "farewell": "smalltalk.greetings.bye",
+  "greeting": "smalltalk.greetings.hello",
+  "question": "unknown",
+  "request_action": "unknown",
+  "request_information": "unknown",
+  "thanks": "smalltalk.appraisal.thank_you"
+}

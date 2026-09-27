@@ -10,13 +10,8 @@ defmodule World.EntityDiscovererDataTest do
 
   setup do
     ensure_pubsub_started()
-    ensure_started(Brain.ML.Gazetteer)
-
-    try do
-      Gazetteer.load_all()
-    catch
-      _, _ -> :ok
-    end
+    # The gazetteer loads its sources when it starts.
+    ensure_started(Gazetteer)
 
     :ok
   end

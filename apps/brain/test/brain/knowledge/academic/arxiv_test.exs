@@ -39,9 +39,10 @@ defmodule Brain.Knowledge.Academic.ArxivTest do
 
   describe "search/2 (with snapshot)" do
     setup do
-      # Load the snapshot for this test (server is started globally in test_helper.exs)
-      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("arxiv/search_transformer")
-      :ok
+      # Loaded for this test only: the snapshot server is global and its
+      # matcher is a substring match, so a snapshot left loaded would answer a
+      # later test's request with a stale body.
+      Brain.Test.Singletons.use_http_snapshots!(["arxiv/search_transformer"])
     end
 
     test "returns papers for a valid query" do

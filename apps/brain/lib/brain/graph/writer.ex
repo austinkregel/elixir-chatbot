@@ -264,8 +264,15 @@ defmodule Brain.Graph.Writer do
       graph_nodes =
         Enum.map(node_ids, fn nid ->
           case AtlasIntegration.find_node("epistemic_graph", "JTMSNode", to_string(nid)) do
-            {:ok, v} -> v
-            _ -> nil
+            {:ok, v} ->
+              v
+
+            :not_found ->
+              nil
+
+            {:error, reason} ->
+              Logger.warning("Writer: JTMS node #{nid} lookup failed, contradiction edge skipped: #{inspect(reason)}")
+              nil
           end
         end)
         |> Enum.reject(&is_nil/1)
@@ -688,7 +695,14 @@ defmodule Brain.Graph.Writer do
       {:ok, conv_node} ->
         Atlas.Graph.add_edge("conversation_graph", conv_node.id, msg_node.id, EdgeLabels.contains())
 
-      _ ->
+      :not_found ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning(
+          "Writer: conversation #{conversation_id} lookup failed, message left unlinked: #{inspect(reason)}"
+        )
+
         :ok
     end
   end
@@ -757,7 +771,14 @@ defmodule Brain.Graph.Writer do
       {:ok, conclusion_node} ->
         Atlas.Graph.add_edge("epistemic_graph", just_node.id, conclusion_node.id, EdgeLabels.supports())
 
-      _ ->
+      :not_found ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning(
+          "Writer: conclusion #{conclusion_id} lookup failed, justification left unlinked: #{inspect(reason)}"
+        )
+
         :ok
     end
   end
@@ -768,7 +789,11 @@ defmodule Brain.Graph.Writer do
         {:ok, target} ->
           Atlas.Graph.add_edge("epistemic_graph", just_node.id, target.id, rel_type)
 
-        _ ->
+        :not_found ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("Writer: JTMS node #{nid} lookup failed, requirement edge skipped: #{inspect(reason)}")
           :ok
       end
     end)

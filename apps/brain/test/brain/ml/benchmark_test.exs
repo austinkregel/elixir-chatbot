@@ -23,6 +23,16 @@ defmodule Brain.ML.BenchmarkTest do
 
   alias ML.{Evaluation, EvaluationStore}
 
+  # These run the whole pipeline, which reads the knowledge graph. Without a
+  # checked-out connection every one of those lookups fails, and the graph
+  # features silently read as "unknown" — 2,960 failed lookups in one suite
+  # run before this was added.
+  setup tags do
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+    :ok
+  end
+
   setup_all do
     Brain.TestHelpers.require_services!(:ml_inference)
 
@@ -84,21 +94,66 @@ defmodule Brain.ML.BenchmarkTest do
              "Expected at least 2/#{length(music_inputs)} music queries classified correctly, got #{correct}/#{length(music_inputs)}: #{inspect(results)}"
     end
 
+    # One `Pipeline.analyze_chunk/2` costs about 197 ms (measured 2026-09-22,
+    # after the per-token POS fix; it was ~744 ms before). This used to sweep
+    # the whole 4,870-row corpus in a single test -- 16 minutes, which no
+    # timeout tolerates. It was killed at 300 s having measured nothing, while
+    # the pipeline work it had started kept running without its sandbox
+    # connection: that is where 1,777 failed graph lookups in one suite run
+    # came from.
+    #
+    # It now reads the held-out split (500 rows, carved 2026-09-24), which is
+    # both the honest partition and small enough to finish inside one timeout:
+    #
+    #   100 entries ~ 20 s   (one group)
+    #   500 entries ~ 100 s  (the whole held-out split, five groups)
+    #
+    # Sample size is chosen for what it buys. The standard error of an accuracy
+    # estimate is sqrt(p(1-p)/n): about 5.0% at n = 100 and 2.2% at n = 500.
+    # Against a 60% threshold, 500 settles the question to within a couple of
+    # points, so the default evaluates the split in full. GOLD_SAMPLE=<n>
+    # takes a smaller stride sample when you want a faster answer.
+    #
+    # Entries are taken by a fixed stride rather than from the front, because
+    # the file is grouped by intent -- the first N rows are not a sample of it.
+    # Groups are evaluated one at a time so memory and time stay bounded, and
+    # so a group that goes wrong reports its own numbers instead of taking the
+    # whole measurement down with it.
+    @gold_group_size 100
+    @gold_default_sample 500
+
     @tag :benchmark
+    @tag timeout: 180_000
     test "gold standard accuracy meets minimum threshold" do
-      gold = EvaluationStore.load_gold_standard("intent")
+      # Held-out only. ModelFactory trains the suite's :intent_full from the
+      # :train partition, so scoring against the full corpus would be scoring
+      # the model on rows it was just fitted to.
+      gold = EvaluationStore.load_gold_standard("intent", :held_out)
 
-      if gold == [] do
-        IO.puts(
-          "  [SKIP] No gold standard data for intent (add to priv/evaluation/intent/gold_standard.json)"
-        )
-      else
-        {predictions, actuals} = evaluate_intent_gold(gold)
-        acc = Evaluation.accuracy(predictions, actuals)
+      assert gold != [],
+             "The held-out split for intent is empty. It is loaded by " <>
+               "EvaluationStore.load_gold_standard/2 from priv/evaluation/intent/held_out.json; " <>
+               "an empty list here means the measurement cannot be made, which is not the same as passing."
 
-        assert acc >= 0.6,
-               "Intent classification accuracy #{Float.round(acc * 100, 1)}% is below minimum threshold of 60%"
-      end
+      entries = gold_sample(gold)
+
+      {predictions, actuals, errors} =
+        entries
+        |> Enum.chunk_every(@gold_group_size)
+        |> Enum.reduce({[], [], []}, fn group, {preds, acts, errs} ->
+          {p, a, e} = evaluate_intent_gold(group)
+          {preds ++ p, acts ++ a, errs ++ e}
+        end)
+
+      acc = Evaluation.accuracy(predictions, actuals)
+
+      assert errors == [],
+             "#{length(errors)}/#{length(entries)} entries failed to analyse rather than " <>
+               "classifying wrongly: #{inspect(Enum.take(errors, 3))}"
+
+      assert acc >= 0.6,
+             "Intent classification accuracy #{Float.round(acc * 100, 1)}% over " <>
+               "#{length(entries)} of #{length(gold)} gold entries is below the 60% threshold"
     end
   end
 
@@ -274,23 +329,62 @@ defmodule Brain.ML.BenchmarkTest do
     end
   end
 
-  defp evaluate_intent_gold(gold) do
-    Enum.reduce(gold, {[], []}, fn example, {preds, acts} ->
-      text = example["text"]
-      expected = example["intent"]
+  # The entries this run measures. `GOLD_SAMPLE=all` takes the whole set (16
+  # minutes); a number takes that many; the default is @gold_default_sample.
+  # Taken by a fixed stride rather than from the front: the gold file is
+  # grouped by intent, so its first 500 rows are not a sample of it.
+  defp gold_sample(gold) do
+    case System.get_env("GOLD_SAMPLE") do
+      "all" ->
+        gold
 
-      predicted =
-        try do
-          analysis = Pipeline.analyze_chunk(text, side_effects: false)
-          to_string(analysis.intent || "unknown")
-        rescue
-          _ -> "unknown"
-        catch
-          :exit, _ -> "unknown"
+      value when is_binary(value) ->
+        case Integer.parse(value) do
+          {n, ""} when n > 0 -> stride_sample(gold, n)
+          _ -> raise ArgumentError, "GOLD_SAMPLE must be a positive integer or \"all\", got #{inspect(value)}"
         end
 
-      {[predicted | preds], [expected | acts]}
-    end)
-    |> then(fn {p, a} -> {Enum.reverse(p), Enum.reverse(a)} end)
+      nil ->
+        stride_sample(gold, @gold_default_sample)
+    end
+  end
+
+  defp stride_sample(gold, wanted) do
+    total = length(gold)
+
+    if wanted >= total do
+      gold
+    else
+      stride = div(total, wanted)
+
+      gold
+      |> Enum.with_index()
+      |> Enum.filter(fn {_entry, index} -> rem(index, stride) == 0 end)
+      |> Enum.map(&elem(&1, 0))
+      |> Enum.take(wanted)
+    end
+  end
+
+  # Returns `{predictions, actuals, errors}`. An entry the pipeline could not
+  # analyse is an error, not a wrong answer: counting a crash as a
+  # misclassification quietly turns "the analyser broke" into "the model is
+  # 2% less accurate".
+  defp evaluate_intent_gold(gold) do
+    {preds, acts, errors} =
+      Enum.reduce(gold, {[], [], []}, fn example, {preds, acts, errors} ->
+        text = example["text"]
+        expected = example["intent"]
+
+        try do
+          analysis = Pipeline.analyze_chunk(text, side_effects: false)
+          {[to_string(analysis.intent || "unknown") | preds], [expected | acts], errors}
+        rescue
+          e -> {preds, acts, [{text, Exception.message(e)} | errors]}
+        catch
+          :exit, reason -> {preds, acts, [{text, {:exit, reason}} | errors]}
+        end
+      end)
+
+    {Enum.reverse(preds), Enum.reverse(acts), Enum.reverse(errors)}
   end
 end

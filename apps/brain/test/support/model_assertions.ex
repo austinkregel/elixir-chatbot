@@ -15,8 +15,8 @@ defmodule Brain.Test.ModelAssertions do
 
   ## Model types
 
-  - `:gazetteer` — Gazetteer GenServer populated from disk
-  - `:entities` — Entity extractor maps from trained `gazetteer.term`
+  - `:gazetteer` — Gazetteer GenServer populated from its source files
+  - `:entities` — entity extraction ready (the gazetteer it reads has loaded)
   - `:pos` — POS model on disk / POSTagger
   - `:embedder` — Embedder vocabulary loaded
   - `:sentiment` — `SentimentClassifierSimple` model loaded

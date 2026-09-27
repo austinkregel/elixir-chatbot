@@ -9,6 +9,14 @@ defmodule Brain.ML.ModelActivationTest do
   use ExUnit.Case, async: false
   @moduletag :integration
 
+  # This exercises the live pipeline, which reads the knowledge graph; without
+  # a checked-out connection those lookups fail silently.
+  setup tags do
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+    :ok
+  end
+
   describe "Poincare Embeddings wiring" do
     test "Poincare module exposes ready?/0" do
       assert is_boolean(Brain.ML.Poincare.Embeddings.ready?())

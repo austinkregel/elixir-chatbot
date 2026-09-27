@@ -34,7 +34,9 @@ defmodule ChatWeb.Router do
       live "/sessions/:session_id", SessionsLive
       live "/knowledge-review", Admin.KnowledgeReviewLive
       live "/accuracy", AccuracyLive
+      live "/lexicon", LexiconLive
       live "/training-studio", TrainingStudioLive
+      live "/training/pos", POSTrainingLive
     end
 
     # Legacy route redirects

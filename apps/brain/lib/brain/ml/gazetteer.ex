@@ -297,6 +297,23 @@ defmodule Brain.ML.Gazetteer do
   end
 
   @doc """
+  Adds an entity a human reviewer approved.
+
+  Unlike `add_entry/3`, a name the gazetteer already knows under another
+  type gains the reviewed type as a further candidate reading: approving
+  "Paris" as a person keeps Paris the city. The entry records
+  `source: :reviewed`.
+
+  Returns `{:ok, normalized_key}`, or `{:error, {:duplicate, entity_type}}`
+  when the name already has this type.
+  """
+  @spec add_reviewed(String.t(), String.t()) :: {:ok, String.t()} | {:error, {:duplicate, String.t()}}
+  def add_reviewed(name, entity_type)
+      when is_binary(name) and name != "" and is_binary(entity_type) and entity_type != "" do
+    GenServer.call(__MODULE__, {:add_reviewed, name, entity_type})
+  end
+
+  @doc """
   Remove an entity from the gazetteer.
   """
   def remove_entry(name) when is_binary(name) do
@@ -561,10 +578,18 @@ defmodule Brain.ML.Gazetteer do
     # Create ETS tables (with isolation support)
     create_tables(tables)
 
+    isolated = table_prefix != nil
+
+    # The global gazetteer loads its sources before init returns. Lookups read
+    # ETS directly, so loading afterwards would let callers started later in
+    # the supervision tree see an empty table. Isolated test instances start
+    # empty.
+    unless isolated, do: load_sources()
+
     state = %{
-      loaded: false,
+      loaded: not isolated,
       tables: tables,
-      isolated: table_prefix != nil
+      isolated: isolated
     }
 
     {:ok, state}
@@ -586,109 +611,8 @@ defmodule Brain.ML.Gazetteer do
 
   @impl true
   def handle_call(:load_all, _from, state) do
-    Logger.info("Loading all gazetteers...")
-
-    stats = %{
-      entities: 0,
-      prefixes: 0,
-      cities: 0,
-      artists: 0,
-      emojis: 0,
-      us_cities: 0,
-      entity_types: 0,
-      loaded: false,
-      load_time_ms: 0
-    }
-
-    start_time = System.monotonic_time(:millisecond)
-
-    # Load and index entities from JSON files
-    stats =
-      case DataLoaders.load_all_entities() do
-        {:ok, entities} ->
-          entity_lookup = DataLoaders.build_entity_lookup(entities)
-          indexed = index_entities(entity_lookup, "json_entity")
-          %{stats | entities: stats.entities + indexed, entity_types: map_size(entities)}
-
-        {:error, _} ->
-          stats
-      end
-
-    # Load and index world cities
-    stats =
-      case DataLoaders.load_cities() do
-        {:ok, cities} ->
-          city_lookup = DataLoaders.build_city_lookup(cities)
-          indexed = index_entities(city_lookup, :cities)
-          %{stats | entities: stats.entities + indexed, cities: length(cities)}
-
-        {:error, _} ->
-          stats
-      end
-
-    # Load and index US cities (comprehensive dataset)
-    stats =
-      case DataLoaders.load_us_cities() do
-        {:ok, us_cities} ->
-          us_city_lookup = DataLoaders.build_us_city_lookup(us_cities)
-          indexed = index_entities(us_city_lookup, :us_cities)
-          Logger.info("Loaded US cities", %{count: length(us_cities), indexed: indexed})
-          %{stats | entities: stats.entities + indexed, us_cities: length(us_cities)}
-
-        {:error, _} ->
-          stats
-      end
-
-    # Load and index artists
-    stats =
-      case DataLoaders.load_artists() do
-        {:ok, artists} ->
-          artist_lookup = DataLoaders.build_artist_lookup(artists)
-          indexed = index_entities(artist_lookup, "artist")
-          %{stats | entities: stats.entities + indexed, artists: length(artists)}
-
-        {:error, _} ->
-          stats
-      end
-
-    # Load and index emojis
-    stats =
-      case DataLoaders.load_emojis() do
-        {:ok, emojis} ->
-          emoji_lookup = DataLoaders.build_emoji_lookup(emojis)
-          indexed = index_entities(emoji_lookup, "emoji")
-          %{stats | entities: stats.entities + indexed, emojis: length(emojis)}
-
-        {:error, _} ->
-          stats
-      end
-
-    # Enrich from Atlas knowledge_graph entities
-    atlas_synced = sync_from_atlas()
-
-    stats = %{stats | entities: stats.entities + atlas_synced}
-
-    # Build prefix index
-    prefix_count = build_prefix_index()
-
-    end_time = System.monotonic_time(:millisecond)
-    load_time = end_time - start_time
-
-    final_stats = %{stats | prefixes: prefix_count, loaded: true, load_time_ms: load_time}
-
-    :ets.insert(@stats_table, {:stats, final_stats})
-
-    Logger.info("Gazetteers loaded", %{
-      entities: final_stats.entities,
-      prefixes: final_stats.prefixes,
-      cities: final_stats.cities,
-      artists: final_stats.artists,
-      emojis: final_stats.emojis,
-      atlas_synced: atlas_synced,
-      load_time_ms: load_time
-    })
-
-    {:reply, {:ok, final_stats}, %{state | loaded: true}}
+    stats = load_sources()
+    {:reply, {:ok, stats}, %{state | loaded: true}}
   end
 
   @impl true
@@ -738,6 +662,20 @@ defmodule Brain.ML.Gazetteer do
 
         Logger.info("Added gazetteer entry", %{name: name, type: entity_type})
         {:reply, {:ok, normalized_key}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:add_reviewed, name, entity_type}, _from, state) do
+    normalized_key = normalize(name)
+    new_key? = :ets.lookup(@table_name, normalized_key) == []
+
+    if insert_entry_direct(name, entity_type, %{}, :reviewed) do
+      if new_key?, do: update_entity_count(1)
+      Logger.info("Added reviewed gazetteer entry", %{name: name, type: entity_type})
+      {:reply, {:ok, normalized_key}, state}
+    else
+      {:reply, {:error, {:duplicate, entity_type}}, state}
     end
   end
 
@@ -937,28 +875,107 @@ defmodule Brain.ML.Gazetteer do
   # Private Functions
   # ============================================================================
 
-  defp sync_from_atlas do
-    case Brain.Graph.Training.collect_gazetteer_entries() do
-      {:ok, entries} ->
-        count =
-          Enum.count(entries, fn {name, entity_type, metadata} ->
-            insert_entry_direct(name, entity_type, metadata)
-          end)
+  # Loads and indexes every source into the global tables. Called from init/1,
+  # so the tables are full before any process started after this one can
+  # read them, and again by load_all/0 to reload.
+  defp load_sources do
+    Logger.info("Loading all gazetteers...")
 
-        Logger.debug("Gazetteer enriched from Atlas knowledge_graph (#{count} entries)")
-        count
+    stats = %{
+      entities: 0,
+      prefixes: 0,
+      cities: 0,
+      artists: 0,
+      emojis: 0,
+      us_cities: 0,
+      entity_types: 0,
+      loaded: false,
+      load_time_ms: 0
+    }
 
-      {:error, reason} ->
-        Logger.debug("Atlas Gazetteer sync skipped: #{inspect(reason)}")
-        0
-    end
-  rescue
-    e ->
-      Logger.debug("Atlas Gazetteer sync unavailable: #{inspect(e)}")
-      0
+    start_time = System.monotonic_time(:millisecond)
+
+    # Every source is required: one that cannot be loaded raises instead of
+    # leaving the gazetteer silently short of entries.
+
+    # Load and index entities from JSON files
+    entities = DataLoaders.load_all_entities() |> DataLoaders.require_source!(:entities)
+    indexed = entities |> DataLoaders.build_entity_lookup() |> index_entities("json_entity")
+    stats = %{stats | entities: stats.entities + indexed, entity_types: map_size(entities)}
+
+    # Load and index world cities
+    cities = DataLoaders.load_cities() |> DataLoaders.require_source!(:cities)
+    indexed = cities |> DataLoaders.build_city_lookup() |> index_entities(:cities)
+    stats = %{stats | entities: stats.entities + indexed, cities: length(cities)}
+
+    # Load and index US cities (comprehensive dataset)
+    us_cities = DataLoaders.load_us_cities() |> DataLoaders.require_source!(:us_cities)
+    indexed = us_cities |> DataLoaders.build_us_city_lookup() |> index_entities(:us_cities)
+    Logger.info("Loaded US cities", %{count: length(us_cities), indexed: indexed})
+    stats = %{stats | entities: stats.entities + indexed, us_cities: length(us_cities)}
+
+    # Load and index artists
+    artists = DataLoaders.load_artists() |> DataLoaders.require_source!(:artists)
+    indexed = artists |> DataLoaders.build_artist_lookup() |> index_entities("artist")
+    stats = %{stats | entities: stats.entities + indexed, artists: length(artists)}
+
+    # Load and index emojis
+    emojis = DataLoaders.load_emojis() |> DataLoaders.require_source!(:emojis)
+    indexed = emojis |> DataLoaders.build_emoji_lookup() |> index_entities("emoji")
+    stats = %{stats | entities: stats.entities + indexed, emojis: length(emojis)}
+
+    # Entities a human reviewer approved
+    reviewed = load_reviewed()
+
+    stats = %{stats | entities: stats.entities + reviewed}
+
+    # Build prefix index
+    prefix_count = build_prefix_index()
+
+    end_time = System.monotonic_time(:millisecond)
+    load_time = end_time - start_time
+
+    final_stats = %{stats | prefixes: prefix_count, loaded: true, load_time_ms: load_time}
+
+    :ets.insert(@stats_table, {:stats, final_stats})
+
+    Logger.info("Gazetteers loaded", %{
+      entities: final_stats.entities,
+      prefixes: final_stats.prefixes,
+      cities: final_stats.cities,
+      artists: final_stats.artists,
+      emojis: final_stats.emojis,
+      reviewed: reviewed,
+      load_time_ms: load_time
+    })
+
+    final_stats
   end
 
-  defp insert_entry_direct(name, entity_type, metadata) when is_binary(name) and name != "" do
+  # The gazetteer learns only what a human reviewer approved. Approved
+  # entities scoped to a world live in that world's overlay, which
+  # World.Manager persists and restores with the world, so only the global
+  # ones are loaded here.
+  defp load_reviewed do
+    case Brain.AtlasIntegration.load_reviewed_entities() do
+      {:ok, entities} ->
+        count =
+          Enum.count(entities, fn
+            {name, entity_type, nil} -> insert_entry_direct(name, entity_type, %{}, :reviewed)
+            {_name, _entity_type, _world_id} -> false
+          end)
+
+        Logger.debug("Gazetteer loaded #{count} reviewed entities")
+        count
+
+      # No approvals is {:ok, []}; an error means Atlas could not be read,
+      # which is a failure like any other missing source.
+      {:error, reason} ->
+        raise "Gazetteer: could not read reviewed entities from Atlas: #{inspect(reason)}"
+    end
+  end
+
+  defp insert_entry_direct(name, entity_type, metadata, source) when is_binary(name) and name != "" do
     normalized_key = normalize(name)
 
     entity_info =
@@ -967,7 +984,7 @@ defmodule Brain.ML.Gazetteer do
       |> Map.put(:type, entity_type)
       |> Map.put(:value, name)
       |> Map.put(:original_name, name)
-      |> Map.put(:source, :atlas)
+      |> Map.put(:source, source)
       |> Map.put(:added_at, System.system_time(:second))
 
     case :ets.lookup(@table_name, normalized_key) do
@@ -1009,7 +1026,7 @@ defmodule Brain.ML.Gazetteer do
     end
   end
 
-  defp insert_entry_direct(_, _, _), do: false
+  defp insert_entry_direct(_, _, _, _), do: false
 
   defp update_entity_count(delta) do
     case :ets.lookup(@stats_table, :stats) do

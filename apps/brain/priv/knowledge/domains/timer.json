@@ -1,0 +1,58 @@
+{
+  "domain": "timer",
+  "description": "Timer management",
+  "response_frames": {
+    "set": [
+      "Timer set for $duration.",
+      "I've started a $duration timer."
+    ],
+    "cancel": [
+      "Timer cancelled.",
+      "I've stopped the timer."
+    ],
+    "check": [
+      "Let me check the timer."
+    ],
+    "general": [
+      "Timer is running."
+    ]
+  },
+  "enriched_response_frames": {
+    "with_timer_status": {
+      "condition": "enriched:timer_status",
+      "requires_enrichment": ["timer_status", "time_remaining"],
+      "templates": [
+        "The timer is $timer_status with $time_remaining remaining.",
+        "Timer: $timer_status -- $time_remaining left."
+      ]
+    },
+    "service_not_configured": {
+      "condition": "service_missing",
+      "requires_enrichment": [],
+      "templates": [
+        "I'd need a smart home connection to manage timers."
+      ]
+    },
+    "service_error": {
+      "condition": "service_error",
+      "requires_enrichment": [],
+      "templates": [
+        "I had trouble with the timer. The system might be unavailable."
+      ]
+    }
+  },
+  "entity_verbalizations": {
+    "duration": ["for $value"]
+  },
+  "acknowledgment_prefixes": ["Sure,", "Done.", "Got it."],
+  "slot_requirements": {
+    "required": [],
+    "optional": ["duration"]
+  },
+  "enrichment_service": "home_assistant",
+  "enrichment_fields": {
+    "timer_status": {"description": "Timer state (running/paused/idle)", "source": "home_assistant"},
+    "time_remaining": {"description": "Remaining time on timer", "source": "home_assistant"},
+    "duration": {"description": "Timer duration", "source": "home_assistant"}
+  }
+}

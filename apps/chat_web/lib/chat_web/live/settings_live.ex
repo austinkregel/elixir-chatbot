@@ -35,6 +35,7 @@ defmodule ChatWeb.SettingsLive do
         "ml_training" -> :ml_training
         "templates" -> :templates
         "services" -> :services
+        "response_systems" -> :response_systems
         _ -> :worlds
       end
 
@@ -78,6 +79,11 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:service_credentials, %{})
       |> assign(:service_health_status, %{})
       |> assign(:service_checking, nil)
+      |> assign(:ha_discovered_entities, [])
+      |> assign(:ha_discovering, false)
+      |> assign(:response_domains, [])
+      |> assign(:lattice_stats, %{})
+      |> assign(:response_generating, false)
       |> load_section_data()
 
     {:noreply, socket}
@@ -91,6 +97,7 @@ defmodule ChatWeb.SettingsLive do
       :ml_training -> load_ml_training_data(socket)
       :templates -> load_templates_data(socket)
       :services -> load_services_data(socket)
+      :response_systems -> load_response_systems_data(socket)
       _ -> socket
     end
   end
@@ -292,6 +299,30 @@ defmodule ChatWeb.SettingsLive do
     socket
     |> assign(:services, services)
     |> assign(:service_credentials, service_credentials)
+  end
+
+  defp load_response_systems_data(socket) do
+    domains =
+      try do
+        Brain.Response.ResponseSystemRouter.list_domains()
+      rescue
+        _ -> []
+      catch
+        :exit, _ -> []
+      end
+
+    lattice_stats =
+      try do
+        Brain.Response.PhraseInventory.stats()
+      rescue
+        _ -> %{status: :unavailable}
+      catch
+        :exit, _ -> %{status: :unavailable}
+      end
+
+    socket
+    |> assign(:response_domains, domains)
+    |> assign(:lattice_stats, lattice_stats)
   end
 
   @impl true
@@ -805,7 +836,101 @@ defmodule ChatWeb.SettingsLive do
        |> put_flash(:error, "Invalid service name")}
   end
 
+  def handle_event("discover_ha_entities", _params, socket) do
+    socket = assign(socket, :ha_discovering, true)
+
+    Task.start(fn ->
+      result =
+        case fetch_ha_credentials() do
+          {:ok, creds} ->
+            Brain.Services.HomeAssistant.Discovery.discover(creds)
+
+          {:error, _} ->
+            {:error, :no_credentials}
+        end
+
+      send(socket.root_pid, {:ha_discovery_result, result})
+    end)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("register_ha_entities", _params, socket) do
+    case fetch_ha_credentials() do
+      {:ok, creds} ->
+        case Brain.Services.HomeAssistant.Discovery.discover_and_register(creds) do
+          {:ok, %{total: count}} ->
+            {:noreply, put_flash(socket, :info, "Registered #{count} entities in Gazetteer")}
+
+          {:error, reason} ->
+            {:noreply, put_flash(socket, :error, "Registration failed: #{inspect(reason)}")}
+        end
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Home Assistant credentials not configured")}
+    end
+  end
+
+  # ============================================================================
+  # Response Systems Section Event Handlers
+  # ============================================================================
+
+  def handle_event("update_domain_system", %{"domain" => domain, "system" => system}, socket) do
+    Brain.Response.ResponseSystemRouter.update_domain_config(domain, %{"system" => system})
+    {:noreply, socket |> load_response_systems_data() |> put_flash(:info, "Updated #{domain} response system")}
+  rescue
+    _ -> {:noreply, put_flash(socket, :error, "Failed to update")}
+  end
+
+  def handle_event("update_domain_tone", %{"domain" => domain, "tone_bias" => tone}, socket) do
+    Brain.Response.ResponseSystemRouter.update_domain_config(domain, %{"tone_bias" => tone})
+    {:noreply, socket |> load_response_systems_data() |> put_flash(:info, "Updated #{domain} tone")}
+  rescue
+    _ -> {:noreply, put_flash(socket, :error, "Failed to update")}
+  end
+
+  def handle_event("update_domain_mirror", %{"domain" => domain, "mirror" => mirror_str}, socket) do
+    {mirror, _} = Float.parse(mirror_str)
+    mirror = max(0.0, min(1.0, mirror))
+    Brain.Response.ResponseSystemRouter.update_domain_config(domain, %{"mirror_coefficient" => mirror})
+    {:noreply, socket |> load_response_systems_data() |> put_flash(:info, "Updated #{domain} mirror coefficient")}
+  rescue
+    _ -> {:noreply, put_flash(socket, :error, "Failed to update")}
+  end
+
+  def handle_event("regenerate_lattice", _params, socket) do
+    socket = assign(socket, :response_generating, true)
+
+    case Brain.ML.TrainingServer.start_training(:lattice, []) do
+      {:ok, _} ->
+        {:noreply, put_flash(socket, :info, "Lattice regeneration started")}
+
+      {:error, reason} ->
+        {:noreply, socket |> assign(:response_generating, false) |> put_flash(:error, "Failed: #{inspect(reason)}")}
+    end
+  rescue
+    _ -> {:noreply, socket |> assign(:response_generating, false) |> put_flash(:error, "Training server not available")}
+  end
+
   @impl true
+  def handle_info({:ha_discovery_result, result}, socket) do
+    case result do
+      {:ok, entities_by_domain} when is_map(entities_by_domain) ->
+        flat_entities = Enum.flat_map(entities_by_domain, fn {_domain, entities} -> entities end)
+
+        {:noreply,
+         socket
+         |> assign(:ha_discovered_entities, flat_entities)
+         |> assign(:ha_discovering, false)}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> assign(:ha_discovering, false)
+         |> put_flash(:error, "Discovery failed: #{inspect(reason)}")}
+    end
+  end
+
   def handle_info({:world_context_changed, _world_id}, socket) do
     {:noreply, load_section_data(socket)}
   end
@@ -932,6 +1057,13 @@ defmodule ChatWeb.SettingsLive do
           >
             <.icon name="hero-cloud" class="size-4" /> Services
           </button>
+          <button
+            phx-click="switch_section"
+            phx-value-section="response_systems"
+            class={["tab gap-1", if(@section == :response_systems, do: "tab-active", else: "")]}
+          >
+            <.icon name="hero-sparkles" class="size-4" /> Response
+          </button>
         </div>
 
     <!-- Content -->
@@ -996,6 +1128,14 @@ defmodule ChatWeb.SettingsLive do
               credentials={@service_credentials}
               health_status={@service_health_status}
               checking={@service_checking}
+              ha_discovered_entities={@ha_discovered_entities}
+              ha_discovering={@ha_discovering}
+            />
+          <% :response_systems -> %>
+            <.response_systems_section
+              domains={@response_domains}
+              lattice_stats={@lattice_stats}
+              generating={@response_generating}
             />
         <% end %>
       </div>
@@ -2155,6 +2295,214 @@ defmodule ChatWeb.SettingsLive do
           <% end %>
         </div>
       <% end %>
+
+      <!-- Home Assistant Entity Discovery -->
+      <%= if Enum.any?(@services, & &1.name == :home_assistant && &1.configured) do %>
+        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-semibold flex items-center gap-2">
+                <.icon name="hero-home" class="size-5" />
+                Home Assistant Entity Discovery
+              </h3>
+              <p class="text-sm text-base-content/60">
+                Discover HA devices and register them in the Gazetteer
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <button
+                phx-click="discover_ha_entities"
+                class="btn btn-sm btn-outline gap-1"
+                disabled={@ha_discovering}
+              >
+                <%= if @ha_discovering do %>
+                  <span class="loading loading-spinner loading-xs"></span>
+                  Discovering...
+                <% else %>
+                  <.icon name="hero-magnifying-glass" class="size-4" />
+                  Discover
+                <% end %>
+              </button>
+              <button
+                phx-click="register_ha_entities"
+                class="btn btn-sm btn-primary gap-1"
+                disabled={@ha_discovering}
+              >
+                <.icon name="hero-plus-circle" class="size-4" />
+                Register All
+              </button>
+            </div>
+          </div>
+
+          <%= if length(@ha_discovered_entities) > 0 do %>
+            <div class="overflow-x-auto max-h-96">
+              <table class="table table-xs table-zebra">
+                <thead>
+                  <tr>
+                    <th>Entity ID</th>
+                    <th>Name</th>
+                    <th>Domain</th>
+                    <th>State</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <%= for entity <- @ha_discovered_entities do %>
+                    <tr>
+                      <td class="font-mono text-xs">{entity.ha_entity_id}</td>
+                      <td>{entity.name}</td>
+                      <td>
+                        <span class="badge badge-sm badge-ghost">
+                          {entity.ha_domain}
+                        </span>
+                      </td>
+                      <td>{entity.state}</td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+            <div class="mt-2 text-sm text-base-content/60">
+              {length(@ha_discovered_entities)} entities found
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  defp response_systems_section(assigns) do
+    ~H"""
+    <div class="space-y-6">
+      <!-- Lattice Stats -->
+      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-semibold">Phrase Lattice</h3>
+            <p class="text-sm text-base-content/60">Fragment inventory for response generation</p>
+          </div>
+          <button
+            phx-click="regenerate_lattice"
+            class="btn btn-primary btn-sm gap-1"
+            disabled={@generating}
+          >
+            <%= if @generating do %>
+              <span class="loading loading-spinner loading-xs"></span>
+              Generating...
+            <% else %>
+              <.icon name="hero-arrow-path" class="size-4" />
+              Regenerate
+            <% end %>
+          </button>
+        </div>
+
+        <%= if @lattice_stats[:status] == :ok do %>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-base-200/50 rounded-lg p-3 text-center">
+              <div class="text-2xl font-bold">{Map.get(@lattice_stats, :total_fragments, 0)}</div>
+              <div class="text-xs text-base-content/60">Total Fragments</div>
+            </div>
+            <%= for {chunk_type, count} <- Map.get(@lattice_stats, :by_chunk_type, %{}) do %>
+              <div class="bg-base-200/50 rounded-lg p-3 text-center">
+                <div class="text-lg font-bold">{count}</div>
+                <div class="text-xs text-base-content/60">{chunk_type}</div>
+              </div>
+            <% end %>
+          </div>
+
+          <%= if map_size(Map.get(@lattice_stats, :tone_distribution, %{})) > 0 do %>
+            <div class="mt-4">
+              <h4 class="text-sm font-medium mb-2">Tone Distribution</h4>
+              <div class="flex flex-wrap gap-2">
+                <%= for {tone, count} <- Enum.sort_by(Map.get(@lattice_stats, :tone_distribution, %{}), fn {_, c} -> c end, :desc) do %>
+                  <span class="badge badge-sm badge-outline gap-1">
+                    {tone}: {count}
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="text-sm text-base-content/50 p-4 text-center">
+            <.icon name="hero-exclamation-circle" class="size-8 mx-auto mb-2 text-base-content/30" />
+            <p>No phrase inventory loaded</p>
+            <p class="mt-1">Run "Regenerate" or <code>mix gen_lattice_data</code> to build the inventory</p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Per-Domain Configuration -->
+      <div class="bg-base-100 rounded-xl border border-base-300/50">
+        <div class="p-4 border-b border-base-300">
+          <h3 class="font-semibold">Per-Domain Response System</h3>
+          <p class="text-sm text-base-content/60">Configure which system handles each domain</p>
+        </div>
+
+        <%= if length(@domains) == 0 do %>
+          <div class="p-8 text-center text-base-content/50">
+            No domain configurations found
+          </div>
+        <% else %>
+          <div class="divide-y divide-base-300/50">
+            <%= for domain <- @domains do %>
+              <div class="p-4">
+                <div class="flex flex-wrap items-center gap-4">
+                  <div class="min-w-[120px]">
+                    <span class="font-medium">{domain.domain}</span>
+                  </div>
+
+                  <div class="form-control">
+                    <label class="label py-0"><span class="label-text text-xs">System</span></label>
+                    <select
+                      phx-change="update_domain_system"
+                      name="system"
+                      class="select select-sm select-bordered"
+                    >
+                      <input type="hidden" name="domain" value={domain.domain} />
+                      <option value="lattice" selected={domain.system == "lattice"}>Lattice</option>
+                      <option value="ouro" selected={domain.system == "ouro"}>Ouro</option>
+                      <option value="template" selected={domain.system == "template"}>Template</option>
+                    </select>
+                  </div>
+
+                  <div class="form-control">
+                    <label class="label py-0"><span class="label-text text-xs">Tone Bias</span></label>
+                    <select
+                      phx-change="update_domain_tone"
+                      name="tone_bias"
+                      class="select select-sm select-bordered"
+                    >
+                      <input type="hidden" name="domain" value={domain.domain} />
+                      <%= for tone <- ~w(enthusiastic cheery playful warm encouraging calm neutral professional matter_of_fact dry deadpan sardonic empathetic gentle patient) do %>
+                        <option value={tone} selected={domain.tone_bias == tone}>{tone}</option>
+                      <% end %>
+                    </select>
+                  </div>
+
+                  <div class="form-control min-w-[200px]">
+                    <label class="label py-0">
+                      <span class="label-text text-xs">Mirror: {domain.mirror_coefficient}</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={domain.mirror_coefficient}
+                      phx-change="update_domain_mirror"
+                      name="mirror"
+                      class="range range-sm range-primary"
+                    />
+                    <input type="hidden" name="domain" value={domain.domain} />
+                  </div>
+
+                  <div class="badge badge-sm badge-ghost">{domain.fallback} fallback</div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
     </div>
     """
   end
@@ -2192,7 +2540,19 @@ defmodule ChatWeb.SettingsLive do
   defp service_icon(:weather), do: "hero-sun"
   defp service_icon(:news), do: "hero-newspaper"
   defp service_icon(:geocoding), do: "hero-map-pin"
+  defp service_icon(:home_assistant), do: "hero-home"
   defp service_icon(_), do: "hero-cloud"
+
+  defp fetch_ha_credentials do
+    vault = Brain.Services.CredentialVault
+
+    with {:ok, url} <- vault.get(:home_assistant, :url),
+         {:ok, token} <- vault.get(:home_assistant, :access_token) do
+      {:ok, %{url: url, access_token: token}}
+    else
+      _ -> {:error, :missing_credentials}
+    end
+  end
 
   defp humanize_credential(:api_key), do: "API Key"
   defp humanize_credential(:client_id), do: "Client ID"

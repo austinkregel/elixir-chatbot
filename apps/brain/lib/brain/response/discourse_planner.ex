@@ -24,16 +24,10 @@ defmodule Brain.Response.DiscoursePlanner do
   @patterns_path Path.join(@brain_priv, "response/discourse_patterns.json")
   @external_resource @patterns_path
 
-  @patterns (case File.read(@patterns_path) do
-               {:ok, content} ->
-                 case Jason.decode(content) do
-                   {:ok, %{"patterns" => patterns}} -> patterns
-                   _ -> %{}
-                 end
-
-               _ ->
-                 %{}
-             end)
+  # discourse_patterns.json drives every response plan. An unreadable or
+  # malformed file used to compile to %{}, leaving the planner with nothing but
+  # its default single-primitive backbone.
+  @patterns @patterns_path |> File.read!() |> Jason.decode!() |> Map.fetch!("patterns")
 
   @doc """
   Plans a discourse structure for the given analysis model.

@@ -20,20 +20,25 @@ defmodule Mix.Tasks.Evaluate.Intent do
     ML.MicroClassifiers.await_ready(:infinity)
     IO.puts("MicroClassifiers ready.")
 
-    gold = EvaluationStore.load_gold_standard("intent")
+    # Held-out only. Evaluating on the full gold standard measures the model
+    # against the rows it was fitted to: every intent figure this repo has
+    # produced, including 43.5% and 38.4%, was training-set accuracy.
+    # `load_gold_standard/2` raises when no split exists rather than quietly
+    # falling back to the training set, which is the defect being closed.
+    gold = EvaluationStore.load_gold_standard("intent", :held_out)
 
     if gold == [] do
-      IO.puts("\nNo gold standard data for intent classification.")
-      IO.puts("Add annotated examples to: priv/evaluation/intent/gold_standard.json")
-      IO.puts("")
-      IO.puts("Format: [{\"text\": \"What's the weather?\", \"intent\": \"weather.query\"}, ...]")
-      IO.puts("")
-      exit(:normal)
+      Mix.raise("""
+      The held-out split for intent is empty: #{EvaluationStore.held_out_path("intent")}
+
+      An empty evaluation set cannot measure anything, which is not the same as
+      a model that scores zero. Re-carve it with `mix split.held_out intent`.
+      """)
     end
 
     IO.puts("\n" <> String.duplicate("=", 60))
-    IO.puts("INTENT CLASSIFICATION EVALUATION (#{length(gold)} examples)")
-    IO.puts("(Using production pipeline)")
+    IO.puts("INTENT CLASSIFICATION EVALUATION (#{length(gold)} held-out examples)")
+    IO.puts("(Using production pipeline; the model never saw these rows)")
     IO.puts(String.duplicate("=", 60) <> "\n")
 
     start_time = System.monotonic_time(:millisecond)
@@ -100,10 +105,23 @@ defmodule Mix.Tasks.Evaluate.Intent do
   end
 
   defp evaluate_all(gold) do
+    total = length(gold)
+    IO.puts("Starting evaluation of #{total} examples...")
+
     {results, counts} =
-      Enum.reduce(gold, {[], %{ok: 0, unknown: 0, errored: 0}}, fn example, {acc, counts} ->
+      gold
+      |> Enum.with_index(1)
+      |> Enum.reduce({[], %{ok: 0, unknown: 0, errored: 0}}, fn {example, idx}, {acc, counts} ->
         text = example["text"]
         expected = example["intent"]
+
+        if rem(idx, 100) == 0 or idx == 1 do
+          elapsed = counts[:_started_at] && System.monotonic_time(:millisecond) - counts[:_started_at]
+          rate = if elapsed && elapsed > 0, do: " (#{Float.round(idx / (elapsed / 1000), 1)}/s)", else: ""
+          IO.puts("  [#{idx}/#{total}]#{rate} processing: #{String.slice(text || "", 0, 60)}")
+        end
+
+        counts = if idx == 1, do: Map.put(counts, :_started_at, System.monotonic_time(:millisecond)), else: counts
 
         {status, predicted} =
           try do
@@ -111,14 +129,20 @@ defmodule Mix.Tasks.Evaluate.Intent do
             p = to_string(analysis.intent || "unknown")
             if p == "unknown", do: {:unknown, p}, else: {:ok, p}
           rescue
-            _ -> {:error, "unknown"}
+            e ->
+              if idx <= 3, do: IO.puts("  ERROR on example #{idx}: #{Exception.message(e)}")
+              {:error, "unknown"}
           catch
-            :exit, _ -> {:error, "unknown"}
+            :exit, reason ->
+              if idx <= 3, do: IO.puts("  EXIT on example #{idx}: #{inspect(reason)}")
+              {:error, "unknown"}
           end
 
         counts = Map.update!(counts, status_key(status), &(&1 + 1))
         {[{predicted, expected} | acc], counts}
       end)
+
+    counts = Map.delete(counts, :_started_at)
 
     error_rate = (counts.errored + counts.unknown) / max(length(gold), 1)
 

@@ -4,21 +4,17 @@
       "index": 0,
       "text": "What's the weather?",
       "entities": [],
-      "response_strategy": "needs_clarification",
-      "slots_filled": [
-        "date"
-      ],
-      "slots_missing": [
-        "location"
-      ],
-      "detected_intent": "weather",
+      "response_strategy": "hedged_response",
+      "detected_intent": "calendar.cancel",
       "speech_act_category": "directive",
-      "speech_act_type": "request_information",
-      "speech_act_confidence": 1.0,
+      "speech_act_type": "command",
+      "speech_act_confidence": 0.93,
       "discourse_addressee": "bot",
-      "discourse_self_referential": "false"
+      "discourse_self_referential": "false",
+      "slots_filled": [],
+      "slots_missing": []
     }
   ],
-  "overall_strategy": "needs_clarification",
+  "overall_strategy": "hedged_response",
   "chunk_count": 1
 }

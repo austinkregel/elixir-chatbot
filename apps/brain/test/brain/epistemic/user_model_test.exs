@@ -7,7 +7,11 @@ defmodule Brain.Epistemic.UserModelStoreTest do
   setup _context do
     ensure_pubsub_started()
     ensure_started(UserModelStore)
-    UserModelStore.clear_all()
+
+    # Empty before each test and empty again after: user models live in
+    # GenServer state, which the Sandbox does not roll back. Empty is the boot
+    # state (0 rows in atlas_user_models).
+    Brain.Test.Singletons.reset_epistemic_stores!([:user_models])
 
     :ok
   end

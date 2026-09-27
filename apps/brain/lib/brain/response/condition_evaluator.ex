@@ -265,15 +265,23 @@ defmodule Brain.Response.ConditionEvaluator do
   end
 
   defp eval_condition("enrichment_failed", _value, context) do
-    # Check if enrichment was attempted but failed
     enrichment_status = Map.get(context, :enrichment_status)
     enrichment_status == :failed
   end
 
   defp eval_condition("enrichment_success", _value, context) do
-    # Check if enrichment succeeded
     enrichment_status = Map.get(context, :enrichment_status)
     enrichment_status == :success
+  end
+
+  defp eval_condition("service_missing", _value, context) do
+    enrichment_status = Map.get(context, :enrichment_status)
+    enrichment_status == :not_configured
+  end
+
+  defp eval_condition("service_error", _value, context) do
+    enrichment_status = Map.get(context, :enrichment_status)
+    enrichment_status == :failed
   end
 
   defp eval_condition(unknown_type, _value, _context) do

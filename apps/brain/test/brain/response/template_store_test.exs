@@ -260,7 +260,7 @@ defmodule Brain.Response.TemplateStoreTest do
 
       entities = [
         %{entity_type: "song", value: "Bohemian Rhapsody"},
-        %{entity_type: "music-artist", value: "Queen"}
+        %{entity_type: "music_artist", value: "Queen"}
       ]
 
       result = TemplateStore.substitute_slots(template, entities)

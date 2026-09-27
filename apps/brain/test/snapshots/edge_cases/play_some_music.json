@@ -3,18 +3,24 @@
     {
       "index": 0,
       "text": "Play some music",
-      "entities": [],
-      "response_strategy": "can_respond",
-      "slots_filled": [],
-      "slots_missing": [],
-      "detected_intent": "music.play",
+      "entities": [
+        {
+          "type": "given_name",
+          "value": "Play",
+          "confidence": 0.65
+        }
+      ],
+      "response_strategy": "hedged_response",
+      "detected_intent": "knowledge.capital",
       "speech_act_category": "directive",
       "speech_act_type": "command",
-      "speech_act_confidence": 0.73,
+      "speech_act_confidence": 1.0,
       "discourse_addressee": "bot",
-      "discourse_self_referential": "false"
+      "discourse_self_referential": "false",
+      "slots_filled": [],
+      "slots_missing": []
     }
   ],
-  "overall_strategy": "can_respond",
+  "overall_strategy": "hedged_response",
   "chunk_count": 1
 }

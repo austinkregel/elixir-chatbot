@@ -62,6 +62,57 @@ defmodule Brain.LinguisticDataTest do
     end
   end
 
+  describe "has_negation?/1 with contracted negation" do
+    # Regression: has_negation?/1 split on ~r/\W+/, so "don't" became
+    # ["don", "t"] and neither token is in the negation vocabulary, which lists
+    # the negator itself. Every contracted negation was therefore reported as
+    # affirmative. Measured on the cognitive-distortions corpus before the fix:
+    # 55 of 206 negated sentences (26.7%) were missed.
+    #
+    # Every case in the describe blocks above uses negation spelled out in full,
+    # which is why the defect survived the suite.
+    @contracted [
+      "I don't like rain",
+      "I can't help it",
+      "It won't work",
+      "She didn't come to the party",
+      "It isn't working",
+      "They aren't here",
+      "That wasn't flawless",
+      "We weren't ready",
+      "He doesn't like cats"
+    ]
+
+    for text <- @contracted do
+      @text text
+
+      test "detects contracted negation in: #{text}" do
+        assert LinguisticData.has_negation?(@text),
+               "expected contracted negation to be detected in #{inspect(@text)}"
+      end
+    end
+
+    test "contracted and expanded forms agree" do
+      pairs = [
+        {"I don't like rain", "I do not like rain"},
+        {"It won't work", "It will not work"},
+        {"She didn't come", "She did not come"}
+      ]
+
+      for {contracted, expanded} <- pairs do
+        assert LinguisticData.has_negation?(contracted) ==
+                 LinguisticData.has_negation?(expanded),
+               "#{inspect(contracted)} and #{inspect(expanded)} must agree"
+      end
+    end
+
+    test "expanding contractions does not create false positives" do
+      refute LinguisticData.has_negation?("I can help it")
+      refute LinguisticData.has_negation?("She tied a knot in the rope")
+      refute LinguisticData.has_negation?("The cannon fired")
+    end
+  end
+
   describe "parity with legacy substring-based checks" do
     # These inputs are the kind both Knowledge.Types and PaperModelBuilder
     # used to handle correctly with the substring approach. The new predicate

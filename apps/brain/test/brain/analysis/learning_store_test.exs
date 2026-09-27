@@ -13,6 +13,13 @@ defmodule Brain.Analysis.LearningStoreTest do
     # Start LearningStore under ExUnit supervision
     ensure_started(LearningStore)
 
+    # The store is one map for the whole VM, and it also writes that map to a
+    # gitignored file that outlives the run. These tests rewrite chunker,
+    # speech_acts and discourse params and bump the feedback counters, and
+    # SemanticChunker and ResponseGate read those values live — before this,
+    # the rest of the run saw max_chunk_words 60 and bot_names ["test"].
+    Brain.Test.Singletons.preserve_learning_params!()
+
     :ok
   end
 

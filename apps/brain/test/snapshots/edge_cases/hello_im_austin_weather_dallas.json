@@ -2,7 +2,32 @@
   "analyses": [
     {
       "index": 0,
-      "text": "Hello, I'm Austin. What's the weather in Dallas?",
+      "text": "Hello, I'm Austin.",
+      "entities": [
+        {
+          "type": "person",
+          "value": "Austin",
+          "confidence": 0.84
+        },
+        {
+          "type": "song",
+          "value": "Hello",
+          "confidence": 0.71
+        }
+      ],
+      "response_strategy": "hedged_response",
+      "detected_intent": "smalltalk.appraisal.welcome",
+      "speech_act_category": "expressive",
+      "speech_act_type": "greeting",
+      "speech_act_confidence": 1.0,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false",
+      "slots_filled": [],
+      "slots_missing": []
+    },
+    {
+      "index": 1,
+      "text": "What's the weather in Dallas?",
       "entities": [
         {
           "type": "location",
@@ -10,20 +35,20 @@
           "confidence": 0.79
         }
       ],
-      "response_strategy": "can_respond",
+      "response_strategy": "hedged_response",
+      "detected_intent": "weather.query",
+      "speech_act_category": "directive",
+      "speech_act_type": "request_information",
+      "speech_act_confidence": 0.82,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false",
       "slots_filled": [
         "date",
         "location"
       ],
-      "slots_missing": [],
-      "detected_intent": "weather",
-      "speech_act_category": "directive",
-      "speech_act_type": "request_information",
-      "speech_act_confidence": 0.79,
-      "discourse_addressee": "bot",
-      "discourse_self_referential": "false"
+      "slots_missing": []
     }
   ],
-  "overall_strategy": "can_respond",
-  "chunk_count": 1
+  "overall_strategy": "hedged_response",
+  "chunk_count": 2
 }

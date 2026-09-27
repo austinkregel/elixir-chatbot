@@ -297,10 +297,12 @@ See `test/support/http_snapshot.ex` for more information.
 
 ### Running Tests
 
+Use an explicit test environment so compilation and paths (`_build/test/…`, `priv` copies) are never ambiguous if the shell inherited another `MIX_ENV`:
+
 ```bash
-mix test                           # All tests (excludes slow, benchmark)
-mix test --only benchmark          # Accuracy threshold tests
-mix test --only integration        # Integration tests
+MIX_ENV=test mix test                           # All tests (excludes slow, benchmark)
+MIX_ENV=test mix test --only benchmark          # Accuracy threshold tests
+MIX_ENV=test mix test --only integration        # Integration tests
 ```
 
 ### Test Helpers

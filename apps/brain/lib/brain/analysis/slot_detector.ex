@@ -5,7 +5,7 @@ defmodule Brain.Analysis.SlotDetector do
 
   require Logger
 
-  @schemas_path "priv/analysis/intent_registry.json"
+  @schemas_path "analysis/intent_registry.json"
 
   @doc "Detects slots for the given intent and fills them from entities.\n\nReturns a SlotResult struct indicating which slots are filled and which are missing.\n"
   def detect(intent, entities) when is_binary(intent) and is_list(entities) do
@@ -159,23 +159,23 @@ defmodule Brain.Analysis.SlotDetector do
     "Could you please specify the #{readable}?"
   end
 
+  # The registry is resolved from the app's priv directory, not the working
+  # directory, and is required: without it every intent would get only the
+  # service schemas, which is how music.play lost its artist slot whenever the
+  # app ran from the umbrella root.
   defp load_schemas do
-    base =
-      case Application.get_env(:brain, :analysis_schemas_path, @schemas_path) do
-        path when is_binary(path) ->
-          case File.read(path) do
-            {:ok, content} ->
-              case Jason.decode(content) do
-                {:ok, schemas} -> schemas
-                {:error, _} -> default_schemas()
-              end
+    path = Brain.priv_path(@schemas_path)
 
-            {:error, _} ->
-              default_schemas()
+    base =
+      case File.read(path) do
+        {:ok, content} ->
+          case Jason.decode(content) do
+            {:ok, schemas} -> schemas
+            {:error, reason} -> raise "SlotDetector: cannot parse #{path}: #{inspect(reason)}"
           end
 
-        _ ->
-          default_schemas()
+        {:error, reason} ->
+          raise "SlotDetector: cannot read intent registry at #{path}: #{inspect(reason)}"
       end
 
     merge_service_schemas(base)
@@ -233,18 +233,6 @@ defmodule Brain.Analysis.SlotDetector do
     base_defaults = Map.get(base, "defaults", %{})
     overlay_defaults = Map.get(overlay, "defaults", %{})
     Map.put(base, "defaults", Map.merge(base_defaults, overlay_defaults))
-  end
-
-  defp default_schemas do
-    %{
-      "unknown" => %{
-        "required" => [],
-        "optional" => [],
-        "defaults" => %{},
-        "entity_mappings" => %{},
-        "clarification_templates" => %{}
-      }
-    }
   end
 
   defp expected_entity_types_from_schema(_intent, schema) do

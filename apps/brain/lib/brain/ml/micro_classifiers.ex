@@ -171,12 +171,61 @@ defmodule Brain.ML.MicroClassifiers do
     end
   end
 
+  @doc """
+  Return the label vocabulary of the named classifier's loaded model.
+
+  This is the set of values the classifier can actually emit, read off the
+  trained model's `:label_centroids` — both `SimpleClassifier` (text) and
+  `FeatureVectorClassifier` key their centroids by label, so one accessor
+  covers both kinds.
+
+  Exists so that consumers can declare an axis's value domain by *asking the
+  model* instead of hardcoding a parallel list. A hand-maintained copy of a
+  trained model's classes is a second source of truth that silently goes stale
+  the first time a model is retrained on different data.
+
+  Labels are returned sorted, as strings, exactly as the model stores them —
+  converting to atoms is the caller's decision, because an unknown label
+  string must not silently mint an atom here.
+
+  Returns `{:error, :not_trained}` for a model with an empty centroid map: a
+  classifier that can emit nothing has no value domain, and reporting `[]`
+  would let a caller mistake that for a successfully-read empty vocabulary.
+  """
+  @spec labels(atom()) ::
+          {:ok, [String.t()]} | {:error, :not_loaded | :not_trained}
+  def labels(name) when is_atom(name) do
+    if ready?() do
+      GenServer.call(__MODULE__, {:labels, name}, 1_000)
+    else
+      {:error, :not_loaded}
+    end
+  end
+
   @doc "Check if the MicroClassifiers server is ready."
   def ready? do
     try do
       GenServer.call(__MODULE__, :ready?, 100)
     catch
       :exit, _ -> false
+    end
+  end
+
+  @doc """
+  Classifiers that were rejected at load because their provenance did not match
+  the current environment, as `%{name => message}`.
+
+  Empty when every model matched. A rejected classifier is absent from `models`,
+  so it answers `{:error, :not_loaded}` rather than predicting from data it was
+  not trained on. `Brain.ML.ModelPreflight.validate_all!/0` turns a non-empty map
+  into a failure.
+  """
+  @spec stale() :: %{atom() => String.t()}
+  def stale do
+    try do
+      GenServer.call(__MODULE__, :stale, 1_000)
+    catch
+      :exit, _ -> %{}
     end
   end
 
@@ -204,6 +253,21 @@ defmodule Brain.ML.MicroClassifiers do
     if ready?() do
       :ok
     else
+      # A rejected model will never load, so waiting cannot help. Without this,
+      # `await_ready(:infinity)` spins forever instead of reporting the reason --
+      # five mix tasks call it that way.
+      case stale() do
+        empty when empty == %{} ->
+          :ok
+
+        rejected ->
+          raise """
+          MicroClassifiers rejected #{map_size(rejected)} model(s), so it will never become ready:
+
+          #{Enum.map_join(rejected, "\n\n", fn {name, message} -> "#{name}:\n#{message}" end)}
+          """
+      end
+
       if deadline != :infinity and System.monotonic_time(:millisecond) >= deadline do
         raise "MicroClassifiers failed to become ready within timeout. " <>
               "Ensure models are trained: mix train_micro"
@@ -243,14 +307,19 @@ defmodule Brain.ML.MicroClassifiers do
 
   @impl true
   def init(_opts) do
-    models = load_all_models()
+    {models, stale} = load_all_models()
 
-    {:ok, %{models: models}}
+    {:ok, %{models: models, stale: stale}}
   end
 
   @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, all_models_loaded?(state.models), state}
+  end
+
+  @impl true
+  def handle_call(:stale, _from, state) do
+    {:reply, Map.get(state, :stale, %{}), state}
   end
 
   @impl true
@@ -374,6 +443,23 @@ defmodule Brain.ML.MicroClassifiers do
   end
 
   @impl true
+  def handle_call({:labels, name}, _from, state) do
+    case Map.get(state.models, name) do
+      nil ->
+        {:reply, {:error, :not_loaded}, state}
+
+      %{label_centroids: centroids} when map_size(centroids) == 0 ->
+        {:reply, {:error, :not_trained}, state}
+
+      %{label_centroids: centroids} ->
+        {:reply, {:ok, centroids |> Map.keys() |> Enum.sort()}, state}
+
+      _other ->
+        {:reply, {:error, :not_trained}, state}
+    end
+  end
+
+  @impl true
   def handle_call({:incremental_update, name, examples}, _from, state) do
     case Map.get(state.models, name) do
       nil ->
@@ -398,20 +484,27 @@ defmodule Brain.ML.MicroClassifiers do
           incremental_count: new_count
         )
 
-        {:reply, {:ok, new_count}, %{state | models: Map.put(state.models, name, updated_model)}}
+        # The model changed, so its recorded verdict no longer describes it.
+        {:reply, {:ok, new_count},
+         %{
+           state
+           | models: Map.put(state.models, name, updated_model),
+         }}
     end
   end
 
   @impl true
   def handle_call(:reload, _from, _state) do
-    models = load_all_models()
-    {:reply, :ok, %{models: models}}
+    {models, stale} = load_all_models()
+    {:reply, :ok, %{models: models, stale: stale}}
   end
 
   @impl true
   def handle_call({:load_trained_models, models_map}, _from, state) when is_map(models_map) do
     merged = Map.merge(state.models, models_map)
-    {:reply, :ok, %{state | models: merged}}
+
+    {:reply, :ok,
+     %{state | models: merged, stale: Map.drop(state.stale, Map.keys(models_map))}}
   end
 
   @impl true
@@ -444,15 +537,29 @@ defmodule Brain.ML.MicroClassifiers do
     Enum.all?(@classifier_names, &Map.has_key?(models, &1))
   end
 
+  # Returns the loaded models and, separately, the reason each rejected model was
+  # rejected. A model whose provenance does not match the current environment is
+  # not loaded, so it cannot answer a classification; `ready?/0` is then false and
+  # `stale/0` says why.
+  #
+  # The verdict is a value rather than an exception on purpose. Raising in `init/1`
+  # stops `mix train_micro` from booting, which is the only thing that can replace
+  # a stale model. Raising inside a `handle_call` is worse: it kills this
+  # GenServer, the supervisor restarts it, the next classification raises again,
+  # and the restart limit takes the brain application down.
   defp load_all_models do
-    Enum.reduce(@classifier_names, %{}, fn name, acc ->
+    Enum.reduce(@classifier_names, {%{}, %{}}, fn name, {loaded, stale} ->
       case load_model(name) do
         {:ok, model} ->
-          Map.put(acc, name, model)
+          {Map.put(loaded, name, model), stale}
+
+        {:error, {:stale, message}} ->
+          Logger.error("MicroClassifiers: #{name} not loaded.\n#{message}")
+          {loaded, Map.put(stale, name, message)}
 
         {:error, reason} ->
           Logger.warning("MicroClassifiers: failed to load #{name}: #{inspect(reason)}")
-          acc
+          {loaded, stale}
       end
     end)
   end
@@ -463,13 +570,21 @@ defmodule Brain.ML.MicroClassifiers do
 
     case File.read(model_path) do
       {:ok, binary} ->
-        try do
-          model = :erlang.binary_to_term(binary)
-          {:ok, model}
-        rescue
-          _ ->
-            Logger.error("MicroClassifiers: corrupt model file for #{name}. Run `mix train_micro` to retrain.")
+        model =
+          try do
+            :erlang.binary_to_term(binary)
+          rescue
+            _ ->
+              Logger.error("MicroClassifiers: corrupt model file for #{name}. Run `mix train_micro` to retrain.")
+              :corrupted_model
+          end
+
+        case model do
+          :corrupted_model ->
             {:error, :corrupted_model}
+
+          model ->
+            check_provenance(model, name, model_path)
         end
 
       {:error, _} ->
@@ -478,10 +593,21 @@ defmodule Brain.ML.MicroClassifiers do
     end
   end
 
+  # Only the training-data half runs here. `MicroProvenance.check_schema!/3`
+  # needs `Brain.Analysis.TypeHierarchy`, which starts after this GenServer, so
+  # the feature schema is not knowable at load. `Brain.ML.ModelPreflight` checks
+  # that half once the supervision tree is up.
+  defp check_provenance(model, name, path) do
+    Brain.ML.MicroProvenance.check_inputs!(model, name, path)
+    {:ok, model}
+  rescue
+    e in RuntimeError -> {:error, {:stale, Exception.message(e)}}
+  end
+
   defp persist_model(name, model) do
     path = model_file_path(name)
     File.mkdir_p!(Path.dirname(path))
-    File.write!(path, :erlang.term_to_binary(model))
+    File.write!(path, Brain.ML.ModelStore.serialize(model))
     Logger.info("MicroClassifiers: persisted #{name} to #{path}")
   rescue
     e -> Logger.warning("MicroClassifiers: failed to persist #{name}: #{inspect(e)}")

@@ -93,7 +93,7 @@ defmodule Brain.Response.RefinementLoop do
     primary = select_primary_analysis(analyses)
     primitives = DiscoursePlanner.plan(model, opts)
     specified = ContentSpecifier.specify(primitives, primary, opts)
-    realize_opts = Keyword.merge(opts, [analysis: primary])
+    realize_opts = realize_opts_for_analysis(opts, primary)
 
     case SurfaceRealizer.realize(specified, realize_opts) do
       {:ok, rendered, response} ->
@@ -107,7 +107,7 @@ defmodule Brain.Response.RefinementLoop do
 
   defp iterate(plan, analysis, opts, iteration, max_iter, best_so_far) do
     specified = ContentSpecifier.specify(plan, analysis, opts)
-    realize_opts = Keyword.merge(opts, [analysis: analysis])
+    realize_opts = realize_opts_for_analysis(opts, analysis)
 
     case SurfaceRealizer.realize(specified, realize_opts) do
       {:ok, rendered, {:ouro_dry_run, _messages} = response} ->
@@ -314,4 +314,23 @@ defmodule Brain.Response.RefinementLoop do
   defp get_missing_slots(nil), do: []
   defp get_missing_slots(%{missing_required: m}) when is_list(m), do: m
   defp get_missing_slots(_), do: []
+
+  defp realize_opts_for_analysis(opts, analysis) do
+    opts
+    |> Keyword.merge(analysis: analysis)
+    |> maybe_put_feature_vector(analysis)
+    |> maybe_put_intent(analysis)
+  end
+
+  defp maybe_put_feature_vector(opts, %{feature_vector: fv}) when is_list(fv) and fv != [] do
+    Keyword.put_new(opts, :feature_vector, fv)
+  end
+
+  defp maybe_put_feature_vector(opts, _), do: opts
+
+  defp maybe_put_intent(opts, %{intent: intent}) when is_binary(intent) and intent != "" do
+    Keyword.put_new(opts, :intent, intent)
+  end
+
+  defp maybe_put_intent(opts, _), do: opts
 end

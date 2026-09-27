@@ -81,6 +81,24 @@ defmodule Brain.ML.KnowledgeGraph.EntityVectorCache do
   end
 
   @doc """
+  Fast ETS-only lookup for type vectors. Returns `{:ok, tensor}` or `:miss`.
+
+  Does NOT compute on miss -- returns `:miss` immediately. Use this on
+  hot paths (intent scoring loops) where GenServer calls per iteration
+  would serialize and kill throughput.
+  """
+  def get_cached_type(type_name) do
+    key = {:global, {:type, type_name}}
+
+    case :ets.lookup(@ets_table, key) do
+      [{^key, tensor, _access_time}] -> {:ok, tensor}
+      _ -> :miss
+    end
+  rescue
+    ArgumentError -> :miss
+  end
+
+  @doc """
   Pre-compute type vectors for all entity types from the hierarchy.
 
   Requires TripleScorer to be loaded. Raises if not available.

@@ -198,9 +198,18 @@ defmodule Brain.ML.FramingClassifierAccuracyTest do
     # (apps/brain/test/ml_models) holds throw-away artifacts re-trained on
     # fixture data each run; the real GA-optimized framing_class lives in
     # apps/brain/priv/ml_models/micro/.
+    # The test-env models_path used to head this list, which contradicted the
+    # comment above: it exists during a test run, so Enum.find/3 always chose
+    # it and the test evaluated the throw-away model rather than the GA-trained
+    # one. That went unnoticed while the throw-away artifact happened to be an
+    # old copy carrying weights; regenerating it from fixture data produced a
+    # model with `weights: nil` and the test failed on its own first assertion.
+    #
+    # Measured 2026-09-25: apps/brain/priv/ml_models/micro/framing_class.term
+    # carries 326 GA weights, apps/brain/test/ml_models/micro/framing_class.term
+    # carries none.
     candidates =
       [
-        Application.get_env(:brain, :ml, [])[:models_path],
         Brain.priv_path("ml_models"),
         Path.join(umbrella_root(), "apps/brain/priv/ml_models")
       ]

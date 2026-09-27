@@ -92,7 +92,7 @@ defmodule Brain.ML.TrainingData.Catalog do
       nil ->
         {:error, :unknown_source}
 
-      %{record_kind: kind} when kind in [:registry_entry, :slot_schema_entry, :speech_act_map_entry, :entity_type_entry, :csv_row] ->
+      %{record_kind: kind} when kind in [:registry_entry, :speech_act_map_entry, :entity_type_entry, :csv_row] ->
         {:error, :not_applicable}
 
       _ ->
@@ -183,7 +183,7 @@ defmodule Brain.ML.TrainingData.Catalog do
             {:ok, records} when is_list(records) ->
               write_source(source_id, records ++ [record])
 
-            {:ok, %{} = map} when desc.record_kind in [:registry_entry, :slot_schema_entry, :speech_act_map_entry, :entity_type_entry] ->
+            {:ok, %{} = map} when desc.record_kind in [:registry_entry, :speech_act_map_entry, :entity_type_entry] ->
               {key, val} = record
               write_source(source_id, Map.put(map, key, val))
 

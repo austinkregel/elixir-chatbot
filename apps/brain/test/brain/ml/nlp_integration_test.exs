@@ -6,7 +6,12 @@ defmodule Brain.ML.NLPIntegrationTest do
   alias Brain.ML.EntityExtractor
   alias Brain.ML.NLPPipeline
 
-  setup do
+  setup tags do
+    # The pipeline reads the knowledge graph; without a checked-out connection
+    # those lookups fail silently.
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
     ensure_pubsub_started()
 
     Application.put_env(:chat_bot, :ml,
@@ -15,8 +20,6 @@ defmodule Brain.ML.NLPIntegrationTest do
       models_path: "priv/ml_models",
       training_data_path: "data"
     )
-
-    EntityExtractor.load_entity_maps()
 
     :ok
   end
@@ -34,8 +37,8 @@ defmodule Brain.ML.NLPIntegrationTest do
       beatles = Enum.find(entities, fn e -> String.downcase(e.value) == "the beatles" end)
 
       if beatles do
-        # After type normalization, "music-artist" maps to canonical "artist"
-        assert beatles.entity_type in ["artist", "music-artist", "music_artist"]
+        # After type normalization, "music_artist" maps to canonical "artist"
+        assert beatles.entity_type in ["artist", "music_artist"]
       end
     end
   end

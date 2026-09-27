@@ -10,6 +10,14 @@ defmodule Brain.Analysis.ChunkProfileRegressionTest do
   @moduletag :regression
   @moduletag timeout: 300_000
 
+  # The pipeline reads the knowledge graph; without a checked-out connection
+  # every lookup fails silently and the graph features read as "unknown".
+  setup tags do
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+    :ok
+  end
+
   alias Brain.Analysis.{ChunkProfile, FeatureExtractor, Pipeline}
 
   @intent_to_domain %{
@@ -106,7 +114,17 @@ defmodule Brain.Analysis.ChunkProfileRegressionTest do
                ]
 
         assert profile.modality in [:declarative, :interrogative, :imperative, :exclamatory]
-        assert profile.polarity in [:affirmative, :negative]
+
+        # Polarity is a continuous negation strength, not a two-valued atom:
+        # the axis manifest declares {:polarity, :continuous, {:range, 0.0, 1.0}}
+        # (chunk_profile.ex), and derive_polarity/2 returns 0.0 for an
+        # affirmative clause, 1.0 for a sentential negator, and a smaller
+        # accumulating score for morphological negators.
+        assert is_float(profile.polarity),
+               "polarity should be a float in 0.0..1.0, got #{inspect(profile.polarity)}"
+
+        assert profile.polarity >= 0.0 and profile.polarity <= 1.0
+
         assert profile.tense in [:past, :present, :future, :atemporal]
         assert profile.aspect in [:simple, :progressive, :perfect, :perfect_progressive]
         assert profile.urgency in [:low, :normal, :high, :critical]
@@ -159,13 +177,9 @@ defmodule Brain.Analysis.ChunkProfileRegressionTest do
     {analysis, feature_vector}
   end
 
+  # Training rows only. Read the whole corpus here and this regression test
+  # would be profiling rows the models are evaluated on.
   defp load_gold_standard do
-    path =
-      case :code.priv_dir(:brain) do
-        {:error, _} -> "apps/brain/priv/evaluation/intent/gold_standard.json"
-        priv -> Path.join(to_string(priv), "evaluation/intent/gold_standard.json")
-      end
-
-    path |> File.read!() |> Jason.decode!()
+    Brain.ML.EvaluationStore.load_gold_standard("intent", :train)
   end
 end

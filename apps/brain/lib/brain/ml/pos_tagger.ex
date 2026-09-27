@@ -1,157 +1,187 @@
 defmodule Brain.ML.POSTagger do
-  @moduledoc "Part-of-Speech tagging using trained sequence model.\n\nTags tokens with grammatical roles (PRON, VERB, NOUN, ADJ, etc.)\nusing the same HMM-like architecture as EntityTrainer:\n- Feature extraction (prefix, suffix, capitalization, context)\n- Transition probabilities (P(tag|prev_tag))\n- Emission probabilities (P(features|tag))\n- Viterbi decoding for optimal tag sequence\n\n## Training\n\nTraining data should be in the format:\n    %{\n      tokens: [\"I\", \"am\", \"Austin\"],\n      tags: [\"PRON\", \"VERB\", \"PROPN\"],\n      source: \"intent_name\"  # optional\n    }\n\n## Usage\n\n    # Train from data\n    {:ok, model} = POSTagger.train(training_sequences)\n\n    # Or load pre-trained model\n    {:ok, model} = POSTagger.load_model()\n\n    # Predict POS tags\n    predictions = POSTagger.predict([\"I\", \"am\", \"Austin\"], model)\n    # => [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n\n"
+  @moduledoc """
+  Part-of-speech tagging with a BiLSTM over words and characters.
+
+  The architecture follows Plank, Søgaard & Goldberg (2016, "Multilingual
+  Part-of-Speech Tagging with Bidirectional LSTM Models and Auxiliary Loss"):
+
+  - each word's characters run through a character-level BiLSTM, so a word
+    never seen in training still has a representation from its spelling;
+  - that joins the word's embedding (lowercased) and a sentence-level BiLSTM
+    reads the whole sentence in both directions;
+  - a softmax predicts the tag, and an auxiliary head predicts the word's
+    training-frequency bin, which the paper found improves tagging of rare
+    and unseen words.
+
+  Tags are Universal Dependencies v1 (`valid_tags/0`). Training reads
+  fixtures in the task 086 format; `mix pos.train` trains on the UD English
+  Web Treebank and records the model's accuracy and confusion matrix on the
+  held-out test split alongside it.
+
+  ## Usage
+
+      {:ok, model} = POSTagger.load_model()
+      POSTagger.predict(["I", "may", "go"], model)
+      # => [{"I", "PRON"}, {"may", "AUX"}, {"go", "VERB"}]
+
+  Hyperparameters are in `config :brain, :pos_tagger`. Training is
+  deterministic from the training seed (`Brain.ML.TrainingSeed`).
+  """
 
   require Logger
-  alias Brain.Analysis.TypeHierarchy
+
+  alias Brain.ML.{ModelStore, TrainingSeed}
 
   @pos_tags ~w(
     NOUN PROPN VERB AUX ADJ ADV PRON DET ADP
     CONJ PART NUM INTJ PUNCT SYM X
   )
 
+  # Version of the saved model's shape. A file of another version is refused.
+  @format 2
+
+  @pad 0
+  @unk 1
+
+  # Sentences are padded to one of these lengths, so the compiled network is
+  # reused rather than recompiled for every distinct sentence length.
+  @buckets [8, 16, 32, 64, 128, 256]
+
   @type pos_tag :: String.t()
+  @type training_sequence :: %{tokens: [String.t()], tags: [pos_tag()]}
 
-  @type training_sequence :: %{
-          tokens: [String.t()],
-          tags: [pos_tag()],
-          source: String.t() | nil
-        }
+  # ---------------------------------------------------------------------------
+  # Public API
+  # ---------------------------------------------------------------------------
 
-  @type pos_model :: %{
-          tag_vocabulary: %{pos_tag() => integer()},
-          feature_weights: %{String.t() => %{pos_tag() => float()}},
-          transition_weights: %{pos_tag() => %{pos_tag() => float()}},
-          tag_priors: %{pos_tag() => float()}
-        }
-  defp model_path do
-    Brain.priv_path("ml_models/pos_model.term")
-  end
+  @doc "The tags the tagger can emit (Universal Dependencies v1)."
+  def valid_tags, do: @pos_tags
 
-  @doc "Train POS model from labeled training sequences.\nReturns {:ok, model} or {:error, reason}.\nEmits telemetry events for training metrics.\n"
-  def train(training_sequences) when is_list(training_sequences) do
-    start_time = System.monotonic_time(:millisecond)
-    sequence_count = length(training_sequences)
+  @doc """
+  Trains a tagger on `sequences` (`%{tokens: [...], tags: [...]}`).
 
-    Logger.info("Starting POS model training...", %{sequences: sequence_count})
+  ## Options
+
+  - `:dev` -- sequences to stop on: after each epoch the tagger is measured
+    on them, and training stops when accuracy has not improved for
+    `patience` epochs; the best epoch's parameters are kept. With
+    `patience: nil` training never stops early and runs `max_epochs`, still
+    keeping the best epoch. Without `:dev`, training runs exactly
+    `max_epochs` epochs.
+  - `:config` -- keyword list overriding `config :brain, :pos_tagger`.
+  - `:seed` -- training seed (default `Brain.ML.TrainingSeed.get!/0`).
+  - `:inputs` -- provenance of the training data (task 086 `producer.inputs`
+    entries), recorded in the model.
+  - `:on_epoch` -- `fn progress, model_at -> any end`, called after every
+    epoch. `progress` is `%{epoch, loss, dev_accuracy, best_epoch,
+    best_dev_accuracy, improved?, elapsed_ms}`: `loss` is the epoch's mean
+    training loss, `dev_accuracy` is nil without `:dev`, and `improved?` is
+    true when this epoch is the new best. `model_at.()` builds the model as
+    it stands after this epoch, in the shape `train/2` returns, for saving
+    a snapshot; it copies the parameters, so call it only when needed.
+
+  Every sequence must have as many tags as tokens, all in `valid_tags/0`;
+  anything else raises rather than being filtered out.
+  """
+  @spec train([training_sequence()], keyword()) :: {:ok, map()} | {:error, String.t()}
+  def train(sequences, opts \\ [])
+
+  def train([], _opts), do: {:error, "No training sequences provided"}
+
+  def train(sequences, opts) when is_list(sequences) do
+    config = config(opts)
+    seed = Keyword.get_lazy(opts, :seed, &TrainingSeed.get!/0)
+    sequences = Enum.map(sequences, &validate_sequence!/1)
+    dev = opts |> Keyword.get(:dev, []) |> Enum.map(&validate_sequence!/1)
+
+    started = System.monotonic_time(:millisecond)
+    :telemetry.execute([:chat_bot, :ml, :train, :start], %{sequence_count: length(sequences)}, %{model: :pos_tagger})
+
+    vocab = build_vocab(sequences)
+    network = build_network(vocab, config, seed)
+    {_init_fn, predict_fn} = Axon.build(network, compiler: EXLA, mode: :inference)
+
+    # The saved model for trained parameters and a training summary.
+    assemble = fn model_state, training ->
+      %{
+        format: @format,
+        config: Map.new(config),
+        vocab: vocab,
+        params: transfer(model_state, Nx.BinaryBackend),
+        training:
+          Map.merge(training, %{
+            seed: seed,
+            sequences: length(sequences),
+            inputs: Keyword.get(opts, :inputs, [])
+          }),
+        evaluation: nil
+      }
+    end
+
+    on_epoch = Keyword.get(opts, :on_epoch, fn _progress, _model_at -> :ok end)
+    {model_state, training} = fit(network, predict_fn, sequences, dev, vocab, config, seed, on_epoch, assemble)
+    model = assemble.(model_state, training)
 
     :telemetry.execute(
-      [:chat_bot, :ml, :train, :start],
-      %{sequence_count: sequence_count},
-      %{model: :pos_tagger, started_at: DateTime.utc_now()}
+      [:chat_bot, :ml, :train, :stop],
+      %{duration_ms: System.monotonic_time(:millisecond) - started, sequence_count: length(sequences)},
+      %{model: :pos_tagger, success: true}
     )
 
-    result =
-      if sequence_count == 0 do
-        {:error, "No training sequences provided"}
-      else
-        valid_sequences =
-          training_sequences
-          |> Enum.filter(fn seq ->
-            tokens = Map.get(seq, :tokens) || Map.get(seq, "tokens", [])
-            tags = Map.get(seq, :tags) || Map.get(seq, "tags", [])
-            tokens != [] and length(tokens) == length(tags)
+    {:ok, model}
+  end
+
+  @doc "Tags `tokens`, returning `[{token, tag}]`."
+  @spec predict([String.t()], map()) :: [{String.t(), pos_tag()}]
+  def predict([], _model), do: []
+  def predict(tokens, model) when is_list(tokens) and is_map(model), do: Enum.zip(tokens, predict_tags(tokens, model))
+
+  @doc "Tags `tokens`, returning only the tags."
+  @spec predict_tags([String.t()], map()) :: [pos_tag()]
+  def predict_tags([], _model), do: []
+
+  def predict_tags(tokens, model) when is_list(tokens) and is_map(model) do
+    check_format!(model)
+    [tags] = decode_batch(runtime(model), model, [tokens])
+    tags
+  end
+
+  @doc """
+  Measures `model` on tagged `sequences`: token accuracy, accuracy on words
+  outside the training vocabulary, per-tag recall and precision, and the
+  confusion matrix (`%{gold => %{predicted => count}}`).
+  """
+  @spec evaluate([training_sequence()], map()) :: map()
+  def evaluate(sequences, model) do
+    check_format!(model)
+    sequences = Enum.map(sequences, &validate_sequence!/1)
+    runtime = runtime(model)
+
+    pairs =
+      sequences
+      |> Enum.chunk_every(model.config.batch_size)
+      |> Enum.flat_map(fn batch ->
+        predicted = decode_batch(runtime, model, Enum.map(batch, & &1.tokens))
+
+        Enum.zip(batch, predicted)
+        |> Enum.flat_map(fn {seq, tags} ->
+          Enum.zip([seq.tokens, seq.tags, tags])
+          |> Enum.map(fn {token, gold, pred} ->
+            {gold, pred, not Map.has_key?(model.vocab.words, String.downcase(token))}
           end)
-          |> Enum.map(&normalize_sequence/1)
+        end)
+      end)
 
-        if valid_sequences == [] do
-          {:error, "No valid training sequences after filtering"}
-        else
-          Logger.info("Training on valid sequences", %{count: length(valid_sequences)})
-          model = train_sequence_model(valid_sequences)
-
-          Logger.info("POS model trained", %{
-            tag_count: map_size(model.tag_vocabulary),
-            feature_count: map_size(model.feature_weights)
-          })
-
-          {:ok, model}
-        end
-      end
-
-    duration_ms = System.monotonic_time(:millisecond) - start_time
-
-    case result do
-      {:ok, model} ->
-        :telemetry.execute(
-          [:chat_bot, :ml, :train, :stop],
-          %{
-            duration_ms: duration_ms,
-            sequence_count: sequence_count,
-            tag_count: map_size(model.tag_vocabulary),
-            feature_count: map_size(model.feature_weights)
-          },
-          %{model: :pos_tagger, success: true}
-        )
-
-      {:error, reason} ->
-        :telemetry.execute(
-          [:chat_bot, :ml, :train, :exception],
-          %{duration_ms: duration_ms, sequence_count: sequence_count},
-          %{model: :pos_tagger, success: false, reason: reason}
-        )
-    end
-
-    result
+    report(pairs)
   end
 
-  @doc "Train and save POS model to disk.\n"
-  def train_and_save(training_sequences) do
-    case train(training_sequences) do
-      {:ok, model} -> save_model(model)
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  @doc "Load training data from JSON file and train model.\n"
-  def train_from_file(training_file_path \\ "data/training/pos/sequences.json") do
-    case File.read(training_file_path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, sequences} when is_list(sequences) ->
-            train(sequences)
-
-          {:ok, %{"sequences" => sequences}} when is_list(sequences) ->
-            train(sequences)
-
-          {:error, reason} ->
-            {:error, "Failed to parse training file: #{inspect(reason)}"}
-        end
-
-      {:error, reason} ->
-        {:error, "Failed to read training file: #{reason}"}
-    end
-  end
-
-  @doc "Load a trained POS model from disk.\n"
-  def load_model(path \\ nil) do
-    model_path = path || get_model_path()
-
-    if is_nil(path) do
-      Brain.ML.ModelStore.ensure_local("pos_model.term", model_path)
-    end
-
-    case File.read(model_path) do
-      {:ok, binary} ->
-        try do
-          model = :erlang.binary_to_term(binary)
-          {:ok, model}
-        rescue
-          e -> {:error, "Failed to deserialize model: #{inspect(e)}"}
-        end
-
-      {:error, reason} ->
-        {:error, "Failed to read model: #{reason}"}
-    end
-  end
-
-  @doc "Save trained model to disk.\n"
+  @doc "Saves `model` (optionally with its evaluation) to `path`."
   def save_model(model, path \\ nil) do
-    model_path = path || get_model_path()
+    check_format!(model)
+    model_path = path || model_path()
     File.mkdir_p!(Path.dirname(model_path))
 
-    binary = :erlang.term_to_binary(model)
-
-    case File.write(model_path, binary) do
+    case File.write(model_path, ModelStore.serialize(model)) do
       :ok ->
         Logger.info("POS model saved to #{model_path}")
         {:ok, model_path}
@@ -162,568 +192,563 @@ defmodule Brain.ML.POSTagger do
   end
 
   @doc """
-  Get the current POS model from disk.
+  Loads the tagger from `path` (default: the configured models path).
 
-  Returns `{:ok, model}` or `{:error, reason}`.
+  The loaded model is cached by path and file modification time, so the
+  many callers that load before every prediction read the file once.
   """
-  def get_model do
-    load_model()
-  end
+  def load_model(path \\ nil) do
+    model_path = path || model_path()
+    if is_nil(path), do: ModelStore.ensure_local("pos_model.term", model_path)
 
-  @doc """
-  Update model weights by blending graph-derived weights with existing model.
+    with {:ok, %File.Stat{mtime: mtime, size: size}} <- stat(model_path) do
+      key = {__MODULE__, :model, model_path}
 
-  The `blend` option controls how much weight the graph data gets:
-  - `blend: 0.3` means 30% graph + 70% existing (default)
-  - `blend: 1.0` means 100% graph (replaces existing)
-  - `blend: 0.0` means 0% graph (no change)
+      case :persistent_term.get(key, nil) do
+        {{^mtime, ^size}, model} ->
+          {:ok, model}
 
-  ## Parameters
-
-  - `transition_weights` - Map of `%{from_tag => %{to_tag => frequency}}`
-  - `tag_priors` - Map of `%{tag => prior_probability}`
-  - `opts` - Options including `:blend` ratio
-
-  ## Returns
-
-  `:ok` on success, `{:error, reason}` on failure.
-  """
-  def update_weights(transition_weights, tag_priors, opts \\ []) do
-    blend = Keyword.get(opts, :blend, 0.3)
-
-    case load_model() do
-      {:ok, model} ->
-        blended_transitions = blend_maps(model.transition_weights, transition_weights, blend)
-        blended_priors = blend_flat_map(model.tag_priors, tag_priors, blend)
-
-        updated_model = %{
-          model
-          | transition_weights: blended_transitions,
-            tag_priors: blended_priors
-        }
-
-        case save_model(updated_model) do
-          {:ok, _path} ->
-            Logger.info("POS model weights updated with graph data", blend: blend)
-            :ok
-
-          error ->
-            error
-        end
-
-      {:error, reason} ->
-        Logger.warning("Cannot update POS weights - no model loaded", reason: inspect(reason))
-        {:error, reason}
-    end
-  end
-
-  defp blend_maps(existing, new_data, blend) when is_map(existing) and is_map(new_data) do
-    all_keys = MapSet.union(MapSet.new(Map.keys(existing)), MapSet.new(Map.keys(new_data)))
-
-    Map.new(all_keys, fn key ->
-      existing_inner = Map.get(existing, key, %{})
-      new_inner = Map.get(new_data, key, %{})
-
-      blended =
-        cond do
-          is_map(existing_inner) and is_map(new_inner) ->
-            blend_flat_map(existing_inner, new_inner, blend)
-
-          is_number(existing_inner) and is_number(new_inner) ->
-            existing_inner * (1 - blend) + new_inner * blend
-
-          is_map(existing_inner) ->
-            existing_inner
-
-          is_map(new_inner) ->
-            new_inner
-
-          true ->
-            existing_inner
-        end
-
-      {key, blended}
-    end)
-  end
-
-  defp blend_maps(existing, _, _), do: existing
-
-  defp blend_flat_map(existing, new_data, blend) when is_map(existing) and is_map(new_data) do
-    all_keys = MapSet.union(MapSet.new(Map.keys(existing)), MapSet.new(Map.keys(new_data)))
-
-    Map.new(all_keys, fn key ->
-      e = Map.get(existing, key, 0)
-      n = Map.get(new_data, key, 0)
-
-      if is_number(e) and is_number(n) do
-        {key, e * (1 - blend) + n * blend}
-      else
-        {key, e}
-      end
-    end)
-  end
-
-  defp blend_flat_map(existing, _, _), do: existing
-
-  @doc """
-  Blends graph-derived POS transition frequencies into the model.
-
-  Reads `tag_transitions` from the pos_graph for each known tag,
-  normalizes them into transition probabilities, and blends them
-  with the existing model via `update_weights/3`.
-  """
-  def blend_graph_transitions(opts \\ []) do
-    blend = Keyword.get(opts, :blend, 0.2)
-
-    graph_transitions =
-      valid_tags()
-      |> Enum.reduce(%{}, fn tag, acc ->
-        case Brain.Graph.Reader.tag_transitions(tag) do
-          transitions when is_list(transitions) and transitions != [] ->
-            total = transitions |> Enum.map(& &1.frequency) |> Enum.sum() |> max(1)
-
-            probs =
-              Map.new(transitions, fn %{to_tag: to, frequency: freq} ->
-                {to, freq / total}
-              end)
-
-            Map.put(acc, tag, probs)
-
-          _ ->
-            acc
-        end
-      end)
-
-    if map_size(graph_transitions) > 0 do
-      update_weights(graph_transitions, %{}, blend: blend)
-    else
-      :ok
-    end
-  rescue
-    _ -> :ok
-  end
-
-  @doc "Predict POS tags for a sequence of tokens.\nReturns list of {token, predicted_tag} tuples.\n"
-  def predict(tokens, model) when is_list(tokens) and is_map(model) do
-    if tokens == [] do
-      []
-    else
-      predictions = viterbi_decode(tokens, model) |> correct_propn(tokens, model)
-      Enum.zip(tokens, predictions)
-    end
-  end
-
-  @doc "Predict POS tags, returning just the tags.\n"
-  def predict_tags(tokens, model) when is_list(tokens) do
-    if tokens == [] do
-      []
-    else
-      viterbi_decode(tokens, model) |> correct_propn(tokens, model)
-    end
-  end
-
-  @doc false
-  defp correct_propn(tags, tokens, model) do
-    propn_tag = TypeHierarchy.config(["pos_tag_roles", "proper_noun"], "PROPN")
-    cap_weights = Map.get(model.feature_weights, "cap_non_initial", %{})
-    cap_propn = Map.get(cap_weights, propn_tag, 0)
-
-    if cap_propn < 0.3 do
-      tags
-    else
-      tokens
-      |> Enum.with_index()
-      |> Enum.zip(tags)
-      |> Enum.map(fn {{token, idx}, tag} ->
-        if idx > 0 and tag != propn_tag and capitalized?(token) do
-          token_weights = Map.get(model.feature_weights, "token:#{String.downcase(token)}", %{})
-          token_propn = Map.get(token_weights, propn_tag, 0)
-          token_current = Map.get(token_weights, tag, 0)
-
-          cond do
-            map_size(token_weights) == 0 ->
-              propn_tag
-
-            token_propn > token_current ->
-              propn_tag
-
-            true ->
-              tag
+        _ ->
+          with {:ok, binary} <- read(model_path),
+               {:ok, model} <- decode(binary, model_path) do
+            :persistent_term.put(key, {{mtime, size}, model})
+            {:ok, model}
           end
-        else
-          tag
-        end
-      end)
+      end
     end
   end
 
-  @doc "Check if a trained model exists.\n"
-  def model_exists?(path \\ nil) do
-    model_path = path || get_model_path()
-    File.exists?(model_path)
+  @doc "The current model from the configured path. See `load_model/1`."
+  def get_model, do: load_model()
+
+  @doc "True when a model file exists at `path` (default: the configured path)."
+  def model_exists?(path \\ nil), do: File.exists?(path || model_path())
+
+  # ---------------------------------------------------------------------------
+  # Data
+  # ---------------------------------------------------------------------------
+
+  defp config(opts) do
+    base = Application.fetch_env!(:brain, :pos_tagger)
+    Keyword.merge(base, Keyword.get(opts, :config, []))
   end
 
-  @doc "Return list of valid POS tags.\n"
-  def valid_tags do
-    @pos_tags
+  defp validate_sequence!(seq) do
+    tokens = Map.get(seq, :tokens) || Map.get(seq, "tokens")
+    tags = Map.get(seq, :tags) || Map.get(seq, "tags")
+
+    unless is_list(tokens) and tokens != [] and is_list(tags) and length(tokens) == length(tags) do
+      raise ArgumentError, "POSTagger: a sequence needs as many tags as tokens: #{inspect(seq)}"
+    end
+
+    case Enum.reject(tags, &(&1 in @pos_tags)) do
+      [] -> %{tokens: tokens, tags: tags}
+      bad -> raise ArgumentError, "POSTagger: tags outside the tagset #{inspect(Enum.uniq(bad))}"
+    end
   end
 
-  defp normalize_sequence(seq) do
-    tokens = Map.get(seq, :tokens) || Map.get(seq, "tokens", [])
-    tags = Map.get(seq, :tags) || Map.get(seq, "tags", [])
-    source = Map.get(seq, :source) || Map.get(seq, "source")
-    normalized_tags = Enum.map(tags, &normalize_tag/1)
-
-    %{
-      tokens: tokens,
-      tags: normalized_tags,
-      source: source
-    }
-  end
-
-  defp normalize_tag(tag) when is_atom(tag) do
-    Atom.to_string(tag) |> String.upcase()
-  end
-
-  defp normalize_tag(tag) when is_binary(tag) do
-    String.upcase(tag)
-  end
-
-  defp normalize_tag(_) do
-    "X"
-  end
-
-  defp train_sequence_model(sequences) do
-    all_tags =
+  defp build_vocab(sequences) do
+    word_counts =
       sequences
-      |> Enum.flat_map(& &1.tags)
+      |> Enum.flat_map(& &1.tokens)
+      |> Enum.frequencies_by(&String.downcase/1)
+
+    chars =
+      sequences
+      |> Enum.flat_map(& &1.tokens)
+      |> Enum.flat_map(&String.graphemes/1)
       |> Enum.uniq()
       |> Enum.sort()
 
-    tag_vocabulary =
-      all_tags
-      |> Enum.with_index()
-      |> Enum.into(%{})
+    words = word_counts |> Map.keys() |> Enum.sort()
 
-    tag_counts =
-      sequences
-      |> Enum.flat_map(& &1.tags)
-      |> Enum.frequencies()
-
-    total_tags = Enum.sum(Map.values(tag_counts))
-
-    tag_priors =
-      Enum.into(tag_counts, %{}, fn {tag, count} ->
-        {tag, count / total_tags}
-      end)
-
-    transition_counts = calculate_transition_counts(sequences)
-    transition_weights = normalize_transition_counts(transition_counts, all_tags)
-    feature_weights = calculate_feature_weights(sequences)
+    # Frequency bin as in Plank et al.: floor of the natural log of the count.
+    bins = Map.new(word_counts, fn {w, n} -> {w, floor(:math.log(n))} end)
 
     %{
-      tag_vocabulary: tag_vocabulary,
-      feature_weights: feature_weights,
-      transition_weights: transition_weights,
-      tag_priors: tag_priors
+      words: words |> Enum.with_index(2) |> Map.new(),
+      chars: chars |> Enum.with_index(2) |> Map.new(),
+      word_counts: word_counts,
+      freq_bins: bins,
+      freq_bin_count: (bins |> Map.values() |> Enum.max()) + 1,
+      tags: @pos_tags,
+      tag_index: @pos_tags |> Enum.with_index() |> Map.new()
     }
   end
 
-  defp calculate_transition_counts(sequences) do
-    Enum.reduce(sequences, %{}, fn seq, acc ->
-      tags = ["<START>" | seq.tags] ++ ["<END>"]
-
-      tags
-      |> Enum.chunk_every(2, 1, :discard)
-      |> Enum.reduce(acc, fn [prev, curr], inner_acc ->
-        key = {prev, curr}
-        Map.update(inner_acc, key, 1, &(&1 + 1))
-      end)
-    end)
+  defp bucket(n) do
+    Enum.find(@buckets, &(&1 >= n)) || div(n + 255, 256) * 256
   end
 
-  defp normalize_transition_counts(counts, all_tags) do
-    all_tags_with_markers = ["<START>" | all_tags] ++ ["<END>"]
-    grouped = Enum.group_by(counts, fn {{prev, _curr}, _count} -> prev end)
+  # Keeps a word's first and last characters when it is longer than
+  # `max_chars`: prefix and suffix carry most of what spelling says about
+  # a word's part of speech.
+  defp word_chars(word, max_chars) do
+    graphemes = String.graphemes(word)
 
-    Enum.reduce(all_tags_with_markers, %{}, fn prev_tag, acc ->
-      transitions = Map.get(grouped, prev_tag, [])
-      total = Enum.sum(Enum.map(transitions, fn {_, count} -> count end))
+    if length(graphemes) <= max_chars do
+      graphemes
+    else
+      half = div(max_chars, 2)
+      Enum.take(graphemes, half) ++ Enum.take(graphemes, -(max_chars - half))
+    end
+  end
 
-      if total > 0 do
-        probs =
-          Enum.into(transitions, %{}, fn {{_prev, curr}, count} ->
-            {curr, count / total}
+  # Encodes sentences into padded input tensors. `unk?` decides, per
+  # training token, whether to replace the word with the unknown token.
+  defp encode(sentences, vocab, config, rows, unk? \\ fn _ -> false end) do
+    len = sentences |> Enum.map(&length/1) |> Enum.max() |> bucket()
+    max_chars = config[:max_word_chars]
+    padded_rows = sentences ++ List.duplicate([], rows - length(sentences))
+
+    word_ids =
+      Enum.map(padded_rows, fn tokens ->
+        ids =
+          Enum.map(tokens, fn t ->
+            lower = String.downcase(t)
+            if unk?.(lower), do: @unk, else: Map.get(vocab.words, lower, @unk)
           end)
 
-        Map.put(acc, prev_tag, probs)
-      else
-        uniform = 1.0 / length(all_tags_with_markers)
-        probs = Enum.into(all_tags_with_markers, %{}, fn tag -> {tag, uniform} end)
-        Map.put(acc, prev_tag, probs)
-      end
-    end)
-  end
-
-  defp calculate_feature_weights(sequences) do
-    feature_tag_counts =
-      Enum.reduce(sequences, %{}, fn seq, acc ->
-        seq.tokens
-        |> Enum.zip(seq.tags)
-        |> Enum.with_index()
-        |> Enum.reduce(acc, fn {{token, tag}, idx}, inner_acc ->
-          features = extract_token_features(token, seq.tokens, idx)
-
-          Enum.reduce(features, inner_acc, fn feature, feat_acc ->
-            Map.update(feat_acc, feature, %{tag => 1}, fn tag_counts ->
-              Map.update(tag_counts, tag, 1, &(&1 + 1))
-            end)
-          end)
-        end)
+        ids ++ List.duplicate(@pad, len - length(ids))
       end)
 
-    Enum.into(feature_tag_counts, %{}, fn {feature, tag_counts} ->
-      total = Enum.sum(Map.values(tag_counts))
+    char_ids =
+      Enum.map(padded_rows, fn tokens ->
+        words =
+          Enum.map(tokens, fn t ->
+            ids = t |> word_chars(max_chars) |> Enum.map(&Map.get(vocab.chars, &1, @unk))
+            ids ++ List.duplicate(@pad, max_chars - length(ids))
+          end)
 
-      probs =
-        Enum.into(tag_counts, %{}, fn {tag, count} ->
-          {tag, count / total}
-        end)
+        words ++ List.duplicate(List.duplicate(@pad, max_chars), len - length(words))
+      end)
 
-      {feature, probs}
-    end)
+    words = Nx.tensor(word_ids, type: :s64)
+    chars = Nx.tensor(char_ids, type: :s64)
+
+    %{
+      "words" => words,
+      "word_pad" => Nx.equal(words, @pad),
+      "chars" => chars,
+      "char_pad" => Nx.equal(chars, @pad)
+    }
   end
 
-  defp extract_token_features(token, all_tokens, idx) do
-    lower_token = String.downcase(token)
-    is_cap = capitalized?(token)
+  defp targets(batch, vocab, len, rows) do
+    n_tags = length(vocab.tags)
+    n_bins = vocab.freq_bin_count
+    padded = batch ++ List.duplicate(%{tokens: [], tags: []}, rows - length(batch))
 
-    features = [
-      "token:#{lower_token}",
-      "prefix2:#{String.slice(lower_token, 0, 2)}",
-      "prefix3:#{String.slice(lower_token, 0, 3)}",
-      "suffix2:#{String.slice(lower_token, -2, 2) || ""}",
-      "suffix3:#{String.slice(lower_token, -3, 3) || ""}",
-      if(is_cap, do: "is_capitalized", else: "not_capitalized"),
-      if(is_cap and idx > 0, do: "cap_non_initial", else: "not_cap_non_initial"),
-      if(all_caps?(token), do: "is_all_caps", else: "not_all_caps"),
-      if(all_lower?(token), do: "is_all_lower", else: "not_all_lower"),
-      if(has_digit?(token), do: "has_digit", else: "no_digit"),
-      if(all_digits?(token), do: "is_number", else: "not_number"),
-      if(is_punctuation?(token), do: "is_punct", else: "not_punct"),
-      if(idx == 0, do: "is_first", else: "not_first"),
-      if(idx == length(all_tokens) - 1, do: "is_last", else: "not_last"),
-      "length:#{min(String.length(token), 10)}"
-    ]
+    one_hot = fn index, size -> for i <- 0..(size - 1), do: if(i == index, do: 1.0, else: 0.0) end
+    zeros = fn size -> List.duplicate(0.0, size) end
 
-    prev_features =
-      if idx > 0 do
-        prev_token = Enum.at(all_tokens, idx - 1)
-        prev_lower = String.downcase(prev_token)
-        [
-          "prev_token:#{prev_lower}",
-          if(is_cap and capitalized?(prev_token), do: "prev_also_cap", else: nil)
-        ]
-      else
-        ["prev_token:<START>"]
-      end
-
-    next_features =
-      if idx < length(all_tokens) - 1 do
-        next_token = Enum.at(all_tokens, idx + 1)
-        next_lower = String.downcase(next_token)
-        [
-          "next_token:#{next_lower}",
-          if(is_cap and capitalized?(next_token), do: "next_also_cap", else: nil)
-        ]
-      else
-        ["next_token:<END>"]
-      end
-
-    Enum.filter(features ++ prev_features ++ next_features, &(&1 != nil))
-  end
-
-  defp viterbi_decode(tokens, model) do
     tags =
-      Map.keys(model.tag_vocabulary)
-      |> Enum.filter(&(&1 != "<START>" and &1 != "<END>"))
+      Enum.map(padded, fn seq ->
+        rows = Enum.map(seq.tags, &one_hot.(Map.fetch!(vocab.tag_index, &1), n_tags))
+        rows ++ List.duplicate(zeros.(n_tags), len - length(rows))
+      end)
 
-    if tags == [] do
-      Enum.map(tokens, fn _ -> "X" end)
-    else
-      {initial_viterbi, initial_backpointer} =
-        initialize_viterbi(Enum.at(tokens, 0), tokens, 0, tags, model)
+    freq =
+      Enum.map(padded, fn seq ->
+        rows = Enum.map(seq.tokens, &one_hot.(Map.fetch!(vocab.freq_bins, String.downcase(&1)), n_bins))
+        rows ++ List.duplicate(zeros.(n_bins), len - length(rows))
+      end)
 
-      {final_viterbi, backpointers} =
-        tokens
-        |> Enum.with_index()
-        |> Enum.drop(1)
-        |> Enum.reduce({initial_viterbi, [initial_backpointer]}, fn {token, idx},
-                                                                    {prev_viterbi, bps} ->
-          {new_viterbi, new_bp} = viterbi_step(token, tokens, idx, prev_viterbi, tags, model)
-          {new_viterbi, [new_bp | bps]}
+    %{tags: Nx.tensor(tags, type: :f32), freq: Nx.tensor(freq, type: :f32)}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Network
+  # ---------------------------------------------------------------------------
+
+  defp build_network(vocab, config, seed) do
+    word_vocab = map_size(vocab.words) + 2
+    char_vocab = map_size(vocab.chars) + 2
+    max_chars = config[:max_word_chars]
+
+    words = Axon.input("words", shape: {nil, nil})
+    word_pad = Axon.input("word_pad", shape: {nil, nil})
+    chars = Axon.input("chars", shape: {nil, nil, max_chars})
+    char_pad = Axon.input("char_pad", shape: {nil, nil, max_chars})
+
+    word_vec = Axon.embedding(words, word_vocab, config[:word_dim], name: "word_embedding")
+
+    flat = fn t ->
+      {b, s, c} = Nx.shape(t)
+      Nx.reshape(t, {b * s, c})
+    end
+
+    chars_flat = Axon.nx(chars, flat, name: "chars_flat")
+    char_pad_flat = Axon.nx(char_pad, flat, name: "char_pad_flat")
+    char_emb = Axon.embedding(chars_flat, char_vocab, config[:char_dim], name: "char_embedding")
+
+    char_fw = final_state(char_emb, char_pad_flat, config[:char_hidden], "char_lstm_fw", seed)
+    char_bw = final_state(reverse(char_emb), reverse(char_pad_flat), config[:char_hidden], "char_lstm_bw", seed)
+
+    char_vec =
+      Axon.layer(
+        fn char_states, word_ids, _opts ->
+          {b, s} = Nx.shape(word_ids)
+          Nx.reshape(char_states, {b, s, Nx.axis_size(char_states, 1)})
+        end,
+        [Axon.concatenate(char_fw, char_bw, axis: -1), words],
+        name: "char_vec"
+      )
+
+    x =
+      Axon.concatenate(word_vec, char_vec, axis: -1)
+      |> Axon.dropout(rate: config[:dropout], seed: seed, name: "input_dropout")
+
+    {fw_seq, _} = Axon.lstm(x, config[:word_hidden], lstm_opts("word_lstm_fw", word_pad, seed))
+    {bw_seq, _} = Axon.lstm(reverse(x), config[:word_hidden], lstm_opts("word_lstm_bw", reverse(word_pad), seed))
+
+    h =
+      Axon.concatenate(fw_seq, reverse(bw_seq), axis: -1)
+      |> Axon.dropout(rate: config[:dropout], seed: seed, name: "output_dropout")
+
+    Axon.container(%{
+      tags: h |> Axon.dense(length(@pos_tags), name: "tag_output") |> Axon.softmax(name: "tag_softmax"),
+      freq: h |> Axon.dense(vocab.freq_bin_count, name: "freq_output") |> Axon.softmax(name: "freq_softmax")
+    })
+  end
+
+  # The last real step's hidden state: masked (padded) steps carry the
+  # state through unchanged, so with right-padding the final state is the
+  # state after the last real character.
+  defp final_state(x, pad, units, name, seed) do
+    {_seq, {_cell, hidden}} = Axon.lstm(x, units, lstm_opts(name, pad, seed))
+    hidden
+  end
+
+  # Zero initial states, so a sentence is tagged the same way every time.
+  defp lstm_opts(name, pad, seed),
+    do: [name: name, mask: pad, seed: seed, recurrent_initializer: :zeros]
+
+  defp reverse(x), do: Axon.nx(x, &Nx.reverse(&1, axes: [1]))
+
+  defp loss(aux_weight) do
+    fn y_true, y_pred ->
+      Nx.add(masked_ce(y_true.tags, y_pred.tags), Nx.multiply(aux_weight, masked_ce(y_true.freq, y_pred.freq)))
+    end
+  end
+
+  # Cross-entropy averaged over real tokens only: padded positions have an
+  # all-zero target row and contribute nothing.
+  defp masked_ce(y_true, y_pred) do
+    total = Nx.sum(Nx.multiply(y_true, Nx.log(Nx.add(y_pred, 1.0e-9))))
+    count = Nx.max(Nx.sum(y_true), 1.0)
+    Nx.negate(Nx.divide(total, count))
+  end
+
+  # ---------------------------------------------------------------------------
+  # Training
+  # ---------------------------------------------------------------------------
+
+  defp fit(network, predict_fn, sequences, dev, vocab, config, seed, on_epoch, assemble) do
+    batch_size = config[:batch_size]
+    epochs = config[:max_epochs]
+    per_epoch = sequences |> batches(batch_size, seed, 0) |> length()
+
+    data =
+      Stream.flat_map(1..epochs, fn epoch ->
+        rand = TrainingSeed.state(seed + epoch)
+
+        sequences
+        |> batches(batch_size, seed, epoch)
+        |> Enum.map_reduce(rand, fn batch, rand ->
+          {unk_draws, rand} = draws(batch, rand)
+          unk? = singleton_unk(vocab, config[:singleton_unk_rate], unk_draws)
+          inputs = encode(Enum.map(batch, & &1.tokens), vocab, config, batch_size, unk?)
+          len = Nx.axis_size(inputs["words"], 1)
+          {{inputs, targets(batch, vocab, len, batch_size)}, rand}
         end)
-
-      backtrack(final_viterbi, Enum.reverse(backpointers), tags)
-    end
-  end
-
-  defp initialize_viterbi(token, all_tokens, idx, tags, model) do
-    features = extract_token_features(token, all_tokens, idx)
-
-    viterbi =
-      Enum.into(tags, %{}, fn tag ->
-        trans_prob = get_transition_prob("<START>", tag, model)
-        emit_prob = get_emission_prob(features, tag, model)
-        {tag, trans_prob * emit_prob}
+        |> elem(0)
       end)
 
-    backpointer = Enum.into(tags, %{}, fn tag -> {tag, nil} end)
+    best_key = {__MODULE__, :best, make_ref()}
 
-    {viterbi, backpointer}
-  end
+    Process.put(best_key, %{
+      accuracy: -1.0,
+      epoch: 0,
+      state: nil,
+      epochs_run: 0,
+      batches: 0,
+      loss_total: 0.0,
+      started: System.monotonic_time(:millisecond)
+    })
 
-  defp viterbi_step(token, all_tokens, idx, prev_viterbi, tags, model) do
-    features = extract_token_features(token, all_tokens, idx)
+    epoch_end = %{
+      per_epoch: per_epoch,
+      predict_fn: predict_fn,
+      dev: dev,
+      vocab: vocab,
+      config: config,
+      on_epoch: on_epoch,
+      assemble: assemble
+    }
 
-    {viterbi, backpointer} =
-      Enum.reduce(tags, {%{}, %{}}, fn tag, {v_acc, bp_acc} ->
-        {best_prev, best_prob} =
-          Enum.reduce(tags, {nil, 0.0}, fn prev_tag, {best, best_p} ->
-            prev_prob = Map.get(prev_viterbi, prev_tag, 0.0)
-            trans_prob = get_transition_prob(prev_tag, tag, model)
-            prob = prev_prob * trans_prob
+    optimizer = Polaris.Optimizers.adam(learning_rate: config[:learning_rate])
 
-            if prob > best_p do
-              {prev_tag, prob}
-            else
-              {best, best_p}
-            end
-          end)
+    # Runs after every batch and acts only when a whole epoch's batches are
+    # done. Axon's `every: n` filter fires after batch 1, n + 1, 2n + 1 --
+    # one batch into each epoch -- so the batches are counted here instead.
+    loop =
+      network
+      |> Axon.Loop.trainer(loss(config[:aux_loss_weight]), optimizer, seed: seed, log: 0)
+      |> Axon.Loop.handle_event(:iteration_completed, fn state ->
+        best = Process.get(best_key)
+        batches = best.batches + 1
+        Process.put(best_key, %{best | batches: batches})
 
-        emit_prob = get_emission_prob(features, tag, model)
-        final_prob = best_prob * emit_prob
-
-        {Map.put(v_acc, tag, final_prob), Map.put(bp_acc, tag, best_prev)}
+        if rem(batches, per_epoch) == 0,
+          do: end_of_epoch(state, epoch_end, best_key),
+          else: {:continue, state}
       end)
 
-    {viterbi, backpointer}
-  end
+    # strict?: false compiles the step once per batch shape -- once per length
+    # bucket -- instead of refusing every shape but the first.
+    last_state =
+      Axon.Loop.run(loop, data, Axon.ModelState.empty(), epochs: 1, strict?: false, compiler: EXLA)
+    best = Process.delete(best_key)
 
-  defp backtrack(final_viterbi, backpointers, tags) do
-    {best_tag, _} =
-      Enum.max_by(final_viterbi, fn {_tag, prob} -> prob end, fn ->
-        {Enum.at(tags, 0), 0.0}
-      end)
-
-    path =
-      Enum.reduce(Enum.reverse(backpointers), [best_tag], fn bp, [current | _] = path ->
-        prev = Map.get(bp, current)
-
-        if prev do
-          [prev | path]
-        else
-          path
-        end
-      end)
-
-    Enum.take(path, -length(backpointers))
-    |> case do
-      [] -> [best_tag]
-      p -> p
-    end
-  end
-
-  defp get_transition_prob(prev_tag, current_tag, model) do
-    model.transition_weights
-    |> Map.get(prev_tag, %{})
-    |> Map.get(current_tag, 0.001)
-  end
-
-  defp get_emission_prob(features, tag, model) do
-    known_probs =
-      features
-      |> Enum.flat_map(fn feature ->
-        case Map.get(model.feature_weights, feature) do
-          nil -> []
-          weights -> [Map.get(weights, tag, 0.001)]
-        end
-      end)
-
-    if known_probs != [] do
-      Enum.sum(known_probs) / length(known_probs)
+    if dev == [] do
+      {last_state, %{epochs_run: best.epochs_run, best_epoch: best.epochs_run, dev_accuracy: nil}}
     else
-      Map.get(model.tag_priors, tag, 0.001)
+      {best.state, %{epochs_run: best.epochs_run, best_epoch: best.epoch, dev_accuracy: best.accuracy}}
     end
   end
 
-  defp get_model_path do
+  # Runs once per epoch's worth of batches; the epoch number is the count of
+  # those runs, kept alongside the best result.
+  defp end_of_epoch(state, e, best_key) do
+    model_state = state.step_state.model_state
+    best = Process.get(best_key)
+    epoch = best.epochs_run + 1
+
+    # The loop runs as one Axon epoch, so its "loss" metric is the running
+    # mean over every batch so far; the difference of running totals is this
+    # epoch's share. At :iteration_completed `state.iteration` is still the
+    # zero-based index of the batch just run, so the mean covers one more.
+    loss_total = Nx.to_number(state.metrics["loss"]) * (state.iteration + 1)
+    loss = (loss_total - best.loss_total) / e.per_epoch
+
+    {accuracy, best} =
+      if e.dev == [] do
+        {nil, %{best | epoch: epoch}}
+      else
+        model = %{format: @format, config: Map.new(e.config), vocab: e.vocab, params: model_state}
+        accuracy = e.dev |> evaluate_with(model, e.predict_fn) |> Map.fetch!(:accuracy)
+        Logger.info("POSTagger: epoch #{epoch} dev accuracy #{Float.round(accuracy * 100, 2)}%")
+
+        best =
+          if accuracy > best.accuracy,
+            do: %{best | accuracy: accuracy, epoch: epoch, state: transfer(model_state, Nx.BinaryBackend)},
+            else: best
+
+        {accuracy, best}
+      end
+
+    best = %{best | epochs_run: epoch, loss_total: loss_total}
+    Process.put(best_key, best)
+
+    progress = %{
+      epoch: epoch,
+      loss: loss,
+      dev_accuracy: accuracy,
+      best_epoch: best.epoch,
+      best_dev_accuracy: if(e.dev == [], do: nil, else: best.accuracy),
+      improved?: best.epoch == epoch,
+      elapsed_ms: System.monotonic_time(:millisecond) - best.started
+    }
+
+    model_at = fn ->
+      e.assemble.(model_state, %{
+        epochs_run: epoch,
+        best_epoch: epoch,
+        dev_accuracy: accuracy
+      })
+    end
+
+    e.on_epoch.(progress, model_at)
+
+    patience = e.config[:patience]
+
+    if e.dev != [] and is_integer(patience) and epoch - best.epoch >= patience,
+      do: {:halt_loop, state},
+      else: {:continue, state}
+  end
+
+  # One epoch's batches: sentences grouped by padded length, shuffled within
+  # each length and in batch order, deterministically from seed and epoch.
+  defp batches(sequences, batch_size, seed, epoch) do
+    rand = TrainingSeed.state(seed * 1_000 + epoch)
+
+    {grouped, rand} =
+      sequences
+      |> Enum.group_by(&bucket(length(&1.tokens)))
+      |> Enum.sort()
+      |> Enum.map_reduce(rand, fn {_len, group}, rand ->
+        {shuffled, rand} = TrainingSeed.shuffle(group, rand)
+        {Enum.chunk_every(shuffled, batch_size), rand}
+      end)
+
+    {batches, _rand} = grouped |> Enum.concat() |> TrainingSeed.shuffle(rand)
+    batches
+  end
+
+  defp draws(batch, rand) do
+    count = batch |> Enum.map(&length(&1.tokens)) |> Enum.sum()
+
+    {draws, rand} =
+      Enum.map_reduce(1..max(count, 1), rand, fn _, rand -> :rand.uniform_s(rand) end)
+
+    {draws, rand}
+  end
+
+  # Replaces a word seen once in training with the unknown token with
+  # probability `rate`, drawing from the batch's precomputed draws in order.
+  defp singleton_unk(vocab, rate, draws) do
+    counter = :counters.new(1, [])
+    draws = List.to_tuple(draws)
+
+    fn lower ->
+      i = :counters.get(counter, 1)
+      :counters.add(counter, 1, 1)
+      draw = if i < tuple_size(draws), do: elem(draws, i), else: 1.0
+      Map.get(vocab.word_counts, lower) == 1 and draw < rate
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Inference and evaluation
+  # ---------------------------------------------------------------------------
+
+  # The compiled predict function for a model's shape, built once and cached.
+  defp runtime(model) do
+    key = {__MODULE__, :runtime, :erlang.phash2({model.config, map_size(model.vocab.words), map_size(model.vocab.chars), model.vocab.freq_bin_count})}
+
+    case :persistent_term.get(key, nil) do
+      nil ->
+        network = build_network(model.vocab, Map.to_list(model.config), model_seed(model))
+        {_init, predict_fn} = Axon.build(network, compiler: EXLA, mode: :inference)
+        :persistent_term.put(key, predict_fn)
+        predict_fn
+
+      predict_fn ->
+        predict_fn
+    end
+  end
+
+  defp model_seed(%{training: %{seed: seed}}), do: seed
+  defp model_seed(_), do: 0
+
+  defp evaluate_with(sequences, model, predict_fn) do
+    pairs =
+      sequences
+      |> Enum.chunk_every(model.config.batch_size)
+      |> Enum.flat_map(fn batch ->
+        predicted = decode_batch(predict_fn, model, Enum.map(batch, & &1.tokens))
+
+        Enum.zip(batch, predicted)
+        |> Enum.flat_map(fn {seq, tags} ->
+          Enum.zip(seq.tags, tags) |> Enum.map(fn {g, p} -> {g, p, false} end)
+        end)
+      end)
+
+    report(pairs)
+  end
+
+  defp decode_batch(predict_fn, model, token_lists) do
+    config = Map.to_list(model.config)
+    rows = model.config.batch_size
+    inputs = encode(token_lists, model.vocab, config, max(rows, length(token_lists)))
+    %{tags: probs} = predict_fn.(model.params, inputs)
+    best = probs |> Nx.argmax(axis: -1) |> Nx.to_list()
+
+    token_lists
+    |> Enum.zip(best)
+    |> Enum.map(fn {tokens, ids} ->
+      ids |> Enum.take(length(tokens)) |> Enum.map(&Enum.at(model.vocab.tags, &1))
+    end)
+  end
+
+  defp report(pairs) do
+    total = length(pairs)
+    correct = Enum.count(pairs, fn {g, p, _} -> g == p end)
+    oov = Enum.filter(pairs, fn {_, _, oov?} -> oov? end)
+
+    confusion =
+      Enum.reduce(pairs, %{}, fn {g, p, _}, acc ->
+        Map.update(acc, g, %{p => 1}, &Map.update(&1, p, 1, fn n -> n + 1 end))
+      end)
+
+    predicted_counts = Enum.frequencies_by(pairs, fn {_, p, _} -> p end)
+
+    per_tag =
+      Map.new(confusion, fn {tag, row} ->
+        n = row |> Map.values() |> Enum.sum()
+        hit = Map.get(row, tag, 0)
+        predicted = Map.get(predicted_counts, tag, 0)
+        {tag, %{count: n, recall: hit / n, precision: if(predicted > 0, do: hit / predicted, else: 0.0)}}
+      end)
+
+    %{
+      tokens: total,
+      accuracy: if(total > 0, do: correct / total, else: 0.0),
+      oov_tokens: length(oov),
+      oov_accuracy:
+        if(oov == [], do: nil, else: Enum.count(oov, fn {g, p, _} -> g == p end) / length(oov)),
+      per_tag: per_tag,
+      confusion: confusion
+    }
+  end
+
+  # ---------------------------------------------------------------------------
+  # Persistence
+  # ---------------------------------------------------------------------------
+
+  defp check_format!(%{format: @format}), do: :ok
+
+  defp check_format!(model) do
+    raise ArgumentError,
+          "POSTagger: model format #{inspect(Map.get(model, :format))} is not #{@format}; " <>
+            "retrain with mix pos.train"
+  end
+
+  # A copy, not a transfer: a transfer frees the source buffers, which the
+  # training loop is still using when a best-epoch snapshot is taken.
+  defp transfer(%Axon.ModelState{} = state, backend) do
+    %{state | data: Nx.backend_copy(state.data, backend)}
+  end
+
+  defp stat(path) do
+    case File.stat(path) do
+      {:ok, stat} -> {:ok, stat}
+      {:error, reason} -> {:error, "Failed to read model: #{reason}"}
+    end
+  end
+
+  defp read(path) do
+    case File.read(path) do
+      {:ok, binary} -> {:ok, binary}
+      {:error, reason} -> {:error, "Failed to read model: #{reason}"}
+    end
+  end
+
+  defp decode(binary, path) do
+    case :erlang.binary_to_term(binary) do
+      %{format: @format} = model -> {:ok, model}
+      other -> {:error, "#{path} is not a POS model of format #{@format} (got #{inspect(Map.get(other, :format))})"}
+    end
+  rescue
+    e -> {:error, "Failed to deserialize model: #{Exception.message(e)}"}
+  end
+
+  @doc "Where the app's tagger is saved and loaded: `pos_model.term` under the configured models path."
+  def model_path do
     case Application.get_env(:brain, :ml)[:models_path] do
-      nil -> model_path()
+      nil -> Brain.priv_path("ml_models/pos_model.term")
       models_path -> Path.join(models_path, "pos_model.term")
     end
-  end
-
-  defp capitalized?(token) do
-    first = String.first(token) || ""
-    first == String.upcase(first) and first != String.downcase(first)
-  end
-
-  defp all_caps?(token) do
-    token == String.upcase(token) and token != String.downcase(token)
-  end
-
-  defp all_lower?(token) do
-    token == String.downcase(token) and token != String.upcase(token)
-  end
-
-  defp has_digit?(token) do
-    Enum.any?(String.graphemes(token), fn g ->
-      g >= "0" and g <= "9"
-    end)
-  end
-
-  defp all_digits?(token) do
-    token != "" and
-      Enum.all?(String.graphemes(token), fn g ->
-        g >= "0" and g <= "9"
-      end)
-  end
-
-  defp is_punctuation?(token) do
-    punct = [
-      ".",
-      ",",
-      "!",
-      "?",
-      ";",
-      ":",
-      "'",
-      "\"",
-      "-",
-      "--",
-      "...",
-      "(",
-      ")",
-      "[",
-      "]",
-      "{",
-      "}",
-      "/",
-      "\\",
-      "@",
-      "#",
-      "$",
-      "%",
-      "^",
-      "&",
-      "*",
-      "+",
-      "=",
-      "~",
-      "`"
-    ]
-
-    token in punct
   end
 end

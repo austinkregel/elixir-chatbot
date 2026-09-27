@@ -489,7 +489,7 @@ defmodule Mix.Tasks.GenFramingData do
 
     srl_frames =
       safe_call(
-        fn -> SemanticRoleLabeler.label(tokens, bio_tags, entities) end,
+        fn -> SemanticRoleLabeler.label(tokens, bio_tags, entities: entities) end,
         []
       )
 

@@ -843,7 +843,7 @@ defmodule ChatWeb.ExplorerLive do
                   {format_confidence(candidate.confidence)}
                 </span>
               </td>
-              <td>{candidate[:occurrences] || 1}</td>
+              <td>{candidate.occurrences}</td>
               <td>
                 <%= if candidate.inferred_type && candidate.inferred_type != "unknown" do %>
                   <button

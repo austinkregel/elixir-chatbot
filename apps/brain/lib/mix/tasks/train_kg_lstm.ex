@@ -360,28 +360,45 @@ defmodule Mix.Tasks.TrainKgLstm do
     _ -> []
   end
 
+  # This carried two defects that cancelled into silence: it tested Penn
+  # Treebank tags against a tagger that emits Universal Dependencies, and it
+  # matched `tag in [...]` against the `{token, tag}` tuples `predict/2`
+  # actually returns. Neither could ever match, so `--include-srl` contributed
+  # no triples, and three separate `"NN"` fallbacks hid a missing model.
+  # Measured 2026-09-23.
   defp generate_minimal_bio_tags(tokens) do
-    pos_tags =
-    if Brain.ML.POSTagger.model_exists?() do
+    model =
       case Brain.ML.POSTagger.load_model() do
         {:ok, model} ->
-          tags = Brain.ML.POSTagger.predict(tokens, model)
-          if is_list(tags) and length(tags) == length(tokens), do: tags, else: Enum.map(tokens, fn _ -> "NN" end)
+          model
 
-        _ ->
-          Enum.map(tokens, fn _ -> "NN" end)
+        {:error, reason} ->
+          Mix.raise("""
+          train_kg_lstm: no usable POS model at #{Brain.ML.POSTagger.model_path()}
+
+          #{reason}
+
+          SRL triples are derived from part-of-speech tags. Without them every
+          sentence yields no predicate and --include-srl contributes nothing.
+          Train one with `mix pos.train`.
+          """)
       end
-    else
-      Enum.map(tokens, fn _ -> "NN" end)
+
+    tagged = Brain.ML.POSTagger.predict(tokens, model)
+
+    unless length(tagged) == length(tokens) do
+      Mix.raise(
+        "train_kg_lstm: POSTagger returned #{length(tagged)} tags for #{length(tokens)} tokens"
+      )
     end
 
-    pos_tags
+    tagged
     |> Enum.with_index()
-    |> Enum.map(fn {tag, idx} ->
+    |> Enum.map(fn {{_token, tag}, idx} ->
       cond do
-        tag in ["VB", "VBD", "VBG", "VBN", "VBP", "VBZ"] -> if idx == 0, do: "B-V", else: "B-V"
+        tag == "VERB" -> "B-V"
         idx == 0 -> "B-ARG0"
-        tag in ["NN", "NNS", "NNP", "NNPS", "PRP"] -> "B-ARG1"
+        tag in ["NOUN", "PROPN", "PRON"] -> "B-ARG1"
         true -> "O"
       end
     end)

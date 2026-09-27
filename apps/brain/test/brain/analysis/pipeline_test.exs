@@ -4,11 +4,9 @@ defmodule Brain.Analysis.PipelineTest do
 
   alias Brain.Analysis.Pipeline
   alias Brain.Analysis.InternalModel
-  alias Brain.ML.EntityExtractor
 
   setup _context do
     start_test_services()
-    EntityExtractor.load_entity_maps()
     :ok
   end
 

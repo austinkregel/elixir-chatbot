@@ -74,7 +74,17 @@ defmodule Mix.Tasks.Split.HeldOut do
 
     File.mkdir_p!(Path.dirname(held_path))
     File.write!(held_path, Jason.encode!(held_out, pretty: true) <> "\n")
-    File.write!(gold_path, Jason.encode!(remaining, pretty: true) <> "\n")
+
+    # The gold standard is deliberately left whole. This used to rewrite it with
+    # only `remaining`, which made the split a one-shot destructive edit --
+    # and `mix rebuild_gold_standard`, `cleanup_gold_standard`,
+    # `normalize_gold_standard` and `augment_training_data` all regenerate that
+    # file from data/intents/, so any of them would have quietly pulled the
+    # held-out rows back into training with no signal.
+    #
+    # Instead the split is applied at read time:
+    # `EvaluationStore.load_gold_standard/2` takes :train or :held_out and
+    # filters against this file.
 
     report(examples, held_out, remaining, label_key, gold_path, held_path)
   end
@@ -155,9 +165,17 @@ defmodule Mix.Tasks.Split.HeldOut do
     IO.puts("\nRemaining training: #{length(remaining)} examples")
     print_distribution(remain_dist)
 
-    IO.puts("\nFiles written:")
+    IO.puts("\nWritten:")
     IO.puts("  Held-out test set: #{held_path}")
-    IO.puts("  Training set:      #{gold_path}")
+    IO.puts("\nLeft whole:")
+    IO.puts("  Gold standard:     #{gold_path}")
+
+    IO.puts(
+      "\nThe split is applied at read time. Training reads " <>
+        "EvaluationStore.load_gold_standard(task, :train), evaluation reads :held_out. " <>
+        "Regenerating the gold standard will not undo it."
+    )
+
     IO.puts("")
   end
 

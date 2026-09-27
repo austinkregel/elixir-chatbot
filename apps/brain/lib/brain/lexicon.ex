@@ -1,8 +1,16 @@
 defmodule Brain.Lexicon do
   @moduledoc """
-  Public API for the unified lexicon system.
+  Public API for the unified lexicon system, and the one place lexical lookups
+  should come from.
 
-  Wraps the existing WordNet-based `Brain.ML.Lexicon` and extends it with:
+  WordNet (`Brain.ML.Lexicon`) is the base reference. The brain's own facts
+  (`Brain.Lexicon.UserDefined`, persisted in Atlas) extend it: list-valued
+  lookups return WordNet's answers followed by owned relations, and every
+  owned fact records its source so a seeded fact and a learned one that
+  contradicts it can both be weighed from context. With no owned facts, every
+  lookup here returns exactly what WordNet returns.
+
+  Beyond the lookups, it provides:
   - Lexical domain lookup (from WordNet lexicographer file numbers)
   - ConceptNet relation queries
   - User-defined lexicon access (for OOV / learned words)
@@ -174,11 +182,139 @@ defmodule Brain.Lexicon do
     length(chain)
   end
 
-  @doc """
-  Returns antonym lemmas for a word.
-  """
-  def antonyms(word) when is_binary(word) do
+  # ---------------------------------------------------------------------------
+  # Lexical lookups — WordNet as the base, the brain's own facts on top
+  # ---------------------------------------------------------------------------
+  #
+  # Every lexical lookup in the brain goes through these functions rather than
+  # `Brain.ML.Lexicon` directly. WordNet supplies the base answer; the brain's
+  # own facts (`Brain.Lexicon.UserDefined`) extend it.
+  #
+  # List-valued lookups return WordNet's answers followed by the owned
+  # relation targets, de-duplicated. Owned relations are facts of kind
+  # "relation" whose `key` is the relation ("synonym", "hypernym", "antonym")
+  # and whose `ref` is the related word; a relation may carry `"pos"` in its
+  # value, and when a POS filter is given only relations with that POS apply.
+  #
+  # Scalar lookups (`definition/2`, `lemma/1`) and structured ones (`senses/1`,
+  # `hypernym_chain/3`) return WordNet's answer unchanged. The brain's own facts
+  # about the same word are available from `owned_facts/2`; choosing between a
+  # seeded answer and a learned one that contradicts it is a contextual
+  # decision for the caller, not something this layer hard-codes.
+  #
+  # With no owned facts, every function here returns exactly what
+  # `Brain.ML.Lexicon` returns. `test/brain/lexicon/lexicon_contract_test.exs`
+  # holds that equivalence.
+  #
+  # The `:store` option exists for tests, which need an isolated store.
+
+  @doc "Returns the brain's own facts about a word. See `Brain.Lexicon.UserDefined.facts/3`."
+  @spec owned_facts(String.t(), keyword()) :: [Atlas.Schemas.LexiconFact.t()]
+  def owned_facts(word, filters \\ []) when is_binary(word) do
+    {store, filters} = Keyword.pop(filters, :store, UserDefined)
+    UserDefined.facts(word, filters, store)
+  end
+
+  @doc "Returns synonyms for a word, optionally filtered by POS."
+  @spec synonyms(String.t(), atom() | nil, keyword()) :: [String.t()]
+  def synonyms(word, pos \\ nil, opts \\ []) when is_binary(word) do
+    WordNet.synonyms(word, pos)
+    |> with_owned_relations(word, "synonym", pos, opts)
+  end
+
+  @doc "Returns one-level hypernyms for a word, optionally filtered by POS."
+  @spec hypernyms(String.t(), atom() | nil, keyword()) :: [String.t()]
+  def hypernyms(word, pos \\ nil, opts \\ []) when is_binary(word) do
+    WordNet.hypernyms(word, pos)
+    |> with_owned_relations(word, "hypernym", pos, opts)
+  end
+
+  @doc "Returns antonym lemmas for a word."
+  @spec antonyms(String.t(), keyword()) :: [String.t()]
+  def antonyms(word, opts \\ []) when is_binary(word) do
     WordNet.antonyms(word)
+    |> with_owned_relations(word, "antonym", nil, opts)
+  end
+
+  @doc """
+  Returns the gloss of the first matching sense as `{:ok, definition}`, or
+  `:not_found`.
+  """
+  @spec definition(String.t(), atom() | nil) :: {:ok, String.t()} | :not_found
+  def definition(word, pos \\ nil) when is_binary(word), do: WordNet.definition(word, pos)
+
+  @doc "Walks the hypernym chain from a word. See `Brain.ML.Lexicon.hypernym_chain/3`."
+  @spec hypernym_chain(String.t(), atom() | nil, keyword()) :: [String.t()]
+  def hypernym_chain(word, pos \\ nil, opts \\ []) when is_binary(word) do
+    WordNet.hypernym_chain(word, pos, opts)
+  end
+
+  @doc "Returns every WordNet sense of a word, with synset id, POS and definition."
+  @spec senses(String.t()) :: [map()]
+  def senses(word) when is_binary(word), do: WordNet.senses(word)
+
+  @doc """
+  Returns the parts of speech a word takes: WordNet's, then those of the
+  brain's own senses.
+  """
+  @spec pos(String.t(), keyword()) :: [atom()]
+  def pos(word, opts \\ []) when is_binary(word) do
+    owned =
+      word
+      |> owned_facts(kind: "sense", store: Keyword.get(opts, :store, UserDefined))
+      |> Enum.map(&String.to_existing_atom(&1.key))
+
+    Enum.uniq(WordNet.pos(word) ++ owned)
+  end
+
+  @doc "Returns true if the word is known. Same as `known?/1`."
+  @spec known_word?(String.t()) :: boolean()
+  def known_word?(word) when is_binary(word), do: known?(word)
+
+  @doc """
+  Expands a token list with synonyms for tokens missing from `vocabulary`.
+
+  A token already in the vocabulary is kept alone. Otherwise its lemma is added
+  if the lemma is in the vocabulary; failing that, the first synonym found in
+  the vocabulary is added. `vocabulary` is a map keyed by word.
+  """
+  @spec expand_with_synonyms([String.t()], map(), keyword()) :: [String.t()]
+  def expand_with_synonyms(tokens, vocabulary, opts \\ [])
+      when is_list(tokens) and is_map(vocabulary) do
+    Enum.flat_map(tokens, fn token ->
+      if Map.has_key?(vocabulary, token) do
+        [token]
+      else
+        lemmatized = lemma(token)
+
+        if lemmatized != token and Map.has_key?(vocabulary, lemmatized) do
+          [token, lemmatized]
+        else
+          case Enum.find(synonyms(token, nil, opts), &Map.has_key?(vocabulary, &1)) do
+            nil -> [token]
+            known -> [token, known]
+          end
+        end
+      end
+    end)
+  end
+
+  defp with_owned_relations(base, word, relation, pos, opts) do
+    store = Keyword.get(opts, :store, UserDefined)
+    normalized = String.downcase(word)
+
+    owned =
+      normalized
+      |> owned_facts(kind: "relation", key: relation, store: store)
+      |> Enum.filter(fn fact -> is_nil(pos) or fact.value["pos"] == to_string(pos) end)
+      |> Enum.map(& &1.ref)
+      |> Enum.uniq()
+      |> Enum.reject(&(&1 == normalized or &1 in base))
+
+    # WordNet's list is passed through untouched. Its functions do not all
+    # clean their output the same way (hypernyms/3 keeps the word itself if a
+    # parent synset contains it), so re-processing it here would change answers.
+    base ++ owned
   end
 
   @doc """
@@ -256,6 +392,22 @@ defmodule Brain.Lexicon do
 
   @doc "Returns the base/lemma form of a word."
   def lemma(word) when is_binary(word), do: WordNet.lemma(word)
+
+  @doc """
+  Returns every lemma a word can be a form of, as `{lemma, pos}`: regular
+  and irregular inflections and the word itself. See
+  `Brain.ML.Lexicon.base_forms/2`.
+  """
+  @spec base_forms(String.t()) :: [{String.t(), atom()}]
+  def base_forms(word) when is_binary(word), do: WordNet.base_forms(word)
+
+  @doc """
+  The grammatical number of a word read as a noun: `:plural`, `:singular`,
+  or `nil` when it is no noun WordNet knows. See
+  `Brain.ML.Lexicon.grammatical_number/2`.
+  """
+  @spec grammatical_number(String.t()) :: :plural | :singular | nil
+  def grammatical_number(word) when is_binary(word), do: WordNet.grammatical_number(word)
 
   @doc "Returns all synset IDs for a word, optionally filtered by POS."
   def synset_ids(word, pos \\ nil) when is_binary(word) do

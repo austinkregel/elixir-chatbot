@@ -1,0 +1,55 @@
+{
+  "domain": "calendar",
+  "description": "Calendar event queries and creation",
+  "response_frames": {
+    "query": [
+      "Let me check your calendar.",
+      "Checking your upcoming events."
+    ],
+    "create": [
+      "I've added that to your calendar.",
+      "Event created."
+    ],
+    "general": [
+      "Here's what I found on your calendar."
+    ]
+  },
+  "enriched_response_frames": {
+    "with_events": {
+      "condition": "enriched:next_event",
+      "requires_enrichment": ["next_event", "event_time"],
+      "templates": [
+        "Your next event is $next_event at $event_time.",
+        "Coming up: $next_event at $event_time."
+      ]
+    },
+    "service_not_configured": {
+      "condition": "service_missing",
+      "requires_enrichment": [],
+      "templates": [
+        "I'd need a calendar integration to check that."
+      ]
+    },
+    "service_error": {
+      "condition": "service_error",
+      "requires_enrichment": [],
+      "templates": [
+        "I had trouble accessing the calendar right now."
+      ]
+    }
+  },
+  "entity_verbalizations": {
+    "event": ["$value"],
+    "time": ["at $value", "for $value"]
+  },
+  "acknowledgment_prefixes": ["Sure,", "Let me check."],
+  "slot_requirements": {
+    "required": [],
+    "optional": ["event", "time", "date"]
+  },
+  "enrichment_service": "home_assistant",
+  "enrichment_fields": {
+    "next_event": {"description": "Next calendar event title", "source": "home_assistant"},
+    "event_time": {"description": "Event date/time", "source": "home_assistant"}
+  }
+}

@@ -1,285 +1,484 @@
 defmodule Brain.Lexicon.UserDefined do
   @moduledoc """
-  Mutable runtime lexicon for words learned from conversations.
+  The brain's own lexicon: seeded facts and learned facts, held in ETS and
+  persisted in Atlas.
 
-  Stores user-defined or system-derived word senses in the
-  `:lexicon_user_defined` ETS table. Each entry holds a list of
-  observed senses with centroids, frequency, and provenance.
+  WordNet stays the base reference in `Brain.ML.Lexicon`. This store holds
+  what the brain owns on top of it — domain concepts, corrections, properties
+  derived from a corpus, and senses learned from conversation — each as an
+  `Atlas.Schemas.LexiconFact` that records its source. A learned fact and the
+  seeded fact it contradicts are both kept; which one applies is decided from
+  context by the reader, not here.
 
-  This table is created by `Brain.Lexicon.Loader` at startup.
-  Entries are persisted to disk periodically via `flush_to_disk/0`.
+  ## Storage
+
+  At boot every fact is loaded from `Atlas.Lexicon` into ETS. Atlas is a
+  required dependency: if the load fails, `init/1` crashes instead of starting
+  with an empty lexicon that would look exactly like a populated one. Writes go
+  to Atlas first and update ETS only after the write succeeds. Reads never
+  touch the database.
+
+  The ETS table is `:protected`, so nothing but this process can write to it.
+
+  The module name predates the store holding seeded facts as well as learned
+  ones.
+
+  ## Senses
+
+  `get/1`, `has_entry?/1`, `all/0` and `count/0` keep their original meaning:
+  they report words that carry at least one sense fact, as
+  `%{senses: [sense_map]}`. `add_sense/3`, `record_observation/3` and
+  `decay_senses/1` maintain those sense facts.
   """
+
+  use GenServer
+  require Logger
+
+  alias Atlas.Lexicon, as: Facts
+  alias Atlas.Schemas.LexiconFact
+  alias FourthWall.Math
 
   @table :lexicon_user_defined
 
-  @doc """
-  Returns the entry for a word, or nil if not found.
-  """
-  def get(word) when is_binary(word) do
-    normalized = String.downcase(word)
+  # -- Lifecycle --------------------------------------------------------------
 
-    try do
-      case :ets.lookup(@table, normalized) do
-        [{^normalized, entry}] -> entry
-        _ -> nil
+  @doc """
+  Starts the store.
+
+  ## Options
+
+  - `:name` — registered name, default `#{inspect(__MODULE__)}`.
+  - `:table_prefix` — gives an isolated instance its own ETS table.
+  """
+  def start_link(opts \\ []) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
+  end
+
+  @doc "Reloads every fact from Atlas, discarding the ETS contents."
+  @spec reload(GenServer.server()) :: {:ok, non_neg_integer()}
+  def reload(name \\ __MODULE__), do: GenServer.call(name, :reload)
+
+  # -- Reads ------------------------------------------------------------------
+
+  @doc """
+  Returns the facts about a word, optionally filtered.
+
+  ## Filters
+
+  - `:kind` — `"sense"`, `"relation"`, or `"property"`.
+  - `:key` — the relation type, property name, or part of speech.
+  - `:source` — a single source such as `"seed:wordnet"`.
+  - `:include_archived` — include decayed facts. Default `false`.
+  """
+  @spec facts(String.t(), keyword(), GenServer.server()) :: [LexiconFact.t()]
+  def facts(word, filters \\ [], name \\ __MODULE__) when is_binary(word) do
+    include_archived = Keyword.get(filters, :include_archived, false)
+
+    name
+    |> table_for()
+    |> lookup(String.downcase(word))
+    |> Enum.filter(fn fact ->
+      (include_archived or not fact.archived) and
+        matches?(fact.kind, filters[:kind]) and
+        matches?(fact.key, filters[:key]) and
+        matches?(fact.source, filters[:source])
+    end)
+  end
+
+  @doc "Returns the total number of facts held, archived ones included."
+  @spec fact_count(GenServer.server()) :: non_neg_integer()
+  def fact_count(name \\ __MODULE__) do
+    name
+    |> table_for()
+    |> :ets.tab2list()
+    |> Enum.reduce(0, fn {_word, facts}, acc -> acc + length(facts) end)
+  end
+
+  @doc """
+  Returns `%{senses: [sense_map]}` for a word with at least one sense, else `nil`.
+  """
+  @spec get(String.t(), GenServer.server()) :: %{senses: [map()]} | nil
+  def get(word, name \\ __MODULE__) when is_binary(word) do
+    case sense_maps(word, name) do
+      [] -> nil
+      senses -> %{senses: senses}
+    end
+  end
+
+  @doc "Returns true if the word carries at least one sense."
+  @spec has_entry?(String.t(), GenServer.server()) :: boolean()
+  def has_entry?(word, name \\ __MODULE__) when is_binary(word) do
+    get(word, name) != nil
+  end
+
+  @doc "Returns `{word, %{senses: senses}}` for every word carrying a sense."
+  @spec all(GenServer.server()) :: [{String.t(), %{senses: [map()]}}]
+  def all(name \\ __MODULE__) do
+    name
+    |> table_for()
+    |> :ets.tab2list()
+    |> Enum.flat_map(fn {word, _facts} ->
+      case get(word, name) do
+        nil -> []
+        entry -> [{word, entry}]
       end
-    catch
-      :error, :badarg -> nil
+    end)
+    |> Enum.sort_by(&elem(&1, 0))
+  end
+
+  @doc "Returns the number of words carrying at least one sense."
+  @spec count(GenServer.server()) :: non_neg_integer()
+  def count(name \\ __MODULE__), do: length(all(name))
+
+  # -- Writes -----------------------------------------------------------------
+
+  @doc """
+  Writes one fact. Returns `{:error, changeset}` if the fact is invalid.
+  """
+  @spec put_fact(map(), GenServer.server()) :: {:ok, 1} | {:error, Ecto.Changeset.t()}
+  def put_fact(attrs, name \\ __MODULE__) when is_map(attrs) do
+    case put_facts([attrs], name) do
+      {:ok, _} = ok -> ok
+      {:error, {0, changeset}} -> {:error, changeset}
     end
   end
 
   @doc """
-  Returns true if there is a user-defined entry for this word.
+  Writes many facts. If any is invalid nothing is written, and
+  `{:error, {index, changeset}}` names the first bad entry.
   """
-  def has_entry?(word) when is_binary(word) do
-    get(word) != nil
+  @spec put_facts([map()], GenServer.server()) ::
+          {:ok, non_neg_integer()} | {:error, {non_neg_integer(), Ecto.Changeset.t()}}
+  def put_facts(attrs_list, name \\ __MODULE__) when is_list(attrs_list) do
+    GenServer.call(name, {:put_facts, attrs_list}, :infinity)
+  end
+
+  @doc """
+  Archives every fact from `source` with one of `keys` whose identity
+  `{word, kind, key, ref}` is not in `keep` -- how a seeder retires what it
+  no longer derives, rather than leaving stale facts to be read alongside
+  the new ones. `:ref` in `opts` narrows it to one ref. Archiving is
+  reversible: writing the fact again un-archives it.
+
+  Returns `{:ok, count}` of facts archived.
+  """
+  @spec retire_unlisted(String.t(), [String.t()], MapSet.t(), keyword()) :: {:ok, non_neg_integer()}
+  def retire_unlisted(source, keys, keep, opts \\ [])
+      when is_binary(source) and is_list(keys) do
+    GenServer.call(
+      Keyword.get(opts, :name, __MODULE__),
+      {:retire_unlisted, source, keys, keep, Keyword.get(opts, :ref)},
+      :infinity
+    )
   end
 
   @doc """
   Adds or updates a sense for a word.
 
-  If the word already has senses, the new sense is matched against
-  existing ones by centroid similarity. If the best match is above
-  `similarity_threshold`, the existing sense is updated (frequency bumped,
-  centroid EMA'd). Otherwise a new sense is appended.
+  An existing sense whose centroid is at least `:similarity_threshold`
+  (default 0.8) similar to the new one is updated: its frequency is bumped and
+  its centroid moved toward the new one. Otherwise a new sense is added.
 
-  ## Parameters
-  - `word` - the word to add/update
-  - `sense` - a map with keys: `:coarse_class`, `:pos`, `:centroid` (list of floats),
-    `:source` (`:derived` | `:clarified`)
-  - `opts` - options:
-    - `:similarity_threshold` - cosine similarity threshold for merging (default 0.8)
+  `sense` requires `:pos` and `:coarse_class`, and may carry `:centroid`
+  (a list of floats) and `:source` (`:derived` or `:clarified`, default
+  `:derived`).
+
+  Returns `{:ok, :created}`, `{:ok, :updated}`, `{:ok, :new_sense}`, or
+  `{:error, changeset}`.
   """
+  @spec add_sense(String.t(), map(), keyword()) ::
+          {:ok, :created | :updated | :new_sense} | {:error, Ecto.Changeset.t()}
   def add_sense(word, sense, opts \\ []) when is_binary(word) and is_map(sense) do
-    normalized = String.downcase(word)
-    threshold = Keyword.get(opts, :similarity_threshold, 0.8)
-    now = System.system_time(:second)
-
-    new_sense =
-      sense
-      |> Map.put_new(:frequency, 1)
-      |> Map.put_new(:first_seen, now)
-      |> Map.put(:last_seen, now)
-
-    case get(normalized) do
-      nil ->
-        entry = %{senses: [new_sense]}
-        :ets.insert(@table, {normalized, entry})
-        {:ok, :created}
-
-      %{senses: existing_senses} ->
-        case find_matching_sense(existing_senses, new_sense, threshold) do
-          {:match, idx} ->
-            updated = update_sense_at(existing_senses, idx, new_sense)
-            :ets.insert(@table, {normalized, %{senses: updated}})
-            {:ok, :updated}
-
-          :no_match ->
-            :ets.insert(@table, {normalized, %{senses: existing_senses ++ [new_sense]}})
-            {:ok, :new_sense}
-        end
+    for field <- [:pos, :coarse_class], is_nil(sense[field]) do
+      raise ArgumentError, "add_sense/3 requires #{inspect(field)}, got: #{inspect(sense)}"
     end
+
+    GenServer.call(Keyword.get(opts, :name, __MODULE__), {:add_sense, word, sense, opts})
   end
 
   @doc """
-  Records an observation of a word in context (for Tier 2 centroid refinement).
+  Records an observation of a word in context: bumps the primary sense's
+  frequency and moves its centroid toward `context_centroid` by an exponential
+  moving average (`:ema_alpha`, default 0.3).
 
-  Increments frequency and updates the centroid via exponential moving average.
+  Returns `{:error, :not_found}` if the word has no sense.
   """
-  def record_observation(word, context_centroid, opts \\ []) when is_binary(word) do
-    normalized = String.downcase(word)
+  @spec record_observation(String.t(), [float()], keyword()) ::
+          {:ok, :updated} | {:error, :not_found}
+  def record_observation(word, context_centroid, opts \\ [])
+      when is_binary(word) and is_list(context_centroid) do
+    GenServer.call(
+      Keyword.get(opts, :name, __MODULE__),
+      {:record_observation, word, context_centroid, opts}
+    )
+  end
+
+  @doc """
+  Halves the frequency of every sense not observed within `:max_age_seconds`
+  (default one week), and archives those that fall below `:archive_threshold`
+  (default 1).
+
+  Returns the number of senses that decayed.
+  """
+  @spec decay_senses(keyword()) :: non_neg_integer()
+  def decay_senses(opts \\ []) do
+    GenServer.call(Keyword.get(opts, :name, __MODULE__), {:decay_senses, opts}, :infinity)
+  end
+
+  # -- Server -----------------------------------------------------------------
+
+  @impl true
+  def init(opts) do
+    table = create_table(Keyword.get(opts, :table_prefix))
+    count = load_all(table)
+    Logger.info("Lexicon.UserDefined: loaded #{count} facts from Atlas")
+    {:ok, %{table: table}}
+  end
+
+  @impl true
+  def handle_call(:table_name, _from, state), do: {:reply, state.table, state}
+
+  def handle_call(:reload, _from, state), do: {:reply, {:ok, load_all(state.table)}, state}
+
+  def handle_call({:put_facts, attrs_list}, _from, state) do
+    {:reply, write(state.table, attrs_list), state}
+  end
+
+  def handle_call({:add_sense, word, sense, opts}, _from, state) do
+    word = String.downcase(word)
+    threshold = Keyword.get(opts, :similarity_threshold, 0.8)
+    existing = sense_facts(state.table, word)
+
+    reply =
+      case matching_sense(existing, sense[:centroid], threshold) do
+        {:match, fact} ->
+          centroid = blend(fact.value["centroid"], sense[:centroid], 0.3)
+
+          fact
+          |> Facts.update_fact(%{
+            frequency: fact.frequency + 1,
+            value: Map.put(fact.value, "centroid", centroid),
+            last_observed_at: DateTime.utc_now()
+          })
+          |> after_update(state.table, word, :updated)
+
+        :no_match ->
+          case write(state.table, [sense_attrs(word, sense)]) do
+            {:ok, _} when existing == [] -> {:ok, :created}
+            {:ok, _} -> {:ok, :new_sense}
+            {:error, {0, changeset}} -> {:error, changeset}
+          end
+      end
+
+    {:reply, reply, state}
+  end
+
+  def handle_call({:record_observation, word, context_centroid, opts}, _from, state) do
+    word = String.downcase(word)
     alpha = Keyword.get(opts, :ema_alpha, 0.3)
 
-    case get(normalized) do
-      nil ->
-        {:error, :not_found}
+    reply =
+      case sense_facts(state.table, word) do
+        [] ->
+          {:error, :not_found}
 
-      %{senses: [primary | rest]} ->
-        updated_centroid =
-          case primary[:centroid] do
-            nil ->
-              context_centroid
+        [primary | _] ->
+          centroid = blend(primary.value["centroid"], context_centroid, alpha)
 
-            existing when is_list(existing) and is_list(context_centroid) ->
-              ema_update(existing, context_centroid, alpha)
-
-            _ ->
-              context_centroid
-          end
-
-        updated_primary =
           primary
-          |> Map.put(:centroid, updated_centroid)
-          |> Map.put(:frequency, (primary[:frequency] || 0) + 1)
-          |> Map.put(:last_seen, System.system_time(:second))
+          |> Facts.update_fact(%{
+            frequency: primary.frequency + 1,
+            value: Map.put(primary.value, "centroid", centroid),
+            last_observed_at: DateTime.utc_now()
+          })
+          |> after_update(state.table, word, :updated)
+      end
 
-        :ets.insert(@table, {normalized, %{senses: [updated_primary | rest]}})
-        {:ok, :updated}
-    end
+    {:reply, reply, state}
   end
 
-  @doc """
-  Applies decay to all senses not observed recently.
+  def handle_call({:retire_unlisted, source, keys, keep, ref}, _from, state) do
+    retired =
+      state.table
+      |> :ets.tab2list()
+      |> Enum.flat_map(fn {_word, facts} -> facts end)
+      |> Enum.filter(fn fact ->
+        fact.source == source and fact.key in keys and not fact.archived and
+          (is_nil(ref) or fact.ref == ref) and
+          not MapSet.member?(keep, {fact.word, fact.kind, fact.key, fact.ref})
+      end)
+      |> Enum.map(fn fact ->
+        {:ok, _} = Facts.update_fact(fact, %{archived: true})
+        fact.word
+      end)
 
-  Senses not seen in `max_age_seconds` have their frequency halved.
-  Senses with frequency below `archive_threshold` are marked as archived.
-  """
-  def decay_senses(opts \\ []) do
+    refresh_words(state.table, Enum.uniq(retired))
+    {:reply, {:ok, length(retired)}, state}
+  end
+
+  def handle_call({:decay_senses, opts}, _from, state) do
     max_age = Keyword.get(opts, :max_age_seconds, 7 * 24 * 3600)
     archive_threshold = Keyword.get(opts, :archive_threshold, 1)
-    now = System.system_time(:second)
+    now = DateTime.utc_now()
 
-    try do
-      :ets.foldl(
-        fn {word, %{senses: senses}}, count ->
-          updated =
-            Enum.map(senses, fn sense ->
-              age = now - (sense[:last_seen] || now)
+    decayed =
+      state.table
+      |> :ets.tab2list()
+      |> Enum.flat_map(fn {_word, facts} -> Enum.filter(facts, &(&1.kind == "sense")) end)
+      |> Enum.filter(fn fact ->
+        not fact.archived and DateTime.diff(now, last_seen(fact)) > max_age
+      end)
+      |> Enum.map(fn fact ->
+        frequency = div(fact.frequency, 2)
 
-              if age > max_age do
-                new_freq = max(div(sense[:frequency] || 1, 2), 0)
-                archived = new_freq < archive_threshold
+        {:ok, _} =
+          Facts.update_fact(fact, %{
+            frequency: frequency,
+            archived: frequency < archive_threshold
+          })
 
-                sense
-                |> Map.put(:frequency, new_freq)
-                |> Map.put(:archived, archived)
-              else
-                sense
-              end
-            end)
+        fact.word
+      end)
 
-          :ets.insert(@table, {word, %{senses: updated}})
-          count + 1
-        end,
-        0,
-        @table
-      )
-    catch
-      :error, :badarg -> 0
-    end
-  end
-
-  @doc """
-  Returns all entries in the user-defined lexicon.
-  """
-  def all do
-    try do
-      :ets.tab2list(@table)
-      |> Enum.map(fn {word, entry} -> {word, entry} end)
-    catch
-      :error, :badarg -> []
-    end
-  end
-
-  @doc """
-  Returns the count of entries in the user-defined lexicon.
-  """
-  def count do
-    try do
-      :ets.info(@table, :size)
-    catch
-      :error, :badarg -> 0
-    end
-  end
-
-  @doc """
-  Persists the current user-defined lexicon to disk.
-  """
-  def flush_to_disk do
-    path = Path.join(Brain.priv_path("lexicon"), "user_defined.term")
-    File.mkdir_p!(Path.dirname(path))
-
-    data = all() |> Map.new()
-    binary = :erlang.term_to_binary(data)
-    File.write!(path, binary)
-
-    {:ok, map_size(data)}
-  end
-
-  @doc """
-  Loads persisted user-defined entries from disk.
-  """
-  def load_from_disk do
-    path = Path.join(Brain.priv_path("lexicon"), "user_defined.term")
-
-    if File.exists?(path) do
-      case File.read(path) do
-        {:ok, binary} ->
-          data = :erlang.binary_to_term(binary)
-
-          Enum.each(data, fn {word, entry} ->
-            :ets.insert(@table, {word, entry})
-          end)
-
-          {:ok, map_size(data)}
-
-        {:error, reason} ->
-          {:error, reason}
-      end
-    else
-      {:ok, 0}
-    end
+    refresh_words(state.table, Enum.uniq(decayed))
+    {:reply, length(decayed), state}
   end
 
   # -- Private ----------------------------------------------------------------
 
-  defp find_matching_sense(senses, new_sense, threshold) do
-    new_centroid = new_sense[:centroid]
+  defp create_table(prefix) do
+    name = if prefix, do: :"#{prefix}_#{@table}", else: @table
+    :ets.new(name, [:set, :protected, :named_table, read_concurrency: true])
+  end
 
-    if new_centroid == nil or not is_list(new_centroid) do
-      :no_match
-    else
-      senses
-      |> Enum.with_index()
-      |> Enum.find_value(:no_match, fn {sense, idx} ->
-        case sense[:centroid] do
-          existing when is_list(existing) ->
-            sim = cosine_similarity(existing, new_centroid)
-            if sim >= threshold, do: {:match, idx}
+  defp table_for(__MODULE__), do: @table
+  defp table_for(name), do: GenServer.call(name, :table_name)
 
-          _ ->
-            nil
-        end
-      end)
+  defp lookup(table, word) do
+    case :ets.lookup(table, word) do
+      [{^word, facts}] -> facts
+      [] -> []
     end
   end
 
-  defp update_sense_at(senses, idx, new_sense) do
-    List.update_at(senses, idx, fn existing ->
-      updated_freq = (existing[:frequency] || 0) + 1
+  defp matches?(_value, nil), do: true
+  defp matches?(value, wanted), do: value == wanted
 
-      updated_centroid =
-        case {existing[:centroid], new_sense[:centroid]} do
-          {old, new} when is_list(old) and is_list(new) ->
-            ema_update(old, new, 0.3)
+  # Replaces the whole table. Crashes if Atlas cannot be read: an empty
+  # lexicon must never stand in for an unreadable one.
+  defp load_all(table) do
+    facts = Facts.list_facts()
+    :ets.delete_all_objects(table)
 
-          {nil, new} ->
-            new
+    facts
+    |> Enum.group_by(& &1.word)
+    |> Enum.each(fn {word, word_facts} -> :ets.insert(table, {word, word_facts}) end)
 
-          {old, _} ->
-            old
-        end
+    length(facts)
+  end
 
-      existing
-      |> Map.put(:frequency, updated_freq)
-      |> Map.put(:centroid, updated_centroid)
-      |> Map.put(:last_seen, System.system_time(:second))
+  # Atlas first; ETS only for the words that were written, and only on success.
+  defp write(table, attrs_list) do
+    case Facts.upsert_facts(attrs_list) do
+      {:ok, count} ->
+        refresh_words(table, attrs_list |> Enum.map(&word_of/1) |> Enum.uniq())
+        {:ok, count}
+
+      {:error, _} = error ->
+        error
+    end
+  end
+
+  defp word_of(attrs), do: Map.get(attrs, :word) || Map.get(attrs, "word")
+
+  defp refresh_words(_table, []), do: :ok
+
+  defp refresh_words(table, words) do
+    fresh = words |> Facts.list_facts_for_words() |> Enum.group_by(& &1.word)
+
+    Enum.each(words, fn word ->
+      case Map.fetch(fresh, word) do
+        {:ok, word_facts} -> :ets.insert(table, {word, word_facts})
+        :error -> :ets.delete(table, word)
+      end
     end)
   end
 
-  defp ema_update(old, new, alpha) when is_list(old) and is_list(new) do
-    Enum.zip(old, new)
+  defp after_update({:ok, _}, table, word, result) do
+    refresh_words(table, [word])
+    {:ok, result}
+  end
+
+  defp after_update({:error, changeset}, _table, _word, _result), do: {:error, changeset}
+
+  # Sense facts in the order they were first recorded, so the primary sense is
+  # the oldest. Archived senses are kept here, matching the original store.
+  defp sense_facts(table, word) do
+    table
+    |> lookup(word)
+    |> Enum.filter(&(&1.kind == "sense"))
+    |> Enum.sort_by(& &1.inserted_at, DateTime)
+  end
+
+  defp sense_maps(word, name) do
+    name
+    |> table_for()
+    |> sense_facts(String.downcase(word))
+    |> Enum.map(&to_sense_map/1)
+  end
+
+  defp to_sense_map(fact) do
+    %{
+      pos: String.to_existing_atom(fact.key),
+      coarse_class: String.to_existing_atom(fact.value["coarse_class"]),
+      centroid: fact.value["centroid"],
+      # A string, not an atom: seeded sources such as "seed:wordnet" are
+      # open-ended, and minting atoms from stored data is unbounded.
+      source: fact.source,
+      frequency: fact.frequency,
+      first_seen: DateTime.to_unix(fact.inserted_at),
+      last_seen: DateTime.to_unix(last_seen(fact)),
+      archived: fact.archived
+    }
+  end
+
+  defp last_seen(fact), do: fact.last_observed_at || fact.inserted_at
+
+  defp sense_attrs(word, sense) do
+    %{
+      word: word,
+      kind: "sense",
+      key: to_string(sense[:pos]),
+      ref: Ecto.UUID.generate(),
+      value: %{
+        "coarse_class" => to_string(sense[:coarse_class]),
+        "centroid" => sense[:centroid]
+      },
+      source: to_string(sense[:source] || :derived),
+      frequency: sense[:frequency] || 1,
+      last_observed_at: DateTime.utc_now()
+    }
+  end
+
+  defp matching_sense(_facts, centroid, _threshold) when not is_list(centroid), do: :no_match
+
+  defp matching_sense(facts, centroid, threshold) do
+    Enum.find_value(facts, :no_match, fn fact ->
+      existing = fact.value["centroid"]
+
+      if is_list(existing) and Math.cosine_similarity(existing, centroid) >= threshold do
+        {:match, fact}
+      end
+    end)
+  end
+
+  defp blend(old, new, alpha) when is_list(old) and is_list(new) do
+    old
+    |> Enum.zip(new)
     |> Enum.map(fn {o, n} -> o * (1 - alpha) + n * alpha end)
   end
 
-  defp cosine_similarity(a, b) when is_list(a) and is_list(b) do
-    FourthWall.Math.cosine_similarity(a, b)
-  rescue
-    _ ->
-      dot = Enum.zip(a, b) |> Enum.reduce(0.0, fn {x, y}, acc -> acc + x * y end)
-      mag_a = :math.sqrt(Enum.reduce(a, 0.0, fn x, acc -> acc + x * x end))
-      mag_b = :math.sqrt(Enum.reduce(b, 0.0, fn x, acc -> acc + x * x end))
-
-      if mag_a == 0.0 or mag_b == 0.0, do: 0.0, else: dot / (mag_a * mag_b)
-  end
+  defp blend(nil, new, _alpha), do: new
+  defp blend(old, nil, _alpha), do: old
 end

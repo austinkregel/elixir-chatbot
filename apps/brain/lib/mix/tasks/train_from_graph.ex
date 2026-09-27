@@ -4,17 +4,18 @@ defmodule Mix.Tasks.TrainFromGraph do
 
   ## Usage
 
-      mix train_from_graph              # Run all graph training updates
-      mix train_from_graph --pos-only   # Just POS weight refresh
-      mix train_from_graph --gazetteer  # Just gazetteer sync
-      mix train_from_graph --priors     # Just intent priors extraction
+      mix train_from_graph              # Extract intent priors
+      mix train_from_graph --priors     # The same; the only step left
 
   ## Options
 
-  - `--pos-only` - Only refresh POS tagger weights from pos_graph
-  - `--gazetteer` - Only sync gazetteer from knowledge_graph
-  - `--priors` - Only extract intent priors from conversation_graph
-  - `--blend RATIO` - Override blend ratio for POS weights (default: 0.3)
+  - `--priors` - Extract intent priors from conversation_graph
+
+  Neither the gazetteer nor the POS tagger is trained from the graph. The
+  gazetteer learns only what a human reviewer approved, through
+  `Brain.Knowledge.ReviewQueue`; the POS tagger is a neural model trained on
+  the UD English Web Treebank (`mix pos.train`), with no transition table to
+  blend graph counts into.
   """
 
   use Mix.Task
@@ -25,44 +26,15 @@ defmodule Mix.Tasks.TrainFromGraph do
   def run(args) do
     Mix.Task.run("app.start")
 
-    {opts, _, _} =
-      OptionParser.parse(args,
-        switches: [
-          pos_only: :boolean,
-          gazetteer: :boolean,
-          priors: :boolean,
-          blend: :float
-        ],
-        aliases: [p: :pos_only, g: :gazetteer, i: :priors, b: :blend]
-      )
+    {_opts, _, invalid} = OptionParser.parse(args, strict: [priors: :boolean], aliases: [i: :priors])
 
-    run_all = not (opts[:pos_only] || opts[:gazetteer] || opts[:priors])
+    # An unknown option (such as the removed --gazetteer or --pos-only) would
+    # otherwise be dropped silently.
+    if invalid != [], do: Mix.raise("train_from_graph: unknown options #{inspect(invalid)}")
 
-    if run_all or opts[:pos_only] do
-      Mix.shell().info("Refreshing POS weights from pos_graph...")
-      blend = opts[:blend] || 0.3
-
-      case Brain.Graph.Training.refresh_pos_weights(blend: blend) do
-        :ok -> Mix.shell().info("  POS weights updated (blend: #{blend})")
-        {:error, reason} -> Mix.shell().error("  POS weight refresh failed: #{inspect(reason)}")
-      end
-    end
-
-    if run_all or opts[:gazetteer] do
-      Mix.shell().info("Syncing gazetteer from knowledge_graph...")
-
-      case Brain.Graph.Training.sync_gazetteer() do
-        :ok -> Mix.shell().info("  Gazetteer sync complete")
-        {:error, reason} -> Mix.shell().error("  Gazetteer sync failed: #{inspect(reason)}")
-      end
-    end
-
-    if run_all or opts[:priors] do
-      Mix.shell().info("Extracting intent priors from conversation_graph...")
-      priors = Brain.Graph.Training.extract_intent_priors()
-      count = map_size(priors)
-      Mix.shell().info("  Extracted #{count} intent transition entries")
-    end
+    Mix.shell().info("Extracting intent priors from conversation_graph...")
+    priors = Brain.Graph.Training.extract_intent_priors()
+    Mix.shell().info("  Extracted #{map_size(priors)} intent transition entries")
 
     Mix.shell().info("Graph training pipeline complete.")
   end
