@@ -276,37 +276,39 @@ defmodule Brain.ML.MicroClassifiers do
   def init(_opts) do
     models = load_all_models()
 
-    # `schema_verified` names the feature-vector classifiers whose extractor
-    # schema fingerprint has been checked against the current one. It cannot be
-    # done here -- see verify_schema!/2 -- so it starts empty and fills on first
-    # use.
-    {:ok, %{models: models, schema_verified: MapSet.new()}}
+    # `verified` names the classifiers whose provenance has been checked against
+    # the current environment. Empty at boot; fills on first use. See
+    # verify_model!/2.
+    {:ok, %{models: models, verified: MapSet.new()}}
   end
 
-  # The second half of task 072's gate.
+  # Checks a model's provenance before its first use, then remembers the result.
+  # Any write that replaces a model clears its entry.
   #
-  # ChunkFeatures.schema_fingerprint/0 walks dimension_manifest/0, whose group
-  # 23 takes its names from Brain.Analysis.TypeHierarchy.parent_types/0 -- ETS
-  # populated out of the AGE graph. This GenServer starts before TypeHierarchy,
-  # so at init the fingerprint does not merely differ, it raises
-  # ("TypeHierarchy must be ready for feature extraction (group 23)").
+  # Deliberately not done in `init/1`, for two reasons:
   #
-  # The feature vector's schema is therefore not knowable at boot. The first
-  # classification is both the earliest moment it *is* knowable -- producing a
-  # vector requires TypeHierarchy -- and the first moment a stale model could
-  # return a wrong answer. Checked once per classifier, then remembered.
-  defp verify_schema!(state, name) do
-    if MapSet.member?(state.schema_verified, name) do
+  #   * `ChunkFeatures.schema_fingerprint/0` raises before
+  #     `Brain.Analysis.TypeHierarchy` is ready, and this GenServer starts
+  #     earlier in the supervision tree.
+  #   * `mix train_micro` calls `app.start`, so a load-time gate stops the task
+  #     that replaces a stale model from starting at all.
+  #
+  # Loading a stale model is harmless; returning a prediction from one is not.
+  # Training does not classify -- the feature extractor never calls this module,
+  # and `gen_micro_data` discards the intent the pipeline computes -- so the
+  # regenerate-and-retrain sequence runs with the gate armed.
+  defp verify_model!(state, name) do
+    if MapSet.member?(state.verified, name) do
       state
     else
       :ok =
-        Brain.ML.MicroProvenance.check_schema!(
+        Brain.ML.MicroProvenance.check_current!(
           Map.fetch!(state.models, name),
           name,
           model_file_path(name)
         )
 
-      %{state | schema_verified: MapSet.put(state.schema_verified, name)}
+      %{state | verified: MapSet.put(state.verified, name)}
     end
   end
 
@@ -342,7 +344,7 @@ defmodule Brain.ML.MicroClassifiers do
         {:reply, {:error, :not_loaded}, state}
 
       %{kind: :feature_vector} = model ->
-        state = verify_schema!(state, name)
+        state = verify_model!(state, name)
 
         case FeatureVectorClassifier.classify(feature_vector, model) do
           {:ok, label, score, _details} ->
@@ -390,7 +392,7 @@ defmodule Brain.ML.MicroClassifiers do
         {:reply, {:error, :not_loaded}, state}
 
       %{kind: :feature_vector} = model ->
-        state = verify_schema!(state, name)
+        state = verify_model!(state, name)
 
         case FeatureVectorClassifier.classify(feature_vector, model) do
           {:ok, label, score, details} ->
@@ -486,7 +488,7 @@ defmodule Brain.ML.MicroClassifiers do
          %{
            state
            | models: Map.put(state.models, name, updated_model),
-             schema_verified: MapSet.delete(state.schema_verified, name)
+             verified: MapSet.delete(state.verified, name)
          }}
     end
   end
@@ -494,21 +496,20 @@ defmodule Brain.ML.MicroClassifiers do
   @impl true
   def handle_call(:reload, _from, _state) do
     models = load_all_models()
-    {:reply, :ok, %{models: models, schema_verified: MapSet.new()}}
+    {:reply, :ok, %{models: models, verified: MapSet.new()}}
   end
 
   @impl true
   def handle_call({:load_trained_models, models_map}, _from, state) when is_map(models_map) do
     merged = Map.merge(state.models, models_map)
 
-    # Every replaced model is unverified again. Carrying the old verdict
-    # forward would let a freshly loaded stale model inherit a pass from the
-    # model it displaced -- which is the shape of the bug this gate exists for.
+    # A replaced model is unverified again; it must not inherit the verdict of
+    # the model it displaced.
     {:reply, :ok,
      %{
        state
        | models: merged,
-         schema_verified: MapSet.difference(state.schema_verified, MapSet.new(Map.keys(models_map)))
+         verified: MapSet.difference(state.verified, MapSet.new(Map.keys(models_map)))
      }}
   end
 
@@ -575,18 +576,7 @@ defmodule Brain.ML.MicroClassifiers do
             {:error, :corrupted_model}
 
           model ->
-            # Task 072's gate, and deliberately outside the `try`: a stale model
-            # must crash the load, not be rescued into {:error, _} and logged as
-            # a warning. Being fed inverted features is not a recoverable
-            # condition -- it is how six classifiers ran on a sign flip for
-            # months while every length check passed.
-            #
-            # Only the training-data half runs here. The extractor schema
-            # fingerprint cannot be computed at this point: it walks feature
-            # group 23, whose names come from TypeHierarchy, which starts after
-            # this GenServer. That half runs at the first classification --
-            # see verify_schema!/2 below.
-            :ok = Brain.ML.MicroProvenance.check_inputs!(model, name, model_path)
+            # Provenance is checked on first use, not here. See verify_model!/2.
             {:ok, model}
         end
 
