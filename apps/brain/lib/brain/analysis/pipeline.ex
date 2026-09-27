@@ -40,9 +40,38 @@ defmodule Brain.Analysis.Pipeline do
 
   @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n\nReturns an InternalModel struct with complete analysis.\n"
   def process(text, opts \\ []) when is_binary(text) do
+    refuse_stale_classifiers!()
+
     Telemetry.span(:pipeline_process, %{text_length: String.length(text)}, fn ->
       do_process(text, opts)
     end)
+  end
+
+  # `process/2` produces an intent, and a rejected classifier cannot produce one.
+  # Continuing would return an analysis whose intent is absent for a reason the
+  # caller cannot see, which is how six classifiers served predictions built on
+  # inverted features.
+  #
+  # Only rejection raises, not `ready?/0` being false: a model still loading is
+  # transient, while a model whose provenance does not match is permanent until an
+  # operator retrains it.
+  #
+  # `analyze_chunk/2` deliberately does not check. It is the analysis primitive
+  # `mix gen_micro_data` uses to build training vectors, and the feature vector
+  # does not depend on any classifier, so regenerating a corpus must work while
+  # the models trained from the previous one are still on disk.
+  defp refuse_stale_classifiers! do
+    case MicroClassifiers.stale() do
+      empty when empty == %{} ->
+        :ok
+
+      rejected ->
+        raise """
+        Pipeline.process/2 cannot run: #{map_size(rejected)} classifier(s) were rejected at load.
+
+        #{Enum.map_join(rejected, "\n\n", fn {name, message} -> "#{name}:\n#{message}" end)}
+        """
+    end
   end
 
   defp do_process(text, opts) do
@@ -402,19 +431,29 @@ defmodule Brain.Analysis.Pipeline do
     )
   end
 
+  # Returns the domain, or nil when the classifier had no answer for this input.
+  #
+  # Does not rescue. A crash in feature extraction or in the classifier is a
+  # defect in this pipeline, and returning nil for it made three different
+  # outcomes -- classifier unavailable, no confident label, and an exception --
+  # indistinguishable at the call site.
+  #
+  # Unavailability is reported once per call rather than swallowed;
+  # `MicroClassifiers.stale/0` names any model that was rejected at load.
   defp classify_intent_domain_lightweight(analysis) do
     if MicroClassifiers.ready?() do
-      try do
-        {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+      {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
 
-        case MicroClassifiers.classify_vector(:intent_domain, feature_vector) do
-          {:ok, domain, _confidence} -> to_string(domain)
-          _ -> nil
-        end
-      rescue
-        _ -> nil
+      case MicroClassifiers.classify_vector(:intent_domain, feature_vector) do
+        {:ok, domain, _confidence} ->
+          to_string(domain)
+
+        {:error, reason} ->
+          Logger.warning("intent_domain unavailable (#{inspect(reason)}); domain left unset")
+          nil
       end
     else
+      Logger.warning("MicroClassifiers not ready — intent_domain classification skipped")
       nil
     end
   end

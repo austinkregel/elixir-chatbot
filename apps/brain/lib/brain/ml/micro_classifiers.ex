@@ -253,6 +253,21 @@ defmodule Brain.ML.MicroClassifiers do
     if ready?() do
       :ok
     else
+      # A rejected model will never load, so waiting cannot help. Without this,
+      # `await_ready(:infinity)` spins forever instead of reporting the reason --
+      # five mix tasks call it that way.
+      case stale() do
+        empty when empty == %{} ->
+          :ok
+
+        rejected ->
+          raise """
+          MicroClassifiers rejected #{map_size(rejected)} model(s), so it will never become ready:
+
+          #{Enum.map_join(rejected, "\n\n", fn {name, message} -> "#{name}:\n#{message}" end)}
+          """
+      end
+
       if deadline != :infinity and System.monotonic_time(:millisecond) >= deadline do
         raise "MicroClassifiers failed to become ready within timeout. " <>
               "Ensure models are trained: mix train_micro"
