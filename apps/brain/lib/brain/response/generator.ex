@@ -501,7 +501,7 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  @doc "Generate a response using context-aware template selection.\n\nThis uses conditional template matching and semantic ranking:\n1. Filter templates by conditions that match the context\n2. Rank matching templates by similarity to the query\n3. Fall back to cross-intent semantic search if needed\n\n## Parameters\n- `intent` - The classified intent name\n- `entities` - List of extracted entities\n- `query_text` - The original user query\n- `context` - Additional context (filled_slots, missing_slots, confidence, speech_act)\n\n## Returns\n- {:ok, response, :conditional_template} for condition-matched templates\n- {:ok, response, :semantic_fallback} for cross-intent semantic match\n- Falls back to regular generate/3 if conditional selection fails\n"
+  @doc "Generate a response using context-aware template selection.\n\nThis uses conditional template matching and semantic ranking:\n1. Filter this intent's templates by conditions that match the context\n2. Rank matching templates by similarity to the query\n\n## Parameters\n- `intent` - The classified intent name\n- `entities` - List of extracted entities\n- `query_text` - The original user query\n- `context` - Additional context (filled_slots, missing_slots, confidence, speech_act)\n\n## Returns\n- {:ok, response, :conditional_template} for condition-matched templates\n- Falls back to regular generate/3 if conditional selection fails\n"
   def generate_with_context(intent, entities, query_text, context \\ %{}) do
     full_context = build_template_context(entities, context)
     confidence = Map.get(context, :confidence, 0.7)
@@ -724,7 +724,10 @@ defmodule Brain.Response.Generator do
         if is_map(context) and Map.has_key?(context, :query_text) do
           case TemplateStore.get_best_template(intent, context.query_text, context) do
             {:ok, t} -> t
-            _ -> TemplateStore.get_random_template(intent)
+            # This intent has no template that matches the context. Asking for a
+            # random one cannot help -- get_random_template/1 reads the same
+            # per-intent list -- so fall through to the caller's next strategy.
+            {:error, _reason} -> nil
           end
         else
           TemplateStore.get_random_template(intent)
@@ -749,10 +752,6 @@ defmodule Brain.Response.Generator do
         {:ok, template} ->
           response = TemplateStore.substitute_slots(template, entities)
           {:ok, response, :conditional_template}
-
-        {:ok, template, :fallback} ->
-          response = TemplateStore.substitute_slots(template, entities)
-          {:ok, response, :semantic_fallback}
 
         {:error, _reason} ->
           :not_handled
