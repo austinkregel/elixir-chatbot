@@ -411,6 +411,8 @@ defmodule Brain.Analysis.Pipeline do
       intent: prelim_intent,
       intent_method: intent_method,
       intent_confidence: prelim_intent_conf,
+      original_intent: Map.get(prelim_intent_details, :original_intent),
+      original_score: Map.get(prelim_intent_details, :original_score),
       margin: Map.get(prelim_intent_details, :margin, 0.0),
       pass: 1,
       domain: pass1_domain
@@ -585,6 +587,11 @@ defmodule Brain.Analysis.Pipeline do
       intent: intent,
       intent_method: intent_method,
       intent_confidence: intent_confidence,
+      # The label and score determine_intent/6 overrode, when it overrode one.
+      # :speech_act_fallback is returned by three different branches of that
+      # function, and these two are what tell them apart.
+      original_intent: Map.get(intent_details, :original_intent),
+      original_score: Map.get(intent_details, :original_score),
       margin: Map.get(intent_details, :margin, 0.0),
       top_k: Map.get(intent_details, :top_k, []),
       lattice: Map.get(intent_details, :lattice) && Brain.Lattice.to_map(Map.get(intent_details, :lattice)),
@@ -1100,6 +1107,14 @@ defmodule Brain.Analysis.Pipeline do
 
   @disambiguation_threshold 0.5
   @low_confidence_floor 0.3
+
+  @doc "The classifier confidence at or above which `determine_intent/6` trusts the label outright."
+  @spec disambiguation_threshold() :: float()
+  def disambiguation_threshold, do: @disambiguation_threshold
+
+  @doc "The classifier confidence below which a no-opinion from Atlas falls through to the speech act."
+  @spec low_confidence_floor() :: float()
+  def low_confidence_floor, do: @low_confidence_floor
 
   @external_resource Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
   @speech_act_intent_map Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
