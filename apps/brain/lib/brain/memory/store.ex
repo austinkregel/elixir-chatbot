@@ -171,11 +171,38 @@ defmodule Brain.Memory.Store do
     GenServer.call(__MODULE__, {:add_semantic, semantic, world_id})
   end
 
-  @doc "Query for semantic facts similar to the given text.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n  - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)\n"
+  @doc """
+  Query for semantic facts similar to the given text.
+
+  ## Options
+    - world_id: The world to query (default: "default")
+    - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)
+
+  ## Why this does not run in the GenServer
+
+  This is a read. It needs the semantic index and the record cache, both of which
+  are `:public` ETS tables with `read_concurrency: true`, and nothing else from the
+  server's state -- so it runs in the calling process and several callers proceed
+  at once.
+
+  It used to be a `handle_call`, which serialised every caller behind one process
+  while that process embedded the query, searched the index, fetched each candidate
+  from Atlas, and ran entity-vector reranking. Concurrent callers queued past the
+  5s call timeout and lost work: `mix gen_micro_data` at
+  `System.schedulers_online()` concurrency dropped 23 of 3868 rows, and
+  `mix axes.experiment` caps itself at 4 for the same reason. Caching the records
+  removed the round-trips and recovered 8 of those rows; the rest was the
+  serialisation itself, which only moving the work out can fix.
+
+  The single cheap `:tables` call replaces it because `VectorIndex.new/1` creates
+  its table without `:named_table`, so the identifiers live in the server's state
+  and have to be asked for.
+  """
   def query_semantic(text, k \\ 5, opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
     rerank = Keyword.get(opts, :rerank, :auto)
-    GenServer.call(__MODULE__, {:query_semantic, text, k, world_id, rerank})
+
+    do_query_semantic(tables!(), text, k, world_id, rerank)
   end
 
   @doc "Get a specific semantic fact by ID.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
@@ -424,37 +451,8 @@ defmodule Brain.Memory.Store do
   end
 
   @impl true
-  def handle_call({:query_semantic, text, k, world_id}, from, state) do
-    handle_call({:query_semantic, text, k, world_id, :auto}, from, state)
-  end
-
-  @impl true
-  def handle_call({:query_semantic, text, k, world_id, rerank}, _from, state) do
-    do_rerank = rerank != false and memory_rerank_enabled?()
-
-    case get_embedding(world_id, text) do
-      {:ok, query_embedding} ->
-        pool_size = if do_rerank, do: k * 4, else: k * 2
-
-        candidates =
-          VectorIndex.search_all(state.semantic_index, query_embedding, pool_size)
-          |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
-          |> Enum.map(fn {{_wid, id}, similarity} ->
-            {fetch_semantic_record!(state, world_id, id), similarity}
-          end)
-
-        results =
-          if do_rerank do
-            kg_rerank(text, candidates, k)
-          else
-            Enum.take(candidates, k)
-          end
-
-        {:reply, {:ok, results}, state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+  def handle_call(:tables, _from, state) do
+    {:reply, Map.take(state, [:semantic_index, :semantic_records]), state}
   end
 
   @impl true
@@ -576,12 +574,52 @@ defmodule Brain.Memory.Store do
     ArgumentError -> :memory_semantic_records
   end
 
+  # The table identifiers, fetched once per query. Cheap: a map lookup in the
+  # server, no work of its own.
+  defp tables! do
+    case Process.whereis(__MODULE__) do
+      nil ->
+        raise "Brain.Memory.Store is not running, so the semantic index cannot be read."
+
+      _pid ->
+        GenServer.call(__MODULE__, :tables, 5_000)
+    end
+  end
+
+  defp do_query_semantic(tables, text, k, world_id, rerank) do
+    do_rerank = rerank != false and memory_rerank_enabled?()
+
+    case get_embedding(world_id, text) do
+      {:ok, query_embedding} ->
+        pool_size = if do_rerank, do: k * 4, else: k * 2
+
+        candidates =
+          VectorIndex.search_all(tables.semantic_index, query_embedding, pool_size)
+          |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
+          |> Enum.map(fn {{_wid, id}, similarity} ->
+            {fetch_semantic_record!(tables.semantic_records, world_id, id), similarity}
+          end)
+
+        results =
+          if do_rerank do
+            kg_rerank(text, candidates, k)
+          else
+            Enum.take(candidates, k)
+          end
+
+        {:ok, results}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
   defp put_semantic_record(state, world_id, semantic) do
     :ets.insert(state.semantic_records, {{world_id, semantic.id}, semantic})
   end
 
-  defp fetch_semantic_record!(state, world_id, id) do
-    case :ets.lookup(state.semantic_records, {world_id, id}) do
+  defp fetch_semantic_record!(table, world_id, id) do
+    case :ets.lookup(table, {world_id, id}) do
       [{_key, semantic}] ->
         semantic
 
