@@ -156,10 +156,9 @@ apps/brain/priv/evaluation/**/*.bak
 !/data/Global Music Artists.csv
 !/data/emojis.csv
 
-# Annotated utterances whose source no longer exists in data/intents/, so nothing
-# can regenerate them. The rest of data/ is either regenerable or reproducible from
-# a declared source; these 38 files are not, and the ignore rule above is why they
-# had no history to lose. See data/archive/intent_annotations/README.md.
+# Annotated utterances whose source no longer exists in data/intents/, so no
+# script can regenerate them. Everything else under data/ can be rebuilt from a
+# declared source. See data/archive/intent_annotations/README.md.
 !/data/archive/
 # app-local and test-local data dirs (previously covered by unanchored data/)
 apps/*/data/
