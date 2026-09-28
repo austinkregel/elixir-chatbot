@@ -175,7 +175,7 @@
   },
   {
     "intent": "music.play",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "music.play_usersays_en.json",
     "text": "Play Bohemian Rhapsody"
   },
@@ -1267,7 +1267,7 @@
   },
   {
     "intent": "music.search",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "music.search_usersays_en.json",
     "text": "now find Hello Darling song"
   },
@@ -1662,115 +1662,115 @@
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "My name is Dallas"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "Hey, I'm Georgia"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "Nice to meet you, I'm Austin"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "I'm Troy"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "I'm Austin"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "I'm Michael"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "You can call me Jordan"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "Hi, I'm Dakota"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "My name is Paris"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "Call me Jolene"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "I'm Sarah"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "They call me Dallas"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "I'm Victoria"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "Hi there, I'm Charlotte"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "Hello, my name is Orlando"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "I'm Regina"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "I'm Brooklyn"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "I'm Geneva"
   },
   {
     "intent": "smalltalk.user.introduction",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "smalltalk.user.introduction_usersays_en.json",
     "text": "Pleased to meet you, my name is Georgia"
   },
@@ -2649,19 +2649,19 @@
   },
   {
     "intent": "smalltalk.greetings.hello",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.greetings.hello_usersays_en.json",
     "text": "ello"
   },
   {
     "intent": "smalltalk.greetings.hello",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.greetings.hello_usersays_en.json",
     "text": "Hello! It is nice to meet you"
   },
   {
     "intent": "smalltalk.greetings.hello",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.greetings.hello_usersays_en.json",
     "text": "Hello! I have a question"
   },
@@ -2673,73 +2673,73 @@
   },
   {
     "intent": "smalltalk.greetings.hello",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.greetings.hello_usersays_en.json",
     "text": "holla"
   },
   {
     "intent": "smalltalk.greetings.hello",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.greetings.hello_usersays_en.json",
     "text": "Hello, I'm Sarah. Nice to meet you."
   },
   {
     "intent": "smalltalk.greetings.hello",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.greetings.hello_usersays_en.json",
     "text": "howdy!"
   },
   {
     "intent": "smalltalk.greetings.hello",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.greetings.hello_usersays_en.json",
     "text": "Hi there! I need some help"
   },
   {
     "intent": "code.explain",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.explain_usersays_en.json",
     "text": "I want to understand the OrderService class"
   },
   {
     "intent": "code.explain",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.explain_usersays_en.json",
     "text": "explain the Pipeline module"
   },
   {
     "intent": "code.explain",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.explain_usersays_en.json",
     "text": "explain what the ResponseGenerator does"
   },
   {
     "intent": "code.explain",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.explain_usersays_en.json",
     "text": "explain the code in brain.ex"
   },
   {
     "intent": "code.explain",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.explain_usersays_en.json",
     "text": "describe what fetch_data does"
   },
   {
     "intent": "code.explain",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.explain_usersays_en.json",
     "text": "tell me about the DatabaseConnection class"
   },
   {
     "intent": "code.explain",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.explain_usersays_en.json",
     "text": "how does the Tokenizer module work"
   },
   {
     "intent": "code.explain",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.explain_usersays_en.json",
     "text": "can you explain handle_request"
   },
@@ -4077,97 +4077,97 @@
   },
   {
     "intent": "code.find_usage",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.find_usage_usersays_en.json",
     "text": "where is the function parse_json referenced"
   },
   {
     "intent": "code.find_usage",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.find_usage_usersays_en.json",
     "text": "show me where validate_email is called"
   },
   {
     "intent": "code.find_usage",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.find_usage_usersays_en.json",
     "text": "show all references to create_user"
   },
   {
     "intent": "code.find_usage",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.find_usage_usersays_en.json",
     "text": "trace usage of Session"
   },
   {
     "intent": "code.signature",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.signature_usersays_en.json",
     "text": "what's the interface for Logger"
   },
   {
     "intent": "code.signature",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.signature_usersays_en.json",
     "text": "what parameters does calculate_tax take"
   },
   {
     "intent": "code.signature",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.signature_usersays_en.json",
     "text": "what inputs does calculate_discount need"
   },
   {
     "intent": "code.signature",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "code.signature_usersays_en.json",
     "text": "show the definition of parse_json"
   },
   {
     "intent": "smarthome.device.brightness.check.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.lights.brightness.check.implicit_usersays_en.json",
     "text": "is bright it enough everywhere"
   },
   {
     "intent": "smarthome.device.brightness.check.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.lights.brightness.check.implicit_usersays_en.json",
     "text": "can you are the decorations bright enough everywhere"
   },
   {
     "intent": "smarthome.device.brightness.check.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.lights.brightness.check.implicit_usersays_en.json",
     "text": "I'd like to is it bright enough everywhere"
   },
   {
     "intent": "smarthome.device.brightness.check.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.lights.brightness.check.implicit_usersays_en.json",
     "text": "is the TV dark in living room"
   },
   {
     "intent": "meta.self_knowledge",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "meta.self_knowledge_usersays_en.json",
     "text": "what do you know about me"
   },
   {
     "intent": "meta.self_knowledge",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "meta.self_knowledge_usersays_en.json",
     "text": "summarize what you know about me"
   },
   {
     "intent": "meta.self_knowledge",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "meta.self_knowledge_usersays_en.json",
     "text": "what facts do you have about me"
   },
   {
     "intent": "meta.self_knowledge",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "meta.self_knowledge_usersays_en.json",
     "text": "tell me everything you know about me"
   },
@@ -4245,25 +4245,25 @@
   },
   {
     "intent": "statement.observation",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "statement.observation_usersays_en.json",
     "text": "The light is on"
   },
   {
     "intent": "statement.observation",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "statement.observation_usersays_en.json",
     "text": "Everything is blue"
   },
   {
     "intent": "statement.observation",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "statement.observation_usersays_en.json",
     "text": "That looks nice"
   },
   {
     "intent": "statement.observation",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "statement.observation_usersays_en.json",
     "text": "The water is warm"
   },
@@ -4275,19 +4275,19 @@
   },
   {
     "intent": "communication.text",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "communication.text_usersays_en.json",
     "text": "Send a message to mom"
   },
   {
     "intent": "communication.text",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "communication.text_usersays_en.json",
     "text": "Send message"
   },
   {
     "intent": "communication.text",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "communication.text_usersays_en.json",
     "text": "SMS John"
   },
@@ -4305,13 +4305,13 @@
   },
   {
     "intent": "smarthome.device.brightness.up.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.lights.brightness.up.implicit_usersays_en.json",
     "text": "I'd like to it's dark in here"
   },
   {
     "intent": "smarthome.device.brightness.up.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.lights.brightness.up.implicit_usersays_en.json",
     "text": "my laptop screen is way too"
   },
@@ -4418,7 +4418,7 @@
   },
   {
     "intent": "smalltalk.greetings.nice_to_meet_you",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.greetings.nice_to_meet_you_usersays_en.json",
     "text": "Hi there, it's nice to meet you"
   },
@@ -4628,73 +4628,73 @@
   },
   {
     "intent": "timer.set",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "timer.set_usersays_en.json",
     "text": "Start the timer"
   },
   {
     "intent": "timer.set",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "timer.set_usersays_en.json",
     "text": "Start a timer for cooking"
   },
   {
     "intent": "timer.set",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "timer.set_usersays_en.json",
     "text": "Set a workout timer"
   },
   {
     "intent": "display.show",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "display.show_usersays_en.json",
     "text": "Show me the results"
   },
   {
     "intent": "display.show",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "display.show_usersays_en.json",
     "text": "Show the presentation"
   },
   {
     "intent": "display.show",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "display.show_usersays_en.json",
     "text": "Display this on screen"
   },
   {
     "intent": "date.query",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "date.query_usersays_en.json",
     "text": "Show the date"
   },
   {
     "intent": "date.query",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "date.query_usersays_en.json",
     "text": "Is today Monday"
   },
   {
     "intent": "date.query",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "date.query_usersays_en.json",
     "text": "What's the date"
   },
   {
     "intent": "time.query",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "time.query_usersays_en.json",
     "text": "Show the time"
   },
   {
     "intent": "time.query",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "time.query_usersays_en.json",
     "text": "Give me the time"
   },
   {
     "intent": "time.query",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "time.query_usersays_en.json",
     "text": "Clock"
   },
@@ -4718,19 +4718,19 @@
   },
   {
     "intent": "knowledge.define",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "knowledge.define_usersays_en.json",
     "text": "Define empathy"
   },
   {
     "intent": "knowledge.define",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "knowledge.define_usersays_en.json",
     "text": "Define ambiguous"
   },
   {
     "intent": "knowledge.define",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "knowledge.define_usersays_en.json",
     "text": "What is the meaning of paradigm"
   },
@@ -4754,73 +4754,73 @@
   },
   {
     "intent": "meta.privacy_probe",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "meta.privacy_probe_usersays_en.json",
     "text": "are you monitoring me"
   },
   {
     "intent": "meta.privacy_probe",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "meta.privacy_probe_usersays_en.json",
     "text": "do you keep records of our conversations"
   },
   {
     "intent": "meta.privacy_probe",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "meta.privacy_probe_usersays_en.json",
     "text": "how do I delete my data"
   },
   {
     "intent": "communication.call",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "communication.call_usersays_en.json",
     "text": "Start a phone call"
   },
   {
     "intent": "communication.call",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "communication.call_usersays_en.json",
     "text": "Phone mom"
   },
   {
     "intent": "communication.call",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "communication.call_usersays_en.json",
     "text": "Phone my friend"
   },
   {
     "intent": "calendar.schedule",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "calendar.schedule_usersays_en.json",
     "text": "Book the conference room"
   },
   {
     "intent": "calendar.schedule",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "calendar.schedule_usersays_en.json",
     "text": "Schedule a team sync"
   },
   {
     "intent": "calendar.schedule",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "calendar.schedule_usersays_en.json",
     "text": "Schedule a meeting for next week"
   },
   {
     "intent": "meta.memory_check",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "meta.memory_check_usersays_en.json",
     "text": "can you recall what we talked about"
   },
   {
     "intent": "meta.memory_check",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "meta.memory_check_usersays_en.json",
     "text": "do you recall our previous conversations"
   },
   {
     "intent": "meta.memory_check",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "meta.memory_check_usersays_en.json",
     "text": "did you forget who I am"
   },
@@ -4844,19 +4844,19 @@
   },
   {
     "intent": "alarm.set",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "alarm.set_usersays_en.json",
     "text": "Set alarm for 6am every day"
   },
   {
     "intent": "alarm.set",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "alarm.set_usersays_en.json",
     "text": "Wake me up early"
   },
   {
     "intent": "alarm.set",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "alarm.set_usersays_en.json",
     "text": "Set a morning alarm"
   },
@@ -4880,109 +4880,109 @@
   },
   {
     "intent": "knowledge.capital",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "knowledge.capital_usersays_en.json",
     "text": "What's the capital of Germany"
   },
   {
     "intent": "knowledge.capital",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "knowledge.capital_usersays_en.json",
     "text": "What is the capital of Canada"
   },
   {
     "intent": "knowledge.capital",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "knowledge.capital_usersays_en.json",
     "text": "Capital of India"
   },
   {
     "intent": "analysis.analyze",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "analysis.analyze_usersays_en.json",
     "text": "Analyze the report"
   },
   {
     "intent": "analysis.analyze",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "analysis.analyze_usersays_en.json",
     "text": "Analyze this dataset"
   },
   {
     "intent": "analysis.analyze",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "analysis.analyze_usersays_en.json",
     "text": "Analyze the spreadsheet"
   },
   {
     "intent": "communication.email",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "communication.email_usersays_en.json",
     "text": "Check inbox"
   },
   {
     "intent": "communication.email",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "communication.email_usersays_en.json",
     "text": "Check my work email"
   },
   {
     "intent": "communication.email",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "communication.email_usersays_en.json",
     "text": "Check my email"
   },
   {
     "intent": "knowledge.translate",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "knowledge.translate_usersays_en.json",
     "text": "Translate thank you to German"
   },
   {
     "intent": "knowledge.translate",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "knowledge.translate_usersays_en.json",
     "text": "Translate good morning to Italian"
   },
   {
     "intent": "knowledge.translate",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "knowledge.translate_usersays_en.json",
     "text": "Translate help to Russian"
   },
   {
     "intent": "todo.add",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "todo.add_usersays_en.json",
     "text": "Add to my todo list"
   },
   {
     "intent": "todo.add",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "todo.add_usersays_en.json",
     "text": "Add send report to my list"
   },
   {
     "intent": "todo.add",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "todo.add_usersays_en.json",
     "text": "Add a new task to my list"
   },
   {
     "intent": "calendar.query",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "calendar.query_usersays_en.json",
     "text": "What meetings do I have"
   },
   {
     "intent": "calendar.query",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "calendar.query_usersays_en.json",
     "text": "Show me my appointments"
   },
   {
     "intent": "calendar.query",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "calendar.query_usersays_en.json",
     "text": "Check my availability"
   },
@@ -5006,19 +5006,19 @@
   },
   {
     "intent": "search.locate",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "search.locate_usersays_en.json",
     "text": "Find a restaurant nearby"
   },
   {
     "intent": "search.locate",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "search.locate_usersays_en.json",
     "text": "Locate John"
   },
   {
     "intent": "search.locate",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "search.locate_usersays_en.json",
     "text": "Search for the document"
   },
@@ -5042,37 +5042,37 @@
   },
   {
     "intent": "status.report",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "status.report_usersays_en.json",
     "text": "What's the current status"
   },
   {
     "intent": "status.report",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "status.report_usersays_en.json",
     "text": "Give me a status update"
   },
   {
     "intent": "status.report",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "status.report_usersays_en.json",
     "text": "Current system state"
   },
   {
     "intent": "reminder.create",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "reminder.create_usersays_en.json",
     "text": "Can you remind me to call John"
   },
   {
     "intent": "reminder.create",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "reminder.create_usersays_en.json",
     "text": "Remind me to water the plants"
   },
   {
     "intent": "reminder.create",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "reminder.create_usersays_en.json",
     "text": "Remind me at 5pm to leave"
   },
@@ -5174,7 +5174,7 @@
   },
   {
     "intent": "smalltalk.user.lonely",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.lonely_usersays_en.json",
     "text": "I want to i feel lonely"
   },
@@ -5198,13 +5198,13 @@
   },
   {
     "intent": "smalltalk.user.sleepy",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.sleepy_usersays_en.json",
     "text": "I want to i'm sleeping"
   },
   {
     "intent": "smalltalk.user.sleepy",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.sleepy_usersays_en.json",
     "text": "want I to sleep"
   },
@@ -5228,7 +5228,7 @@
   },
   {
     "intent": "smarthome.device.volume.down.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.device.volume.down.implicit_usersays_en.json",
     "text": "TV is so loud kitchen"
   },
@@ -5240,13 +5240,13 @@
   },
   {
     "intent": "smalltalk.user.good",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.good_usersays_en.json",
     "text": "I want to i'm doing just great"
   },
   {
     "intent": "smalltalk.agent.birth_date",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.agent.birth_date_usersays_en.json",
     "text": "birth your date"
   },
@@ -5258,7 +5258,7 @@
   },
   {
     "intent": "smalltalk.user.looks_like",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.looks_like_usersays_en.json",
     "text": "what do you think I look"
   },
@@ -5270,13 +5270,13 @@
   },
   {
     "intent": "smalltalk.user.here",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.here_usersays_en.json",
     "text": "I here am"
   },
   {
     "intent": "smalltalk.user.here",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.here_usersays_en.json",
     "text": "could you i am here"
   },
@@ -5288,19 +5288,19 @@
   },
   {
     "intent": "smalltalk.user.sad",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.sad_usersays_en.json",
     "text": "I sad am"
   },
   {
     "intent": "smarthome.device.volume.up.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.device.volume.up.implicit_usersays_en.json",
     "text": "I'd like to tv volume is too low in bedroom"
   },
   {
     "intent": "smarthome.device.volume.up.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.device.volume.up.implicit_usersays_en.json",
     "text": "I want to tv volume is too low in bedroom"
   },
@@ -5324,13 +5324,13 @@
   },
   {
     "intent": "music.player.add_playlist",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "music.player.add_playlist_usersays_en.json",
     "text": "please put it on my late night playlist"
   },
   {
     "intent": "smarthome.locks.check.close",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.locks.check.close_usersays_en.json",
     "text": "hey is kitchen door closed"
   },
@@ -5384,13 +5384,13 @@
   },
   {
     "intent": "smalltalk.greetings.goodevening",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.greetings.goodevening_usersays_en.json",
     "text": "can you good evening there"
   },
   {
     "intent": "music.player.pause",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "music.player.pause_usersays_en.json",
     "text": "hey pause playing"
   },
@@ -5402,25 +5402,25 @@
   },
   {
     "intent": "alarm.snooze",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "alarm.snooze_usersays_en.json",
     "text": "Hit snooze"
   },
   {
     "intent": "alarm.snooze",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "alarm.snooze_usersays_en.json",
     "text": "Let me sleep more"
   },
   {
     "intent": "todo.list",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "todo.list_usersays_en.json",
     "text": "Show all todos"
   },
   {
     "intent": "todo.list",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "todo.list_usersays_en.json",
     "text": "What tasks do I have"
   },
@@ -5438,13 +5438,13 @@
   },
   {
     "intent": "status.diagnostic",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "status.diagnostic_usersays_en.json",
     "text": "System diagnostics"
   },
   {
     "intent": "status.diagnostic",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "status.diagnostic_usersays_en.json",
     "text": "Health check"
   },
@@ -5480,7 +5480,7 @@
   },
   {
     "intent": "smalltalk.agent.boring",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.agent.boring_usersays_en.json",
     "text": "please you are boring me"
   },
@@ -5498,13 +5498,13 @@
   },
   {
     "intent": "music.player.shuffle",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "music.player.shuffle_usersays_en.json",
     "text": "could you turn on shuffle mode"
   },
   {
     "intent": "music.player.shuffle",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "music.player.shuffle_usersays_en.json",
     "text": "could you shuffle them"
   },
@@ -5528,7 +5528,7 @@
   },
   {
     "intent": "smalltalk.user.loves_agent",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.loves_agent_usersays_en.json",
     "text": "I'd like to love you"
   },
@@ -5540,19 +5540,19 @@
   },
   {
     "intent": "smalltalk.agent.hungry",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.agent.hungry_usersays_en.json",
     "text": "can you do you want to eat"
   },
   {
     "intent": "smarthome.locks.check",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.locks.check_usersays_en.json",
     "text": "could you front door status"
   },
   {
     "intent": "smarthome.locks.check",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.locks.check_usersays_en.json",
     "text": "status front door"
   },
@@ -5630,19 +5630,19 @@
   },
   {
     "intent": "calendar.cancel",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "calendar.cancel_usersays_en.json",
     "text": "Delete the appointment"
   },
   {
     "intent": "calendar.cancel",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "calendar.cancel_usersays_en.json",
     "text": "Delete the calendar event"
   },
   {
     "intent": "smarthome.heating.switch.on",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.heating.switch.on_usersays_en.json",
     "text": "could you turn on heating"
   },
@@ -5654,13 +5654,13 @@
   },
   {
     "intent": "smarthome.device.volume.check.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.device.volume.check.implicit_usersays_en.json",
     "text": "is n't TV too loud everywhere"
   },
   {
     "intent": "smarthome.device.volume.check.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.device.volume.check.implicit_usersays_en.json",
     "text": "I'd like to isn't tv volume too loud"
   },
@@ -5684,7 +5684,7 @@
   },
   {
     "intent": "smalltalk.user.angry",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.angry_usersays_en.json",
     "text": "could you i am angry with you"
   },
@@ -5696,7 +5696,7 @@
   },
   {
     "intent": "smalltalk.dialog.i_do_not_care",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.dialog.i_do_not_care_usersays_en.json",
     "text": "could you not care at all"
   },
@@ -5756,19 +5756,19 @@
   },
   {
     "intent": "smalltalk.agent.age",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.agent.age_usersays_en.json",
     "text": "what 's your age"
   },
   {
     "intent": "smarthome.device.volume.unmute.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.device.volume.unmute.implicit_usersays_en.json",
     "text": "please i can't hear the tv"
   },
   {
     "intent": "smarthome.device.volume.unmute.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.device.volume.unmute.implicit_usersays_en.json",
     "text": "I ca n't hear the TV"
   },
@@ -5798,7 +5798,7 @@
   },
   {
     "intent": "smalltalk.agent.hobby",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.agent.hobby_usersays_en.json",
     "text": "what your hobby"
   },
@@ -5816,25 +5816,25 @@
   },
   {
     "intent": "smalltalk.user.busy",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.busy_usersays_en.json",
     "text": "I'd like to i'm overloaded"
   },
   {
     "intent": "display.enhance",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "display.enhance_usersays_en.json",
     "text": "Enhance"
   },
   {
     "intent": "display.enhance",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "display.enhance_usersays_en.json",
     "text": "Enhance and clarify"
   },
   {
     "intent": "smalltalk.user.back",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.back_usersays_en.json",
     "text": "here am I again"
   },
@@ -5852,7 +5852,7 @@
   },
   {
     "intent": "smalltalk.dialog.what_do_you_mean",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.dialog.what_do_you_mean_usersays_en.json",
     "text": "I want to what do you mean"
   },
@@ -5870,19 +5870,19 @@
   },
   {
     "intent": "timer.check",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "timer.check_usersays_en.json",
     "text": "Time remaining"
   },
   {
     "intent": "timer.check",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "timer.check_usersays_en.json",
     "text": "How long on the timer"
   },
   {
     "intent": "smalltalk.user.going_to_bed",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.going_to_bed_usersays_en.json",
     "text": "I want to i'm going to bed"
   },
@@ -5894,13 +5894,13 @@
   },
   {
     "intent": "display.zoom",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "display.zoom_usersays_en.json",
     "text": "Magnify"
   },
   {
     "intent": "display.zoom",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "display.zoom_usersays_en.json",
     "text": "Zoom out please"
   },
@@ -5918,13 +5918,13 @@
   },
   {
     "intent": "smarthome.device.volume.mute.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.device.volume.mute.implicit_usersays_en.json",
     "text": "I want to i don't like hearing tv sound from kitchen"
   },
   {
     "intent": "smarthome.device.volume.mute.implicit",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.device.volume.mute.implicit_usersays_en.json",
     "text": "TV sound is disturbing me everywhere the house"
   },
@@ -5942,7 +5942,7 @@
   },
   {
     "intent": "smalltalk.user.will_be_back",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.user.will_be_back_usersays_en.json",
     "text": "I promise come back"
   },
@@ -5960,7 +5960,7 @@
   },
   {
     "intent": "smarthome.heating.switch.off",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smarthome.heating.switch.off_usersays_en.json",
     "text": "turn off heating the living room"
   },
@@ -6008,7 +6008,7 @@
   },
   {
     "intent": "smalltalk.emotions.wow",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.emotions.wow_usersays_en.json",
     "text": "I want to woah"
   },
@@ -6026,13 +6026,13 @@
   },
   {
     "intent": "analysis.trend",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "analysis.trend_usersays_en.json",
     "text": "Show the upward trend"
   },
   {
     "intent": "analysis.trend",
-    "labeled_by": "dialogflow",
+    "labeled_by": "materialized",
     "source_file": "analysis.trend_usersays_en.json",
     "text": "What's the trend"
   },
@@ -6050,7 +6050,7 @@
   },
   {
     "intent": "smalltalk.greetings.nice_to_talk_to_you",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.greetings.nice_to_talk_to_you_usersays_en.json",
     "text": "hey it is nice talking to you"
   },
@@ -6062,7 +6062,7 @@
   },
   {
     "intent": "smalltalk.dialog.hold_on",
-    "labeled_by": "dialogflow",
+    "labeled_by": "augmented",
     "source_file": "smalltalk.dialog.hold_on_usersays_en.json",
     "text": "I want to wait please"
   },
