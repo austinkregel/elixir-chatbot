@@ -82,8 +82,8 @@ defmodule Brain.Test.ModelFactory do
       Logger.info("[ModelFactory] Starting test model training pipeline...")
 
       results = %{
-        sentiment: run_step!("sentiment classifier", &train_sentiment_classifier/0),
-        speech_act: run_step!("speech act classifier", &train_speech_act_classifier/0),
+        sentiment: run_step!("sentiment classifier (promoted, not trained)", &require_sentiment_classifier/0),
+        speech_act: run_step!("speech act classifier (promoted, not trained)", &require_speech_act_classifier/0),
         micro: run_step!("text micro classifiers", &train_micro_classifiers/0),
         feature_vector_micro:
           run_step!("feature-vector micro classifiers", &train_feature_vector_micro_classifiers/0),
@@ -91,7 +91,7 @@ defmodule Brain.Test.ModelFactory do
         pos: run_step!("POS tagger (promoted, not trained)", &require_pos_tagger/0),
         poincare: run_step!("Poincare embeddings", &train_poincare_embeddings/0),
         triple_scorer: run_step!("KG triple scorer", &train_triple_scorer/0),
-        embedder: run_step!("embedder", &train_embedder/0)
+        embedder: run_step!("embedder (promoted, not trained)", &require_embedder/0)
       }
 
       :ok = Brain.ML.MicroClassifiers.reload()
@@ -340,6 +340,88 @@ defmodule Brain.Test.ModelFactory do
   looks in tests, was trained on other fixtures than the current ones, or
   carries no evaluation beating its lookup baseline.
   """
+  @doc """
+  Requires the promoted sentiment classifier rather than training a substitute.
+
+  See `require_promoted!/2` for why.
+  """
+  def require_sentiment_classifier do
+    require_promoted!("sentiment_classifier.term", Brain.ML.SentimentClassifierSimple)
+  end
+
+  @doc "Requires the promoted speech-act classifier. See `require_promoted!/2`."
+  def require_speech_act_classifier do
+    require_promoted!("speech_act_classifier.term", Brain.ML.SpeechActClassifierSimple)
+  end
+
+  @doc """
+  Requires the promoted embedder.
+
+  Checked through `Brain.Memory.Embedder.ready?/0` rather than a GenServer
+  readiness call, because the embedder is per-world and `ready?/0` is the arity
+  that answers for the default one.
+  """
+  def require_embedder do
+    path = model_file!("embedder.term")
+
+    unless Brain.Memory.Embedder.ready?() do
+      raise """
+      ModelFactory: #{Path.basename(path)} is promoted but Brain.Memory.Embedder
+      reports it is not ready.
+
+      The embedder loads from #{path} at boot, so this means the file is present
+      and unusable rather than absent.
+      """
+    end
+
+    {:ok, %{sha256: Brain.Analysis.RunProvenance.sha256_file!(path)}}
+  end
+
+  # These models are *upstream* of the feature vector: the pipeline runs them to
+  # produce the analysis that becomes 343 dimensions. Training substitutes here
+  # made the test environment a second, divergent one, so a model fitted to
+  # vectors built in dev could not be verified against the runtime that loaded
+  # it -- and `data/classifiers/*.json` is generated in dev.
+  #
+  # The trainers are still here, and still public, for tests that exercise the
+  # building process itself. They are no longer what an ordinary test runs
+  # against. `require_pos_tagger/0` already worked this way.
+  defp require_promoted!(filename, module) do
+    path = model_file!(filename)
+
+    unless module.ready?() do
+      raise """
+      ModelFactory: #{filename} is promoted but #{inspect(module)} reports it is
+      not ready.
+
+      #{inspect(module)} loads from #{path} at boot, so the file is present and
+      unusable rather than absent.
+      """
+    end
+
+    {:ok, %{sha256: Brain.Analysis.RunProvenance.sha256_file!(path)}}
+  end
+
+  defp model_file!(filename) do
+    base =
+      Application.get_env(:brain, :ml, [])[:models_path] ||
+        raise "ModelFactory: :models_path is not configured"
+
+    path = Path.join(base, filename)
+
+    unless File.regular?(path) do
+      raise """
+      ModelFactory: no #{filename} at #{path}.
+
+      The suite runs against the real upstream models. Promote them with:
+
+          MIX_ENV=test mix test.models
+      """
+    end
+
+    path
+  end
+
   def require_pos_tagger do
     path = Application.fetch_env!(:brain, :ml) |> Keyword.fetch!(:pos_test_model_path)
 
