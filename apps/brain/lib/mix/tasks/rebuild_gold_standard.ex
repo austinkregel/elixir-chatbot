@@ -3,14 +3,15 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
   @moduledoc """
   Rebuilds `priv/evaluation/intent/gold_standard.json` from `data/intents/`,
-  using Dialogflow as the sole authority.
+  using the export as the sole authority.
 
       mix rebuild_gold_standard                 # dry run, prints the summary
       mix rebuild_gold_standard --save          # write it
       mix rebuild_gold_standard --save --verbose
 
-  No model is consulted. Every label comes from the Dialogflow export, so the
-  corpus can be regenerated from `data/intents/` alone.
+  No model is consulted. Every label comes from the export, so the corpus can be
+  regenerated from `data/intents/` alone. Not every *row* in that export came from
+  Dialogflow, though — see "labeled_by is measured, not asserted" below.
 
   ## Where labels come from
 
@@ -37,6 +38,30 @@ defmodule Mix.Tasks.RebuildGoldStandard do
   intent claims, after the transformations above, is written with
   `status: "needs_review"` and a `candidates` list; it is never resolved by
   guessing. Ambiguous texts are also written to `ambiguous_texts.json`.
+
+  ## `labeled_by` is measured, not asserted
+
+  The export is not purely Dialogflow. `scripts/materialize_orphan_intents.exs`
+  writes gold-standard texts that had no source backing *back into*
+  `data/intents/*_usersays_en.json`, tagging them `orphan-<hash>` or
+  `augmented-<hash>`. Measured 2026-09-28: 82.6% genuine, 12.0% orphan, 5.4%
+  augmented, and some augmented text is ungrammatical ("want I to open an
+  account").
+
+  `labeled_by` is therefore derived per row from that id:
+
+    * `orphan-` -> `"materialized"`
+    * `augmented-` -> `"augmented"`
+    * a UUID, or no id at all -> `"dialogflow"`
+
+  Where the same normalised text occurs more than once, the most genuine origin
+  wins: a text is synthetic only if it exists nowhere outside a synthetic writer.
+  An id shaped like a synthetic marker but with an unknown prefix aborts the run
+  rather than being recorded as Dialogflow output.
+
+  This task previously stamped `"dialogflow"` on all of them, which made 864 rows
+  indistinguishable from the 4119 real ones and left every split carved from this
+  corpus 17.8% synthetic with nothing saying so. The run prints the breakdown.
 
   A label that is not a dotted lowercase identifier of at least two parts aborts
   the run, naming the offenders and their files. Mapping such a name onto a real
@@ -67,7 +92,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
     save? = opts[:save] || false
     verbose? = opts[:verbose] || false
 
-    banner("REBUILD INTENT GOLD STANDARD (Dialogflow only)")
+    banner("REBUILD INTENT GOLD STANDARD (from the export only)")
 
     phrases = load_dialogflow!()
     Mix.shell().info("  #{length(phrases)} usersays phrases across #{count_files(phrases)} intent files")
@@ -110,7 +135,15 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
         path
         |> read_phrases!()
-        |> Enum.map(fn text -> %{text: text, norm: normalise(text), label: label, source_file: source} end)
+        |> Enum.map(fn phrase ->
+          %{
+            text: phrase.text,
+            norm: normalise(phrase.text),
+            label: label,
+            source_file: source,
+            provenance: phrase.provenance
+          }
+        end)
       end)
 
     validate_labels!(phrases)
@@ -193,11 +226,57 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
     entries
     |> Enum.map(fn entry ->
-      entry
-      |> Map.get("data", [])
-      |> Enum.map_join(fn segment -> Map.get(segment, "text", "") end)
+      text =
+        entry
+        |> Map.get("data", [])
+        |> Enum.map_join(fn segment -> Map.get(segment, "text", "") end)
+
+      %{text: text, provenance: provenance!(entry, path)}
     end)
-    |> Enum.reject(&(String.trim(&1) == ""))
+    |> Enum.reject(&(String.trim(&1.text) == ""))
+  end
+
+  # The export is not all Dialogflow. `scripts/materialize_orphan_intents.exs`
+  # writes gold-standard texts that had no source backing *back into* these files,
+  # tagging them `orphan-<hash>` or `augmented-<hash>` (`:87-98`). Measured
+  # 2026-09-28: 82.6% genuine, 12.0% orphan, 5.4% augmented.
+  #
+  # Stamping every row `"dialogflow"` made those 864 rows indistinguishable from
+  # the 4119 real ones, so a held-out split carved from this corpus was 17.8%
+  # synthetic with nothing saying so.
+  #
+  # A missing `id` means Dialogflow, not "unknown": the synthetic writers always
+  # set one, while the export itself omits it on a handful of otherwise ordinary
+  # entries ("checking", "thanks!") that carry the full count/lang/updated shape.
+  defp provenance!(entry, path) do
+    case Map.get(entry, "id") do
+      nil -> "dialogflow"
+      id when is_binary(id) -> provenance_from_id!(id, path)
+      other -> Mix.raise("rebuild_gold_standard: #{path} has a non-string id #{inspect(other)}")
+    end
+  end
+
+  defp provenance_from_id!("orphan-" <> _, _path), do: "materialized"
+  defp provenance_from_id!("augmented-" <> _, _path), do: "augmented"
+
+  defp provenance_from_id!(id, path) do
+    # Dialogflow ids are UUIDs. Anything else of the shape `<word>-<8 hex>` is a
+    # synthetic marker this task does not know how to classify, and guessing its
+    # origin is the defect being closed.
+    if Regex.match?(~r/^[a-z]+-[0-9a-f]{8}$/, id) do
+      Mix.raise("""
+      rebuild_gold_standard: unrecognised synthetic id prefix in #{path}
+
+        id: #{id}
+
+      `orphan-` and `augmented-` are written by scripts/materialize_orphan_intents.exs
+      and are classified. This one is neither, so its provenance is unknown, and
+      recording it as "dialogflow" is what this check exists to prevent. Teach
+      provenance_from_id!/2 what wrote it.
+      """)
+    else
+      "dialogflow"
+    end
   end
 
   # `account.balance.check - context: account` -> `account.balance.check`. The
@@ -210,6 +289,18 @@ defmodule Mix.Tasks.RebuildGoldStandard do
   defp normalise(text), do: text |> String.trim() |> String.downcase() |> String.replace(~r/\s+/, " ")
 
   # -- building ---------------------------------------------------------------
+
+  # Provenance is ranked, not voted on. The same normalised text can appear as a
+  # genuine Dialogflow phrase in one file and as a materialized copy in another;
+  # when any occurrence is genuine, the text is genuine, and only a text that
+  # exists *nowhere* outside a synthetic writer is synthetic.
+  @provenance_rank %{"dialogflow" => 0, "materialized" => 1, "augmented" => 2}
+
+  defp resolve_provenance(occurrences) do
+    occurrences
+    |> Enum.map(& &1.provenance)
+    |> Enum.min_by(&Map.fetch!(@provenance_rank, &1))
+  end
 
   defp build_entries(phrases) do
     grouped = Enum.group_by(phrases, & &1.norm)
@@ -227,7 +318,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
             entry = %{
               "text" => first.text,
               "intent" => label,
-              "labeled_by" => "dialogflow",
+              "labeled_by" => resolve_provenance(occurrences),
               "source_file" => hd(sources)
             }
 
@@ -242,7 +333,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
             entry = %{
               "text" => first.text,
               "intent" => hd(labels),
-              "labeled_by" => "dialogflow",
+              "labeled_by" => resolve_provenance(occurrences),
               "source_file" => hd(sources),
               "status" => "needs_review",
               "candidates" => labels
@@ -272,6 +363,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
     Mix.shell().info("  median per label     #{median}")
     Mix.shell().info("  labels with <10      #{Enum.count(sorted, &(&1 < 10))}")
 
+    report_provenance(entries)
     compare_to_pre_rebuild(entries)
 
     if verbose? and conflicts != [] do
@@ -280,6 +372,39 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       Enum.each(conflicts, fn c ->
         Mix.shell().info("    #{String.pad_trailing(String.slice(c.text, 0, 44), 46)} #{inspect(c.candidates)}")
       end)
+    end
+  end
+
+  # Printed on every run because it is not discoverable otherwise: the corpus
+  # carries no other marker, and a split carved from it inherits the mix silently.
+  defp report_provenance(entries) do
+    counts = Enum.frequencies_by(entries, & &1["labeled_by"])
+    total = length(entries)
+
+    Mix.shell().info("")
+    Mix.shell().info("  provenance:")
+
+    @provenance_rank
+    |> Map.keys()
+    |> Enum.sort_by(&Map.fetch!(@provenance_rank, &1))
+    |> Enum.each(fn kind ->
+      n = Map.get(counts, kind, 0)
+
+      Mix.shell().info(
+        "    #{String.pad_trailing(kind, 14)} #{String.pad_leading(to_string(n), 5)}  #{Float.round(n / total * 100, 1)}%"
+      )
+    end)
+
+    synthetic = total - Map.get(counts, "dialogflow", 0)
+
+    if synthetic > 0 do
+      Mix.shell().info("")
+
+      Mix.shell().info(
+        "    #{synthetic} of #{total} rows (#{Float.round(synthetic / total * 100, 1)}%) were written back into the export"
+      )
+
+      Mix.shell().info("    by scripts/materialize_orphan_intents.exs, not by Dialogflow.")
     end
   end
 
