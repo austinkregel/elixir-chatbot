@@ -1,6 +1,43 @@
 defmodule Mix.Tasks.MigrateGoldStandard do
-  @shortdoc "Migrate intent data into gold standard evaluation files"
-  @moduledoc "Migrates intent training data from multiple sources into the gold standard\nevaluation files. Supports destructive mode to delete source files.\n\n## Data Sources\n\n- `data/intents/*_usersays_en.json` - Dialogflow usersays files\n- `data/training/intents/*.json` - Enriched training data\n\n## Context Variants\n\nContext variants (e.g., `account.balance.check.context_.balance`) are follow-up\nutterances that require prior conversational context. By default, they are kept\nas separate intents because they have different semantic meanings:\n\n- Base intent: \"check my credit card balance\" (self-contained)\n- Context variant: \"how much money\" (requires prior context)\n\nUse `--merge-contexts` only if you want to flatten them into base intents.\n\n## Usage\n\n    mix migrate_gold_standard                    # Migrate all intents\n    mix migrate_gold_standard --preview          # Preview without writing\n    mix migrate_gold_standard --destructive      # Migrate and delete source files\n    mix migrate_gold_standard --merge-contexts   # Merge context variants into base intents\n    mix migrate_gold_standard --limit 5          # Max 5 examples per intent\n    mix migrate_gold_standard --select lights    # Only intents containing \"lights\"\n    mix migrate_gold_standard --no-ner           # Skip NER gold standard\n    mix migrate_gold_standard --append           # Append instead of replace\n    mix migrate_gold_standard --list             # List available intents\n\n## Examples\n\n    # See what's available\n    mix migrate_gold_standard --list\n\n    # Preview migration of lighting intents\n    mix migrate_gold_standard --select lights --preview\n\n    # Full destructive migration (migrate all, delete sources)\n    mix migrate_gold_standard --destructive\n\n    # Merge context variants into base intents\n    mix migrate_gold_standard --merge-contexts --preview\n\n    # Extract intent metadata to intent_registry.json\n    mix migrate_gold_standard --extract-metadata --preview\n    mix migrate_gold_standard --extract-metadata\n\n    # Extract response templates to templates.json\n    mix migrate_gold_standard --extract-templates --preview\n    mix migrate_gold_standard --extract-templates\n\n    # Delete source directories after migration is complete\n    mix migrate_gold_standard --cleanup-sources --preview\n    mix migrate_gold_standard --cleanup-sources\n"
+  @shortdoc "Report what a migration into the gold standard would produce (read-only)"
+  @moduledoc """
+  Reports what a migration from `data/intents/` and `data/training/intents/` into
+  the gold standard, the intent registry and the response templates would produce.
+
+  **This task no longer writes anything.** Three other tasks own those artifacts
+  and build them from the same export under conventions this one contradicts:
+
+  | artifact | owner |
+  |---|---|
+  | `priv/evaluation/intent/gold_standard.json` | `mix rebuild_gold_standard` |
+  | `priv/analysis/intent_registry.json` | `mix registry.derive` |
+  | `priv/response/templates.json` | `mix templates.reconcile` |
+
+  The disagreement is about what an intent is. This task treats a
+  ` - context: …` variant as a separate intent unless `--merge-contexts` is
+  passed; `rebuild_gold_standard`'s `root_label/1` always folds it into its base.
+  The export holds 242 usersays files, 40 of them suffixed, and the corpus holds
+  194 intents. `Pipeline.registered_intent?/1` gates accuracy on that vocabulary,
+  so a registry built the other way rejects the labels the deployed classifier
+  emits.
+
+  Each writing path is refused with the reason and the task that replaces it. The
+  reports remain because they answer questions the owners do not: what the export
+  contains before any folding, and which intents carry slot parameters.
+
+  ## Usage
+
+      mix migrate_gold_standard --list                        # intents across all sources
+      mix migrate_gold_standard --preview                      # what a migration would produce
+      mix migrate_gold_standard --select lights --preview      # only matching intents
+      mix migrate_gold_standard --merge-contexts --preview     # with context variants folded
+      mix migrate_gold_standard --extract-metadata --preview   # slots and clarification prompts
+      mix migrate_gold_standard --extract-templates --preview  # responses held in the export
+      mix migrate_gold_standard --cleanup-sources --preview    # what deletion would remove
+
+  `--limit N`, `--no-ner`, `--append`, `--exclude-context-variants` still shape
+  what the reports show.
+  """
 
   use Mix.Task
 
@@ -43,6 +80,45 @@ defmodule Mix.Tasks.MigrateGoldStandard do
       true ->
         run_migration(select_filter, limit, !no_ner?, append?, destructive?, merge_contexts?, exclude_context_variants?)
     end
+  end
+
+  # This task and `mix rebuild_gold_standard` / `mix registry.derive` /
+  # `mix templates.reconcile` generate the same three artifacts from the same
+  # export, under conventions that contradict each other: this one keeps a
+  # ` - context: …` variant as a separate intent, `root_label/1` folds it into its
+  # base. The export holds 242 usersays files, 40 of them suffixed; the corpus
+  # holds 194 intents. `registered_intent?/1` gates pipeline accuracy on that
+  # vocabulary, so a registry built the other way rejects the labels the deployed
+  # classifier emits.
+  #
+  # Every reporting path here still runs. The writing paths refuse, because each
+  # one silently replaces a file another task owns:
+  #
+  #   --extract-templates   writes the whole map, not a merge. It extracts 94
+  #                         intents / 241 templates against the 198 / 596 in
+  #                         templates.json, so it removes 104 intents' responses.
+  #   --extract-metadata    produces `required`, `optional` and
+  #                         `clarification_templates`, all of which
+  #                         `mix registry.derive` derives from the same export.
+  #   --cleanup-sources     deletes data/intents, the canonical export. `data/` is
+  #                         gitignored, so it cannot be recovered.
+  defp refuse!(flag, owner, detail) do
+    successor =
+      case owner do
+        nil -> "There is no replacement, because the artifact should not be deleted."
+        task -> "#{task} owns this artifact now. Run that instead."
+      end
+
+    Mix.raise("""
+    migrate_gold_standard #{flag} is disabled.
+
+    #{detail}
+
+    #{successor}
+
+    The reporting paths still work: add --preview to see what this task would have
+    produced, or use --list.
+    """)
   end
 
   defp list_intents do
@@ -184,11 +260,15 @@ Previewing migration for #{length(intent_names)} intent(s)...")
   ... and #{map_size(extracted) - 5} more")
       end
 
-      IO.puts("\nRun without --preview to write to intent_registry.json")
+      IO.puts("\nThis is a report only. Writing to intent_registry.json is disabled.")
     else
-      {:ok, merged} = GoldStandardMigrator.merge_into_intent_registry(extracted, write: true)
-      IO.puts("Merged into intent_registry.json (#{map_size(merged)} total intents)")
-      IO.puts("\nRun `mix migrate_gold_standard --destructive` to complete migration.\n")
+      refuse!(
+        "--extract-metadata",
+        "`mix registry.derive`",
+        "It derives required, optional and clarification_templates from the same\n" <>
+          "parameter definitions, plus the category/speech_act/description judgements\n" <>
+          "this task cannot supply."
+      )
     end
   end
 
@@ -242,11 +322,15 @@ Previewing migration for #{length(intent_names)} intent(s)...")
   ... and #{map_size(templates) - 5} more intents")
       end
 
-      IO.puts("\nRun without --preview to write to priv/response/templates.json")
+      IO.puts("\nThis is a report only. Writing to priv/response/templates.json is disabled.")
     else
-      {:ok, path} = GoldStandardMigrator.write_templates_json(templates, write: true)
-      IO.puts("Wrote to #{path}")
-      IO.puts("\nRun `mix migrate_gold_standard --destructive` to complete migration.\n")
+      refuse!(
+        "--extract-templates",
+        "`mix templates.reconcile`",
+        "write_templates_json/2 replaces the file rather than merging into it, and\n" <>
+          "this extraction covers fewer intents than the file already holds, so the\n" <>
+          "difference would be deleted."
+      )
     end
   end
 
@@ -282,21 +366,16 @@ Previewing migration for #{length(intent_names)} intent(s)...")
       end
 
       if preview? do
-        IO.puts("\nRun without --preview to delete these directories.\n")
+        IO.puts("\nThis is a report only. Deleting these directories is disabled.\n")
       else
-        IO.puts("\nWARNING: This will permanently delete these directories!")
-        Process.sleep(2000)
-
-        {:ok, deleted} = GoldStandardMigrator.delete_source_directories()
-
-        IO.puts("
-Deleted #{length(deleted)} items:")
-
-        Enum.each(deleted, fn item ->
-          IO.puts("  - #{item}")
-        end)
-
-        IO.puts("")
+        refuse!(
+          "--cleanup-sources",
+          nil,
+          "data/intents is the canonical Dialogflow export that mix rebuild_gold_standard\n" <>
+            "reads, and data/ is gitignored, so deleting it cannot be undone. The annotated\n" <>
+            "utterances under data/training/intents that no longer have a source are archived\n" <>
+            "in data/archive/intent_annotations/, which is tracked."
+        )
       end
     end
   end
@@ -310,6 +389,16 @@ Deleted #{length(deleted)} items:")
   end
 
   defp run_migration(select_filter, limit, include_ner?, append?, destructive?, merge_contexts?, exclude_context_variants?) do
+    refuse!(
+      "migration",
+      "`mix rebuild_gold_standard`",
+      "Both rebuild priv/evaluation/intent/gold_standard.json from the same export.\n" <>
+        "This one keeps a \" - context: …\" variant as its own intent unless\n" <>
+        "--merge-contexts is passed; rebuild_gold_standard always folds it into the base.\n" <>
+        "Running this would re-split 36 labels the corpus has folded, and\n" <>
+        "registered_intent?/1 gates accuracy on that vocabulary."
+    )
+
     intent_names = resolve_intent_names(select_filter)
 
     mode =
