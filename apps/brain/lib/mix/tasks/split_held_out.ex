@@ -165,6 +165,8 @@ defmodule Mix.Tasks.Split.HeldOut do
     IO.puts("\nRemaining training: #{length(remaining)} examples")
     print_distribution(remain_dist)
 
+    report_provenance(original, held_out, remaining)
+
     IO.puts("\nWritten:")
     IO.puts("  Held-out test set: #{held_path}")
     IO.puts("\nLeft whole:")
@@ -178,6 +180,46 @@ defmodule Mix.Tasks.Split.HeldOut do
 
     IO.puts("")
   end
+
+  # A corpus can mix genuine utterances with texts materialized back into its
+  # source and with synthetic mutations. Accuracy measured on the synthetic part
+  # is not accuracy on user input, so the split states its own composition.
+  defp report_provenance(original, held_out, remaining) do
+    kinds =
+      original
+      |> Enum.map(&provenance_of/1)
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    if kinds != ["dialogflow"] do
+      IO.puts("\nProvenance (from labeled_by):")
+
+      Enum.each([{"original", original}, {"held-out", held_out}, {"training", remaining}], fn {name, rows} ->
+        total = max(length(rows), 1)
+
+        breakdown =
+          kinds
+          |> Enum.map(fn kind ->
+            n = Enum.count(rows, &(provenance_of(&1) == kind))
+            "#{kind} #{n} (#{Float.round(n / total * 100, 1)}%)"
+          end)
+          |> Enum.join(", ")
+
+        IO.puts("  #{String.pad_trailing(name, 10)} #{breakdown}")
+      end)
+
+      synthetic = Enum.count(held_out, &(provenance_of(&1) != "dialogflow"))
+
+      if synthetic > 0 do
+        IO.puts(
+          "\n  #{synthetic} of #{length(held_out)} held-out rows did not come from Dialogflow. " <>
+            "Accuracy measured on this split includes them."
+        )
+      end
+    end
+  end
+
+  defp provenance_of(row), do: Map.get(row, "labeled_by") || "unrecorded"
 
   defp print_distribution(dist) do
     dist
