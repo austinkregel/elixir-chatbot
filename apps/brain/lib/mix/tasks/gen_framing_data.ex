@@ -566,6 +566,21 @@ defmodule Mix.Tasks.GenFramingData do
     json = Jason.encode!(data, pretty: true)
     File.write!(@output_path, json)
     Mix.shell().info("Wrote #{length(data)} records to #{@output_path}")
+
+    write_environment()
+  end
+
+  # `framing_class` is a feature-vector classifier, so its vectors depend on the
+  # same mutable state every other one does -- the POS tagger, the speech-act
+  # voter, the lexicon, the gazetteer and the AGE graph. It is generated here
+  # rather than by `mix gen_micro_data`, so it needs the same record written
+  # beside it; without one `MicroProvenance.stamp!/2` cannot describe what the
+  # vectors were built against.
+  defp write_environment do
+    path = Brain.ML.MicroProvenance.training_environment_path(:framing_class)
+    env = Brain.Analysis.RunProvenance.vector_environment!()
+    File.write!(path, Jason.encode!(env, pretty: true) <> "\n")
+    Mix.shell().info("  environment #{env.digest} -> #{Path.basename(path)}")
   end
 
   defp show_stats(data) do
