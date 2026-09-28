@@ -231,7 +231,8 @@ defmodule Brain.Memory.Store do
 
     state = %{
       episode_index: episode_index,
-      semantic_index: semantic_index
+      semantic_index: semantic_index,
+      semantic_records: semantic_records_table()
     }
 
     warm_vector_index(state)
@@ -333,6 +334,7 @@ defmodule Brain.Memory.Store do
       {:ok, _id} ->
         if is_list(semantic.embedding) and semantic.embedding != [] do
           VectorIndex.insert(state.semantic_index, {world_id, semantic.id}, semantic.embedding)
+          put_semantic_record(state, world_id, semantic)
         end
 
         {:reply, {:ok, semantic.id}, state}
@@ -438,12 +440,8 @@ defmodule Brain.Memory.Store do
           VectorIndex.search_all(state.semantic_index, query_embedding, pool_size)
           |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
           |> Enum.map(fn {{_wid, id}, similarity} ->
-            case Brain.AtlasIntegration.get_semantic(id, world_id) do
-              {:ok, semantic} -> {semantic, similarity}
-              {:error, _} -> nil
-            end
+            {fetch_semantic_record!(state, world_id, id), similarity}
           end)
-          |> Enum.reject(&is_nil/1)
 
         results =
           if do_rerank do
@@ -537,6 +535,7 @@ defmodule Brain.Memory.Store do
   def handle_call({:clear, nil}, _from, state) do
     VectorIndex.clear(state.episode_index)
     VectorIndex.clear(state.semantic_index)
+    :ets.delete_all_objects(state.semantic_records)
     Brain.AtlasIntegration.clear_memory()
     {:reply, :ok, state}
   end
@@ -562,6 +561,41 @@ defmodule Brain.Memory.Store do
     end
   end
 
+  # The record a semantic-search hit resolves to, held beside the index that found
+  # it. `warm_vector_index/1` already loads every semantic in full and kept only
+  # the embedding, so resolving a hit went back to Atlas one row at a time --
+  # `query_semantic` made up to `k * 4` round-trips inside this GenServer, which
+  # serialises them, and enough concurrent callers pushed the 5s call timeout.
+  #
+  # Written only where the index is written, so a key is in both tables or in
+  # neither: an index hit with no record is an invariant violation, not a cache
+  # miss to be papered over with a read.
+  defp semantic_records_table do
+    :ets.new(:memory_semantic_records, [:set, :public, :named_table, read_concurrency: true])
+  rescue
+    ArgumentError -> :memory_semantic_records
+  end
+
+  defp put_semantic_record(state, world_id, semantic) do
+    :ets.insert(state.semantic_records, {{world_id, semantic.id}, semantic})
+  end
+
+  defp fetch_semantic_record!(state, world_id, id) do
+    case :ets.lookup(state.semantic_records, {world_id, id}) do
+      [{_key, semantic}] ->
+        semantic
+
+      [] ->
+        raise """
+        Memory.Store: the semantic index holds #{inspect({world_id, id})} but no record
+        for it is cached.
+
+        The two are written together, so this means one was updated without the
+        other. Reading the row from Atlas here would hide that.
+        """
+    end
+  end
+
   defp warm_vector_index(state) do
     case Brain.AtlasIntegration.load_episodes(@default_world_id) do
       {:ok, episodes} when episodes != %{} ->
@@ -580,6 +614,7 @@ defmodule Brain.Memory.Store do
             Enum.each(semantics, fn {id, sem} ->
               if is_list(sem.embedding) and sem.embedding != [] do
                 VectorIndex.insert(state.semantic_index, {@default_world_id, id}, sem.embedding)
+                put_semantic_record(state, @default_world_id, sem)
               end
             end)
 
