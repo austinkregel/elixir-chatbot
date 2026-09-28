@@ -289,7 +289,11 @@ defmodule Brain.Analysis.RunProvenance do
               "so the entity feature group would be built against nothing."
     end
 
-    for key <- [:entities, :prefixes, :entity_types], into: %{} do
+    # `entities` is excluded: it counts the loaded gazetteer plus whatever
+    # discovery has synced from the graph since boot, so it varies by run. The
+    # gazetteer file is hashed in upstream_models/0 instead. Entities the graph
+    # contributes after boot are therefore not covered here.
+    for key <- [:prefixes, :entity_types], into: %{} do
       case Map.get(stats, key) do
         n when is_integer(n) and n > 0 -> {key, n}
         other -> raise "RunProvenance: Brain.ML.Gazetteer.stats/0 reports #{key}=#{inspect(other)}"
