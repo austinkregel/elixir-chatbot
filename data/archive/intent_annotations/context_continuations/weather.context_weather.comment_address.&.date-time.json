@@ -1,0 +1,128 @@
+[
+  {
+    "text": "what about Princeton tomorrow",
+    "tokens": [
+      "what",
+      "about",
+      "Princeton",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADP",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Princeton",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "6fa1145a-18e3-4c85-9bc1-f2a6df219319",
+    "intent": "weather.context_weather.comment_address.&.date-time"
+  },
+  {
+    "text": "in Moscow this weekend",
+    "tokens": [
+      "in",
+      "Moscow",
+      "this",
+      "weekend"
+    ],
+    "pos_tags": [
+      "ADP",
+      "PROPN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Moscow",
+        "type": "location",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "this weekend",
+        "type": "date_time",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "1942f085-b095-4ee4-908f-6c0748410051",
+    "intent": "weather.context_weather.comment_address.&.date-time"
+  },
+  {
+    "text": "and what about Paris next Friday",
+    "tokens": [
+      "and",
+      "what",
+      "about",
+      "Paris",
+      "next",
+      "Friday"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "PRON",
+      "ADP",
+      "PROPN",
+      "ADJ",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Paris",
+        "type": "location",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "next Friday",
+        "type": "date_time",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "8413e5f0-7895-4629-8150-c2d89888ac23",
+    "intent": "weather.context_weather.comment_address.&.date-time"
+  },
+  {
+    "text": "tomorrow in Madrid",
+    "tokens": [
+      "tomorrow",
+      "in",
+      "Madrid"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "Madrid",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "120f6032-cda8-4cb5-a9ee-63ada1ef353f",
+    "intent": "weather.context_weather.comment_address.&.date-time"
+  }
+]

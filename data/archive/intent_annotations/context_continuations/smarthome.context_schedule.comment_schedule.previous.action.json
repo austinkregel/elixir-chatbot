@@ -1,0 +1,330 @@
+[
+  {
+    "text": "do it everyday",
+    "tokens": [
+      "do",
+      "it",
+      "everyday"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "everyday",
+        "type": "recurrence",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "391b301d-3cb3-4259-83d4-a92fd8508773",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  },
+  {
+    "text": "weekly",
+    "tokens": [
+      "weekly"
+    ],
+    "pos_tags": [
+      "ADJ"
+    ],
+    "entities": [
+      {
+        "text": "weekly",
+        "type": "recurrence",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "84531d03-b2a7-4860-b92b-1c65b23aa3c8",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  },
+  {
+    "text": "ok and repeat daily",
+    "tokens": [
+      "ok",
+      "and",
+      "repeat",
+      "daily"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "CONJ",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [
+      {
+        "text": "daily",
+        "type": "recurrence",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "4a1994ea-265a-48c9-90a0-20c61d8c96c6",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  },
+  {
+    "text": "it should be scheduled at 9 am",
+    "tokens": [
+      "it",
+      "should",
+      "be",
+      "scheduled",
+      "at",
+      "9",
+      "am"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "VERB",
+      "ADP",
+      "NUM",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "at 9 am",
+        "type": "date_time",
+        "start": 4,
+        "end": 6
+      }
+    ],
+    "id": "eea887d0-37ea-4db1-9d81-d430c51be275",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  },
+  {
+    "text": "and repeat every day please",
+    "tokens": [
+      "and",
+      "repeat",
+      "every",
+      "day",
+      "please"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "every day",
+        "type": "recurrence",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "722ba99b-c135-49de-b716-c429f1f399e5",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  },
+  {
+    "text": "and schedule for 9 am every day",
+    "tokens": [
+      "and",
+      "schedule",
+      "for",
+      "9",
+      "am",
+      "every",
+      "day"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "for 9 am",
+        "type": "date_time",
+        "start": 2,
+        "end": 4
+      },
+      {
+        "text": "every day",
+        "type": "recurrence",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "a7e1694b-aeba-481f-9ecd-2d091c1b6cdc",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  },
+  {
+    "text": "at 7 pm",
+    "tokens": [
+      "at",
+      "7",
+      "pm"
+    ],
+    "pos_tags": [
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "at 7 pm",
+        "type": "date_time",
+        "start": 0,
+        "end": 2
+      }
+    ],
+    "id": "d622a507-24b3-4f8f-a65f-fd80f3b486af",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  },
+  {
+    "text": "schedule weekly",
+    "tokens": [
+      "schedule",
+      "weekly"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "weekly",
+        "type": "recurrence",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "7972c548-86c2-4c74-a8ff-807dce5584e0",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  },
+  {
+    "text": "at 7 am",
+    "tokens": [
+      "at",
+      "7",
+      "am"
+    ],
+    "pos_tags": [
+      "ADP",
+      "NUM",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "at 7 am",
+        "type": "date_time",
+        "start": 0,
+        "end": 2
+      }
+    ],
+    "id": "37d4e208-2ad0-4f16-a894-c93442bf0317",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  },
+  {
+    "text": "it should be repeated every day at 8 am",
+    "tokens": [
+      "it",
+      "should",
+      "be",
+      "repeated",
+      "every",
+      "day",
+      "at",
+      "8",
+      "am"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "every day",
+        "type": "recurrence",
+        "start": 4,
+        "end": 5
+      },
+      {
+        "text": "at 8 am",
+        "type": "date_time",
+        "start": 6,
+        "end": 8
+      }
+    ],
+    "id": "82d267a5-e5a7-4b96-a3c2-a0034ee6cef4",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  },
+  {
+    "text": "every day",
+    "tokens": [
+      "every",
+      "day"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "every day",
+        "type": "recurrence",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "5b7aa292-48cd-438e-9b44-72fe9826fa1b",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  },
+  {
+    "text": "do it every morning at 6 am",
+    "tokens": [
+      "do",
+      "it",
+      "every",
+      "morning",
+      "at",
+      "6",
+      "am"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "every morning",
+        "type": "recurrence",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "6 am",
+        "type": "date_time",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "e03b264d-7065-476f-8795-ed10d8d52bbb",
+    "intent": "smarthome.context_schedule.comment_schedule.previous.action"
+  }
+]
