@@ -1,62 +1,4 @@
 {
-  "Default Fallback Intent": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "My apologies, I am not equipt to comprehend human rational. Your words are lost one me."
-      },
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "I have no idea what you're talking about."
-      },
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "I cannot, yet, answer that question."
-      },
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "I'm sorry, but you have a lot to learn before you're ready to save anyone."
-      },
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "I cannot help with that at the moment, I'm busy finding the cure for cancer."
-      },
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "You can't be serious. That's a complex question. I don't have the computing power for that."
-      }
-    ]
-  },
-  "Default Welcome Intent": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "Hi! How are you doing?"
-      },
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "Hello! How can I help you?"
-      },
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "Good day! What can I do for you today?"
-      },
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "Greetings! How can I assist?"
-      }
-    ]
-  },
   "account.balance.check": {
     "templates": [
       {
@@ -99,15 +41,6 @@
       }
     ]
   },
-  "account.query": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Let me check your account."
-      }
-    ]
-  },
   "account.spending.check": {
     "templates": [
       {
@@ -119,20 +52,6 @@
         "condition": null,
         "source": "dialogflow",
         "text": "Here are your withdrawals for that date:"
-      }
-    ]
-  },
-  "action.request": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "I'll do my best to help with that."
-      },
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "What would you like me to do?"
       }
     ]
   },
@@ -302,25 +221,6 @@
       }
     ]
   },
-  "dialog.continuation": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Go on, I'm listening."
-      },
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Tell me more."
-      },
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "I see. What else?"
-      }
-    ]
-  },
   "display.enhance": {
     "templates": [
       {
@@ -345,20 +245,6 @@
         "condition": null,
         "source": "custom",
         "text": "Zooming in."
-      }
-    ]
-  },
-  "information.request": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Let me find that information for you."
-      },
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Looking that up now."
       }
     ]
   },
@@ -431,20 +317,6 @@
       }
     ]
   },
-  "meta.trust_check": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "I aim to be honest and transparent. If I'm not sure about something, I'll let you know."
-      },
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "I always try to give you accurate information. If I'm uncertain, I'll say so."
-      }
-    ]
-  },
   "music.play": {
     "templates": [
       {
@@ -461,15 +333,6 @@
         "condition": null,
         "source": "custom",
         "text": "What would you like me to play?"
-      }
-    ]
-  },
-  "music.player": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "I don't have music player controls connected right now, but I understand what you're asking for."
       }
     ]
   },
@@ -586,69 +449,6 @@
       }
     ]
   },
-  "music.skip": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Skipping this track."
-      }
-    ]
-  },
-  "music.stop": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Stopping playback."
-      }
-    ]
-  },
-  "navigation.directions": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Let me look up directions for you."
-      }
-    ]
-  },
-  "navigation.next": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Moving to the next item."
-      }
-    ]
-  },
-  "navigation.previous": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Going back to the previous item."
-      }
-    ]
-  },
-  "navigation.repeat": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Repeating that for you."
-      }
-    ]
-  },
-  "news.query": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Let me check the latest news."
-      }
-    ]
-  },
   "news.search": {
     "templates": [
       {
@@ -660,15 +460,6 @@
         "condition": null,
         "source": "custom",
         "text": "Let me find news about that."
-      }
-    ]
-  },
-  "outfit.recommend": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Let me suggest an outfit based on the weather."
       }
     ]
   },
@@ -692,20 +483,6 @@
         "condition": null,
         "source": "custom",
         "text": "Good question. Let me check."
-      }
-    ]
-  },
-  "question.opinion": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "That's an interesting question to think about."
-      },
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "I'd need to consider that carefully."
       }
     ]
   },
@@ -734,15 +511,6 @@
         "condition": null,
         "source": "custom",
         "text": "Searching now."
-      }
-    ]
-  },
-  "search.web": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Searching the web for that."
       }
     ]
   },
@@ -1696,25 +1464,6 @@
       }
     ]
   },
-  "smalltalk.backchannel": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Mm-hmm."
-      },
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "I see."
-      },
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Right."
-      }
-    ]
-  },
   "smalltalk.compliment": {
     "templates": [
       {
@@ -1726,33 +1475,6 @@
         "condition": null,
         "source": "custom",
         "text": "You're too nice!"
-      }
-    ]
-  },
-  "smalltalk.confirmation.cancel": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Okay"
-      }
-    ]
-  },
-  "smalltalk.confirmation.no": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Okay"
-      }
-    ]
-  },
-  "smalltalk.confirmation.yes": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Okay"
       }
     ]
   },
@@ -2446,15 +2168,6 @@
       }
     ]
   },
-  "smalltalk.user.age": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Age is just a number. What matters is how you feel!"
-      }
-    ]
-  },
   "smalltalk.user.angry": {
     "templates": [
       {
@@ -2920,20 +2633,6 @@
       }
     ]
   },
-  "smalltalk.user.location": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Sounds like a nice place!"
-      },
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "I've heard good things about there."
-      }
-    ]
-  },
   "smalltalk.user.lonely": {
     "templates": [
       {
@@ -3080,25 +2779,6 @@
       }
     ]
   },
-  "smalltalk.user.name": {
-    "templates": [
-      {
-        "condition": "has_entity:person",
-        "source": "custom",
-        "text": "That's a great name, $person!"
-      },
-      {
-        "condition": "has_entity:person",
-        "source": "custom",
-        "text": "Nice name! I'll remember that."
-      },
-      {
-        "condition": "missing_entity:person",
-        "source": "custom",
-        "text": "What's your name?"
-      }
-    ]
-  },
   "smalltalk.user.needs_advice": {
     "templates": [
       {
@@ -3110,15 +2790,6 @@
         "condition": null,
         "source": "dialogflow",
         "text": "Probably I won't be able to give you the right answer straight away."
-      }
-    ]
-  },
-  "smalltalk.user.origin": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "That's interesting! Tell me more about where you're from."
       }
     ]
   },
@@ -3759,33 +3430,6 @@
       }
     ]
   },
-  "smarthome.heating.schedule.down": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling a temperature decrease."
-      }
-    ]
-  },
-  "smarthome.heating.schedule.set": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling the temperature setting."
-      }
-    ]
-  },
-  "smarthome.heating.schedule.up": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling a temperature increase."
-      }
-    ]
-  },
   "smarthome.heating.set": {
     "templates": [
       {
@@ -3813,24 +3457,6 @@
       }
     ]
   },
-  "smarthome.heating.switch.schedule.off": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling the heating to turn off."
-      }
-    ]
-  },
-  "smarthome.heating.switch.schedule.on": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling the heating to turn on."
-      }
-    ]
-  },
   "smarthome.heating.up": {
     "templates": [
       {
@@ -3851,42 +3477,6 @@
         "condition": null,
         "source": "custom",
         "text": "Making it a bit warmer."
-      }
-    ]
-  },
-  "smarthome.lights.brightness.schedule.down": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling the lights to dim."
-      }
-    ]
-  },
-  "smarthome.lights.brightness.schedule.up": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling a brightness increase."
-      }
-    ]
-  },
-  "smarthome.lights.switch.schedule.off": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling the lights to turn off."
-      }
-    ]
-  },
-  "smarthome.lights.switch.schedule.on": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling the lights to turn on."
       }
     ]
   },
@@ -3959,42 +3549,6 @@
         "condition": null,
         "source": "custom",
         "text": "Opening the lock."
-      }
-    ]
-  },
-  "smarthome.locks.schedule.close": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling it to close."
-      }
-    ]
-  },
-  "smarthome.locks.schedule.lock": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling the lock."
-      }
-    ]
-  },
-  "smarthome.locks.schedule.open": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling it to open."
-      }
-    ]
-  },
-  "smarthome.locks.schedule.unlock": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "custom",
-        "text": "Scheduling an unlock."
       }
     ]
   },
@@ -4130,20 +3684,6 @@
         "condition": null,
         "source": "custom",
         "text": "I'm still learning. Can you say that a different way?"
-      }
-    ]
-  },
-  "weather": {
-    "templates": [
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "Okay, looking up the weather for $address"
-      },
-      {
-        "condition": null,
-        "source": "dialogflow",
-        "text": "Okay, looking up the weather for $address on $date-time"
       }
     ]
   },
