@@ -4,8 +4,9 @@ defmodule Mix.Tasks.Templates.Reconcile do
   @moduledoc """
   Brings `priv/response/templates.json` into line with `priv/analysis/intent_registry.json`.
 
-      mix templates.reconcile          # report only
-      mix templates.reconcile --save   # apply the resolved renames
+      mix templates.reconcile           # report only
+      mix templates.reconcile --save    # apply the resolved renames
+      mix templates.reconcile --retire  # drop the keys graded retire
 
   ## What it applies
 
@@ -41,13 +42,24 @@ defmodule Mix.Tasks.Templates.Reconcile do
   key cited only by `cleanup_gold_standard.ex` is cited by a table of labels
   someone already renamed away from, which is evidence it is dead rather than
   evidence it is live.
+
+  One grade does not come from references at all. A key that is a dotted prefix of
+  registry keys without being registered itself names a *namespace*: `weather` is
+  the parent of `weather.query` and four siblings. A name search cannot tell that
+  from an intent called `weather`, since the string occurs wherever the domain is
+  named, so the registry's structure decides it and the search never runs.
+
+  `--retire` deletes the keys graded retire and **refuses while any key is
+  undecided**, so a key the grader cannot place is never swept into a deletion.
+  Removals are recorded by the commit, `templates.json` being tracked, and printed
+  grouped by grade so the commit message can carry them.
   """
 
   use Mix.Task
 
   @requirements ["app.config"]
 
-  @switches [save: :boolean]
+  @switches [save: :boolean, retire: :boolean]
 
   @registry_path "analysis/intent_registry.json"
   @templates_path "response/templates.json"
@@ -63,11 +75,6 @@ defmodule Mix.Tasks.Templates.Reconcile do
   # This task quotes example labels in its own moduledoc, which would otherwise
   # grade them as live.
   @self "templates_reconcile.ex"
-
-  # A label short enough to occur as a domain or a bare word cannot be graded by
-  # grep: `"weather"` appears wherever the weather *domain* is named. Graded
-  # UNGRADEABLE rather than reported as reachable on a match that proves nothing.
-  @ungradeable_by_grep ~w(weather unknown message smarthome)
 
   @impl Mix.Task
   def run(args) do
@@ -85,12 +92,14 @@ defmodule Mix.Tasks.Templates.Reconcile do
     {resolved, unresolved} =
       Enum.split_with(orphans, fn key -> Map.has_key?(registry, transform(key)) end)
 
-    report(templates, registry, resolved, unresolved, sa_targets, load_sources())
+    graded = grade_all(unresolved, registry, sa_targets, load_sources())
 
-    if opts[:save] do
-      save!(templates, resolved)
-    else
-      Mix.shell().info("\n  Report only. Pass --save to apply the #{length(resolved)} resolved renames.\n")
+    report(templates, registry, resolved, graded)
+
+    cond do
+      opts[:save] -> save!(templates, resolved)
+      opts[:retire] -> retire!(templates, graded)
+      true -> Mix.shell().info("\n  Report only. Pass --save to apply the #{length(resolved)} resolved renames, or --retire to drop the keys graded retire.\n")
     end
   end
 
@@ -135,6 +144,51 @@ defmodule Mix.Tasks.Templates.Reconcile do
     Enum.uniq_by(templates, fn t -> {Map.get(t, "text"), Map.get(t, "condition")} end)
   end
 
+  # Deletes exactly the keys the grader could prove unreachable, and refuses while
+  # any key is undecided rather than sweeping "could not grade this" into a
+  # deletion. What was removed is recorded by the commit, since templates.json is
+  # tracked; the list is printed so the commit can carry it.
+  defp retire!(templates, graded) do
+    undecided = for {key, {:undecided, _g, _w}} <- graded, do: key
+
+    if undecided != [] do
+      Mix.raise("""
+      templates.reconcile --retire: #{length(undecided)} keys are undecided.
+
+      #{Enum.map_join(undecided, "\n", &("  " <> &1))}
+
+      A key the grader cannot place is not a key to delete. Decide it, or teach the
+      grader the evidence that places it, and run again.
+      """)
+    end
+
+    retiring = for {key, {:retire, grade, _w}} <- graded, do: {key, grade}
+
+    if retiring == [] do
+      Mix.shell().info("\n  Nothing graded retire. templates.json unchanged.\n")
+    else
+      kept = Enum.reduce(retiring, templates, fn {key, _grade}, acc -> Map.delete(acc, key) end)
+      dropped = Enum.sum(for {key, _g} <- retiring, do: length(get_in(templates, [key, "templates"]) || []))
+
+      File.write!(priv(@templates_path), encode_sorted!(kept) <> "\n")
+
+      Mix.shell().info("")
+      Mix.shell().info("  RETIRED #{length(retiring)} keys, #{dropped} templates:")
+
+      retiring
+      |> Enum.group_by(&elem(&1, 1), &elem(&1, 0))
+      |> Enum.sort_by(fn {grade, _} -> order(grade) end)
+      |> Enum.each(fn {grade, keys} ->
+        Mix.shell().info("    #{grade}:")
+        Enum.each(Enum.sort(keys), &Mix.shell().info("      #{&1}"))
+      end)
+
+      Mix.shell().info("")
+      Mix.shell().info("  keys    #{map_size(templates)} -> #{map_size(kept)}")
+      Mix.shell().info("")
+    end
+  end
+
   # `Jason.encode!` emits a map in Erlang's iteration order, which is stable for a
   # given map but not for a given *content*: adding or removing one key reshuffles
   # the whole file. Writing 242 keys that way turns a 24-key rename into a 3,100
@@ -154,7 +208,7 @@ defmodule Mix.Tasks.Templates.Reconcile do
 
   # -- reporting --------------------------------------------------------------
 
-  defp report(templates, registry, resolved, unresolved, sa_targets, sources) do
+  defp report(templates, registry, resolved, graded) do
     corpus_missing = corpus_intents_without_templates(templates, registry, resolved)
 
     Mix.shell().info("")
@@ -163,9 +217,12 @@ defmodule Mix.Tasks.Templates.Reconcile do
     Mix.shell().info(String.duplicate("=", 72))
     Mix.shell().info("  template keys          #{map_size(templates)}")
     Mix.shell().info("  registry entries       #{map_size(registry)}")
-    Mix.shell().info("  keys not in registry   #{length(resolved) + length(unresolved)}")
+    Mix.shell().info("  keys not in registry   #{length(resolved) + length(graded)}")
     Mix.shell().info("    resolved by transform  #{length(resolved)}")
-    Mix.shell().info("    unresolved             #{length(unresolved)}")
+    Mix.shell().info("    unresolved             #{length(graded)}")
+    Mix.shell().info("      keep                   #{count(graded, :keep)}")
+    Mix.shell().info("      retire                 #{count(graded, :retire)}")
+    Mix.shell().info("      undecided              #{count(graded, :undecided)}")
     Mix.shell().info("  registry intents with no template, after applying: #{corpus_missing}")
     Mix.shell().info("")
 
@@ -183,18 +240,17 @@ defmodule Mix.Tasks.Templates.Reconcile do
       Mix.shell().info("")
     end
 
-    if unresolved != [] do
-      Mix.shell().info("  UNRESOLVED — left untouched, each needs a decision:")
+    if graded != [] do
+      Mix.shell().info("  UNRESOLVED — graded by reachability, not by registry membership:")
       Mix.shell().info("")
 
-      unresolved
-      |> Enum.map(fn key -> {key, grade(key, sa_targets, sources)} end)
-      |> Enum.group_by(fn {_k, {g, _w}} -> g end)
-      |> Enum.sort_by(fn {g, _} -> order(g) end)
+      graded
+      |> Enum.group_by(fn {_k, {_d, grade, _w}} -> grade end)
+      |> Enum.sort_by(fn {grade, _} -> order(grade) end)
       |> Enum.each(fn {grade, entries} ->
         Mix.shell().info("    #{grade} (#{length(entries)}):")
 
-        Enum.each(entries, fn {key, {_g, where}} ->
+        Enum.each(entries, fn {key, {_d, _g, where}} ->
           n = length(get_in(templates, [key, "templates"]) || [])
           Mix.shell().info("      #{String.pad_trailing(key, 44)} #{n} tmpl   #{where}")
         end)
@@ -204,34 +260,69 @@ defmodule Mix.Tasks.Templates.Reconcile do
     end
   end
 
-  # How a label earns "still reachable": named on a live path, or routed to by the
-  # speech-act map. A hit only in a rename table is the opposite of evidence.
-  defp grade(key, sa_targets, sources) do
+  defp count(graded, disposition) do
+    Enum.count(graded, fn {_k, {d, _g, _w}} -> d == disposition end)
+  end
+
+  defp grade_all(keys, registry, sa_targets, sources) do
+    registry_keys = registry |> Map.keys() |> MapSet.new()
+    namespaces = namespaces(registry_keys)
+    Enum.map(keys, fn key -> {key, grade(key, registry_keys, namespaces, sa_targets, sources)} end)
+  end
+
+  # Every dotted prefix of a registry key, excluding the keys themselves. These
+  # name a namespace rather than an intent: `weather` is a prefix of
+  # `weather.query` and four siblings and is not itself registered.
+  defp namespaces(keys) do
+    for key <- keys,
+        parts = String.split(key, "."),
+        n <- 1..(length(parts) - 1)//1,
+        prefix = parts |> Enum.take(n) |> Enum.join("."),
+        not MapSet.member?(keys, prefix),
+        into: MapSet.new(),
+        do: prefix
+  end
+
+  # Each clause returns {disposition, grade, evidence}. How a label earns
+  # "reachable": routed to by the speech-act map, or named on a live path. A hit
+  # only in a rename table is the opposite of evidence.
+  #
+  # The namespace test runs before the name search and not after, because a name
+  # search cannot tell an intent label from a domain of the same spelling —
+  # `"weather"` occurs wherever the weather *domain* is named — whereas the
+  # registry's own structure settles which of the two a string is.
+  defp grade(key, registry_keys, namespaces, sa_targets, sources) do
     cond do
       MapSet.member?(sa_targets, key) ->
-        {"REACHABLE — speech_act_intent_map routes to it", "keep"}
+        {:keep, "REACHABLE — speech_act_intent_map routes to it", "routed to"}
 
-      key in @ungradeable_by_grep ->
-        {"UNGRADEABLE — too generic to grep for", "decide by hand"}
+      MapSet.member?(namespaces, key) ->
+        {:retire, "NAMESPACE, NOT AN INTENT — a registry key's prefix",
+         "parent of " <> Enum.join(children(key, registry_keys), ", ")}
 
       true ->
         case live_references(key, sources) do
           [] ->
             case rename_map_references(key, sources) do
-              [] -> {"NO REFERENCE ANYWHERE", "-"}
-              files -> {"RENAME-TABLE ONLY — renamed away from", Enum.join(files, ", ")}
+              [] -> {:retire, "NO REFERENCE ANYWHERE", "-"}
+              files -> {:retire, "RENAME-TABLE ONLY — renamed away from", Enum.join(files, ", ")}
             end
 
           files ->
-            {"REACHABLE — named on a live path", Enum.join(files, ", ")}
+            {:keep, "REACHABLE — named on a live path", Enum.join(files, ", ")}
         end
     end
   end
 
+  defp children(key, registry_keys) do
+    registry_keys |> Enum.filter(&String.starts_with?(&1, key <> ".")) |> Enum.sort()
+  end
+
   defp order("REACHABLE — speech_act_intent_map routes to it"), do: 0
   defp order("REACHABLE — named on a live path"), do: 1
-  defp order("RENAME-TABLE ONLY — renamed away from"), do: 2
-  defp order(_), do: 3
+  defp order("NAMESPACE, NOT AN INTENT — a registry key's prefix"), do: 2
+  defp order("RENAME-TABLE ONLY — renamed away from"), do: 3
+  defp order(_), do: 4
 
   defp live_references(key, sources) do
     key |> referencing_files(sources) |> Enum.reject(&(&1 in @rename_map_files))
@@ -242,8 +333,8 @@ defmodule Mix.Tasks.Templates.Reconcile do
   end
 
   # Matches the label as a complete quoted string, so `"music.stop"` does not hit
-  # on `"music.stop_playback"`. It cannot tell an intent label from a same-named
-  # domain, which is what @ungradeable_by_grep exists for.
+  # on `"music.stop_playback"`. It cannot tell an intent label from a domain of the
+  # same spelling, which is why the namespace test runs first.
   defp referencing_files(key, sources) do
     needle = ~s("#{key}")
 
