@@ -531,25 +531,6 @@ defmodule Mix.Tasks.GenMicroData do
     json = Jason.encode!(data, pretty: true)
     File.write!(path, json)
     Mix.shell().info("Wrote #{length(data)} examples to #{path}")
-    write_environment(name)
-  end
-
-  # The vectors above were computed against the POS tagger, the speech-act voter,
-  # the lexicon, the gazetteer and the AGE graph as they are right now. That state
-  # is recorded beside the data rather than at training time, because it describes
-  # the vectors and not the fitting: a model stamped with the environment in force
-  # when `mix train_micro` ran would be asserting something about data it did not
-  # compute.
-  #
-  # A sidecar rather than a key in the data file, which is a plain JSON array that
-  # several readers index into positionally. The data file's own SHA-256 keeps the
-  # pair together: regenerate the data without its sidecar and
-  # `MicroProvenance.check_inputs!/3` fires on the changed hash.
-  defp write_environment(name) do
-    path = Brain.ML.MicroProvenance.training_environment_path(name)
-    env = Brain.Analysis.RunProvenance.vector_environment!()
-    File.write!(path, Jason.encode!(env, pretty: true) <> "\n")
-    Mix.shell().info("  environment #{env.digest} -> #{Path.basename(path)}")
   end
 
   defp show_stats(name, data) do
