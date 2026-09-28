@@ -74,6 +74,53 @@ defmodule Brain.Analysis.RunProvenance do
   end
 
   @doc """
+  The state a feature vector's *values* depend on, as `%{digest, components}`.
+
+  `schema_fingerprint!/0` says whether the vector's 343 dimensions still mean the
+  same things. It says nothing about whether the same text still produces the same
+  numbers, and that is a separate question with a separate answer: measured
+  2026-09-28, the deployed models' stored training vectors do not reproduce, while
+  the vector is otherwise deterministic — identical within a process and across a
+  fresh one. The schema had not moved. What moved was this.
+
+  The vector is computed from a `Pipeline.analyze_chunk/2` result, so it inherits
+  everything that analysis reads:
+
+  - `upstream_models` — the `.term` models whose *output* the vector embeds. The
+    POS tagger feeds `pos_distribution`, the supersense groups and, through the
+    speech-act voter, `speech_act` and `speech_act_wh_interaction`; the sentiment
+    and entity models feed their own groups. Only the top level of the models
+    directory is read: `micro/` holds the classifiers that *consume* vectors, and
+    hashing those into their own provenance would be circular, while `default/`,
+    `lattice/`, `lstm/` and `ouro/` are response-side and never reach a vector.
+  - `lexicon` — WordNet's loaded size. `lexical_domains` is 45 dimensions and the
+    three supersense groups another 45. `hyp_cache_size` is deliberately excluded:
+    it is a cache that grows as queries run, so including it would report drift on
+    every process that had done some work.
+  - `gazetteer` — entity and prefix counts, which feed the `entity` group.
+  - `age_graph` — the same parent-type digest `age_graph!/0` records, because
+    group 23's names come from it.
+
+  `load_time_ms` is excluded from both stats maps for the same reason as the
+  hypernym cache: it is a property of the run, not of the data.
+
+  The digest is for comparison; the components are kept so a mismatch can say
+  which one moved, exactly as `extractor!/0` keeps `group_widths` beside its
+  fingerprint.
+  """
+  @spec vector_environment!() :: map()
+  def vector_environment! do
+    components = %{
+      upstream_models: upstream_models!(),
+      lexicon: lexicon_state!(),
+      gazetteer: gazetteer_state!(),
+      age_graph: age_graph!()
+    }
+
+    %{digest: map_digest(components), components: components}
+  end
+
+  @doc """
   SHA-256 of one file, as `%{name:, version:, sha256:}`.
 
   The same record shape `Brain.Training.POS.inputs/0` stamps into a POS model,
@@ -201,6 +248,73 @@ defmodule Brain.Analysis.RunProvenance do
         Map.new(paths, fn p -> {Path.relative_to(p, path), sha256_file!(p)} end)
     end
   end
+
+  # Top level only, and not recursive: see vector_environment!/0 on why micro/ and
+  # the response-side subdirectories are excluded.
+  defp upstream_models! do
+    path = models_path!()
+
+    case path |> Path.join("*.term") |> Path.wildcard() |> Enum.sort() do
+      [] ->
+        raise "RunProvenance: no upstream .term models directly under #{path}. The feature " <>
+                "vector embeds their output, so a vector taken now cannot be compared to one " <>
+                "taken when they were present."
+
+      paths ->
+        Map.new(paths, fn p -> {Path.basename(p), sha256_file!(p)} end)
+    end
+  end
+
+  defp lexicon_state! do
+    stats = Brain.ML.Lexicon.stats()
+
+    for key <- [:word_count, :synset_count, :hypernym_count, :morph_count], into: %{} do
+      case Map.get(stats, key) do
+        n when is_integer(n) and n > 0 ->
+          {key, n}
+
+        other ->
+          raise "RunProvenance: Brain.ML.Lexicon.stats/0 reports #{key}=#{inspect(other)}. " <>
+                  "A vector whose lexical groups were built against an unloaded lexicon is not " <>
+                  "comparable to one built against a loaded one."
+      end
+    end
+  end
+
+  defp gazetteer_state! do
+    stats = Brain.ML.Gazetteer.stats()
+
+    unless Map.get(stats, :loaded) == true do
+      raise "RunProvenance: the gazetteer reports loaded=#{inspect(Map.get(stats, :loaded))}, " <>
+              "so the entity feature group would be built against nothing."
+    end
+
+    for key <- [:entities, :prefixes, :entity_types], into: %{} do
+      case Map.get(stats, key) do
+        n when is_integer(n) and n > 0 -> {key, n}
+        other -> raise "RunProvenance: Brain.ML.Gazetteer.stats/0 reports #{key}=#{inspect(other)}"
+      end
+    end
+  end
+
+  # Digests a nested map of scalars by rendering it in sorted key order, so the
+  # result depends on the contents and not on map iteration order.
+  defp map_digest(map) do
+    map
+    |> render_sorted()
+    |> then(&:crypto.hash(:sha256, &1))
+    |> Base.encode16(case: :lower)
+    |> binary_part(0, 16)
+  end
+
+  defp render_sorted(map) when is_map(map) do
+    map
+    |> Enum.sort_by(fn {k, _v} -> to_string(k) end)
+    |> Enum.map_join("\n", fn {k, v} -> "#{k}=#{render_sorted(v)}" end)
+  end
+
+  defp render_sorted(list) when is_list(list), do: Enum.map_join(list, ",", &render_sorted/1)
+  defp render_sorted(other), do: to_string(other)
 
   defp datasets! do
     # Brain.data_path/1, not File.cwd!/0: an umbrella run has two working
