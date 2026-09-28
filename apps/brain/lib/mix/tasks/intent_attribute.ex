@@ -23,18 +23,16 @@ defmodule Mix.Tasks.Intent.Attribute do
       reconstructed from the thresholds, so it reports what the code did
     * `final` — `analysis.intent`, after `ContextualEntityInferrer.infer/5`
 
-  Recording `determined` and `final` separately matters because
-  `ContextualEntityInferrer` can rewrite the intent *after* `determine_intent/6`
-  has returned. It is a fourth override path and the plan for this work listed
-  three; a reconstruction from the thresholds alone would have charged its
-  mistakes to the domain-conflict branch.
+  `determined` and `final` are recorded separately because
+  `ContextualEntityInferrer` can rewrite the intent after `determine_intent/6` has
+  returned. Attributing from the thresholds alone would charge its mistakes to the
+  domain-conflict branch.
 
   ## What it does not do
 
-  It changes no threshold and tunes nothing. The plan's instruction was to measure
-  the confidence distribution of *correct* predictions first, because a threshold
-  can only be worth moving if correct predictions are actually exposed to the
-  branch it guards.
+  It changes no threshold and tunes nothing. It reports the confidence
+  distribution of correct predictions, since a threshold is only worth moving when
+  correct predictions reach the branch it guards.
 
   Thresholds are read from `Brain.Analysis.Pipeline`, not copied, so the buckets
   follow the deployed values.
@@ -353,9 +351,8 @@ defmodule Mix.Tasks.Intent.Attribute do
   defp domain_of(label) when is_binary(label), do: label |> String.split(".") |> List.first()
   defp domain_of(_), do: nil
 
-  # The plan's first question: of the predictions the classifier got right, how
-  # many are even exposed to the branches guarded by these thresholds? A threshold
-  # is only worth moving if correct answers are passing through it.
+  # How many correct predictions reach the branches these thresholds guard. A
+  # threshold is only worth moving if correct answers pass through it.
   defp report_exposure(rows) do
     floor_at = Pipeline.low_confidence_floor()
     threshold = Pipeline.disambiguation_threshold()
