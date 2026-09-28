@@ -1,23 +1,20 @@
 # Archived intent annotations
 
-38 files, 651 rows, moved out of `data/training/intents/` on 2026-09-28.
+38 files, 651 rows, moved out of `data/training/intents/`.
 
-Everything else in `data/training/intents/` is **derived output**: it is generated
-from `data/intents/*_usersays_en.json` by `scripts/generate_pos_annotations.py`,
-which builds each filename by taking the Dialogflow intent name and applying
-`name.replace(' - ', '.').replace(' ', '.')`, then adds `tokens` and `pos_tags`
-with NLTK. Re-running that script reproduces those files.
+Everything else in `data/training/intents/` is **derived output**, generated from
+`data/intents/*_usersays_en.json` by `scripts/generate_pos_annotations.py`. That
+script builds each filename from the Dialogflow intent name via
+`name.replace(' - ', '.').replace(' ', '.')` and adds `tokens` and `pos_tags` with
+NLTK, so re-running it reproduces those files.
 
-**These 38 cannot be reproduced.** No file in `data/intents/` mangles to any of
-their names any more, so the source they were generated from is gone. `data/` is
-ignored by git (`.gitignore`, `/data/*`), so they had no history either — deleting
-them would have been final. That is why they are here, and why `!/data/archive/`
-was added to `.gitignore`: without the exception, moving them aside would have left
-them exactly as losable as they were.
+**These 38 cannot be reproduced.** No name in `data/intents/` mangles to any of
+them, so the source they came from is gone, and `/data/*` is gitignored so they
+carry no history either. `!/data/archive/` in `.gitignore` is what keeps them.
 
-Selection was by the canonical join — a file qualifies only when no current
-`data/intents/` name mangles to it. Selecting by matching `schedule` in the name
-would have caught `calendar.schedule`, a live registry intent.
+A file qualifies by that join alone — no current `data/intents/` name mangles to
+it. Selecting instead by matching `schedule` in the filename would also catch
+`calendar.schedule`, which is a live registry intent.
 
 ## device_scheduling/ — 17 files, 344 rows
 
