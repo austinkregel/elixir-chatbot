@@ -1,0 +1,48 @@
+{
+  "rows": 822,
+  "bands": [
+    {
+      "upper": 0.5,
+      "lower": 0.3,
+      "n": 332,
+      "p_correct": 0.20180722891566266
+    },
+    {
+      "upper": 0.6,
+      "lower": 0.5,
+      "n": 193,
+      "p_correct": 0.27979274611398963
+    },
+    {
+      "upper": 0.7,
+      "lower": 0.6,
+      "n": 131,
+      "p_correct": 0.29770992366412213
+    },
+    {
+      "upper": 0.8,
+      "lower": 0.7,
+      "n": 69,
+      "p_correct": 0.3333333333333333
+    },
+    {
+      "upper": 0.9,
+      "lower": 0.8,
+      "n": 49,
+      "p_correct": 0.4489795918367347
+    },
+    {
+      "upper": 1.0,
+      "lower": 0.9,
+      "n": 48,
+      "p_correct": 0.6666666666666666
+    }
+  ],
+  "excluded": {
+    "augmented": 55,
+    "materialized": 123
+  },
+  "fitted_at": "2026-09-29T07:48:25.794329Z",
+  "fitted_on": "dialogflow",
+  "outcome": "pipeline"
+}

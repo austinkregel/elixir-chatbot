@@ -45,7 +45,9 @@ defmodule Mix.Tasks.Intent.Attribute do
 
   @requirements ["app.start"]
 
-  @switches [verbose: :boolean]
+  @switches [verbose: :boolean, save_calibration: :boolean]
+
+  @calibration_path "analysis/intent_calibration.json"
 
   @topic "brain:analysis"
 
@@ -79,7 +81,113 @@ defmodule Mix.Tasks.Intent.Attribute do
     rows = attach_methods!(rows, events)
 
     report(rows, opts[:verbose] || false)
+
+    if opts[:save_calibration], do: save_calibration!(rows)
   end
+
+  # Turns the measured bands into a map from reported confidence to the share of
+  # those rows the pipeline actually got right.
+  #
+  # Fitted against the pipeline's answer rather than the classifier's, because
+  # that is what reaches the user, and on Dialogflow rows only: the materialized
+  # and augmented rows measure 27.6% and 18.2% against 29.0%, so including them
+  # would calibrate against text nobody types.
+  #
+  # Pool-adjacent-violators enforces monotonicity. Raw bands are not monotone --
+  # 0.3-0.4 and 0.4-0.5 invert on 110 against 305 rows -- and a map that says
+  # more confidence means less accuracy cannot be used as a gate.
+  defp save_calibration!(rows) do
+    genuine = Enum.filter(rows, &(&1.provenance == "dialogflow" and is_number(&1.confidence)))
+
+    if length(genuine) < 200 do
+      Mix.raise("""
+      intent.attribute --save-calibration: only #{length(genuine)} Dialogflow rows with a
+      confidence, which is too few to fit a calibration map worth trusting.
+      """)
+    end
+
+    bands =
+      genuine
+      |> Enum.group_by(fn row -> min(trunc(row.confidence * 10), 9) end)
+      |> Enum.sort_by(&elem(&1, 0))
+      |> Enum.map(fn {decile, group} ->
+        n = length(group)
+
+        %{
+          lower: decile / 10,
+          upper: (decile + 1) / 10,
+          n: n,
+          mean_confidence: Enum.sum(Enum.map(group, & &1.confidence)) / n,
+          observed: Enum.count(group, &(&1.final == &1.gold)) / n
+        }
+      end)
+
+    fitted = pava(bands)
+
+    record = %{
+      fitted_at: DateTime.utc_now() |> DateTime.to_iso8601(),
+      fitted_on: "dialogflow",
+      outcome: "pipeline",
+      rows: length(genuine),
+      excluded: %{
+        materialized: Enum.count(rows, &(&1.provenance == "materialized")),
+        augmented: Enum.count(rows, &(&1.provenance == "augmented"))
+      },
+      bands: fitted
+    }
+
+    path = Brain.priv_path(@calibration_path)
+    File.mkdir_p!(Path.dirname(path))
+    File.write!(path, Jason.encode!(record, pretty: true) <> "\n")
+
+    Mix.shell().info("  Calibration map (#{length(genuine)} Dialogflow rows, pipeline outcome):")
+    Mix.shell().info("    reported band   rows   P(correct)   merged from")
+
+    # Iterated, not zipped against `bands`: pava/1 pools violating bands, so the
+    # fitted list is shorter and positional pairing would misalign it.
+    Enum.each(fitted, fn fit ->
+      sources =
+        bands
+        |> Enum.filter(&(&1.lower >= fit.lower and &1.upper <= fit.upper))
+        |> Enum.map_join(", ", &"#{&1.lower}-#{&1.upper} @ #{pct(&1.observed)}")
+
+      merged = if length(String.split(sources, ",")) > 1, do: sources, else: ""
+
+      Mix.shell().info(
+        "    #{String.pad_trailing("#{fit.lower}-#{fit.upper}", 15)} " <>
+          "#{String.pad_leading(to_string(fit.n), 5)}   " <>
+          "#{String.pad_leading(pct(fit.p_correct), 10)}   #{merged}"
+      )
+    end)
+
+    Mix.shell().info("")
+    Mix.shell().info("  wrote #{Path.relative_to_cwd(path)}")
+    Mix.shell().info("")
+  end
+
+  # Pool adjacent violators: while a band's rate is below its predecessor's, merge
+  # the two and use their row-weighted mean.
+  defp pava(bands) do
+    bands
+    |> Enum.map(fn b -> %{lower: b.lower, upper: b.upper, n: b.n, p_correct: b.observed} end)
+    |> Enum.reduce([], fn band, acc -> merge_while_decreasing([band | acc]) end)
+    |> Enum.reverse()
+  end
+
+  defp merge_while_decreasing([b, a | rest]) when b.p_correct < a.p_correct do
+    n = a.n + b.n
+
+    merged = %{
+      lower: a.lower,
+      upper: b.upper,
+      n: n,
+      p_correct: (a.p_correct * a.n + b.p_correct * b.n) / n
+    }
+
+    merge_while_decreasing([merged | rest])
+  end
+
+  defp merge_while_decreasing(stack), do: stack
 
   # -- inputs -----------------------------------------------------------------
 
