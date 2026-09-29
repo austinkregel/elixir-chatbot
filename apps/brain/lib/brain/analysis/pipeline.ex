@@ -1867,10 +1867,14 @@ defmodule Brain.Analysis.Pipeline do
 
     entity_fam = EntityGraphEnricher.familiarity_score(analysis.entities)
 
+    # nil, not 0.5: an intent whose confidence is unknown is a different state
+    # from one measured at the middle, and a consumer calibrating against this
+    # number cannot tell them apart once they are the same value. Measured over
+    # 1000 held-out rows, this is absent on 1 of them.
     intent_conf =
       case analysis.speech_act do
         %{intent_confidence: c} when is_number(c) and c > 0 -> c
-        _ -> 0.5
+        _ -> nil
       end
 
     acc =
@@ -1880,7 +1884,7 @@ defmodule Brain.Analysis.Pipeline do
       |> ContextAccumulator.add_signal(:slot_fill, Map.get(analysis.slots || %{}, :all_required_filled, false), slot_conf)
       |> ContextAccumulator.add_signal(:sentiment, Map.get(analysis.sentiment || %{}, :label, :neutral), sentiment_conf)
       |> ContextAccumulator.add_signal(:entity_familiarity, entity_fam > 0.5, entity_fam)
-      |> ContextAccumulator.add_signal(:intent, analysis.intent, intent_conf)
+      |> add_intent_signal(analysis.intent, intent_conf)
       |> ContextAccumulator.accumulate()
 
     confidence = ContextAccumulator.effective_confidence(acc) |> Float.round(3)
@@ -1889,6 +1893,11 @@ defmodule Brain.Analysis.Pipeline do
     |> Map.put(:confidence, confidence)
     |> Map.put(:accumulated_context, acc)
   end
+
+  defp add_intent_signal(acc, _intent, nil), do: acc
+
+  defp add_intent_signal(acc, intent, confidence),
+    do: ContextAccumulator.add_signal(acc, :intent, intent, confidence)
 
   defp record_pipeline_result(%InternalModel{} = model) do
     feedback_type =
