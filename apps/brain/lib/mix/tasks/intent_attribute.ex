@@ -97,7 +97,11 @@ defmodule Mix.Tasks.Intent.Attribute do
   # 0.3-0.4 and 0.4-0.5 invert on 110 against 305 rows -- and a map that says
   # more confidence means less accuracy cannot be used as a gate.
   defp save_calibration!(rows) do
-    genuine = Enum.filter(rows, &(&1.provenance == "dialogflow" and is_number(&1.confidence)))
+    genuine =
+      Enum.filter(rows, fn r ->
+        r.provenance == "dialogflow" and is_number(r.runtime_confidence) and
+          r.runtime_confidence > 0
+      end)
 
     if length(genuine) < 200 do
       Mix.raise("""
@@ -108,7 +112,7 @@ defmodule Mix.Tasks.Intent.Attribute do
 
     bands =
       genuine
-      |> Enum.group_by(fn row -> min(trunc(row.confidence * 10), 9) end)
+      |> Enum.group_by(fn row -> min(trunc(row.runtime_confidence * 10), 9) end)
       |> Enum.sort_by(&elem(&1, 0))
       |> Enum.map(fn {decile, group} ->
         n = length(group)
@@ -117,7 +121,7 @@ defmodule Mix.Tasks.Intent.Attribute do
           lower: decile / 10,
           upper: (decile + 1) / 10,
           n: n,
-          mean_confidence: Enum.sum(Enum.map(group, & &1.confidence)) / n,
+          mean_confidence: Enum.sum(Enum.map(group, & &1.runtime_confidence)) / n,
           observed: Enum.count(group, &(&1.final == &1.gold)) / n
         }
       end)
@@ -128,6 +132,12 @@ defmodule Mix.Tasks.Intent.Attribute do
       fitted_at: DateTime.utc_now() |> DateTime.to_iso8601(),
       fitted_on: "dialogflow",
       outcome: "pipeline",
+      # The quantity calculate_confidence/1 reads to build the accumulator's
+      # :intent signal, so the map is indexed by what the runtime looks up. The
+      # classifier's own top-1 score is a different number: measured over 999
+      # rows, never identical, mean absolute difference 7.3%, and 263 differing
+      # by more than 0.1.
+      variable: "speech_act.intent_confidence",
       rows: length(genuine),
       excluded: %{
         materialized: Enum.count(rows, &(&1.provenance == "materialized")),
@@ -270,6 +280,7 @@ defmodule Mix.Tasks.Intent.Attribute do
       gold: entry["intent"],
       classifier: classifier,
       confidence: confidence,
+      runtime_confidence: runtime_confidence(analysis),
       final: to_string(analysis.intent || "unknown"),
       # The :intent_domain micro-classifier's answer. Pass 1 puts it on the struct
       # and pass 2 carries it through, and it is the same signal ChunkProfile.domain
@@ -277,6 +288,16 @@ defmodule Mix.Tasks.Intent.Attribute do
       predicted_domain: analysis |> Map.get(:intent_domain) |> normalize_domain(),
       pass: Map.get(analysis, :pass)
     }
+  end
+
+  # What `calculate_confidence/1` reads to build the accumulator's :intent signal.
+  # Returned raw, including 0.0 and nil, so the report can count how often no
+  # signal is added at all.
+  defp runtime_confidence(analysis) do
+    case Map.get(analysis, :speech_act) do
+      %{intent_confidence: c} -> c
+      _ -> nil
+    end
   end
 
   defp normalize_domain(nil), do: nil
@@ -378,6 +399,7 @@ defmodule Mix.Tasks.Intent.Attribute do
     report_divergence(rows)
     report_domain_premise(rows)
     report_calibration(rows)
+    report_runtime_confidence(rows)
     report_provenance(rows)
     report_exposure(rows)
 
@@ -512,6 +534,56 @@ defmodule Mix.Tasks.Intent.Attribute do
         |> then(fn accs -> accs == Enum.sort(accs) end)
 
       Mix.shell().info("    accuracy rises with confidence across every band: #{monotone}")
+    end
+
+    Mix.shell().info("")
+  end
+
+  # The confidence a calibration map is fitted on and the confidence the runtime
+  # would look up are different quantities. This reports how far apart, and how
+  # often the runtime one is absent and rewritten to 0.5 by pipeline.ex.
+  defp report_runtime_confidence(rows) do
+    Mix.shell().info("  Runtime intent confidence vs the classifier's own score:")
+
+    absent = Enum.count(rows, fn r -> is_nil(r.runtime_confidence) or r.runtime_confidence <= 0 end)
+    usable = Enum.filter(rows, fn r -> is_number(r.runtime_confidence) and r.runtime_confidence > 0 end)
+
+    Mix.shell().info(
+      "    absent or zero, no :intent signal   #{absent} / #{length(rows)}  (#{pct(absent / length(rows))})"
+    )
+
+    Mix.shell().info("    carries a real value                #{length(usable)}")
+
+    if usable != [] do
+      pairs = Enum.filter(usable, &is_number(&1.confidence))
+
+      diffs = Enum.map(pairs, fn r -> abs(r.runtime_confidence - r.confidence) end)
+      same = Enum.count(diffs, &(&1 < 1.0e-6))
+      mean_diff = Enum.sum(diffs) / length(diffs)
+
+      Mix.shell().info("")
+      Mix.shell().info("    of those, compared with the fitted quantity:")
+      Mix.shell().info("      identical                        #{same} / #{length(pairs)}")
+      Mix.shell().info("      mean absolute difference         #{pct(mean_diff)}")
+
+      Mix.shell().info(
+        "      differ by more than 0.1          #{Enum.count(diffs, &(&1 > 0.1))} / #{length(pairs)}"
+      )
+
+      acc_absent =
+        rows
+        |> Enum.filter(fn r -> is_nil(r.runtime_confidence) or r.runtime_confidence <= 0 end)
+        |> then(fn g -> if g == [], do: nil, else: Enum.count(g, &(&1.final == &1.gold)) / length(g) end)
+
+      acc_present = Enum.count(usable, &(&1.final == &1.gold)) / length(usable)
+
+      Mix.shell().info("")
+
+      if acc_absent do
+        Mix.shell().info("    pipeline accuracy where it is absent   #{pct(acc_absent)}")
+      end
+
+      Mix.shell().info("    pipeline accuracy where it is present  #{pct(acc_present)}")
     end
 
     Mix.shell().info("")
