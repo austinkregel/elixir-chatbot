@@ -268,6 +268,7 @@ defmodule Mix.Tasks.Intent.Attribute do
     report_stage(rows, "ContextualEntityInferrer", & &1.determined, & &1.final)
     report_divergence(rows)
     report_domain_premise(rows)
+    report_calibration(rows)
     report_exposure(rows)
 
     if verbose?, do: report_rows(rows)
@@ -350,6 +351,61 @@ defmodule Mix.Tasks.Intent.Attribute do
 
   defp domain_of(label) when is_binary(label), do: label |> String.split(".") |> List.first()
   defp domain_of(_), do: nil
+
+  # Does the classifier's confidence mean anything? For each decile of reported
+  # confidence, the share of those rows it actually got right. A hedge is only
+  # worth conditioning on confidence if accuracy tracks it.
+  #
+  # `gap` is mean confidence minus accuracy: positive is overconfidence. ECE is
+  # the row-weighted mean of |gap|.
+  defp report_calibration(rows) do
+    scored = Enum.filter(rows, &is_number(&1.confidence))
+
+    Mix.shell().info("  Calibration of classifier confidence (#{length(scored)} rows):")
+
+    if scored == [] do
+      Mix.shell().info("    no row reported a confidence")
+    else
+      buckets =
+        scored
+        |> Enum.group_by(fn row -> min(trunc(row.confidence * 10), 9) end)
+        |> Enum.sort_by(&elem(&1, 0))
+
+      Mix.shell().info("    band        rows   mean conf   clf acc   pipeline acc   gap")
+
+      ece =
+        Enum.reduce(buckets, 0.0, fn {decile, group}, acc ->
+          n = length(group)
+          mean_conf = Enum.sum(Enum.map(group, & &1.confidence)) / n
+          clf_acc = Enum.count(group, &(&1.classifier == &1.gold)) / n
+          pipe_acc = Enum.count(group, &(&1.final == &1.gold)) / n
+          gap = mean_conf - clf_acc
+
+          Mix.shell().info(
+            "    #{String.pad_trailing("#{decile / 10}-#{(decile + 1) / 10}", 11)} " <>
+              "#{String.pad_leading(to_string(n), 5)}   " <>
+              "#{String.pad_leading(pct(mean_conf), 8)}   " <>
+              "#{String.pad_leading(pct(clf_acc), 7)}   " <>
+              "#{String.pad_leading(pct(pipe_acc), 12)}   " <>
+              "#{String.pad_leading(pct(gap), 6)}"
+          )
+
+          acc + n / length(scored) * abs(gap)
+        end)
+
+      Mix.shell().info("")
+      Mix.shell().info("    expected calibration error  #{pct(ece)}")
+
+      monotone =
+        buckets
+        |> Enum.map(fn {_d, g} -> Enum.count(g, &(&1.classifier == &1.gold)) / length(g) end)
+        |> then(fn accs -> accs == Enum.sort(accs) end)
+
+      Mix.shell().info("    accuracy rises with confidence across every band: #{monotone}")
+    end
+
+    Mix.shell().info("")
+  end
 
   # How many correct predictions reach the branches these thresholds guard. A
   # threshold is only worth moving if correct answers pass through it.
