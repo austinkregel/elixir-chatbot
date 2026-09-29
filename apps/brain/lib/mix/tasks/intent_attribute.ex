@@ -157,6 +157,7 @@ defmodule Mix.Tasks.Intent.Attribute do
 
     %{
       tag: tag,
+      provenance: entry["labeled_by"] || "unrecorded",
       text: text,
       gold: entry["intent"],
       classifier: classifier,
@@ -269,6 +270,7 @@ defmodule Mix.Tasks.Intent.Attribute do
     report_divergence(rows)
     report_domain_premise(rows)
     report_calibration(rows)
+    report_provenance(rows)
     report_exposure(rows)
 
     if verbose?, do: report_rows(rows)
@@ -402,6 +404,51 @@ defmodule Mix.Tasks.Intent.Attribute do
         |> then(fn accs -> accs == Enum.sort(accs) end)
 
       Mix.shell().info("    accuracy rises with confidence across every band: #{monotone}")
+    end
+
+    Mix.shell().info("")
+  end
+
+  # Accuracy split by where each held-out row came from. The corpus mixes genuine
+  # Dialogflow utterances with texts materialized back into the export and with
+  # synthetic mutations; scoring them together reports one number for three
+  # different things.
+  defp report_provenance(rows) do
+    groups = Enum.group_by(rows, & &1.provenance)
+
+    Mix.shell().info("  Held-out accuracy by provenance:")
+    Mix.shell().info("    origin          rows   clf acc   pipeline acc   mean conf")
+
+    groups
+    |> Enum.sort_by(fn {_k, g} -> -length(g) end)
+    |> Enum.each(fn {origin, group} ->
+      n = length(group)
+      clf = Enum.count(group, &(&1.classifier == &1.gold)) / n
+      pipe = Enum.count(group, &(&1.final == &1.gold)) / n
+      scored = Enum.filter(group, &is_number(&1.confidence))
+
+      conf =
+        if scored == [], do: 0.0, else: Enum.sum(Enum.map(scored, & &1.confidence)) / length(scored)
+
+      Mix.shell().info(
+        "    #{String.pad_trailing(origin, 14)} #{String.pad_leading(to_string(n), 5)}   " <>
+          "#{String.pad_leading(pct(clf), 7)}   #{String.pad_leading(pct(pipe), 12)}   " <>
+          "#{String.pad_leading(pct(conf), 9)}"
+      )
+    end)
+
+    genuine = Map.get(groups, "dialogflow", [])
+
+    if genuine != [] and length(genuine) < length(rows) do
+      g_pipe = Enum.count(genuine, &(&1.final == &1.gold)) / length(genuine)
+      all_pipe = Enum.count(rows, &(&1.final == &1.gold)) / length(rows)
+
+      Mix.shell().info("")
+
+      Mix.shell().info(
+        "    pipeline accuracy on Dialogflow rows only: #{pct(g_pipe)} " <>
+          "against #{pct(all_pipe)} reported over all #{length(rows)}"
+      )
     end
 
     Mix.shell().info("")
