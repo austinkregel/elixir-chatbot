@@ -31,6 +31,7 @@ defmodule Brain.ML.POSTagger do
   require Logger
 
   alias Brain.ML.{ModelStore, TrainingSeed}
+  alias Brain.ML.POSTagger.LexicalFeatures
 
   @pos_tags ~w(
     NOUN PROPN VERB AUX ADJ ADV PRON DET ADP
@@ -38,7 +39,9 @@ defmodule Brain.ML.POSTagger do
   )
 
   # Version of the saved model's shape. A file of another version is refused.
-  @format 2
+  # 3 added the lexical input channel: a version-2 model's network has no "lex"
+  # input and its parameters do not fit this graph.
+  @format 3
 
   @pad 0
   @unk 1
@@ -326,13 +329,37 @@ defmodule Brain.ML.POSTagger do
     words = Nx.tensor(word_ids, type: :s64)
     chars = Nx.tensor(char_ids, type: :s64)
 
-    %{
+    base = %{
       "words" => words,
       "word_pad" => Nx.equal(words, @pad),
       "chars" => chars,
       "char_pad" => Nx.equal(chars, @pad)
     }
+
+    if lexical_channel?(config) do
+      Map.put(base, "lex", Nx.tensor(lexical_rows(padded_rows, len), type: :f32))
+    else
+      base
+    end
   end
+
+  # Read from the raw token, never from `vocab.words`. A word the treebank does
+  # not contain is exactly the case this channel exists for, so keying it on the
+  # training vocabulary would drop the evidence it is meant to supply.
+  defp lexical_rows(padded_rows, len) do
+    pad = List.duplicate(0.0, LexicalFeatures.width())
+
+    Enum.map(padded_rows, fn tokens ->
+      vectors = Enum.map(tokens, &LexicalFeatures.features_cached/1)
+      vectors ++ List.duplicate(pad, len - length(vectors))
+    end)
+  end
+
+  # `lex_dim: 0` builds the network without the channel. A feature is worth its
+  # place only against the same model without it, and the comparison has to be on
+  # one training set — otherwise the channel's effect is mixed with whatever else
+  # differed between the two runs.
+  defp lexical_channel?(config), do: (config[:lex_dim] || 0) > 0
 
   defp targets(batch, vocab, len, rows) do
     n_tags = length(vocab.tags)
@@ -395,8 +422,25 @@ defmodule Brain.ML.POSTagger do
         name: "char_vec"
       )
 
+    # The lexical channel joins before the sentence LSTM, so position and context
+    # can override the prior it supplies: `open` is adjective-leaning in general
+    # and a verb at the head of a command, and only the LSTM sees where the token
+    # sits. A projection first, so the hand-built dimensions enter on the same
+    # footing as the learned word and character representations.
+    inputs =
+      if lexical_channel?(config) do
+        lex_vec =
+          Axon.input("lex", shape: {nil, nil, LexicalFeatures.width()})
+          |> Axon.dense(config[:lex_dim], name: "lex_projection")
+          |> Axon.tanh(name: "lex_activation")
+
+        [word_vec, char_vec, lex_vec]
+      else
+        [word_vec, char_vec]
+      end
+
     x =
-      Axon.concatenate(word_vec, char_vec, axis: -1)
+      Axon.concatenate(inputs, axis: -1)
       |> Axon.dropout(rate: config[:dropout], seed: seed, name: "input_dropout")
 
     {fw_seq, _} = Axon.lstm(x, config[:word_hidden], lstm_opts("word_lstm_fw", word_pad, seed))
