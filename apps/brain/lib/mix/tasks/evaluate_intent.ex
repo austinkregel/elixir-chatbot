@@ -56,6 +56,8 @@ defmodule Mix.Tasks.Evaluate.Intent do
     IO.puts("Duration:         #{duration_ms}ms")
     IO.puts("")
 
+    report_by_provenance(gold, predictions, actuals)
+
     IO.puts(Evaluation.format_report(report))
     IO.puts("")
 
@@ -160,6 +162,49 @@ defmodule Mix.Tasks.Evaluate.Intent do
     results = Enum.reverse(results)
     {Enum.map(results, &elem(&1, 0)), Enum.map(results, &elem(&1, 1))}
   end
+
+  # The held-out split mixes genuine utterances with texts materialized back into
+  # the export, so an overall figure does not say what the model was scored on.
+  # Each kind is reported on its own, and each non-Dialogflow kind also reported
+  # excluded, so the score on genuine input is visible without a second run.
+  defp report_by_provenance(gold, predictions, actuals) do
+    rows = Enum.zip([gold, predictions, actuals])
+    kind = fn {example, _p, _a} -> Map.get(example, "labeled_by") || "unrecorded" end
+    groups = Enum.group_by(rows, kind)
+
+    if map_size(groups) > 1 do
+      IO.puts("--- Accuracy by provenance ---\n")
+
+      groups
+      |> Enum.sort_by(fn {_k, rs} -> -length(rs) end)
+      |> Enum.each(fn {k, rs} -> IO.puts("  " <> line(k, rs)) end)
+
+      groups
+      |> Map.keys()
+      |> Enum.reject(&(&1 == "dialogflow"))
+      |> Enum.sort()
+      |> Enum.each(fn excluded ->
+        kept = Enum.reject(rows, &(kind.(&1) == excluded))
+        IO.puts("  " <> line("excl. " <> excluded, kept))
+      end)
+
+      IO.puts("")
+    end
+  end
+
+  defp line(label, rows) do
+    result =
+      Evaluation.build_result(
+        "intent",
+        Enum.map(rows, fn {_e, p, _a} -> p end),
+        Enum.map(rows, fn {_e, _p, a} -> a end)
+      )
+
+    "#{String.pad_trailing(label, 20)} n=#{String.pad_leading(to_string(length(rows)), 5)}" <>
+      "  acc=#{pct(result.accuracy)}  macroF1=#{pct(result.macro_f1)}"
+  end
+
+  defp pct(value), do: String.pad_leading("#{Float.round(value * 100, 1)}%", 6)
 
   defp status_key(:ok), do: :ok
   defp status_key(:unknown), do: :unknown
