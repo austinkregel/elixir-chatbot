@@ -15,7 +15,7 @@ defmodule Mix.Tasks.Axes.Snapshot do
   An untagged run is disposable and prunable. `--tag` promotes a run to a
   durable reference point and requires `--note` saying what it represents; a
   reference point nobody can interpret later is not one. Tagged runs also store
-  the full 343-float feature vector per utterance, so a change can be attributed
+  the full 337-float feature vector per utterance, so a change can be attributed
   to a feature rather than only seen as an axis moving.
 
   ## Why `--corpus` has no default
@@ -140,7 +140,7 @@ defmodule Mix.Tasks.Axes.Snapshot do
         value: serialize_value(Map.fetch!(profile, axis)),
         status: to_string(entry.status),
         reason: entry[:reason] && to_string(entry[:reason]),
-        # Stored once per utterance, on the first axis only: repeating 343
+        # Stored once per utterance, on the first axis only: repeating 337
         # floats 18 times would multiply a tagged run's storage by the axis
         # count for no extra information.
         feature_vector: if(store_vectors? and axis == hd(axes), do: vector)
