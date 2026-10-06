@@ -47,7 +47,8 @@ defmodule Mix.Tasks.RebuildGoldStandard do
   `augmented-<hash>`; augmented text is a mutation of a real utterance and can be
   ungrammatical.
 
-  `labeled_by` is read per row from that id:
+  `labeled_by` is read per row from that id by `Brain.Corpus.Provenance`, which
+  owns the rule:
 
     * `orphan-` -> `"materialized"`
     * `augmented-` -> `"augmented"`
@@ -65,6 +66,9 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
   use Mix.Task
 
+  alias Brain.Corpus.Export
+  alias Brain.Corpus.Label
+  alias Brain.Corpus.Provenance
   alias Brain.ML.EvaluationStore
 
   @requirements ["app.config"]
@@ -72,8 +76,6 @@ defmodule Mix.Tasks.RebuildGoldStandard do
   @switches [save: :boolean, verbose: :boolean]
 
   @usersays_suffix "_usersays_en.json"
-  @lights_prefix "smarthome.lights."
-  @device_prefix "smarthome.device."
 
   @impl Mix.Task
   def run(args) do
@@ -125,7 +127,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       files
       |> Enum.reject(fn path -> Path.basename(path, @usersays_suffix) in fallbacks end)
       |> Enum.flat_map(fn path ->
-        label = path |> Path.basename(@usersays_suffix) |> root_label() |> fold_lights()
+        label = path |> Path.basename(@usersays_suffix) |> Label.canonical()
         source = Path.basename(path)
 
         path
@@ -133,7 +135,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
         |> Enum.map(fn phrase ->
           %{
             text: phrase.text,
-            norm: normalise(phrase.text),
+            norm: Export.normalise(phrase.text),
             label: label,
             source_file: source,
             provenance: phrase.provenance
@@ -226,67 +228,17 @@ defmodule Mix.Tasks.RebuildGoldStandard do
         |> Map.get("data", [])
         |> Enum.map_join(fn segment -> Map.get(segment, "text", "") end)
 
-      %{text: text, provenance: provenance!(entry, path)}
+      %{text: text, provenance: Provenance.of_entry!(entry, path)}
     end)
     |> Enum.reject(&(String.trim(&1.text) == ""))
   end
 
-  # Not every row in the export came from Dialogflow.
-  # `scripts/materialize_orphan_intents.exs` writes gold-standard texts that have
-  # no source backing back into these files, tagging them `orphan-<hash>` or
-  # `augmented-<hash>`.
-  #
-  # A missing `id` means Dialogflow rather than unknown: the synthetic writers
-  # always set one, while the export omits it on a few otherwise ordinary entries.
-  defp provenance!(entry, path) do
-    case Map.get(entry, "id") do
-      nil -> "dialogflow"
-      id when is_binary(id) -> provenance_from_id!(id, path)
-      other -> Mix.raise("rebuild_gold_standard: #{path} has a non-string id #{inspect(other)}")
-    end
-  end
-
-  defp provenance_from_id!("orphan-" <> _, _path), do: "materialized"
-  defp provenance_from_id!("augmented-" <> _, _path), do: "augmented"
-
-  # Dialogflow ids are UUIDs. Anything shaped `<word>-<8 hex>` is a synthetic
-  # marker, and an unrecognised one has no known origin to record.
-  defp provenance_from_id!(id, path) do
-    if Regex.match?(~r/^[a-z]+-[0-9a-f]{8}$/, id) do
-      Mix.raise("""
-      rebuild_gold_standard: unrecognised synthetic id prefix in #{path}
-
-        id: #{id}
-
-      `orphan-` and `augmented-` are written by scripts/materialize_orphan_intents.exs.
-      This prefix is neither, so the row's origin is unknown. Teach
-      provenance_from_id!/2 what writes it.
-      """)
-    else
-      "dialogflow"
-    end
-  end
-
-  # `account.balance.check - context: account` -> `account.balance.check`. The
-  # suffix names a context of the intent, not a separate intent.
-  defp root_label(name), do: name |> String.split(" - ") |> List.first() |> String.trim()
-
-  defp fold_lights(@lights_prefix <> rest), do: @device_prefix <> rest
-  defp fold_lights(label), do: label
-
-  defp normalise(text), do: text |> String.trim() |> String.downcase() |> String.replace(~r/\s+/, " ")
-
   # -- building ---------------------------------------------------------------
-
-  # The same normalised text can appear as a genuine phrase in one file and as a
-  # materialized copy in another. A text is synthetic only when it exists nowhere
-  # outside a synthetic writer, so the most genuine origin wins.
-  @provenance_rank %{"dialogflow" => 0, "materialized" => 1, "augmented" => 2}
 
   defp resolve_provenance(occurrences) do
     occurrences
     |> Enum.map(& &1.provenance)
-    |> Enum.min_by(&Map.fetch!(@provenance_rank, &1))
+    |> Provenance.most_genuine()
   end
 
   defp build_entries(phrases) do
@@ -369,9 +321,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
     Mix.shell().info("")
     Mix.shell().info("  provenance:")
 
-    @provenance_rank
-    |> Map.keys()
-    |> Enum.sort_by(&Map.fetch!(@provenance_rank, &1))
+    Provenance.kinds()
     |> Enum.each(fn kind ->
       n = Map.get(counts, kind, 0)
 
@@ -404,11 +354,11 @@ defmodule Mix.Tasks.RebuildGoldStandard do
         path
         |> File.read!()
         |> Jason.decode!()
-        |> Map.new(fn row -> {normalise(row["text"]), fold_lights(row["intent"])} end)
+        |> Map.new(fn row -> {Export.normalise(row["text"]), Label.fold_lights(row["intent"])} end)
 
       shared =
         entries
-        |> Enum.map(fn e -> {normalise(e["text"]), e["intent"]} end)
+        |> Enum.map(fn e -> {Export.normalise(e["text"]), e["intent"]} end)
         |> Enum.filter(fn {norm, _} -> Map.has_key?(pre, norm) end)
 
       agree = Enum.count(shared, fn {norm, label} -> Map.fetch!(pre, norm) == label end)
