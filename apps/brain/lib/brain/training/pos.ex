@@ -19,6 +19,7 @@ defmodule Brain.Training.POS do
   """
 
   alias Brain.ML.POSTagger
+  alias Brain.ML.POSTagger.LexicalFeatures
   alias Brain.Training.Fixture
 
   @fixture_dir "training/pos"
@@ -63,9 +64,28 @@ defmodule Brain.Training.POS do
     if limit, do: Enum.take(sequences, limit), else: sequences
   end
 
-  @doc "Provenance of the fixtures, as recorded in a model's `training.inputs`."
+  @doc """
+  Provenance of everything the model's features are built from, as recorded in a
+  model's `training.inputs`.
+
+  The fixtures, and the lexicon. The tagger reads WordNet and the closed-class
+  declaration per token now, so the same sentence encodes differently against a
+  different lexicon with nothing in the model's weights to say so. Recording it
+  here means `check_current!/2` catches a reseeded lexicon with the check it
+  already performs.
+  """
   @spec inputs() :: [map()]
-  def inputs, do: Enum.map(@splits, &input(Map.fetch!(fixture_paths(), &1)))
+  def inputs do
+    Enum.map(@splits, &input(Map.fetch!(fixture_paths(), &1))) ++ [lexicon_input()]
+  end
+
+  defp lexicon_input do
+    %{
+      name: "lexicon",
+      version: "wordnet+closed_class",
+      sha256: LexicalFeatures.lexicon_digest()
+    }
+  end
 
   @doc """
   Measures `model` on the `test` sequences against the lookup baseline
