@@ -13,24 +13,20 @@ defmodule Mix.Tasks.MigrateGoldStandard do
   | `priv/analysis/intent_registry.json` | `mix registry.derive` |
   | `priv/response/templates.json` | `mix templates.reconcile` |
 
-  The disagreement is about what an intent is. This task treats a
-  ` - context: …` variant as a separate intent unless `--merge-contexts` is
-  passed; `rebuild_gold_standard`'s `root_label/1` always folds it into its base.
-  The export holds 242 usersays files, 40 of them suffixed, and the corpus holds
-  194 intents. `Pipeline.registered_intent?/1` gates accuracy on that vocabulary,
-  so a registry built the other way rejects the labels the deployed classifier
-  emits.
+  Intents are named through `Brain.Corpus.Label.canonical/1`, the same rule the
+  corpus uses: a ` - context: …` suffix names a context of an intent rather than an
+  intent, and `smarthome.lights.*` folds to `smarthome.device.*`. The export holds
+  242 usersays files, 40 of them suffixed, against the corpus's 194 intents, and
+  `Pipeline.registered_intent?/1` gates accuracy on that vocabulary.
 
-  Each writing path is refused with the reason and the task that replaces it. The
-  reports remain because they answer questions the owners do not: what the export
-  contains before any folding, and which intents carry slot parameters.
+  Each writing path is refused with the reason and the task that owns the artifact.
+  One artifact gets one writer.
 
   ## Usage
 
       mix migrate_gold_standard --list                        # intents across all sources
       mix migrate_gold_standard --preview                      # what a migration would produce
       mix migrate_gold_standard --select lights --preview      # only matching intents
-      mix migrate_gold_standard --merge-contexts --preview     # with context variants folded
       mix migrate_gold_standard --extract-metadata --preview   # slots and clarification prompts
       mix migrate_gold_standard --extract-templates --preview  # responses held in the export
       mix migrate_gold_standard --cleanup-sources --preview    # what deletion would remove
@@ -52,7 +48,6 @@ defmodule Mix.Tasks.MigrateGoldStandard do
     no_ner? = "--no-ner" in args
     append? = "--append" in args
     destructive? = "--destructive" in args
-    merge_contexts? = "--merge-contexts" in args
     exclude_context_variants? = "--exclude-context-variants" in args
     extract_metadata? = "--extract-metadata" in args
     extract_templates? = "--extract-templates" in args
@@ -75,10 +70,10 @@ defmodule Mix.Tasks.MigrateGoldStandard do
         cleanup_source_directories(preview?)
 
       preview? ->
-        preview_migration(select_filter, limit, merge_contexts?, exclude_context_variants?)
+        preview_migration(select_filter, limit, exclude_context_variants?)
 
       true ->
-        run_migration(select_filter, limit, !no_ner?, append?, destructive?, merge_contexts?, exclude_context_variants?)
+        run_migration(select_filter, limit, !no_ner?, append?, destructive?, exclude_context_variants?)
     end
   end
 
@@ -158,21 +153,17 @@ defmodule Mix.Tasks.MigrateGoldStandard do
     IO.puts("")
   end
 
-  defp preview_migration(select_filter, limit, merge_contexts?, exclude_context_variants?) do
+  defp preview_migration(select_filter, limit, exclude_context_variants?) do
     intent_names = resolve_intent_names(select_filter)
 
     IO.puts("
 Previewing migration for #{length(intent_names)} intent(s)...")
 
-    if merge_contexts? do
-      IO.puts("NOTE: Context variants will be merged into base intents")
-    end
-
     if exclude_context_variants? do
       IO.puts("NOTE: Context-variant usersays files will be excluded")
     end
 
-    opts = [merge_context_variants: merge_contexts?, exclude_context_variants: exclude_context_variants?]
+    opts = [exclude_context_variants: exclude_context_variants?]
 
     opts =
       if limit do
@@ -187,18 +178,22 @@ Previewing migration for #{length(intent_names)} intent(s)...")
     non_empty_ner = Enum.count(entity_examples, fn e -> e["expected"] != [] end)
     unique_intents = intent_examples |> Enum.map(& &1["intent"]) |> Enum.uniq() |> length()
 
-    context_variant_count =
+    # Nothing should reach here carrying a context suffix: intents are named by
+    # `Brain.Corpus.Label.canonical/1` where they are read. A non-zero count means
+    # a source spells one in a way the export cannot account for, which is worth
+    # seeing rather than passing over.
+    unresolved =
       intent_examples
       |> Enum.map(& &1["intent"])
-      |> Enum.count(&String.contains?(&1, "context_"))
+      |> Enum.filter(&String.contains?(&1, "context_"))
+      |> Enum.uniq()
 
     IO.puts("\nWould migrate:")
     IO.puts("  Intent examples: #{length(intent_examples)} (#{unique_intents} unique intents)")
 
-    if context_variant_count > 0 and not merge_contexts? do
-      IO.puts(
-        "  Context variants: #{context_variant_count} examples (use --merge-contexts to merge)"
-      )
+    unless unresolved == [] do
+      IO.puts("  UNRESOLVED labels (#{length(unresolved)}), still carrying a context suffix:")
+      Enum.each(unresolved, fn label -> IO.puts("    #{label}") end)
     end
 
     IO.puts("  NER examples:    #{non_empty_ner}")
@@ -388,15 +383,16 @@ Previewing migration for #{length(intent_names)} intent(s)...")
     end
   end
 
-  defp run_migration(select_filter, limit, include_ner?, append?, destructive?, merge_contexts?, exclude_context_variants?) do
+  defp run_migration(select_filter, limit, include_ner?, append?, destructive?, exclude_context_variants?) do
     refuse!(
       "migration",
       "`mix rebuild_gold_standard`",
       "Both rebuild priv/evaluation/intent/gold_standard.json from the same export.\n" <>
-        "This one keeps a \" - context: …\" variant as its own intent unless\n" <>
-        "--merge-contexts is passed; rebuild_gold_standard always folds it into the base.\n" <>
-        "Running this would re-split 36 labels the corpus has folded, and\n" <>
-        "registered_intent?/1 gates accuracy on that vocabulary."
+        "They now agree on the vocabulary -- both name intents through\n" <>
+        "Brain.Corpus.Label.canonical/1 -- but one artifact still gets one writer,\n" <>
+        "and rebuild_gold_standard is it: this path has no provenance, no\n" <>
+        "needs_review for ambiguous texts, and no comparison against the previous\n" <>
+        "corpus."
     )
 
     intent_names = resolve_intent_names(select_filter)
@@ -417,10 +413,6 @@ Previewing migration for #{length(intent_names)} intent(s)...")
     IO.puts("
 Migrating #{intent_label} intent(s) [#{mode} mode]...")
 
-    if merge_contexts? do
-      IO.puts("NOTE: Context variants will be merged into base intents")
-    end
-
     if exclude_context_variants? do
       IO.puts("NOTE: Context-variant usersays files will be excluded")
     end
@@ -434,7 +426,6 @@ Migrating #{intent_label} intent(s) [#{mode} mode]...")
       include_ner: include_ner?,
       append: append?,
       destructive: destructive?,
-      merge_context_variants: merge_contexts?,
       exclude_context_variants: exclude_context_variants?
     ]
 
