@@ -173,7 +173,7 @@ defmodule Brain.Analysis.ChunkProfile do
   Returns the declared shape of all 18 axes as `{axis, kind, domain, source}`.
 
   The counterpart to `ChunkFeatures.dimension_manifest/0`, one layer up: that
-  names the 343 feature dimensions, this declares what the 18 axes projected
+  names the 337 feature dimensions, this declares what the 18 axes projected
   from them are allowed to contain.
 
   Needed because "is this axis correct?" is unanswerable without first knowing
