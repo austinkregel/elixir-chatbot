@@ -15,8 +15,14 @@ defmodule ChatWeb.POSTrainingLive do
 
   import ChatWeb.AppShell
 
+  alias Brain.ML.POSTagger
+  alias Brain.ML.POSTagger.LexicalFeatures
   alias Brain.ML.TrainingServer
   alias Brain.Training.POSRuns
+
+  # Imperatives the treebank barely teaches. Whether the tagger heads these with
+  # a VERB is the thing this page cannot show from a learning curve.
+  @default_probe "switch off the heating and dim the lamp"
 
   @palette ~w(#6366f1 #f59e0b #10b981 #ef4444 #8b5cf6 #0ea5e9 #ec4899 #84cc16)
   @compared_by_default 4
@@ -34,7 +40,58 @@ defmodule ChatWeb.POSTrainingLive do
      |> assign(:compared, runs |> Enum.take(@compared_by_default) |> MapSet.new(& &1["id"]))
      |> assign(:log_x, true)
      |> assign(:promoting, nil)
+     |> assign(:probe, to_form(%{"text" => @default_probe}, as: :probe))
+     |> assign(:tagged, nil)
+     |> assign(:tag_error, nil)
      |> assign(:form, to_form(default_params(), as: :run))}
+  end
+
+  defp shares(by_pos) do
+    ~w(noun verb adj adv)
+    |> Enum.map_join("/", fn p -> by_pos |> Map.get(p, 0.0) |> pct0() end)
+  end
+
+  defp pct0(x), do: "#{round((x || 0.0) * 100)}"
+  defp pct1(x), do: "#{Float.round((x || 0.0) * 1.0, 2)}"
+
+  defp tag_tokens(text) do
+    tokens = text |> Brain.ML.Tokenizer.tokenize() |> Enum.map(& &1.text)
+
+    cond do
+      tokens == [] ->
+        {:error, "Nothing to tag."}
+
+      true ->
+        case POSTagger.load_model() do
+          {:ok, model} ->
+            tags = POSTagger.predict_tags(tokens, model)
+
+            rows =
+              Enum.zip(tokens, tags)
+              |> Enum.map(fn {token, tag} ->
+                lex = Map.new(LexicalFeatures.explain(token))
+
+                %{
+                  token: token,
+                  tag: tag,
+                  known: lex[:known_to_lexicon] == 1.0,
+                  present: Enum.filter(~w(noun verb adj adv), &(lex[:"has_#{&1}"] == 1.0)),
+                  senses: Map.new(~w(noun verb adj adv), &{&1, lex[:"sense_share_#{&1}"]}),
+                  freqs: Map.new(~w(noun verb adj adv), &{&1, lex[:"freq_share_#{&1}"]}),
+                  has_frequency: lex[:has_frequency] == 1.0,
+                  polysemy: lex[:polysemy],
+                  closed: Enum.filter(Brain.Lexicon.ClosedClass.all_classes(), &(lex[:"closed_#{String.downcase(&1)}"] == 1.0))
+                }
+              end)
+
+            {:ok, rows}
+
+          {:error, reason} ->
+            {:error, "No usable POS model: #{reason}"}
+        end
+    end
+  rescue
+    e -> {:error, Exception.message(e)}
   end
 
   defp default_params do
@@ -79,6 +136,19 @@ defmodule ChatWeb.POSTrainingLive do
 
   def handle_event("toggle_log_x", _params, socket) do
     {:noreply, assign(socket, :log_x, not socket.assigns.log_x)}
+  end
+
+  # A learning curve cannot answer "is `switch` a verb here". Test accuracy over
+  # 25,094 tokens moves by 0.02% when a word like `dim` goes from wrong to right
+  # on all of its twelve occurrences, so the per-token view is the only place the
+  # lexical channel's effect is visible.
+  def handle_event("tag", %{"probe" => %{"text" => text}}, socket) do
+    socket = assign(socket, :probe, to_form(%{"text" => text}, as: :probe))
+
+    case tag_tokens(text) do
+      {:ok, rows} -> {:noreply, socket |> assign(:tagged, rows) |> assign(:tag_error, nil)}
+      {:error, message} -> {:noreply, socket |> assign(:tagged, nil) |> assign(:tag_error, message)}
+    end
   end
 
   def handle_event("promote", %{"run_id" => id, "snapshot" => snapshot, "target" => target}, socket)
@@ -201,6 +271,78 @@ defmodule ChatWeb.POSTrainingLive do
       </:page_header>
 
       <div class="p-4 space-y-4">
+        <div class="card bg-base-200">
+          <div class="card-body p-4">
+            <h2 class="font-semibold">Tag a sentence</h2>
+            <p class="text-xs text-base-content/60">
+              The tag the model serves, beside what the lexicon knows about each token.
+              A learning curve cannot show whether <code>switch</code> heads a command as a verb.
+            </p>
+
+            <.form for={@probe} id="pos-probe-form" phx-submit="tag" class="flex gap-2 items-end">
+              <label class="form-control grow">
+                <input
+                  type="text"
+                  name="probe[text]"
+                  value={@probe[:text].value}
+                  placeholder="switch off the heating"
+                  class="input input-bordered input-sm w-full"
+                />
+              </label>
+              <button type="submit" class="btn btn-sm btn-primary">Tag</button>
+            </.form>
+
+            <div :if={@tag_error} class="alert alert-warning text-xs py-2">{@tag_error}</div>
+
+            <div :if={@tagged} class="overflow-x-auto">
+              <table class="table table-xs">
+                <thead>
+                  <tr>
+                    <th>token</th>
+                    <th>tag</th>
+                    <th>lexicon</th>
+                    <th>senses n/v/a/r</th>
+                    <th>frequency n/v/a/r</th>
+                    <th>poly</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr :for={row <- @tagged}>
+                    <td class="font-mono">{row.token}</td>
+                    <td>
+                      <span class={[
+                        "badge badge-sm",
+                        row.tag == "VERB" && "badge-success",
+                        row.tag != "VERB" && "badge-ghost"
+                      ]}>
+                        {row.tag}
+                      </span>
+                    </td>
+                    <td class="text-xs">
+                      <span :if={not row.known} class="text-base-content/40">unknown</span>
+                      <span :if={row.known and row.closed != []} class="font-mono">
+                        closed: {Enum.join(row.closed, " ")}
+                      </span>
+                      <span :if={row.known and row.closed == [] and row.present != []} class="font-mono">
+                        {Enum.join(row.present, " ")}
+                      </span>
+                      <span :if={row.known and row.closed == [] and row.present == []} class="text-base-content/40">
+                        no senses
+                      </span>
+                    </td>
+                    <td class="font-mono text-xs">{shares(row.senses)}</td>
+                    <td class="font-mono text-xs">
+                      <span :if={row.has_frequency}>{shares(row.freqs)}</span>
+                      <span :if={not row.has_frequency} class="text-base-content/40">none</span>
+                    </td>
+                    <td class="font-mono text-xs">{pct1(row.polysemy)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div class="card bg-base-200">
           <div class="card-body p-4">
             <h2 class="font-semibold">New run</h2>
