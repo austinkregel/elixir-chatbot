@@ -58,6 +58,39 @@ defmodule Brain.ML.Lexicon do
     |> Enum.reject(&(&1 == normalized))
   end
 
+  @doc """
+  Synonyms sharing the word's most frequent sense for `pos`.
+
+  `synonyms/3` returns every synonym of every sense, flattened. For a polysemous
+  verb that spans senses the caller did not mean: `check` reaches `curb`,
+  `chit` and `tick off` alongside `verify`. This returns only the words of the
+  single synset WordNet records most often for the word, which is the sense a
+  reader naming that verb almost certainly intends.
+
+  Sense frequency is SemCor's `tag_count`, and the words table is already stored
+  in descending `tag_count` order, so the dominant sense is the first entry.
+  """
+  def dominant_sense_synonyms(word, pos, name \\ __MODULE__) when is_binary(word) do
+    normalized = String.downcase(word)
+
+    case lookup_synset_ids(normalized, pos, name) do
+      [] ->
+        []
+
+      [dominant | _] ->
+        case synset(dominant, name) do
+          {:ok, %{words: words}} ->
+            words
+            |> Enum.map(&String.downcase/1)
+            |> Enum.uniq()
+            |> Enum.reject(&(&1 == normalized))
+
+          :error ->
+            []
+        end
+    end
+  end
+
   @doc "Returns the definition (gloss) for a word, optionally filtered by POS."
   def definition(word, pos \\ nil, name \\ __MODULE__)
 
