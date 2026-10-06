@@ -378,7 +378,7 @@ defmodule Brain.Test.ModelFactory do
   end
 
   # These models are *upstream* of the feature vector: the pipeline runs them to
-  # produce the analysis that becomes 343 dimensions. Training substitutes here
+  # produce the analysis that becomes 337 dimensions. Training substitutes here
   # made the test environment a second, divergent one, so a model fitted to
   # vectors built in dev could not be verified against the runtime that loaded
   # it -- and `data/classifiers/*.json` is generated in dev.
