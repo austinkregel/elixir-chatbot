@@ -176,6 +176,38 @@ describes, created by this project rather than inherited from it.
   against 5. The exception is hedges, where the union of code usage (20) exceeds the declared list
   (10) — there, the declaration has to grow.
 
+### The naming divergence is why this was never caught
+
+Austin, on reading the survey, 2026-10-06: *"it seems they have slightly different names for similar
+clusters of keywords too which is interesting."* Measured — the same concept goes by a different
+identifier in every module that defines it:
+
+| concept | the names it goes by |
+|---|---|
+| hedges | `hedge` (local), `hedge:` (map key), `@hedge_tokens`, `@hedge_words`, `hedges()` |
+| agreement | `@backchannel_tokens`, `@ack_tokens`, `@acknowledgment_tokens`, `confirmation:` |
+| question words | `question_words`, `@question_words`, `@question_prefixes`, `@pronoun_interrogative`, `@clarification_start_tokens` |
+| imperative verbs | `@seed_imperative_verbs`, `imperative_verbs`, `imperative_words` |
+| stopwords | `@stopwords`, `stopwords`, `stop_words` |
+| 1st person pronouns | `@pronoun_1st_singular` / `@pronoun_1st_plural`, `@first_person_pronouns`, `first_person` |
+| politeness | `@please_tokens`, bare `"please"` / `"kindly"` literals, `polite_markers` |
+
+`@ack_tokens` (`speech_act_classifier.ex:287`) and `@acknowledgment_tokens`
+(`chunk_segmenter.ex:235`) are the same word, abbreviated in one module and not the other. The
+suffix carries no information: `_tokens`, `_words`, `_verbs`, `_markers`, `_prefixes` and a bare
+plural all mean "a set of strings to match", chosen per author.
+
+**The consequence is that this duplication is not discoverable by search.** Grepping `hedge` finds 4
+of the 5 definitions; grepping `_tokens` finds a different 4; grepping `question` misses
+`@pronoun_interrogative` and `@clarification_start_tokens` entirely. No single query surfaces a
+cluster — it only appeared by enumerating every list in the app and grouping by concept. That is why
+it survived a month of agents working in these files.
+
+So criterion 1 for this domain is not satisfied by naming a canonical file. **It needs a declared
+naming rule as well**, or the next author writes `@hedging_terms`, no search finds the other five,
+and the split regrows under a sixth name. The rule belongs with the vocabulary declaration, so that
+the name and the data have one source.
+
 ### A live defect this located
 
 `has_imperative_start?/1` at `speech_act_classifier.ex:828-842` skips one leading politeness token
