@@ -57,7 +57,7 @@ defmodule Brain.Memory.Store do
     rerank = Keyword.get(opts, :rerank, :auto)
 
     Telemetry.span(:memory_query, %{k: k, world_id: world_id}, fn ->
-      GenServer.call(__MODULE__, {:query_similar, text, k, world_id, rerank})
+      do_query_similar(tables!(), text, k, world_id, rerank)
     end)
   end
 
@@ -394,44 +394,6 @@ defmodule Brain.Memory.Store do
   # ============================================================================
 
   @impl true
-  def handle_call({:query_similar, text, k, world_id}, from, state) do
-    handle_call({:query_similar, text, k, world_id, :auto}, from, state)
-  end
-
-  @impl true
-  def handle_call({:query_similar, text, k, world_id, rerank}, _from, state) do
-    do_rerank = rerank != false and memory_rerank_enabled?()
-
-    case get_embedding(world_id, text) do
-      {:ok, query_embedding} ->
-        pool_size = if do_rerank, do: k * 4, else: k * 2
-
-        candidates =
-          VectorIndex.search_all(state.episode_index, query_embedding, pool_size)
-          |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
-          |> Enum.map(fn {{_wid, id}, similarity} ->
-            case Brain.AtlasIntegration.get_episode(id, world_id) do
-              {:ok, episode} -> {episode, similarity}
-              {:error, _} -> nil
-            end
-          end)
-          |> Enum.reject(&is_nil/1)
-
-        results =
-          if do_rerank do
-            kg_rerank(text, candidates, k)
-          else
-            Enum.take(candidates, k)
-          end
-
-        {:reply, {:ok, results}, state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
-  end
-
-  @impl true
   def handle_call({:query_by_tags, tags, limit, world_id}, _from, state) do
     case Brain.AtlasIntegration.query_episodes_by_tags(world_id, tags, limit) do
       {:ok, episodes} ->
@@ -452,7 +414,7 @@ defmodule Brain.Memory.Store do
 
   @impl true
   def handle_call(:tables, _from, state) do
-    {:reply, Map.take(state, [:semantic_index, :semantic_records]), state}
+    {:reply, Map.take(state, [:semantic_index, :semantic_records, :episode_index]), state}
   end
 
   @impl true
@@ -583,6 +545,44 @@ defmodule Brain.Memory.Store do
 
       _pid ->
         GenServer.call(__MODULE__, :tables, 5_000)
+    end
+  end
+
+  # Runs in the caller, like `do_query_semantic/5` and for the same reason: the
+  # episode fetch is one Atlas round-trip per candidate, up to `k * 4` of them,
+  # and inside the GenServer they serialise every other caller behind them. Under
+  # `mix gen_micro_data`'s 28-way concurrency that overran the 5-second call
+  # timeout often enough to lose rows, and to time out the trivial `:tables`
+  # lookup sitting behind it in the mailbox.
+  defp do_query_similar(tables, text, k, world_id, rerank) do
+    do_rerank = rerank != false and memory_rerank_enabled?()
+
+    case get_embedding(world_id, text) do
+      {:ok, query_embedding} ->
+        pool_size = if do_rerank, do: k * 4, else: k * 2
+
+        candidates =
+          VectorIndex.search_all(tables.episode_index, query_embedding, pool_size)
+          |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
+          |> Enum.map(fn {{_wid, id}, similarity} ->
+            case Brain.AtlasIntegration.get_episode(id, world_id) do
+              {:ok, episode} -> {episode, similarity}
+              {:error, _} -> nil
+            end
+          end)
+          |> Enum.reject(&is_nil/1)
+
+        results =
+          if do_rerank do
+            kg_rerank(text, candidates, k)
+          else
+            Enum.take(candidates, k)
+          end
+
+        {:ok, results}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
