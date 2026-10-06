@@ -39,6 +39,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
 
   alias Brain.Analysis.FeatureExtractor.{WordFeatures, EnrichmentFeatures}
   alias Brain.Lexicon
+  alias Brain.Provenance
 
   @all_pos [:NOUN, :PROPN, :VERB, :AUX, :ADJ, :ADV, :PRON, :DET, :ADP, :CONJ, :PART, :NUM, :INTJ, :PUNCT, :SYM, :X]
 
@@ -613,7 +614,33 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
     has_named = if Enum.any?(entities, fn e -> entity_type(e) in [:person, :location, :organization] end), do: 1.0, else: 0.0
 
     acc = get_accumulated_context(analysis)
-    familiarity = if acc, do: Map.get(acc, :entity_familiarity, 0.5), else: 0.5
+
+    # Three paths that all produced 0.5 and were indistinguishable in the
+    # vector: no accumulated context at all, context that carries no
+    # familiarity, and a real measurement that happens to be 0.5. `new_entity`
+    # below is derived from this, so a stand-in here silently decides a second
+    # dimension too.
+    familiarity =
+      cond do
+        is_nil(acc) ->
+          Provenance.record(["entity", "familiarity"], 0.5, :absent,
+            source: "ChunkFeatures.entity_features/1",
+            meta: %{"reason" => "this chunk carries no accumulated context"}
+          )
+
+        not Map.has_key?(acc, :entity_familiarity) ->
+          Provenance.record(["entity", "familiarity"], 0.5, :default,
+            source: "ChunkFeatures.entity_features/1",
+            meta: %{"reason" => "accumulated context holds no :entity_familiarity"}
+          )
+
+        true ->
+          Provenance.record(["entity", "familiarity"], Map.fetch!(acc, :entity_familiarity),
+            :computed,
+            source: "ChunkFeatures.entity_features/1"
+          )
+      end
+
     new_entity = if familiarity < 0.3 and total > 0, do: 1.0, else: 0.0
 
     [entity_count, entity_density] ++ type_counts ++ [has_named, new_entity]
