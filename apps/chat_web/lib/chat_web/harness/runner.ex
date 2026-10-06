@@ -40,27 +40,32 @@ defmodule ChatWeb.Harness.Runner do
   flows onward: `:raised` has no `:value`, so nothing downstream can mistake a
   failure for a result.
 
-  ## Provenance is displayed, and is mostly not yet reported
+  ## Provenance is collected, not asked for
 
   Task 039's added criterion is that a value which came from a fallback default
-  must be visually distinguishable from a computed one. `result_panel/1` renders
-  a provenance block and marks defaulted paths, and `ChatWeb.Harness.Diff.term/1`
-  does the marking.
+  must be visually distinguishable from a computed one. `run/2` turns
+  `Brain.Provenance` on around the subsystem call and returns what the
+  subsystem recorded, so a page gets this without gathering anything itself and
+  without the subsystem's signature changing — the per-request trace collector
+  task 039 asks for rather than provenance threaded through every return value.
 
-  **No subsystem currently reports this.** Doing so means subsystems *returning*
-  provenance rather than only values, which task 039 names as the design
-  consequence and which is per-subsystem work. Until a page gathers it, the
-  provenance block says so explicitly instead of rendering empty and implying
-  there was nothing to report. The gap is visible, which is the point — an empty
-  provenance panel on 18 pages is a standing reminder of exactly the defects
-  that prompted the criterion: `default_propn_type: "person"`, the `PROPN` gate
-  that never opens, `@memory_context_default`.
+  The panel renders each recorded value with where it came from, why, and which
+  function said so, and the stand-ins — `:default`, `:absent`, `:unavailable` —
+  are tinted and counted in the section header. `:unavailable` is its own origin
+  because a source that could not be read at all means something is broken,
+  which is not the same as a value being unset.
+
+  Collection is off outside this function, so an ordinary request pays one
+  `Process.get/1` per instrumented site. An `after` clause guarantees no route
+  out of `run/2` leaves the process collecting, which would silently attach this
+  run's provenance to the next one.
   """
 
   use Phoenix.Component
 
   import ChatWeb.UI
 
+  alias Brain.Provenance
   alias ChatWeb.Harness.Diff
 
   @type outcome :: %{
@@ -97,17 +102,25 @@ defmodule ChatWeb.Harness.Runner do
     # module, which is the masking this catch must not do.
     invoke = callable!(call)
     started = System.monotonic_time(:microsecond)
+    Provenance.start()
 
     try do
       value = invoke.(input)
-      %{status: :ok, value: value, duration_us: elapsed(started)}
+
+      %{
+        status: :ok,
+        value: value,
+        duration_us: elapsed(started),
+        provenance: Provenance.stop()
+      }
     rescue
       error ->
         %{
           status: :raised,
           error: error,
           stacktrace: __STACKTRACE__,
-          duration_us: elapsed(started)
+          duration_us: elapsed(started),
+          provenance: Provenance.stop()
         }
     catch
       kind, reason ->
@@ -115,8 +128,15 @@ defmodule ChatWeb.Harness.Runner do
           status: :raised,
           error: {kind, reason},
           stacktrace: __STACKTRACE__,
-          duration_us: elapsed(started)
+          duration_us: elapsed(started),
+          provenance: Provenance.stop()
         }
+    after
+      # Already a no-op on every path above, each of which calls stop/0. This
+      # exists so that no route out of this function can leave the process
+      # collecting, which would silently attach this run's provenance to the
+      # next one.
+      if Provenance.collecting?(), do: Provenance.stop()
     end
   end
 
@@ -156,8 +176,6 @@ defmodule ChatWeb.Harness.Runner do
   attr :outcome, :map, required: true
   attr :label, :string, required: true, doc: "what was called, e.g. \"SpeechActClassifier.classify/1\""
   attr :comparison, :map, default: nil
-  attr :provenance, :map, default: nil
-  attr :defaulted_paths, :list, default: []
   attr :class, :string, default: nil
 
   slot :result, doc: "a page's own rendering of the value; the raw term is shown regardless"
@@ -202,23 +220,70 @@ defmodule ChatWeb.Harness.Runner do
       </.card>
 
       <.card>
-        <.card_body class="space-y-2">
-          <.section_header>Where each value came from</.section_header>
-          <div :if={@provenance} class="space-y-2">
-            <Diff.term term={@provenance} defaulted={@defaulted_paths} />
-          </div>
-          <p :if={is_nil(@provenance)} class="text-xs text-base-content/60">
-            This subsystem does not report provenance yet, so nothing here is known to be
-            computed rather than defaulted. That is a gap, not an all-clear — reporting it
-            means the subsystem returning provenance alongside its values. See task 039.
+        <.card_body class="space-y-3">
+          <.section_header>
+            Where each value came from
+            <:actions>
+              <.badge
+                :if={stand_in_count(@outcome) > 0}
+                variant={:warning}
+                size={:xs}
+              >
+                {stand_in_count(@outcome)} not from your input
+              </.badge>
+            </:actions>
+          </.section_header>
+
+          <p :if={provenance(@outcome) == []} class="text-xs text-base-content/60">
+            Nothing on this path is instrumented yet. That is a gap, not an all-clear:
+            a value with no recorded origin is a value nobody has checked the origin of.
           </p>
+
+          <div :if={provenance(@outcome) != []} class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="text-xs uppercase tracking-wider text-base-content/50">
+                <tr>
+                  <th class="py-2 pr-4 font-semibold">Value</th>
+                  <th class="py-2 pr-4 font-semibold">Came from</th>
+                  <th class="py-2 pr-4 text-right font-semibold">Reads</th>
+                  <th class="py-2 pr-4 font-semibold">Why</th>
+                  <th class="py-2 font-semibold">Recorded by</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-base-300">
+                <tr
+                  :for={entry <- grouped_provenance(@outcome)}
+                  class={if(Provenance.stand_in?(entry.origin), do: "bg-warning/5", else: nil)}
+                >
+                  <td class="py-2 pr-4">
+                    <div class="font-mono text-xs">{Enum.join(entry.path, ".")}</div>
+                    <div class="font-mono text-xs text-base-content/60">
+                      {truncate(inspect(entry.value))}
+                    </div>
+                  </td>
+                  <td class="py-2 pr-4">
+                    <.badge variant={origin_variant(entry.origin)} size={:xs}>
+                      {origin_label(entry.origin)}
+                    </.badge>
+                  </td>
+                  <td class="py-2 pr-4 text-right font-mono text-xs">{entry.reads}</td>
+                  <td class="py-2 pr-4 text-xs text-base-content/60">
+                    {entry.meta["reason"] || entry.meta["file"] || "—"}
+                  </td>
+                  <td class="py-2 font-mono text-[11px] text-base-content/50">
+                    {entry.source}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </.card_body>
       </.card>
 
       <.card :if={@outcome.status == :ok}>
         <.card_body class="space-y-2">
           <.section_header>Raw term</.section_header>
-          <Diff.term term={normalized(@outcome.value)} defaulted={@defaulted_paths} />
+          <Diff.term term={normalized(@outcome.value)} defaulted={stand_in_paths(@outcome)} />
         </.card_body>
       </.card>
     </div>
@@ -270,6 +335,66 @@ defmodule ChatWeb.Harness.Runner do
   # -- internals --------------------------------------------------------------
 
   defp normalized(value), do: Atlas.Verification.Comparison.normalize(value)
+
+  defp provenance(outcome), do: Map.get(outcome, :provenance, [])
+
+  @doc false
+  # Grouped by {path, origin, value}, because one analysis makes the same lookup
+  # many times and a row per read is unreadable: a single live run recorded 277
+  # entries over 11 distinct facts, 207 of them the same config key falling back
+  # to the same empty map.
+  #
+  # Origin and value are part of the key rather than only the path, so a value
+  # that was computed for one chunk and stood in for another stays two rows.
+  # That distinction is the display's whole purpose and collapsing it would hide
+  # exactly what someone came to see.
+  #
+  # Stand-ins sort first. The reads count is kept because a fallback taken 207
+  # times per utterance reads very differently from one taken once.
+  def grouped_provenance(outcome) do
+    outcome
+    |> provenance()
+    |> Enum.group_by(&{&1.path, &1.origin, &1.value})
+    |> Enum.map(fn {_key, [first | _] = reads} ->
+      Map.put(first, :reads, length(reads))
+    end)
+    |> Enum.sort_by(fn entry ->
+      {not Provenance.stand_in?(entry.origin), entry.path, entry.source}
+    end)
+  end
+
+  # A declared config value can be a whole nested map; the table shows what it
+  # is, and the raw term below shows it in full.
+  defp truncate(string) when byte_size(string) <= 120, do: string
+  defp truncate(string), do: String.slice(string, 0, 117) <> "..."
+
+  # Counted over the grouped rows, not the raw reads: "1 not from your input" is
+  # the useful number when one key was read 207 times.
+  defp stand_in_count(outcome) do
+    outcome
+    |> grouped_provenance()
+    |> Enum.count(&Provenance.stand_in?(&1.origin))
+  end
+
+  # Only the stand-ins are marked in the raw term, and only where a recorded
+  # path happens to name a path in the output. Provenance paths are about
+  # internal values and often have no counterpart in what was returned, which is
+  # why the table above is the primary display and this is the convenience.
+  defp stand_in_paths(outcome) do
+    outcome |> provenance() |> Provenance.stand_ins() |> Enum.map(& &1.path)
+  end
+
+  defp origin_variant(:computed), do: :success
+  defp origin_variant(:declared), do: :info
+  defp origin_variant(:default), do: :warning
+  defp origin_variant(:absent), do: :warning
+  defp origin_variant(:unavailable), do: :error
+
+  defp origin_label(:computed), do: "your input"
+  defp origin_label(:declared), do: "declared"
+  defp origin_label(:default), do: "fallback default"
+  defp origin_label(:absent), do: "no data — stand-in"
+  defp origin_label(:unavailable), do: "source unreadable"
 
   defp format_duration(us) when us < 1_000, do: "#{us} us"
   defp format_duration(us) when us < 1_000_000, do: "#{Float.round(us / 1_000, 1)} ms"
