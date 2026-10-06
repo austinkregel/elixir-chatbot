@@ -55,6 +55,16 @@ defmodule Brain.Lexicon.ClosedClass do
   @spec classes(String.t()) :: [String.t()]
   def classes(word) when is_binary(word), do: Map.get(@class_of, String.downcase(word), [])
 
+  @doc """
+  Every UD part of speech the declaration file assigns words to, sorted.
+
+  A consumer encoding closed-class membership as a fixed-width vector takes its
+  width from here, so adding a class to the file widens the vector instead of
+  being silently dropped.
+  """
+  @spec all_classes() :: [String.t()]
+  def all_classes, do: Enum.sort(Map.keys(@classes))
+
   @doc "The UD features declared for `word`, e.g. `%{\"PronType\" => \"Tot\"}`."
   @spec features(String.t()) :: %{String.t() => String.t()}
   def features(word) when is_binary(word), do: Map.get(@features_of, String.downcase(word), %{})
