@@ -20,6 +20,7 @@ defmodule Brain.Analysis.TypeHierarchy do
 
   use GenServer
   alias Atlas.Graph.EdgeLabels
+  alias Brain.Provenance
   require Logger
 
   @ets_table :type_hierarchy
@@ -181,20 +182,59 @@ defmodule Brain.Analysis.TypeHierarchy do
       iex> TypeHierarchy.config("nonexistent", "fallback")
       "fallback"
   """
+  # Three outcomes that used to be one. A key the file declares, a key it does
+  # not, and a table that could not be read at all are different facts: the last
+  # means the store is down, which is not the same as a value being unset, and
+  # returning the caller's fallback for both is how a dead lookup table reads as
+  # a configuration choice. `Brain.Provenance` separates them for whoever is
+  # looking; the returned value is unchanged either way.
   def config(key, default \\ nil)
 
   def config(key, default) when is_binary(key) do
     case safe_ets_lookup(:_config) do
-      [{:_config, config_map}] -> Map.get(config_map, key, default)
-      _ -> default
+      [{:_config, config_map}] ->
+        case Map.fetch(config_map, key) do
+          {:ok, value} -> declared(key, value)
+          :error -> defaulted(key, default)
+        end
+
+      _ ->
+        unavailable(key, default)
     end
   end
 
   def config(keys, default) when is_list(keys) do
     case safe_ets_lookup(:_config) do
-      [{:_config, config_map}] -> get_in(config_map, keys) || default
-      _ -> default
+      [{:_config, config_map}] ->
+        case get_in(config_map, keys) do
+          nil -> defaulted(Enum.join(keys, "."), default)
+          value -> declared(Enum.join(keys, "."), value)
+        end
+
+      _ ->
+        unavailable(Enum.join(keys, "."), default)
     end
+  end
+
+  defp declared(key, value) do
+    Provenance.record(["config", key], value, :declared,
+      source: "TypeHierarchy.config/2",
+      meta: %{"file" => "priv/analysis/entity_types.json"}
+    )
+  end
+
+  defp defaulted(key, default) do
+    Provenance.record(["config", key], default, :default,
+      source: "TypeHierarchy.config/2",
+      meta: %{"reason" => "entity_types.json declares no #{key}"}
+    )
+  end
+
+  defp unavailable(key, default) do
+    Provenance.record(["config", key], default, :unavailable,
+      source: "TypeHierarchy.config/2",
+      meta: %{"reason" => "the TypeHierarchy ETS table could not be read"}
+    )
   end
 
   @doc "Check if the GenServer is ready."
