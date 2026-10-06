@@ -181,7 +181,7 @@ defmodule ChatWeb.Harness.Diff do
       <div :for={{child, index} <- Enum.with_index(@value)} class="flex flex-wrap gap-2">
         <span class="shrink-0 text-base-content/40">{index}:</span>
         <div class="min-w-0 flex-1">
-          <.node
+          <.value_node
             value={child}
             path={@path ++ [Integer.to_string(index)]}
             defaulted_set={@defaulted_set}
