@@ -37,6 +37,10 @@ defmodule ChatWeb.Router do
       live "/lexicon", LexiconLive
       live "/training-studio", TrainingStudioLive
       live "/training/pos", POSTrainingLive
+
+      # The verification harness index (task 039). The per-subsystem pages
+      # (tasks 040-057) register their own routes here as they land.
+      live "/verify", VerifyLive
     end
 
     # Legacy route redirects
