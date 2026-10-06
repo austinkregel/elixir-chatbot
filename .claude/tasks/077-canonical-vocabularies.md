@@ -372,8 +372,56 @@ disambiguation for the ambiguous high-frequency tokens.
 Two items already on the board are the same thing seen from other sides: Austin's proposal of a
 hand-defined feature group for politeness / conflict / familiarity is this axis's feature-side
 surface, and the `"jew"` → `"did you"` case held in memory is the same problem class — context
-deciding which reading applies. **No new task has been drafted for this**; it is recorded here
-because domain 5 is where it belongs and overlap with existing plans has not been checked.
+deciding which reading applies.
+
+### The axis exists — built 2026-10-06
+
+Austin: *"I think building the system is more important than getting it right 100% off the bat. If we
+account for the lists being non-static, and expandable we can then seed it manually with what we know
+today based on what we've done and then expand it as things are used or refined."*
+
+Overlap checked against all 91 task files before building: none. 081/082 are utterance-level
+`ChunkProfile` axes and would **measure** this one (`modality` is computed for only 59 of 238 chunks
+and is squarely modal/hedge territory); 044 is the verification page for the speech-act subsystem.
+
+| file | what it is |
+|---|---|
+| `apps/brain/priv/knowledge/pragmatic_functions.json` | 26 functions, 193 seeded entries, each function carrying a `description` and a `seeded_from` list |
+| `apps/brain/lib/brain/lexicon/pragmatic_function.ex` | compile-time load and validation, n-gram matching, owned-lexicon expansion |
+| `apps/brain/test/brain/lexicon/pragmatic_function_test.exs` | 34 tests, 0 failures, affirmative throughout |
+
+**The invariant that makes "expandable" and "hard-fail" coexist:** the inventory of function *names*
+is closed — declared, validated at compile time, and `all_functions/0` is where consumers take their
+vector width, so adding a function widens them instead of being dropped. The set of *words* per
+function is open — the file holds seeds, and `functions/2` returns them together with owned facts
+(`kind: "property"`, `key: "pragmatic_function"`, `ref:` the function name). The owned half may add
+words to a function, **never a new function**, and raises if it tries. This generalises what
+`LinguisticData.negator?/1` already does for negation, where seeding took recognition from 1 of 12
+to 1,374 words.
+
+Three things it fixes as data rather than as code:
+
+- `pls` and `plz` are politeness, so the `has_imperative_start?` defect becomes fixable without a
+  third hardcoded list. The phrase markers `could you` / `would you` / `can you` are in the same
+  function, which a one-position token lookahead could never have consumed.
+- Bare `kind` and `sort` are **absent**, and `kind of` / `sort of` are present as phrases. N-gram
+  matching lives in the module, so the `chunk_features.ex:508` false positive cannot be reproduced
+  by a consumer of this file.
+- The three real pragmatic distinctions are separate declared functions instead of implicit in four
+  disagreeing lists.
+
+**What it deliberately is not.** Every accessor answers *which functions could this token be
+performing*, never which one it is — `are` is seeded under `polar_interrogative` and so fires on the
+copula in *"you are very kind"*. Resolving a candidate set needs context, as lexical sense does
+through `Lexicon.disambiguate/3`, and **that layer does not exist**. The docs say so at every level
+so a consumer cannot mistake candidates for readings.
+
+**Not done in this pass, deliberately:** no consumer has been migrated. The sixteen lists are all
+still in place and still disagree; this pass built the thing they can be migrated *onto*. Migration
+is per-consumer and each one changes a feature the classifiers read, so it is measurable work
+against 081's bits-per-axis rather than a mechanical edit. There is also **no verification page**
+for the axis yet; the standing requirement is that every feature gets one, and 044 is the natural
+host but is blocked by 039.
 
 ### A live defect this located
 
