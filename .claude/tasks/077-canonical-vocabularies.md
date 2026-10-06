@@ -142,6 +142,35 @@ exception"), `code/tokenizer.ex`'s 9 per-language keyword tables and digit/hex a
 | days / months | 2 | — | — | none |
 | intensifiers | 2 | — | — | `LinguisticData.intensifiers()` — 10 |
 
+### Correction, and a defect it exposed (2026-10-06, same day)
+
+The first version of this section cited the declared hedge list from memory rather than from the
+file, and got four of its ten members wrong. The actual `linguistic.json` hedges are:
+
+```
+maybe  perhaps  possibly  probably  might  could  somewhat  "kind of"  "sort of"  "a bit"
+```
+
+Three corrections follow, none of which change the section's conclusions:
+
+| claim | was | is |
+|---|---|---|
+| hedge pairs, independent / nested | 10 / 0 | **9 / 1** — `speech_act_classifier.ex:284` is a strict subset of the declared list |
+| WordNet recall on hedges | 7.1% of 14 wanted | **6.2% of 16 wanted** |
+| multi-function words | 20 of 239 (8.4%) | 20 of **236** (8.5%) — the hedge set used three words no list contains |
+
+**Phrase-shaped entries are not an edge case in the declared data.** 3 of 10 hedges (`kind of`,
+`sort of`, `a bit`), **3 of 4** `polite_markers` (`could you`, `would you`, `can you`) and 1 of 4
+`attention_words` (`hold on`) are multi-token. Any consumer that matches single tokens against these
+files silently sees a fraction of them, so the owning module has to do the n-gram matching rather
+than hand a flat list to callers.
+
+**The live defect that follows from it:** `chunk_features.ex:508` counts bare `kind` and `sort` as
+hedges — the heads of `kind of` and `sort of`, token-matched. In the 4,600-row corpus `kind` occurs
+twice and **neither occurrence is a hedge**: *"you are very kind"* and *"you're so kind"*, both
+compliments, both scoring a hedge in the feature vector. `sort` occurs zero times, so that half of
+the list is dead weight. Small n, but 2 of 2 wrong, and it is a feature the intent classifier reads.
+
 ### Four pairs are byte-identical copies
 
 | copy A | copy B |
@@ -219,7 +248,7 @@ members the other lacks were built independently of each other. Measured over ev
 
 | cluster | identical | nested | independent | reading |
 |---|---:|---:|---:|---|
-| hedges | 0 | 0 | **10** | independent invention |
+| hedges | 0 | 1 | **9** | independent invention, one exception |
 | agreement / backchannel | 0 | 0 | **6** | independent — but see below |
 | stopwords | 0 | 0 | **3** | independent — legitimately task-local |
 | question words | 1 | 5 | 9 | two families, nested within each |
@@ -246,9 +275,11 @@ one list would destroy information:
 
 **Three are duplication with no distinguishing concept:**
 
-- **Hedges** — 10 of 10 pairs independent, all five definitions named "hedge", and no criterion
+- **Hedges** — 9 of 10 pairs independent, all five definitions named "hedge", and no criterion
   separates any two. Nothing states what `chunk_segmenter`'s hedge list is for that `speech_act`'s
-  is not.
+  is not. The one exception is real and worth keeping: `speech_act_classifier.ex:284` is a strict
+  **subset of the declared list**, so that author either read `linguistic.json` or landed on it
+  exactly. It is the only one of the four code lists that did.
 - **The four byte-identical pairs** — identical content cannot be differentiation.
 - **The pronoun lists** — nested, but with no criterion. No task needs `you your yours yourself` and
   not `yourselves`.
@@ -269,7 +300,7 @@ uses:
 
 | cluster | seed | wanted | recall | noise pulled in |
 |---|---:|---:|---:|---:|
-| hedges | 4 | 14 | **7.1%** (`likely` only) | 9 |
+| hedges | 4 | 16 | **6.2%** (`likely` only) | 9 |
 | intensifiers | 2 | 5 | **0%** | 8 |
 | agreement | 2 | 20 | **0%** | 14 |
 | politeness | 1 | 3 | **0%** | 1 |
