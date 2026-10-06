@@ -200,6 +200,46 @@ end)
 '
 ```
 
+## Verification of the instrumentation (PROVEN 2026-10-06)
+
+Two source files outside the harness were changed — `TypeHierarchy.config/2` and
+`ChunkFeatures.entity_features/1` — so the question is whether either moved behaviour.
+
+**A/B against the same build**, reverting both files to the pre-change revision and running the same
+suite. The revert and the restore were each verified inside the job's own output by counting
+`Provenance` references in the two files (`0 0` before, `5 4` after):
+
+| | tests | failures |
+|---|---:|---:|
+| pre-change files | 818 | **39** |
+| at HEAD | 836 | **39** |
+
+The 18-test difference is exactly `provenance_test.exs`. **Zero net failures introduced, 18 tests
+added.** `ChunkFeatures.schema_fingerprint/0` is unchanged at `ab0903fe86037864`, so the feature
+vector and every model trained on it are untouched.
+
+### The failing *set* differed by 3, and that is the suite, not the change
+
+Same count, different members: three tests failed only before and three only after, every one inside
+`EdgeCasesComprehensiveTest`. Rather than assume that was noise, it was measured — the same file run
+**twice at HEAD, same seed, same build**:
+
+| | run 1 | run 2 |
+|---|---:|---:|
+| failures | 24 | 23 |
+| stable across both | 22 | 22 |
+| failing in this run only | 2 | 1 |
+
+`EdgeCasesComprehensiveTest` churns about three tests against itself between identical runs, which is
+the same magnitude as the before/after delta. *"Iris is also a song by Goo Goo Dolls"* appears both
+in the after-only list and in the run2-only list, so it is a demonstrated flapper rather than a
+regression.
+
+So the file holds **22 stable failures and roughly 3 that are not reproducible**. That belongs with
+task 072's fourth criterion, which is about exactly this: a measurement that moves when nothing
+changed cannot be used to judge whether something changed. Recorded here because it is what makes
+this task's own verification trustworthy; not drafted as a separate task, and not fixed.
+
 ## Remaining
 
 - **Page 040 built on these components** is the last acceptance criterion, and it is task 040.
