@@ -294,6 +294,56 @@ Two consequences for this task:
 2. These vocabularies are the part the system has to own and learn, which is the same ruling already
    recorded for WordNet generally: it seeds the owned lexicon and is never a runtime authority.
 
+### Domain 5 is a missing axis, not only a missing canonical file (PROVEN 2026-10-06)
+
+Austin: *"So is there a technical system that we're missing? Or is this strictly a canonical vocab
+issue?"* A system is missing, and it is one axis in an architecture that already has the right shape
+three times:
+
+| axis | module | shape |
+|---|---|---|
+| morphosyntactic class | `Brain.Lexicon.ClosedClass` | word → UD POS class(es) + features; declared, compile-time validated, hard-fails, **already many-to-many** ("`to` is ADP and PART") |
+| lexical sense | WordNet + `Brain.Lexicon.UserDefined` + `SenseDrift` | word → senses; owned facts kept beside contradicting seeds; `Lexicon.disambiguate/3` picks by context |
+| utterance-level pragmatics | `SpeechActClassifier`, `DiscourseAnalyzer`, `illocutionary_clarity` | whole utterance → act |
+
+**Absent: the word-level pragmatic-function axis.** A word has a declared class and a disambiguable
+sense; it has no declared discourse function. Every one of the 16 clusters is a module privately
+asking *"is this token performing function X here?"* with no axis to ask on, so each author wrote
+the set inline. Three measurements establish this:
+
+1. **`could` appearing in both the modal list and the hedge list is not carelessness.** `AUX` is its
+   *class*, which `ClosedClass` already declares; hedging is its *function* in some contexts. Two
+   orthogonal axes, one of which exists. Likewise `will`/`shall` in modal and commissive, `now` in
+   temporal and urgency.
+2. **The axis needs disambiguation, not just declaration.** Of 239 distinct words across 26
+   concepts, 20 (8.4%) carry more than one function — but they are the highest-frequency tokens:
+   `ok`/`okay` carry four (backchannel, acknowledge, confirmation, greeting), `right`/`sure` three,
+   and `backchannel ∩ confirmation` is 7 words, **half of each list**. Assigning each word a single
+   function is false for exactly the words that matter most. The precedent is
+   `Lexicon.disambiguate(word, pos, context_words)`, which already does this for sense — not a larger
+   JSON file.
+3. **One module already built the right representation and it was never promoted.**
+   `enrichment_features.ex:769` declares `@dm_categories` as function → words, inverts it into
+   `@dm_token_to_category`, and derives `@discmark_dim` from the inventory size. Its eight categories
+   include `hedge` and `confirmation` — the same two concepts four other modules carry as standalone
+   word lists. Even this one forces a single category per token, so it cannot represent `ok` as both
+   confirmation and backchannel.
+
+**Consequence for criterion 1.** Canonicalising alone is insufficient here. It would collapse the 16
+lists into declared files and remove the duplication, but `ok` would have to be assigned to exactly
+one of backchannel / acknowledge / confirmation / greeting, which is false; the three real pragmatic
+distinctions measured above would remain undeclared; and the next module needing *"is this a hedge
+here?"* would have nothing to call and would write list seventeen. What the domain needs is a
+declared **function inventory** (as `ClosedClass` declares the POS inventory), a many-to-many
+word → function mapping validated against that inventory at compile time, and context
+disambiguation for the ambiguous high-frequency tokens.
+
+Two items already on the board are the same thing seen from other sides: Austin's proposal of a
+hand-defined feature group for politeness / conflict / familiarity is this axis's feature-side
+surface, and the `"jew"` → `"did you"` case held in memory is the same problem class — context
+deciding which reading applies. **No new task has been drafted for this**; it is recorded here
+because domain 5 is where it belongs and overlap with existing plans has not been checked.
+
 ### A live defect this located
 
 `has_imperative_start?/1` at `speech_act_classifier.ex:828-842` skips one leading politeness token
