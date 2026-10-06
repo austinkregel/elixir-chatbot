@@ -888,7 +888,7 @@ defmodule Brain.Analysis.Pipeline do
   # The tagger is required, not optional. `pos_tags` feeds WordFeatures, and
   # WordFeatures feeds every WordNet group (supersenses, lexical domains,
   # selectional preferences, subcategorization, meaning depth), ConceptNet
-  # edges and pos_distribution -- 169 of the 343 feature dimensions.
+  # edges and pos_distribution -- 169 of the 337 feature dimensions.
   #
   # This used to return `{:error, reason}` and the callers turned that into
   # `[]`, so an unloadable model produced a *constant* feature vector instead
@@ -909,7 +909,7 @@ defmodule Brain.Analysis.Pipeline do
         #{reason}
 
         Analysis cannot continue without part-of-speech tags: they feed 169 of
-        the 343 feature dimensions, so proceeding would yield a constant
+        the 337 feature dimensions, so proceeding would yield a constant
         feature vector rather than a wrong one.
 
         Train one with `mix pos.train`, or install an existing run with
@@ -1870,7 +1870,7 @@ defmodule Brain.Analysis.Pipeline do
     # nil, not 0.5: an intent whose confidence is unknown is a different state
     # from one measured at the middle, and a consumer calibrating against this
     # number cannot tell them apart once they are the same value. Measured over
-    # 1000 held-out rows, this is absent on 1 of them.
+    # the held-out split when it held 1000 rows, this was absent on 1 of them.
     intent_conf =
       case analysis.speech_act do
         %{intent_confidence: c} when is_number(c) and c > 0 -> c
