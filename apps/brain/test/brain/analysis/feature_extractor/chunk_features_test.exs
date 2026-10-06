@@ -10,17 +10,18 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     2. The rescue clause inside `extract_tokens/1` re-attempts the same
        broken bracket read, so it cannot recover.
 
-    3. `memory_context_features/1` reads `:novelty_score`,
-       `:similar_episode_count`, `:graph_known`, `:repetition_score`,
-       `:conversation_centroid_distance`, and `:context_length` from a
-       `%Brain.Analysis.ContextAccumulator{}` struct, but none of those
-       fields exist on that struct.
+    3. Reading `:novelty_score`, `:similar_episode_count`, `:graph_known`,
+       `:repetition_score`, `:conversation_centroid_distance` and
+       `:context_length` off a `%Brain.Analysis.ContextAccumulator{}`, none
+       of which are fields on that struct. `entity_features/1` is the one
+       place the accumulator still reaches the vector, through
+       `:entity_familiarity`.
 
   These tests pass plain structs (no maps/keyword lists) into the public
   API, exactly the way `Brain.materialize_profiles/1` does in production,
   and assert that the resulting feature vector is the right shape and
-  that the memory + slot dimensions reflect the input data instead of
-  collapsing to zero.
+  that the slot dimensions reflect the input data instead of collapsing
+  to zero.
 
   The tests intentionally pre-supply an empty `word_features` list so
   the ETS-backed `Brain.Lexicon` is never queried — these cases exercise
@@ -33,7 +34,6 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
   alias Brain.Analysis.FeatureExtractor.ChunkFeatures
   alias Brain.Analysis.FeatureExtractor.EnrichmentFeatures
 
-  @memory_dims 6
   @slot_dims 6
 
   describe "extract/2 with a real %ChunkAnalysis{} struct" do
@@ -77,7 +77,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     end
   end
 
-  describe "memory_context_features/1 with a real %ContextAccumulator{}" do
+  describe "a real %ContextAccumulator{} in the analysis" do
     test "does not raise on bracket access against the struct (Bug 1)" do
       acc = %ContextAccumulator{}
 
@@ -91,7 +91,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
       assert is_list(ChunkFeatures.extract(analysis, []))
     end
 
-    test "reflects real ContextAccumulator fields, not the nonexistent ones (Bug 3)" do
+    test "a populated accumulator extracts to a full-width vector" do
       acc = %ContextAccumulator{
         signals: [
           {:speech_act, :directive, 0.9},
@@ -113,41 +113,18 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
       }
 
       vector = ChunkFeatures.extract(analysis, [])
-      memory_features = memory_slice(vector)
 
-      refute Enum.all?(memory_features, &(&1 == 0.0)),
-             "memory_context_features collapsed to all-zeros despite a populated ContextAccumulator " <>
-               "(real fields: combined_confidence=0.85, entity_familiarity=0.95, " <>
-               "relevant_episodes=5, relevant_semantics=2, conversation_topics=2, signals=2). " <>
-               "Got: #{inspect(memory_features)}"
+      assert length(vector) == ChunkFeatures.vector_dimension()
+      assert Enum.all?(vector, &is_float/1)
     end
 
-    test "an empty ContextAccumulator yields different memory features than a populated one" do
-      empty_acc = %ContextAccumulator{}
+    test "no dimension is derived from accumulated memory state" do
+      groups = ChunkFeatures.dimension_manifest() |> Enum.map(&elem(&1, 0)) |> Enum.uniq()
 
-      full_acc = %ContextAccumulator{
-        signals: [{:a, 1, 0.9}, {:b, 2, 0.9}],
-        combined_confidence: 0.95,
-        entity_familiarity: 0.99,
-        relevant_episodes: List.duplicate(%{}, 8),
-        conversation_topics: [:x, :y, :z]
-      }
-
-      empty_vec =
-        ChunkFeatures.extract(
-          %ChunkAnalysis{chunk_index: 0, text: "hi", pos_tags: [], accumulated_context: empty_acc},
-          []
-        )
-
-      full_vec =
-        ChunkFeatures.extract(
-          %ChunkAnalysis{chunk_index: 0, text: "hi", pos_tags: [], accumulated_context: full_acc},
-          []
-        )
-
-      assert memory_slice(empty_vec) != memory_slice(full_vec),
-             "memory features were identical for empty vs populated ContextAccumulator — " <>
-               "the extractor is not actually reading any real fields"
+      refute :memory_context in groups,
+             "a dimension computed from the memory stores makes the training corpus " <>
+               "differ between two generation runs over the same input, because " <>
+               "generation writes to the stores it reads features from."
     end
   end
 
@@ -297,10 +274,9 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     end
   end
 
-  # Locates a group's window by name rather than by arithmetic on the vector's
-  # tail. The previous version subtracted a hand-maintained sum of every
-  # enrichment group's width to find the memory/slot windows, so adding a group
-  # anywhere but the very end silently moved these slices onto the wrong values.
+  # By name, not by arithmetic on the vector's tail: a width computed from a
+  # hand-maintained sum of the other groups moves onto the wrong values as soon as
+  # a group is added anywhere but the end.
   defp group_slice(vector, group) do
     manifest = ChunkFeatures.dimension_manifest()
     offset = Enum.find_index(manifest, fn {g, _n} -> g == group end)
@@ -309,12 +285,6 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     refute is_nil(offset), "no group #{inspect(group)} in the dimension manifest"
 
     Enum.slice(vector, offset, width)
-  end
-
-  defp memory_slice(vector) do
-    slice = group_slice(vector, :memory_context)
-    assert length(slice) == @memory_dims
-    slice
   end
 
   defp slot_slice(vector) do
