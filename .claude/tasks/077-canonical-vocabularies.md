@@ -208,6 +208,92 @@ naming rule as well**, or the next author writes `@hedging_terms`, no search fin
 and the split regrows under a sixth name. The rule belongs with the vocabulary declaration, so that
 the name and the data have one source.
 
+### Which divergences are purposeful and which are careless (PROVEN 2026-10-06)
+
+Austin: *"I want to believe that the agents chose to remake these lists instead of using what was
+there on purpose, but I have no proof they weren't just blindly charging forth."*
+
+The discriminator is the subset relation. Within a cluster, a smaller list that is a **strict
+subset** of a larger one is consistent with purposeful narrowing; two lists that **each** hold
+members the other lacks were built independently of each other. Measured over every pair:
+
+| cluster | identical | nested | independent | reading |
+|---|---:|---:|---:|---|
+| hedges | 0 | 0 | **10** | independent invention |
+| agreement / backchannel | 0 | 0 | **6** | independent — but see below |
+| stopwords | 0 | 0 | **3** | independent — legitimately task-local |
+| question words | 1 | 5 | 9 | two families, nested within each |
+| pronoun 1st person | 1 | 4 | 1 | nested, no stated criterion |
+| pronoun 2nd / 3rd | 0 | 2 | 4 | nested within person |
+| imperative verbs | 1 | 2 | 0 | purposeful narrowing |
+
+**Three clusters encode real distinctions that were never written down**, so consolidating them onto
+one list would destroy information:
+
+- **Agreement is three different illocutionary acts.** `@backchannel_tokens` is a continuer
+  (`mhm`, `uh huh`, `nah` — "keep going"); `@ack_tokens` is receipt (`roger`, `noted`,
+  `understood` — "message landed"); `enrichment:777 confirmation` is agreement (`yes`, `exactly`,
+  `absolutely`). All six pairs being independent is *expected* for three distinct categories. Only
+  `chunk_segmenter.ex:235` is muddled — it mixes backchannel and acknowledgment.
+- **Question words are two families.** Every within-family pair is nested; every cross-family pair is
+  independent, because `is are was were does did` answers *"does this open like a yes/no question?"*
+  while `what where when why` answers *"is there a wh-word?"* And `@pronoun_interrogative` excluding
+  `how`/`when`/`where` is linguistically correct — those are adverbs, not pronouns. A POS-constrained
+  subset, not an omission.
+- **Stopwords are correctly task-local**, the most defensible cluster surveyed. A stopword list is
+  defined by what the task wants to *keep*: `knowledge/types.ex:879` strips wh-words because it is
+  reducing a question to its entity; `response_quality.ex:157` is measuring content overlap.
+
+**Three are duplication with no distinguishing concept:**
+
+- **Hedges** — 10 of 10 pairs independent, all five definitions named "hedge", and no criterion
+  separates any two. Nothing states what `chunk_segmenter`'s hedge list is for that `speech_act`'s
+  is not.
+- **The four byte-identical pairs** — identical content cannot be differentiation.
+- **The pronoun lists** — nested, but with no criterion. No task needs `you your yours yourself` and
+  not `yourselves`.
+
+So the answer is both, and the two are in the same pile. **This changes what reconciliation means for
+this domain:** it is not "pick one of six and delete five." It is *name the distinctions that are
+real* and delete the copies that are not. Merging the five hedge lists is correct; merging
+backchannel + acknowledgment + confirmation would lose three pragmatic categories the system
+currently distinguishes by accident.
+
+### WordNet cannot supply these vocabularies (PROVEN 2026-10-06)
+
+Austin: *"Are we filling a gap WordNet doesn't fill?"* Yes, and it is the central gap.
+
+Each cluster's shared core was expanded through synset co-membership — the mechanism 088 built as
+`Brain.Lexicon.dominant_sense_synonyms/3` — and measured against the union of what the code actually
+uses:
+
+| cluster | seed | wanted | recall | noise pulled in |
+|---|---:|---:|---:|---:|
+| hedges | 4 | 14 | **7.1%** (`likely` only) | 9 |
+| intensifiers | 2 | 5 | **0%** | 8 |
+| agreement | 2 | 20 | **0%** | 14 |
+| politeness | 1 | 3 | **0%** | 1 |
+| question words | 2 | 7 | **0%** | 2 |
+| pronoun 1st person | 2 | 8 | **0%** | 12 |
+| greetings | 2 | 5 | 20% (`howdy`) | 6 |
+| imperative verbs | 4 | 25 | 20% | **142** |
+
+WordNet *contains* most of the words — 17 of 20 hedges, 7 of 7 intensifiers, 29 of 29 imperative
+verbs — and has no relation that **groups** them, because it indexes by lexical sense while every one
+of these clusters is organized by **pragmatic function**. `maybe` and `presumably` are both hedges in
+unrelated synsets; `ok` and `roger` are both acknowledgments with no WordNet link. Hedging is
+something a word does in context, not a sense it has. Coverage of the closed class is separately
+absent: 33 of 40 pronouns, 5 of 10 modals and 4 of 5 conditional markers have no synset at all.
+
+Two consequences for this task:
+
+1. `priv/knowledge/closed_class.json` and `priv/knowledge/linguistic.json` **are** the gap-filler, and
+   they are the weak point. `linguistic.json` holds three keys totalling 39 words, and its own
+   `description` field reads *"NOT for classification - use trained models for that"* — the file that
+   should be canonical for this domain disclaims the job.
+2. These vocabularies are the part the system has to own and learn, which is the same ruling already
+   recorded for WordNet generally: it seeds the owned lexicon and is never a runtime authority.
+
 ### A live defect this located
 
 `has_imperative_start?/1` at `speech_act_classifier.ex:828-842` skips one leading politeness token
