@@ -143,6 +143,12 @@ defmodule ChatWeb.AppShell do
                 active={String.starts_with?(@current_path, "/training/pos")}
               />
               <.nav_item
+                href={~p"/verify"}
+                icon="hero-check-badge"
+                label="Verification"
+                active={String.starts_with?(@current_path, "/verify")}
+              />
+              <.nav_item
                 href={~p"/settings"}
                 icon="hero-cog-6-tooth"
                 label="Settings"
