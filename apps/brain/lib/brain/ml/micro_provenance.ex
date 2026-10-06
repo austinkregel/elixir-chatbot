@@ -32,7 +32,7 @@ defmodule Brain.ML.MicroProvenance do
   | check | question |
   |---|---|
   | `check_inputs!/3` | was the training file changed after training? |
-  | `check_schema!/3` | do the 343 dimensions still mean the same things? |
+  | `check_schema!/3` | do the 337 dimensions still mean the same things? |
   | `check_environment!/3` | does the same text still produce the same numbers? |
 
   The third exists because the first two can both pass while the model is useless.
@@ -275,7 +275,7 @@ defmodule Brain.ML.MicroProvenance do
       is_nil(recorded) ->
         raise """
         feature-vector classifier #{name} at #{path} records no extractor schema
-        fingerprint, so there is no way to tell whether its 343 dimensions still
+        fingerprint, so there is no way to tell whether its 337 dimensions still
         mean what they meant at training time.
 
         The current schema is #{current}. Retrain with `mix train_micro`.
