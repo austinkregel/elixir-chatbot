@@ -14,7 +14,7 @@ defmodule Mix.Tasks.Test.Models do
   ## Why the test suite wants the real ones
 
   These models are *upstream* of the feature vector — the pipeline runs them to
-  produce the analysis that `Brain.Analysis.FeatureExtractor` turns into 343
+  produce the analysis that `Brain.Analysis.FeatureExtractor` turns into 337
   dimensions. A model fitted to vectors built against one set of them is not
   comparable to a runtime using another, and `data/classifiers/*.json` is generated
   in dev.
