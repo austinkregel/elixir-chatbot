@@ -848,13 +848,42 @@ defmodule Brain.Analysis.SpeechActClassifier do
     help explain describe calculate remember
   )
 
+  @imperative_verbs_cache :speech_act_imperative_verbs
+
+  # The seeds plus the synonyms sharing each seed's dominant verb sense.
+  #
+  # The criterion is the sense, not a count. `Brain.Lexicon.synonyms/3` flattens
+  # every sense of a polysemous verb together, so expanding through it reaches
+  # `check` -> `curb`, `chit`, `tick off` as readily as `verify`. Measured against
+  # the speech act corpus's directive labels, taking every synonym of every sense
+  # costs 9.6 points of precision (68.9% -> 59.3%) to gain 2.7 of recall.
+  #
+  # Memoised: the seeds are a compile-time constant and WordNet does not change
+  # between `mix atlas.seed` runs, but this is read once per utterance.
   defp expanded_imperative_verbs do
-    @seed_imperative_verbs
-    |> Enum.flat_map(fn verb ->
-      syns = Brain.Lexicon.synonyms(verb, :verb)
-      [verb | Enum.take(syns, 3)]
-    end)
-    |> MapSet.new()
+    table = imperative_verbs_table()
+
+    case :ets.lookup(table, :set) do
+      [{:set, set}] ->
+        set
+
+      [] ->
+        set =
+          @seed_imperative_verbs
+          |> Enum.flat_map(fn verb ->
+            [verb | Brain.Lexicon.dominant_sense_synonyms(verb, :verb)]
+          end)
+          |> MapSet.new()
+
+        :ets.insert(table, {:set, set})
+        set
+    end
+  end
+
+  defp imperative_verbs_table do
+    :ets.new(@imperative_verbs_cache, [:set, :public, :named_table, read_concurrency: true])
+  rescue
+    ArgumentError -> @imperative_verbs_cache
   end
 
   defp has_continuation_structure?(text, _normalized) do
