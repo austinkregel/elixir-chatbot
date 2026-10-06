@@ -76,7 +76,7 @@ defmodule Brain.Analysis.RunProvenance do
   @doc """
   The state a feature vector's *values* depend on, as `%{digest, components}`.
 
-  `schema_fingerprint!/0` says whether the vector's 343 dimensions still mean the
+  `schema_fingerprint!/0` says whether the vector's 337 dimensions still mean the
   same things. It says nothing about whether the same text still produces the same
   numbers, and that is a separate question with a separate answer: measured
   2026-09-28, the deployed models' stored training vectors do not reproduce, while
