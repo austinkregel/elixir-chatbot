@@ -99,6 +99,18 @@ config :brain,
     char_dim: 100,
     char_hidden: 100,
     word_hidden: 100,
+    # Width the lexical channel is projected to before it joins the word and
+    # character representations. Smaller than either: it carries a prior about
+    # the word type, not a learned representation of it.
+    #
+    # 0 builds the network without the channel, which is how its contribution is
+    # measured. Of the widths tried (0, 4, 8, 16, 32, 64), this is the only one
+    # whose held-out intent accuracy sits outside the spread a single
+    # configuration produces when measured repeatedly — see task 089. The tagger
+    # itself barely distinguishes the widths: 0.22 points of EWT separates all
+    # six. It need not be a power of two, being a dense layer's unit count, but
+    # nothing finer is justifiable at this signal-to-noise.
+    lex_dim: 4,
     dropout: 0.25,
     # Probability a word seen once in training is replaced by the unknown-word
     # token, so the model learns to tag words it has never seen.
