@@ -222,6 +222,19 @@ defmodule Brain.Lexicon do
     |> with_owned_relations(word, "synonym", pos, opts)
   end
 
+  @doc """
+  Synonyms sharing the word's most frequent sense for `pos`.
+
+  Narrower than `synonyms/3`, which flattens every sense together. Use this when
+  the caller named a word for one of its meanings and the others would be wrong.
+  """
+  @spec dominant_sense_synonyms(String.t(), atom(), keyword()) :: [String.t()]
+  def dominant_sense_synonyms(word, pos, opts \\ []) when is_binary(word) do
+    word
+    |> WordNet.dominant_sense_synonyms(pos)
+    |> with_owned_relations(word, "synonym", pos, opts)
+  end
+
   @doc "Returns one-level hypernyms for a word, optionally filtered by POS."
   @spec hypernyms(String.t(), atom() | nil, keyword()) :: [String.t()]
   def hypernyms(word, pos \\ nil, opts \\ []) when is_binary(word) do
