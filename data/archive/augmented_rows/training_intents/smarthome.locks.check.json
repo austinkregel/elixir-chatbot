@@ -1,0 +1,80 @@
+[
+  {
+    "text": "hey check all doors status",
+    "tokens": [
+      "hey",
+      "check",
+      "all",
+      "doors",
+      "status"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-8c53f3b3",
+    "intent": "smarthome.locks.check"
+  },
+  {
+    "text": "could you front door status",
+    "tokens": [
+      "could",
+      "you",
+      "front",
+      "door",
+      "status"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-9691b76c",
+    "intent": "smarthome.locks.check"
+  },
+  {
+    "text": "status front door",
+    "tokens": [
+      "status",
+      "front",
+      "door"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-c9038061",
+    "intent": "smarthome.locks.check"
+  },
+  {
+    "text": "can you check all doors status",
+    "tokens": [
+      "can",
+      "you",
+      "check",
+      "all",
+      "doors",
+      "status"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-066ef6d6",
+    "intent": "smarthome.locks.check"
+  }
+]

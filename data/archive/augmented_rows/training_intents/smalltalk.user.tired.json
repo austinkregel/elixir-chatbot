@@ -1,0 +1,44 @@
+[
+  {
+    "text": "I 'm tired getting",
+    "tokens": [
+      "I",
+      "'m",
+      "tired",
+      "getting"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-462d3ed0",
+    "intent": "smalltalk.user.tired"
+  },
+  {
+    "text": "I'd like to i'm exhausted",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "i",
+      "'m",
+      "exhausted"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-a1a44649",
+    "intent": "smalltalk.user.tired"
+  }
+]

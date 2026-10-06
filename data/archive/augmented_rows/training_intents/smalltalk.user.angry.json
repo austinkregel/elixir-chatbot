@@ -1,0 +1,44 @@
+[
+  {
+    "text": "could you i am angry with you",
+    "tokens": [
+      "could",
+      "you",
+      "i",
+      "am",
+      "angry",
+      "with",
+      "you"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-87bf991e",
+    "intent": "smalltalk.user.angry"
+  },
+  {
+    "text": "I 'm being mad",
+    "tokens": [
+      "I",
+      "'m",
+      "being",
+      "mad"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-47aba727",
+    "intent": "smalltalk.user.angry"
+  }
+]

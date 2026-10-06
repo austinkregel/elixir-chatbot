@@ -1,0 +1,20 @@
+[
+  {
+    "text": "I want to anytime",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "anytime"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-11ae1461",
+    "intent": "smalltalk.appraisal.welcome"
+  }
+]

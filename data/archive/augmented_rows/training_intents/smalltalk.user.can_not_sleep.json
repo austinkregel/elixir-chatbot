@@ -1,0 +1,40 @@
+[
+  {
+    "text": "I insomniac 'm",
+    "tokens": [
+      "I",
+      "insomniac",
+      "'m"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-fdf3dc08",
+    "intent": "smalltalk.user.can_not_sleep"
+  },
+  {
+    "text": "I n't ca get no sleep",
+    "tokens": [
+      "I",
+      "n't",
+      "ca",
+      "get",
+      "no",
+      "sleep"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADV",
+      "AUX",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-b44bd704",
+    "intent": "smalltalk.user.can_not_sleep"
+  }
+]

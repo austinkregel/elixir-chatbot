@@ -1,0 +1,18 @@
+[
+  {
+    "text": "hey no probs",
+    "tokens": [
+      "hey",
+      "no",
+      "probs"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-b670c0c2",
+    "intent": "smalltalk.appraisal.no_problem"
+  }
+]

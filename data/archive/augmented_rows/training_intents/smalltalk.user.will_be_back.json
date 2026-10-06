@@ -1,0 +1,118 @@
+[
+  {
+    "text": "can you be back in 5 minutes",
+    "tokens": [
+      "can",
+      "you",
+      "be",
+      "back",
+      "in",
+      "5",
+      "minutes"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-f1661163",
+    "intent": "smalltalk.user.will_be_back"
+  },
+  {
+    "text": "be back in minutes 5",
+    "tokens": [
+      "be",
+      "back",
+      "in",
+      "minutes",
+      "5"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV",
+      "ADP",
+      "NOUN",
+      "NUM"
+    ],
+    "entities": [],
+    "id": "augmented-00c046f5",
+    "intent": "smalltalk.user.will_be_back"
+  },
+  {
+    "text": "I promise come back",
+    "tokens": [
+      "I",
+      "promise",
+      "come",
+      "back"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "augmented-b109c2dc",
+    "intent": "smalltalk.user.will_be_back"
+  },
+  {
+    "text": "I be 'll back in a few minutes",
+    "tokens": [
+      "I",
+      "be",
+      "'ll",
+      "back",
+      "in",
+      "a",
+      "few",
+      "minutes"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "AUX",
+      "VERB",
+      "ADP",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-2c23b771",
+    "intent": "smalltalk.user.will_be_back"
+  },
+  {
+    "text": "please i'll be back in a few minutes",
+    "tokens": [
+      "please",
+      "i",
+      "'ll",
+      "be",
+      "back",
+      "in",
+      "a",
+      "few",
+      "minutes"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "AUX",
+      "VERB",
+      "ADV",
+      "ADP",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-7a947826",
+    "intent": "smalltalk.user.will_be_back"
+  }
+]

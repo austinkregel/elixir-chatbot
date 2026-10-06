@@ -1,0 +1,18 @@
+[
+  {
+    "text": "I sad am",
+    "tokens": [
+      "I",
+      "sad",
+      "am"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-42a5dd60",
+    "intent": "smalltalk.user.sad"
+  }
+]

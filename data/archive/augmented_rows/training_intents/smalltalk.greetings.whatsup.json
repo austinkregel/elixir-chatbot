@@ -1,0 +1,90 @@
+[
+  {
+    "text": "sup",
+    "tokens": [
+      "sup"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-2eeecd72",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "wazzup",
+    "tokens": [
+      "wazzup"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-ce0e6799",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "yo",
+    "tokens": [
+      "yo"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-6d0007e5",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "yo yo",
+    "tokens": [
+      "yo",
+      "yo"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-e8553652",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "what up",
+    "tokens": [
+      "what",
+      "up"
+    ],
+    "pos_tags": [
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "augmented-06d71e4d",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "whaddup",
+    "tokens": [
+      "whaddup"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-ebc39e7e",
+    "intent": "smalltalk.greetings.whatsup"
+  },
+  {
+    "text": "ayy",
+    "tokens": [
+      "ayy"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-8843cfb8",
+    "intent": "smalltalk.greetings.whatsup"
+  }
+]

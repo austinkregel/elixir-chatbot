@@ -1,0 +1,20 @@
+[
+  {
+    "text": "is my table lamp",
+    "tokens": [
+      "is",
+      "my",
+      "table",
+      "lamp"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-05a7a7a6",
+    "intent": "smarthome.lights.switch.check.off"
+  }
+]

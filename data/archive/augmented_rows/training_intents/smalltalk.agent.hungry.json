@@ -1,0 +1,48 @@
+[
+  {
+    "text": "I want to are you hungry",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "are",
+      "you",
+      "hungry"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-fcba061e",
+    "intent": "smalltalk.agent.hungry"
+  },
+  {
+    "text": "can you do you want to eat",
+    "tokens": [
+      "can",
+      "you",
+      "do",
+      "you",
+      "want",
+      "to",
+      "eat"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-b6895588",
+    "intent": "smalltalk.agent.hungry"
+  }
+]

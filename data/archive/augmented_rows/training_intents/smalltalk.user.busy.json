@@ -1,0 +1,26 @@
+[
+  {
+    "text": "I'd like to i'm overloaded",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "i",
+      "'m",
+      "overloaded"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-87bc5a25",
+    "intent": "smalltalk.user.busy"
+  }
+]

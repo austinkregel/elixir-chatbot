@@ -1,0 +1,474 @@
+[
+  {
+    "text": "hia there",
+    "tokens": [
+      "hia",
+      "there"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-0e712c86",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "hia",
+    "tokens": [
+      "hia"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-2d145e60",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "howdy y'all",
+    "tokens": [
+      "howdy",
+      "y'all"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-9eb690de",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "howdy!",
+    "tokens": [
+      "howdy",
+      "!"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PUNCT"
+    ],
+    "entities": [],
+    "id": "augmented-74b3389d",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "howdy partner",
+    "tokens": [
+      "howdy",
+      "partner"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-e28a0315",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "howdy there",
+    "tokens": [
+      "howdy",
+      "there"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-56862ce7",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hey, I was wondering",
+    "tokens": [
+      "Hey",
+      ",",
+      "I",
+      "was",
+      "wondering"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-b359f79a",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hello, can you help me?",
+    "tokens": [
+      "Hello",
+      ",",
+      "can",
+      "you",
+      "help",
+      "me",
+      "?"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "PUNCT"
+    ],
+    "entities": [],
+    "id": "augmented-f26db6ce",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hi there! I need some help",
+    "tokens": [
+      "Hi",
+      "there",
+      "!",
+      "I",
+      "need",
+      "some",
+      "help"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PRON",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-e108fbcf",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hello! I have a question",
+    "tokens": [
+      "Hello",
+      "!",
+      "I",
+      "have",
+      "a",
+      "question"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-c5ae6cbd",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hey! What's going on?",
+    "tokens": [
+      "Hey",
+      "!",
+      "What",
+      "'s",
+      "going",
+      "on",
+      "?"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADP",
+      "PUNCT"
+    ],
+    "entities": [],
+    "id": "augmented-a9353f5f",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hi, it's me",
+    "tokens": [
+      "Hi",
+      ",",
+      "it",
+      "'s",
+      "me"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-6ea439fe",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hello, nice to see you",
+    "tokens": [
+      "Hello",
+      ",",
+      "nice",
+      "to",
+      "see",
+      "you"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-1130f9f2",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hello there! How are you doing today?",
+    "tokens": [
+      "Hello",
+      "there",
+      "!",
+      "How",
+      "are",
+      "you",
+      "doing",
+      "today",
+      "?"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PRON",
+      "PUNCT",
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "PUNCT"
+    ],
+    "entities": [],
+    "id": "augmented-c9a8b5b0",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hello, it's nice to meet you",
+    "tokens": [
+      "Hello",
+      ",",
+      "it",
+      "'s",
+      "nice",
+      "to",
+      "meet",
+      "you"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-e555b856",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hello! It is nice to meet you",
+    "tokens": [
+      "Hello",
+      "!",
+      "It",
+      "is",
+      "nice",
+      "to",
+      "meet",
+      "you"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-194899d1",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hi! I'm new here",
+    "tokens": [
+      "Hi",
+      "!",
+      "I",
+      "'m",
+      "new",
+      "here"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-110e1183",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hey there, I'm Mike",
+    "tokens": [
+      "Hey",
+      "there",
+      ",",
+      "I",
+      "'m",
+      "Mike"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PRON",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-5aace82f",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hello, I'm Sarah. Nice to meet you.",
+    "tokens": [
+      "Hello",
+      ",",
+      "I",
+      "'m",
+      "Sarah",
+      ".",
+      "Nice",
+      "to",
+      "meet",
+      "you",
+      "."
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PUNCT",
+      "PROPN",
+      "PART",
+      "VERB",
+      "PRON",
+      "PUNCT"
+    ],
+    "entities": [],
+    "id": "augmented-dd16434d",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hi, my name is John",
+    "tokens": [
+      "Hi",
+      ",",
+      "my",
+      "name",
+      "is",
+      "John"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "PRON",
+      "NOUN",
+      "VERB",
+      "PROPN"
+    ],
+    "entities": [],
+    "id": "augmented-d3816af6",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "Hello, I'm Austin",
+    "tokens": [
+      "Hello",
+      ",",
+      "I",
+      "'m",
+      "Austin"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-0fd609de",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "hiya",
+    "tokens": [
+      "hiya"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-e2c50ded",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "holla",
+    "tokens": [
+      "holla"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-f67ba9d9",
+    "intent": "smalltalk.greetings.hello"
+  },
+  {
+    "text": "ello",
+    "tokens": [
+      "ello"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-9ecb0b2f",
+    "intent": "smalltalk.greetings.hello"
+  }
+]

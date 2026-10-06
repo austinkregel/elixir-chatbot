@@ -1,0 +1,208 @@
+[
+  {
+    "text": "I ca n't hear TV in the kitchen",
+    "tokens": [
+      "I",
+      "ca",
+      "n't",
+      "hear",
+      "TV",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "ADV",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-3d0143a0",
+    "intent": "smarthome.device.volume.unmute.implicit"
+  },
+  {
+    "text": "I ca n't hear the TV in the kitchen",
+    "tokens": [
+      "I",
+      "ca",
+      "n't",
+      "hear",
+      "the",
+      "TV",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-9b5df88f",
+    "intent": "smarthome.device.volume.unmute.implicit"
+  },
+  {
+    "text": "I ca n't hear TV",
+    "tokens": [
+      "I",
+      "ca",
+      "n't",
+      "hear",
+      "TV"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "ADV",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-a223a82c",
+    "intent": "smarthome.device.volume.unmute.implicit"
+  },
+  {
+    "text": "can you i can't hear the tv",
+    "tokens": [
+      "can",
+      "you",
+      "i",
+      "ca",
+      "n't",
+      "hear",
+      "the",
+      "tv"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "AUX",
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-d1fa4e6f",
+    "intent": "smarthome.device.volume.unmute.implicit"
+  },
+  {
+    "text": "I n't ca hear the TV in the kitchen",
+    "tokens": [
+      "I",
+      "n't",
+      "ca",
+      "hear",
+      "the",
+      "TV",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADV",
+      "AUX",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-45ab4898",
+    "intent": "smarthome.device.volume.unmute.implicit"
+  },
+  {
+    "text": "please i can't hear the tv",
+    "tokens": [
+      "please",
+      "i",
+      "ca",
+      "n't",
+      "hear",
+      "the",
+      "tv"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "AUX",
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-7df084f6",
+    "intent": "smarthome.device.volume.unmute.implicit"
+  },
+  {
+    "text": "I ca n't hear the TV",
+    "tokens": [
+      "I",
+      "ca",
+      "n't",
+      "hear",
+      "the",
+      "TV"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-f414bca4",
+    "intent": "smarthome.device.volume.unmute.implicit"
+  },
+  {
+    "text": "can you i can't hear the tv in the kitchen",
+    "tokens": [
+      "can",
+      "you",
+      "i",
+      "ca",
+      "n't",
+      "hear",
+      "the",
+      "tv",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "AUX",
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-27a7932c",
+    "intent": "smarthome.device.volume.unmute.implicit"
+  }
+]

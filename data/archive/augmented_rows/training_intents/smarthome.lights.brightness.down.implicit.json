@@ -1,0 +1,88 @@
+[
+  {
+    "text": "the computer screen is bright too",
+    "tokens": [
+      "the",
+      "computer",
+      "screen",
+      "is",
+      "bright",
+      "too"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-ff6ee0d1",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "I'd like to kitchen tv is too bright",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "kitchen",
+      "tv",
+      "is",
+      "too",
+      "bright"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-e36d433c",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "the kitchen TV is too",
+    "tokens": [
+      "the",
+      "kitchen",
+      "TV",
+      "is",
+      "too"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-1fd6ba23",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  },
+  {
+    "text": "it bright 's",
+    "tokens": [
+      "it",
+      "bright",
+      "'s"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART"
+    ],
+    "entities": [],
+    "id": "augmented-8d079810",
+    "intent": "smarthome.lights.brightness.down.implicit"
+  }
+]
