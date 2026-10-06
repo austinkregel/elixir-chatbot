@@ -84,7 +84,6 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
     group10 = lexical_semantic_fingerprint(word_feats)
     group11 = word_meaning_depth(word_feats)
     group12 = srl_frame_features(analysis)
-    group13 = memory_context_features(analysis)
     group14 = slot_completeness_features(analysis)
 
     # Enrichment groups (Tier 1). Appended at the tail so existing
@@ -111,7 +110,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
 
     group1 ++ group2 ++ group3 ++ group4 ++ group5 ++ group6 ++
       group7 ++ group8 ++ group9 ++ group10 ++ group11 ++ group12 ++
-      group13 ++ group14 ++
+      group14 ++
       group15 ++ group16 ++ group17_verb ++ group17_noun ++ group17_adj ++
       group18 ++ group19 ++
       group20 ++ group21 ++ group22 ++ group23
@@ -176,7 +175,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   The width alone was already guarded — `chunk_features_test.exs` asserts
   `length(extract(...)) == vector_dimension()`, so a group that changed size
   without updating the total would fail. What was missing is *identity*: a
-  343-float list where nothing says which slot is which cannot be diffed,
+  337-float list where nothing says which slot is which cannot be diffed,
   snapshotted or attributed. When a value moves between two runs there was no
   way to name the feature that moved, and when the width changes a total tells
   you only that something did.
@@ -287,14 +286,6 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
           Enum.map(@srl_roles, &:"role_#{&1}") ++
           [:srl_coverage]
       ) ++
-      in_group(:memory_context, [
-        :mem_novelty,
-        :mem_similar_episodes,
-        :mem_graph_known,
-        :mem_topic_continuity,
-        :mem_conflict,
-        :mem_combined_confidence
-      ]) ++
       in_group(:slot_completeness, [
         :slot_required_count,
         :slot_filled_count,
@@ -722,52 +713,11 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
     [frame_count] ++ role_flags ++ [coverage]
   end
 
-  # -- Group 13: Memory/context (~6 dims) --------------------------------------
-  #
-  # Sourced from the real fields on `Brain.Analysis.ContextAccumulator`:
-  #
-  #   - `:entity_familiarity`     (0.0..1.0)
-  #   - `:relevant_episodes`      (list)
-  #   - `:relevant_semantics`     (list)
-  #   - `:conversation_topics`    (list)
-  #   - `:combined_confidence`    (0.0..1.0)
-  #   - `:conflict_measure`       (0.0..1.0)
-  #   - `:signals`                (list)
-  #
-  # Each dim is normalized to 0.0..1.0 so it composes with the rest of the
-  # chunk feature vector. When `accumulated_context` is nil (no signals were
-  # accumulated for this turn), we fall back to a neutral midpoint vector so
-  # downstream classifiers don't read a spurious "perfectly familiar / no
-  # conflict" signal.
-
-  @memory_context_default [0.5, 0.0, 0.5, 0.0, 0.0, 0.0]
-
-  defp memory_context_features(analysis) do
-    case get_accumulated_context(analysis) do
-      nil ->
-        @memory_context_default
-
-      acc ->
-        familiarity = clamp01(Map.get(acc, :entity_familiarity, 0.5))
-        novelty = 1.0 - familiarity
-
-        episode_count = length(Map.get(acc, :relevant_episodes) || [])
-        semantic_count = length(Map.get(acc, :relevant_semantics) || [])
-        topic_count = length(Map.get(acc, :conversation_topics) || [])
-        _signal_count = length(Map.get(acc, :signals) || [])
-
-        similar_episodes = min((episode_count + semantic_count) / 10.0, 1.0)
-        graph_known = familiarity
-        topic_continuity = min(topic_count / 10.0, 1.0)
-        conflict = clamp01(Map.get(acc, :conflict_measure, 0.0))
-        combined_conf = clamp01(Map.get(acc, :combined_confidence, 0.5))
-
-        [novelty, similar_episodes, graph_known, topic_continuity, conflict, combined_conf]
-    end
-  end
-
-  defp clamp01(v) when is_number(v), do: min(max(v * 1.0, 0.0), 1.0)
-  defp clamp01(_), do: 0.5
+  # There is no group 13. The vector carries no dimension derived from accumulated
+  # memory state: `mix gen_micro_data` writes to the memory stores it reads
+  # features from, so any such dimension makes the training corpus differ between
+  # two runs over the same input. Entity familiarity reaches the vector only
+  # through `entity/ent_new_entity`.
 
   defp compute_avg_similarity(content_words) when length(content_words) < 2, do: 0.5
 
