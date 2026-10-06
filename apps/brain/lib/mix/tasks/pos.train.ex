@@ -19,7 +19,11 @@ defmodule Mix.Tasks.Pos.Train do
     {opts, _, invalid} = OptionParser.parse(args, strict: [out: :string])
     if invalid != [], do: Mix.raise("pos.train: unknown options #{inspect(invalid)}")
 
-    Mix.Task.run("app.config")
+    # `app.start`, not `app.config`: the tagger reads WordNet and the closed-class
+    # declaration per token, so `Brain.ML.Lexicon` has to be running to train at
+    # all. Under `app.config` it is not, and the first thing to ask for it — the
+    # provenance digest — exits on a call to a process that was never started.
+    Mix.Task.run("app.start")
     {:ok, _} = Application.ensure_all_started(:exla)
 
     Mix.shell().info("Training the POS tagger on the EWT fixtures...")
