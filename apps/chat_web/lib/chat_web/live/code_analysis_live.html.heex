@@ -133,17 +133,31 @@
                 </form>
 
                 <.icon_btn
+                  id="clear-world-symbols"
                   type="button"
-                  variant={:primary}
                   size={:sm}
                   title="Clear all symbols for this world"
-                  phx-click="clear_world_symbols"
-                  data-confirm="Are you sure you want to clear all symbols for this world?"
+                  phx-click="open_confirm"
+                  phx-value-id="confirm-clear-world-symbols"
                 >
                   <.icon name="hero-trash" class="size-4" />
                 </.icon_btn>
               </div>
             </div>
+            <.execute_confirm
+              id="confirm-clear-world-symbols"
+              open={@open_confirm == "confirm-clear-world-symbols"}
+              reach={:local}
+              removes
+              verb="Clear symbols"
+              target={"code symbols · world #{@world_id}"}
+              consequence={"Deletes every symbol and relation world #{@world_id} holds in the code gazetteer's tables on this node. Nothing else keeps them, so they return only when the code is analyzed again."}
+              on_confirm="clear_world_symbols"
+              on_cancel="close_confirm"
+              trigger_id="clear-world-symbols"
+              error={@confirm_error}
+              class="mt-space-md ml-auto"
+            />
           </div>
 
           <div class="p-space-lg">
