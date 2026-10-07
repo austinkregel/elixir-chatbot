@@ -405,7 +405,8 @@ defmodule ChatWeb.DesignLive do
   # The gate's four states, each judged by `Gate.verdict/3` from a sample
   # baseline and result: no baseline; a fall within the allowance; a fall
   # beyond it with new failed predictions; and a result saved without
-  # diagnostics, so the error canary cannot be measured.
+  # diagnostics, so the error canary cannot be measured and the gate fails
+  # although macro-F1 held.
   defp gate_samples do
     baseline =
       {:ok,
