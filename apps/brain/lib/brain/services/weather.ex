@@ -96,6 +96,9 @@ defmodule Brain.Services.Weather do
   end
 
   @impl true
+  def writes?(_intent), do: false
+
+  @impl true
   def health_check(credentials) do
     api_key = Map.get(credentials, :api_key)
 
