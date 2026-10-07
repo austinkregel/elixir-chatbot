@@ -96,6 +96,29 @@ defmodule ChatWeb.Harness.DiffTest do
         render_component(&Diff.verdict/1, status: "probably fine")
       end
     end
+
+    test "a not-run verdict takes words saying why nothing was judged, keeping its mark" do
+      html = render_component(&Diff.verdict/1, status: "pending", label: "gate not set")
+
+      assert html =~ "gate not set"
+      refute html =~ "Not run"
+      assert html =~ ~s(data-mark="dashed_square")
+      assert html =~ "text-verdict-pending"
+    end
+
+    test "pass, fail and raised keep their own words: a label on them raises" do
+      for status <- ["pass", "fail", "error"] do
+        assert_raise ArgumentError, ~r/label words only a non-blank not-run verdict/, fn ->
+          render_component(&Diff.verdict/1, status: status, label: "gate not set")
+        end
+      end
+    end
+
+    test "a blank label raises" do
+      assert_raise ArgumentError, ~r/non-blank not-run verdict/, fn ->
+        render_component(&Diff.verdict/1, status: "pending", label: "")
+      end
+    end
   end
 
   describe "coverage/1" do
@@ -111,6 +134,14 @@ defmodule ChatWeb.Harness.DiffTest do
       html = render_component(&Diff.coverage/1, checked: 3, total: 3)
 
       assert html =~ "of 3 values asserted"
+      refute html =~ "unchecked"
+    end
+
+    test "with no output to count against, it says how many values are asserted" do
+      html = render_component(&Diff.coverage/1, checked: 2)
+
+      assert html =~ "values asserted"
+      refute html =~ " of "
       refute html =~ "unchecked"
     end
   end
@@ -140,25 +171,95 @@ defmodule ChatWeb.Harness.DiffTest do
       assert html =~ "(empty list)"
     end
 
-    test "a defaulted path is marked and an undefaulted one is not" do
+    test "a stand-in path is marked and another path is not" do
       term = Comparison.normalize(%{entity: %{familiarity: 0.5, count: 2}})
 
       html =
         render_component(&Diff.term/1,
           term: term,
-          defaulted: [["entity", "familiarity"]]
+          stand_ins: [%{path: ["entity", "familiarity"], origin: :default}]
         )
 
-      assert html =~ "default"
+      assert html =~ "fallback default"
       assert html =~ "text-origin-default"
+      assert html =~ "decoration-dashed"
+      assert length(Regex.scan(~r/data-origin=/, html)) == 1
     end
 
-    test "with no defaulted paths nothing is marked" do
+    test "each stand-in is labeled by its real origin, not default for all" do
+      term = Comparison.normalize(%{memory: %{turns: 0}, config: %{gazetteer: nil}})
+
+      html =
+        render_component(&Diff.term/1,
+          term: term,
+          stand_ins: [
+            %{path: ["memory", "turns"], origin: :absent},
+            %{path: ["config", "gazetteer"], origin: :unavailable}
+          ]
+        )
+
+      assert html =~ ~s(data-origin="absent")
+      assert html =~ "no data — stand-in"
+      assert html =~ "decoration-dotted"
+      assert html =~ "bg-origin-absent-wash"
+
+      assert html =~ ~s(data-origin="unavailable")
+      assert html =~ "source unreadable"
+      assert html =~ "decoration-wavy"
+      assert html =~ "bg-origin-unavailable-wash"
+
+      refute html =~ "fallback default"
+    end
+
+    test "a map or list that stood in whole is marked too" do
+      term = Comparison.normalize(%{memory: %{context: []}, config: %{domain_lemmas: %{}}})
+
+      html =
+        render_component(&Diff.term/1,
+          term: term,
+          stand_ins: [
+            %{path: ["memory", "context"], origin: :absent},
+            %{path: ["config", "domain_lemmas"], origin: :default}
+          ]
+        )
+
+      assert html =~ ~s(data-origin="absent")
+      assert html =~ ~s(data-origin="default")
+      assert html =~ "(empty list)"
+      assert html =~ "(empty map)"
+    end
+
+    test "a path that stood in by two origins shows both" do
+      term = Comparison.normalize(%{threshold: 0.4})
+
+      html =
+        render_component(&Diff.term/1,
+          term: term,
+          stand_ins: [
+            %{path: ["threshold"], origin: :default},
+            %{path: ["threshold"], origin: :absent}
+          ]
+        )
+
+      assert html =~ ~s(data-origin="default")
+      assert html =~ ~s(data-origin="absent")
+    end
+
+    test "an origin that is not a stand-in raises" do
+      assert_raise ArgumentError, ~r/is not a stand-in origin/, fn ->
+        render_component(&Diff.term/1,
+          term: %{"a" => 1},
+          stand_ins: [%{path: ["a"], origin: :computed}]
+        )
+      end
+    end
+
+    test "with no stand-ins nothing is marked" do
       term = Comparison.normalize(%{entity: %{familiarity: 0.5}})
 
-      html = render_component(&Diff.term/1, term: term, defaulted: [])
+      html = render_component(&Diff.term/1, term: term, stand_ins: [])
 
-      refute html =~ "text-origin-default"
+      refute html =~ "data-origin"
     end
 
     test "a bare scalar renders without a surrounding structure" do
