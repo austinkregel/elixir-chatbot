@@ -721,59 +721,6 @@ defmodule ChatWeb.ChatLive do
   end
 
   @doc false
-  def stage_color(step) do
-    case step do
-      s when s in [:pipeline_start, :pipeline_complete] ->
-        "bg-primary/10"
-
-      s when s in [:chunk_start, :chunk_complete] ->
-        "bg-info/10"
-
-      s
-      when s in [
-             :discourse_complete,
-             :speech_act_complete,
-             :sentiment_complete,
-             :intent_determined
-           ] ->
-        "bg-base-200/50"
-
-      s when s in [:entities_extracted, :entities_filtered, :events_extracted] ->
-        "bg-success/5"
-
-      :fact_verification ->
-        "bg-violet-500/10"
-
-      s when s in [:slots_detected, :context_resolved, :anaphora_resolved] ->
-        "bg-warning/5"
-
-      s when s in [:strategy_determined, :response_gate_start, :response_gate_complete] ->
-        "bg-info/5"
-
-      s when s in [:racing_complete, :fast_path_used, :fast_path_bypassed, :fast_path_miss] ->
-        "bg-amber-500/10"
-
-      :memory_query ->
-        "bg-cyan-500/10"
-
-      :response_generated ->
-        "bg-success/10"
-
-      s when s in [:nlp_pipeline_start, :nlp_pipeline_complete] ->
-        "bg-indigo-500/5"
-
-      :learning_complete ->
-        "bg-purple-500/5"
-
-      s when s in [:followup_detected, :meta_cognitive_query] ->
-        "bg-orange-500/10"
-
-      _ ->
-        "bg-base-200/50"
-    end
-  end
-
-  @doc false
   def stage_detail(step) when is_map(step) do
     step_name = step[:step] || step["step"]
 
@@ -795,7 +742,7 @@ defmodule ChatWeb.ChatLive do
         conf = step[:confidence] || step["confidence"]
         parts = []
         parts = if addr, do: parts ++ ["→ #{addr}"], else: parts
-        parts = if is_number(conf), do: parts ++ ["#{Float.round(conf * 100, 1)}%"], else: parts
+        parts = if conf != nil, do: parts ++ [score_text(conf, :unestablished)], else: parts
         Enum.join(parts, " ")
 
       :speech_act_complete ->
@@ -814,7 +761,7 @@ defmodule ChatWeb.ChatLive do
         conf = step[:confidence] || step["confidence"]
         parts = []
         parts = if label, do: parts ++ ["#{label}"], else: parts
-        parts = if is_number(conf), do: parts ++ ["#{Float.round(conf * 100, 1)}%"], else: parts
+        parts = if conf != nil, do: parts ++ [score_text(conf, :unestablished)], else: parts
         Enum.join(parts, " ")
 
       :entities_extracted ->
@@ -832,7 +779,7 @@ defmodule ChatWeb.ChatLive do
         parts = []
         parts = if intent, do: parts ++ ["#{intent}"], else: parts
         parts = if method, do: parts ++ ["via #{method}"], else: parts
-        parts = if is_number(conf), do: parts ++ ["(#{Float.round(conf * 100, 1)}%)"], else: parts
+        parts = if conf != nil, do: parts ++ ["(#{score_text(conf, :unestablished)})"], else: parts
         Enum.join(parts, " ")
 
       :entities_filtered ->
@@ -875,9 +822,13 @@ defmodule ChatWeb.ChatLive do
 
       :memory_query ->
         count = step[:match_count] || step["match_count"] || 0
-        sim = step[:top_similarity] || step["top_similarity"] || 0.0
-        sim_str = if is_number(sim), do: "#{Float.round(sim * 100, 1)}%", else: "-"
-        "#{count} match(es), top #{sim_str}"
+
+        if count > 0 do
+          sim = step[:top_similarity] || step["top_similarity"]
+          "#{count} match(es), top #{score_text(sim, :cosine_similarity)}"
+        else
+          "no matches"
+        end
 
       :response_generated ->
         type = step[:response_type] || step["response_type"]
@@ -928,24 +879,33 @@ defmodule ChatWeb.ChatLive do
 
   def stage_detail(_), do: ""
 
-  def strategy_badge_variant(:can_respond) do
-    :success
-  end
+  # Badge variant per response strategy. The strategies are the pipeline's
+  # (`Brain.Analysis.InternalModel.response_strategy/0`), the response gate's
+  # `:response_optional` and `:response_deferred`, and ProcessingTrace's
+  # `:low_confidence`; `nil` is a strategy that was not reported.
+  @strategy_badge_variants %{
+    can_respond: :success,
+    hedged_response: :default,
+    needs_clarification: :warning,
+    partial_response_with_clarification: :info,
+    cannot_respond: :error,
+    defer_to_user: :default,
+    response_optional: :default,
+    response_deferred: :default,
+    low_confidence: :warning,
+    nil: :default
+  }
 
-  def strategy_badge_variant(:needs_clarification) do
-    :warning
-  end
+  def strategy_badge_variant(strategy) do
+    case Map.fetch(@strategy_badge_variants, strategy) do
+      {:ok, variant} ->
+        variant
 
-  def strategy_badge_variant(:partial_response_with_clarification) do
-    :info
-  end
-
-  def strategy_badge_variant(:cannot_respond) do
-    :error
-  end
-
-  def strategy_badge_variant(_) do
-    :default
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.ChatLive.strategy_badge_variant/1: no treatment for response strategy " <>
+                "#{inspect(strategy)}. The strategies are #{inspect(Map.keys(@strategy_badge_variants))}."
+    end
   end
 
   defp update_analysis_details(details, payload) when is_map(details) and is_map(payload) do
@@ -1299,29 +1259,26 @@ defmodule ChatWeb.ChatLive do
 
   def processing_trace(assigns) do
     ~H"""
-    <div class="bg-base-200 rounded-lg p-3 text-xs border border-base-300 shadow-sm">
+    <div class="bg-surface-sunk rounded-md p-space-md text-caption text-ink border border-border">
       <!-- Multi-chunk header -->
       <%= if (@trace.chunk_count || 1) > 1 do %>
-        <div class="flex items-center justify-between mb-3 pb-2 border-b border-base-300">
-          <div class="flex items-center gap-2">
-            <.icon name="hero-document-text" class="w-4 h-4 text-info" />
-            <span class="font-semibold text-base-content">
+        <div class="flex items-center justify-between mb-space-md pb-space-sm border-b border-border">
+          <div class="flex items-center gap-space-sm">
+            <.icon name="hero-document-text" class="size-4 text-ink-muted" />
+            <span class="font-semibold text-ink">
               {@trace.chunk_count} utterances detected
             </span>
           </div>
-          <div class="flex items-center gap-2 text-base-content/60">
-            <span>{@trace.total_processing_ms || 0}ms total</span>
-            <span class={[
-              "badge badge-xs",
-              strategy_badge_class(@trace.overall_strategy)
-            ]}>
+          <div class="flex items-center gap-space-sm text-ink-muted">
+            <span class="text-value">{@trace.total_processing_ms || 0}ms total</span>
+            <.badge variant={strategy_badge_variant(@trace.overall_strategy)} size={:xs}>
               {format_strategy(@trace.overall_strategy)}
-            </span>
+            </.badge>
           </div>
         </div>
 
     <!-- Each chunk -->
-        <div class="space-y-3">
+        <div class="space-y-space-md">
           <%= for chunk <- @trace.chunks || [] do %>
             <.chunk_trace chunk={chunk} />
           <% end %>
@@ -1338,68 +1295,68 @@ defmodule ChatWeb.ChatLive do
 
   defp chunk_trace(assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-lg p-2 border border-base-300">
+    <div class="bg-surface rounded-md p-space-sm border border-border">
       <!-- Chunk header with text preview -->
-      <div class="flex items-start justify-between gap-2 mb-2">
-        <div class="flex-1">
-          <div class="text-base-content/60 text-xs mb-1">
+      <div class="flex items-start justify-between gap-space-sm mb-space-sm">
+        <div class="flex-1 min-w-0">
+          <div class="text-ink-muted text-caption mb-space-xs">
             Chunk {@chunk.index + 1}
           </div>
-          <div class="text-sm text-base-content italic truncate" title={@chunk.text}>
+          <div class="text-body-dense text-ink italic truncate" title={@chunk.text}>
             "{@chunk.text}"
           </div>
         </div>
-        <div class="flex items-center gap-1 shrink-0">
-          <span class="font-medium text-base-content">
+        <div class="flex items-center gap-space-xs shrink-0">
+          <span class="text-value-strong text-ink">
             {@chunk.intent || "Unknown"}
           </span>
           <.confidence_badge level={@chunk.confidence_level} confidence={@chunk.confidence} />
           <%= if @chunk.fast_path do %>
-            <span class="badge badge-success badge-xs">⚡</span>
+            <.badge variant={:success} size={:xs}>⚡</.badge>
           <% end %>
         </div>
       </div>
 
     <!-- Compact details row -->
-      <div class="flex flex-wrap items-center gap-2 text-base-content/60">
+      <div class="flex flex-wrap items-center gap-space-sm text-ink-muted">
         <!-- Entities -->
         <%= if length(@chunk.entities || []) > 0 do %>
-          <div class="flex items-center gap-1">
-            <.icon name="hero-tag" class="w-3 h-3" />
+          <div class="flex items-center gap-space-xs">
+            <.icon name="hero-tag" class="size-3" />
             <%= for entity <- Enum.take(@chunk.entities, 3) do %>
-              <span class="badge badge-outline badge-xs">{entity.value}</span>
+              <.badge size={:xs} class="border border-border-strong">{entity.value}</.badge>
             <% end %>
             <%= if length(@chunk.entities) > 3 do %>
-              <span class="text-xs">+{length(@chunk.entities) - 3}</span>
+              <span class="text-caption">+{length(@chunk.entities) - 3}</span>
             <% end %>
           </div>
         <% end %>
 
     <!-- Missing slots -->
         <%= if length(@chunk.slots_missing || []) > 0 do %>
-          <div class="flex items-center gap-1 text-warning">
-            <.icon name="hero-exclamation-triangle" class="w-3 h-3" />
+          <div class="flex items-center gap-space-xs text-ochre">
+            <.icon name="hero-exclamation-triangle" class="size-3" />
             <span>Missing: {Enum.join(@chunk.slots_missing, ", ")}</span>
           </div>
         <% end %>
 
     <!-- Alternatives (collapsed) -->
         <%= if length(@chunk.alternatives || []) > 0 do %>
-          <div class="flex items-center gap-1">
-            <span class="text-base-content/40">Also:</span>
+          <div class="flex items-center gap-space-xs">
+            <span class="text-ink-muted">Also:</span>
             <%= for alt <- Enum.take(@chunk.alternatives, 2) do %>
-              <span class="text-xs">{alt.intent}</span>
+              <span class="text-caption">{alt.intent}</span>
             <% end %>
           </div>
         <% end %>
 
     <!-- Backtrack indicator -->
         <%= if @chunk.backtrack_count > 0 do %>
-          <span class="badge badge-warning badge-xs">↩{@chunk.backtrack_count}</span>
+          <.badge variant={:warning} size={:xs}>↩{@chunk.backtrack_count}</.badge>
         <% end %>
 
     <!-- Time -->
-        <span class="ml-auto">{@chunk.racing_ms}ms</span>
+        <span class="ml-auto text-value">{@chunk.racing_ms}ms</span>
       </div>
     </div>
     """
@@ -1411,47 +1368,39 @@ defmodule ChatWeb.ChatLive do
     ~H"""
     <div>
       <!-- Header with intent and confidence -->
-      <div class="flex items-center justify-between mb-2 pb-2 border-b border-base-300">
-        <div class="flex items-center gap-2">
-          <span class="font-semibold text-base-content">
+      <div class="flex items-center justify-between mb-space-sm pb-space-sm border-b border-border">
+        <div class="flex items-center gap-space-sm">
+          <span class="text-value-strong text-ink">
             {@trace.intent || "Unknown"}
           </span>
           <.confidence_badge level={@trace.confidence_level} confidence={@trace.confidence} />
         </div>
-        <div class="flex items-center gap-2 text-base-content/60">
+        <div class="flex items-center gap-space-sm text-ink-muted">
           <%= if @trace.fast_path do %>
-            <span class="badge badge-success badge-xs">Fast Path</span>
+            <.badge variant={:success} size={:xs}>Fast Path</.badge>
           <% end %>
           <%= if @trace.racing_ms do %>
-            <span>{@trace.racing_ms}ms</span>
+            <span class="text-value">{@trace.racing_ms}ms</span>
           <% end %>
         </div>
       </div>
 
     <!-- Racing Analyzers -->
       <%= if length(@trace.analyzers || []) > 0 do %>
-        <div class="mb-3">
-          <div class="font-semibold text-base-content/70 mb-1 flex items-center gap-1">
-            <.icon name="hero-scale" class="w-3 h-3" /> Racing Analyzers
+        <div class="mb-space-md">
+          <div class="font-semibold text-ink-muted mb-space-xs flex items-center gap-space-xs">
+            <.icon name="hero-scale" class="size-3" /> Racing Analyzers
           </div>
-          <div class="space-y-1">
+          <div class="space-y-space-xs">
             <%= for {analyzer, idx} <- Enum.with_index(@trace.analyzers) do %>
-              <div class="flex items-center gap-2">
-                <div class="w-24 truncate text-base-content/60">{analyzer.analyzer}</div>
-                <div class="flex-1">
-                  <div class="flex items-center gap-1">
-                    <div
-                      class={["h-1.5 rounded-full", activation_color(analyzer.calibrated)]}
-                      style={"width: #{analyzer.calibrated * 100}%"}
-                    >
-                    </div>
-                    <span class="text-base-content/50 w-10">
-                      {format_percent(analyzer.calibrated)}
-                    </span>
-                  </div>
+              <div class="flex items-center gap-space-sm">
+                <div class="w-24 truncate text-ink-muted">{analyzer.analyzer}</div>
+                <div class="flex-1 flex items-center gap-space-xs min-w-0">
+                  <.score_bar value={analyzer.calibrated} kind={:analyzer_activation} />
+                  <.score value={analyzer.calibrated} kind={:analyzer_activation} />
                 </div>
                 <%= if idx == 0 do %>
-                  <span class="badge badge-primary badge-xs">Winner</span>
+                  <.badge variant={:primary} size={:xs}>Winner</.badge>
                 <% end %>
               </div>
             <% end %>
@@ -1461,95 +1410,84 @@ defmodule ChatWeb.ChatLive do
 
     <!-- Alternatives -->
       <%= if length(@trace.alternatives || []) > 0 do %>
-        <div class="mb-3">
-          <div class="font-semibold text-base-content/70 mb-1 flex items-center gap-1">
-            <.icon name="hero-arrows-right-left" class="w-3 h-3" /> Also Considered
+        <div class="mb-space-md">
+          <div class="font-semibold text-ink-muted mb-space-xs flex items-center gap-space-xs">
+            <.icon name="hero-arrows-right-left" class="size-3" /> Also Considered
           </div>
-          <div class="flex flex-wrap gap-1">
+          <div class="flex flex-wrap gap-space-xs">
             <%= for alt <- @trace.alternatives do %>
-              <span class="badge badge-ghost badge-sm">
+              <.badge>
                 {alt.intent}
-                <span class="opacity-60 ml-1">{format_percent(alt.activation)}</span>
-              </span>
+                <.score value={alt.activation} kind={:activation} />
+              </.badge>
             <% end %>
           </div>
         </div>
       <% end %>
 
     <!-- Entities & Slots -->
-      <div class="grid grid-cols-2 gap-3 mb-3">
+      <div class="grid grid-cols-2 gap-space-md mb-space-md">
         <!-- Entities Found -->
-        <div>
-          <div class="font-semibold text-base-content/70 mb-1 flex items-center gap-1">
-            <.icon name="hero-tag" class="w-3 h-3" /> Entities
+        <div class="min-w-0">
+          <div class="font-semibold text-ink-muted mb-space-xs flex items-center gap-space-xs">
+            <.icon name="hero-tag" class="size-3" /> Entities
           </div>
           <%= if length(@trace.entities || []) > 0 do %>
-            <div class="space-y-0.5">
+            <div class="space-y-space-2xs">
               <%= for entity <- @trace.entities do %>
-                <% confidence = Map.get(entity, :confidence)
-                confidence_percent = if confidence, do: Float.round(confidence * 100, 1), else: nil
-
-                confidence_variant =
-                  cond do
-                    confidence && confidence >= 0.8 -> :success
-                    confidence && confidence >= 0.6 -> :warning
-                    confidence -> :error
-                    true -> :default
-                  end %>
-                <div class="flex items-center gap-1">
-                  <span class="badge badge-outline badge-xs">{entity.type}</span>
-                  <%= if confidence_percent do %>
-                    <.badge variant={confidence_variant} size={:xs}>
-                      {confidence_percent}%
-                    </.badge>
+                <% confidence = Map.get(entity, :confidence) %>
+                <div class="flex items-center gap-space-xs">
+                  <.badge size={:xs} class="border border-border-strong">{entity.type}</.badge>
+                  <%= if confidence != nil do %>
+                    <.score value={confidence} kind={:unestablished} />
                   <% end %>
-                  <span class="text-base-content/80 truncate">{entity.value}</span>
+                  <span class="text-ink truncate">{entity.value}</span>
                 </div>
               <% end %>
             </div>
           <% else %>
-            <span class="text-base-content/40 italic">None detected</span>
+            <span class="text-ink-muted italic">None detected</span>
           <% end %>
         </div>
 
     <!-- Slots -->
-        <div>
-          <div class="font-semibold text-base-content/70 mb-1 flex items-center gap-1">
-            <.icon name="hero-puzzle-piece" class="w-3 h-3" /> Slots
+        <div class="min-w-0">
+          <div class="font-semibold text-ink-muted mb-space-xs flex items-center gap-space-xs">
+            <.icon name="hero-puzzle-piece" class="size-3" /> Slots
           </div>
           <%= if map_size(@trace.slots_filled || %{}) > 0 || length(@trace.slots_missing || []) > 0 do %>
-            <div class="space-y-0.5">
+            <div class="space-y-space-2xs">
               <%= for {slot, value} <- @trace.slots_filled || %{} do %>
-                <div class="flex items-center gap-1">
-                  <span class="text-success">✓</span>
-                  <span class="text-base-content/60">{slot}:</span>
-                  <span class="text-base-content/80">{value}</span>
+                <div class="flex items-center gap-space-xs">
+                  <span class="text-ink">✓</span>
+                  <span class="text-ink-muted">{slot}:</span>
+                  <span class="text-ink">{value}</span>
                 </div>
               <% end %>
               <%= for slot <- @trace.slots_missing || [] do %>
-                <div class="flex items-center gap-1 text-warning">
+                <div class="flex items-center gap-space-xs text-ochre">
                   <span>✗</span>
                   <span>{slot}</span>
-                  <span class="text-base-content/40">(missing)</span>
+                  <span class="text-ink-muted">(missing)</span>
                 </div>
               <% end %>
             </div>
           <% else %>
-            <span class="text-base-content/40 italic">None required</span>
+            <span class="text-ink-muted italic">None required</span>
           <% end %>
         </div>
       </div>
 
     <!-- Backtracking -->
       <%= if @trace.backtrack_count > 0 do %>
-        <div class="mb-2 p-2 bg-warning/10 rounded border border-warning/30">
-          <div class="flex items-center gap-2">
-            <.icon name="hero-arrow-path" class="w-4 h-4 text-warning" />
-            <span class="text-warning font-medium">
+        <div class="mb-space-sm p-space-sm bg-ochre-wash rounded-sm border border-ochre">
+          <div class="flex items-center gap-space-sm">
+            <.icon name="hero-arrow-path" class="size-4 text-ochre" />
+            <span class="text-ochre font-semibold">
               Backtracked {@trace.backtrack_count}x
             </span>
             <%= if @trace.backtrack_reason do %>
-              <span class="text-base-content/60">- {@trace.backtrack_reason}</span>
+              <span class="text-ink-muted">- {@trace.backtrack_reason}</span>
             <% end %>
           </div>
         </div>
@@ -1557,20 +1495,21 @@ defmodule ChatWeb.ChatLive do
 
     <!-- Clarification Needed -->
       <%= if @trace.needs_clarification && @trace.clarification do %>
-        <div class="p-2 bg-info/10 rounded border border-info/30">
-          <div class="flex items-center gap-2">
-            <.icon name="hero-question-mark-circle" class="w-4 h-4 text-info" />
-            <span class="text-info">{@trace.clarification}</span>
+        <div class="p-space-sm bg-surface-sunk rounded-sm border border-border-strong">
+          <div class="flex items-center gap-space-sm">
+            <.icon name="hero-question-mark-circle" class="size-4 text-ink-muted" />
+            <span class="text-ink">{@trace.clarification}</span>
           </div>
         </div>
       <% end %>
 
     <!-- Stability Footer -->
-      <div class="mt-2 pt-2 border-t border-base-300 flex items-center justify-between text-base-content/50">
-        <div class="flex items-center gap-2">
-          <span>Total Activation: {format_percent(@trace.total_activation)}</span>
+      <div class="mt-space-sm pt-space-sm border-t border-border flex items-center justify-between text-ink-muted">
+        <div class="flex items-center gap-space-sm">
+          <span>Total Activation:</span>
+          <.score value={@trace.total_activation} kind={:activation_sum} />
           <%= if @trace.was_normalized do %>
-            <span class="badge badge-warning badge-xs">Normalized</span>
+            <.badge variant={:warning} size={:xs}>Normalized</.badge>
           <% end %>
         </div>
         <span class="capitalize">{@trace.source}</span>
@@ -1579,89 +1518,144 @@ defmodule ChatWeb.ChatLive do
     """
   end
 
+  # Badge variant per `Brain.Analysis.Interpretation.confidence_level/1`, which
+  # buckets an interpretation's activation into these four levels.
+  @confidence_level_variants %{
+    high: :success,
+    medium: :info,
+    low: :warning,
+    very_low: :error
+  }
+
   attr(:level, :atom, required: true)
   attr(:confidence, :string, required: true)
 
   defp confidence_badge(assigns) do
-    badge_class =
-      case assigns.level do
-        :high -> "badge-success"
-        :medium -> "badge-info"
-        :low -> "badge-warning"
-        _ -> "badge-error"
+    variant =
+      case Map.fetch(@confidence_level_variants, assigns.level) do
+        {:ok, variant} ->
+          variant
+
+        :error ->
+          raise ArgumentError,
+                "ChatWeb.ChatLive.confidence_badge/1: no treatment for confidence level " <>
+                  "#{inspect(assigns.level)}. The levels are #{inspect(Map.keys(@confidence_level_variants))}."
       end
 
-    assigns = assign(assigns, :badge_class, badge_class)
+    assigns = assign(assigns, :variant, variant)
 
     ~H"""
-    <span class={["badge badge-sm", @badge_class]}>
-      {@confidence}
+    <.badge variant={@variant}>
+      <span class="text-value">{@confidence}</span>
+      <span class="font-normal">{score_kind!(:activation).label}</span>
+      <span>· {String.replace(Atom.to_string(@level), "_", " ")}</span>
+    </.badge>
+    """
+  end
+
+  # What each number on this page is, per the score kinds of the Retroduct
+  # design language. `:unit` kinds lie in 0..1 and may be drawn on a bar;
+  # the others are never drawn on a 0..1 scale.
+  #
+  # - `:weighted_vote`: the speech-act combiner's clamped weighted vote
+  #   (`Brain.Analysis.SpeechActClassifier`).
+  # - `:cosine_similarity`: memory matches, scored by
+  #   `Brain.Memory.VectorIndex.cosine_similarity/2`, in -1..1.
+  # - `:raw_score`: a racing analyzer's own score, on the analyzer's scale.
+  # - `:analyzer_activation`: a racing analyzer's raw score multiplied by its
+  #   bucket's historical accuracy (`Brain.Analysis.AnalyzerCalibration.calibrate/2`),
+  #   or the raw score itself when that calibration is not running
+  #   (`Brain.Analysis.AnalyzerResult.new/4`). A rescale, not a calibrated
+  #   probability.
+  # - `:activation`: an interpretation's activation, divided by the total of all
+  #   activations when that total exceeds 1 (`Brain.Analysis.ActivationPool`).
+  # - `:activation_sum`: the sum of an interpretation's activations, which can
+  #   exceed 1.
+  # - `:accumulated_confidence`: a chunk's confidence accumulated over its
+  #   discourse, speech-act, slot, sentiment, entity and intent signals
+  #   (`Brain.Analysis.Pipeline` via `ContextAccumulator.effective_confidence/1`).
+  # - `:unestablished`: a confidence whose kind has not been established from
+  #   its producer, shown as such rather than as a probability.
+  @score_kinds %{
+    weighted_vote: %{label: "weighted vote", range: :unit},
+    cosine_similarity: %{label: "cosine similarity", range: :signed_unit},
+    raw_score: %{label: "raw score", range: :source_specific},
+    analyzer_activation: %{label: "analyzer activation", range: :unit},
+    activation: %{label: "activation", range: :unit},
+    activation_sum: %{label: "sum of activations", range: :unbounded},
+    accumulated_confidence: %{label: "accumulated confidence", range: :unit},
+    unestablished: %{label: "confidence, kind not established", range: :unit}
+  }
+
+  defp score_kind!(kind) do
+    case Map.fetch(@score_kinds, kind) do
+      {:ok, score_kind} ->
+        score_kind
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.ChatLive: no score kind #{inspect(kind)}. " <>
+                "The kinds are #{inspect(Map.keys(@score_kinds))}."
+    end
+  end
+
+  defp format_score(value, _kind) when is_number(value) do
+    :erlang.float_to_binary(value * 1.0, decimals: 2)
+  end
+
+  defp format_score(value, kind) do
+    raise ArgumentError,
+          "ChatWeb.ChatLive: a #{inspect(kind)} score must be a number, got #{inspect(value)}."
+  end
+
+  @doc false
+  def score_text(value, kind) do
+    "#{format_score(value, kind)} #{score_kind!(kind).label}"
+  end
+
+  attr(:value, :any, required: true)
+  attr(:kind, :atom, required: true)
+  attr(:class, :string, default: nil)
+
+  defp score(assigns) do
+    assigns =
+      assigns
+      |> assign(:label, score_kind!(assigns.kind).label)
+      |> assign(:formatted, format_score(assigns.value, assigns.kind))
+
+    ~H"""
+    <span class={["inline-flex flex-wrap items-baseline gap-x-space-xs", @class]}>
+      <span class="text-value text-ink">{@formatted}</span>
+      <span class="text-caption font-normal text-ink-muted">{@label}</span>
     </span>
     """
   end
 
-  defp activation_color(value) when value >= 0.7 do
-    "bg-success"
-  end
+  attr(:value, :any, required: true)
+  attr(:kind, :atom, required: true)
 
-  defp activation_color(value) when value >= 0.4 do
-    "bg-info"
-  end
+  defp score_bar(assigns) do
+    %{range: range} = score_kind!(assigns.kind)
 
-  defp activation_color(value) when value >= 0.2 do
-    "bg-warning"
-  end
+    unless range == :unit do
+      raise ArgumentError,
+            "ChatWeb.ChatLive.score_bar/1: a #{inspect(assigns.kind)} score is #{inspect(range)}, " <>
+              "and only a 0..1 score is drawn on a bar."
+    end
 
-  defp activation_color(_) do
-    "bg-error"
-  end
+    unless is_number(assigns.value) and assigns.value >= 0 and assigns.value <= 1 do
+      raise ArgumentError,
+            "ChatWeb.ChatLive.score_bar/1: a #{inspect(assigns.kind)} score must lie in 0..1, " <>
+              "got #{inspect(assigns.value)}."
+    end
 
-  defp format_percent(nil) do
-    "0%"
-  end
+    assigns = assign(assigns, :width, Float.round(assigns.value * 100.0, 1))
 
-  defp format_percent(value) when is_float(value) do
-    "#{round(value * 100)}%"
-  end
-
-  defp format_percent(value) when is_integer(value) do
-    "#{value}%"
-  end
-
-  defp format_percent(_) do
-    "0%"
-  end
-
-  def confidence_badge_class(:high) do
-    "badge-success"
-  end
-
-  def confidence_badge_class(:medium) do
-    "badge-info"
-  end
-
-  def confidence_badge_class(:low) do
-    "badge-warning"
-  end
-
-  def confidence_badge_class(_) do
-    "badge-error"
-  end
-
-  def strategy_badge_class(:can_respond) do
-    "badge-success"
-  end
-
-  def strategy_badge_class(:partial_response_with_clarification) do
-    "badge-info"
-  end
-
-  def strategy_badge_class(:needs_clarification) do
-    "badge-warning"
-  end
-
-  def strategy_badge_class(_) do
-    "badge-error"
+    ~H"""
+    <div class="flex-1 h-space-sm rounded-sm bg-score-track">
+      <div class="h-full rounded-sm border border-score-heuristic" style={"width: #{@width}%"}></div>
+    </div>
+    """
   end
 
   def format_strategy(:can_respond) do
@@ -1819,23 +1813,59 @@ defmodule ChatWeb.ChatLive do
     end
   end
 
-  # Epistemic status helpers for processing inspector
-  def epistemic_status_class(:verified), do: "text-success font-medium"
-  def epistemic_status_class(:contradicted), do: "text-error font-medium"
-  def epistemic_status_class(:uncertain), do: "text-warning font-medium"
-  def epistemic_status_class(:unchecked), do: "text-base-content/60"
-  def epistemic_status_class(_), do: "text-base-content/60"
+  # Text and panel treatment per fact-verification status, the four statuses
+  # `Brain.Analysis.Pipeline.verify_facts_in_chunk/4` reports, plus `nil` for a
+  # chunk whose verification was not reported. Every status is printed as a
+  # word beside its treatment, so none rests on color alone. A verified fact is
+  # not a test verdict, so it takes ink, not the pass green.
+  @epistemic_status_treatments %{
+    verified: %{text: "text-ink font-semibold", panel: "bg-surface-sunk border-border-strong"},
+    contradicted: %{text: "text-red font-semibold", panel: "bg-red-wash border-red"},
+    uncertain: %{text: "text-ochre font-semibold", panel: "bg-ochre-wash border-ochre"},
+    unchecked: %{text: "text-ink-muted", panel: "bg-surface-sunk border-border"},
+    nil: %{text: "text-ink-muted", panel: "bg-surface-sunk border-border"}
+  }
 
-  def sentiment_label_class(:positive), do: "text-success font-medium"
-  def sentiment_label_class(:negative), do: "text-error font-medium"
-  def sentiment_label_class(:neutral), do: "text-base-content/70"
-  def sentiment_label_class("positive"), do: "text-success font-medium"
-  def sentiment_label_class("negative"), do: "text-error font-medium"
-  def sentiment_label_class("neutral"), do: "text-base-content/70"
-  def sentiment_label_class(_), do: "text-base-content/60"
+  defp epistemic_status_treatment!(status) do
+    case Map.fetch(@epistemic_status_treatments, status) do
+      {:ok, treatment} ->
+        treatment
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.ChatLive: no treatment for epistemic status #{inspect(status)}. " <>
+                "The statuses are #{inspect(Map.keys(@epistemic_status_treatments))}."
+    end
+  end
+
+  def epistemic_status_class(status), do: epistemic_status_treatment!(status).text
+
+  def epistemic_panel_class(status), do: epistemic_status_treatment!(status).panel
+
+  # Step-number indicator and status badge per response-path step status, the
+  # two statuses `Brain` records in a response path.
+  @path_step_treatments %{
+    completed: %{indicator: "bg-ink text-surface", badge: :success},
+    skipped: %{
+      indicator: "bg-surface-sunk text-ink-muted border border-dashed border-border-strong",
+      badge: :default
+    }
+  }
+
+  def path_step_treatment(status) do
+    case Map.fetch(@path_step_treatments, status) do
+      {:ok, treatment} ->
+        treatment
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.ChatLive.path_step_treatment/1: no treatment for response path step status " <>
+                "#{inspect(status)}. The statuses are #{inspect(Map.keys(@path_step_treatments))}."
+    end
+  end
 
   def format_verification(nil), do: "-"
-  def format_verification({:verified, conf}) when is_number(conf), do: "Verified (#{Float.round(conf * 100, 1)}%)"
+  def format_verification({:verified, conf}) when is_number(conf), do: "Verified (#{score_text(conf, :unestablished)})"
   def format_verification({:contradicted, beliefs}) when is_list(beliefs), do: "Contradicted (#{length(beliefs)} conflicts)"
   def format_verification({:uncertain, reason}), do: "Uncertain: #{reason}"
   def format_verification(_), do: "-"
@@ -1893,13 +1923,6 @@ defmodule ChatWeb.ChatLive do
       end
     end)
   end
-
-  defp authority_badge_class("professional"), do: "badge-info"
-  defp authority_badge_class("personal"), do: "badge-secondary"
-  defp authority_badge_class("academic"), do: "badge-accent"
-  defp authority_badge_class("entertainment"), do: "badge-warning"
-  defp authority_badge_class("unknown"), do: "badge-ghost"
-  defp authority_badge_class(_), do: "badge-ghost"
 
   defp authority_category(authority_key) do
     if SourceAuthority.ready?() do
