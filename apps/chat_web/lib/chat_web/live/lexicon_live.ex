@@ -96,7 +96,7 @@ defmodule ChatWeb.LexiconLive do
 
   defp origin_label(fact), do: if(seeded?(fact), do: "seeded", else: "learned")
 
-  defp origin_class(fact), do: if(seeded?(fact), do: "badge-ghost", else: "badge-primary")
+  defp origin_variant(fact), do: if(seeded?(fact), do: :default, else: :primary)
 
   defp truncate(nil, _len), do: ""
 
@@ -116,145 +116,142 @@ defmodule ChatWeb.LexiconLive do
     >
       <:page_header>
         <div>
-          <h1 class="text-xl font-bold">Lexicon</h1>
-          <p class="text-sm text-base-content/60">
+          <h1 class="text-title text-ink">Lexicon</h1>
+          <p class="text-body text-ink-muted">
             What the brain knows about a word, and where each answer came from
           </p>
         </div>
       </:page_header>
 
-      <div class="p-4 space-y-4">
-        <form id="lexicon-lookup" phx-submit="lookup" class="flex flex-col sm:flex-row gap-2">
+      <div class="p-space-lg space-y-space-lg">
+        <form id="lexicon-lookup" phx-submit="lookup" class="flex flex-col sm:flex-row gap-space-sm">
           <input
             type="text"
             name="word"
             value={@word}
             placeholder="Look up a word"
             autocomplete="off"
-            class="input input-bordered flex-1"
+            class="flex-1 h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
           />
-          <button type="submit" class="btn btn-primary">Look up</button>
+          <.btn type="submit" variant={:primary}>Look up</.btn>
         </form>
 
-        <div class="flex flex-wrap items-center gap-2 text-sm">
-          <span class="text-base-content/50">Try:</span>
+        <div class="flex flex-wrap items-center gap-space-sm text-body">
+          <span class="text-ink-muted">Try:</span>
           <%= for example <- @examples do %>
-            <button
+            <.btn
               phx-click="example"
               phx-value-word={example}
-              class="btn btn-xs btn-outline"
+              variant={:outline}
+              size={:xs}
             >
               {example}
-            </button>
+            </.btn>
           <% end %>
         </div>
 
         <%= if @result do %>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg">
             <!-- What the brain knows -->
-            <div class="card bg-base-100 border border-base-300">
-              <div class="card-body p-4">
-                <h2 class="card-title text-base">Summary</h2>
+            <.card>
+              <.card_body>
+                <h2 class="text-heading text-ink">Summary</h2>
 
-                <dl class="grid grid-cols-3 gap-y-1 text-sm">
-                  <dt class="text-base-content/60">Known</dt>
+                <dl class="mt-space-sm grid grid-cols-3 gap-y-space-xs text-body text-ink">
+                  <dt class="text-ink-muted">Known</dt>
                   <dd class="col-span-2">
                     <%= if @result.known do %>
-                      <span class="badge badge-success badge-sm">known</span>
+                      <.badge variant={:success}>known</.badge>
                     <% else %>
-                      <span class="badge badge-warning badge-sm">out of vocabulary</span>
+                      <.badge variant={:warning}>out of vocabulary</.badge>
                     <% end %>
                   </dd>
 
-                  <dt class="text-base-content/60">Lemma</dt>
-                  <dd class="col-span-2 font-mono">{@result.lemma}</dd>
+                  <dt class="text-ink-muted">Lemma</dt>
+                  <dd class="col-span-2 text-value">{@result.lemma}</dd>
 
-                  <dt class="text-base-content/60">Parts of speech</dt>
-                  <dd class="col-span-2 font-mono">
+                  <dt class="text-ink-muted">Parts of speech</dt>
+                  <dd class="col-span-2 text-value">
                     {if @result.pos == [], do: "—", else: Enum.join(@result.pos, ", ")}
                   </dd>
 
-                  <dt class="text-base-content/60">Domain</dt>
-                  <dd class="col-span-2 font-mono">{@result.primary_domain || "—"}</dd>
+                  <dt class="text-ink-muted">Domain</dt>
+                  <dd class="col-span-2 text-value">{@result.primary_domain || "—"}</dd>
 
-                  <dt class="text-base-content/60">Senses</dt>
+                  <dt class="text-ink-muted">Senses</dt>
                   <dd class="col-span-2">{@result.polysemy}</dd>
 
-                  <dt class="text-base-content/60">Definition</dt>
+                  <dt class="text-ink-muted">Definition</dt>
                   <dd class="col-span-2">{@result.definition || "—"}</dd>
                 </dl>
-              </div>
-            </div>
-            
-    <!-- Negation -->
-            <div class="card bg-base-100 border border-base-300">
-              <div class="card-body p-4">
-                <h2 class="card-title text-base">Negation</h2>
+              </.card_body>
+            </.card>
 
-                <dl class="grid grid-cols-3 gap-y-1 text-sm">
-                  <dt class="text-base-content/60">Negates</dt>
+    <!-- Negation -->
+            <.card>
+              <.card_body>
+                <h2 class="text-heading text-ink">Negation</h2>
+
+                <dl class="mt-space-sm grid grid-cols-3 gap-y-space-xs text-body text-ink">
+                  <dt class="text-ink-muted">Negates</dt>
                   <dd class="col-span-2">
                     <%= if @result.negation.negates do %>
-                      <span class="badge badge-error badge-sm">yes</span>
+                      <.badge variant={:error}>yes</.badge>
                     <% else %>
-                      <span class="badge badge-ghost badge-sm">no</span>
+                      <.badge>no</.badge>
                     <% end %>
                   </dd>
 
-                  <dt class="text-base-content/60">Closed class</dt>
+                  <dt class="text-ink-muted">Closed class</dt>
                   <dd class="col-span-2">{@result.negation.closed_class}</dd>
 
-                  <dt class="text-base-content/60">Morphological</dt>
+                  <dt class="text-ink-muted">Morphological</dt>
                   <dd class="col-span-2">{@result.negation.morphological}</dd>
                 </dl>
 
                 <%= if @result.negation.fact do %>
-                  <div class="mt-2 text-sm bg-base-200 rounded p-2 font-mono">
+                  <div class="mt-space-sm text-value text-ink bg-surface-sunk rounded-sm p-space-sm">
                     {@result.word} = {@result.negation.fact.value["affix"]} + {@result.negation.fact.value[
                       "root"
                     ]}
-                    <span class={"badge badge-xs ml-2 #{origin_class(@result.negation.fact)}"}>
+                    <.badge variant={origin_variant(@result.negation.fact)} size={:xs} class="ml-space-sm">
                       {origin_label(@result.negation.fact)}
-                    </span>
+                    </.badge>
                   </div>
                 <% else %>
-                  <p class="text-sm text-base-content/50 mt-2">
+                  <p class="text-body text-ink-muted mt-space-sm">
                     No negation fact. Closed-class negators come from
                     priv/knowledge/linguistic.json; morphological ones are seeded
                     from WordNet by mix atlas.seed.
                   </p>
                 <% end %>
-              </div>
-            </div>
+              </.card_body>
+            </.card>
           </div>
-          
+
     <!-- Relations -->
-          <div class="card bg-base-100 border border-base-300">
-            <div class="card-body p-4">
-              <h2 class="card-title text-base">Relations</h2>
-              <p class="text-sm text-base-content/60">
+          <.card>
+            <.card_body>
+              <h2 class="text-heading text-ink">Relations</h2>
+              <p class="text-body text-ink-muted">
                 Answers from the facade. Highlighted entries are facts the brain
                 owns; the rest come from WordNet.
               </p>
 
               <%= for {label, values, owned_set} <- @result.relations do %>
-                <div class="mt-2">
-                  <div class="text-sm font-semibold">{label} ({length(values)})</div>
+                <div class="mt-space-sm">
+                  <div class="text-subheading text-ink">{label} ({length(values)})</div>
                   <%= if values == [] do %>
-                    <div class="text-sm text-base-content/50">—</div>
+                    <div class="text-body text-ink-muted">—</div>
                   <% else %>
-                    <div class="flex flex-wrap gap-1 mt-1">
+                    <div class="flex flex-wrap gap-space-xs mt-space-xs">
                       <%= for value <- Enum.take(values, 40) do %>
-                        <span class={
-                          if MapSet.member?(owned_set, value),
-                            do: "badge badge-primary badge-sm",
-                            else: "badge badge-ghost badge-sm"
-                        }>
+                        <.badge variant={if MapSet.member?(owned_set, value), do: :primary, else: :default}>
                           {value}
-                        </span>
+                        </.badge>
                       <% end %>
                       <%= if length(values) > 40 do %>
-                        <span class="text-xs text-base-content/50 self-center">
+                        <span class="text-caption text-ink-muted self-center">
                           +{length(values) - 40} more
                         </span>
                       <% end %>
@@ -262,58 +259,58 @@ defmodule ChatWeb.LexiconLive do
                   <% end %>
                 </div>
               <% end %>
-            </div>
-          </div>
-          
+            </.card_body>
+          </.card>
+
     <!-- Facts the brain owns -->
-          <div class="card bg-base-100 border border-base-300">
-            <div class="card-body p-4">
-              <h2 class="card-title text-base">
+          <.card>
+            <.card_body>
+              <h2 class="text-heading text-ink">
                 Owned facts ({length(@result.owned)})
               </h2>
-              <p class="text-sm text-base-content/60">
+              <p class="text-body text-ink-muted">
                 Everything the brain stores about this word, with its source. A
                 learned fact and the seeded fact it contradicts both appear here.
               </p>
 
               <%= if @result.owned == [] do %>
-                <p class="text-sm text-base-content/50">
+                <p class="text-body text-ink-muted">
                   Nothing stored. The brain only inherits WordNet for this word.
                 </p>
               <% else %>
-                <div class="overflow-x-auto mt-2">
-                  <table class="table table-sm">
-                    <thead>
+                <div class="overflow-x-auto mt-space-sm">
+                  <table class="w-full text-left text-body-dense text-ink">
+                    <thead class="bg-surface-sunk">
                       <tr>
-                        <th>Kind</th>
-                        <th>Key</th>
-                        <th>Ref</th>
-                        <th>Value</th>
-                        <th>Source</th>
-                        <th>Conf.</th>
-                        <th>Seen</th>
-                        <th>State</th>
+                        <th class="h-row-compact px-space-sm text-label text-ink-muted">Kind</th>
+                        <th class="h-row-compact px-space-sm text-label text-ink-muted">Key</th>
+                        <th class="h-row-compact px-space-sm text-label text-ink-muted">Ref</th>
+                        <th class="h-row-compact px-space-sm text-label text-ink-muted">Value</th>
+                        <th class="h-row-compact px-space-sm text-label text-ink-muted">Source</th>
+                        <th class="h-row-compact px-space-sm text-label text-ink-muted">Conf.</th>
+                        <th class="h-row-compact px-space-sm text-label text-ink-muted">Seen</th>
+                        <th class="h-row-compact px-space-sm text-label text-ink-muted">State</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-border">
                       <%= for fact <- @result.owned do %>
                         <tr>
-                          <td class="font-mono">{fact.kind}</td>
-                          <td class="font-mono">{fact.key}</td>
-                          <td class="font-mono">{fact.ref}</td>
-                          <td class="font-mono text-xs">{truncate(inspect(fact.value), 60)}</td>
-                          <td>
-                            <span class={"badge badge-xs #{origin_class(fact)}"}>
+                          <td class="h-row-compact px-space-sm text-value">{fact.kind}</td>
+                          <td class="h-row-compact px-space-sm text-value">{fact.key}</td>
+                          <td class="h-row-compact px-space-sm text-value">{fact.ref}</td>
+                          <td class="h-row-compact px-space-sm text-term">{truncate(inspect(fact.value), 60)}</td>
+                          <td class="h-row-compact px-space-sm">
+                            <.badge variant={origin_variant(fact)} size={:xs}>
                               {fact.source}
-                            </span>
+                            </.badge>
                           </td>
-                          <td>{fact.confidence}</td>
-                          <td>{fact.frequency}</td>
-                          <td>
+                          <td class="h-row-compact px-space-sm text-value">{fact.confidence}</td>
+                          <td class="h-row-compact px-space-sm text-value">{fact.frequency}</td>
+                          <td class="h-row-compact px-space-sm">
                             <%= if fact.archived do %>
-                              <span class="badge badge-warning badge-xs">archived</span>
+                              <.badge variant={:warning} size={:xs}>archived</.badge>
                             <% else %>
-                              <span class="badge badge-success badge-xs">active</span>
+                              <.badge variant={:success} size={:xs}>active</.badge>
                             <% end %>
                           </td>
                         </tr>
@@ -322,43 +319,43 @@ defmodule ChatWeb.LexiconLive do
                   </table>
                 </div>
               <% end %>
-            </div>
-          </div>
-          
+            </.card_body>
+          </.card>
+
     <!-- Senses -->
-          <div class="card bg-base-100 border border-base-300">
-            <div class="card-body p-4">
-              <h2 class="card-title text-base">Senses ({length(@result.senses)})</h2>
+          <.card>
+            <.card_body>
+              <h2 class="text-heading text-ink">Senses ({length(@result.senses)})</h2>
 
               <%= if @result.senses == [] do %>
-                <p class="text-sm text-base-content/50">
+                <p class="text-body text-ink-muted">
                   No senses. Note that inflected forms are looked up as written, so
                   a plural can read as unknown even when its lemma is known.
                 </p>
               <% else %>
                 <div class="overflow-x-auto">
-                  <table class="table table-sm">
-                    <thead>
+                  <table class="w-full text-left text-body-dense text-ink">
+                    <thead class="bg-surface-sunk">
                       <tr>
-                        <th>Synset</th>
-                        <th>POS</th>
-                        <th>Definition</th>
+                        <th class="h-row-compact px-space-sm text-label text-ink-muted">Synset</th>
+                        <th class="h-row-compact px-space-sm text-label text-ink-muted">POS</th>
+                        <th class="h-row-compact px-space-sm text-label text-ink-muted">Definition</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-border">
                       <%= for sense <- @result.senses do %>
                         <tr>
-                          <td class="font-mono text-xs">{sense.synset_id}</td>
-                          <td class="font-mono text-xs">{sense.pos}</td>
-                          <td class="text-sm">{truncate(sense.definition, 120)}</td>
+                          <td class="h-row-compact px-space-sm text-ref">{sense.synset_id}</td>
+                          <td class="h-row-compact px-space-sm text-ref">{sense.pos}</td>
+                          <td class="h-row-compact px-space-sm text-body">{truncate(sense.definition, 120)}</td>
                         </tr>
                       <% end %>
                     </tbody>
                   </table>
                 </div>
               <% end %>
-            </div>
-          </div>
+            </.card_body>
+          </.card>
         <% end %>
       </div>
     </.app_shell>
