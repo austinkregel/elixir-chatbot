@@ -5,7 +5,7 @@ defmodule ChatWeb.AppShell do
   use Phoenix.Component
   use ChatWeb, :verified_routes
   import ChatWeb.CoreComponents
-  import ChatWeb.UI, only: [status_dot: 1]
+  import ChatWeb.UI, only: [status_dot: 1, badge: 1]
 
   alias Phoenix.LiveView.JS
 
@@ -54,7 +54,7 @@ defmodule ChatWeb.AppShell do
           <div class="flex items-center justify-between mb-space-xs">
             <div class="text-label text-ink-muted">Training World</div>
             <%= if @world_models_loading do %>
-              <.icon name="hero-arrow-path" class="size-3 text-progress-fill animate-spin" />
+              <.icon name="hero-arrow-path" class="size-3 text-progress-fill motion-safe:animate-spin" />
             <% end %>
           </div>
 
@@ -267,9 +267,7 @@ defmodule ChatWeb.AppShell do
 
   defp world_stamp(assigns) do
     ~H"""
-    <span class="inline-flex items-center rounded-sm bg-surface-sunk px-space-xs text-ref text-ink-muted">
-      world {@world_id}
-    </span>
+    <.badge mono>world {@world_id}</.badge>
     """
   end
 
