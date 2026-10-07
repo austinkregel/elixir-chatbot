@@ -419,16 +419,26 @@
         id="message-form"
         phx-submit="send_message"
         phx-change="input_change"
-        class="max-w-4xl mx-auto flex gap-space-md"
+        class="max-w-4xl mx-auto flex items-start gap-space-md"
       >
-        <.text_input
-          name="input"
-          value={@input_text}
-          placeholder="Type your message..."
-          class="flex-1"
-          autocomplete="off"
-        />
-        <.btn type="submit" variant={:primary} disabled={@input_text == ""}>
+        <div class="flex-1 min-w-0">
+          <.input
+            id="message-input"
+            name="input"
+            value={@input_text}
+            label="Message"
+            inline
+            placeholder="Type your message..."
+            autocomplete="off"
+            required
+            minlength="1"
+            pattern=".*\S.*"
+            title="A message needs at least one character that is not a space."
+            aria-invalid={@input_error && "true"}
+            errors={List.wrap(@input_error)}
+          />
+        </div>
+        <.btn type="submit" variant={:primary} disabled={String.trim(@input_text) == ""}>
           <.icon name="hero-paper-airplane" class="size-4" />
           <span class="hidden sm:inline">Send</span>
         </.btn>
