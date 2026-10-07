@@ -62,9 +62,14 @@ defmodule ChatWeb.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "assets.setup", "assets.build"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind chat_web", "esbuild chat_web"],
+      "assets.setup": [
+        "tailwind.install --if-missing",
+        "esbuild.install --if-missing",
+        "cmd --cd assets npm ci"
+      ],
+      "assets.build": ["tailwind chat_web", "esbuild chat_web", "chat_web.fonts"],
       "assets.deploy": [
+        "chat_web.fonts",
         "tailwind chat_web --minify",
         "esbuild chat_web --minify",
         "phx.digest"
