@@ -36,11 +36,13 @@ defmodule ChatWeb.VerifyLiveTest do
       refute html =~ "Pass</span>"
     end
 
-    test "names the task that would build each missing page", %{conn: conn} do
+    test "every subsystem row says it has no page yet", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/verify")
 
-      assert html =~ "not built — task 040"
-      assert html =~ "not built — task 057"
+      no_page_rows = length(String.split(html, "no page yet")) - 1
+
+      assert no_page_rows == length(Subsystems.all()),
+             "expected one \"no page yet\" per declared subsystem (#{length(Subsystems.all())}), found #{no_page_rows}"
     end
 
     test "the subsystem count matches the declaration", %{conn: conn} do
@@ -125,8 +127,8 @@ defmodule ChatWeb.VerifyLiveTest do
 
   describe "chrome" do
     test "uses the app shell rather than bespoke navigation", %{conn: conn} do
-      # Task 039's criterion: no new page duplicates AppShell or WorldContext.
-      # The shell's world selector and nav are the evidence it was used.
+      # No page duplicates AppShell or WorldContext. The shell's world
+      # selector and nav are the evidence it was used.
       {:ok, _view, html} = live(conn, "/verify")
 
       assert html =~ "Training World"
