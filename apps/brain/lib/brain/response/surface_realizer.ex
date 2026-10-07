@@ -129,8 +129,13 @@ defmodule Brain.Response.SurfaceRealizer do
             p |> Primitive.render(text) |> Map.put(:source, :ouro)
           end)
 
-        collect_plan(primitives, text, opts)
-        collect_pairs(primitives, text)
+        # The realized pairs and plan are decompressor training data; a run
+        # with side effects off keeps them out of it.
+        if Keyword.get(opts, :side_effects, true) do
+          collect_plan(primitives, text, opts)
+          collect_pairs(primitives, text)
+        end
+
         {:ok, rendered, text}
 
       {:error, reason} ->
