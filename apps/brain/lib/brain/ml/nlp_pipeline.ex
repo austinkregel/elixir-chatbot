@@ -31,6 +31,8 @@ defmodule Brain.ML.NLPPipeline do
     produced a full-features intent in pass 2.
   - `:reuse_entities` - list of pre-extracted entities. When provided, skip
     `EntityExtractor.extract_entities/2`.
+  - `:side_effects` - passed to `Pipeline.analyze_chunk/2` when the intent is
+    classified here; `false` keeps that analysis from writing.
   """
   def process(text, opts \\ []) do
     Logger.debug("Processing text with classical NLP", %{text: text})
@@ -100,7 +102,7 @@ defmodule Brain.ML.NLPPipeline do
         {:ok, intent, confidence / 1}
 
       _ ->
-        classify_intent(text)
+        classify_intent(text, Keyword.take(opts, [:side_effects]))
     end
   end
 
@@ -176,13 +178,13 @@ defmodule Brain.ML.NLPPipeline do
     confidence >= threshold
   end
 
-  defp classify_intent(text) do
+  defp classify_intent(text, pipeline_opts \\ []) do
     alias Brain.Analysis.{FeatureExtractor, Pipeline}
     alias Brain.ML.MicroClassifiers
 
     if MicroClassifiers.ready?() do
       try do
-        analysis = Pipeline.analyze_chunk(text)
+        analysis = Pipeline.analyze_chunk(text, pipeline_opts)
         {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
 
         case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
