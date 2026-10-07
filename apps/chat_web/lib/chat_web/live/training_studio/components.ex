@@ -18,7 +18,12 @@ defmodule ChatWeb.TrainingStudio.Components do
   """
   attr :record, :map, required: true
   attr :kind, :atom, required: true
-  attr :index, :integer, required: true
+  attr :index, :integer,
+    required: true,
+    doc:
+      "the record's position in the unfiltered source file: what Edit and Delete act on, " <>
+        "and, plus one, the record number the row and its delete confirmation show"
+
   attr :editable, :boolean, default: false
   attr :source_path, :string, default: nil, doc: "the source file, as the delete confirmation names it; required when editable"
   attr :confirm_open, :boolean, default: false
