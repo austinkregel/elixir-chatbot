@@ -1,14 +1,14 @@
 defmodule Brain.Analysis.PipelineSideEffectsTest do
   @moduledoc """
   The analysis pipeline writes what it learned about a turn (beliefs extracted
-  from events, graph data, feedback statistics) only when its caller passes
-  `side_effects: true`, and only a live conversation turn does.
+  from events, graph data, feedback statistics) unless its caller passes
+  `side_effects: false`.
 
-  Evaluation and training-data runs push whole corpora through the pipeline.
-  When belief extraction ignored `side_effects: false`, every corpus utterance
-  became a belief about the user ("user requests turn lights"), so these tests
-  run each batch call shape and require that nothing was written, and run the
-  live conversation path and require that it still writes.
+  Evaluation and training-data runs push whole corpora through the pipeline
+  and pass `false`. When belief extraction ignored that option, every corpus
+  utterance became a belief about the user ("user requests turn lights"), so
+  these tests require that a run with `false` writes nothing, and that a run
+  with the default, and a live conversation turn, still write.
   """
 
   use Brain.Test.GraphCase, async: false
@@ -26,33 +26,34 @@ defmodule Brain.Analysis.PipelineSideEffectsTest do
     {:ok, user_id: "side_effects_#{System.unique_integer([:positive])}"}
   end
 
-  describe "a run that does not opt in writes nothing" do
-    test "analyze_chunk with side_effects: false, as the evaluation tasks call it" do
+  describe "a run with side_effects: false writes nothing" do
+    test "analyze_chunk, as the evaluation tasks call it" do
       assert_writes_nothing(fn -> Pipeline.analyze_chunk(@directive, side_effects: false) end)
     end
 
-    test "analyze_chunk with no side_effects option" do
-      assert_writes_nothing(fn -> Pipeline.analyze_chunk(@directive) end)
-    end
-
-    test "process with side_effects: false" do
+    test "process" do
       assert_writes_nothing(fn -> Pipeline.process(@directive, side_effects: false) end)
     end
 
-    test "process with no side_effects option" do
-      assert_writes_nothing(fn -> Pipeline.process(@directive) end)
-    end
-
-    test "a user_id alone does not opt in", %{user_id: user_id} do
+    test "with a user_id", %{user_id: user_id} do
       Pipeline.analyze_chunk(@directive, user_id: user_id, side_effects: false)
-      Pipeline.process(@directive, user_id: user_id)
+      Pipeline.process(@directive, user_id: user_id, side_effects: false)
 
       assert beliefs_for(user_id) == []
       assert atlas_belief_count(user_id) == 0
     end
   end
 
-  describe "a run that opts in writes" do
+  describe "a run with side effects writes" do
+    test "process with no side_effects option extracts a belief for the user", %{user_id: user_id} do
+      Pipeline.process(@directive, user_id: user_id)
+
+      assert Enum.any?(beliefs_for(user_id), &(&1.predicate == :requests)),
+             "Expected a :requests belief for #{user_id}, got: #{inspect(beliefs_for(user_id))}"
+
+      assert atlas_belief_count(user_id) > 0
+    end
+
     test "process with side_effects: true extracts a belief for the user", %{user_id: user_id} do
       Pipeline.process(@directive, user_id: user_id, side_effects: true)
 
