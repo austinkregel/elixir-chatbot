@@ -94,12 +94,11 @@ defmodule ChatWeb.ExplorerLive do
     |> assign(:beliefs_source_filter, nil)
     |> assign(:beliefs_category_filter, nil)
     |> assign(:selected_user, nil)
-    # Add belief form state
-    |> assign(:show_add_belief_form, false)
+    # The open confirmation panel, if any, and its failure
+    |> assign(:confirming, nil)
+    |> assign(:confirm_error, nil)
     |> assign(:add_belief_form, %{"subject" => "", "predicate" => "", "object" => "", "confidence" => "100", "authority" => "mentor"})
     |> assign(:authority_filter, nil)
-    # Inline confidence editing
-    |> assign(:editing_confidence_id, nil)
   end
 
   defp apply_url_params(socket, params) do
@@ -143,32 +142,35 @@ defmodule ChatWeb.ExplorerLive do
   defp apply_filters(socket) do
     tab = socket.assigns.tab
     search = socket.assigns.search_query |> String.downcase()
-    page = socket.assigns.page
     page_size = socket.assigns.page_size
 
-    {filtered, total} =
+    {items, total, total_rows, filter_active, paged?} =
       case tab do
         :entities ->
           type = socket.assigns.selected_type
           entities = Map.get(socket.assigns.overlay_by_type, type, [])
           filtered = filter_by_search(entities, search, fn {key, _info} -> key end)
-          {paginate(filtered, page, page_size), length(filtered)}
+          {filtered, length(filtered), length(entities), search != "", true}
 
         :candidates ->
           filtered = filter_by_search(socket.assigns.candidates, search, & &1.value)
-          {paginate(filtered, page, page_size), length(filtered)}
+
+          {filtered, length(filtered), length(socket.assigns.candidates), search != "", true}
 
         :episodes ->
           filtered = filter_by_search(socket.assigns.episodes, search, & &1.state)
-          {paginate(filtered, page, page_size), length(filtered)}
+
+          {filtered, length(filtered), length(socket.assigns.episodes), search != "", true}
 
         :semantics ->
           filtered = filter_by_search(socket.assigns.semantics, search, & &1.representation)
-          {paginate(filtered, page, page_size), length(filtered)}
+
+          {filtered, length(filtered), length(socket.assigns.semantics), search != "", true}
 
         :knowledge ->
           # Knowledge is a map, don't paginate
-          {socket.assigns.knowledge, map_size(socket.assigns.knowledge)}
+          knowledge_size = map_size(socket.assigns.knowledge)
+          {socket.assigns.knowledge, knowledge_size, knowledge_size, false, false}
 
         :beliefs ->
           # Load beliefs data lazily on first access
@@ -178,7 +180,8 @@ defmodule ChatWeb.ExplorerLive do
 
           case sub_tab do
             :beliefs ->
-              items = Map.get(beliefs_data, :beliefs, [])
+              all_items = Map.get(beliefs_data, :beliefs, [])
+              items = all_items
               source_filter = socket.assigns.beliefs_source_filter
               authority_filter = socket.assigns.authority_filter
 
@@ -202,10 +205,12 @@ defmodule ChatWeb.ExplorerLive do
                 "#{b.subject} #{b.predicate} #{b.object}"
               end)
 
-              {paginate(filtered, page, page_size), length(filtered)}
+              {filtered, length(filtered), length(all_items),
+               search != "" or not is_nil(source_filter) or not is_nil(authority_filter), true}
 
             :facts ->
-              items = Map.get(beliefs_data, :facts, [])
+              all_items = Map.get(beliefs_data, :facts, [])
+              items = all_items
               cat_filter = socket.assigns.beliefs_category_filter
 
               items =
@@ -219,19 +224,23 @@ defmodule ChatWeb.ExplorerLive do
                 "#{f.entity} #{f.fact}"
               end)
 
-              {paginate(filtered, page, page_size), length(filtered)}
+              {filtered, length(filtered), length(all_items),
+               search != "" or not is_nil(cat_filter), true}
 
             _ ->
-              {%{}, 0}
+              {%{}, 0, 0, false, false}
           end
       end
 
-    total_pages = max(1, ceil(total / page_size))
+    page = clamp_page(socket.assigns.page, total, page_size)
+    filtered = if paged?, do: paginate(items, page, page_size), else: items
 
     socket
+    |> assign(:page, page)
     |> assign(:filtered_data, filtered)
     |> assign(:total_entries, total)
-    |> assign(:total_pages, total_pages)
+    |> assign(:total_rows, total_rows)
+    |> assign(:matching_rows, if(filter_active, do: total))
   end
 
   # ============================================================================
@@ -359,8 +368,12 @@ defmodule ChatWeb.ExplorerLive do
 
   # ---- Belief management actions ----
 
-  def handle_event("toggle_add_belief_form", _params, socket) do
-    {:noreply, assign(socket, :show_add_belief_form, !socket.assigns.show_add_belief_form)}
+  def handle_event("open_confirm", %{"id" => confirm_id}, socket) do
+    {:noreply, assign(socket, confirming: confirm_id, confirm_error: nil)}
+  end
+
+  def handle_event("close_confirm", _params, socket) do
+    {:noreply, assign(socket, confirming: nil, confirm_error: nil)}
   end
 
   def handle_event("update_add_belief_form", %{"belief" => params}, socket) do
@@ -397,7 +410,7 @@ defmodule ChatWeb.ExplorerLive do
         {:ok, _id} ->
           socket =
             socket
-            |> assign(:show_add_belief_form, false)
+            |> assign(confirming: nil, confirm_error: nil)
             |> assign(:add_belief_form, %{"subject" => "", "predicate" => "", "object" => "", "confidence" => "100", "authority" => "mentor"})
             |> assign(:beliefs_data, nil)
             |> maybe_load_beliefs_data()
@@ -407,10 +420,10 @@ defmodule ChatWeb.ExplorerLive do
           {:noreply, socket}
 
         {:error, reason} ->
-          {:noreply, put_flash(socket, :error, "Failed to add belief: #{inspect(reason)}")}
+          {:noreply, assign(socket, :confirm_error, "Adding the belief failed: #{inspect(reason)}")}
       end
     else
-      {:noreply, put_flash(socket, :error, "Subject, predicate, and object are all required")}
+      {:noreply, assign(socket, :confirm_error, "Subject, predicate, and object are all required.")}
     end
   end
 
@@ -419,6 +432,7 @@ defmodule ChatWeb.ExplorerLive do
       :ok ->
         socket =
           socket
+          |> assign(confirming: nil, confirm_error: nil)
           |> assign(:beliefs_data, nil)
           |> maybe_load_beliefs_data()
           |> apply_filters()
@@ -427,7 +441,7 @@ defmodule ChatWeb.ExplorerLive do
         {:noreply, socket}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to retract: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Retract failed: #{inspect(reason)}")}
     end
   end
 
@@ -436,6 +450,7 @@ defmodule ChatWeb.ExplorerLive do
       {:ok, _updated} ->
         socket =
           socket
+          |> assign(confirming: nil, confirm_error: nil)
           |> assign(:beliefs_data, nil)
           |> maybe_load_beliefs_data()
           |> apply_filters()
@@ -444,12 +459,8 @@ defmodule ChatWeb.ExplorerLive do
         {:noreply, socket}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to confirm: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Confirm failed: #{inspect(reason)}")}
     end
-  end
-
-  def handle_event("edit_confidence", %{"id" => belief_id}, socket) do
-    {:noreply, assign(socket, :editing_confidence_id, belief_id)}
   end
 
   def handle_event("save_confidence", %{"belief_id" => belief_id, "confidence" => conf_str}, socket) do
@@ -459,20 +470,17 @@ defmodule ChatWeb.ExplorerLive do
       {:ok, _updated} ->
         socket =
           socket
-          |> assign(:editing_confidence_id, nil)
+          |> assign(confirming: nil, confirm_error: nil)
           |> assign(:beliefs_data, nil)
           |> maybe_load_beliefs_data()
           |> apply_filters()
+          |> put_flash(:info, "Belief confidence set to #{round(confidence * 100)}%")
 
         {:noreply, socket}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to update confidence: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Setting the confidence failed: #{inspect(reason)}")}
     end
-  end
-
-  def handle_event("cancel_edit_confidence", _params, socket) do
-    {:noreply, assign(socket, :editing_confidence_id, nil)}
   end
 
   def handle_event("authority_filter", %{"authority" => authority}, socket) do
@@ -682,17 +690,18 @@ defmodule ChatWeb.ExplorerLive do
                 data={@filtered_data}
                 loading={@loading}
                 page={@page}
-                total_pages={@total_pages}
-                total_entries={@total_entries}
+                total_rows={@total_rows}
+                matching_rows={@matching_rows}
                 page_size={@page_size}
               />
             <% :candidates -> %>
               <.candidates_table
                 data={@filtered_data}
                 loading={@loading}
+                world_id={@current_world_id}
                 page={@page}
-                total_pages={@total_pages}
-                total_entries={@total_entries}
+                total_rows={@total_rows}
+                matching_rows={@matching_rows}
                 page_size={@page_size}
               />
             <% :episodes -> %>
@@ -700,8 +709,8 @@ defmodule ChatWeb.ExplorerLive do
                 data={@filtered_data}
                 expanded_id={@expanded_id}
                 page={@page}
-                total_pages={@total_pages}
-                total_entries={@total_entries}
+                total_rows={@total_rows}
+                matching_rows={@matching_rows}
                 page_size={@page_size}
               />
             <% :semantics -> %>
@@ -709,8 +718,8 @@ defmodule ChatWeb.ExplorerLive do
                 data={@filtered_data}
                 expanded_id={@expanded_id}
                 page={@page}
-                total_pages={@total_pages}
-                total_entries={@total_entries}
+                total_rows={@total_rows}
+                matching_rows={@matching_rows}
                 page_size={@page_size}
               />
             <% :knowledge -> %>
@@ -723,13 +732,13 @@ defmodule ChatWeb.ExplorerLive do
                 source_filter={@beliefs_source_filter}
                 category_filter={@beliefs_category_filter}
                 selected_user={@selected_user}
-                show_add_belief_form={@show_add_belief_form}
+                confirming={@confirming}
+                confirm_error={@confirm_error}
                 add_belief_form={@add_belief_form}
-                editing_confidence_id={@editing_confidence_id}
                 expanded_id={@expanded_id}
                 page={@page}
-                total_pages={@total_pages}
-                total_entries={@total_entries}
+                total_rows={@total_rows}
+                matching_rows={@matching_rows}
                 page_size={@page_size}
               />
           <% end %>
@@ -746,7 +755,7 @@ defmodule ChatWeb.ExplorerLive do
   defp entities_table(assigns) do
     ~H"""
     <%= if length(@data) == 0 do %>
-      <.empty_state icon="hero-tag" message="No entities found" />
+      <.empty_panel kind={:plain} words="No entities found" class="m-space-lg" />
     <% else %>
       <table class="w-full text-left text-body-dense text-ink">
         <thead class="bg-surface-sunk">
@@ -774,11 +783,13 @@ defmodule ChatWeb.ExplorerLive do
           <% end %>
         </tbody>
       </table>
-      <.pagination
+      <.page_bar
         page={@page}
-        total_pages={@total_pages}
-        total_entries={@total_entries}
         page_size={@page_size}
+        total={@total_rows}
+        matching={@matching_rows}
+        event="change_page"
+        class="px-space-lg py-space-md border-t border-border"
       />
     <% end %>
     """
@@ -787,7 +798,7 @@ defmodule ChatWeb.ExplorerLive do
   defp candidates_table(assigns) do
     ~H"""
     <%= if length(@data) == 0 do %>
-      <.empty_state icon="hero-queue-list" message="No candidates found" />
+      <.empty_panel kind={:plain} words="No candidates found" class="m-space-lg" />
     <% else %>
       <table class="w-full text-left text-body-dense text-ink">
         <thead class="bg-surface-sunk">
@@ -796,7 +807,16 @@ defmodule ChatWeb.ExplorerLive do
             <th class="h-row-compact px-space-sm text-label text-ink-muted">Inferred Type</th>
             <th class="h-row-compact px-space-sm text-label text-ink-muted">Confidence</th>
             <th class="h-row-compact px-space-sm text-label text-ink-muted">Occurrences</th>
-            <th class="h-row-compact px-space-sm text-label text-ink-muted">Action</th>
+            <th class="h-row-compact px-space-sm text-label text-ink-muted">
+              <span class="inline-flex items-center gap-space-sm">
+                Action
+                <.reach_badge
+                  id="explorer-promote-reach"
+                  reach={:local}
+                  target={"gazetteer overlay · #{@world_id}"}
+                />
+              </span>
+            </th>
           </tr>
         </thead>
         <tbody class="divide-y divide-border">
@@ -831,6 +851,7 @@ defmodule ChatWeb.ExplorerLive do
                     size={:xs}
                     class="opacity-0 group-hover:opacity-100"
                     title="Promote to gazetteer"
+                    aria-describedby="explorer-promote-reach"
                   >
                     <.icon name="hero-arrow-up-circle" class="size-4" />
                   </.btn>
@@ -840,11 +861,13 @@ defmodule ChatWeb.ExplorerLive do
           <% end %>
         </tbody>
       </table>
-      <.pagination
+      <.page_bar
         page={@page}
-        total_pages={@total_pages}
-        total_entries={@total_entries}
         page_size={@page_size}
+        total={@total_rows}
+        matching={@matching_rows}
+        event="change_page"
+        class="px-space-lg py-space-md border-t border-border"
       />
     <% end %>
     """
@@ -853,7 +876,7 @@ defmodule ChatWeb.ExplorerLive do
   defp episodes_list(assigns) do
     ~H"""
     <%= if length(@data) == 0 do %>
-      <.empty_state icon="hero-clock" message="No episodes found" />
+      <.empty_panel kind={:plain} words="No episodes found" class="m-space-lg" />
     <% else %>
       <div class="divide-y divide-border">
         <%= for episode <- @data do %>
@@ -905,11 +928,13 @@ defmodule ChatWeb.ExplorerLive do
           </div>
         <% end %>
       </div>
-      <.pagination
+      <.page_bar
         page={@page}
-        total_pages={@total_pages}
-        total_entries={@total_entries}
         page_size={@page_size}
+        total={@total_rows}
+        matching={@matching_rows}
+        event="change_page"
+        class="px-space-lg py-space-md border-t border-border"
       />
     <% end %>
     """
@@ -918,7 +943,7 @@ defmodule ChatWeb.ExplorerLive do
   defp semantics_list(assigns) do
     ~H"""
     <%= if length(@data) == 0 do %>
-      <.empty_state icon="hero-light-bulb" message="No semantic facts found" />
+      <.empty_panel kind={:plain} words="No semantic facts found" class="m-space-lg" />
     <% else %>
       <div class="divide-y divide-border">
         <%= for semantic <- @data do %>
@@ -959,11 +984,13 @@ defmodule ChatWeb.ExplorerLive do
           </div>
         <% end %>
       </div>
-      <.pagination
+      <.page_bar
         page={@page}
-        total_pages={@total_pages}
-        total_entries={@total_entries}
         page_size={@page_size}
+        total={@total_rows}
+        matching={@matching_rows}
+        event="change_page"
+        class="px-space-lg py-space-md border-t border-border"
       />
     <% end %>
     """
@@ -972,7 +999,7 @@ defmodule ChatWeb.ExplorerLive do
   defp knowledge_view(assigns) do
     ~H"""
     <%= if map_size(@data) == 0 do %>
-      <.empty_state icon="hero-book-open" message="No knowledge stored" />
+      <.empty_panel kind={:plain} words="No knowledge stored" class="m-space-lg" />
     <% else %>
       <div class="divide-y divide-border">
         <%= for {category, items} <- @data do %>
@@ -1059,7 +1086,16 @@ defmodule ChatWeb.ExplorerLive do
 
           <div class="flex items-center gap-space-sm ml-auto">
             <%= if @sub_tab == :beliefs do %>
-              <.btn phx-click="toggle_add_belief_form" variant={:primary} size={:sm} title="Add guided belief">
+              <.btn
+                id="explorer-add-belief"
+                phx-click="open_confirm"
+                phx-value-id="explorer-confirm-add-belief"
+                variant={:primary}
+                size={:sm}
+                reach={:shared}
+                target="belief store"
+                title="Add guided belief"
+              >
                 <.icon name="hero-plus" class="size-4" />
                 Add Belief
               </.btn>
@@ -1110,77 +1146,85 @@ defmodule ChatWeb.ExplorerLive do
         <% end %>
       <% end %>
 
-      <!-- Add belief form (collapsible) -->
-      <%= if @show_add_belief_form do %>
-        <div class="p-space-lg bg-surface-sunk border-b border-border">
-          <form phx-submit="add_guided_belief" phx-change="update_add_belief_form" class="space-y-space-md">
-            <div class="flex items-center gap-space-sm mb-space-sm">
-              <.icon name="hero-light-bulb" class="size-5 text-ink-muted" />
-              <span class="text-subheading text-ink">Add Guided Belief</span>
-              <span class="text-caption text-ink-muted ml-space-sm">Confidence set by authority tier</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-space-md">
-              <div>
-                <label class="block mb-space-xs text-label text-ink-muted">Subject</label>
-                <select
-                  name="belief[subject]"
-                  class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
-                >
-                  <option value="world" selected={@add_belief_form["subject"] == "world"}>world</option>
-                  <option value="self" selected={@add_belief_form["subject"] == "self"}>self</option>
-                  <option value="user" selected={@add_belief_form["subject"] == "user"}>user</option>
-                </select>
+      <!-- Add belief: the form is the confirmation -->
+      <%= if @sub_tab == :beliefs and @confirming == "explorer-confirm-add-belief" do %>
+        <div class="p-space-lg bg-surface-sunk border-b border-border flex justify-end">
+          <.execute_confirm
+            id="explorer-confirm-add-belief"
+            open={true}
+            reach={:shared}
+            verb="Add belief"
+            target="belief store"
+            consequence="Adds this belief to the belief store every query reads, with a JTMS node, and saves it to Atlas. Its confidence comes from the chosen authority's tier and tracked credibility."
+            on_confirm="add_guided_belief"
+            on_cancel="close_confirm"
+            trigger_id="explorer-add-belief"
+            error={@confirm_error}
+            class="w-full"
+          >
+            <:fields>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+                <div>
+                  <label for="explorer-belief-subject" class="block mb-space-xs text-label text-ink-muted">Subject</label>
+                  <select
+                    id="explorer-belief-subject"
+                    name="belief[subject]"
+                    phx-change="update_add_belief_form"
+                    class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
+                  >
+                    <option value="world" selected={@add_belief_form["subject"] == "world"}>world</option>
+                    <option value="self" selected={@add_belief_form["subject"] == "self"}>self</option>
+                    <option value="user" selected={@add_belief_form["subject"] == "user"}>user</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="explorer-belief-predicate" class="block mb-space-xs text-label text-ink-muted">Predicate</label>
+                  <input
+                    id="explorer-belief-predicate"
+                    type="text"
+                    name="belief[predicate]"
+                    value={@add_belief_form["predicate"]}
+                    phx-change="update_add_belief_form"
+                    placeholder="e.g. name, likes, location"
+                    class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
+                    required
+                  />
+                </div>
+                <div>
+                  <label for="explorer-belief-object" class="block mb-space-xs text-label text-ink-muted">Object</label>
+                  <input
+                    id="explorer-belief-object"
+                    type="text"
+                    name="belief[object]"
+                    value={@add_belief_form["object"]}
+                    phx-change="update_add_belief_form"
+                    placeholder="The value"
+                    class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
+                    required
+                  />
+                </div>
+                <div>
+                  <label for="explorer-belief-authority" class="block mb-space-xs text-label text-ink-muted">Authority</label>
+                  <select
+                    id="explorer-belief-authority"
+                    name="belief[authority]"
+                    phx-change="update_add_belief_form"
+                    class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
+                  >
+                    <%= for {category, profiles} <- group_authority_profiles(@authority_profiles) do %>
+                      <optgroup label={String.capitalize(category)}>
+                        <%= for p <- profiles do %>
+                          <option value={p.key} selected={to_string(p.key) == @add_belief_form["authority"]}>
+                            {p.profile.label} ({Float.round(p.profile.initial_confidence * 100, 0)}%)
+                          </option>
+                        <% end %>
+                      </optgroup>
+                    <% end %>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label class="block mb-space-xs text-label text-ink-muted">Predicate</label>
-                <input
-                  type="text"
-                  name="belief[predicate]"
-                  value={@add_belief_form["predicate"]}
-                  placeholder="e.g. name, likes, location"
-                  class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
-                  required
-                />
-              </div>
-              <div>
-                <label class="block mb-space-xs text-label text-ink-muted">Object</label>
-                <input
-                  type="text"
-                  name="belief[object]"
-                  value={@add_belief_form["object"]}
-                  placeholder="The value"
-                  class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
-                  required
-                />
-              </div>
-              <div>
-                <label class="block mb-space-xs text-label text-ink-muted">Authority</label>
-                <select
-                  name="belief[authority]"
-                  class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
-                >
-                  <%= for {category, profiles} <- group_authority_profiles(@authority_profiles) do %>
-                    <optgroup label={String.capitalize(category)}>
-                      <%= for p <- profiles do %>
-                        <option value={p.key} selected={to_string(p.key) == @add_belief_form["authority"]}>
-                          {p.profile.label} ({Float.round(p.profile.initial_confidence * 100, 0)}%)
-                        </option>
-                      <% end %>
-                    </optgroup>
-                  <% end %>
-                </select>
-              </div>
-            </div>
-            <div class="flex items-center gap-space-lg">
-              <div class="text-caption text-ink-muted">
-                Confidence will be based on authority tier and tracked credibility
-              </div>
-              <div class="flex gap-space-sm ml-auto">
-                <.btn type="button" phx-click="toggle_add_belief_form" variant={:ghost} size={:sm}>Cancel</.btn>
-                <.btn type="submit" variant={:primary} size={:sm}>Add Belief</.btn>
-              </div>
-            </div>
-          </form>
+            </:fields>
+          </.execute_confirm>
         </div>
       <% end %>
 
@@ -1193,10 +1237,11 @@ defmodule ChatWeb.ExplorerLive do
             source_filter={@source_filter}
             authority_filter={assigns[:authority_filter]}
             authority_types={@beliefs_data[:belief_authorities] || []}
-            editing_confidence_id={@editing_confidence_id}
+            confirming={@confirming}
+            confirm_error={@confirm_error}
             page={@page}
-            total_pages={@total_pages}
-            total_entries={@total_entries}
+            total_rows={@total_rows}
+            matching_rows={@matching_rows}
             page_size={@page_size}
           />
         <% :facts -> %>
@@ -1205,8 +1250,8 @@ defmodule ChatWeb.ExplorerLive do
             categories={@beliefs_data[:fact_categories] || []}
             category_filter={@category_filter}
             page={@page}
-            total_pages={@total_pages}
-            total_entries={@total_entries}
+            total_rows={@total_rows}
+            matching_rows={@matching_rows}
             page_size={@page_size}
           />
         <% :jtms -> %>
@@ -1257,9 +1302,13 @@ defmodule ChatWeb.ExplorerLive do
     </div>
 
     <%= if is_list(@data) and length(@data) == 0 do %>
-      <.empty_state icon="hero-eye" message="No beliefs found" />
+      <.empty_panel kind={:plain} words="No beliefs found" class="m-space-lg" />
     <% else %>
       <%= if is_list(@data) do %>
+        <div class="px-space-lg pt-space-md flex items-center gap-space-sm text-caption text-ink-muted">
+          Confirm, Adjust confidence and Retract
+          <.reach_badge id="explorer-belief-actions-reach" reach={:shared} target="belief store" />
+        </div>
         <div class="divide-y divide-border">
           <%= for belief <- @data do %>
             <% b_conf = belief.confidence || 0.0
@@ -1279,40 +1328,19 @@ defmodule ChatWeb.ExplorerLive do
                     <span class="text-ink">{inspect(belief.object)}</span>
                   </div>
 
-                  <!-- Confidence bar or editor -->
-                  <%= if @editing_confidence_id == belief.id do %>
-                    <form phx-submit="save_confidence" class="flex items-center gap-space-sm mt-space-sm max-w-xs">
-                      <input type="hidden" name="belief_id" value={belief.id} />
-                      <input
-                        type="range"
-                        name="confidence"
-                        min="0"
-                        max="100"
-                        value={round(b_conf * 100)}
-                        class="flex-1 accent-primary"
-                      />
-                      <span class="text-offset text-ink w-10 text-right">{round(b_conf * 100)}%</span>
-                      <.icon_btn type="submit" variant={:primary} size={:sm} title="Save">
-                        <.icon name="hero-check" class="size-3" />
-                      </.icon_btn>
-                      <.icon_btn type="button" phx-click="cancel_edit_confidence" variant={:ghost} size={:sm} title="Cancel">
-                        <.icon name="hero-x-mark" class="size-3" />
-                      </.icon_btn>
-                    </form>
-                  <% else %>
-                    <div class="flex items-center gap-space-sm mt-space-sm max-w-xs">
-                      <div class="flex-1 bg-surface-sunk rounded-sm h-space-xs">
-                        <div
-                          class="h-space-xs rounded-sm bg-ink-muted"
-                          style={"width: #{Float.round(b_conf * 100, 1)}%"}
-                        >
-                        </div>
+                  <!-- Confidence bar -->
+                  <div class="flex items-center gap-space-sm mt-space-sm max-w-xs">
+                    <div class="flex-1 bg-surface-sunk rounded-sm h-space-xs">
+                      <div
+                        class="h-space-xs rounded-sm bg-ink-muted"
+                        style={"width: #{Float.round(b_conf * 100, 1)}%"}
+                      >
                       </div>
-                      <span class="text-offset text-ink-muted">
-                        {Float.round(b_conf * 100, 1)}%
-                      </span>
                     </div>
-                  <% end %>
+                    <span class="text-offset text-ink-muted">
+                      {Float.round(b_conf * 100, 1)}%
+                    </span>
+                  </div>
                 </div>
 
                 <!-- Badges + Actions -->
@@ -1334,8 +1362,10 @@ defmodule ChatWeb.ExplorerLive do
                   <!-- Action buttons -->
                   <div class="flex items-center gap-space-xs ml-space-xs">
                     <.icon_btn
-                      phx-click="confirm_belief"
-                      phx-value-id={belief.id}
+                      id={belief_trigger_id("confirm", belief.id)}
+                      phx-click="open_confirm"
+                      phx-value-id={belief_confirm_id("confirm", belief.id)}
+                      aria-describedby="explorer-belief-actions-reach"
                       variant={:primary}
                       size={:sm}
                       title="Confirm (boost confidence +10%)"
@@ -1343,8 +1373,10 @@ defmodule ChatWeb.ExplorerLive do
                       <.icon name="hero-check-circle" class="size-4" />
                     </.icon_btn>
                     <.icon_btn
-                      phx-click="edit_confidence"
-                      phx-value-id={belief.id}
+                      id={belief_trigger_id("adjust", belief.id)}
+                      phx-click="open_confirm"
+                      phx-value-id={belief_confirm_id("adjust", belief.id)}
+                      aria-describedby="explorer-belief-actions-reach"
                       variant={:ghost}
                       size={:sm}
                       title="Adjust confidence"
@@ -1352,9 +1384,10 @@ defmodule ChatWeb.ExplorerLive do
                       <.icon name="hero-adjustments-horizontal" class="size-4" />
                     </.icon_btn>
                     <.icon_btn
-                      phx-click="retract_belief"
-                      phx-value-id={belief.id}
-                      data-confirm="Retract this belief?"
+                      id={belief_trigger_id("retract", belief.id)}
+                      phx-click="open_confirm"
+                      phx-value-id={belief_confirm_id("retract", belief.id)}
+                      aria-describedby="explorer-belief-actions-reach"
                       variant={:primary}
                       size={:sm}
                       title="Retract belief"
@@ -1363,6 +1396,67 @@ defmodule ChatWeb.ExplorerLive do
                     </.icon_btn>
                   </div>
                 </div>
+              </div>
+
+              <div class="flex justify-end">
+                <.execute_confirm
+                  id={belief_confirm_id("confirm", belief.id)}
+                  open={@confirming == belief_confirm_id("confirm", belief.id)}
+                  reach={:shared}
+                  verb="Confirm"
+                  target={belief_target(belief)}
+                  consequence="Raises this belief's confidence by 0.1, to at most 1.0, in the belief store every query reads, and records a confirmation against its authority's credibility when it has one. Nothing is written to Atlas."
+                  on_confirm={JS.push("confirm_belief", value: %{id: belief.id})}
+                  on_cancel="close_confirm"
+                  trigger_id={belief_trigger_id("confirm", belief.id)}
+                  error={@confirm_error}
+                  class="mt-space-sm"
+                />
+                <.execute_confirm
+                  id={belief_confirm_id("adjust", belief.id)}
+                  open={@confirming == belief_confirm_id("adjust", belief.id)}
+                  reach={:shared}
+                  verb="Set confidence"
+                  target={belief_target(belief)}
+                  consequence="Sets this belief's confidence to the chosen value in the belief store every query reads, and saves it to Atlas."
+                  on_confirm="save_confidence"
+                  on_cancel="close_confirm"
+                  trigger_id={belief_trigger_id("adjust", belief.id)}
+                  error={@confirm_error}
+                  class="mt-space-sm w-full"
+                >
+                  <:fields>
+                    <input type="hidden" name="belief_id" value={belief.id} />
+                    <label
+                      for={"explorer-belief-confidence-#{belief.id}"}
+                      class="block mb-space-xs text-label text-ink-muted"
+                    >
+                      Confidence (now {Float.round(b_conf * 100, 1)}%)
+                    </label>
+                    <input
+                      id={"explorer-belief-confidence-#{belief.id}"}
+                      type="range"
+                      name="confidence"
+                      min="0"
+                      max="100"
+                      value={round(b_conf * 100)}
+                      class="w-full accent-primary"
+                    />
+                  </:fields>
+                </.execute_confirm>
+                <.execute_confirm
+                  id={belief_confirm_id("retract", belief.id)}
+                  open={@confirming == belief_confirm_id("retract", belief.id)}
+                  reach={:shared}
+                  verb="Retract"
+                  target={belief_target(belief)}
+                  consequence="Retracts this belief: the belief store stops returning it to every query, Atlas marks it retracted, and its authority's credibility records a contradiction when it has one."
+                  on_confirm={JS.push("retract_belief", value: %{id: belief.id})}
+                  on_cancel="close_confirm"
+                  trigger_id={belief_trigger_id("retract", belief.id)}
+                  error={@confirm_error}
+                  class="mt-space-sm"
+                />
               </div>
 
               <!-- Metadata row -->
@@ -1378,11 +1472,13 @@ defmodule ChatWeb.ExplorerLive do
             </div>
           <% end %>
         </div>
-        <.pagination
+        <.page_bar
           page={@page}
-          total_pages={@total_pages}
-          total_entries={@total_entries}
           page_size={@page_size}
+          total={@total_rows}
+          matching={@matching_rows}
+          event="change_page"
+          class="px-space-lg py-space-md border-t border-border"
         />
       <% end %>
     <% end %>
@@ -1408,7 +1504,7 @@ defmodule ChatWeb.ExplorerLive do
     <% end %>
 
     <%= if is_list(@data) and length(@data) == 0 do %>
-      <.empty_state icon="hero-book-open" message="No facts found" />
+      <.empty_panel kind={:plain} words="No facts found" class="m-space-lg" />
     <% else %>
       <%= if is_list(@data) do %>
         <table class="w-full text-left text-body-dense text-ink">
@@ -1443,11 +1539,13 @@ defmodule ChatWeb.ExplorerLive do
             <% end %>
           </tbody>
         </table>
-        <.pagination
+        <.page_bar
           page={@page}
-          total_pages={@total_pages}
-          total_entries={@total_entries}
           page_size={@page_size}
+          total={@total_rows}
+          matching={@matching_rows}
+          event="change_page"
+          class="px-space-lg py-space-md border-t border-border"
         />
       <% end %>
     <% end %>
@@ -1556,7 +1654,7 @@ defmodule ChatWeb.ExplorerLive do
     ~H"""
     <div class="divide-y divide-border">
       <%= if length(@user_ids) == 0 do %>
-        <.empty_state icon="hero-user-group" message="No user models found" />
+        <.empty_panel kind={:plain} words="No user models found" class="m-space-lg" />
       <% else %>
         <!-- User list -->
         <div class="p-space-lg">
@@ -1659,55 +1757,16 @@ defmodule ChatWeb.ExplorerLive do
     _ -> nil
   end
 
+  defp belief_trigger_id(action, belief_id), do: "explorer-#{action}-belief-#{belief_id}"
+  defp belief_confirm_id(action, belief_id), do: "explorer-confirm-#{action}-belief-#{belief_id}"
+
+  defp belief_target(belief), do: "belief #{String.slice(belief.id, 0, 8)}"
+
   defp format_datetime(%DateTime{} = dt) do
     Calendar.strftime(dt, "%Y-%m-%d %H:%M")
   end
 
   defp format_datetime(_), do: "-"
-
-  defp empty_state(assigns) do
-    ~H"""
-    <div class="p-space-3xl text-center text-ink-muted">
-      <.icon name={@icon} class="size-12 mx-auto mb-space-lg text-ink-muted" />
-      <p class="text-body">{@message}</p>
-    </div>
-    """
-  end
-
-  defp pagination(assigns) do
-    ~H"""
-    <%= if @total_pages > 1 do %>
-      <div class="flex items-center justify-between px-space-lg py-space-md border-t border-border">
-        <div class="text-body-dense text-ink-muted">
-          Showing {(@page - 1) * @page_size + 1}-{min(@page * @page_size, @total_entries)} of {@total_entries}
-        </div>
-        <div class="flex items-center gap-space-xs">
-          <.btn
-            phx-click="change_page"
-            phx-value-page={@page - 1}
-            disabled={@page == 1}
-            variant={:ghost}
-            size={:xs}
-            title="Previous page"
-          >
-            <.icon name="hero-chevron-left" class="size-4" />
-          </.btn>
-          <span class="px-space-sm text-body-dense text-ink">Page {@page} of {@total_pages}</span>
-          <.btn
-            phx-click="change_page"
-            phx-value-page={@page + 1}
-            disabled={@page == @total_pages}
-            variant={:ghost}
-            size={:xs}
-            title="Next page"
-          >
-            <.icon name="hero-chevron-right" class="size-4" />
-          </.btn>
-        </div>
-      </div>
-    <% end %>
-    """
-  end
 
   # ============================================================================
   # Helpers
@@ -1896,6 +1955,13 @@ defmodule ChatWeb.ExplorerLive do
       value = getter.(item) || ""
       String.contains?(String.downcase(value), search)
     end)
+  end
+
+  # A page from the URL or a page event can be anything; the page shown is the
+  # nearest one that exists, from 1 to the last page of the matching rows.
+  defp clamp_page(page, total, page_size) do
+    last_page = max(div(total + page_size - 1, page_size), 1)
+    page |> max(1) |> min(last_page)
   end
 
   defp paginate(items, page, page_size) do
