@@ -1261,15 +1261,11 @@ defmodule Brain do
         end
       end)
 
-    # A conversation turn is the one caller whose analysis is about the user,
-    # so it is the one that opts into the pipeline's writes: extracted beliefs,
-    # graph data, feedback statistics and novel-intent candidates.
     pipeline_opts =
       Keyword.merge(opts,
         participants: [:user, :bot],
         conversation_history: history,
-        user_profile: %{},
-        side_effects: true
+        user_profile: %{}
       )
 
     Pipeline.process(input, pipeline_opts)
