@@ -24,7 +24,13 @@ defmodule ChatWeb.POSTrainingLive do
   # a VERB is the thing this page cannot show from a learning curve.
   @default_probe "switch off the heating and dim the lamp"
 
-  @palette ~w(#6366f1 #f59e0b #10b981 #ef4444 #8b5cf6 #0ea5e9 #ec4899 #84cc16)
+  # Compared runs are categories with no meaning of their own, and the design
+  # language reserves every hue for a meaning. So every series is drawn in the
+  # data-mark blue and told apart by its stroke pattern and its marker shape,
+  # each repeated in the legend beside the run's id. Patterns vary fastest, so
+  # the first four series differ in line before they differ in marker.
+  @series_dashes [nil, "8 4", "2 3", "10 3 2 3"]
+  @series_markers [:filled_circle, :hollow_square, :filled_triangle, :hollow_diamond]
   @compared_by_default 4
 
   @impl true
@@ -249,7 +255,7 @@ defmodule ChatWeb.POSTrainingLive do
       |> Enum.filter(&MapSet.member?(assigns.compared, &1["id"]))
       |> Enum.reverse()
       |> Enum.with_index()
-      |> Enum.map(fn {run, i} -> %{run: run, color: Enum.at(@palette, rem(i, length(@palette)))} end)
+      |> Enum.map(fn {run, i} -> Map.put(series_style(i), :run, run) end)
 
     assigns = assign(assigns, current: current, series: series)
 
@@ -263,214 +269,213 @@ defmodule ChatWeb.POSTrainingLive do
     >
       <:page_header>
         <div>
-          <h1 class="text-xl font-bold">POS Training</h1>
-          <p class="text-sm text-base-content/60">
+          <h1 class="text-title text-ink">POS Training</h1>
+          <p class="text-body text-ink-muted">
             Train the part-of-speech tagger on EWT, watch where more epochs stop paying, promote a snapshot
           </p>
         </div>
       </:page_header>
 
-      <div class="p-4 space-y-4">
-        <div class="card bg-base-200">
-          <div class="card-body p-4">
-            <h2 class="font-semibold">Tag a sentence</h2>
-            <p class="text-xs text-base-content/60">
+      <div class="p-space-lg space-y-space-lg">
+        <.card>
+          <.card_body class="space-y-space-sm">
+            <h2 class="text-heading text-ink">Tag a sentence</h2>
+            <p class="text-caption text-ink-muted">
               The tag the model serves, beside what the lexicon knows about each token.
-              A learning curve cannot show whether <code>switch</code> heads a command as a verb.
+              A learning curve cannot show whether <code class="text-ref">switch</code> heads a command as a verb.
             </p>
 
-            <.form for={@probe} id="pos-probe-form" phx-submit="tag" class="flex gap-2 items-end">
-              <label class="form-control grow">
-                <input
-                  type="text"
+            <.form for={@probe} id="pos-probe-form" phx-submit="tag" class="flex gap-space-sm items-end">
+              <div class="grow">
+                <.text_input
                   name="probe[text]"
                   value={@probe[:text].value}
                   placeholder="switch off the heating"
-                  class="input input-bordered input-sm w-full"
                 />
-              </label>
-              <button type="submit" class="btn btn-sm btn-primary">Tag</button>
+              </div>
+              <.btn type="submit" variant={:primary}>Tag</.btn>
             </.form>
 
-            <div :if={@tag_error} class="alert alert-warning text-xs py-2">{@tag_error}</div>
+            <.alert :if={@tag_error} variant={:warning}>{@tag_error}</.alert>
 
             <div :if={@tagged} class="overflow-x-auto">
-              <table class="table table-xs">
-                <thead>
+              <table class="w-full text-left text-body-dense text-ink tabular-nums">
+                <thead class="bg-surface-sunk">
                   <tr>
-                    <th>token</th>
-                    <th>tag</th>
-                    <th>lexicon</th>
-                    <th>senses n/v/a/r</th>
-                    <th>frequency n/v/a/r</th>
-                    <th>poly</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">token</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">tag</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">lexicon</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">senses n/v/a/r</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">frequency n/v/a/r</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">poly</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr :for={row <- @tagged}>
-                    <td class="font-mono">{row.token}</td>
-                    <td>
-                      <span class={[
-                        "badge badge-sm",
-                        row.tag == "VERB" && "badge-success",
-                        row.tag != "VERB" && "badge-ghost"
-                      ]}>
+                <tbody class="divide-y divide-border">
+                  <tr :for={row <- @tagged} class="even:bg-surface-sunk">
+                    <td class="h-row-compact px-space-sm text-value text-ink">{row.token}</td>
+                    <td class="h-row-compact px-space-sm">
+                      <.badge variant={if row.tag == "VERB", do: :success, else: :default}>
                         {row.tag}
-                      </span>
+                      </.badge>
                     </td>
-                    <td class="text-xs">
-                      <span :if={not row.known} class="text-base-content/40">unknown</span>
-                      <span :if={row.known and row.closed != []} class="font-mono">
+                    <td class="h-row-compact px-space-sm">
+                      <span :if={not row.known} class="text-ink-muted">unknown</span>
+                      <span :if={row.known and row.closed != []} class="text-value">
                         closed: {Enum.join(row.closed, " ")}
                       </span>
-                      <span :if={row.known and row.closed == [] and row.present != []} class="font-mono">
+                      <span :if={row.known and row.closed == [] and row.present != []} class="text-value">
                         {Enum.join(row.present, " ")}
                       </span>
-                      <span :if={row.known and row.closed == [] and row.present == []} class="text-base-content/40">
+                      <span :if={row.known and row.closed == [] and row.present == []} class="text-ink-muted">
                         no senses
                       </span>
                     </td>
-                    <td class="font-mono text-xs">{shares(row.senses)}</td>
-                    <td class="font-mono text-xs">
+                    <td class="h-row-compact px-space-sm text-value text-ink">{shares(row.senses)}</td>
+                    <td class="h-row-compact px-space-sm text-value text-ink">
                       <span :if={row.has_frequency}>{shares(row.freqs)}</span>
-                      <span :if={not row.has_frequency} class="text-base-content/40">none</span>
+                      <span :if={not row.has_frequency} class="text-ink-muted">none</span>
                     </td>
-                    <td class="font-mono text-xs">{pct1(row.polysemy)}</td>
+                    <td class="h-row-compact px-space-sm text-value text-ink">{pct1(row.polysemy)}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
+          </.card_body>
+        </.card>
 
-        <div class="card bg-base-200">
-          <div class="card-body p-4">
-            <h2 class="font-semibold">New run</h2>
-            <.form for={@form} id="pos-run-form" phx-submit="start" class="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
-              <label class="form-control">
-                <span class="label-text text-xs">Sentences (blank: all 12,544)</span>
-                <input type="text" name="run[sentences]" value={@form[:sentences].value} class="input input-bordered input-sm" />
-              </label>
-              <label class="form-control">
-                <span class="label-text text-xs">Max epochs</span>
-                <input type="text" name="run[max_epochs]" value={@form[:max_epochs].value} class="input input-bordered input-sm" />
-              </label>
-              <label class="form-control">
-                <span class="label-text text-xs">Early stop after (blank: never)</span>
-                <input type="text" name="run[patience]" value={@form[:patience].value} class="input input-bordered input-sm" />
-              </label>
-              <label class="form-control">
-                <span class="label-text text-xs">Seed</span>
-                <input type="text" name="run[seed]" value={@form[:seed].value} class="input input-bordered input-sm" />
-              </label>
-              <button type="submit" class="btn btn-primary btn-sm" disabled={@current_run != nil}>Start run</button>
+        <.card>
+          <.card_body class="space-y-space-sm">
+            <h2 class="text-heading text-ink">New run</h2>
+            <.form for={@form} id="pos-run-form" phx-submit="start" class="grid grid-cols-2 md:grid-cols-5 gap-space-md items-end">
+              <.input name="run[sentences]" label="Sentences (blank: all 12,544)" value={@form[:sentences].value} />
+              <.input name="run[max_epochs]" label="Max epochs" value={@form[:max_epochs].value} />
+              <.input name="run[patience]" label="Early stop after (blank: never)" value={@form[:patience].value} />
+              <.input name="run[seed]" label="Seed" value={@form[:seed].value} />
+              <.btn type="submit" variant={:primary} class="mb-space-sm" disabled={@current_run != nil}>Start run</.btn>
             </.form>
-            <p class="text-xs text-base-content/50">
+            <p class="text-caption text-ink-muted">
               Snapshots are kept at epochs {Enum.join(POSRuns.snapshot_epochs(), ", ")}, the last epoch, and the best on dev.
               Measured on this machine: about 12 s per epoch on 2,000 sentences, 50 s on all of them.
             </p>
-          </div>
-        </div>
+          </.card_body>
+        </.card>
 
-        <div :if={@current} id="current-run" class="card bg-base-200">
-          <div class="card-body p-4">
+        <.card :if={@current} id="current-run">
+          <.card_body class="space-y-space-sm">
             <div class="flex items-center justify-between">
-              <h2 class="font-semibold">Running: <span class="font-mono text-sm">{@current["id"]}</span></h2>
-              <button phx-click="cancel" data-confirm="Stop this run? Its snapshots so far are kept." class="btn btn-error btn-sm">
+              <h2 class="text-heading text-ink">Running: <span class="text-value">{@current["id"]}</span></h2>
+              <.btn
+                variant={:danger}
+                size={:sm}
+                phx-click="cancel"
+                data-confirm="Stop this run? Its snapshots so far are kept."
+              >
                 Cancel
-              </button>
+              </.btn>
             </div>
             <.progress run={@current} />
-          </div>
-        </div>
+          </.card_body>
+        </.card>
 
-        <div class="card bg-base-200">
-          <div class="card-body p-4 space-y-2">
+        <.card>
+          <.card_body class="space-y-space-sm">
             <div class="flex items-center justify-between">
-              <h2 class="font-semibold">Dev accuracy by epoch</h2>
-              <button phx-click="toggle_log_x" class="btn btn-ghost btn-xs">
+              <h2 class="text-heading text-ink">Dev accuracy by epoch</h2>
+              <.btn variant={:ghost} size={:xs} phx-click="toggle_log_x">
                 Epoch axis: {if @log_x, do: "log", else: "linear"}
-              </button>
+              </.btn>
             </div>
             <.curve_chart series={@series} field="dev_accuracy" log_x={@log_x} percent={true} />
-            <h2 class="font-semibold pt-2">Training loss by epoch</h2>
+            <h2 class="pt-space-sm text-heading text-ink">Training loss by epoch</h2>
             <.curve_chart series={@series} field="loss" log_x={@log_x} percent={false} />
-            <div class="flex flex-wrap gap-3 text-xs">
-              <span :for={s <- @series} class="flex items-center gap-1">
-                <span class="inline-block w-3 h-3 rounded-sm" style={"background: #{s.color}"}></span>
-                <span class="font-mono">{s.run["id"]}</span>
-                <span class="text-base-content/50">{describe(s.run["params"])}</span>
+            <div class="flex flex-wrap gap-space-md text-caption">
+              <span :for={s <- @series} class="flex items-center gap-space-xs">
+                <.legend_swatch style={s} />
+                <span class="text-ref text-ink">{s.run["id"]}</span>
+                <span class="text-ink-muted">{describe(s.run["params"])}</span>
               </span>
             </div>
-          </div>
-        </div>
+          </.card_body>
+        </.card>
 
-        <div class="card bg-base-200">
-          <div class="card-body p-4">
-            <h2 class="font-semibold">Runs</h2>
-            <p :if={@runs == []} class="text-sm text-base-content/50">No runs yet.</p>
+        <.card>
+          <.card_body class="space-y-space-sm">
+            <h2 class="text-heading text-ink">Runs</h2>
+            <p :if={@runs == []} class="text-body text-ink-muted">No runs yet.</p>
             <div :if={@runs != []} class="overflow-x-auto">
-              <table id="pos-runs" class="table table-sm">
-                <thead>
+              <table id="pos-runs" class="w-full text-left text-body-dense text-ink tabular-nums">
+                <thead class="bg-surface-sunk">
                   <tr>
-                    <th>Compare</th>
-                    <th>Run</th>
-                    <th>Status</th>
-                    <th>Settings</th>
-                    <th>Epochs</th>
-                    <th>Best dev</th>
-                    <th title="First epoch within this much of the run's best dev accuracy">Within 0.5 / 0.1 pt of best</th>
-                    <th>Promote</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Compare</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Run</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Status</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Settings</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Epochs</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Best dev</th>
+                    <th
+                      class="h-row-compact px-space-sm text-label text-ink-muted"
+                      title="First epoch within this much of the run's best dev accuracy"
+                    >
+                      Within 0.5 / 0.1 pt of best
+                    </th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Promote</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr :for={run <- @runs} id={"run-" <> run["id"]}>
-                    <td>
+                <tbody class="divide-y divide-border">
+                  <tr :for={run <- @runs} id={"run-" <> run["id"]} class="even:bg-surface-sunk">
+                    <td class="px-space-sm py-space-xs">
                       <input
                         type="checkbox"
-                        class="checkbox checkbox-xs"
+                        class="size-4 accent-primary cursor-pointer"
                         checked={MapSet.member?(@compared, run["id"])}
                         phx-click="toggle_compare"
                         phx-value-id={run["id"]}
                       />
                     </td>
-                    <td class="font-mono text-xs">{run["id"]}</td>
-                    <td><span class={["badge badge-sm", status_class(run["status"])]}>{run["status"]}</span></td>
-                    <td class="text-xs">{describe(run["params"])}</td>
-                    <td>{length(run["curve"] || [])}</td>
-                    <td>{best_text(run)}</td>
-                    <td class="text-xs">{plateau_text(run)}</td>
-                    <td>
-                      <form :if={(run["snapshots"] || []) != []} phx-submit="promote" class="flex gap-1 items-center">
+                    <td class="px-space-sm py-space-xs text-ref text-ink">{run["id"]}</td>
+                    <td class="px-space-sm py-space-xs">
+                      <.badge variant={status_variant(run["status"])}>{run["status"]}</.badge>
+                    </td>
+                    <td class="px-space-sm py-space-xs text-caption text-ink">{describe(run["params"])}</td>
+                    <td class="px-space-sm py-space-xs text-value text-score-count">{length(run["curve"] || [])}</td>
+                    <td class="px-space-sm py-space-xs text-value text-ink">{best_text(run)}</td>
+                    <td class="px-space-sm py-space-xs text-value text-ink">{plateau_text(run)}</td>
+                    <td class="px-space-sm py-space-xs">
+                      <form :if={(run["snapshots"] || []) != []} phx-submit="promote" class="flex gap-space-xs items-start">
                         <input type="hidden" name="run_id" value={run["id"]} />
-                        <select name="snapshot" class="select select-bordered select-xs">
-                          <option :for={s <- run["snapshots"]} value={s}>{s}</option>
-                        </select>
-                        <button name="target" value="test" class="btn btn-xs" disabled={@promoting != nil}>Test</button>
-                        <button
+                        <.input type="select" name="snapshot" options={run["snapshots"]} value={nil} />
+                        <.button
+                          variant="primary"
+                          name="target"
+                          value="test"
+                          disabled={@promoting != nil}
+                        >
+                          Test
+                        </.button>
+                        <.button
+                          variant="primary"
                           name="target"
                           value="production"
-                          class="btn btn-xs btn-warning"
                           disabled={@promoting != nil}
                           data-confirm="Replace the POS model the app serves with this snapshot?"
                         >
                           Production
-                        </button>
+                        </.button>
                       </form>
-                      <div :for={p <- run["promotions"] || []} class="text-[10px] text-base-content/60">
+                      <div :for={p <- run["promotions"] || []} class="text-caption text-ink-muted">
                         {p["snapshot"]} → {p["target"]}: test {pct(p["test_accuracy"])} vs lookup {pct(p["lookup_baseline"])}
                       </div>
-                      <div :if={run["error"]} class="text-[10px] text-error">{run["error"]}</div>
+                      <div :if={run["error"]} class="text-caption text-red">{run["error"]}</div>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <p :if={@promoting} class="text-sm text-base-content/60">
+            <p :if={@promoting} class="text-body text-ink-muted">
               Measuring {elem(@promoting, 1)} of {elem(@promoting, 0)} on the test split...
             </p>
-          </div>
-        </div>
+          </.card_body>
+        </.card>
       </div>
     </.app_shell>
     """
@@ -493,12 +498,12 @@ defmodule ChatWeb.POSTrainingLive do
     assigns = assign(assigns, last: last, max_epochs: max_epochs, eta: eta)
 
     ~H"""
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
-      <div>Epoch <strong>{if @last, do: @last["epoch"], else: 0}</strong> / {@max_epochs}</div>
-      <div>Dev <strong>{if @last, do: pct(@last["dev_accuracy"]), else: "—"}</strong></div>
-      <div>Best <strong>{best_text(@run)}</strong></div>
-      <div>Loss <strong>{if @last, do: Float.round(@last["loss"], 4), else: "—"}</strong></div>
-      <div>Left <strong>{if @eta, do: duration(@eta), else: "—"}</strong></div>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-space-sm text-body text-ink">
+      <div>Epoch <strong class="text-value-strong">{if @last, do: @last["epoch"], else: 0}</strong> / {@max_epochs}</div>
+      <div>Dev <strong class="text-value-strong">{if @last, do: pct(@last["dev_accuracy"]), else: "—"}</strong></div>
+      <div>Best <strong class="text-value-strong">{best_text(@run)}</strong></div>
+      <div>Loss <strong class="text-value-strong">{if @last, do: Float.round(@last["loss"], 4), else: "—"}</strong></div>
+      <div>Left <strong class="text-value-strong">{if @eta, do: duration(@eta), else: "—"}</strong></div>
     </div>
     """
   end
@@ -511,7 +516,7 @@ defmodule ChatWeb.POSTrainingLive do
   defp curve_chart(assigns) do
     points =
       Enum.map(assigns.series, fn s ->
-        {s.color, for(p <- s.run["curve"] || [], is_number(p[assigns.field]), do: {p["epoch"], p[assigns.field]})}
+        {s, for(p <- s.run["curve"] || [], is_number(p[assigns.field]), do: {p["epoch"], p[assigns.field]})}
       end)
 
     all = Enum.flat_map(points, &elem(&1, 1))
@@ -520,7 +525,7 @@ defmodule ChatWeb.POSTrainingLive do
       assigns = assign(assigns, :message, "Pick a run with at least two epochs to plot.")
 
       ~H"""
-      <div class="text-sm text-base-content/50 text-center py-4">{@message}</div>
+      <div class="py-space-lg text-center text-body text-ink-muted">{@message}</div>
       """
     else
       {width, height, pad_l, pad_r, pad_t, pad_b} = {640, 220, 52, 12, 10, 26}
@@ -540,16 +545,27 @@ defmodule ChatWeb.POSTrainingLive do
 
       scale_y = fn y -> pad_t + (1 - (y - min_y) / range_y) * plot_h end
 
-      lines =
-        for {color, pts} <- points, pts != [] do
-          %{color: color, points: Enum.map_join(pts, " ", fn {x, y} -> "#{r(scale_x.(x))},#{r(scale_y.(y))}" end)}
-        end
-
-      x_ticks =
+      tick_epochs =
         (if assigns.log_x, do: [1, 5, 10, 25, 50, 100, 250, 500, 1000], else: Enum.map(0..4, &max(1, round(&1 * max_x / 4))))
         |> Enum.filter(&(&1 <= max_x))
         |> Enum.uniq()
-        |> Enum.map(&%{label: &1, x: r(scale_x.(&1))})
+
+      x_ticks = Enum.map(tick_epochs, &%{label: &1, x: r(scale_x.(&1))})
+
+      # Each series carries its marker at the tick epochs it reached and at its
+      # last epoch, so the marker identifies the line without crowding it.
+      lines =
+        for {s, pts} <- points, pts != [] do
+          {last_epoch, _} = List.last(pts)
+
+          %{
+            dash: s.dash,
+            marker: s.marker,
+            points: Enum.map_join(pts, " ", fn {x, y} -> "#{r(scale_x.(x))},#{r(scale_y.(y))}" end),
+            markers:
+              for({x, y} <- pts, x in tick_epochs or x == last_epoch, do: %{x: r(scale_x.(x)), y: r(scale_y.(y))})
+          }
+        end
 
       y_ticks =
         for i <- 0..4 do
@@ -572,10 +588,20 @@ defmodule ChatWeb.POSTrainingLive do
 
       ~H"""
       <svg viewBox={"0 0 #{@width} #{@height}"} class="w-full h-auto" role="img" aria-label={"#{@field} by epoch"}>
-        <line :for={t <- @y_ticks} x1={@pad_l} y1={t.y} x2={@pad_l + @plot_w} y2={t.y} stroke="currentColor" stroke-opacity="0.1" />
-        <text :for={t <- @y_ticks} x={@pad_l - 6} y={t.y + 3} text-anchor="end" font-size="10" class="fill-base-content/50">{t.label}</text>
-        <text :for={t <- @x_ticks} x={t.x} y={@pad_t + @plot_h + 16} text-anchor="middle" font-size="10" class="fill-base-content/50">{t.label}</text>
-        <polyline :for={l <- @lines} points={l.points} fill="none" stroke={l.color} stroke-width="1.5" stroke-linejoin="round" />
+        <line :for={t <- @y_ticks} x1={@pad_l} y1={t.y} x2={@pad_l + @plot_w} y2={t.y} stroke="var(--border)" />
+        <text :for={t <- @y_ticks} x={@pad_l - 6} y={t.y + 3} text-anchor="end" font-size="10" class="fill-ink-muted">{t.label}</text>
+        <text :for={t <- @x_ticks} x={t.x} y={@pad_t + @plot_h + 16} text-anchor="middle" font-size="10" class="fill-ink-muted">{t.label}</text>
+        <g :for={l <- @lines}>
+          <polyline
+            points={l.points}
+            fill="none"
+            stroke="var(--blue)"
+            stroke-width="1.5"
+            stroke-linejoin="round"
+            stroke-dasharray={l.dash}
+          />
+          <.series_marker :for={m <- l.markers} shape={l.marker} x={m.x} y={m.y} />
+        </g>
       </svg>
       """
     end
@@ -608,10 +634,25 @@ defmodule ChatWeb.POSTrainingLive do
 
   defp plateau_text(_run), do: "—"
 
-  defp status_class("running"), do: "badge-info"
-  defp status_class("completed"), do: "badge-success"
-  defp status_class("failed"), do: "badge-error"
-  defp status_class(_), do: "badge-ghost"
+  @status_variants %{
+    "running" => :info,
+    "completed" => :success,
+    "failed" => :error,
+    "cancelled" => :default,
+    "interrupted" => :default
+  }
+
+  defp status_variant(status) do
+    case Map.fetch(@status_variants, status) do
+      {:ok, variant} ->
+        variant
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.POSTrainingLive: no badge for run status #{inspect(status)}. " <>
+                "The statuses are #{inspect(Map.keys(@status_variants))}."
+    end
+  end
 
   defp pct(nil), do: "—"
   defp pct(x), do: "#{Float.round(x * 100, 2)}%"
@@ -624,4 +665,71 @@ defmodule ChatWeb.POSTrainingLive do
   end
 
   defp r(x), do: Float.round(x * 1.0, 1)
+
+  # The i-th compared run's line pattern and marker. There are as many distinct
+  # styles as patterns times markers; past that two runs would be drawn alike
+  # and could not be told apart, so it raises instead.
+  defp series_style(i) do
+    dashes = length(@series_dashes)
+
+    case Enum.fetch(@series_markers, div(i, dashes)) do
+      {:ok, marker} ->
+        %{dash: Enum.at(@series_dashes, rem(i, dashes)), marker: marker}
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.POSTrainingLive: #{i + 1} runs are compared, and the curve chart can draw " <>
+                "#{dashes * length(@series_markers)} runs distinctly. Untick a run to compare fewer."
+    end
+  end
+
+  attr :style, :map, required: true
+
+  defp legend_swatch(assigns) do
+    ~H"""
+    <svg viewBox="0 0 32 12" class="h-3 w-8 shrink-0 overflow-visible" aria-hidden="true">
+      <line x1="0" y1="6" x2="32" y2="6" stroke="var(--blue)" stroke-width="1.5" stroke-dasharray={@style.dash} />
+      <.series_marker shape={@style.marker} x={16} y={6} />
+    </svg>
+    """
+  end
+
+  attr :shape, :atom, required: true
+  attr :x, :any, required: true
+  attr :y, :any, required: true
+
+  defp series_marker(%{shape: :filled_circle} = assigns) do
+    ~H"""
+    <circle cx={@x} cy={@y} r="3" fill="var(--blue)" />
+    """
+  end
+
+  defp series_marker(%{shape: :hollow_square} = assigns) do
+    ~H"""
+    <rect x={@x - 2.75} y={@y - 2.75} width="5.5" height="5.5" fill="var(--surface)" stroke="var(--blue)" stroke-width="1.5" />
+    """
+  end
+
+  defp series_marker(%{shape: :filled_triangle} = assigns) do
+    ~H"""
+    <path d={"M#{@x} #{@y - 3.5} L#{@x + 3.5} #{@y + 3} L#{@x - 3.5} #{@y + 3} Z"} fill="var(--blue)" />
+    """
+  end
+
+  defp series_marker(%{shape: :hollow_diamond} = assigns) do
+    ~H"""
+    <path
+      d={"M#{@x} #{@y - 3.5} L#{@x + 3.5} #{@y} L#{@x} #{@y + 3.5} L#{@x - 3.5} #{@y} Z"}
+      fill="var(--surface)"
+      stroke="var(--blue)"
+      stroke-width="1.5"
+    />
+    """
+  end
+
+  defp series_marker(%{shape: shape}) do
+    raise ArgumentError,
+          "ChatWeb.POSTrainingLive.series_marker/1: no marker for #{inspect(shape)}. " <>
+            "The markers are #{inspect(@series_markers)}."
+  end
 end
