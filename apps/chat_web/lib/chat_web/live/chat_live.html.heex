@@ -29,7 +29,7 @@
       <div class="mt-space-md text-body-dense text-ink-muted space-y-space-xs">
         <div class="flex items-center justify-between">
           <span>Status:</span>
-          <.badge variant={if @status.is_shutting_down, do: :error, else: :success}>
+          <.badge variant={if @status.is_shutting_down, do: :default, else: :success}>
             {if @status.is_shutting_down, do: "Shutting Down", else: "Active"}
           </.badge>
         </div>
@@ -182,11 +182,9 @@
         </.btn>
       </div>
 
-      <.link navigate={~p"/admin"} class="block">
-        <.btn variant={:outline} size={:sm} class="w-full">
-          <.icon name="hero-cog-6-tooth" class="size-4" /> Entity Management
-        </.btn>
-      </.link>
+      <.btn variant={:link} size={:sm} navigate={~p"/admin"} icon="hero-cog-6-tooth">
+        Entity Management
+      </.btn>
     </div>
 
 <!-- Conversations List -->
@@ -249,9 +247,32 @@
         </div>
 
         <%= if @current_conversation_id do %>
-          <.btn variant={:danger} size={:sm} phx-click="end_conversation">
-            End Conversation
-          </.btn>
+          <% conversation_target = "conversation #{String.slice(@current_conversation_id, 0, 8)}" %>
+          <div class="flex flex-col items-end gap-space-sm">
+            <.btn
+              id="end-conversation"
+              variant={:outline}
+              size={:sm}
+              reach={:shared}
+              target={conversation_target}
+              phx-click="open_confirm"
+              phx-value-id="end-conversation-confirm"
+            >
+              End Conversation
+            </.btn>
+            <.execute_confirm
+              id="end-conversation-confirm"
+              open={@open_confirm == "end-conversation-confirm"}
+              reach={:shared}
+              verb="End conversation"
+              target={conversation_target}
+              consequence="Removes this conversation from the Brain server, so it leaves the conversation list every session reads."
+              on_confirm="end_conversation"
+              on_cancel="close_confirm"
+              trigger_id="end-conversation"
+              error={@confirm_error}
+            />
+          </div>
         <% end %>
       </div>
     </header>
@@ -571,7 +592,8 @@
                 <%= for step <- analysis_steps do %>
                   <% step_name = step[:step] || step["step"]
                   step_icon = stage_icon(step_name)
-                  step_detail = stage_detail(step) %>
+                  step_detail = stage_detail(step)
+                  step_score = stage_score_spec(step) %>
                   <div class="flex items-start gap-space-sm py-space-xs px-space-sm rounded-sm text-caption bg-surface-sunk">
                     <span class="shrink-0 mt-space-2xs">{step_icon}</span>
                     <div class="flex-1 min-w-0">
@@ -592,9 +614,10 @@
                           <% end %>
                         </div>
                       </div>
-                      <%= if step_detail != "" do %>
-                        <div class="text-caption text-ink-muted mt-space-2xs truncate">
-                          {step_detail}
+                      <%= if step_detail != "" or step_score do %>
+                        <div class="flex flex-wrap items-baseline gap-x-space-sm text-caption text-ink-muted mt-space-2xs">
+                          <span :if={step_detail != ""} class="min-w-0 truncate">{step_detail}</span>
+                          <.stage_score :if={step_score} spec={step_score} />
                         </div>
                       <% end %>
                     </div>
@@ -614,7 +637,7 @@
                         Chunk {idx + 1}
                       </span>
                       <%= if chunk[:response_strategy] do %>
-                        <.badge variant={:info} size={:xs}>
+                        <.badge variant={strategy_badge_variant(chunk.response_strategy)} size={:xs}>
                           {step_label(chunk.response_strategy)}
                         </.badge>
                       <% end %>
@@ -638,9 +661,9 @@
                           <span class="text-value text-ink">{chunk[:intent] || "-"}</span>
                           <span class="text-ink-muted">Method:</span>
                           <span class="text-value text-ink">{chunk[:intent_method] || "-"}</span>
-                          <%= if chunk[:intent_confidence] do %>
+                          <%= if chunk[:intent_method] do %>
                             <span class="text-ink-muted">Confidence:</span>
-                            <.score value={chunk.intent_confidence} kind={:unestablished} />
+                            <.intent_confidence method={chunk.intent_method} confidence={chunk[:intent_confidence]} />
                           <% end %>
                         </div>
                       </div>
@@ -654,7 +677,7 @@
                           <span class="text-ink">{get_in(chunk, [:discourse, :addressee]) || "-"}</span>
                           <span class="text-ink-muted">Confidence:</span>
                           <%= if discourse_confidence != nil do %>
-                            <.score value={discourse_confidence} kind={:unestablished} />
+                            <.score_display value={discourse_confidence} kind={:mapped_confidence} />
                           <% else %>
                             <span class="text-ink">-</span>
                           <% end %>
@@ -674,7 +697,7 @@
                           <span class="text-ink">{get_in(chunk, [:speech_act, :is_question]) || "false"}</span>
                           <span class="text-ink-muted">Confidence:</span>
                           <%= if speech_act_confidence != nil do %>
-                            <.score value={speech_act_confidence} kind={:weighted_vote} />
+                            <.score_display value={speech_act_confidence} kind={:weighted_vote} />
                           <% else %>
                             <span class="text-ink">-</span>
                           <% end %>
@@ -692,7 +715,7 @@
                           </span>
                           <span class="text-ink-muted">Confidence:</span>
                           <%= if sentiment_confidence != nil do %>
-                            <.score value={sentiment_confidence} kind={:unestablished} />
+                            <.score_display value={sentiment_confidence} kind={:cosine_similarity} />
                           <% else %>
                             <span class="text-ink">-</span>
                           <% end %>
@@ -718,7 +741,7 @@
                                     {event[:type] || event["type"] || "unknown"}
                                   </span>
                                   <%= if event_confidence do %>
-                                    <.score value={event_confidence} kind={:unestablished} />
+                                    <.event_confidence event={event} />
                                   <% end %>
                                 </div>
                                 <%= if event[:action] || event["action"] do %>
@@ -743,11 +766,9 @@
                         </div>
                         <div class="grid grid-cols-2 gap-space-xs">
                           <span class="text-ink-muted">Status:</span>
-                          <span class={epistemic_status_class(chunk[:epistemic_status])}>
-                            {chunk[:epistemic_status] || "unchecked"}
-                          </span>
+                          <.epistemic_status_label status={chunk[:epistemic_status]} />
                           <span class="text-ink-muted">Verification:</span>
-                          <span class="text-caption text-ink">{format_verification(chunk[:fact_verification])}</span>
+                          <span class="text-caption text-ink"><.verification_result verification={chunk[:fact_verification]} /></span>
                           <span class="text-ink-muted">Related beliefs:</span>
                           <span class="text-ink">
                             <span class="text-value text-score-count">{length(chunk[:related_beliefs] || [])}</span> beliefs
@@ -759,7 +780,7 @@
                       <%= if chunk[:confidence] do %>
                         <div class="flex justify-between items-center gap-space-sm pt-space-sm border-t border-border">
                           <span class="font-semibold">Overall Confidence:</span>
-                          <.score value={chunk.confidence} kind={:accumulated_confidence} />
+                          <.score_display value={chunk.confidence} kind={:accumulated_confidence} />
                         </div>
                       <% end %>
                     </div>
@@ -822,7 +843,7 @@
                                   </.badge>
                                 <% end %>
                                 <%= if confidence do %>
-                                  <.score value={confidence} kind={:unestablished} />
+                                  <.entity_confidence source={source} confidence={confidence} />
                                 <% end %>
                               </div>
                               <div class="font-semibold text-ink truncate">
@@ -1035,7 +1056,7 @@
                           <span class="text-value text-ink">{chunk[:intent_method] || "-"}</span>
                           <span>Confidence:</span>
                           <%= if chunk[:confidence] do %>
-                            <.score value={chunk.confidence} kind={:accumulated_confidence} />
+                            <.score_display value={chunk.confidence} kind={:accumulated_confidence} />
                           <% else %>
                             <span class="text-ink">-</span>
                           <% end %>
@@ -1096,7 +1117,7 @@
                             <span class="font-semibold text-ink capitalize">
                               {result[:analyzer] || result["analyzer"]}
                             </span>
-                            <.score
+                            <.score_display
                               value={result[:calibrated] || result["calibrated"]}
                               kind={:analyzer_activation}
                             />
@@ -1107,7 +1128,11 @@
                               {result[:intent] || result["intent"] || "-"}
                             </span>
                             <span>Raw Score:</span>
-                            <.score value={result[:raw_score] || result["raw_score"]} kind={:raw_score} />
+                            <.score_display
+                              value={result[:raw_score] || result["raw_score"]}
+                              kind={:raw_score}
+                              source={to_string(result[:analyzer] || result["analyzer"])}
+                            />
                           </div>
                           <%= if length(result[:indicators] || result["indicators"] || []) > 0 do %>
                             <div class="mt-space-xs flex flex-wrap gap-space-xs">
@@ -1141,7 +1166,7 @@
                             <span class="text-ink-muted">
                               {alt[:source] || alt["source"]}
                             </span>
-                            <.score value={alt[:activation] || alt["activation"]} kind={:activation} />
+                            <.score_display value={alt[:activation] || alt["activation"]} kind={:activation} />
                           </div>
                         </div>
                       <% end %>
@@ -1170,7 +1195,7 @@
                     <div class="flex justify-between">
                       <span class="font-semibold">Top Similarity:</span>
                       <%= if (memory[:match_count] || 0) > 0 do %>
-                        <.score value={memory[:top_similarity]} kind={:cosine_similarity} />
+                        <.score_display value={memory[:top_similarity]} kind={:cosine_similarity} />
                       <% else %>
                         <span class="text-ink-muted">no matches</span>
                       <% end %>
@@ -1196,7 +1221,7 @@
                                 12
                               )}...
                             </span>
-                            <.score
+                            <.score_display
                               value={match[:similarity] || match["similarity"]}
                               kind={:cosine_similarity}
                             />
@@ -1452,9 +1477,7 @@
                   <div class="text-caption text-ink-muted space-y-space-sm">
                     <div class="flex justify-between items-center">
                       <span class="font-semibold">Overall Status:</span>
-                      <span class={epistemic_status_class(worst_status)}>
-                        {worst_status || "unchecked"}
-                      </span>
+                      <.epistemic_status_label status={worst_status} />
                     </div>
                     <div class="flex justify-between">
                       <span class="font-semibold">Beliefs Checked:</span>
@@ -1465,9 +1488,11 @@
                         <div class="text-value-strong text-ink">{verified_count}</div>
                         <div class="text-caption text-ink-muted">Verified</div>
                       </div>
-                      <div class="text-center p-space-xs rounded-sm border bg-red-wash border-red">
-                        <div class="text-value-strong text-red">{contradiction_count}</div>
-                        <div class="text-caption text-ink-muted">Contradicted</div>
+                      <div class="text-center p-space-xs rounded-sm border bg-ochre-wash border-ochre">
+                        <div class="text-value-strong text-ochre">{contradiction_count}</div>
+                        <div class="text-caption text-ink-muted inline-flex items-center gap-space-2xs">
+                          <.icon name="hero-exclamation-triangle" class="size-3 shrink-0 text-ochre" /> Contradicted
+                        </div>
                       </div>
                       <div class="text-center p-space-xs rounded-sm border bg-ochre-wash border-ochre">
                         <div class="text-value-strong text-ochre">{uncertain_count}</div>
@@ -1482,8 +1507,9 @@
               <%= if length(all_beliefs) > 0 do %>
                 <.card>
                   <.card_body class="p-space-md">
-                    <div class="text-caption font-semibold text-ink mb-space-sm">
-                      Related Beliefs
+                    <div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-sm">
+                      <span class="text-caption font-semibold text-ink">Related Beliefs</span>
+                      <.reach_badge reach={:shared} target="belief store" />
                     </div>
                     <div class="space-y-space-sm">
                       <%= for belief <- all_beliefs do %>
@@ -1512,8 +1538,7 @@
                           <!-- Confidence bar -->
                           <div class="flex items-center gap-space-sm mb-space-xs">
                             <span class="text-ink-muted w-16 shrink-0">Confidence:</span>
-                            <.score_bar value={b_conf} kind={:unestablished} />
-                            <.score value={b_conf} kind={:unestablished} />
+                            <.score_display value={b_conf} kind={:belief_confidence} form={:bar} class="min-w-0" />
                           </div>
 
                           <!-- Source + Authority + JTMS badges + Actions -->
@@ -1535,27 +1560,26 @@
                               </span>
                             <% end %>
                             <%= if b_status do %>
-                              <span class={["text-label", epistemic_status_class(b_status)]}>
-                                {b_status}
-                              </span>
+                              <.epistemic_status_label status={b_status} class="text-label" />
                             <% end %>
 
                             <!-- Inline action buttons -->
                             <%= if belief[:id] do %>
                               <div class="flex items-center gap-space-xs ml-auto">
                                 <.icon_btn
+                                  id={"belief-confirm-trigger-#{belief[:id]}"}
                                   size={:sm}
-                                  phx-click="inspector_confirm_belief"
-                                  phx-value-belief_id={belief[:id]}
-                                  title="Confirm belief (+10% confidence)"
+                                  phx-click="open_confirm"
+                                  phx-value-id={"belief-confirm-#{belief[:id]}"}
+                                  title="Confirm belief"
                                 >
                                   <.icon name="hero-check-circle" class="size-3.5" />
                                 </.icon_btn>
                                 <.icon_btn
+                                  id={"belief-retract-trigger-#{belief[:id]}"}
                                   size={:sm}
-                                  phx-click="inspector_retract_belief"
-                                  phx-value-belief_id={belief[:id]}
-                                  data-confirm="Retract this belief?"
+                                  phx-click="open_confirm"
+                                  phx-value-id={"belief-retract-#{belief[:id]}"}
                                   title="Retract belief"
                                 >
                                   <.icon name="hero-x-circle" class="size-3.5" />
@@ -1563,18 +1587,67 @@
                               </div>
                             <% end %>
                           </div>
+
+                          <%= if belief[:id] do %>
+                            <% belief_target = "belief #{String.slice(to_string(belief[:id]), 0, 8)}" %>
+                            <.execute_confirm
+                              id={"belief-confirm-#{belief[:id]}"}
+                              open={@open_confirm == "belief-confirm-#{belief[:id]}"}
+                              reach={:shared}
+                              verb="Confirm"
+                              target={belief_target}
+                              consequence="Raises this belief's confidence by 0.1, to at most 1.0, in the belief store every session reads, and, when it has a source authority, counts the confirmation toward that authority's credibility."
+                              on_confirm={JS.push("inspector_confirm_belief", value: %{belief_id: belief[:id]})}
+                              on_cancel="close_confirm"
+                              trigger_id={"belief-confirm-trigger-#{belief[:id]}"}
+                              error={@confirm_error}
+                              class="mt-space-sm"
+                            />
+                            <.execute_confirm
+                              id={"belief-retract-#{belief[:id]}"}
+                              open={@open_confirm == "belief-retract-#{belief[:id]}"}
+                              reach={:shared}
+                              verb="Retract"
+                              target={belief_target}
+                              consequence="Retracts this belief from the belief store every session reads and marks it retracted in Atlas, and, when it has a source authority, counts the retraction against that authority's credibility."
+                              on_confirm={JS.push("inspector_retract_belief", value: %{belief_id: belief[:id]})}
+                              on_cancel="close_confirm"
+                              trigger_id={"belief-retract-trigger-#{belief[:id]}"}
+                              error={@confirm_error}
+                              class="mt-space-sm"
+                            />
+                          <% end %>
                         </div>
                       <% end %>
                     </div>
 
                     <!-- "Add guided belief" mini-form -->
-                    <div class="mt-space-md pt-space-md border-t border-border">
-                      <%= if @inspector_correction_form do %>
-                        <form phx-submit="submit_correction_belief" class="space-y-space-sm">
-                          <div class="flex items-center gap-space-sm mb-space-xs">
-                            <.icon name="hero-light-bulb" class="size-4 text-ink-muted" />
-                            <span class="text-caption font-semibold text-ink">Add Guided Belief</span>
-                          </div>
+                    <div class="mt-space-md pt-space-md border-t border-border space-y-space-sm">
+                      <.btn
+                        id="add-belief"
+                        variant={:ghost}
+                        size={:xs}
+                        reach={:shared}
+                        target="belief store"
+                        phx-click="show_correction_form"
+                      >
+                        <.icon name="hero-plus" class="size-3" />
+                        <span>Add guided belief</span>
+                      </.btn>
+                      <.execute_confirm
+                        id="add-belief-confirm"
+                        open={@inspector_correction_form != nil}
+                        reach={:shared}
+                        verb="Add belief"
+                        target="belief store"
+                        consequence="Adds this belief, with a JTMS node, to the belief store every session reads, and persists it to Atlas."
+                        on_confirm="submit_correction_belief"
+                        on_cancel="cancel_correction_form"
+                        trigger_id="add-belief"
+                        error={@correction_error}
+                      >
+                        <:fields>
+                        <div class="space-y-space-sm">
                           <div class="grid grid-cols-3 gap-space-sm">
                             <select name="subject" class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink">
                               <option value="self" selected={@inspector_correction_form["subject"] == "self"}>self</option>
@@ -1598,8 +1671,8 @@
                               required
                             />
                           </div>
-                          <div class="flex items-center gap-space-sm">
-                            <select name="authority" class="flex-1 min-w-0 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink">
+                          <div>
+                            <select name="authority" class="w-full min-w-0 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink">
                               <%= if @authority_profiles != [] do %>
                                 <%= for {category, profiles} <- group_authority_profiles(@authority_profiles) do %>
                                   <optgroup label={String.capitalize(category)}>
@@ -1615,18 +1688,10 @@
                                 <option value="stranger">Stranger</option>
                               <% end %>
                             </select>
-                            <div class="flex gap-space-xs">
-                              <.btn type="button" variant={:ghost} size={:xs} phx-click="cancel_correction_form">Cancel</.btn>
-                              <.btn type="submit" variant={:primary} size={:xs}>Add</.btn>
-                            </div>
                           </div>
-                        </form>
-                      <% else %>
-                        <.btn variant={:ghost} size={:xs} class="w-full" phx-click="show_correction_form">
-                          <.icon name="hero-plus" class="size-3" />
-                          <span>Add guided belief</span>
-                        </.btn>
-                      <% end %>
+                        </div>
+                        </:fields>
+                      </.execute_confirm>
                     </div>
                   </.card_body>
                 </.card>
@@ -1656,9 +1721,7 @@
                         <div class="p-space-sm bg-surface-sunk rounded-sm">
                           <div class="flex items-center justify-between mb-space-xs">
                             <span class="font-semibold text-caption text-ink">Chunk {idx + 1}</span>
-                            <span class={["text-caption", epistemic_status_class(chunk[:epistemic_status])]}>
-                              {chunk[:epistemic_status] || "unchecked"}
-                            </span>
+                            <.epistemic_status_label status={chunk[:epistemic_status]} class="text-caption" />
                           </div>
                           <%= if chunk[:chunk_text] do %>
                             <div class="text-caption text-ink-muted mb-space-xs truncate">
