@@ -1,14 +1,13 @@
 defmodule Atlas.Verification.Comparison do
   @moduledoc """
   Compares a verification case's partial expectation against what a subsystem
-  actually produced, and normalises arbitrary Elixir terms into something
+  actually produced, and normalizes arbitrary Elixir terms into something
   storable as jsonb.
 
   ## Why the verdict lives here and not in the web app
 
-  Task 039 sketches a single `ChatWeb.Harness.Diff` doing both the comparison
-  and its rendering. Those are split, because the verdict is not a presentation
-  concern: `Atlas.Verification.record_result/2` computes a case's status itself
+  The comparison and its rendering are split between this module and
+  `ChatWeb.Harness.Diff`, because the verdict is not a presentation concern: `Atlas.Verification.record_result/2` computes a case's status itself
   rather than trusting a caller to pass one in, and a mix task re-running every
   case needs the same answer the page gets. `ChatWeb.Harness.Diff` renders what
   this module decides.
@@ -67,12 +66,12 @@ defmodule Atlas.Verification.Comparison do
   def default_tolerance, do: @default_tolerance
 
   @doc """
-  Normalises an arbitrary term into a jsonb-storable one.
+  Normalizes an arbitrary term into a jsonb-storable one.
 
   Structs keep their module name under `"__struct__"` rather than being
   flattened to a bare map: which struct a subsystem returned is part of what is
-  being verified, and task 010 is the case for saying so — an `{:ok, list}`
-  treated as a list went unnoticed because the shape was never displayed.
+  being verified. An `{:ok, list}` once treated as a list went unnoticed
+  because the shape was never displayed.
 
   Tuples become lists, tagged with `"__tuple__" => true` so a tuple and the
   list of the same elements are not stored identically. Anything with no JSON
