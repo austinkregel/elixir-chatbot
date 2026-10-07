@@ -1,16 +1,223 @@
 defmodule ChatWeb.UI do
   @moduledoc """
-  Shared UI components using Tailwind CSS utilities with daisyUI color classes.
-  Uses daisyUI's color utilities (bg-base-100, text-base-content, etc.) for theme compatibility.
+  Shared UI components, styled only with the Retroduct design tokens defined in
+  `assets/css/app.css`.
+
+  Every color is a token utility (`bg-surface`, `text-ink-muted`,
+  `border-border-strong`, `bg-primary`), every size a type, space, density or
+  radius token. Variants are closed: a variant or status a component has no
+  treatment for raises rather than rendering a default, because a silent
+  default is how a broken state reads as a normal one.
+
+  The generic variants (`:success`, `:warning`, `:error`, `:info`, `:primary`)
+  carry no meaning of their own in the design language. They map onto its hues
+  without borrowing a reserved one: green is reserved for a passing verdict, so
+  `:success` is plain ink; `:warning` is ochre, attention that is not breakage;
+  `:error` is red, breakage; `:info` is neutral. A component that shows a
+  verdict, an origin or an availability state uses the component for that
+  meaning — `ChatWeb.Harness.Diff.verdict/1`, `ChatWeb.Harness.Runner.origin/1`,
+  `status_dot/1` — which pairs the meaning's token with its mark.
   """
   use Phoenix.Component
+
+  # ============================================================================
+  # Mark
+  # ============================================================================
+
+  @mark_shapes [
+    :filled_circle,
+    :hollow_circle,
+    :dashed_circle,
+    :dotted_circle,
+    :half_circle,
+    :struck_circle,
+    :filled_square,
+    :dotted_square,
+    :dashed_square,
+    :check_square,
+    :cross_square,
+    :alert_triangle,
+    :filled_diamond
+  ]
+
+  @doc """
+  A glyph that carries a meaning by shape, so no meaning rests on color alone.
+
+  The mark draws in `currentColor`; give it the meaning's color with a text
+  utility, e.g. `class="size-1.5 text-origin-default"`. Shapes that sit inside a
+  filled body (`:check_square`, `:cross_square`, `:alert_triangle`) draw their
+  inner stroke in `surface` so it holds contrast in both themes.
+
+  Shapes: #{Enum.map_join(@mark_shapes, ", ", &"`#{inspect(&1)}`")}.
+  """
+  attr :shape, :atom, required: true, values: @mark_shapes
+  attr :class, :any, default: "size-1.5"
+
+  def mark(%{shape: shape} = assigns) when shape in @mark_shapes do
+    ~H"""
+    <svg
+      viewBox="0 0 12 12"
+      aria-hidden="true"
+      focusable="false"
+      class={["inline-block shrink-0 overflow-visible", @class]}
+      data-mark={@shape}
+    >
+      <.mark_body shape={@shape} />
+    </svg>
+    """
+  end
+
+  def mark(%{shape: shape}) do
+    raise ArgumentError,
+          "ChatWeb.UI.mark/1: #{inspect(shape)} is not a mark shape. " <>
+            "The shapes are #{inspect(@mark_shapes)}."
+  end
+
+  attr :shape, :atom, required: true
+
+  defp mark_body(%{shape: :filled_circle} = assigns) do
+    ~H"""
+    <circle cx="6" cy="6" r="5.5" fill="currentColor" />
+    """
+  end
+
+  defp mark_body(%{shape: :hollow_circle} = assigns) do
+    ~H"""
+    <circle cx="6" cy="6" r="4.75" fill="none" stroke="currentColor" stroke-width="2" />
+    """
+  end
+
+  defp mark_body(%{shape: :dashed_circle} = assigns) do
+    ~H"""
+    <circle
+      cx="6"
+      cy="6"
+      r="4.75"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-dasharray="3 2"
+    />
+    """
+  end
+
+  defp mark_body(%{shape: :dotted_circle} = assigns) do
+    ~H"""
+    <circle
+      cx="6"
+      cy="6"
+      r="4.75"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-dasharray="0.01 2.9"
+    />
+    """
+  end
+
+  defp mark_body(%{shape: :half_circle} = assigns) do
+    ~H"""
+    <circle cx="6" cy="6" r="4.75" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path d="M6 0.5 A5.5 5.5 0 0 0 6 11.5 Z" fill="currentColor" />
+    """
+  end
+
+  defp mark_body(%{shape: :struck_circle} = assigns) do
+    ~H"""
+    <circle cx="6" cy="6" r="4.75" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <line x1="2.4" y1="9.6" x2="9.6" y2="2.4" stroke="currentColor" stroke-width="1.5" />
+    """
+  end
+
+  defp mark_body(%{shape: :filled_square} = assigns) do
+    ~H"""
+    <rect x="0.5" y="0.5" width="11" height="11" fill="currentColor" />
+    """
+  end
+
+  defp mark_body(%{shape: :dotted_square} = assigns) do
+    ~H"""
+    <rect
+      x="1"
+      y="1"
+      width="10"
+      height="10"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-dasharray="0.01 2.9"
+    />
+    """
+  end
+
+  defp mark_body(%{shape: :dashed_square} = assigns) do
+    ~H"""
+    <rect
+      x="1"
+      y="1"
+      width="10"
+      height="10"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-dasharray="2.5 1.5"
+    />
+    """
+  end
+
+  defp mark_body(%{shape: :check_square} = assigns) do
+    ~H"""
+    <rect x="0.5" y="0.5" width="11" height="11" fill="currentColor" />
+    <path
+      d="M3 6.2 L5.1 8.3 L9 3.9"
+      fill="none"
+      class="stroke-surface"
+      stroke-width="1.6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    """
+  end
+
+  defp mark_body(%{shape: :cross_square} = assigns) do
+    ~H"""
+    <rect x="0.5" y="0.5" width="11" height="11" fill="currentColor" />
+    <path
+      d="M3.6 3.6 L8.4 8.4 M8.4 3.6 L3.6 8.4"
+      fill="none"
+      class="stroke-surface"
+      stroke-width="1.6"
+      stroke-linecap="round"
+    />
+    """
+  end
+
+  defp mark_body(%{shape: :alert_triangle} = assigns) do
+    ~H"""
+    <path d="M6 0.5 L11.6 11.2 H0.4 Z" fill="currentColor" stroke-linejoin="round" />
+    <path d="M6 4.2 V7.4" fill="none" class="stroke-surface" stroke-width="1.5" stroke-linecap="round" />
+    <circle cx="6" cy="9.3" r="0.85" class="fill-surface" />
+    """
+  end
+
+  defp mark_body(%{shape: :filled_diamond} = assigns) do
+    ~H"""
+    <path d="M6 0.3 L11.7 6 L6 11.7 L0.3 6 Z" fill="currentColor" />
+    """
+  end
 
   # ============================================================================
   # Card Component
   # ============================================================================
 
   @doc """
-  Renders a card container with optional header and footer.
+  Renders a panel: surface with a hairline edge. Panels take no shadow.
+
+  The base style is the `.panel` class in the components layer, so a border or
+  background utility passed in `class` (e.g. `border-verdict-error
+  bg-verdict-error-wash` for a raised call) replaces it.
   """
   attr :class, :string, default: nil
   attr :rest, :global
@@ -18,21 +225,21 @@ defmodule ChatWeb.UI do
 
   def card(assigns) do
     ~H"""
-    <div class={["rounded-lg border border-base-300 bg-base-100 shadow-sm", @class]} {@rest}>
+    <div class={["panel", @class]} {@rest}>
       {render_slot(@inner_block)}
     </div>
     """
   end
 
   @doc """
-  Card body with standard padding.
+  Card body with panel padding.
   """
   attr :class, :string, default: nil
   slot :inner_block, required: true
 
   def card_body(assigns) do
     ~H"""
-    <div class={["p-4", @class]}>
+    <div class={["p-space-lg", @class]}>
       {render_slot(@inner_block)}
     </div>
     """
@@ -42,45 +249,46 @@ defmodule ChatWeb.UI do
   # Badge Component
   # ============================================================================
 
+  @badge_variants %{
+    default: "bg-surface-sunk text-ink-muted",
+    info: "bg-surface-sunk text-ink-muted",
+    success: "bg-surface-sunk text-ink",
+    primary: "border border-primary text-primary",
+    warning: "bg-ochre-wash text-ochre",
+    error: "bg-red-wash text-red"
+  }
+
+  @badge_sizes %{
+    xs: "px-space-xs text-caption",
+    sm: "px-space-xs py-px text-body-dense"
+  }
+
   @doc """
-  Renders a badge/chip for status indicators.
+  Renders a tag: square-cornered, never pill-shaped.
+
+  The variant sets the hue only; the tag's words carry its meaning. For a
+  verdict, origin or availability state use the component for that meaning,
+  which adds its mark.
   """
   attr :variant, :atom,
     default: :default,
-    values: [:default, :primary, :success, :warning, :error, :info]
+    values: Map.keys(@badge_variants)
 
-  attr :size, :atom, default: :sm, values: [:xs, :sm]
+  attr :size, :atom, default: :sm, values: Map.keys(@badge_sizes)
   attr :class, :string, default: nil
   attr :rest, :global
   slot :inner_block, required: true
 
   def badge(assigns) do
-    variant_classes = %{
-      default: "bg-neutral/10 text-base-content/70",
-      primary: "bg-primary/15 text-primary",
-      success: "bg-success/15 text-success",
-      warning: "bg-warning/15 text-warning",
-      error: "bg-error/15 text-error",
-      info: "bg-info/15 text-info"
-    }
-
-    size_classes = %{
-      xs: "px-1.5 py-0.5 text-[10px]",
-      sm: "px-2 py-0.5 text-xs"
-    }
-
     assigns =
       assigns
-      |> assign(
-        :variant_class,
-        Map.get(variant_classes, assigns.variant, variant_classes.default)
-      )
-      |> assign(:size_class, Map.get(size_classes, assigns.size, size_classes.sm))
+      |> assign(:variant_class, fetch_variant!(@badge_variants, assigns.variant, "badge/1"))
+      |> assign(:size_class, fetch_variant!(@badge_sizes, assigns.size, "badge/1 size"))
 
     ~H"""
     <span
       class={[
-        "inline-flex items-center font-medium rounded-full",
+        "inline-flex items-center gap-space-xs rounded-sm font-semibold whitespace-nowrap",
         @variant_class,
         @size_class,
         @class
@@ -96,48 +304,52 @@ defmodule ChatWeb.UI do
   # Button Components
   # ============================================================================
 
+  @btn_variants %{
+    primary: "bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-hover",
+    secondary: "border border-primary bg-primary-wash text-primary",
+    outline: "border border-primary bg-transparent text-primary hover:bg-primary-wash",
+    ghost: "bg-transparent text-ink-muted hover:bg-primary-wash hover:text-primary",
+    danger:
+      "bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-hover " <>
+        "outline-mark outline-reach-device focus-visible:outline-focus"
+  }
+
+  @btn_sizes %{
+    xs: "h-control-sm px-space-sm gap-space-xs text-caption",
+    sm: "h-control-sm px-space-sm gap-space-xs text-body-dense",
+    md: "h-control-md px-space-md gap-space-sm text-body",
+    lg: "h-control-md px-space-lg gap-space-sm text-body"
+  }
+
   @doc """
-  Renders a button with various styles.
+  Renders an action button.
+
+  Every action is primary: `:primary` is the filled button, `:outline` the
+  secondary (outlined) one, `:secondary` an outlined button in its pressed state,
+  `:ghost` a quiet control for chrome such as closing a panel. `:danger` is a
+  primary fill with the 2px reach-device outline: red marks the stakes and is
+  never a button fill.
   """
   attr :variant, :atom,
     default: :primary,
-    values: [:primary, :secondary, :outline, :ghost, :danger]
+    values: Map.keys(@btn_variants)
 
-  attr :size, :atom, default: :md, values: [:xs, :sm, :md, :lg]
+  attr :size, :atom, default: :md, values: Map.keys(@btn_sizes)
   attr :disabled, :boolean, default: false
   attr :class, :string, default: nil
   attr :rest, :global, include: ~w(type phx-click phx-disable-with navigate patch href)
   slot :inner_block, required: true
 
   def btn(assigns) do
-    variant_classes = %{
-      primary: "bg-primary text-primary-content hover:opacity-90 shadow-sm",
-      secondary: "bg-base-200 text-base-content hover:bg-base-300",
-      outline: "border border-base-300 bg-transparent text-base-content hover:bg-base-200",
-      ghost: "bg-transparent text-base-content hover:bg-base-200",
-      danger: "bg-error text-error-content hover:opacity-90 shadow-sm"
-    }
-
-    size_classes = %{
-      xs: "px-2 py-1 text-xs gap-1",
-      sm: "px-3 py-1.5 text-sm gap-1.5",
-      md: "px-4 py-2 text-sm gap-2",
-      lg: "px-5 py-2.5 text-base gap-2"
-    }
-
     assigns =
       assigns
-      |> assign(
-        :variant_class,
-        Map.get(variant_classes, assigns.variant, variant_classes.primary)
-      )
-      |> assign(:size_class, Map.get(size_classes, assigns.size, size_classes.md))
+      |> assign(:variant_class, fetch_variant!(@btn_variants, assigns.variant, "btn/1"))
+      |> assign(:size_class, fetch_variant!(@btn_sizes, assigns.size, "btn/1 size"))
 
     ~H"""
     <button
       class={[
-        "inline-flex items-center justify-center font-medium rounded-lg transition-colors",
-        "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1",
+        "inline-flex items-center justify-center rounded-md font-semibold transition-colors cursor-pointer",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         @variant_class,
         @size_class,
@@ -151,46 +363,39 @@ defmodule ChatWeb.UI do
     """
   end
 
+  @icon_btn_sizes %{
+    sm: "size-control-sm",
+    md: "size-control-md",
+    lg: "size-control-md"
+  }
+
   @doc """
-  Icon button - square button typically containing just an icon.
+  Icon button: a square control holding just an icon, with the same variants
+  as `btn/1`.
   """
-  attr :variant, :atom, default: :ghost, values: [:primary, :secondary, :outline, :ghost, :danger]
-  attr :size, :atom, default: :md, values: [:sm, :md, :lg]
+  attr :variant, :atom, default: :ghost, values: Map.keys(@btn_variants)
+  attr :size, :atom, default: :md, values: Map.keys(@icon_btn_sizes)
   attr :class, :string, default: nil
   attr :title, :string, default: nil
   attr :rest, :global, include: ~w(type phx-click phx-disable-with navigate patch href)
   slot :inner_block, required: true
 
   def icon_btn(assigns) do
-    variant_classes = %{
-      primary: "bg-primary text-primary-content hover:opacity-90",
-      secondary: "bg-base-200 text-base-content hover:bg-base-300",
-      outline: "border border-base-300 bg-transparent text-base-content hover:bg-base-200",
-      ghost: "bg-transparent text-base-content/70 hover:bg-base-200 hover:text-base-content",
-      danger: "bg-error text-error-content hover:opacity-90"
-    }
-
-    size_classes = %{
-      sm: "p-1.5",
-      md: "p-2",
-      lg: "p-2.5"
-    }
-
     assigns =
       assigns
-      |> assign(:variant_class, Map.get(variant_classes, assigns.variant, variant_classes.ghost))
-      |> assign(:size_class, Map.get(size_classes, assigns.size, size_classes.md))
+      |> assign(:variant_class, fetch_variant!(@btn_variants, assigns.variant, "icon_btn/1"))
+      |> assign(:size_class, fetch_variant!(@icon_btn_sizes, assigns.size, "icon_btn/1 size"))
 
     ~H"""
     <button
       class={[
-        "inline-flex items-center justify-center rounded-lg transition-colors",
-        "focus:outline-none focus:ring-2 focus:ring-primary/50",
+        "inline-flex shrink-0 items-center justify-center rounded-md transition-colors cursor-pointer",
         @variant_class,
         @size_class,
         @class
       ]}
       title={@title}
+      aria-label={@title}
       {@rest}
     >
       {render_slot(@inner_block)}
@@ -203,14 +408,15 @@ defmodule ChatWeb.UI do
   # ============================================================================
 
   @doc """
-  Renders a tab bar for switching between views.
+  Renders a view switcher. The selected segment is accent, as a selected tab
+  is; switching views is navigation, not an action.
   """
   attr :class, :string, default: nil
   slot :inner_block, required: true
 
   def tabs(assigns) do
     ~H"""
-    <div class={["flex gap-1 p-1 rounded-lg bg-base-200", @class]}>
+    <div role="tablist" class={["flex gap-space-2xs p-space-2xs rounded-md bg-surface-sunk", @class]}>
       {render_slot(@inner_block)}
     </div>
     """
@@ -228,11 +434,13 @@ defmodule ChatWeb.UI do
     ~H"""
     <button
       type="button"
+      role="tab"
+      aria-selected={to_string(@active)}
       class={[
-        "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+        "h-control-sm px-space-sm rounded-sm text-body-dense transition-colors cursor-pointer",
         if(@active,
-          do: "bg-base-100 text-base-content shadow-sm",
-          else: "text-base-content/60 hover:text-base-content"
+          do: "bg-accent text-on-accent font-semibold",
+          else: "text-ink-muted hover:bg-surface hover:text-ink"
         ),
         @class
       ]}
@@ -247,8 +455,18 @@ defmodule ChatWeb.UI do
   # KPI / Stat Card Component
   # ============================================================================
 
+  @stat_icon_classes %{
+    default: "bg-surface-sunk text-ink-muted",
+    info: "bg-surface-sunk text-ink-muted",
+    success: "bg-surface-sunk text-ink",
+    primary: "bg-primary-wash text-primary",
+    warning: "bg-ochre-wash text-ochre",
+    error: "bg-red-wash text-red"
+  }
+
   @doc """
-  Renders a KPI/stat card for dashboards.
+  Renders a KPI/stat card for dashboards. The value is a plain count in ink;
+  the variant tints only the icon.
   """
   attr :label, :string, required: true
   attr :value, :string, required: true
@@ -257,50 +475,27 @@ defmodule ChatWeb.UI do
 
   attr :variant, :atom,
     default: :default,
-    values: [:default, :success, :warning, :error, :info, :primary]
+    values: Map.keys(@stat_icon_classes)
 
   attr :class, :string, default: nil
 
   def stat_kpi(assigns) do
-    icon_bg_classes = %{
-      default: "bg-base-200",
-      primary: "bg-primary/10",
-      success: "bg-success/10",
-      warning: "bg-warning/10",
-      error: "bg-error/10",
-      info: "bg-info/10"
-    }
-
-    icon_text_classes = %{
-      default: "text-base-content/60",
-      primary: "text-primary",
-      success: "text-success",
-      warning: "text-warning",
-      error: "text-error",
-      info: "text-info"
-    }
-
     assigns =
-      assigns
-      |> assign(:icon_bg, Map.get(icon_bg_classes, assigns.variant, icon_bg_classes.default))
-      |> assign(
-        :icon_text,
-        Map.get(icon_text_classes, assigns.variant, icon_text_classes.default)
-      )
+      assign(assigns, :icon_class, fetch_variant!(@stat_icon_classes, assigns.variant, "stat_kpi/1"))
 
     ~H"""
     <.card class={@class}>
       <.card_body>
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="text-sm text-base-content/60">{@label}</div>
-            <div class="text-2xl font-bold text-base-content mt-1">{@value}</div>
+        <div class="flex items-center justify-between gap-space-sm">
+          <div class="min-w-0">
+            <div class="text-label text-ink-muted">{@label}</div>
+            <div class="mt-space-xs text-title tabular-nums text-ink">{@value}</div>
           </div>
-          <div :if={@icon} class={["p-3 rounded-full", @icon_bg]}>
-            <span class={[@icon, "size-6", @icon_text]} />
+          <div :if={@icon} class={["p-space-sm rounded-md", @icon_class]}>
+            <span class={[@icon, "block size-5"]} />
           </div>
         </div>
-        <div :if={@sublabel} class="mt-2 text-xs text-base-content/60">
+        <div :if={@sublabel} class="mt-space-sm text-caption text-ink-muted">
           {@sublabel}
         </div>
       </.card_body>
@@ -313,7 +508,8 @@ defmodule ChatWeb.UI do
   # ============================================================================
 
   @doc """
-  Renders a toggle switch.
+  Renders a switch. The thumb's position carries the state; the track fills
+  with primary when on, because the switch is a control.
   """
   attr :checked, :boolean, default: false
   attr :label, :string, default: nil
@@ -322,9 +518,11 @@ defmodule ChatWeb.UI do
   attr :rest, :global, include: ~w(phx-click name id disabled)
 
   def toggle(assigns) do
-    track_size = if assigns.size == :sm, do: "w-8 h-4", else: "w-10 h-5"
-    thumb_size = if assigns.size == :sm, do: "size-3", else: "size-4"
-    thumb_translate = if assigns.size == :sm, do: "translate-x-4", else: "translate-x-5"
+    {track_size, thumb_size, thumb_translate} =
+      case assigns.size do
+        :sm -> {"w-8 h-4", "size-3", "translate-x-4"}
+        :md -> {"w-10 h-5", "size-4", "translate-x-5"}
+      end
 
     assigns =
       assigns
@@ -333,25 +531,27 @@ defmodule ChatWeb.UI do
       |> assign(:thumb_translate, thumb_translate)
 
     ~H"""
-    <label class={["inline-flex items-center gap-2 cursor-pointer", @class]}>
-      <span :if={@label} class="text-xs text-base-content/70">{@label}</span>
+    <label class={["inline-flex items-center gap-space-sm cursor-pointer", @class]}>
+      <span :if={@label} class="text-caption text-ink-muted">{@label}</span>
       <button
         type="button"
         role="switch"
         aria-checked={to_string(@checked)}
         class={[
-          "relative inline-flex shrink-0 rounded-full transition-colors",
-          "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1",
+          "relative inline-flex shrink-0 items-center rounded-sm border transition-colors cursor-pointer",
           @track_size,
-          if(@checked, do: "bg-primary", else: "bg-base-300")
+          if(@checked,
+            do: "bg-primary border-primary",
+            else: "bg-surface-sunk border-border-strong"
+          )
         ]}
         {@rest}
       >
         <span class={[
-          "pointer-events-none inline-block rounded-full bg-white shadow-sm transition-transform",
-          "translate-x-0.5 my-auto",
+          "pointer-events-none inline-block rounded-sm transition-transform",
+          "translate-x-0.5",
           @thumb_size,
-          @checked && @thumb_translate
+          if(@checked, do: ["bg-on-primary", @thumb_translate], else: "bg-ink-muted")
         ]} />
       </button>
     </label>
@@ -362,43 +562,51 @@ defmodule ChatWeb.UI do
   # Alert Component
   # ============================================================================
 
+  @alert_variants %{
+    info: %{box: "bg-surface-sunk border-border-strong", icon: "text-ink-muted"},
+    success: %{box: "bg-surface-sunk border-border-strong", icon: "text-ink"},
+    warning: %{box: "bg-ochre-wash border-ochre", icon: "text-ochre"},
+    error: %{box: "bg-red-wash border-red", icon: "text-red"}
+  }
+
+  @alert_icons %{
+    info: "hero-information-circle",
+    success: "hero-check-circle",
+    warning: "hero-exclamation-triangle",
+    error: "hero-exclamation-circle"
+  }
+
   @doc """
-  Renders an alert/banner message.
+  Renders a banner message. Its text is ink on the variant's wash; the icon's
+  shape and color say which kind it is.
   """
-  attr :variant, :atom, default: :info, values: [:info, :success, :warning, :error]
+  attr :variant, :atom, default: :info, values: Map.keys(@alert_variants)
   attr :icon, :string, default: nil
   attr :class, :string, default: nil
   attr :rest, :global
   slot :inner_block, required: true
 
   def alert(assigns) do
-    variant_classes = %{
-      info: "bg-info/10 border-info/30 text-info",
-      success: "bg-success/10 border-success/30 text-success",
-      warning: "bg-warning/10 border-warning/30 text-warning",
-      error: "bg-error/10 border-error/30 text-error"
-    }
-
-    default_icons = %{
-      info: "hero-information-circle",
-      success: "hero-check-circle",
-      warning: "hero-exclamation-triangle",
-      error: "hero-exclamation-circle"
-    }
+    variant = fetch_variant!(@alert_variants, assigns.variant, "alert/1")
 
     assigns =
       assigns
-      |> assign(:variant_class, Map.get(variant_classes, assigns.variant, variant_classes.info))
-      |> assign(:default_icon, Map.get(default_icons, assigns.variant))
+      |> assign(:box_class, variant.box)
+      |> assign(:icon_class, variant.icon)
+      |> assign(:default_icon, Map.fetch!(@alert_icons, assigns.variant))
 
     ~H"""
     <div
       role="alert"
-      class={["flex items-center gap-3 p-3 rounded-lg border", @variant_class, @class]}
+      class={[
+        "flex items-center gap-space-md p-space-md rounded-md border text-ink",
+        @box_class,
+        @class
+      ]}
       {@rest}
     >
-      <span class={[@icon || @default_icon, "size-5 shrink-0"]} />
-      <div class="text-sm">
+      <span class={[@icon || @default_icon, "size-5 shrink-0", @icon_class]} />
+      <div class="text-body">
         {render_slot(@inner_block)}
       </div>
     </div>
@@ -409,46 +617,59 @@ defmodule ChatWeb.UI do
   # Status Dot Component
   # ============================================================================
 
+  @status_marks %{
+    ready: {:filled_circle, "text-avail-ready"},
+    running: {:filled_circle, "text-avail-ready"},
+    healthy: {:filled_circle, "text-avail-ready"},
+    initializing: {:hollow_circle, "text-progress-fill"},
+    building_vocabulary: {:hollow_circle, "text-progress-fill"},
+    loading: {:hollow_circle, "text-progress-fill"},
+    idle: {:dashed_circle, "text-ink-muted"},
+    not_started: {:dashed_circle, "text-ink-muted"},
+    degraded: {:half_circle, "text-ochre"},
+    warning: {:half_circle, "text-ochre"},
+    error: {:struck_circle, "text-red"},
+    critical: {:struck_circle, "text-red"}
+  }
+
   @doc """
-  Renders a small status indicator dot.
+  Renders a small status mark: a shape and a color per state.
+
+  Ready is the quiet default, a filled ink circle. Starting up is a hollow
+  circle in the progress color. Not started or idle is a dashed hollow circle in
+  ink-muted: nothing is wrong, it has not been built or started. Degraded is an
+  ochre half-filled circle, attention that is not breakage. Error is a red
+  struck circle.
+
+  Statuses: #{Enum.map_join(Map.keys(@status_marks), ", ", &"`#{inspect(&1)}`")}.
+  Any other status raises.
   """
-  attr :status, :atom, default: :default
+  attr :status, :atom, required: true
   attr :pulse, :boolean, default: false
   attr :size, :atom, default: :md, values: [:sm, :md]
   attr :class, :string, default: nil
 
   def status_dot(assigns) do
-    color_class =
-      case assigns.status do
-        status when status in [:ready, :running, :healthy] ->
-          "bg-success"
+    {shape, color_class} =
+      case Map.fetch(@status_marks, assigns.status) do
+        {:ok, mark} ->
+          mark
 
-        status
-        when status in [:initializing, :building_vocabulary, :loading, :degraded, :warning] ->
-          "bg-warning"
-
-        status when status in [:not_started, :error, :critical] ->
-          "bg-error"
-
-        _ ->
-          "bg-base-content/50"
+        :error ->
+          raise ArgumentError,
+                "ChatWeb.UI.status_dot/1: no treatment for status #{inspect(assigns.status)}. " <>
+                  "The statuses are #{inspect(Map.keys(@status_marks))}."
       end
 
     size_class = if assigns.size == :sm, do: "size-1.5", else: "size-2"
 
     assigns =
       assigns
-      |> assign(:color_class, color_class)
-      |> assign(:size_class, size_class)
+      |> assign(:shape, shape)
+      |> assign(:mark_class, [color_class, size_class, assigns.pulse && "animate-pulse", assigns.class])
 
     ~H"""
-    <span class={[
-      "inline-block rounded-full",
-      @color_class,
-      @size_class,
-      @pulse && "animate-pulse",
-      @class
-    ]} />
+    <.mark shape={@shape} class={@mark_class} />
     """
   end
 
@@ -456,11 +677,19 @@ defmodule ChatWeb.UI do
   # Circular Progress (SVG-based)
   # ============================================================================
 
+  @progress_strokes %{
+    primary: "stroke-progress-fill",
+    success: "stroke-ink",
+    warning: "stroke-ochre",
+    error: "stroke-red",
+    info: "stroke-ink-muted"
+  }
+
   @doc """
-  Renders a circular progress indicator.
+  Renders a circular progress indicator on the progress track.
   """
   attr :value, :integer, required: true, doc: "Progress value 0-100"
-  attr :variant, :atom, default: :primary, values: [:primary, :success, :warning, :error, :info]
+  attr :variant, :atom, default: :primary, values: Map.keys(@progress_strokes)
   attr :size, :atom, default: :md, values: [:sm, :md, :lg]
   attr :class, :string, default: nil
   slot :inner_block
@@ -477,28 +706,18 @@ defmodule ChatWeb.UI do
         :lg -> "size-16"
       end
 
-    # Use daisyUI's internal color variables
-    stroke_class =
-      case assigns.variant do
-        :primary -> "stroke-primary"
-        :success -> "stroke-success"
-        :warning -> "stroke-warning"
-        :error -> "stroke-error"
-        :info -> "stroke-info"
-      end
-
     assigns =
       assigns
       |> assign(:radius, radius)
       |> assign(:circumference, circumference)
       |> assign(:stroke_dashoffset, stroke_dashoffset)
       |> assign(:size_class, size_class)
-      |> assign(:stroke_class, stroke_class)
+      |> assign(:stroke_class, fetch_variant!(@progress_strokes, assigns.variant, "circular_progress/1"))
 
     ~H"""
     <div class={["relative inline-flex items-center justify-center", @size_class, @class]}>
-      <svg class="transform -rotate-90 size-full" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={@radius} class="stroke-base-300" stroke-width="8" fill="none" />
+      <svg class="transform -rotate-90 size-full" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r={@radius} class="stroke-progress-track" stroke-width="8" fill="none" />
         <circle
           cx="50"
           cy="50"
@@ -506,7 +725,6 @@ defmodule ChatWeb.UI do
           class={[@stroke_class, "transition-all duration-300"]}
           stroke-width="8"
           fill="none"
-          stroke-linecap="round"
           stroke-dasharray={@circumference}
           stroke-dashoffset={@stroke_dashoffset}
         />
@@ -523,7 +741,7 @@ defmodule ChatWeb.UI do
   # ============================================================================
 
   @doc """
-  Renders a text input field.
+  Renders a text input field: a sunk well with a control border.
   """
   attr :name, :string, required: true
   attr :value, :string, default: ""
@@ -542,10 +760,9 @@ defmodule ChatWeb.UI do
       placeholder={@placeholder}
       disabled={@disabled}
       class={[
-        "w-full px-3 py-2 text-sm rounded-lg",
-        "bg-base-100 border border-base-300",
-        "text-base-content placeholder:text-base-content/40",
-        "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary",
+        "w-full h-control-md px-space-sm rounded-sm",
+        "bg-surface-sunk border border-border-strong",
+        "text-body text-ink placeholder:text-ink-muted",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         @class
       ]}
@@ -559,13 +776,13 @@ defmodule ChatWeb.UI do
   # ============================================================================
 
   @doc """
-  Renders a horizontal divider line.
+  Renders a horizontal section rule, a decorative hairline.
   """
   attr :class, :string, default: nil
 
   def divider(assigns) do
     ~H"""
-    <hr class={["border-t border-base-300", @class]} />
+    <hr class={["border-t border-border", @class]} />
     """
   end
 
@@ -574,7 +791,7 @@ defmodule ChatWeb.UI do
   # ============================================================================
 
   @doc """
-  Renders a section header with icon and optional actions.
+  Renders a section heading inside a panel, with an optional icon and actions.
   """
   attr :icon, :string, default: nil
   attr :class, :string, default: nil
@@ -583,15 +800,31 @@ defmodule ChatWeb.UI do
 
   def section_header(assigns) do
     ~H"""
-    <div class={["flex items-center justify-between gap-2", @class]}>
-      <h3 class="flex items-center gap-2 text-sm font-semibold text-base-content">
-        <span :if={@icon} class={[@icon, "size-4 text-primary"]} />
+    <div class={["flex items-center justify-between gap-space-sm", @class]}>
+      <h3 class="flex items-center gap-space-sm text-subheading text-ink">
+        <span :if={@icon} class={[@icon, "size-4 text-ink-muted"]} />
         {render_slot(@inner_block)}
       </h3>
-      <div :if={@actions != []} class="flex items-center gap-2">
+      <div :if={@actions != []} class="flex items-center gap-space-sm">
         {render_slot(@actions)}
       </div>
     </div>
     """
+  end
+
+  # ============================================================================
+  # Internals
+  # ============================================================================
+
+  defp fetch_variant!(variants, key, component) do
+    case Map.fetch(variants, key) do
+      {:ok, value} ->
+        value
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.UI.#{component}: no treatment for #{inspect(key)}. " <>
+                "The variants are #{inspect(Map.keys(variants))}."
+    end
   end
 end
