@@ -140,7 +140,7 @@ defmodule Mix.Tasks.Axes.Experiment do
       held_out
       |> Task.async_stream(
         fn entry ->
-          analysis = Pipeline.analyze_chunk(entry["text"])
+          analysis = Pipeline.analyze_chunk(entry["text"], side_effects: false)
           {vector, _word_feats} = FeatureExtractor.extract(analysis)
           %{vector: vector, label: entry["intent"]}
         end,
