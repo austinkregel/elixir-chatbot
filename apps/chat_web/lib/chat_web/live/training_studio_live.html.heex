@@ -187,13 +187,12 @@
                   <th :if={source_editable?(assigns)} class="h-row-compact px-space-sm text-label text-ink-muted text-right">Actions</th>
                 </thead>
                 <tbody>
-                  <%= for {record, idx} <- Enum.with_index(@records) do %>
-                    <% abs_idx = (@page - 1) * @page_size + idx %>
-                    <%= if assigns[:editing_index] == abs_idx do %>
+                  <%= for {index, record} <- @records do %>
+                    <%= if assigns[:editing_index] == index do %>
                       <tr class="bg-accent-wash border-b border-border">
                         <td colspan="10" class="px-space-sm py-space-sm">
                           <form phx-submit="save_edit" class="flex items-center gap-space-sm">
-                            <input type="hidden" name="index" value={abs_idx} />
+                            <input type="hidden" name="index" value={index} />
                             <%= case @source_desc.record_kind do %>
                               <% kind when kind in [:intent_example, :text_classifier_row] -> %>
                                 <input
@@ -234,7 +233,7 @@
                                 <span class="text-caption text-ink-muted">Inline edit not available</span>
                             <% end %>
                             <.btn
-                              id={"record-#{abs_idx}-save"}
+                              id={"record-#{index}-save"}
                               type="submit"
                               size={:xs}
                               reach={:local}
@@ -250,10 +249,10 @@
                       <ChatWeb.TrainingStudio.Components.record_row
                         record={record}
                         kind={@source_desc.record_kind}
-                        index={abs_idx}
+                        index={index}
                         editable={source_editable?(assigns)}
                         source_path={Path.relative_to_cwd(@source_desc.path)}
-                        confirm_open={@open_confirm == "confirm-delete-record-#{abs_idx}"}
+                        confirm_open={@open_confirm == "confirm-delete-record-#{index}"}
                         confirm_error={@confirm_error}
                       />
                     <% end %>
@@ -268,6 +267,7 @@
               page={@page}
               page_size={@page_size}
               total={@total_records}
+              matching={@matching_records}
               event="page"
               label="Record pages"
               class="px-space-lg py-space-md border-t border-border"
