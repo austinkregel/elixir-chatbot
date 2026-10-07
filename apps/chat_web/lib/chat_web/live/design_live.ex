@@ -11,8 +11,19 @@ defmodule ChatWeb.DesignLive do
   The harness components are rendered from real calls: `Runner.run/2` on small
   sample functions that record provenance in each of the five origins, a real
   `Atlas.Verification.Comparison.compare/3` result, and real
-  `Atlas.Schemas.VerificationCase` structs. The samples are labeled as samples;
-  nothing on this page is a verification result.
+  `Atlas.Schemas.VerificationCase` structs. The regression gate's states are
+  real `Brain.Evaluation.Gate.verdict/3` judgments of sample baselines and
+  results. The samples are labeled as samples; nothing on this page is a
+  verification result or an evaluation.
+
+  The pagination samples are live: each bar keeps its own current page, so
+  one page, a few pages and many pages with gaps can each be stepped through.
+
+  The execute confirmations are live: each trigger opens its panel in place,
+  Cancel and Escape close it, and confirming writes nothing, because this page
+  has nothing to write. The device sample answers its confirm with the failure
+  shown in the panel, which is how a failed confirmation looks. Visiting
+  `/design?confirm=open` opens every panel at once.
   """
 
   use ChatWeb, :live_view
@@ -21,6 +32,7 @@ defmodule ChatWeb.DesignLive do
 
   alias Atlas.Schemas.VerificationCase
   alias Atlas.Verification.Comparison
+  alias Brain.Evaluation.Gate
   alias Brain.Provenance
   alias ChatWeb.Harness.Diff
   alias ChatWeb.Harness.Runner
@@ -186,19 +198,134 @@ defmodule ChatWeb.DesignLive do
     :critical
   ]
 
+  # Each score kind in its text form, and in its bar form where the kind has
+  # one. The values are samples.
+  @scores [
+    %{kind: :model_confidence, value: 0.72},
+    %{kind: :softmax_share, value: 0.12},
+    %{kind: :margin, value: 0.31},
+    %{kind: :entropy, value: 0.44},
+    %{kind: :weighted_vote, value: 0.58},
+    %{kind: :mapped_confidence, value: 0.78},
+    %{kind: :reranked_confidence, value: 0.66},
+    %{kind: :match_confidence, value: 0.81},
+    %{kind: :completeness, value: 0.9, parts: ["actor", "object", "verb"]},
+    %{kind: :belief_confidence, value: 0.7},
+    %{kind: :analyzer_activation, value: 0.42},
+    %{kind: :activation, value: 0.35},
+    %{kind: :accumulated_confidence, value: 0.63},
+    %{kind: :cosine_similarity, value: 0.61},
+    %{kind: :cosine_similarity, value: -0.24},
+    %{kind: :distance, value: 2.41, axis_max: 7}
+  ]
+
+  @text_only_scores [
+    %{kind: :activation_sum, value: 1.37},
+    %{kind: :raw_score, value: -3.2, source: "log-probability"},
+    %{kind: :count, value: 17, noun: "times candidate"},
+    %{kind: :count, value: 3, of: 12, noun: "voters"},
+    %{kind: :unestablished, value: 0.64},
+    %{kind: :unestablished, value: 0.64, candidates: "model confidence or weighted vote"}
+  ]
+
+  @confirm_kinds [:shared, :device, :local, :form]
+
+  # Each pagination sample: its rows, its page size and the page it opens on.
+  # One page; a few pages, every number shown; many pages, windowed with gaps.
+  @page_samples %{
+    "one" => %{title: "One page", total: 12, page_size: 50, page: 1},
+    "few" => %{title: "A few pages", total: 180, page_size: 50, page: 2},
+    "many" => %{title: "Many pages, with gaps", total: 1204, page_size: 20, page: 30}
+  }
+
+  @page_sample_order ["one", "few", "many"]
+
+  @gate_sample_order [
+    {:not_set, "gate not set"},
+    {:pass, "pass"},
+    {:fail, "fail"},
+    {:canary_not_measured, "canary not measured"}
+  ]
+
   @impl true
   def mount(_params, _session, socket) do
     returned = Runner.run(&sample_with_every_origin/1, "turn on the kitchen light")
     raised = Runner.run(&sample_that_raises/1, "turn on the kitchen light")
+    unrecorded = Runner.run(&sample_without_provenance/1, "turn on the kitchen light")
 
     {:ok,
      socket
      |> assign(:page_title, "Design Language")
      |> assign(:returned, returned)
      |> assign(:raised, raised)
+     |> assign(:unrecorded, unrecorded)
      |> assign(:failing, Comparison.compare(%{intent: "greeting", score: 0.5}, returned.value))
      |> assign(:passing, Comparison.compare(%{intent: "directive"}, returned.value))
-     |> assign(:cases, sample_cases())}
+     |> assign(:cases, sample_cases(returned.value))
+     |> assign(:open_confirms, MapSet.new())
+     |> assign(:confirm_errors, %{})
+     |> assign(:confirmed, nil)
+     |> assign(:sample_page, 2)
+     |> assign(:page_samples, @page_samples)
+     |> assign(:gate_verdicts, gate_samples())}
+  end
+
+  @impl true
+  def handle_params(%{"confirm" => "open"}, _uri, socket) do
+    every = for theme <- ["light", "dark"], kind <- @confirm_kinds, into: MapSet.new(), do: confirm_id(kind, theme)
+    {:noreply, assign(socket, :open_confirms, every)}
+  end
+
+  def handle_params(_params, _uri, socket), do: {:noreply, socket}
+
+  @impl true
+  def handle_event("open_confirm", %{"id" => id}, socket) do
+    {:noreply,
+     socket
+     |> update(:open_confirms, &MapSet.put(&1, id))
+     |> update(:confirm_errors, &Map.delete(&1, id))}
+  end
+
+  def handle_event("close_confirm", %{"id" => id}, socket) do
+    {:noreply,
+     socket
+     |> update(:open_confirms, &MapSet.delete(&1, id))
+     |> update(:confirm_errors, &Map.delete(&1, id))}
+  end
+
+  def handle_event("confirm", %{"id" => id} = params, socket) do
+    if String.starts_with?(id, "design-confirm-device-") do
+      {:noreply,
+       update(
+         socket,
+         :confirm_errors,
+         &Map.put(
+           &1,
+           id,
+           "Nothing was sent to light.kitchen: this gallery has no Home Assistant connection. " <>
+             "A failed confirmation stays open and says what failed, as this one does."
+         )
+       )}
+    else
+      topic = params["topic"]
+
+      {:noreply,
+       socket
+       |> update(:open_confirms, &MapSet.delete(&1, id))
+       |> assign(
+         :confirmed,
+         "Confirmed #{id}#{if topic, do: " with topic \"#{topic}\"", else: ""}. The sample wrote nothing."
+       )}
+    end
+  end
+
+  def handle_event("design_page", %{"page" => page}, socket) do
+    {:noreply, assign(socket, :sample_page, String.to_integer(page))}
+  end
+
+  def handle_event("design_page_" <> sample, %{"page" => page}, socket)
+      when is_map_key(@page_samples, sample) do
+    {:noreply, update(socket, :page_samples, &put_in(&1, [sample, :page], String.to_integer(page)))}
   end
 
   @impl true
@@ -240,24 +367,74 @@ defmodule ChatWeb.DesignLive do
     raise ArgumentError, "a sample raise, rendered as the result it would be"
   end
 
-  defp sample_cases do
-    run_at = ~U[2026-10-06 12:00:00.000000Z]
+  @doc false
+  def sample_without_provenance(input) do
+    %{intent: "directive", text: input}
+  end
 
-    for {status, name, last_run_at} <- [
-          {"pass", "a plain directive", run_at},
-          {"fail", "a greeting read as a directive", run_at},
-          {"error", "an input that raises", run_at},
-          {"pending", "a case never run", nil}
+  defp sample_cases(returned) do
+    run_at = ~U[2026-10-06 12:00:00.000000Z]
+    actual = Comparison.normalize(returned)
+
+    error = %{
+      "__error__" => true,
+      "kind" => "ArgumentError",
+      "message" => "a sample raise",
+      "stacktrace" => []
+    }
+
+    for {status, name, expected, last_actual, last_run_at} <- [
+          {"pass", "a plain directive", %{"intent" => "directive"}, actual, run_at},
+          {"fail", "a greeting read as a directive", %{"intent" => "greeting", "score" => 0.5}, actual,
+           run_at},
+          {"error", "an input that raises", %{"intent" => "directive"}, error, run_at},
+          {"pending", "a case never run", %{"intent" => "directive", "score" => 0.83}, nil, nil}
         ] do
       %VerificationCase{
         subsystem: "speech_act",
         name: name,
         world_id: "default",
         status: status,
+        expected: expected,
+        last_actual: last_actual,
         last_run_at: last_run_at
       }
     end
   end
+
+  # The gate's four states, each judged by `Gate.verdict/3` from a sample
+  # baseline and result: no baseline; a fall within the allowance; a fall
+  # beyond it with new failed predictions; and a result saved without
+  # diagnostics, so the error canary cannot be measured.
+  defp gate_samples do
+    baseline =
+      {:ok,
+       %{
+         "intent" => %{
+           "macro_f1" => 0.500,
+           "accuracy" => 0.287,
+           "diagnostics" => %{"ok" => 4860, "unknown" => 8, "errored" => 2}
+         }
+       }}
+
+    %{
+      not_set: Gate.verdict("intent", :not_set, nil),
+      pass:
+        Gate.verdict("intent", baseline, %{
+          "macro_f1" => 0.496,
+          "diagnostics" => %{"ok" => 4861, "unknown" => 7, "errored" => 2}
+        }),
+      fail:
+        Gate.verdict("intent", baseline, %{
+          "macro_f1" => 0.452,
+          "diagnostics" => %{"ok" => 4855, "unknown" => 11, "errored" => 4}
+        }),
+      canary_not_measured: Gate.verdict("intent", baseline, %{"macro_f1" => 0.496})
+    }
+  end
+
+  defp confirm_id(kind, theme), do: "design-confirm-#{kind}-#{theme}"
+  defp trigger_id(kind, theme), do: "design-trigger-#{kind}-#{theme}"
 
   @impl true
   def render(assigns) do
@@ -269,6 +446,10 @@ defmodule ChatWeb.DesignLive do
       |> assign(:density, @density)
       |> assign(:radius, @radius)
       |> assign(:statuses, @statuses)
+      |> assign(:scores, @scores)
+      |> assign(:text_only_scores, @text_only_scores)
+      |> assign(:page_sample_order, @page_sample_order)
+      |> assign(:gate_sample_order, @gate_sample_order)
 
     ~H"""
     <.app_shell
@@ -428,38 +609,29 @@ defmodule ChatWeb.DesignLive do
 
         <.section title="What a score means">
           <.both :let={_theme}>
-            <div class="space-y-space-md">
-              <div class="flex items-center gap-space-md">
-                <span class="w-36 text-ref text-ink-muted">score-calibrated</span>
-                <div class="h-space-sm w-40 rounded-sm bg-score-track">
-                  <div class="h-full rounded-sm bg-score-calibrated" style="width: 72%" />
+            <div class="space-y-space-lg">
+              <div>
+                <h4 class="mb-space-sm text-label text-ink-muted">Bar form, beside the text form</h4>
+                <div class="space-y-space-sm">
+                  <div :for={score <- @scores}>
+                    <.score_display {score} form={:bar} />
+                  </div>
                 </div>
-                <span class="text-value text-ink">0.72 · model confidence</span>
               </div>
-              <div class="flex items-center gap-space-md">
-                <span class="w-36 text-ref text-ink-muted">score-relative</span>
-                <div class="h-space-sm w-40 rounded-sm bg-score-track">
-                  <div class="h-full rounded-sm border border-score-calibrated bg-score-relative" style="width: 12%" />
+              <div>
+                <h4 class="mb-space-sm text-label text-ink-muted">Text form, every kind</h4>
+                <div class="flex flex-col gap-space-xs">
+                  <.score_display :for={score <- @scores} {score} />
+                  <.score_display :for={score <- @text_only_scores} {score} />
+                  <.no_confidence method="intent inferred from speech act" />
+                  <span class="inline-flex items-center gap-space-xs">
+                    <span class="text-value text-ink underline underline-offset-2 decoration-dashed decoration-origin-default">
+                      0.40
+                    </span>
+                    <Runner.origin origin={:default} />
+                    <span class="text-caption text-ink-muted">a constant stand-in takes its origin, not a bar</span>
+                  </span>
                 </div>
-                <span class="text-value text-ink">0.12 · softmax share</span>
-              </div>
-              <div class="flex items-center gap-space-md">
-                <span class="w-36 text-ref text-ink-muted">score-heuristic</span>
-                <div class="h-space-sm w-40 rounded-sm bg-score-track">
-                  <div class="h-full rounded-sm border border-score-heuristic" style="width: 58%" />
-                </div>
-                <span class="text-value text-ink">0.58 · weighted vote</span>
-              </div>
-              <div class="flex items-center gap-space-md">
-                <span class="w-36 text-ref text-ink-muted">score-unbounded</span>
-                <div class="relative h-space-sm w-40 border-b border-score-axis">
-                  <span class="absolute -bottom-1 size-2 rounded-pip bg-score-unbounded" style="left: 35%" />
-                </div>
-                <span class="text-value text-ink">2.41 · hyperbolic distance</span>
-              </div>
-              <div class="flex items-center gap-space-md">
-                <span class="w-36 text-ref text-ink-muted">score-count</span>
-                <span class="text-value text-score-count">17</span>
               </div>
             </div>
           </.both>
@@ -487,33 +659,140 @@ defmodule ChatWeb.DesignLive do
         </.section>
 
         <.section title="Reach of an action">
-          <.both :let={_theme}>
+          <.both :let={theme}>
             <div class="space-y-space-md">
               <div class="flex flex-wrap items-center gap-space-sm">
                 <.btn>Run</.btn>
                 <span class="text-caption text-ink-muted">read-only: no badge</span>
               </div>
               <div class="flex flex-wrap items-center gap-space-sm">
-                <.btn>Retrain</.btn>
-                <span class="inline-flex items-center gap-space-xs rounded-sm border border-reach-local px-space-xs text-caption font-semibold text-reach-local">
-                  <.icon name="hero-circle-stack-micro" class="size-3" /> writes local
-                </span>
+                <.btn id={"design-reach-local-#{theme}"} reach={:local} target="micro/intent.term">
+                  Rebuild
+                </.btn>
               </div>
-              <div class="flex flex-wrap items-center gap-space-md rounded-md border border-border-strong bg-surface-raised p-space-md shadow-overlay">
-                <span class="inline-flex items-center gap-space-xs rounded-sm border border-reach-shared px-space-xs text-caption font-semibold text-reach-shared">
-                  <.icon name="hero-share-micro" class="size-3" /> writes shared
-                </span>
-                <button class="h-control-md rounded-md bg-reach-shared-confirm px-space-md text-body font-semibold text-on-reach-shared outline-mark outline-reach-shared">
-                  Confirm save
-                </button>
+              <div class="flex flex-wrap items-center gap-space-sm">
+                <.btn id={"design-reach-shared-#{theme}"} reach={:shared} target="candidate 41">
+                  Approve
+                </.btn>
               </div>
-              <div class="flex flex-wrap items-center gap-space-md rounded-md border border-border-strong bg-surface-raised p-space-md shadow-overlay">
-                <span class="inline-flex items-center gap-space-xs rounded-sm border border-reach-device px-space-xs text-caption font-semibold text-reach-device">
-                  <.icon name="hero-bolt-micro" class="size-3" /> actuates light.kitchen
-                </span>
-                <button class="h-control-md rounded-md bg-reach-device-confirm px-space-md text-body font-semibold text-on-reach-device outline-mark outline-reach-device">
-                  Confirm turn on
-                </button>
+              <div class="flex flex-wrap items-center gap-space-sm">
+                <.btn id={"design-reach-device-#{theme}"} reach={:device} target="light.kitchen">
+                  Turn on
+                </.btn>
+              </div>
+              <div>
+                <h4 class="mb-space-sm text-label text-ink-muted">Reach badges</h4>
+                <div class="flex flex-wrap items-center gap-space-sm">
+                  <.reach_badge reach={:local} />
+                  <.reach_badge reach={:local} target="data/intents.json" />
+                  <.reach_badge reach={:shared} target="learning session" />
+                  <.reach_badge reach={:device} target="light.kitchen" />
+                </div>
+              </div>
+            </div>
+          </.both>
+        </.section>
+
+        <.section title="Execute confirmation">
+          <.both :let={theme}>
+            <div class="space-y-space-lg">
+              <p :if={@confirmed} class="text-caption text-ink-muted">{@confirmed}</p>
+              <div class="space-y-space-sm">
+                <.btn
+                  id={trigger_id(:shared, theme)}
+                  reach={:shared}
+                  target="candidate 41"
+                  phx-click="open_confirm"
+                  phx-value-id={confirm_id(:shared, theme)}
+                >
+                  Reject
+                </.btn>
+                <.execute_confirm
+                  id={confirm_id(:shared, theme)}
+                  open={MapSet.member?(@open_confirms, confirm_id(:shared, theme))}
+                  reach={:shared}
+                  verb="Reject"
+                  target="candidate 41"
+                  consequence="Marks this candidate rejected in the review store and records the rejection against its source's domain."
+                  on_confirm={JS.push("confirm", value: %{id: confirm_id(:shared, theme)})}
+                  on_cancel={JS.push("close_confirm", value: %{id: confirm_id(:shared, theme)})}
+                  trigger_id={trigger_id(:shared, theme)}
+                  error={@confirm_errors[confirm_id(:shared, theme)]}
+                />
+              </div>
+              <div class="space-y-space-sm">
+                <.btn
+                  id={trigger_id(:device, theme)}
+                  reach={:device}
+                  target="light.kitchen"
+                  phx-click="open_confirm"
+                  phx-value-id={confirm_id(:device, theme)}
+                >
+                  Turn on
+                </.btn>
+                <.execute_confirm
+                  id={confirm_id(:device, theme)}
+                  open={MapSet.member?(@open_confirms, confirm_id(:device, theme))}
+                  reach={:device}
+                  verb="Turn on"
+                  target="light.kitchen"
+                  consequence="Calls the Home Assistant service light.turn_on."
+                  current_state="off, as a sample"
+                  on_confirm={JS.push("confirm", value: %{id: confirm_id(:device, theme)})}
+                  on_cancel={JS.push("close_confirm", value: %{id: confirm_id(:device, theme)})}
+                  trigger_id={trigger_id(:device, theme)}
+                  error={@confirm_errors[confirm_id(:device, theme)]}
+                />
+              </div>
+              <div class="space-y-space-sm">
+                <.btn
+                  id={trigger_id(:local, theme)}
+                  variant={:outline}
+                  reach={:local}
+                  target="world star-trek"
+                  phx-click="open_confirm"
+                  phx-value-id={confirm_id(:local, theme)}
+                >
+                  Unload world
+                </.btn>
+                <.execute_confirm
+                  id={confirm_id(:local, theme)}
+                  open={MapSet.member?(@open_confirms, confirm_id(:local, theme))}
+                  reach={:local}
+                  removes
+                  verb="Unload world"
+                  target="world star-trek"
+                  consequence="Unloads this world and its gazetteer overlay from this node. Its folder under priv/training_worlds stays, and the world loads again at the next start."
+                  on_confirm={JS.push("confirm", value: %{id: confirm_id(:local, theme)})}
+                  on_cancel={JS.push("close_confirm", value: %{id: confirm_id(:local, theme)})}
+                  trigger_id={trigger_id(:local, theme)}
+                />
+              </div>
+              <div class="space-y-space-sm">
+                <.btn
+                  id={trigger_id(:form, theme)}
+                  reach={:shared}
+                  target="learning session"
+                  phx-click="open_confirm"
+                  phx-value-id={confirm_id(:form, theme)}
+                >
+                  Start learning session
+                </.btn>
+                <.execute_confirm
+                  id={confirm_id(:form, theme)}
+                  open={MapSet.member?(@open_confirms, confirm_id(:form, theme))}
+                  reach={:shared}
+                  verb="Start session"
+                  target="learning session"
+                  consequence="Saves a session and its goals to Atlas; the agents it dispatches add candidates to the review queue."
+                  on_confirm={JS.push("confirm", value: %{id: confirm_id(:form, theme)})}
+                  on_cancel={JS.push("close_confirm", value: %{id: confirm_id(:form, theme)})}
+                  trigger_id={trigger_id(:form, theme)}
+                >
+                  <:fields>
+                    <.input name="topic" label="Topic" value="" />
+                  </:fields>
+                </.execute_confirm>
               </div>
             </div>
           </.both>
@@ -525,18 +804,120 @@ defmodule ChatWeb.DesignLive do
               <div class="flex flex-wrap items-center gap-space-sm">
                 <Diff.verdict :for={status <- ["pass", "fail", "error", "pending"]} status={status} />
               </div>
+              <div class="flex flex-wrap items-center gap-space-sm">
+                <Diff.verdict status="pending" label="gate not set" />
+                <span class="text-caption text-ink-muted">the not-run verdict, worded for what has not run</span>
+              </div>
               <Diff.coverage checked={7} total={143} />
               <div><Diff.coverage checked={3} total={3} /></div>
+              <div><Diff.coverage checked={2} /></div>
+            </div>
+          </.both>
+        </.section>
+
+        <.section title="Empty states">
+          <.both :let={_theme}>
+            <div class="space-y-space-sm">
+              <.empty_panel kind={:observed_clean}>
+                A sample: 11 values recorded from your input; none came from a fallback, a
+                stand-in or an unreadable source.
+              </.empty_panel>
+              <.empty_panel kind={:not_observable}>
+                A sample: this call did its work inside <span class="text-ref">Brain.Memory.Store</span>, another
+                process. Provenance is collected per process, so nothing here could be recorded.
+              </.empty_panel>
+              <.empty_panel
+                kind={:not_instrumented}
+                entries={@unrecorded.provenance}
+                expected={["Brain.Analysis.SemanticChunker", "Brain.ML.Tokenizer"]}
+              />
+              <.empty_panel kind={:could_not_ask}>
+                A sample: MicroClassifiers exited before answering <span class="text-ref">stale/0</span>.
+                Whether any model is stale is unknown.
+                <:action>
+                  <.btn size={:sm} variant={:outline}>Ask again</.btn>
+                </:action>
+              </.empty_panel>
+              <.empty_panel kind={:plain} words="No saved cases for this subsystem yet" />
+            </div>
+          </.both>
+        </.section>
+
+        <.section title="Regression gate">
+          <.both :let={theme}>
+            <div class="space-y-space-lg">
+              <div class="space-y-space-sm">
+                <div
+                  :for={{key, name} <- @gate_sample_order}
+                  id={"design-gate-#{key}-#{theme}"}
+                  class="flex flex-wrap items-center gap-space-md"
+                >
+                  <span class="w-40 shrink-0 text-ref text-ink-muted">{name}</span>
+                  <.gate_verdict verdict={@gate_verdicts[key]} />
+                </div>
+              </div>
+              <div>
+                <h4 class="mb-space-sm text-label text-ink-muted">In a stat tile's verdict slot</h4>
+                <div class="grid grid-cols-2 gap-space-sm">
+                  <div id={"design-kpi-gate-pass-#{theme}"} class="min-w-0">
+                    <.stat_kpi
+                      label="Macro F1"
+                      value="49.6%"
+                      sublabel="macro-F1 · 4870 examples"
+                      icon="hero-chart-bar"
+                    >
+                      <:verdict><.gate_verdict verdict={@gate_verdicts.pass} /></:verdict>
+                    </.stat_kpi>
+                  </div>
+                  <div id={"design-kpi-gate-not-set-#{theme}"} class="min-w-0">
+                    <.stat_kpi
+                      label="Macro F1"
+                      value="49.6%"
+                      sublabel="macro-F1 · 4870 examples"
+                      icon="hero-chart-bar"
+                    >
+                      <:verdict><.gate_verdict verdict={@gate_verdicts.not_set} /></:verdict>
+                    </.stat_kpi>
+                  </div>
+                </div>
+              </div>
+              <p class="text-caption text-ink-muted">
+                Samples: each is <span class="text-ref">Brain.Evaluation.Gate.verdict/3</span> on a sample
+                baseline and result, not an evaluation.
+              </p>
+            </div>
+          </.both>
+        </.section>
+
+        <.section title="Pagination">
+          <.both :let={theme}>
+            <div class="space-y-space-lg">
+              <div :for={sample <- @page_sample_order}>
+                <h4 class="mb-space-sm text-label text-ink-muted">{@page_samples[sample].title}</h4>
+                <.page_bar
+                  page={@page_samples[sample].page}
+                  page_size={@page_samples[sample].page_size}
+                  total={@page_samples[sample].total}
+                  event={"design_page_#{sample}"}
+                  label={"#{@page_samples[sample].title}, #{theme}"}
+                />
+              </div>
             </div>
           </.both>
         </.section>
 
         <.section title="Availability and status">
           <.both :let={_theme}>
-            <div class="grid grid-cols-2 gap-space-sm sm:grid-cols-3">
-              <div :for={status <- @statuses} class="flex items-center gap-space-sm">
-                <.status_dot status={status} />
-                <span class="text-ref text-ink-muted">{status}</span>
+            <div class="space-y-space-md">
+              <div class="grid grid-cols-2 gap-space-sm sm:grid-cols-3">
+                <div :for={status <- @statuses} class="flex items-center gap-space-sm">
+                  <.status_dot status={status} />
+                  <span class="text-ref text-ink-muted">{status}</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-space-sm">
+                <.status_dot status={:initializing} pulse />
+                <span class="text-ref text-ink-muted">initializing, pulse (still under reduced motion)</span>
               </div>
             </div>
           </.both>
@@ -570,29 +951,70 @@ defmodule ChatWeb.DesignLive do
                   {variant} {size}
                 </.badge>
               </div>
+              <div class="flex flex-wrap items-center gap-space-sm">
+                <.badge mono>world default</.badge>
+                <.badge mono>ChunkFeatures.entity_features/1</.badge>
+                <.badge mono>runner.ex:222-281</.badge>
+                <span class="text-caption text-ink-muted">mono</span>
+              </div>
             </div>
           </.both>
         </.section>
 
         <.section title="Buttons">
-          <.both :let={_theme}>
+          <.both :let={theme}>
             <div class="space-y-space-sm">
               <div
-                :for={variant <- [:primary, :outline, :secondary, :ghost, :danger]}
+                :for={variant <- [:primary, :outline, :secondary, :ghost]}
                 class="flex flex-wrap items-center gap-space-sm"
               >
                 <.btn :for={size <- [:xs, :sm, :md, :lg]} variant={variant} size={size}>
                   {variant} {size}
                 </.btn>
                 <.btn variant={variant} disabled>disabled</.btn>
-                <.icon_btn :for={size <- [:sm, :md, :lg]} variant={variant} size={size} title="Refresh">
+                <.icon_btn variant={variant} size={:sm} title="Refresh">
+                  <.icon name="hero-arrow-path" class="size-3.5" />
+                </.icon_btn>
+                <.icon_btn variant={variant} size={:md} title="Refresh">
+                  <.icon name="hero-arrow-path" class="size-4" />
+                </.icon_btn>
+                <.icon_btn variant={variant} size={:lg} title="Refresh">
+                  <.icon name="hero-arrow-path" class="size-5" />
+                </.icon_btn>
+                <.icon_btn variant={variant} title="Refresh (disabled)" disabled>
                   <.icon name="hero-arrow-path" class="size-4" />
                 </.icon_btn>
               </div>
-              <div class="flex flex-wrap items-center gap-space-sm">
-                <.button variant="primary">core button primary</.button>
-                <.button>core button default</.button>
+              <div class="flex flex-wrap items-center gap-space-md">
+                <.btn :for={size <- [:xs, :sm, :md]} variant={:link} size={size} navigate={~p"/design"}>
+                  View details {size}
+                </.btn>
+                <span class="text-caption text-ink-muted">link: navigation, accent</span>
               </div>
+              <div class="flex flex-wrap items-center gap-space-sm">
+                <.btn icon="hero-play">Run</.btn>
+                <.btn busy>Training</.btn>
+                <.btn busy variant={:outline} busy_label="Saving">Save case</.btn>
+                <.btn busy variant={:ghost} size={:sm}>Re-run</.btn>
+                <span class="text-caption text-ink-muted">busy: spinner in the button's own color</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-space-sm">
+                <.btn
+                  id={"design-cancel-run-#{theme}"}
+                  variant={:outline}
+                  size={:sm}
+                  reach={:local}
+                  target="run pos-0412"
+                >
+                  Cancel run
+                </.btn>
+                <span class="text-caption text-ink-muted">a Cancel is outline; this one writes local</span>
+              </div>
+              <form class="flex flex-wrap items-center gap-space-sm" id={"design-promote-#{theme}"}>
+                <.btn size={:sm} name="target" value="test" type="button">Test</.btn>
+                <.btn size={:sm} name="target" value="production" type="button">Production</.btn>
+                <span class="text-caption text-ink-muted">name and value, for a form action</span>
+              </form>
             </div>
           </.both>
         </.section>
@@ -630,6 +1052,29 @@ defmodule ChatWeb.DesignLive do
               />
               <.input type="textarea" name={"design-textarea-#{theme}"} value="a textarea" label="Textarea" />
               <.input type="checkbox" name={"design-checkbox-#{theme}"} value={true} label="Checkbox" />
+              <div>
+                <h4 class="mb-space-sm text-label text-ink-muted">Inline, size :sm, in table rows</h4>
+                <.table
+                  id={"design-inline-table-#{theme}"}
+                  rows={[%{id: 1, key: "access_token", errors: []}, %{id: 2, key: "refresh_token", errors: ["must not be empty"]}]}
+                >
+                  <:col :let={row} label="Credential"><span class="text-ref">{row.key}</span></:col>
+                  <:col :let={row} label="Value">
+                    <.input
+                      name={"design-inline-#{row.key}-#{theme}"}
+                      label={"#{row.key} value"}
+                      placeholder="paste a token"
+                      value=""
+                      inline
+                      size={:sm}
+                      errors={row.errors}
+                    />
+                  </:col>
+                  <:action>
+                    <.btn size={:xs}>Save</.btn>
+                  </:action>
+                </.table>
+              </div>
             </div>
           </.both>
         </.section>
@@ -667,9 +1112,26 @@ defmodule ChatWeb.DesignLive do
                     <:actions><.btn size={:xs} variant={:outline}>Action</.btn></:actions>
                   </.section_header>
                   <.divider />
-                  <p class="text-body text-ink">A card body.</p>
+                  <p class="text-body text-ink">A card body, density :regular.</p>
                 </.card_body>
               </.card>
+              <.card>
+                <.card_body density={:compact}>
+                  <p class="text-body text-ink">A card body, density :compact.</p>
+                </.card_body>
+              </.card>
+              <.card>
+                <.card_body density={:flush}>
+                  <.table
+                    id={"design-flush-table-#{theme}"}
+                    rows={[%{id: 1, path: "speech_act.category", value: "directive"}, %{id: 2, path: "score", value: "0.83"}]}
+                  >
+                    <:col :let={row} label="Path"><span class="text-ref">{row.path}</span></:col>
+                    <:col :let={row} label="Value"><span class="text-value">{row.value}</span></:col>
+                  </.table>
+                </.card_body>
+              </.card>
+              <p class="text-caption text-ink-muted">density :flush: the table runs to the panel edge.</p>
               <.header>
                 Core header
                 <:subtitle>With a subtitle</:subtitle>
@@ -682,18 +1144,37 @@ defmodule ChatWeb.DesignLive do
         <.section title="Table and list">
           <.both :let={theme}>
             <div class="space-y-space-md">
+              <div class="flex flex-wrap items-center justify-between gap-space-sm">
+                <span class="text-subheading text-ink">Intent examples</span>
+                <.reach_badge reach={:local} target="data/intents.json" />
+              </div>
               <.table
                 id={"design-table-#{theme}"}
                 rows={[
-                  %{id: 1, path: "speech_act.category", value: "directive"},
-                  %{id: 2, path: "entities.0.type", value: "device"},
-                  %{id: 3, path: "score", value: "0.83"},
-                  %{id: 4, path: "text", value: "turn on the kitchen light"}
+                  %{id: 1, path: "speech_act.category", value: "directive", origin: :computed},
+                  %{id: 2, path: "config.domain_lemmas", value: "%{}", origin: :default},
+                  %{id: 3, path: "score", value: "0.83", origin: :computed},
+                  %{id: 4, path: "config.gazetteer", value: "nil", origin: :unavailable},
+                  %{id: 5, path: "text", value: "turn on the kitchen light", origin: :computed}
                 ]}
+                row_class={&Runner.origin_style(&1.origin).row}
               >
                 <:col :let={row} label="Path"><span class="text-ref">{row.path}</span></:col>
                 <:col :let={row} label="Value"><span class="text-value">{row.value}</span></:col>
+                <:col :let={row} label="Came from"><Runner.origin origin={row.origin} /></:col>
+                <:action>
+                  <.icon_btn size={:sm} title="Edit record"><.icon name="hero-pencil" /></.icon_btn>
+                  <.icon_btn size={:sm} title="Delete record"><.icon name="hero-trash" /></.icon_btn>
+                </:action>
               </.table>
+              <.page_bar
+                page={@sample_page}
+                page_size={50}
+                total={1204}
+                matching={312}
+                event="design_page"
+                label={"Sample pages, #{theme}"}
+              />
               <.list>
                 <:item title="World">default</:item>
                 <:item title="Language">en</:item>
@@ -708,9 +1189,22 @@ defmodule ChatWeb.DesignLive do
               <Runner.result_panel
                 outcome={@returned}
                 label="ChatWeb.DesignLive.sample_with_every_origin/1"
+                world_id={@current_world_id}
+                expected_sources={["ChatWeb.DesignLive.sample_with_every_origin"]}
                 comparison={@failing}
               />
-              <Runner.result_panel outcome={@raised} label="ChatWeb.DesignLive.sample_that_raises/1" />
+              <Runner.result_panel
+                outcome={@unrecorded}
+                label="ChatWeb.DesignLive.sample_without_provenance/1"
+                world_id={@current_world_id}
+                expected_sources={["ChatWeb.DesignLive.sample_without_provenance"]}
+              />
+              <Runner.result_panel
+                outcome={@raised}
+                label="ChatWeb.DesignLive.sample_that_raises/1"
+                world_id={@current_world_id}
+                expected_sources={["ChatWeb.DesignLive.sample_that_raises"]}
+              />
               <.card>
                 <.card_body>
                   <Diff.diff comparison={@passing} />
@@ -718,10 +1212,23 @@ defmodule ChatWeb.DesignLive do
               </.card>
               <.card>
                 <.card_body class="space-y-space-sm">
-                  <h3 class="text-heading text-ink">Raw term with a stand-in path</h3>
+                  <h3 class="text-heading text-ink">Raw term with stand-in paths, each by its origin</h3>
                   <Diff.term
-                    term={Comparison.normalize(%{entity: %{familiarity: 0.5, count: 2}, raw: {:ok, []}})}
-                    defaulted={[["entity", "familiarity"]]}
+                    term={
+                      Comparison.normalize(%{
+                        entity: %{familiarity: 0.5, count: 2},
+                        memory: %{context: []},
+                        config: %{gazetteer: nil, threshold: 0.4},
+                        raw: {:ok, []}
+                      })
+                    }
+                    stand_ins={[
+                      %{path: ["entity", "familiarity"], origin: :default},
+                      %{path: ["memory", "context"], origin: :absent},
+                      %{path: ["config", "gazetteer"], origin: :unavailable},
+                      %{path: ["config", "threshold"], origin: :default},
+                      %{path: ["config", "threshold"], origin: :absent}
+                    ]}
                   />
                 </.card_body>
               </.card>
@@ -739,8 +1246,11 @@ defmodule ChatWeb.DesignLive do
   slot :inner_block, required: true
 
   defp section(assigns) do
+    anchor = assigns.title |> String.downcase() |> String.replace(~r/[^a-z0-9]+/, "-")
+    assigns = assign(assigns, :anchor, anchor)
+
     ~H"""
-    <section class="space-y-space-sm">
+    <section id={@anchor} class="space-y-space-sm">
       <h2 class="text-heading text-ink">{@title}</h2>
       {render_slot(@inner_block)}
     </section>
