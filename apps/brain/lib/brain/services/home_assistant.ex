@@ -70,6 +70,14 @@ defmodule Brain.Services.HomeAssistant do
     }
   end
 
+  # An intent whose action maps to Home Assistant services is a device
+  # action (the call that `enrich/3` makes in `handle_action/7`); any other
+  # intent only reads state.
+  @impl true
+  def writes?(intent) do
+    intent |> extract_action_suffix() |> resolve_ha_services() != nil
+  end
+
   @impl true
   def health_check(credentials) do
     url = Map.get(credentials, :url, Map.get(credentials, "url"))
