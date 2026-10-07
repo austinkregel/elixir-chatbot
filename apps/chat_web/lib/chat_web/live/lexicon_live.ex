@@ -195,11 +195,7 @@ defmodule ChatWeb.LexiconLive do
                 <dl class="mt-space-sm grid grid-cols-3 gap-y-space-xs text-body text-ink">
                   <dt class="text-ink-muted">Negates</dt>
                   <dd class="col-span-2">
-                    <%= if @result.negation.negates do %>
-                      <.badge variant={:error}>yes</.badge>
-                    <% else %>
-                      <.badge>no</.badge>
-                    <% end %>
+                    <.badge>{if @result.negation.negates, do: "yes", else: "no"}</.badge>
                   </dd>
 
                   <dt class="text-ink-muted">Closed class</dt>
