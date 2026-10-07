@@ -122,8 +122,16 @@ defmodule Brain do
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
     - `:timeout` - Call timeout in ms (default: 90_000)
+
+  Whether the turn writes is the conversation's `:side_effects`, set by
+  `create_conversation/1`; passing `:side_effects` here raises.
   """
   def evaluate(conversation_id, input, opts \\ []) do
+    if Keyword.has_key?(opts, :side_effects) do
+      raise ArgumentError,
+            "Brain.evaluate does not take :side_effects; it is set for the whole conversation by Brain.create_conversation/1"
+    end
+
     server = Keyword.get(opts, :server, __MODULE__)
     timeout = Keyword.get(opts, :timeout, 90_000)
     opts = opts |> Keyword.delete(:server) |> Keyword.delete(:timeout)
@@ -139,10 +147,31 @@ defmodule Brain do
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
     - `:world_id` - The training world to use for this conversation (default: "default")
+    - `:side_effects` - whether the conversation and its turns write what they
+      learn: graph nodes, beliefs, user-model facts, episodes, learner files,
+      entity candidates, Gazetteer preferences, Ouro debug and training data,
+      and service calls that change state, such as a Home Assistant action.
+      Defaults to `true`. A conversation created with `false` (a benchmark,
+      for one) writes none of them; a service call that would change state is
+      refused and reported as an enrichment failure. Any other value raises.
   """
   def create_conversation(opts \\ []) do
     server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, {:create_conversation, opts})
+    side_effects = conversation_side_effects!(opts)
+    GenServer.call(server, {:create_conversation, Keyword.put(opts, :side_effects, side_effects)})
+  end
+
+  # Checked in the caller's process, so a bad value raises there rather than
+  # inside the Brain server.
+  defp conversation_side_effects!(opts) do
+    case Keyword.get(opts, :side_effects, true) do
+      value when is_boolean(value) ->
+        value
+
+      other ->
+        raise ArgumentError,
+              "Brain.create_conversation option :side_effects must be true or false, got: #{inspect(other)}"
+    end
   end
 
   @doc """
@@ -330,10 +359,12 @@ defmodule Brain do
   def handle_call({:create_conversation, opts}, _from, state) do
     conversation_id = generate_conversation_id()
     world_id = Keyword.get(opts, :world_id, "default")
+    side_effects = Keyword.get(opts, :side_effects, true)
 
     conversation = %{
       id: conversation_id,
       world_id: world_id,
+      side_effects: side_effects,
       memory: [],
       active_context: nil,
       created_at: System.system_time(:millisecond),
@@ -350,7 +381,9 @@ defmodule Brain do
       world_id: world_id
     })
 
-    Brain.Graph.Writer.write_conversation(conversation)
+    if side_effects do
+      Brain.Graph.Writer.write_conversation(conversation)
+    end
 
     {:reply, {:ok, conversation_id}, updated_state}
   end
@@ -726,7 +759,12 @@ defmodule Brain do
   defp do_evaluate(conversation_id, conversation, input, opts, state) do
     now = System.system_time(:millisecond)
     world_id = Map.get(conversation, :world_id, "default")
-    opts_with_world = Keyword.put(opts, :world_id, world_id)
+    side_effects = Map.fetch!(conversation, :side_effects)
+
+    opts_with_world =
+      opts
+      |> Keyword.put(:world_id, world_id)
+      |> Keyword.put(:side_effects, side_effects)
     ml_config = Application.get_env(:brain, :ml) || Application.get_env(:chat_bot, :ml) || []
 
     {response, processing_method, context} =
@@ -772,12 +810,14 @@ defmodule Brain do
         {[user_message, assistant_message], response}
       end
 
-    Enum.each(new_messages, fn msg ->
-      analysis_for_msg =
-        if msg.role == "user", do: Map.get(context, :analysis_model), else: nil
+    if side_effects do
+      Enum.each(new_messages, fn msg ->
+        analysis_for_msg =
+          if msg.role == "user", do: Map.get(context, :analysis_model), else: nil
 
-      Brain.Graph.Writer.write_message(conversation_id, msg, analysis_for_msg)
-    end)
+        Brain.Graph.Writer.write_message(conversation_id, msg, analysis_for_msg)
+      end)
+    end
 
     updated_conversation =
       conversation
@@ -786,7 +826,7 @@ defmodule Brain do
       |> Map.put(:last_activity, System.system_time(:millisecond))
 
     updated_learning_queue =
-      if learning_response != nil do
+      if side_effects and learning_response != nil do
         learning_entry = %{
           conversation_id: conversation_id,
           world_id: world_id,
@@ -802,14 +842,17 @@ defmodule Brain do
 
     user_id = Keyword.get(opts, :user_id)
     entities = Map.get(context, :entities, [])
-    extract_and_store_beliefs(input, entities, user_id, conversation_id)
-    feed_entities_to_world(entities, world_id, input)
 
-    if ml_config[:enabled] and entities != [] and Config.auto_extraction_enabled?() do
+    if side_effects do
+      extract_and_store_beliefs(input, entities, user_id, conversation_id)
+      feed_entities_to_world(entities, world_id, input)
+    end
+
+    if side_effects and ml_config[:enabled] and entities != [] and Config.auto_extraction_enabled?() do
       Learner.learn_from_classical_extraction(state.persona.name, entities, input)
     end
 
-    if learning_response != nil and processing_method != :response_deferred do
+    if side_effects and learning_response != nil and processing_method != :response_deferred do
       Task.start(fn ->
         interpretation = build_interpretation_from_context(input, context)
 
@@ -862,7 +905,7 @@ defmodule Brain do
         previous_entities: length(previous_context[:entities] || [])
       })
 
-      handle_followup_message(persona, input, previous_context)
+      handle_followup_message(persona, input, previous_context, opts)
     else
       process_new_message(persona, input, memory, opts)
     end
@@ -873,7 +916,8 @@ defmodule Brain do
     world_id = Keyword.get(opts, :world_id, "default")
     Process.put(:current_world_id, world_id)
 
-    if Config.enabled?() and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
+    if Config.enabled?() and
+         SelfKnowledgeAnalyzer.is_self_knowledge_query?(input, side_effects: Keyword.fetch!(opts, :side_effects)) do
       Progress.report(opts, :meta_cognitive_query, %{
         query_type: :self_knowledge
       })
@@ -1029,8 +1073,11 @@ defmodule Brain do
     end
   end
 
-  defp handle_followup_message(persona, input, previous_context) do
-    analysis_model = run_analysis_pipeline(input, [], []) |> materialize_profiles()
+  defp handle_followup_message(persona, input, previous_context, opts) do
+    side_effects = Keyword.fetch!(opts, :side_effects)
+
+    analysis_model =
+      run_analysis_pipeline(input, [], side_effects: side_effects) |> materialize_profiles()
 
     best_analysis =
       analysis_model.analyses
@@ -1066,7 +1113,7 @@ defmodule Brain do
     })
 
     if merged_context.all_required_filled do
-      response = generate_intent_response(merged_context, persona)
+      response = generate_intent_response(merged_context, persona, side_effects)
 
       context = %{
         intent: merged_context.intent,
@@ -1200,10 +1247,10 @@ defmodule Brain do
     %{}
   end
 
-  defp generate_intent_response(context, _persona) do
+  defp generate_intent_response(context, _persona, side_effects) do
     intent = context.intent
     entities = slots_to_entities(context.slots)
-    {:ok, response, _type} = Generator.generate(intent, entities, nil)
+    {:ok, response, _type} = Generator.generate(intent, entities, nil, side_effects: side_effects)
     response
   end
 
@@ -1369,13 +1416,16 @@ defmodule Brain do
 
     analysis_intent_confidence = get_analysis_intent_confidence(intent_analysis)
 
+    side_effects = Keyword.fetch!(opts, :side_effects)
+
     disambiguation_opts =
       if best_analysis do
         base = [
           discourse: Map.get(best_analysis, :discourse),
           speech_act: Map.get(best_analysis, :speech_act),
           world_id: world_id,
-          reuse_entities: analysis_entities
+          reuse_entities: analysis_entities,
+          side_effects: side_effects
         ]
 
         if analysis_intent && analysis_intent != "" do
@@ -1384,7 +1434,7 @@ defmodule Brain do
           base
         end
       else
-        [world_id: world_id]
+        [world_id: world_id, side_effects: side_effects]
       end
 
     all_analysis_entities = union_chunk_entities(analysis_model.analyses)
@@ -1505,15 +1555,17 @@ defmodule Brain do
       intent: intent
     }
 
-    Learner.learn_from_conversation(persona.name, input, analysis_for_learning)
+    if side_effects do
+      Learner.learn_from_conversation(persona.name, input, analysis_for_learning)
 
-    Progress.report(opts, :learning_complete, %{
-      intent: intent,
-      entities_count: length(entities)
-    })
+      Progress.report(opts, :learning_complete, %{
+        intent: intent,
+        entities_count: length(entities)
+      })
 
-    conversation_id = Keyword.get(opts, :conversation_id)
-    track_stance(conversation_id, intent, best_analysis, opts)
+      conversation_id = Keyword.get(opts, :conversation_id)
+      track_stance(conversation_id, intent, best_analysis, opts)
+    end
 
     {response, response_type} =
       generate_analysis_response_with_type(intent, entities, analysis_model, persona, input, opts)
@@ -1718,7 +1770,8 @@ defmodule Brain do
       user_id: Keyword.get(opts, :user_id),
       conversation_id: Keyword.get(opts, :conversation_id),
       unified_context: unified_context,
-      dry_run_ouro: Keyword.get(opts, :dry_run_ouro, false)
+      dry_run_ouro: Keyword.get(opts, :dry_run_ouro, false),
+      side_effects: Keyword.fetch!(opts, :side_effects)
     }
 
     case Generator.generate_via_synthesis(analysis_model, intent, entities, query_text, gen_opts) do
@@ -2117,7 +2170,7 @@ defmodule Brain do
     _ -> []
   end
 
-  defp handle_meta_cognitive_query(_persona, input, user_id, _opts) do
+  defp handle_meta_cognitive_query(_persona, input, user_id, opts) do
     Logger.info("Handling meta-cognitive query", %{input: input, user_id: user_id})
     assessment = SelfKnowledgeAnalyzer.build_self_knowledge_assessment(user_id)
 
@@ -2129,7 +2182,7 @@ defmodule Brain do
         }
       )
 
-    if user_id do
+    if user_id && Keyword.fetch!(opts, :side_effects) do
       disclosed_keys =
         (assessment.discloseable ++ assessment.inferred_uncertain)
         |> Enum.map(& &1.key)
