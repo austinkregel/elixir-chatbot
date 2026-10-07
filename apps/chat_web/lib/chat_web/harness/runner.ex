@@ -182,23 +182,34 @@ defmodule ChatWeb.Harness.Runner do
 
   def result_panel(assigns) do
     ~H"""
-    <div class={["space-y-4", @class]}>
-      <div class="flex flex-wrap items-center gap-3">
-        <span class="font-mono text-xs text-base-content/60">{@label}</span>
-        <.badge variant={if(@outcome.status == :ok, do: :info, else: :error)} size={:xs}>
-          {if @outcome.status == :ok, do: "returned", else: "raised"}
-        </.badge>
-        <span class="font-mono text-xs text-base-content/50">
+    <div class={["space-y-space-xl", @class]}>
+      <div class="flex flex-wrap items-center gap-space-sm">
+        <span class="text-ref text-ink">{@label}</span>
+        <span
+          :if={@outcome.status == :ok}
+          class="inline-flex items-center rounded-sm bg-surface-sunk px-space-xs text-caption font-semibold text-ink-muted"
+        >
+          returned
+        </span>
+        <span
+          :if={@outcome.status == :raised}
+          class="inline-flex items-center gap-space-xs rounded-sm bg-verdict-error-wash px-space-xs text-caption font-semibold text-verdict-error"
+        >
+          <.mark shape={:alert_triangle} class="size-3" /> raised
+        </span>
+        <span class="text-ref text-ink-muted">
           {format_duration(@outcome.duration_us)}
         </span>
       </div>
 
-      <.card :if={@outcome.status == :raised} class="border-error/40 bg-error/5">
-        <.card_body class="space-y-2">
-          <.section_header>The subsystem raised</.section_header>
-          <p class="font-mono text-sm text-error">{error_message(@outcome.error)}</p>
-          <pre class="overflow-x-auto whitespace-pre-wrap rounded bg-base-200 p-3 font-mono text-xs text-base-content/80"><%= format_stacktrace(@outcome.stacktrace) %></pre>
-          <p class="text-xs text-base-content/60">
+      <.card :if={@outcome.status == :raised} class="border-verdict-error bg-verdict-error-wash">
+        <.card_body class="space-y-space-sm">
+          <h3 class="flex items-center gap-space-sm text-heading text-verdict-error">
+            <.mark shape={:alert_triangle} class="size-4" /> The subsystem raised
+          </h3>
+          <p class="text-value-strong text-verdict-error">{error_message(@outcome.error)}</p>
+          <pre class="overflow-x-auto whitespace-pre-wrap bg-surface-sunk p-space-md text-term text-ink"><%= format_stacktrace(@outcome.stacktrace) %></pre>
+          <p class="text-caption text-ink">
             This is the verification result, not a missing one. It is recorded under its own
             status so it is never counted as a wrong answer.
           </p>
@@ -206,71 +217,75 @@ defmodule ChatWeb.Harness.Runner do
       </.card>
 
       <.card :if={@comparison}>
-        <.card_body class="space-y-2">
-          <.section_header>Against the saved expectation</.section_header>
+        <.card_body class="space-y-space-sm">
+          <h3 class="text-heading text-ink">Against the saved expectation</h3>
           <Diff.diff comparison={@comparison} />
         </.card_body>
       </.card>
 
       <.card :if={@outcome.status == :ok and @result != []}>
-        <.card_body class="space-y-2">
-          <.section_header>Result</.section_header>
+        <.card_body class="space-y-space-sm">
+          <h3 class="text-heading text-ink">Result</h3>
           {render_slot(@result, @outcome.value)}
         </.card_body>
       </.card>
 
       <.card>
-        <.card_body class="space-y-3">
-          <.section_header>
-            Where each value came from
-            <:actions>
-              <.badge
-                :if={stand_in_count(@outcome) > 0}
-                variant={:warning}
-                size={:xs}
-              >
-                {stand_in_count(@outcome)} not from your input
-              </.badge>
-            </:actions>
-          </.section_header>
+        <.card_body class="space-y-space-md">
+          <div class="flex flex-wrap items-center justify-between gap-space-sm">
+            <h3 class="text-heading text-ink">Where each value came from</h3>
+            <span
+              :if={stand_in_count(@outcome) > 0}
+              class="inline-flex items-center gap-space-xs rounded-sm bg-origin-standin-wash px-space-xs text-caption font-semibold text-origin-default"
+            >
+              <.mark shape={:hollow_circle} class="size-1.5" />
+              {stand_in_count(@outcome)} not from your input
+            </span>
+          </div>
 
-          <p :if={provenance(@outcome) == []} class="text-xs text-base-content/60">
+          <p :if={provenance(@outcome) == []} class="text-body text-ink-muted">
             Nothing on this path is instrumented yet. That is a gap, not an all-clear:
             a value with no recorded origin is a value nobody has checked the origin of.
           </p>
 
           <div :if={provenance(@outcome) != []} class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-              <thead class="text-xs uppercase tracking-wider text-base-content/50">
+            <table class="w-full text-left text-body-dense tabular-nums">
+              <thead class="bg-surface-sunk">
                 <tr>
-                  <th class="py-2 pr-4 font-semibold">Value</th>
-                  <th class="py-2 pr-4 font-semibold">Came from</th>
-                  <th class="py-2 pr-4 text-right font-semibold">Reads</th>
-                  <th class="py-2 pr-4 font-semibold">Why</th>
-                  <th class="py-2 font-semibold">Recorded by</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Value</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Came from</th>
+                  <th class="h-row-compact px-space-sm text-right text-label text-ink-muted">
+                    Reads
+                  </th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Why</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Recorded by</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-base-300">
+              <tbody class="divide-y divide-border">
                 <tr
                   :for={entry <- grouped_provenance(@outcome)}
-                  class={if(Provenance.stand_in?(entry.origin), do: "bg-warning/5", else: nil)}
+                  class={origin_style(entry.origin).row}
+                  data-origin={entry.origin}
                 >
-                  <td class="py-2 pr-4">
-                    <div class="font-mono text-xs">{Enum.join(entry.path, ".")}</div>
-                    <div class="font-mono text-xs text-base-content/60">
+                  <td class="px-space-sm py-space-xs align-top">
+                    <div class="text-ref text-ink">{Enum.join(entry.path, ".")}</div>
+                    <div class={[
+                      "text-value text-ink",
+                      origin_style(entry.origin).underline
+                    ]}>
                       {truncate(inspect(entry.value))}
                     </div>
                   </td>
-                  <td class="py-2 pr-4">
-                    <.badge variant={origin_variant(entry.origin)} size={:xs}>
-                      {origin_label(entry.origin)}
-                    </.badge>
+                  <td class="px-space-sm py-space-xs align-top">
+                    <.origin origin={entry.origin} />
                   </td>
-                  <td class="py-2 pr-4 text-right font-mono text-xs">{entry.reads}</td>
-                  <td class="py-2 pr-4 text-xs text-base-content/60">
+                  <td class="px-space-sm py-space-xs align-top text-right text-value text-score-count">
+                    {entry.reads}
+                  </td>
+                  <td class="px-space-sm py-space-xs align-top text-body-dense text-ink-muted">
                     {entry.meta["reason"] || entry.meta["file"] || "—"}
                   </td>
-                  <td class="py-2 font-mono text-[11px] text-base-content/50">
+                  <td class="px-space-sm py-space-xs align-top text-ref text-ink-muted">
                     {entry.source}
                   </td>
                 </tr>
@@ -281,12 +296,40 @@ defmodule ChatWeb.Harness.Runner do
       </.card>
 
       <.card :if={@outcome.status == :ok}>
-        <.card_body class="space-y-2">
-          <.section_header>Raw term</.section_header>
+        <.card_body class="space-y-space-sm">
+          <h3 class="text-heading text-ink">Raw term</h3>
           <Diff.term term={normalized(@outcome.value)} defaulted={stand_in_paths(@outcome)} />
         </.card_body>
       </.card>
     </div>
+    """
+  end
+
+  @doc """
+  The tag for where a value came from: its origin's mark, color and wording.
+
+  `origin` is one of `Brain.Provenance`'s five origins, or `:unobserved` for a
+  value provenance could not see. Each has one treatment: computed is a filled
+  ink circle, declared a filled slate square, a fallback default a hollow ochre
+  circle on the stand-in wash, absent a dotted sienna circle on its wash, an
+  unreadable source a struck red circle on its wash, and not observed a dotted
+  ink-muted square. Computed is plain ink, never a success hue: an origin is
+  not a judgment. Any other origin raises.
+  """
+  attr :origin, :atom, required: true
+
+  def origin(assigns) do
+    assigns = assign(assigns, :style, origin_style(assigns.origin))
+
+    ~H"""
+    <span class={[
+      "inline-flex items-center gap-space-xs rounded-sm px-space-xs text-caption font-semibold whitespace-nowrap",
+      @style.text,
+      @style.tag
+    ]}>
+      <.mark shape={@style.mark} class="size-1.5" />
+      {@style.label}
+    </span>
     """
   end
 
@@ -304,27 +347,27 @@ defmodule ChatWeb.Harness.Runner do
 
   def case_list(assigns) do
     ~H"""
-    <div class={["space-y-2", @class]}>
-      <p :if={@cases == []} class="text-sm text-base-content/60">
+    <div class={["space-y-space-sm", @class]}>
+      <p :if={@cases == []} class="text-body text-ink-muted">
         No saved cases for this subsystem yet. Nothing here has been verified by hand.
       </p>
 
       <div
         :for={saved <- @cases}
-        class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-base-300 p-3"
+        class="flex min-h-row-regular flex-wrap items-center justify-between gap-space-md rounded-md border border-border bg-surface px-space-md py-space-sm"
       >
-        <div class="min-w-0 space-y-1">
-          <div class="flex items-center gap-2">
+        <div class="min-w-0 space-y-space-xs">
+          <div class="flex items-center gap-space-sm">
             <Diff.verdict status={saved.status} />
-            <span class="truncate text-sm font-medium">{saved.name}</span>
+            <span class="truncate text-body font-semibold text-ink">{saved.name}</span>
           </div>
-          <div class="font-mono text-[11px] text-base-content/50">
-            world {saved.world_id}
+          <div class="flex flex-wrap items-center gap-space-xs text-ref text-ink-muted">
+            <span class="rounded-sm bg-surface-sunk px-space-xs">world {saved.world_id}</span>
             <span :if={saved.last_run_at}>· last run {saved.last_run_at}</span>
             <span :if={is_nil(saved.last_run_at)}>· never run</span>
           </div>
         </div>
-        <div :if={@actions != []} class="flex shrink-0 items-center gap-2">
+        <div :if={@actions != []} class="flex shrink-0 items-center gap-space-sm">
           {render_slot(@actions, saved)}
         </div>
       </div>
@@ -384,17 +427,73 @@ defmodule ChatWeb.Harness.Runner do
     outcome |> provenance() |> Provenance.stand_ins() |> Enum.map(& &1.path)
   end
 
-  defp origin_variant(:computed), do: :success
-  defp origin_variant(:declared), do: :info
-  defp origin_variant(:default), do: :warning
-  defp origin_variant(:absent), do: :warning
-  defp origin_variant(:unavailable), do: :error
+  # One treatment per origin. A function clause per origin, so an origin with
+  # no treatment raises rather than rendering as some other one.
+  defp origin_style(:computed) do
+    %{
+      label: "your input",
+      mark: :filled_circle,
+      text: "text-origin-computed",
+      tag: nil,
+      row: nil,
+      underline: "underline underline-offset-2 decoration-solid decoration-origin-computed"
+    }
+  end
 
-  defp origin_label(:computed), do: "your input"
-  defp origin_label(:declared), do: "declared"
-  defp origin_label(:default), do: "fallback default"
-  defp origin_label(:absent), do: "no data — stand-in"
-  defp origin_label(:unavailable), do: "source unreadable"
+  defp origin_style(:declared) do
+    %{
+      label: "declared",
+      mark: :filled_square,
+      text: "text-origin-declared",
+      tag: "bg-origin-declared-wash",
+      row: nil,
+      underline: "underline underline-offset-2 decoration-solid decoration-origin-declared"
+    }
+  end
+
+  defp origin_style(:default) do
+    %{
+      label: "fallback default",
+      mark: :hollow_circle,
+      text: "text-origin-default",
+      tag: "bg-origin-standin-wash",
+      row: "bg-origin-standin-wash",
+      underline: "underline underline-offset-2 decoration-dashed decoration-origin-default"
+    }
+  end
+
+  defp origin_style(:absent) do
+    %{
+      label: "no data — stand-in",
+      mark: :dotted_circle,
+      text: "text-origin-absent",
+      tag: "bg-origin-absent-wash",
+      row: "bg-origin-absent-wash",
+      underline: "underline underline-offset-2 decoration-dotted decoration-origin-absent"
+    }
+  end
+
+  defp origin_style(:unavailable) do
+    %{
+      label: "source unreadable",
+      mark: :struck_circle,
+      text: "text-origin-unavailable",
+      tag: "bg-origin-unavailable-wash",
+      row: "bg-origin-unavailable-wash",
+      underline: "underline underline-offset-2 decoration-wavy decoration-origin-unavailable"
+    }
+  end
+
+  defp origin_style(:unobserved) do
+    %{
+      label: "not observed",
+      mark: :dotted_square,
+      text: "text-origin-unobserved",
+      tag: nil,
+      row: nil,
+      underline: nil
+    }
+  end
 
   defp format_duration(us) when us < 1_000, do: "#{us} us"
   defp format_duration(us) when us < 1_000_000, do: "#{Float.round(us / 1_000, 1)} ms"
