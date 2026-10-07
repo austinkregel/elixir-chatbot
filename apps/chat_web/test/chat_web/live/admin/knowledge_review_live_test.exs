@@ -219,10 +219,10 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
       candidate = build_test_candidate("Test", "High confidence claim", confidence: 0.95)
       ReviewQueue.add(candidate)
 
-      {:ok, _view, html} = live(conn, "/knowledge-review")
+      {:ok, view, html} = live(conn, "/knowledge-review")
 
       assert html =~ "95"
-      assert html =~ "progress"
+      assert has_element?(view, ~s([role="meter"][aria-label="Confidence"]))
     end
   end
 
