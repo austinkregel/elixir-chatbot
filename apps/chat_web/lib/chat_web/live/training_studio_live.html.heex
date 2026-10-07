@@ -177,6 +177,9 @@
           </.card>
 
           <.card class="overflow-hidden">
+            <div :if={source_editable?(assigns)} class="flex items-center px-space-sm py-space-xs border-b border-border">
+              <.reach_badge id="records-reach" reach={:local} target={Path.relative_to_cwd(@source_desc.path)} />
+            </div>
             <div class="overflow-x-auto">
               <table class="w-full text-left text-body-dense text-ink">
                 <thead class="bg-surface-sunk">
@@ -185,7 +188,7 @@
                 </thead>
                 <tbody>
                   <%= for {record, idx} <- Enum.with_index(@records) do %>
-                    <% abs_idx = (@page - 1) * 50 + idx %>
+                    <% abs_idx = (@page - 1) * @page_size + idx %>
                     <%= if assigns[:editing_index] == abs_idx do %>
                       <tr class="bg-accent-wash border-b border-border">
                         <td colspan="10" class="px-space-sm py-space-sm">
@@ -230,7 +233,15 @@
                               <% _ -> %>
                                 <span class="text-caption text-ink-muted">Inline edit not available</span>
                             <% end %>
-                            <.btn type="submit" size={:xs}>Save</.btn>
+                            <.btn
+                              id={"record-#{abs_idx}-save"}
+                              type="submit"
+                              size={:xs}
+                              reach={:local}
+                              target={Path.relative_to_cwd(@source_desc.path)}
+                            >
+                              Save
+                            </.btn>
                             <.btn type="button" phx-click="cancel_edit" variant={:ghost} size={:xs}>Cancel</.btn>
                           </form>
                         </td>
@@ -241,6 +252,9 @@
                         kind={@source_desc.record_kind}
                         index={abs_idx}
                         editable={source_editable?(assigns)}
+                        source_path={Path.relative_to_cwd(@source_desc.path)}
+                        confirm_open={@open_confirm == "confirm-delete-record-#{abs_idx}"}
+                        confirm_error={@confirm_error}
                       />
                     <% end %>
                   <% end %>
@@ -249,40 +263,15 @@
             </div>
 
             <!-- Pagination -->
-            <div :if={@total_pages > 1} class="flex items-center justify-between px-space-lg py-space-md border-t border-border">
-              <div class="text-caption text-ink-muted">
-                Page {@page} of {@total_pages} · {@total_records} total records
-              </div>
-              <div class="flex gap-space-xs">
-                <.btn
-                  :if={@page > 1}
-                  phx-click="page"
-                  phx-value-page={@page - 1}
-                  variant={:ghost}
-                  size={:xs}
-                >
-                  Prev
-                </.btn>
-                <.btn
-                  :for={p <- visible_pages(@page, @total_pages)}
-                  phx-click="page"
-                  phx-value-page={p}
-                  variant={if p == @page, do: :primary, else: :ghost}
-                  size={:xs}
-                >
-                  {p}
-                </.btn>
-                <.btn
-                  :if={@page < @total_pages}
-                  phx-click="page"
-                  phx-value-page={@page + 1}
-                  variant={:ghost}
-                  size={:xs}
-                >
-                  Next
-                </.btn>
-              </div>
-            </div>
+            <.page_bar
+              :if={@total_pages > 1}
+              page={@page}
+              page_size={@page_size}
+              total={@total_records}
+              event="page"
+              label="Record pages"
+              class="px-space-lg py-space-md border-t border-border"
+            />
           </.card>
         <% else %>
           <div class="flex items-center justify-center h-64 text-ink-muted">
