@@ -284,7 +284,7 @@
         <%= if not Brain.SystemStatus.all_ready?() do %>
           <.alert variant={:warning}>
             <div class="flex items-center gap-space-sm">
-              <.icon name="hero-arrow-path" class="size-4 animate-spin text-progress-fill" />
+              <.icon name="hero-arrow-path" class="size-4 motion-safe:animate-spin text-progress-fill" />
               <span>
                 <span class="font-semibold">System initializing...</span>
                 <span class="hidden sm:inline">
@@ -299,7 +299,7 @@
         <%= if @world_models_loading do %>
           <.alert variant={:info}>
             <div class="flex items-center gap-space-sm">
-              <.icon name="hero-arrow-path" class="size-4 animate-spin text-progress-fill" />
+              <.icon name="hero-arrow-path" class="size-4 motion-safe:animate-spin text-progress-fill" />
               <span>
                 <span class="font-semibold">Loading world models...</span>
               </span>
