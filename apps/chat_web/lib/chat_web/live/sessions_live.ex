@@ -871,7 +871,7 @@ defmodule ChatWeb.SessionsLive do
             <span class="text-subheading text-ink truncate">{@goal.topic}</span>
             <%= if @goal.priority != :normal do %>
               <.badge variant={priority_variant(@goal.priority)} class="border border-border-strong">
-                {@goal.priority}
+                {@goal.priority} priority
               </.badge>
             <% end %>
           </div>
@@ -1335,11 +1335,11 @@ defmodule ChatWeb.SessionsLive do
   # HELPERS
   # ============================================================================
 
-  @session_variants %{active: :warning, completed: :success, cancelled: :error}
+  @session_variants %{active: :warning, completed: :success, cancelled: :default}
 
   @goal_variants %{completed: :success, failed: :error, in_progress: :warning, pending: :default}
 
-  @priority_variants %{high: :error, low: :default}
+  @priority_variants %{high: :default, low: :default}
 
   @investigation_variants %{
     concluded: :success,
@@ -1350,14 +1350,14 @@ defmodule ChatWeb.SessionsLive do
 
   @conclusion_variants %{
     hypotheses_supported: :success,
-    hypotheses_falsified: :error,
+    hypotheses_falsified: :default,
     inconclusive: :warning,
     mixed: :warning
   }
 
   @hypothesis_variants %{
     supported: :success,
-    falsified: :error,
+    falsified: :default,
     inconclusive: :warning,
     testing: :info,
     untested: :default
@@ -1368,7 +1368,7 @@ defmodule ChatWeb.SessionsLive do
     :verified => :success,
     :neutral => :default,
     :untrusted => :warning,
-    :blocked => :error
+    :blocked => :default
   }
 
   defp session_variant(status), do: fetch_variant!(@session_variants, status, "session status")
