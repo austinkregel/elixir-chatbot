@@ -3,18 +3,17 @@ defmodule Atlas.Schemas.VerificationCase do
   One human-curated verification scenario: an input to a subsystem, what a
   person decided the right answer is, and what the subsystem last produced.
 
-  Task 039 exists because a feature nobody can exercise in isolation is a
-  feature nobody can check. Austin's constraint, recorded there: *"every feature
-  gets its own page so a human can exercise it in isolation and verify it
-  works"*, and the harness persists expected-versus-actual rather than offering
-  transient inspection, so a scenario checked once stays checked.
+  A feature nobody can exercise in isolation is a feature nobody can check.
+  Every feature gets its own page so a human can exercise it in isolation and
+  verify it works, and the harness persists expected-versus-actual rather than
+  offering transient inspection, so a scenario checked once stays checked.
 
   ## These are not a gold standard
 
-  A gold standard is a bulk corpus for training and evaluation — tasks 013-015.
-  These are a handful of scenarios a person reasoned about, most with no
-  gold-standard analogue. Conflating the two would put hand-picked cases into
-  training data, which is the contamination task 079 spent a day removing.
+  A gold standard is a bulk corpus for training and evaluation. These are a
+  handful of scenarios a person reasoned about, most with no gold-standard
+  analogue. Conflating the two would put hand-picked cases into training data,
+  which is a contamination this repository has already had to remove once.
 
   ## `expected` is partial on purpose
 
@@ -96,8 +95,8 @@ defmodule Atlas.Schemas.VerificationCase do
     )
   end
 
-  # The boundary enforcement task 077 criterion 4 asks for: a subsystem outside
-  # the declared vocabulary cannot enter storage. Without this a typo creates a
+  # Boundary enforcement: a subsystem outside the declared vocabulary cannot
+  # enter storage. Without this a typo creates a
   # case that no page will ever run and that /verify will never list, so it sits
   # in the store reading "pending" forever.
   defp validate_subsystem(changeset) do
