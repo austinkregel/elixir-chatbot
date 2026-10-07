@@ -39,29 +39,55 @@ defmodule ChatWeb.Harness.ResultPanelTest do
         meta: %{"reason" => "the TypeHierarchy ETS table could not be read"}
       )
 
-      %{intent: "greeting"}
+      %{intent: "greeting", config: %{gazetteer: nil, domain_lemmas: %{}}}
     end
+  end
+
+  defp panel(outcome, attrs \\ []) do
+    render_component(
+      &Runner.result_panel/1,
+      Map.merge(
+        %{
+          outcome: outcome,
+          label: "x",
+          world_id: "smart-home",
+          expected_sources: ["Subject", "TypeHierarchy"]
+        },
+        Map.new(attrs)
+      )
+    )
   end
 
   describe "result_panel/1 for a call that returned" do
     test "shows what was called, that it returned, and how long it took" do
       outcome = Runner.run(&Subject.succeed/1, "hello")
 
-      html =
-        render_component(&Runner.result_panel/1,
-          outcome: outcome,
-          label: "SpeechActClassifier.classify/1"
-        )
+      html = panel(outcome, label: "SpeechActClassifier.classify/1")
 
       assert html =~ "SpeechActClassifier.classify/1"
       assert html =~ "returned"
       assert html =~ "Raw term"
     end
 
+    test "shows the world the run used" do
+      outcome = Runner.run(&Subject.succeed/1, "hello")
+
+      html = panel(outcome)
+
+      assert html =~ ~s(data-world="smart-home")
+      assert html =~ "world smart-home"
+    end
+
+    test "does not show an applied language, since nothing in the app provides one" do
+      outcome = Runner.run(&Subject.succeed/1, "hello")
+
+      refute panel(outcome) =~ "language"
+    end
+
     test "renders the returned term" do
       outcome = Runner.run(&Subject.succeed/1, "hello")
 
-      html = render_component(&Runner.result_panel/1, outcome: outcome, label: "x")
+      html = panel(outcome)
 
       assert html =~ "intent"
       assert html =~ "greeting"
@@ -72,7 +98,7 @@ defmodule ChatWeb.Harness.ResultPanelTest do
     test "the exception is the headline, with its stacktrace" do
       outcome = Runner.run(&Subject.fail/1, "hello")
 
-      html = render_component(&Runner.result_panel/1, outcome: outcome, label: "x")
+      html = panel(outcome)
 
       assert html =~ "The subsystem raised"
       assert html =~ "ArgumentError"
@@ -83,34 +109,60 @@ defmodule ChatWeb.Harness.ResultPanelTest do
     test "says plainly that this is a result and not a missing one" do
       outcome = Runner.run(&Subject.fail/1, "hello")
 
-      html = render_component(&Runner.result_panel/1, outcome: outcome, label: "x")
-
-      assert html =~ "This is the verification result, not a missing one"
+      assert panel(outcome) =~ "This is the verification result, not a missing one"
     end
 
     test "no raw-term panel is rendered, since there is no value" do
       outcome = Runner.run(&Subject.fail/1, "hello")
 
-      html = render_component(&Runner.result_panel/1, outcome: outcome, label: "x")
+      refute panel(outcome) =~ "Raw term"
+    end
 
-      refute html =~ "Raw term"
+    test "the world is shown for a raised call too" do
+      outcome = Runner.run(&Subject.fail/1, "hello")
+
+      assert panel(outcome) =~ "world smart-home"
     end
   end
 
   describe "result_panel/1 provenance" do
-    test "an uninstrumented call says so rather than rendering an empty table" do
+    test "an empty trace says which modules recorded nothing, not a blank" do
       outcome = Runner.run(&Subject.succeed/1, "hello")
 
-      html = render_component(&Runner.result_panel/1, outcome: outcome, label: "x")
+      html = panel(outcome, expected_sources: ["Brain.Analysis.TypeHierarchy"])
 
-      assert html =~ "Nothing on this path is instrumented yet"
+      assert html =~ ~s(data-empty="not_instrumented")
+      assert html =~ "Not instrumented"
+      assert html =~ "Brain.Analysis.TypeHierarchy"
       assert html =~ "a gap, not an all-clear"
+    end
+
+    test "expected sources that recorded nothing are named under a trace that has rows" do
+      outcome = Runner.run(&Subject.with_stand_ins/1, "hello")
+
+      html = panel(outcome, expected_sources: ["TypeHierarchy", "Brain.ML.Tokenizer"])
+
+      assert html =~ "config.domain_lemmas"
+      assert html =~ ~s(data-empty="not_instrumented")
+      assert html =~ "Brain.ML.Tokenizer"
+    end
+
+    test "when every expected source reported, there is no empty state" do
+      outcome = Runner.run(&Subject.with_stand_ins/1, "hello")
+
+      refute panel(outcome, expected_sources: ["TypeHierarchy", "Subject"]) =~ "data-empty"
+    end
+
+    test "naming no expected source raises" do
+      outcome = Runner.run(&Subject.succeed/1, "hello")
+
+      assert_raise ArgumentError, ~r/must name at least one/, fn -> panel(outcome, expected_sources: []) end
     end
 
     test "recorded values render with origin, reason and the function responsible" do
       outcome = Runner.run(&Subject.with_stand_ins/1, "hello")
 
-      html = render_component(&Runner.result_panel/1, outcome: outcome, label: "x")
+      html = panel(outcome)
 
       assert html =~ "entity.familiarity"
       assert html =~ "your input"
@@ -123,17 +175,22 @@ defmodule ChatWeb.Harness.ResultPanelTest do
     test "an unreadable source renders as its own origin, not as a fallback" do
       outcome = Runner.run(&Subject.with_stand_ins/1, "hello")
 
-      html = render_component(&Runner.result_panel/1, outcome: outcome, label: "x")
+      assert panel(outcome) =~ "source unreadable"
+    end
 
-      assert html =~ "source unreadable"
+    test "the raw term marks each stand-in by its own origin" do
+      outcome = Runner.run(&Subject.with_stand_ins/1, "hello")
+
+      html = panel(outcome)
+
+      assert html =~ ~s(data-origin="unavailable")
+      assert html =~ ~s(data-origin="default")
     end
 
     test "the stand-in count is in the header, counting grouped rows" do
       outcome = Runner.run(&Subject.with_stand_ins/1, "hello")
 
-      html = render_component(&Runner.result_panel/1, outcome: outcome, label: "x")
-
-      assert html =~ "2 not from your input"
+      assert panel(outcome) =~ "2 not from your input"
     end
 
     test "provenance recorded before a raise is still rendered" do
@@ -146,7 +203,7 @@ defmodule ChatWeb.Harness.ResultPanelTest do
           nil
         )
 
-      html = render_component(&Runner.result_panel/1, outcome: outcome, label: "x")
+      html = panel(outcome, expected_sources: ["T."])
 
       assert html =~ "The subsystem raised"
       assert html =~ "config.x"
@@ -158,12 +215,7 @@ defmodule ChatWeb.Harness.ResultPanelTest do
       outcome = Runner.run(&Subject.succeed/1, "hello")
       comparison = Comparison.compare(%{intent: "farewell"}, outcome.value)
 
-      html =
-        render_component(&Runner.result_panel/1,
-          outcome: outcome,
-          label: "x",
-          comparison: comparison
-        )
+      html = panel(outcome, comparison: comparison)
 
       assert html =~ "Against the saved expectation"
       assert html =~ "Fail"
@@ -173,9 +225,7 @@ defmodule ChatWeb.Harness.ResultPanelTest do
     test "without a comparison that section is absent" do
       outcome = Runner.run(&Subject.succeed/1, "hello")
 
-      html = render_component(&Runner.result_panel/1, outcome: outcome, label: "x")
-
-      refute html =~ "Against the saved expectation"
+      refute panel(outcome) =~ "Against the saved expectation"
     end
   end
 
@@ -187,11 +237,15 @@ defmodule ChatWeb.Harness.ResultPanelTest do
           name: "a plain greeting",
           world_id: "default",
           status: "pending",
+          expected: %{"intent" => "greeting"},
+          last_actual: nil,
           last_run_at: nil
         },
         attrs
       )
     end
+
+    defp actual, do: Comparison.normalize(%{intent: "greeting", score: 0.9, text: "hi"})
 
     test "an empty list says nothing has been verified by hand" do
       html = render_component(&Runner.case_list/1, cases: [])
@@ -211,22 +265,70 @@ defmodule ChatWeb.Harness.ResultPanelTest do
     test "a case that has run shows its verdict and when" do
       html =
         render_component(&Runner.case_list/1,
-          cases: [a_case(%{status: "pass", last_run_at: ~U[2026-10-06 01:02:03.000000Z]})]
+          cases: [
+            a_case(%{status: "pass", last_actual: actual(), last_run_at: ~U[2026-10-06 01:02:03.000000Z]})
+          ]
         )
 
       assert html =~ "Pass"
       assert html =~ "2026-10-06"
     end
 
-    test "every status renders" do
+    test "a pass shows its coverage: asserted of returned, and what went unchecked" do
+      html =
+        render_component(&Runner.case_list/1,
+          cases: [a_case(%{status: "pass", last_actual: actual(), last_run_at: ~U[2026-10-06 01:02:03.000000Z]})]
+        )
+
+      assert html =~ "data-coverage"
+      assert html =~ "of 3"
+      assert html =~ "2 unchecked"
+    end
+
+    test "every verdict carries coverage" do
       cases =
         for {status, index} <- Enum.with_index(["pending", "pass", "fail", "error"]) do
-          a_case(%{status: status, name: "case #{index}"})
+          last_actual =
+            case status do
+              "pending" -> nil
+              "error" -> %{"__error__" => true, "kind" => "RuntimeError", "message" => "boom", "stacktrace" => []}
+              _ -> actual()
+            end
+
+          a_case(%{status: status, name: "case #{index}", last_actual: last_actual})
         end
 
       html = render_component(&Runner.case_list/1, cases: cases)
 
       for label <- ["Not run", "Pass", "Fail", "Raised"], do: assert(html =~ label)
+      assert length(Regex.scan(~r/data-coverage/, html)) == 4
+    end
+
+    test "a case that raised counts only what it asserts, since there is no output" do
+      error = %{"__error__" => true, "kind" => "RuntimeError", "message" => "boom", "stacktrace" => []}
+
+      html = render_component(&Runner.case_list/1, cases: [a_case(%{status: "error", last_actual: error})])
+
+      assert html =~ "values asserted"
+      refute html =~ "unchecked"
+    end
+
+    test "the world stamp is a mono badge" do
+      html = render_component(&Runner.case_list/1, cases: [a_case(%{})])
+
+      assert html =~ ~r/class="[^"]*text-ref[^"]*">\s*world default/
+    end
+
+    test "a pass with no stored output raises" do
+      assert_raise ArgumentError, ~r/no stored output/, fn ->
+        render_component(&Runner.case_list/1, cases: [a_case(%{status: "pass"})])
+      end
+    end
+
+    test "a case that asserts nothing raises" do
+      assert_raise ArgumentError, ~r/asserts nothing/, fn ->
+        render_component(&Runner.case_list/1, cases: [a_case(%{expected: %{}})])
+      end
     end
   end
 end
