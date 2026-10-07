@@ -2,7 +2,7 @@ defmodule Brain.Evaluation.GateTest do
   @moduledoc """
   The regression gate's verdicts: what a present baseline, an absent one, a
   regression within and beyond the allowance, new failed predictions, and an
-  error canary that cannot be measured each produce. `mix evaluate.gate` and the pages report these same verdicts.
+  error canary that cannot be measured (a fail) each produce. `mix evaluate.gate` and the pages report these same verdicts.
   """
   use ExUnit.Case, async: true
 
@@ -12,9 +12,13 @@ defmodule Brain.Evaluation.GateTest do
 
   defp baseline(entries), do: {:ok, entries}
 
-  defp entry(macro_f1, diagnostics \\ nil) do
+  @diagnostics %{"ok" => 90, "unknown" => 1, "errored" => 0}
+
+  defp entry(macro_f1, diagnostics \\ @diagnostics) do
     %{"macro_f1" => macro_f1, "accuracy" => 0.6, "diagnostics" => diagnostics}
   end
+
+  defp current(macro_f1, diagnostics \\ @diagnostics), do: %{"macro_f1" => macro_f1, "diagnostics" => diagnostics}
 
   describe "allowance/1" do
     test "each task's allowance, as a fraction of 1" do
@@ -54,7 +58,7 @@ defmodule Brain.Evaluation.GateTest do
 
   describe "verdict/3 with a baseline" do
     test "a fall within the allowance passes, with the change and the allowance" do
-      verdict = Gate.verdict("intent", baseline(%{"intent" => entry(0.500)}), %{"macro_f1" => 0.496})
+      verdict = Gate.verdict("intent", baseline(%{"intent" => entry(0.500)}), current(0.496))
 
       assert verdict.status == :pass
       assert_in_delta verdict.delta, -0.004, 1.0e-9
@@ -65,14 +69,14 @@ defmodule Brain.Evaluation.GateTest do
     end
 
     test "a gain passes" do
-      verdict = Gate.verdict("speech_act", baseline(%{"speech_act" => entry(0.3)}), %{"macro_f1" => 0.35})
+      verdict = Gate.verdict("speech_act", baseline(%{"speech_act" => entry(0.3)}), current(0.35))
 
       assert verdict.status == :pass
       assert verdict.delta > 0
     end
 
     test "a regression beyond the allowance fails and says by how much" do
-      verdict = Gate.verdict("speech_act", baseline(%{"speech_act" => entry(0.31)}), %{"macro_f1" => 0.29})
+      verdict = Gate.verdict("speech_act", baseline(%{"speech_act" => entry(0.31)}), current(0.29))
 
       assert verdict.status == :fail
       assert_in_delta verdict.delta, -0.02, 1.0e-9
@@ -80,7 +84,7 @@ defmodule Brain.Evaluation.GateTest do
     end
 
     test "the same fall passes a task with a wider allowance" do
-      verdict = Gate.verdict("ner", baseline(%{"ner" => entry(0.31)}), %{"macro_f1" => 0.29})
+      verdict = Gate.verdict("ner", baseline(%{"ner" => entry(0.31)}), current(0.29))
 
       assert verdict.status == :pass
     end
@@ -108,41 +112,54 @@ defmodule Brain.Evaluation.GateTest do
       assert verdict.diagnostics_absent == []
     end
 
-    test "a result with no diagnostics leaves the canary not measured, never zero" do
-      base = baseline(%{"intent" => entry(0.5, %{"unknown" => 0})})
+    test "a measured canary with no new failed predictions passes" do
+      verdict = Gate.verdict("intent", baseline(%{"intent" => entry(0.5)}), current(0.5))
 
-      verdict = Gate.verdict("intent", base, %{"macro_f1" => 0.5})
-
-      assert verdict.canary == :not_measured
-      assert verdict.new_errors == nil
-      assert verdict.diagnostics_absent == [:current]
       assert verdict.status == :pass
+      assert verdict.canary == :measured
+      assert verdict.new_errors == 0
+      assert verdict.diagnostics_absent == []
       assert verdict.failures == []
     end
 
-    test "a baseline with no diagnostics leaves the canary not measured" do
-      base = baseline(%{"intent" => entry(0.5)})
-      current = %{"macro_f1" => 0.5, "diagnostics" => %{"unknown" => 4}}
+    test "a result with no diagnostics fails on an unmeasured canary, never counted as zero" do
+      verdict = Gate.verdict("intent", baseline(%{"intent" => entry(0.5)}), %{"macro_f1" => 0.5})
 
-      verdict = Gate.verdict("intent", base, current)
+      assert verdict.status == :fail
+      assert verdict.canary == :not_measured
+      assert verdict.new_errors == nil
+      assert verdict.diagnostics_absent == [:current]
+      assert verdict.failures == ["error canary not measured: no diagnostics in the latest result"]
+    end
 
+    test "a baseline with no diagnostics fails on an unmeasured canary" do
+      verdict = Gate.verdict("intent", baseline(%{"intent" => entry(0.5, nil)}), current(0.5, %{"unknown" => 4}))
+
+      assert verdict.status == :fail
       assert verdict.canary == :not_measured
       assert verdict.new_errors == nil
       assert verdict.diagnostics_absent == [:baseline]
+      assert verdict.failures == ["error canary not measured: no diagnostics in the baseline"]
     end
 
-    test "neither side with diagnostics names both" do
-      verdict = Gate.verdict("intent", baseline(%{"intent" => entry(0.5)}), %{"macro_f1" => 0.5})
+    test "neither side with diagnostics fails and names both" do
+      verdict = Gate.verdict("intent", baseline(%{"intent" => entry(0.5, nil)}), %{"macro_f1" => 0.5})
 
+      assert verdict.status == :fail
       assert verdict.diagnostics_absent == [:baseline, :current]
+      assert verdict.failures == ["error canary not measured: no diagnostics in the baseline or the latest result"]
     end
 
-    test "an unmeasured canary still judges macro-F1" do
+    test "an unmeasured canary still judges macro-F1, and a regression adds its own reason" do
       verdict = Gate.verdict("intent", baseline(%{"intent" => entry(0.5)}), %{"macro_f1" => 0.4})
 
       assert verdict.status == :fail
       assert verdict.canary == :not_measured
-      assert verdict.failures == ["macro_f1 regressed 10.0pp (allowance: 2.0pp)"]
+
+      assert verdict.failures == [
+               "macro_f1 regressed 10.0pp (allowance: 2.0pp)",
+               "error canary not measured: no diagnostics in the latest result"
+             ]
     end
 
     test "diagnostics that are not a map raise" do
@@ -178,6 +195,19 @@ defmodule Brain.Evaluation.GateTest do
       assert_raise ArgumentError, ~r/the intent baseline has no numeric "macro_f1"/, fn ->
         Gate.verdict("intent", baseline(%{"intent" => %{"accuracy" => 0.7}}), %{"macro_f1" => 0.5})
       end
+    end
+  end
+
+  describe "diagnostics_absent_words/1" do
+    test "names each side, in either order" do
+      assert Gate.diagnostics_absent_words([:baseline]) == "the baseline"
+      assert Gate.diagnostics_absent_words([:current]) == "the latest result"
+      assert Gate.diagnostics_absent_words([:current, :baseline]) == "the baseline or the latest result"
+    end
+
+    test "no side, or an unknown one, raises" do
+      assert_raise ArgumentError, ~r/one or both of :baseline and :current/, fn -> Gate.diagnostics_absent_words([]) end
+      assert_raise ArgumentError, ~r/got \[:other\]/, fn -> Gate.diagnostics_absent_words([:other]) end
     end
   end
 
