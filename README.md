@@ -37,6 +37,7 @@ This is a Phoenix LiveView chatbot application built around **classical NLP tech
 - **Elixir** >= 1.18 (`.tool-versions` pins 1.19.5)
 - **Erlang/OTP** >= 27 (`.tool-versions` pins 28.3.3)
 - **PostgreSQL** — local install or the `apache/age` container via Docker Compose
+- **Node.js with npm** — `mix assets.setup` installs the web fonts from npm (`apps/chat_web/assets/package.json`)
 
 **Optional:**
 
@@ -355,9 +356,9 @@ Tests are tagged for CI optimization:
 
 Assets (aliases defined in `mix.exs`):
 
-- **`mix assets.setup`**: install Tailwind + esbuild if missing
-- **`mix assets.build`**: compile + build Tailwind + esbuild
-- **`mix assets.deploy`**: minify assets + `phx.digest` (for production)
+- **`mix assets.setup`**: install Tailwind + esbuild if missing, and the npm packages in `assets/package.json` (`npm ci`)
+- **`mix assets.build`**: compile + build Tailwind + esbuild, and publish the IBM Plex fonts to `priv/static/fonts` (`mix chat_web.fonts`)
+- **`mix assets.deploy`**: publish the fonts, minify assets + `phx.digest` (for production)
 
 ### Train ML models
 
