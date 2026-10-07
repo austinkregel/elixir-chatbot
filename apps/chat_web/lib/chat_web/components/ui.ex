@@ -658,7 +658,9 @@ defmodule ChatWeb.UI do
   in ochre) or `:device` (actuates an external device: a bolt in red). There is
   no read-only badge; any other reach raises. `target` names what changes, in
   the ref type so an id or a path reads as an identifier; it is required for
-  `:device`.
+  `:device`. The words never break; a long target wraps at any character
+  inside the badge rather than pushing past its container, and carries its
+  full text as a `title`.
   """
   attr :reach, :atom, required: true, values: Map.keys(@reach_badges)
   attr :target, :string, default: nil
@@ -678,7 +680,7 @@ defmodule ChatWeb.UI do
     ~H"""
     <span
       class={[
-        "inline-flex items-center gap-space-xs rounded-sm border px-space-xs text-caption font-semibold whitespace-nowrap",
+        "inline-flex max-w-full items-center gap-space-xs rounded-sm border px-space-xs text-caption font-semibold",
         @style.class,
         @class
       ]}
@@ -686,8 +688,8 @@ defmodule ChatWeb.UI do
       {@rest}
     >
       <span class={[@style.icon, "size-3 shrink-0"]} aria-hidden="true" />
-      {@style.words}
-      <span :if={@target} class="text-ref font-normal">{@target}</span>
+      <span class="shrink-0 whitespace-nowrap">{@style.words}</span>
+      <span :if={@target} title={@target} class="text-ref min-w-0 font-normal wrap-anywhere">{@target}</span>
     </span>
     """
   end
