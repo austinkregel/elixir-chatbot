@@ -1,5 +1,5 @@
 defmodule ChatWeb.CoreComponents do
-  @moduledoc "Provides core UI components: flash notices, buttons, form inputs, headers, tables,\ndata lists and icons.\n\nThey are styled only with the Retroduct design tokens defined in\n`assets/css/app.css` (`bg-surface`, `text-ink`, `border-border-strong`,\n`bg-primary`, `text-label`, `h-control-md`, ...). Layout, sizing and flexbox\ncome from plain Tailwind CSS utilities.\n\n  * [Tailwind CSS](https://tailwindcss.com) - the utility framework the tokens\n    are defined in.\n\n  * [Heroicons](https://heroicons.com) - see `icon/1` for usage.\n\n  * [Phoenix.Component](https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html) -\n    the component system used by Phoenix. Some components, such as `<.link>`\n    and `<.form>`, are defined there.\n\n"
+  @moduledoc "Provides core UI components: flash notices, form inputs, headers, tables,\ndata lists and icons. Buttons are `ChatWeb.UI.btn/1`.\n\nThey are styled only with the Retroduct design tokens defined in\n`assets/css/app.css` (`bg-surface`, `text-ink`, `border-border-strong`,\n`bg-primary`, `text-label`, `h-control-md`, ...). Layout, sizing and flexbox\ncome from plain Tailwind CSS utilities.\n\n  * [Tailwind CSS](https://tailwindcss.com) - the utility framework the tokens\n    are defined in.\n\n  * [Heroicons](https://heroicons.com) - see `icon/1` for usage.\n\n  * [Phoenix.Component](https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html) -\n    the component system used by Phoenix. Some components, such as `<.link>`\n    and `<.form>`, are defined there.\n\n"
   alias Phoenix.HTML.Form
   alias Phoenix.Component
   use Phoenix.Component
@@ -12,7 +12,7 @@ defmodule ChatWeb.CoreComponents do
     error: %{border: "border-red", icon: "hero-exclamation-circle", icon_class: "text-red"}
   }
 
-  @doc "Renders flash notices.\n\nA flash floats over content, so it takes the raised surface, the strong\nborder and the overlay shadow.\n\n## Examples\n\n    <.flash kind={:info} flash={@flash} />\n    <.flash kind={:info} phx-mounted={show(\"#flash\")}>Welcome Back!</.flash>\n"
+  @doc "Renders flash notices.\n\nA flash floats over content, so it takes the raised surface, the strong\nborder and the overlay shadow. Its whole edge is one hairline, border-strong\nfor info and red for an error; the icon and its color carry the kind.\n\n## Examples\n\n    <.flash kind={:info} flash={@flash} />\n    <.flash kind={:info} phx-mounted={show(\"#flash\")}>Welcome Back!</.flash>\n"
   attr(:id, :string, doc: "the optional id of flash container")
   attr(:flash, :map, default: %{}, doc: "the map of flash messages to display")
   attr(:title, :string, default: nil)
@@ -38,7 +38,7 @@ defmodule ChatWeb.CoreComponents do
     >
       <div class={[
         "flex items-start gap-space-sm w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap",
-        "rounded-md border border-l-4 bg-surface-raised p-space-md shadow-overlay text-body text-ink",
+        "rounded-md border bg-surface-raised p-space-md shadow-overlay text-body text-ink",
         @kind_style.border
       ]}>
         <.icon name={@kind_style.icon} class={["size-5 shrink-0", @kind_style.icon_class]} />
@@ -55,56 +55,29 @@ defmodule ChatWeb.CoreComponents do
     """
   end
 
-  @button_base "inline-flex items-center justify-center gap-space-sm h-control-md px-space-md " <>
-                 "rounded-md text-body font-semibold transition-colors cursor-pointer " <>
-                 "disabled:opacity-50 disabled:cursor-not-allowed"
+  @field_base "w-full px-space-sm rounded-sm border border-border-strong " <>
+                "bg-surface-sunk text-ink placeholder:text-ink-muted " <>
+                "disabled:opacity-50 disabled:cursor-not-allowed"
 
-  @button_variants %{
-    "primary" => "bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-hover",
-    nil => "border border-primary bg-transparent text-primary hover:bg-primary-wash"
+  @field_sizes %{
+    md: "h-control-md text-body",
+    sm: "h-control-sm text-body-dense"
   }
 
-  @doc "Renders a button with navigation support.\n\nWith `variant=\"primary\"` it is the filled primary action; without a variant it\nis the secondary, outlined action.\n\n## Examples\n\n    <.button>Send!</.button>\n    <.button phx-click=\"go\" variant=\"primary\">Send!</.button>\n    <.button navigate={~p\"/\"}>Home</.button>\n"
-  attr(:rest, :global, include: ~w(href navigate patch method download name value disabled))
-  attr(:class, :string)
-  attr(:variant, :string, values: ~w(primary))
-  slot(:inner_block, required: true)
+  @textarea_base "w-full min-h-24 px-space-sm py-space-xs rounded-sm border border-border-strong " <>
+                   "bg-surface-sunk text-ink placeholder:text-ink-muted " <>
+                   "disabled:opacity-50 disabled:cursor-not-allowed"
 
-  def button(%{rest: rest} = assigns) do
-    assigns =
-      assign_new(assigns, :class, fn ->
-        [@button_base, Map.fetch!(@button_variants, assigns[:variant])]
-      end)
-
-    if rest[:href] || rest[:navigate] || rest[:patch] do
-      ~H"""
-      <.link class={@class} {@rest}>
-        {render_slot(@inner_block)}
-      </.link>
-      """
-    else
-      ~H"""
-      <button class={@class} {@rest}>
-        {render_slot(@inner_block)}
-      </button>
-      """
-    end
-  end
-
-  @field_class "w-full h-control-md px-space-sm rounded-sm border border-border-strong " <>
-                 "bg-surface-sunk text-body text-ink placeholder:text-ink-muted " <>
-                 "disabled:opacity-50 disabled:cursor-not-allowed"
-
-  @textarea_class "w-full min-h-24 px-space-sm py-space-xs rounded-sm border border-border-strong " <>
-                    "bg-surface-sunk text-body text-ink placeholder:text-ink-muted " <>
-                    "disabled:opacity-50 disabled:cursor-not-allowed"
+  @textarea_sizes %{md: "text-body", sm: "text-body-dense"}
 
   @field_error_class "border-red"
 
-  @doc "Renders an input with label and error messages.\n\nA `Phoenix.HTML.FormField` may be passed as argument,\nwhich is used to retrieve the input name, id, and values.\nOtherwise all attributes may be passed explicitly.\n\n## Types\n\nThis function accepts all HTML input types, considering that:\n\n  * You may also set `type=\"select\"` to render a `<select>` tag\n\n  * `type=\"checkbox\"` is used exclusively to render boolean values\n\n  * For live file uploads, see `Phoenix.Component.live_file_input/1`\n\nSee https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input\nfor more information. Unsupported types, such as hidden and radio,\nare best written directly in your templates.\n\n## Examples\n\n    <.input field={@form[:email]} type=\"email\" />\n    <.input name=\"my-input\" errors={[\"oh no!\"]} />\n"
+  @doc "Renders an input with label and error messages.\n\nA `Phoenix.HTML.FormField` may be passed as argument,\nwhich is used to retrieve the input name, id, and values.\nOtherwise all attributes may be passed explicitly.\n\n## Types\n\nThis function accepts all HTML input types, considering that:\n\n  * You may also set `type=\"select\"` to render a `<select>` tag\n\n  * `type=\"checkbox\"` is used exclusively to render boolean values\n\n  * For live file uploads, see `Phoenix.Component.live_file_input/1`\n\nSee https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input\nfor more information. Unsupported types, such as hidden and radio,\nare best written directly in your templates.\n\n## Inline fields\n\n`inline` drops the wrapper's bottom margin and the visible label, so the field\ncan sit in a toolbar or a table cell. The label is still required: it becomes\nthe field's `aria-label`. Errors still show as the red border and a red\ncaption below the field, never as a tooltip only.\n\n`size` is `:md` (control-md, body; the default) or `:sm` (control-sm,\nbody-dense) for fields inside table rows. A checkbox has one size.\n\n## Examples\n\n    <.input field={@form[:email]} type=\"email\" />\n    <.input name=\"my-input\" errors={[\"oh no!\"]} />\n    <.input name=\"token\" label=\"Token\" inline size={:sm} />\n"
   attr(:id, :any, default: nil)
   attr(:name, :any)
   attr(:label, :string, default: nil)
+  attr(:inline, :boolean, default: false)
+  attr(:size, :atom, default: :md, values: [:md, :sm])
   attr(:value, :any)
 
   attr(:type, :string,
@@ -153,13 +126,18 @@ defmodule ChatWeb.CoreComponents do
   end
 
   def input(%{type: "checkbox"} = assigns) do
+    if assigns.size != :md do
+      raise ArgumentError,
+            "ChatWeb.CoreComponents.input/1: a checkbox has one size, got #{inspect(assigns.size)}."
+    end
+
     assigns =
-      assign_new(assigns, :checked, fn ->
-        Form.normalize_value("checkbox", assigns[:value])
-      end)
+      assigns
+      |> assign_new(:checked, fn -> Form.normalize_value("checkbox", assigns[:value]) end)
+      |> assign_frame()
 
     ~H"""
-    <div class="mb-space-sm">
+    <div class={@wrapper_class}>
       <label>
         <input type="hidden" name={@name} value="false" disabled={@rest[:disabled]} />
         <span class="inline-flex items-center gap-space-sm text-body text-ink cursor-pointer">
@@ -169,9 +147,10 @@ defmodule ChatWeb.CoreComponents do
             name={@name}
             value="true"
             checked={@checked}
+            aria-label={@aria_label}
             class={@class || "size-4 accent-primary cursor-pointer"}
             {@rest}
-          />{@label}
+          /><span :if={not @inline}>{@label}</span>
         </span>
       </label>
       <.error :for={msg <- @errors}>{msg}</.error>
@@ -180,15 +159,19 @@ defmodule ChatWeb.CoreComponents do
   end
 
   def input(%{type: "select"} = assigns) do
-    assigns = assign(assigns, field_class: @field_class, field_error_class: @field_error_class)
+    assigns =
+      assigns
+      |> assign(field_class: field_class(assigns.size), field_error_class: @field_error_class)
+      |> assign_frame()
 
     ~H"""
-    <div class="mb-space-sm">
+    <div class={@wrapper_class}>
       <label>
-        <span :if={@label} class="block mb-space-xs text-label text-ink-muted">{@label}</span>
+        <span :if={@label && not @inline} class="block mb-space-xs text-label text-ink-muted">{@label}</span>
         <select
           id={@id}
           name={@name}
+          aria-label={@aria_label}
           class={[@class || @field_class, @errors != [] && (@error_class || @field_error_class)]}
           multiple={@multiple}
           {@rest}
@@ -204,15 +187,21 @@ defmodule ChatWeb.CoreComponents do
 
   def input(%{type: "textarea"} = assigns) do
     assigns =
-      assign(assigns, textarea_class: @textarea_class, field_error_class: @field_error_class)
+      assigns
+      |> assign(
+        textarea_class: [@textarea_base, fetch_size!(@textarea_sizes, assigns.size)],
+        field_error_class: @field_error_class
+      )
+      |> assign_frame()
 
     ~H"""
-    <div class="mb-space-sm">
+    <div class={@wrapper_class}>
       <label>
-        <span :if={@label} class="block mb-space-xs text-label text-ink-muted">{@label}</span>
+        <span :if={@label && not @inline} class="block mb-space-xs text-label text-ink-muted">{@label}</span>
         <textarea
           id={@id}
           name={@name}
+          aria-label={@aria_label}
           class={[
             @class || @textarea_class,
             @errors != [] && (@error_class || @field_error_class)
@@ -226,16 +215,20 @@ defmodule ChatWeb.CoreComponents do
   end
 
   def input(assigns) do
-    assigns = assign(assigns, field_class: @field_class, field_error_class: @field_error_class)
+    assigns =
+      assigns
+      |> assign(field_class: field_class(assigns.size), field_error_class: @field_error_class)
+      |> assign_frame()
 
     ~H"""
-    <div class="mb-space-sm">
+    <div class={@wrapper_class}>
       <label>
-        <span :if={@label} class="block mb-space-xs text-label text-ink-muted">{@label}</span>
+        <span :if={@label && not @inline} class="block mb-space-xs text-label text-ink-muted">{@label}</span>
         <input
           type={@type}
           name={@name}
           id={@id}
+          aria-label={@aria_label}
           value={Phoenix.HTML.Form.normalize_value(@type, @value)}
           class={[
             @class || @field_class,
@@ -247,6 +240,36 @@ defmodule ChatWeb.CoreComponents do
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
+  end
+
+  # An inline field drops the wrapper's margin and shows its label to assistive
+  # technology only, so the label is still required.
+  defp assign_frame(%{inline: true, label: label}) when label in [nil, ""] do
+    raise ArgumentError,
+          "ChatWeb.CoreComponents.input/1: an inline field still needs its label; it becomes " <>
+            "the field's aria-label."
+  end
+
+  defp assign_frame(%{inline: true} = assigns) do
+    assign(assigns, wrapper_class: nil, aria_label: assigns.label)
+  end
+
+  defp assign_frame(assigns) do
+    assign(assigns, wrapper_class: "mb-space-sm", aria_label: nil)
+  end
+
+  defp field_class(size), do: [@field_base, fetch_size!(@field_sizes, size)]
+
+  defp fetch_size!(sizes, size) do
+    case Map.fetch(sizes, size) do
+      {:ok, class} ->
+        class
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.CoreComponents.input/1: no treatment for size #{inspect(size)}. " <>
+                "The sizes are #{inspect(Map.keys(sizes))}."
+    end
   end
 
   defp error(assigns) do
@@ -279,7 +302,7 @@ defmodule ChatWeb.CoreComponents do
     """
   end
 
-  @doc "Renders a table: a sunk header row, compact rows, alternate rows striped with\nsurface-sunk, and hairline row dividers.\n\n## Examples\n\n    <.table id=\"users\" rows={@users}>\n      <:col :let={user} label=\"id\">{user.id}</:col>\n      <:col :let={user} label=\"username\">{user.username}</:col>\n    </.table>\n"
+  @doc "Renders a table: a sunk header row, compact rows, alternate rows striped with\nsurface-sunk, and hairline row dividers.\n\nA row whose `row_class` returns a meaning wash takes that wash instead of the\nstripe. Row actions are ghost icon buttons placed space-xs apart. Paging goes\nbelow the table through `ChatWeb.UI.page_bar/1`.\n\n## Examples\n\n    <.table id=\"users\" rows={@users}>\n      <:col :let={user} label=\"id\">{user.id}</:col>\n      <:col :let={user} label=\"username\">{user.username}</:col>\n    </.table>\n"
   attr(:id, :string, required: true)
   attr(:rows, :list, required: true)
   attr(:row_id, :any, default: nil, doc: "the function for generating the row id")
@@ -288,6 +311,13 @@ defmodule ChatWeb.CoreComponents do
   attr(:row_item, :any,
     default: &Function.identity/1,
     doc: "the function for mapping each row before calling the :col and :action slots"
+  )
+
+  attr(:row_class, :any,
+    default: nil,
+    doc:
+      "a function from a row to its meaning wash (an origin's or a verdict's), or nil; " <>
+        "a row with a wash is not striped, because the meaning wins"
   )
 
   slot :col, required: true do
@@ -322,7 +352,10 @@ defmodule ChatWeb.CoreComponents do
         <tr
           :for={row <- @rows}
           id={@row_id && @row_id.(row)}
-          class={["even:bg-surface-sunk", @row_click && "hover:bg-primary-wash"]}
+          class={[
+            (@row_class && @row_class.(row)) || "even:bg-surface-sunk",
+            @row_click && "hover:bg-primary-wash"
+          ]}
         >
           <td
             :for={col <- @col}
@@ -332,7 +365,7 @@ defmodule ChatWeb.CoreComponents do
             {render_slot(col, @row_item.(row))}
           </td>
           <td :if={@action != []} class="w-0 h-row-compact px-space-sm font-semibold">
-            <div class="flex gap-space-lg">
+            <div class="flex justify-end gap-space-xs">
               <%= for action <- @action do %>
                 {render_slot(action, @row_item.(row))}
               <% end %>
