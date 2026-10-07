@@ -12,15 +12,18 @@ defmodule Brain.Response.Generator do
   alias Memory.Store
   alias Brain.Code.QueryHandler
 
-  @doc "Generate a response for the given intent and entities.\n\nUses a generative pipeline:\n1. Retrieve similar episodes from memory\n2. Synthesize response from domain knowledge and primitives\n3. Fall back to templates if synthesis doesn't produce a result\n4. Run the (now no-op) refinement hook and the quality improver\n\nReturns:\n- {:ok, response, :synthesized} for generated responses\n- {:ok, response, :memory_adapted} for memory-adapted responses\n- {:ok, response, :template} for template-based responses\n- {:ok, response, :fallback} for fallback responses\n"
-  def generate(intent, entities, query_text \\ nil) do
-    generate_with_events(intent, entities, query_text, [])
+  @doc "Generate a response for the given intent and entities.\n\n`opts` may carry `:side_effects`; with `false`, a service call that would change state (a device action) is refused during enrichment.\n\nUses a generative pipeline:\n1. Retrieve similar episodes from memory\n2. Synthesize response from domain knowledge and primitives\n3. Fall back to templates if synthesis doesn't produce a result\n4. Run the (now no-op) refinement hook and the quality improver\n\nReturns:\n- {:ok, response, :synthesized} for generated responses\n- {:ok, response, :memory_adapted} for memory-adapted responses\n- {:ok, response, :template} for template-based responses\n- {:ok, response, :fallback} for fallback responses\n"
+  def generate(intent, entities, query_text \\ nil, opts \\ []) do
+    generate_with_events(intent, entities, query_text, [], opts)
   end
 
   @doc "Generate a response with event context for better slot filling.\n\nWhen events are provided, they are used to:\n- Provide action/actor/object slots for template filling\n- Enhance context retrieval from memory\n- Improve response relevance based on user intent structure\n\n## Examples\n\n    events = [%Event{action: %{lemma: \"play\"}, object: %{text: \"jazz\"}}]\n    generate_with_events(\"music.play\", entities, \"Play some jazz\", events)\n"
-  def generate_with_events(intent, entities, query_text, events) when is_list(events) do
+  def generate_with_events(intent, entities, query_text, events, opts \\ []) when is_list(events) do
     Brain.Telemetry.span(:response_generate, %{intent: intent}, fn ->
-      context = build_generation_context_with_events(intent, entities, query_text, events)
+      context =
+        intent
+        |> build_generation_context_with_events(entities, query_text, events)
+        |> Map.put(:side_effects, Keyword.get(opts, :side_effects, true))
 
       # Build slot map for enrichment from entity list
       slots = build_slot_map_for_enrichment(entities)
