@@ -38,8 +38,9 @@ defmodule Brain.Analysis.Pipeline do
   alias Brain.Telemetry
   require Logger
 
-  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n\nReturns an InternalModel struct with complete analysis.\n"
+  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - `true` lets this run write what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Only a live conversation turn passes `true`.\n  Absent or `false`, the run writes nothing. Any other value raises.\n\nReturns an InternalModel struct with complete analysis.\n"
   def process(text, opts \\ []) when is_binary(text) do
+    side_effects?(opts)
     refuse_stale_classifiers!()
 
     Telemetry.span(:pipeline_process, %{text_length: String.length(text)}, fn ->
@@ -139,9 +140,10 @@ defmodule Brain.Analysis.Pipeline do
       elapsed_ms: elapsed
     })
 
-    record_pipeline_result(model)
-
-    Brain.Graph.Writer.write_analysis(model)
+    if side_effects?(opts) do
+      record_pipeline_result(model)
+      Brain.Graph.Writer.write_analysis(model)
+    end
 
     Brain.Graph.ContextCache.purge_process_entries()
 
@@ -150,8 +152,9 @@ defmodule Brain.Analysis.Pipeline do
     model
   end
 
-  @doc "Processes a single chunk through the analysis pipeline.\n\nUseful for testing or when you already have chunks. Internally runs the\nfull two-pass analysis (pass 1 + cross-chunk aggregation + pass 2) on a\nlist of one chunk so the public contract is identical to the multi-chunk\npath.\n"
+  @doc "Processes a single chunk through the analysis pipeline.\n\nUseful for testing or when you already have chunks. Internally runs the\nfull two-pass analysis (pass 1 + cross-chunk aggregation + pass 2) on a\nlist of one chunk so the public contract is identical to the multi-chunk\npath.\n\nTakes the same `:side_effects` option as `process/2`: absent or `false`,\nthe run writes nothing.\n"
   def analyze_chunk(chunk_text, opts \\ []) when is_binary(chunk_text) do
+    side_effects?(opts)
     chunk = Chunk.new(chunk_text, 0, 0, String.length(chunk_text) - 1)
     [analysis] = analyze_chunks([chunk], opts)
     analysis
@@ -1793,39 +1796,43 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
+  # The events of every analyzed text read as things the user said, so this
+  # runs only for a turn whose caller passed `side_effects: true`. Analyzing a
+  # corpus without it would store each utterance as a belief about the user.
+  #
+  # Nothing here is rescued. A failure in the synchronous mode reaches the
+  # caller, and one in the supervised child is reported by its supervisor.
   defp maybe_extract_beliefs_from_events([], _opts), do: :ok
 
   defp maybe_extract_beliefs_from_events(events, opts) do
-    user_id = Keyword.get(opts, :user_id) || "anonymous"
+    if side_effects?(opts) and Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
+      user_id = Keyword.get(opts, :user_id) || "anonymous"
 
-    if Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
       if Application.get_env(:brain, :pipeline_belief_extraction_sync, false) do
-        try do
-          Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
-        rescue
-          e ->
-            require Logger
-            Logger.debug("Belief extraction from events failed: #{Exception.message(e)}")
-        end
+        Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
       else
         Task.Supervisor.start_child(
           Brain.Knowledge.AgentSupervisor,
-          fn ->
-            try do
-              Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
-            rescue
-              e ->
-                require Logger
-                Logger.debug("Belief extraction from events failed: #{Exception.message(e)}")
-            end
-          end
+          fn -> Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id) end
         )
       end
     end
 
     :ok
-  rescue
-    _ -> :ok
+  end
+
+  # Whether this run may write what it learned. Off unless the caller passed
+  # `side_effects: true`: a batch caller that says nothing (evaluation,
+  # training-data generation, measurement) must not be able to write beliefs.
+  defp side_effects?(opts) do
+    case Keyword.get(opts, :side_effects, false) do
+      value when is_boolean(value) ->
+        value
+
+      other ->
+        raise ArgumentError,
+              "Pipeline option :side_effects must be true or false, got: #{inspect(other)}"
+    end
   end
 
   defp calculate_confidence(analysis) do
@@ -2052,9 +2059,8 @@ defmodule Brain.Analysis.Pipeline do
          opts
        ) do
     enabled = Application.get_env(:brain, :intent_promotion_enabled, false)
-    side_effects = Keyword.get(opts, :side_effects, true)
 
-    if enabled and side_effects do
+    if enabled and side_effects?(opts) do
       best_score = confidence || 0.0
       margin = Map.get(details, :margin, 0.0)
 
