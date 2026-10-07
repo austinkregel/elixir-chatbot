@@ -363,10 +363,10 @@ defmodule ChatWeb.DashboardLive do
 
         result ->
           Map.put(acc, task, %{
-            accuracy: result["accuracy"] || 0.0,
-            macro_f1: result["macro_f1"] || 0.0,
-            weighted_f1: result["weighted_f1"] || 0.0,
-            total_examples: result["total_examples"] || 0,
+            accuracy: result["accuracy"],
+            macro_f1: result["macro_f1"],
+            weighted_f1: result["weighted_f1"],
+            total_examples: result["total_examples"],
             duration_ms: result["duration_ms"],
             completed_at: result["timestamp"]
           })
@@ -646,17 +646,25 @@ defmodule ChatWeb.DashboardLive do
     Calendar.strftime(dt, "%H:%M:%S")
   end
 
-  def accuracy_color(accuracy) when is_number(accuracy) do
-    cond do
-      accuracy >= 0.8 -> "text-ink"
-      accuracy >= 0.6 -> "text-ochre"
-      true -> "text-red"
-    end
+  # An evaluation metric is a 0..1 rate shown as a percentage in ink. Its size
+  # never picks a color: no code declares an accuracy target, and the one
+  # declared criterion, the regression gate, speaks through its own verdict.
+  def evaluation_percent(value) when is_number(value) do
+    "#{Float.round(value * 100.0, 1)}%"
   end
 
-  def accuracy_color(other) do
+  def evaluation_percent(other) do
     raise ArgumentError,
-          "ChatWeb.DashboardLive.accuracy_color/1: accuracy must be a number, got #{inspect(other)}"
+          "ChatWeb.DashboardLive.evaluation_percent/1: a metric must be a number, got #{inspect(other)}. " <>
+            "A metric missing from the result is shown as missing, never formatted."
+  end
+
+  def examples_label(count) when is_integer(count), do: "#{count} examples"
+  def examples_label(nil), do: "no example count in this result"
+
+  def examples_label(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.examples_label/1: an example count must be an integer, got #{inspect(other)}"
   end
 
   def category_servers(categories, category) do
@@ -714,7 +722,7 @@ defmodule ChatWeb.DashboardLive do
   end
 
   def status_badge_variant(:not_started) do
-    :error
+    :default
   end
 
   def status_badge_variant(other) do
