@@ -152,9 +152,9 @@ defmodule ChatWeb.TrainingStudioLive do
   # which remains open, rather than closing it and leaving only a flash.
   def handle_event("delete_record", %{"index" => index_str}, socket) do
     source_id = socket.assigns.selected_source
-    index = parse_int(index_str, -1)
+    index = parse_index(index_str)
 
-    if source_id && index >= 0 do
+    if source_id do
       case Catalog.delete_record(source_id, index) do
         :ok ->
           {:noreply,
@@ -167,12 +167,12 @@ defmodule ChatWeb.TrainingStudioLive do
           {:noreply, assign(socket, :confirm_error, "Failed to delete record #{index + 1}: #{inspect(reason)}")}
       end
     else
-      {:noreply, assign(socket, :confirm_error, "No source is selected, or the record index is invalid.")}
+      {:noreply, assign(socket, :confirm_error, "No source is selected.")}
     end
   end
 
   def handle_event("edit_record", %{"index" => index_str}, socket) do
-    index = parse_int(index_str, -1)
+    index = parse_index(index_str)
     {:noreply, assign(socket, :editing_index, index)}
   end
 
@@ -182,9 +182,9 @@ defmodule ChatWeb.TrainingStudioLive do
 
   def handle_event("save_edit", %{"index" => index_str, "record" => record_params}, socket) do
     source_id = socket.assigns.selected_source
-    index = parse_int(index_str, -1)
+    index = parse_index(index_str)
 
-    if source_id && index >= 0 do
+    if source_id do
       record = build_record_from_params(record_params, socket.assigns.source_desc)
 
       case Catalog.update_record(source_id, index, record) do
@@ -434,6 +434,25 @@ defmodule ChatWeb.TrainingStudioLive do
 
   defp parse_int(n, _default) when is_integer(n) and n > 0, do: n
   defp parse_int(_, default), do: default
+
+  # A record's position in its source file, counted from 0. Positions come
+  # from this page's own row buttons (as a string) and from the delete
+  # confirmation (as an integer), so anything else is a bug and raises.
+  defp parse_index(n) when is_integer(n) and n >= 0, do: n
+
+  defp parse_index(str) when is_binary(str) do
+    case Integer.parse(str) do
+      {n, ""} when n >= 0 -> n
+      _ -> invalid_index!(str)
+    end
+  end
+
+  defp parse_index(other), do: invalid_index!(other)
+
+  defp invalid_index!(value) do
+    raise ArgumentError,
+          "Training Studio: a record position must be a whole number from 0 up, got: #{inspect(value)}"
+  end
 
   # Pages divide the records matching the filter. A page past the last one (a
   # stale `?page=`, or the last match on the last page deleted) reads the last
