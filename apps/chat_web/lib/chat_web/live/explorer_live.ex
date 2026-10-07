@@ -97,6 +97,8 @@ defmodule ChatWeb.ExplorerLive do
     # The open confirmation panel, if any, and its failure
     |> assign(:confirming, nil)
     |> assign(:confirm_error, nil)
+    # The confidence (0-100) chosen on the open Set-confidence slider, nil until it moves
+    |> assign(:chosen_confidence, nil)
     |> assign(:add_belief_form, %{"subject" => "", "predicate" => "", "object" => "", "confidence" => "100", "authority" => "mentor"})
     |> assign(:authority_filter, nil)
   end
@@ -369,11 +371,17 @@ defmodule ChatWeb.ExplorerLive do
   # ---- Belief management actions ----
 
   def handle_event("open_confirm", %{"id" => confirm_id}, socket) do
-    {:noreply, assign(socket, confirming: confirm_id, confirm_error: nil)}
+    {:noreply, assign(socket, confirming: confirm_id, confirm_error: nil, chosen_confidence: nil)}
   end
 
   def handle_event("close_confirm", _params, socket) do
-    {:noreply, assign(socket, confirming: nil, confirm_error: nil)}
+    {:noreply, assign(socket, confirming: nil, confirm_error: nil, chosen_confidence: nil)}
+  end
+
+  # The Set-confidence slider reports each position as it moves, so the panel
+  # can show the value the person is about to confirm.
+  def handle_event("choose_confidence", %{"confidence" => value}, socket) do
+    {:noreply, assign(socket, :chosen_confidence, slider_percent!(value))}
   end
 
   def handle_event("update_add_belief_form", %{"belief" => params}, socket) do
@@ -470,7 +478,7 @@ defmodule ChatWeb.ExplorerLive do
       {:ok, _updated} ->
         socket =
           socket
-          |> assign(confirming: nil, confirm_error: nil)
+          |> assign(confirming: nil, confirm_error: nil, chosen_confidence: nil)
           |> assign(:beliefs_data, nil)
           |> maybe_load_beliefs_data()
           |> apply_filters()
@@ -504,6 +512,20 @@ defmodule ChatWeb.ExplorerLive do
   end
 
   defp parse_confidence(_), do: 1.0
+
+  # A range input with min 0 and max 100 sends a whole number in that range;
+  # anything else did not come from the slider.
+  defp slider_percent!(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {percent, ""} when percent in 0..100 ->
+        percent
+
+      _ ->
+        raise ArgumentError,
+              "ChatWeb.ExplorerLive: choose_confidence expects a whole number from 0 to 100 " <>
+                "from the confidence slider, got #{inspect(value)}."
+    end
+  end
 
   defp normalize_subject("user"), do: :user
   defp normalize_subject("world"), do: :world
@@ -734,6 +756,7 @@ defmodule ChatWeb.ExplorerLive do
                 selected_user={@selected_user}
                 confirming={@confirming}
                 confirm_error={@confirm_error}
+                chosen_confidence={@chosen_confidence}
                 add_belief_form={@add_belief_form}
                 expanded_id={@expanded_id}
                 page={@page}
@@ -826,7 +849,7 @@ defmodule ChatWeb.ExplorerLive do
               <td class="h-row-compact px-space-sm font-semibold">
                 <div class="flex items-center gap-space-sm">
                   <%= if is_loading do %>
-                    <.icon name="hero-arrow-path" class="size-4 animate-spin text-progress-fill" />
+                    <.icon name="hero-arrow-path" class="size-4 motion-safe:animate-spin text-progress-fill" />
                   <% end %>
                   {candidate.value}
                 </div>
@@ -1239,6 +1262,7 @@ defmodule ChatWeb.ExplorerLive do
             authority_types={@beliefs_data[:belief_authorities] || []}
             confirming={@confirming}
             confirm_error={@confirm_error}
+            chosen_confidence={@chosen_confidence}
             page={@page}
             total_rows={@total_rows}
             matching_rows={@matching_rows}
@@ -1433,15 +1457,26 @@ defmodule ChatWeb.ExplorerLive do
                     >
                       Confidence (now {Float.round(b_conf * 100, 1)}%)
                     </label>
-                    <input
-                      id={"explorer-belief-confidence-#{belief.id}"}
-                      type="range"
-                      name="confidence"
-                      min="0"
-                      max="100"
-                      value={round(b_conf * 100)}
-                      class="w-full accent-primary"
-                    />
+                    <div class="flex items-center gap-space-sm">
+                      <input
+                        id={"explorer-belief-confidence-#{belief.id}"}
+                        type="range"
+                        name="confidence"
+                        min="0"
+                        max="100"
+                        value={@chosen_confidence || round(b_conf * 100)}
+                        phx-change="choose_confidence"
+                        class="min-w-0 flex-1 accent-primary"
+                      />
+                      <output
+                        id={"explorer-belief-confidence-#{belief.id}-chosen"}
+                        for={"explorer-belief-confidence-#{belief.id}"}
+                        aria-live="polite"
+                        class="w-12 shrink-0 text-right text-value-strong tabular-nums text-ink"
+                      >
+                        {@chosen_confidence || round(b_conf * 100)}%
+                      </output>
+                    </div>
                   </:fields>
                 </.execute_confirm>
                 <.execute_confirm
@@ -1567,17 +1602,15 @@ defmodule ChatWeb.ExplorerLive do
       <!-- Contradictions list -->
       <div>
         <h3 class="text-subheading text-ink mb-space-sm flex items-center gap-space-sm">
-          <.icon name="hero-exclamation-triangle" class="size-4 text-red" />
+          <.icon name="hero-exclamation-triangle" class="size-4 text-ochre" />
           Active Contradictions
         </h3>
         <%= if length(@contradictions) == 0 do %>
-          <div class="text-body text-ink-muted p-space-lg bg-surface-sunk rounded-md text-center">
-            No active contradictions
-          </div>
+          <.empty_panel kind={:plain} words="No active contradictions" />
         <% else %>
           <div class="space-y-space-sm">
             <%= for node <- @contradictions do %>
-              <div class="bg-red-wash border border-red rounded-md p-space-md">
+              <div class="bg-ochre-wash border border-ochre rounded-md p-space-md">
                 <div
                   class="flex items-start justify-between cursor-pointer"
                   phx-click="toggle_expand"
@@ -1597,7 +1630,7 @@ defmodule ChatWeb.ExplorerLive do
                   />
                 </div>
                 <%= if @expanded_id == node.id do %>
-                  <div class="mt-space-md pt-space-md border-t border-red text-caption text-ink space-y-space-xs">
+                  <div class="mt-space-md pt-space-md border-t border-ochre text-caption text-ink space-y-space-xs">
                     <div>
                       <span class="text-ink-muted">Node ID:</span>
                       <span class="text-ref">{node.id}</span>
@@ -1717,9 +1750,7 @@ defmodule ChatWeb.ExplorerLive do
                 </table>
               </div>
             <% else %>
-              <div class="text-body text-ink-muted p-space-lg bg-surface-sunk rounded-md text-center">
-                No facts recorded for this user
-              </div>
+              <.empty_panel kind={:plain} words="No facts recorded for this user" />
             <% end %>
 
             <!-- Interaction patterns -->
