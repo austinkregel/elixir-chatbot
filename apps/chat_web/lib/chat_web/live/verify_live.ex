@@ -111,10 +111,10 @@ defmodule ChatWeb.VerifyLive do
       flash={@flash}
     >
       <:page_header>
-        <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-space-md">
           <div>
-            <h1 class="text-lg font-semibold">Verification</h1>
-            <p class="text-sm text-base-content/60">
+            <h1 class="text-title text-ink">Verification</h1>
+            <p class="text-body text-ink-muted">
               Every subsystem that should be exercisable in isolation, and whether anyone has.
             </p>
           </div>
@@ -122,8 +122,8 @@ defmodule ChatWeb.VerifyLive do
         </div>
       </:page_header>
 
-      <div class="space-y-6 p-4 sm:p-6">
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div class="space-y-space-xl p-space-lg">
+        <div class="grid grid-cols-2 gap-space-md sm:grid-cols-3 lg:grid-cols-6">
           <.stat_kpi label="Subsystems" value={to_string(length(@rows))} />
           <.stat_kpi label="With any case" value={to_string(@totals.subsystems_with_cases)} />
           <.stat_kpi label="Cases" value={to_string(@totals.cases)} />
@@ -132,47 +132,47 @@ defmodule ChatWeb.VerifyLive do
           <.stat_kpi label="Never run" value={to_string(@totals.pending)} variant={:warning} />
         </div>
 
-        <.card :if={@totals.cases == 0} class="border-warning/40 bg-warning/5">
+        <.card :if={@totals.cases == 0} class="border-ochre bg-ochre-wash">
           <.card_body>
-            <p class="text-sm">
+            <p class="text-body text-ink">
               No verification cases exist in world
-              <span class="font-mono">{@current_world_id}</span>. Nothing below has been
+              <span class="text-value">{@current_world_id}</span>. Nothing below has been
               checked by hand, and the zeros are the honest reading — not an all-clear.
             </p>
           </.card_body>
         </.card>
 
         <.card>
-          <.card_body class="space-y-3">
+          <.card_body class="space-y-space-md">
             <.section_header>Subsystems</.section_header>
 
             <div class="overflow-x-auto">
-              <table class="w-full text-left text-sm">
-                <thead class="text-xs uppercase tracking-wider text-base-content/50">
+              <table class="w-full text-left text-body-dense text-ink tabular-nums">
+                <thead class="bg-surface-sunk">
                   <tr>
-                    <th class="py-2 pr-4 font-semibold">Subsystem</th>
-                    <th class="py-2 pr-4 font-semibold">Page</th>
-                    <th class="py-2 pr-4 text-right font-semibold">Pass</th>
-                    <th class="py-2 pr-4 text-right font-semibold">Fail</th>
-                    <th class="py-2 pr-4 text-right font-semibold">Raised</th>
-                    <th class="py-2 pr-4 text-right font-semibold">Never run</th>
-                    <th class="py-2 font-semibold">State</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Subsystem</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Page</th>
+                    <th class="h-row-compact px-space-sm text-right text-label text-ink-muted">Pass</th>
+                    <th class="h-row-compact px-space-sm text-right text-label text-ink-muted">Fail</th>
+                    <th class="h-row-compact px-space-sm text-right text-label text-ink-muted">Raised</th>
+                    <th class="h-row-compact px-space-sm text-right text-label text-ink-muted">Never run</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">State</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-base-300">
+                <tbody class="divide-y divide-border">
                   <tr :for={row <- @rows}>
-                    <td class="py-2 pr-4">
-                      <div class="font-medium">{row.title}</div>
-                      <div class="font-mono text-[11px] text-base-content/50">{row.id}</div>
+                    <td class="px-space-sm py-space-xs">
+                      <div class="font-semibold text-ink">{row.title}</div>
+                      <div class="text-ref text-ink-muted">{row.id}</div>
                     </td>
-                    <td class="py-2 pr-4 text-xs text-base-content/60">
+                    <td class="px-space-sm py-space-xs text-caption text-ink-muted">
                       not built — task {row.task}
                     </td>
-                    <td class="py-2 pr-4 text-right font-mono">{row.counts["pass"]}</td>
-                    <td class="py-2 pr-4 text-right font-mono">{row.counts["fail"]}</td>
-                    <td class="py-2 pr-4 text-right font-mono">{row.counts["error"]}</td>
-                    <td class="py-2 pr-4 text-right font-mono">{row.counts["pending"]}</td>
-                    <td class="py-2">
+                    <td class="px-space-sm py-space-xs text-right text-value text-score-count">{row.counts["pass"]}</td>
+                    <td class="px-space-sm py-space-xs text-right text-value text-score-count">{row.counts["fail"]}</td>
+                    <td class="px-space-sm py-space-xs text-right text-value text-score-count">{row.counts["error"]}</td>
+                    <td class="px-space-sm py-space-xs text-right text-value text-score-count">{row.counts["pending"]}</td>
+                    <td class="px-space-sm py-space-xs">
                       <.badge :if={row.total == 0} variant={:warning} size={:xs}>
                         unverified
                       </.badge>
@@ -185,17 +185,17 @@ defmodule ChatWeb.VerifyLive do
           </.card_body>
         </.card>
 
-        <.card :if={@orphans != []} class="border-error/40 bg-error/5">
-          <.card_body class="space-y-2">
+        <.card :if={@orphans != []} class="border-red bg-red-wash">
+          <.card_body class="space-y-space-sm">
             <.section_header>Cases with no declared subsystem</.section_header>
-            <p class="text-xs text-base-content/60">
+            <p class="text-caption text-ink">
               These were saved against a subsystem that is no longer declared in
-              <span class="font-mono">Atlas.Verification.Subsystems</span>, so no page can run
+              <span class="text-ref">Atlas.Verification.Subsystems</span>, so no page can run
               them. They are listed rather than dropped: the declaration changed under existing
               data, and counting them is how anyone finds out.
             </p>
-            <ul class="space-y-1 text-sm">
-              <li :for={orphan <- @orphans} class="font-mono text-xs">
+            <ul class="space-y-space-xs">
+              <li :for={orphan <- @orphans} class="text-ref text-ink">
                 {orphan.id} — {orphan.total} case(s)
               </li>
             </ul>
