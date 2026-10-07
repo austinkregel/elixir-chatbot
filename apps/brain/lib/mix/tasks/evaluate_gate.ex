@@ -15,6 +15,8 @@ defmodule Mix.Tasks.Evaluate.Gate do
   - Speech-act macro-F1: regression > 1pp = fail
   - NER macro-F1: regression > 3pp = fail
   - Any task: increase in unknown/not_loaded/errored > 0 from baseline = fail
+  - Any task: error canary not measured, because the baseline or the latest
+    result saved no diagnostics = fail
 
   ## Usage
 
@@ -123,16 +125,7 @@ defmodule Mix.Tasks.Evaluate.Gate do
         end
 
       :not_measured ->
-        IO.puts("    error canary not measured (no diagnostics in #{diagnostics_absent_words(verdict.diagnostics_absent)})")
-    end
-  end
-
-  defp diagnostics_absent_words(sides) do
-    case Enum.sort(sides) do
-      [:baseline] -> "the baseline"
-      [:current] -> "the latest result"
-      [:baseline, :current] -> "the baseline or the latest result"
-      other -> Mix.raise("evaluate.gate: an unmeasured canary names :baseline, :current or both; got #{inspect(other)}")
+        IO.puts("    error canary not measured (no diagnostics in #{Gate.diagnostics_absent_words(verdict.diagnostics_absent)})")
     end
   end
 
