@@ -32,7 +32,8 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
     |> assign(:filter, :all)
     |> assign(:sort_by, :confidence)
     |> assign(:new_session_topic, "")
-    |> assign(:show_start_session_modal, false)
+    |> assign(:confirming, nil)
+    |> assign(:confirm_error, nil)
     |> assign(:page_title, "Knowledge Review")
   end
 
@@ -79,14 +80,51 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
       flash={@flash}
     >
       <:page_header>
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-start justify-between gap-space-md">
           <div>
             <h1 class="text-title text-ink">Knowledge Review Queue</h1>
             <p class="text-body text-ink-muted">Review and approve knowledge expansion candidates</p>
           </div>
-          <.btn variant={:primary} size={:sm} phx-click="show_start_session">
-            Start Learning Session
-          </.btn>
+          <div class="flex flex-col items-end gap-space-sm">
+            <.btn
+              id="kr-start-session"
+              variant={:primary}
+              size={:sm}
+              reach={:shared}
+              target="learning session"
+              phx-click="open_confirm"
+              phx-value-id="kr-confirm-start-session"
+            >
+              Start Learning Session
+            </.btn>
+            <.execute_confirm
+              id="kr-confirm-start-session"
+              open={@confirming == "kr-confirm-start-session"}
+              reach={:shared}
+              verb="Start session"
+              target="learning session"
+              consequence="Saves a session and its goals to Atlas; the agents it dispatches add candidates to the review queue."
+              on_confirm="start_session"
+              on_cancel="close_confirm"
+              trigger_id="kr-start-session"
+              error={@confirm_error}
+            >
+              <:fields>
+                <label for="kr-session-topic" class="block mb-space-xs text-label text-ink-muted">
+                  Topic to research
+                </label>
+                <input
+                  id="kr-session-topic"
+                  type="text"
+                  name="topic"
+                  placeholder="e.g., European capitals, Nobel Prize winners"
+                  class="w-full h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
+                  value={@new_session_topic}
+                  phx-change="update_topic"
+                />
+              </:fields>
+            </.execute_confirm>
+          </div>
         </div>
       </:page_header>
 
@@ -111,7 +149,7 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
         </.tab>
         <.tab active={@current_tab == :rejected} phx-click="change_tab" phx-value-tab="rejected">
           Rejected
-          <.badge variant={:error} class="ml-space-sm"><%= @stats.rejected %></.badge>
+          <.badge class="ml-space-sm"><%= @stats.rejected %></.badge>
         </.tab>
         <.tab active={@current_tab == :deferred} phx-click="change_tab" phx-value-tab="deferred">
           Deferred
@@ -136,42 +174,90 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
 
       <!-- Bulk Actions (only for pending) -->
       <%= if @current_tab == :pending do %>
-        <div class="flex items-center gap-space-sm mb-space-lg">
-          <.reach_shared_badge />
-          <.btn
-            variant={:primary}
-            size={:sm}
-            class="outline-mark outline-reach-shared"
-            phx-click="bulk_approve"
-            disabled={MapSet.size(@selected_ids) == 0}
-          >
-            Approve Selected (<%= MapSet.size(@selected_ids) %>)
-          </.btn>
-          <.btn
-            variant={:primary}
-            size={:sm}
-            phx-click="bulk_reject"
-            disabled={MapSet.size(@selected_ids) == 0}
-          >
-            Reject Selected
-          </.btn>
-          <.btn
-            variant={:primary}
-            size={:sm}
-            phx-click="cleanup_html"
-            data-confirm="This will reject all pending items containing HTML/JavaScript fragments. Continue?"
-          >
-            <.icon name="hero-trash" class="size-4" />
-            Cleanup HTML Fragments
-          </.btn>
-          <div class="flex-1"></div>
-          <select
-            class="h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
-            phx-change="change_sort"
-          >
-            <option value="confidence" selected={@sort_by == :confidence}>Sort by Confidence</option>
-            <option value="created_at" selected={@sort_by == :created_at}>Sort by Date</option>
-          </select>
+        <% selected_count = MapSet.size(@selected_ids) %>
+        <div class="mb-space-lg space-y-space-sm">
+          <div class="flex flex-wrap items-center gap-space-sm">
+            <.btn
+              id="kr-bulk-approve"
+              variant={:outline}
+              size={:sm}
+              reach={:shared}
+              target={"#{selected_count} selected"}
+              phx-click="open_confirm"
+              phx-value-id="kr-confirm-bulk-approve"
+              disabled={selected_count == 0}
+            >
+              Approve Selected (<%= selected_count %>)
+            </.btn>
+            <.btn
+              id="kr-bulk-reject"
+              variant={:outline}
+              size={:sm}
+              reach={:shared}
+              target={"#{selected_count} selected"}
+              phx-click="open_confirm"
+              phx-value-id="kr-confirm-bulk-reject"
+              disabled={selected_count == 0}
+            >
+              Reject Selected
+            </.btn>
+            <.btn
+              id="kr-cleanup-html"
+              variant={:outline}
+              size={:sm}
+              reach={:shared}
+              target="pending HTML fragments"
+              phx-click="open_confirm"
+              phx-value-id="kr-confirm-cleanup-html"
+            >
+              <.icon name="hero-trash" class="size-4" />
+              Cleanup HTML Fragments
+            </.btn>
+            <div class="flex-1"></div>
+            <select
+              class="h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
+              phx-change="change_sort"
+            >
+              <option value="confidence" selected={@sort_by == :confidence}>Sort by Confidence</option>
+              <option value="created_at" selected={@sort_by == :created_at}>Sort by Date</option>
+            </select>
+          </div>
+          <.execute_confirm
+            id="kr-confirm-bulk-approve"
+            open={@confirming == "kr-confirm-bulk-approve"}
+            reach={:shared}
+            verb="Approve"
+            target={"#{selected_count} selected"}
+            consequence={"Approves #{selected_count} #{candidate_noun(selected_count)}. Each pending one is saved to Atlas, its claim is added to the fact database, the belief store and the knowledge graph, and the approval is recorded against its source's domain."}
+            on_confirm="bulk_approve"
+            on_cancel="close_confirm"
+            trigger_id="kr-bulk-approve"
+            error={@confirm_error}
+          />
+          <.execute_confirm
+            id="kr-confirm-bulk-reject"
+            open={@confirming == "kr-confirm-bulk-reject"}
+            reach={:shared}
+            verb="Reject"
+            target={"#{selected_count} selected"}
+            consequence={"Rejects #{selected_count} #{candidate_noun(selected_count)} in the review queue and records each rejection against its source's domain, which every later review reads. Nothing is written to Atlas."}
+            on_confirm="bulk_reject"
+            on_cancel="close_confirm"
+            trigger_id="kr-bulk-reject"
+            error={@confirm_error}
+          />
+          <.execute_confirm
+            id="kr-confirm-cleanup-html"
+            open={@confirming == "kr-confirm-cleanup-html"}
+            reach={:shared}
+            verb="Reject fragments"
+            target="pending HTML fragments"
+            consequence="Rejects every pending candidate whose claim holds HTML or JavaScript fragments, in the review queue. Nothing is written to Atlas or to source feedback."
+            on_confirm="cleanup_html"
+            on_cancel="close_confirm"
+            trigger_id="kr-cleanup-html"
+            error={@confirm_error}
+          />
         </div>
       <% end %>
 
@@ -193,50 +279,45 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
               selected={MapSet.member?(@selected_ids, candidate.id)}
               show_actions={@current_tab == :pending}
               show_reviewed_at={@current_tab != :pending}
+              confirming={@confirming}
+              confirm_error={@confirm_error}
             />
           <% end %>
         <% end %>
       </div>
-
-      <!-- Start Session Modal -->
-      <%= if @show_start_session_modal do %>
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-space-lg">
-          <div class="fixed inset-0 bg-ground/80" phx-click="hide_start_session"></div>
-          <div class="relative w-full max-w-lg rounded-md border border-border-strong bg-surface-raised shadow-overlay p-space-lg">
-            <h3 class="text-heading text-ink">Start Learning Session</h3>
-            <form phx-submit="start_session">
-              <div class="mt-space-lg">
-                <label class="block mb-space-xs text-label text-ink-muted">
-                  Topic to research
-                </label>
-                <input
-                  type="text"
-                  name="topic"
-                  placeholder="e.g., European capitals, Nobel Prize winners"
-                  class="w-full h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
-                  value={@new_session_topic}
-                  phx-change="update_topic"
-                  autofocus
-                />
-              </div>
-              <div class="mt-space-lg flex justify-end gap-space-sm">
-                <.btn type="button" variant={:outline} phx-click="hide_start_session">Cancel</.btn>
-                <.btn type="submit" variant={:primary}>Start Session</.btn>
-              </div>
-            </form>
-          </div>
-        </div>
-      <% end %>
       </div>
     </.app_shell>
     """
   end
+
+  @candidate_actions [
+    %{
+      event: "approve",
+      verb: "Approve",
+      consequence:
+        "Marks this candidate approved and saves it to Atlas, adds its claim to the fact database, " <>
+          "the belief store and the knowledge graph, and records the approval against its source's domain."
+    },
+    %{
+      event: "defer",
+      verb: "Defer",
+      consequence: "Marks this candidate deferred in the review queue and saves it to Atlas."
+    },
+    %{
+      event: "reject",
+      verb: "Reject",
+      consequence:
+        "Marks this candidate rejected in the review queue, saves it to Atlas, and records the " <>
+          "rejection against its source's domain, which every later review reads."
+    }
+  ]
 
   defp candidate_card(assigns) do
     assigns =
       assigns
       |> Map.put_new(:show_actions, true)
       |> Map.put_new(:show_reviewed_at, false)
+      |> assign(:actions, @candidate_actions)
 
     ~H"""
     <.card class={if @selected, do: "border-accent bg-accent-wash"}>
@@ -279,6 +360,7 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
               <.badge variant={trust_tier_variant(@candidate.finding.source.trust_tier)}>
                 <%= @candidate.finding.source.domain %>
               </.badge>
+              <.badge :if={@candidate.finding.source.trust_tier == :blocked}>blocked</.badge>
               <.badge title={"Bias: #{@candidate.finding.source.bias_rating}"}>
                 <%= bias_label(@candidate.finding.source.bias_rating) %>
               </.badge>
@@ -332,32 +414,18 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
 
           <!-- Action Buttons (only for pending) -->
           <%= if @show_actions do %>
-            <div class="flex flex-col items-stretch gap-space-sm">
-              <.reach_shared_badge />
+            <div class="flex flex-col items-start gap-space-sm">
               <.btn
-                variant={:primary}
+                :for={action <- @actions}
+                id={action_trigger_id(action.event, @candidate.id)}
+                variant={:outline}
                 size={:sm}
-                class="outline-mark outline-reach-shared"
-                phx-click="approve"
-                phx-value-id={@candidate.id}
+                reach={:shared}
+                target={candidate_target(@candidate)}
+                phx-click="open_confirm"
+                phx-value-id={action_confirm_id(action.event, @candidate.id)}
               >
-                Approve
-              </.btn>
-              <.btn
-                variant={:primary}
-                size={:sm}
-                phx-click="defer"
-                phx-value-id={@candidate.id}
-              >
-                Defer
-              </.btn>
-              <.btn
-                variant={:primary}
-                size={:sm}
-                phx-click="reject"
-                phx-value-id={@candidate.id}
-              >
-                Reject
+                {action.verb}
               </.btn>
             </div>
           <% else %>
@@ -369,24 +437,39 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
             <% end %>
           <% end %>
         </div>
+        <div :if={@show_actions} class="flex justify-end">
+          <.execute_confirm
+            :for={action <- @actions}
+            id={action_confirm_id(action.event, @candidate.id)}
+            open={@confirming == action_confirm_id(action.event, @candidate.id)}
+            reach={:shared}
+            verb={action.verb}
+            target={candidate_target(@candidate)}
+            consequence={action.consequence}
+            on_confirm={JS.push(action.event, value: %{id: @candidate.id})}
+            on_cancel="close_confirm"
+            trigger_id={action_trigger_id(action.event, @candidate.id)}
+            error={@confirm_error}
+            class="mt-space-md"
+          />
+        </div>
       </.card_body>
     </.card>
     """
   end
 
-  defp reach_shared_badge(assigns) do
-    ~H"""
-    <span class="inline-flex items-center gap-space-xs rounded-sm border border-reach-shared px-space-xs text-caption font-semibold text-reach-shared">
-      <.icon name="hero-share-micro" class="size-3" /> writes shared
-    </span>
-    """
-  end
+  defp action_trigger_id(event, candidate_id), do: "kr-#{event}-#{candidate_id}"
+  defp action_confirm_id(event, candidate_id), do: "kr-confirm-#{event}-#{candidate_id}"
+  defp candidate_target(candidate), do: "candidate #{candidate.id}"
+
+  defp candidate_noun(1), do: "candidate"
+  defp candidate_noun(_count), do: "candidates"
 
   @candidate_status_variants %{
     pending: :default,
     approved: :success,
     auto_approved: :default,
-    rejected: :error,
+    rejected: :default,
     deferred: :warning
   }
 
@@ -394,13 +477,13 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
     verified: :success,
     neutral: :info,
     untrusted: :warning,
-    blocked: :error
+    blocked: :default
   }
 
   @session_status_variants %{
     active: :primary,
     completed: :success,
-    cancelled: :error
+    cancelled: :default
   }
 
   defp candidate_status_variant(status),
@@ -461,14 +544,24 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
   end
 
   @impl true
+  def handle_event("open_confirm", %{"id" => confirm_id}, socket) do
+    {:noreply, assign(socket, confirming: confirm_id, confirm_error: nil)}
+  end
+
+  @impl true
+  def handle_event("close_confirm", _, socket) do
+    {:noreply, close_confirm(socket)}
+  end
+
+  @impl true
   def handle_event("approve", %{"id" => id}, socket) do
     case ReviewQueue.approve(id) do
       {:ok, _} ->
-        {:noreply, refresh_data(socket)}
+        {:noreply, socket |> close_confirm() |> refresh_data()}
 
       {:error, reason} ->
         Logger.warning("Failed to approve candidate", id: id, reason: inspect(reason))
-        {:noreply, socket}
+        {:noreply, assign(socket, :confirm_error, "Approve failed: #{inspect(reason)}")}
     end
   end
 
@@ -476,11 +569,11 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
   def handle_event("reject", %{"id" => id}, socket) do
     case ReviewQueue.reject(id) do
       {:ok, _} ->
-        {:noreply, refresh_data(socket)}
+        {:noreply, socket |> close_confirm() |> refresh_data()}
 
       {:error, reason} ->
         Logger.warning("Failed to reject candidate", id: id, reason: inspect(reason))
-        {:noreply, socket}
+        {:noreply, assign(socket, :confirm_error, "Reject failed: #{inspect(reason)}")}
     end
   end
 
@@ -488,22 +581,23 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
   def handle_event("defer", %{"id" => id}, socket) do
     case ReviewQueue.defer(id) do
       {:ok, _} ->
-        {:noreply, refresh_data(socket)}
+        {:noreply, socket |> close_confirm() |> refresh_data()}
 
       {:error, reason} ->
         Logger.warning("Failed to defer candidate", id: id, reason: inspect(reason))
-        {:noreply, socket}
+        {:noreply, assign(socket, :confirm_error, "Defer failed: #{inspect(reason)}")}
     end
   end
 
   @impl true
   def handle_event("bulk_approve", _, socket) do
     ids = MapSet.to_list(socket.assigns.selected_ids)
-    ReviewQueue.bulk_approve(ids)
+    {:ok, _count} = ReviewQueue.bulk_approve(ids)
 
     socket =
       socket
       |> assign(:selected_ids, MapSet.new())
+      |> close_confirm()
       |> refresh_data()
 
     {:noreply, socket}
@@ -512,11 +606,12 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
   @impl true
   def handle_event("bulk_reject", _, socket) do
     ids = MapSet.to_list(socket.assigns.selected_ids)
-    ReviewQueue.bulk_reject(ids)
+    {:ok, _count} = ReviewQueue.bulk_reject(ids)
 
     socket =
       socket
       |> assign(:selected_ids, MapSet.new())
+      |> close_confirm()
       |> refresh_data()
 
     {:noreply, socket}
@@ -542,16 +637,6 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
   end
 
   @impl true
-  def handle_event("show_start_session", _, socket) do
-    {:noreply, assign(socket, :show_start_session_modal, true)}
-  end
-
-  @impl true
-  def handle_event("hide_start_session", _, socket) do
-    {:noreply, assign(socket, show_start_session_modal: false, new_session_topic: "")}
-  end
-
-  @impl true
   def handle_event("update_topic", %{"topic" => topic}, socket) do
     {:noreply, assign(socket, :new_session_topic, topic)}
   end
@@ -565,17 +650,20 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
 
           socket =
             socket
-            |> assign(show_start_session_modal: false, new_session_topic: "")
+            |> close_confirm()
             |> refresh_data()
 
           {:noreply, socket}
 
         {:error, reason} ->
           Logger.warning("Failed to start session", topic: topic, reason: inspect(reason))
-          {:noreply, socket}
+
+          {:noreply,
+           assign(socket, confirm_error: "Start session failed: #{inspect(reason)}", new_session_topic: topic)}
       end
     else
-      {:noreply, socket}
+      {:noreply,
+       assign(socket, confirm_error: "A session needs a topic to research.", new_session_topic: topic)}
     end
   end
 
@@ -587,6 +675,7 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
 
         socket =
           socket
+          |> close_confirm()
           |> put_flash(:info, "Rejected #{count} HTML fragment items")
           |> refresh_data()
 
@@ -594,12 +683,7 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
 
       {:error, reason} ->
         Logger.warning("Failed to cleanup HTML fragments", reason: inspect(reason))
-
-        socket =
-          socket
-          |> put_flash(:error, "Failed to cleanup: #{inspect(reason)}")
-
-        {:noreply, socket}
+        {:noreply, assign(socket, :confirm_error, "Cleanup failed: #{inspect(reason)}")}
     end
   end
 
@@ -629,6 +713,10 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
   @impl true
   def handle_info(_msg, socket) do
     {:noreply, socket}
+  end
+
+  defp close_confirm(socket) do
+    assign(socket, confirming: nil, confirm_error: nil, new_session_topic: "")
   end
 
   defp refresh_data(socket) do
