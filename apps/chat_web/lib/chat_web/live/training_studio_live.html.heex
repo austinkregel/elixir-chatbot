@@ -170,7 +170,15 @@
               <% end %>
 
               <div class="flex gap-space-sm">
-                <.btn type="submit" size={:sm}>Save</.btn>
+                <.btn
+                  id="add-record-save"
+                  type="submit"
+                  size={:sm}
+                  reach={:local}
+                  target={Path.relative_to_cwd(@source_desc.path)}
+                >
+                  Save
+                </.btn>
                 <.btn type="button" phx-click="cancel_add" variant={:ghost} size={:sm}>Cancel</.btn>
               </div>
             </form>
