@@ -40,6 +40,17 @@ defmodule Brain.Services.LocalScheduler do
      :next_event, :event_time]
   end
 
+  # Setting, cancelling and creating store or remove items; checking and
+  # querying only read them.
+  @impl true
+  def writes?(intent) do
+    intent_str = to_string(intent)
+
+    Enum.any?(["alarm.set", "alarm.cancel", "reminder.set", "reminder.cancel", "timer.set", "timer.cancel", "calendar.create"], fn action ->
+      String.contains?(intent_str, action)
+    end)
+  end
+
   @impl true
   def health_check(_credentials) do
     ensure_table()
