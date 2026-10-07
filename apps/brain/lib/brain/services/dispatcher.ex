@@ -59,7 +59,10 @@ defmodule Brain.Services.Dispatcher do
   ## Parameters
     - intent: The classified intent name
     - slots: Map of filled slot values (e.g., %{location: "NYC"})
-    - context: Additional context (world_id, user_id, etc.)
+    - context: Additional context (world_id, user_id, etc.). With
+      `side_effects: false`, an intent the service says `writes?/1` (a device
+      action, a stored alarm) is refused with `{:error, :side_effects_off}`
+      and the service is not called; read-only intents still run.
 
   ## Returns
     - {:ok, enrichment_data} on success
@@ -77,8 +80,13 @@ defmodule Brain.Services.Dispatcher do
         :no_handler
 
       service ->
-        Logger.info("Dispatcher: routing intent=#{intent} to #{inspect(service)}")
-        dispatch_to_service(service, intent, slots, context)
+        if Map.get(context, :side_effects, true) == false and service.writes?(intent) do
+          Logger.info("Dispatcher: refused intent=#{intent} for #{inspect(service)}: it writes and side effects are off")
+          {:error, :side_effects_off}
+        else
+          Logger.info("Dispatcher: routing intent=#{intent} to #{inspect(service)}")
+          dispatch_to_service(service, intent, slots, context)
+        end
     end
   end
 
