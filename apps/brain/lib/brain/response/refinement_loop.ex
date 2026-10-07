@@ -36,6 +36,8 @@ defmodule Brain.Response.RefinementLoop do
   Options:
     - `:unified_context` - rich context map from ContextBuilder
     - `:max_iterations` - override default iteration limit
+    - `:side_effects` - `false` keeps realization and evaluation from writing
+      (Ouro debug and training data, the analysis of the response)
   """
   def generate(%InternalModel{} = model, opts \\ []) do
     analyses = model.analyses || []
@@ -97,7 +99,7 @@ defmodule Brain.Response.RefinementLoop do
 
     case SurfaceRealizer.realize(specified, realize_opts) do
       {:ok, rendered, response} ->
-        score = ResponseEvaluator.evaluate(rendered, response, primary)
+        score = ResponseEvaluator.evaluate(rendered, response, primary, opts)
         {:ok, response, %{score: score, primitives: rendered, iterations: 1}}
 
       {:error, reason} ->
@@ -114,7 +116,7 @@ defmodule Brain.Response.RefinementLoop do
         {:ok, response, rendered, nil, iteration}
 
       {:ok, rendered, response} ->
-        score = ResponseEvaluator.evaluate(rendered, response, analysis)
+        score = ResponseEvaluator.evaluate(rendered, response, analysis, opts)
 
         current = %{response: response, primitives: rendered, score: score, iteration: iteration}
         best = pick_best(best_so_far, current)
