@@ -111,6 +111,31 @@ defmodule ChatWeb.TrainingStudioLiveTest do
     end
   end
 
+  describe "the first record in the file" do
+    setup %{path: path} do
+      write_records(path, @records)
+      :ok
+    end
+
+    test "Delete deletes it and nothing else", %{conn: conn, path: path} do
+      {:ok, view, _html} = browse(conn, "")
+
+      confirmation = delete_visible_row(view, 1)
+
+      assert file_records(path) == List.delete_at(@records, 0)
+      assert confirmation =~ "record 1"
+    end
+
+    test "Edit saves over it and nothing else", %{conn: conn, path: path} do
+      {:ok, view, _html} = browse(conn, "")
+
+      edit_visible_row(view, 1, "alpha-y", "ay")
+
+      assert file_records(path) ==
+               List.replace_at(@records, 0, %{"value" => "alpha-y", "synonyms" => ["ay"]})
+    end
+  end
+
   describe "the page bar under a filter" do
     test "counts every record in the file and, separately, the matches", %{conn: conn, path: path} do
       records =
