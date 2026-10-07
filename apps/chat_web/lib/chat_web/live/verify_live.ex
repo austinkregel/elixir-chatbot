@@ -3,12 +3,11 @@ defmodule ChatWeb.VerifyLive do
   The `/verify` index: every subsystem that should have a verification page,
   with how many hand-checked cases pass, fail, raised, or have never run.
 
-  Task 039's point is that a feature nobody can exercise in isolation is a
-  feature nobody can check. This page is the inventory of that, and it is
-  deliberately built to be **uncomfortable while it is empty** — a subsystem
-  with no page and no cases is listed with zeros and the task number that would
-  build it, rather than being absent. An index that only showed what exists
-  would report an all-clear on day one.
+  A feature nobody can exercise in isolation is a feature nobody can check.
+  This page is the inventory of that, and it is deliberately built to be
+  **uncomfortable while it is empty**: a subsystem with no page and no cases is
+  listed with zeros and "no page yet", rather than being absent. An index that
+  only showed what exists would report an all-clear on day one.
 
   Counts come from `Atlas.Verification.counts_by_subsystem/1`, scoped to the
   selected world, because a subsystem's answer depends on which world's models
@@ -16,9 +15,9 @@ defmodule ChatWeb.VerifyLive do
 
   ## No page links yet
 
-  None of the 18 pages exist (tasks 040-057). Rather than linking to routes that
-  are not there, each row says which task builds it. When a page lands it gets a
-  route and this page starts linking to it.
+  No subsystem has its own verification page yet. Rather than linking to
+  routes that are not there, each row says it has no page. When a page lands
+  it gets a route and this page starts linking to it.
   """
 
   use ChatWeb, :live_view
@@ -166,7 +165,7 @@ defmodule ChatWeb.VerifyLive do
                       <div class="text-ref text-ink-muted">{row.id}</div>
                     </td>
                     <td class="px-space-sm py-space-xs text-caption text-ink-muted">
-                      not built — task {row.task}
+                      no page yet
                     </td>
                     <td class="px-space-sm py-space-xs text-right text-value text-score-count">{row.counts["pass"]}</td>
                     <td class="px-space-sm py-space-xs text-right text-value text-score-count">{row.counts["fail"]}</td>
