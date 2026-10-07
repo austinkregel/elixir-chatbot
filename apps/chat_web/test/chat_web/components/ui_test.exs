@@ -566,27 +566,36 @@ defmodule ChatWeb.UITest do
   describe "gate_verdict/1" do
     alias Brain.Evaluation.Gate
 
-    defp baseline(f1), do: {:ok, %{"intent" => %{"macro_f1" => f1, "accuracy" => 0.5, "diagnostics" => nil}}}
+    @diagnostics %{"unknown" => 1, "errored" => 0}
+
+    defp baseline(f1), do: {:ok, %{"intent" => %{"macro_f1" => f1, "accuracy" => 0.5, "diagnostics" => @diagnostics}}}
+
+    defp baseline_without_diagnostics(f1),
+      do: {:ok, %{"intent" => %{"macro_f1" => f1, "accuracy" => 0.5, "diagnostics" => nil}}}
+
+    defp current(f1), do: %{"macro_f1" => f1, "diagnostics" => @diagnostics}
 
     defp gate(verdict), do: render_component(&UI.gate_verdict/1, verdict: verdict)
 
     test "a pass shows its mark, the change in points and the allowance" do
-      html = gate(Gate.verdict("intent", baseline(0.500), %{"macro_f1" => 0.496}))
+      html = gate(Gate.verdict("intent", baseline(0.500), current(0.496)))
 
       assert html =~ ~s(data-gate="pass")
       assert html =~ ~s(data-verdict="pass")
       assert html =~ "−0.4 pts against baseline · allows 2"
+      refute html =~ "data-gate-canary"
     end
 
     test "a gain is signed" do
-      assert gate(Gate.verdict("intent", baseline(0.5), %{"macro_f1" => 0.512})) =~ "+1.2 pts against baseline"
+      assert gate(Gate.verdict("intent", baseline(0.5), current(0.512))) =~ "+1.2 pts against baseline"
     end
 
     test "a regression beyond the allowance is a fail with its mark" do
-      html = gate(Gate.verdict("intent", baseline(0.5), %{"macro_f1" => 0.45}))
+      html = gate(Gate.verdict("intent", baseline(0.5), current(0.45)))
 
       assert html =~ ~s(data-verdict="fail")
       assert html =~ "−5.0 pts against baseline · allows 2"
+      refute html =~ "data-gate-canary"
     end
 
     test "a fail on new failed predictions says how many" do
@@ -611,20 +620,22 @@ defmodule ChatWeb.UITest do
       refute html =~ "data-gate-canary"
     end
 
-    test "a current result with no diagnostics leaves the canary unmeasured and says where" do
-      base = {:ok, %{"intent" => %{"macro_f1" => 0.5, "diagnostics" => %{"unknown" => 1}}}}
+    test "a current result with no diagnostics is a fail with its mark that says the canary was not measured and where" do
+      html = gate(Gate.verdict("intent", baseline(0.5), %{"macro_f1" => 0.496}))
 
-      html = gate(Gate.verdict("intent", base, %{"macro_f1" => 0.496}))
-
-      assert html =~ ~s(data-verdict="pass")
+      assert html =~ ~s(data-gate="fail")
+      assert html =~ ~s(data-verdict="fail")
+      assert html =~ "−0.4 pts against baseline · allows 2"
       assert html =~ ~s(data-gate-canary="not_measured")
       assert html =~ "error canary not measured · no diagnostics in the latest result"
       refute html =~ "new unknown, errored or not-loaded predictions"
     end
 
-    test "a baseline with no diagnostics leaves the canary unmeasured and says where" do
-      html = gate(Gate.verdict("intent", baseline(0.5), %{"macro_f1" => 0.5, "diagnostics" => %{"unknown" => 9}}))
+    test "a baseline with no diagnostics is a fail that says the canary was not measured and where" do
+      html = gate(Gate.verdict("intent", baseline_without_diagnostics(0.5), current(0.5)))
 
+      assert html =~ ~s(data-gate="fail")
+      assert html =~ ~s(data-verdict="fail")
       assert html =~ ~s(data-gate-canary="not_measured")
       assert html =~ "error canary not measured · no diagnostics in the baseline"
       refute html =~ "the latest result"
@@ -632,9 +643,10 @@ defmodule ChatWeb.UITest do
     end
 
     test "neither side with diagnostics names both" do
-      html = gate(Gate.verdict("intent", baseline(0.5), %{"macro_f1" => 0.45}))
+      html = gate(Gate.verdict("intent", baseline_without_diagnostics(0.5), %{"macro_f1" => 0.45}))
 
       assert html =~ ~s(data-verdict="fail")
+      assert html =~ "−5.0 pts against baseline · allows 2"
       assert html =~ "error canary not measured · no diagnostics in the baseline or the latest result"
       refute html =~ "new unknown, errored or not-loaded predictions"
     end
@@ -656,7 +668,7 @@ defmodule ChatWeb.UITest do
     end
 
     test "an allowance with a fraction of a point keeps it" do
-      assert gate(%{Gate.verdict("intent", baseline(0.5), %{"macro_f1" => 0.5}) | allowance: 0.015}) =~
+      assert gate(%{Gate.verdict("intent", baseline(0.5), current(0.5)) | allowance: 0.015}) =~
                "allows 1.5"
     end
 
