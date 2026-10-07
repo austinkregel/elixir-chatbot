@@ -657,7 +657,7 @@ defmodule Brain.Analysis.Pipeline do
         end)
     })
 
-    slot_result = SlotDetector.detect(intent, relevant_entities)
+    slot_result = SlotDetector.detect(intent, relevant_entities, side_effects: side_effects?(opts))
 
     if debug_pass2?, do: Logger.info("  pass2:slot_detect=#{System.monotonic_time(:millisecond) - t0}ms")
 
