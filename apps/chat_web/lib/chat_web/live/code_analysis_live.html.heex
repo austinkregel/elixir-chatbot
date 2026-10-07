@@ -607,15 +607,12 @@
                 type="button"
                 class="flex-1"
                 phx-click="analyze_code"
-                disabled={@analyzing or String.trim(@code_input) == ""}
+                icon="hero-play"
+                busy={@analyzing}
+                busy_label="Analyzing"
+                disabled={String.trim(@code_input) == ""}
               >
-                <%= if @analyzing do %>
-                  <.icon name="hero-arrow-path" class="size-4 animate-spin text-progress-fill" />
-                  Analyzing...
-                <% else %>
-                  <.icon name="hero-play" class="size-4" />
-                  Analyze
-                <% end %>
+                {if @analyzing, do: "Analyzing", else: "Analyze"}
               </.btn>
               <.btn
                 type="button"
