@@ -438,7 +438,7 @@ defmodule Mix.Tasks.GenFramingData do
   # When `mode: :full` is passed, delegates to `Pipeline.analyze_chunk/1`
   # with a per-chunk timeout to let you compare output quality.
   defp batch_analyze(text, :full) do
-    task = Task.async(fn -> FullPipeline.analyze_chunk(text) end)
+    task = Task.async(fn -> FullPipeline.analyze_chunk(text, side_effects: false) end)
 
     case Task.yield(task, 30_000) || Task.shutdown(task, :brutal_kill) do
       {:ok, analysis} -> analysis
