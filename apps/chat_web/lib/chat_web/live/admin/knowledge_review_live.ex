@@ -81,85 +81,54 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
       <:page_header>
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-xl font-bold">Knowledge Review Queue</h1>
-            <p class="text-sm text-base-content/60">Review and approve knowledge expansion candidates</p>
+            <h1 class="text-title text-ink">Knowledge Review Queue</h1>
+            <p class="text-body text-ink-muted">Review and approve knowledge expansion candidates</p>
           </div>
-          <button
-            class="btn btn-primary btn-sm"
-            phx-click="show_start_session"
-          >
+          <.btn variant={:primary} size={:sm} phx-click="show_start_session">
             Start Learning Session
-          </button>
+          </.btn>
         </div>
       </:page_header>
 
-      <div class="p-4 sm:p-6">
+      <div class="p-space-lg sm:p-space-xl">
         <!-- Stats Bar -->
-        <div class="stats shadow mb-6 w-full">
-          <div class="stat">
-            <div class="stat-title">Pending</div>
-            <div class="stat-value text-primary"><%= @stats.pending %></div>
-          </div>
-          <div class="stat">
-            <div class="stat-title">Approved Today</div>
-            <div class="stat-value text-success"><%= @stats.approved_today %></div>
-          </div>
-          <div class="stat">
-            <div class="stat-title">Rejected Today</div>
-            <div class="stat-value text-error"><%= @stats.rejected_today %></div>
-          </div>
-          <div class="stat">
-            <div class="stat-title">Total Approved</div>
-            <div class="stat-value"><%= @stats.approved %></div>
-          </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-space-lg mb-space-xl">
+          <.stat_kpi label="Pending" value={to_string(@stats.pending)} />
+          <.stat_kpi label="Approved Today" value={to_string(@stats.approved_today)} />
+          <.stat_kpi label="Rejected Today" value={to_string(@stats.rejected_today)} />
+          <.stat_kpi label="Total Approved" value={to_string(@stats.approved)} />
         </div>
 
       <!-- Status Tabs -->
-      <div class="tabs tabs-boxed mb-4">
-        <button
-          class={"tab #{if @current_tab == :pending, do: "tab-active"}"}
-          phx-click="change_tab"
-          phx-value-tab="pending"
-        >
+      <.tabs class="mb-space-lg">
+        <.tab active={@current_tab == :pending} phx-click="change_tab" phx-value-tab="pending">
           Pending
-          <span class="badge badge-sm ml-2"><%= @stats.pending %></span>
-        </button>
-        <button
-          class={"tab #{if @current_tab == :approved, do: "tab-active"}"}
-          phx-click="change_tab"
-          phx-value-tab="approved"
-        >
+          <.badge class="ml-space-sm"><%= @stats.pending %></.badge>
+        </.tab>
+        <.tab active={@current_tab == :approved} phx-click="change_tab" phx-value-tab="approved">
           Approved
-          <span class="badge badge-sm badge-success ml-2"><%= @stats.approved %></span>
-        </button>
-        <button
-          class={"tab #{if @current_tab == :rejected, do: "tab-active"}"}
-          phx-click="change_tab"
-          phx-value-tab="rejected"
-        >
+          <.badge variant={:success} class="ml-space-sm"><%= @stats.approved %></.badge>
+        </.tab>
+        <.tab active={@current_tab == :rejected} phx-click="change_tab" phx-value-tab="rejected">
           Rejected
-          <span class="badge badge-sm badge-error ml-2"><%= @stats.rejected %></span>
-        </button>
-        <button
-          class={"tab #{if @current_tab == :deferred, do: "tab-active"}"}
-          phx-click="change_tab"
-          phx-value-tab="deferred"
-        >
+          <.badge variant={:error} class="ml-space-sm"><%= @stats.rejected %></.badge>
+        </.tab>
+        <.tab active={@current_tab == :deferred} phx-click="change_tab" phx-value-tab="deferred">
           Deferred
-          <span class="badge badge-sm badge-warning ml-2"><%= @stats.deferred %></span>
-        </button>
-      </div>
+          <.badge variant={:warning} class="ml-space-sm"><%= @stats.deferred %></.badge>
+        </.tab>
+      </.tabs>
 
       <!-- Active Sessions -->
       <%= if length(@sessions) > 0 do %>
-        <div class="mb-6">
-          <h2 class="text-lg font-semibold mb-2">Active Sessions</h2>
-          <div class="flex flex-wrap gap-2">
+        <div class="mb-space-xl">
+          <h2 class="text-heading text-ink mb-space-sm">Active Sessions</h2>
+          <div class="flex flex-wrap gap-space-sm">
             <%= for session <- @sessions do %>
-              <div class={"badge badge-lg gap-2 #{session_status_class(session.status)}"}>
+              <.badge variant={session_status_variant(session.status)}>
                 <span><%= session.topic || "Session" %></span>
-                <span class="badge badge-sm"><%= session.findings_count %> findings</span>
-              </div>
+                <.badge size={:xs}><%= session.findings_count %> findings</.badge>
+              </.badge>
             <% end %>
           </div>
         </div>
@@ -167,31 +136,39 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
 
       <!-- Bulk Actions (only for pending) -->
       <%= if @current_tab == :pending do %>
-        <div class="flex gap-2 mb-4">
-          <button
-            class="btn btn-success btn-sm"
+        <div class="flex items-center gap-space-sm mb-space-lg">
+          <.reach_shared_badge />
+          <.btn
+            variant={:primary}
+            size={:sm}
+            class="outline-mark outline-reach-shared"
             phx-click="bulk_approve"
             disabled={MapSet.size(@selected_ids) == 0}
           >
             Approve Selected (<%= MapSet.size(@selected_ids) %>)
-          </button>
-          <button
-            class="btn btn-error btn-sm"
+          </.btn>
+          <.btn
+            variant={:primary}
+            size={:sm}
             phx-click="bulk_reject"
             disabled={MapSet.size(@selected_ids) == 0}
           >
             Reject Selected
-          </button>
-          <button
-            class="btn btn-warning btn-sm"
+          </.btn>
+          <.btn
+            variant={:primary}
+            size={:sm}
             phx-click="cleanup_html"
             data-confirm="This will reject all pending items containing HTML/JavaScript fragments. Continue?"
           >
-            <.icon name="hero-trash" class="size-4 mr-1" />
+            <.icon name="hero-trash" class="size-4" />
             Cleanup HTML Fragments
-          </button>
+          </.btn>
           <div class="flex-1"></div>
-          <select class="select select-bordered select-sm" phx-change="change_sort">
+          <select
+            class="h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
+            phx-change="change_sort"
+          >
             <option value="confidence" selected={@sort_by == :confidence}>Sort by Confidence</option>
             <option value="created_at" selected={@sort_by == :created_at}>Sort by Date</option>
           </select>
@@ -199,16 +176,16 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
       <% end %>
 
       <!-- Candidate List -->
-      <div class="space-y-4">
+      <div class="space-y-space-lg">
         <%= if length(@candidates) == 0 do %>
-          <div class="card bg-base-200">
-            <div class="card-body text-center">
-              <p class="text-base-content/70">No <%= @current_tab %> candidates.</p>
+          <.card class="bg-surface-sunk">
+            <.card_body class="text-center">
+              <p class="text-body text-ink-muted">No <%= @current_tab %> candidates.</p>
               <%= if @current_tab == :pending do %>
-                <p class="text-sm text-base-content/50">Start a learning session to discover new knowledge.</p>
+                <p class="text-body-dense text-ink-muted">Start a learning session to discover new knowledge.</p>
               <% end %>
-            </div>
-          </div>
+            </.card_body>
+          </.card>
         <% else %>
           <%= for candidate <- @candidates do %>
             <.candidate_card
@@ -223,31 +200,31 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
 
       <!-- Start Session Modal -->
       <%= if @show_start_session_modal do %>
-        <div class="modal modal-open">
-          <div class="modal-box">
-            <h3 class="font-bold text-lg">Start Learning Session</h3>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-space-lg">
+          <div class="fixed inset-0 bg-ground/80" phx-click="hide_start_session"></div>
+          <div class="relative w-full max-w-lg rounded-md border border-border-strong bg-surface-raised shadow-overlay p-space-lg">
+            <h3 class="text-heading text-ink">Start Learning Session</h3>
             <form phx-submit="start_session">
-              <div class="form-control mt-4">
-                <label class="label">
-                  <span class="label-text">Topic to research</span>
+              <div class="mt-space-lg">
+                <label class="block mb-space-xs text-label text-ink-muted">
+                  Topic to research
                 </label>
                 <input
                   type="text"
                   name="topic"
                   placeholder="e.g., European capitals, Nobel Prize winners"
-                  class="input input-bordered"
+                  class="w-full h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
                   value={@new_session_topic}
                   phx-change="update_topic"
                   autofocus
                 />
               </div>
-              <div class="modal-action">
-                <button type="button" class="btn" phx-click="hide_start_session">Cancel</button>
-                <button type="submit" class="btn btn-primary">Start Session</button>
+              <div class="mt-space-lg flex justify-end gap-space-sm">
+                <.btn type="button" variant={:outline} phx-click="hide_start_session">Cancel</.btn>
+                <.btn type="submit" variant={:primary}>Start Session</.btn>
               </div>
             </form>
           </div>
-          <div class="modal-backdrop" phx-click="hide_start_session"></div>
         </div>
       <% end %>
       </div>
@@ -262,52 +239,60 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
       |> Map.put_new(:show_reviewed_at, false)
 
     ~H"""
-    <div class={"card bg-base-100 shadow-xl #{if @selected, do: "ring-2 ring-primary"}"}>
-      <div class="card-body">
-        <div class="flex items-start gap-4">
+    <.card class={if @selected, do: "border-accent bg-accent-wash"}>
+      <.card_body>
+        <div class="flex items-start gap-space-lg">
           <!-- Checkbox (only for pending) -->
           <%= if @show_actions do %>
             <input
               type="checkbox"
-              class="checkbox checkbox-primary mt-1"
+              class="size-4 accent-primary mt-space-xs"
               checked={@selected}
               phx-click="toggle_select"
               phx-value-id={@candidate.id}
             />
           <% else %>
             <!-- Status badge for non-pending -->
-            <span class={"badge #{status_badge_class(@candidate.status)}"}>
+            <.badge variant={candidate_status_variant(@candidate.status)}>
               <%= @candidate.status %>
-            </span>
+            </.badge>
           <% end %>
 
           <div class="flex-1">
             <!-- Claim -->
-            <h2 class="card-title text-base"><%= @candidate.finding.claim %></h2>
+            <h2 class="text-heading text-ink"><%= @candidate.finding.claim %></h2>
 
             <!-- Entity and Type -->
-            <div class="flex gap-2 mt-2">
-              <span class="badge badge-outline">
+            <div class="flex gap-space-sm mt-space-sm">
+              <.badge class="border border-border-strong">
                 <%= @candidate.finding.entity %>
-              </span>
+              </.badge>
               <%= if @candidate.finding.entity_type do %>
-                <span class="badge badge-ghost">
+                <.badge>
                   <%= @candidate.finding.entity_type %>
-                </span>
+                </.badge>
               <% end %>
             </div>
 
             <!-- Source Info -->
-            <div class="flex items-center gap-2 mt-3">
-              <.source_badge source={@candidate.finding.source} />
+            <div class="flex items-center gap-space-sm mt-space-md">
+              <.badge variant={trust_tier_variant(@candidate.finding.source.trust_tier)}>
+                <%= @candidate.finding.source.domain %>
+              </.badge>
+              <.badge title={"Bias: #{@candidate.finding.source.bias_rating}"}>
+                <%= bias_label(@candidate.finding.source.bias_rating) %>
+              </.badge>
+              <.badge class="border border-border-strong" title="Reliability score">
+                <%= format_confidence(@candidate.finding.source.reliability_score) %>%
+              </.badge>
             </div>
 
             <!-- Corroboration -->
-            <div class="text-sm mt-2 text-base-content/70">
+            <div class="text-body mt-space-sm text-ink">
               <strong>Sources:</strong>
               <%= length(@candidate.corroborating_sources) + 1 %>
               <%= if length(@candidate.corroborating_sources) > 0 do %>
-                <span class="text-xs opacity-70">
+                <span class="text-caption text-ink-muted">
                   (<%= format_domains(@candidate.corroborating_sources) %>)
                 </span>
               <% end %>
@@ -315,86 +300,127 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
 
             <!-- Contradiction Warning -->
             <%= if length(@candidate.existing_contradictions) > 0 do %>
-              <div class="alert alert-warning mt-3 py-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <div>
-                  <span class="font-semibold">Contradicts existing belief:</span>
-                  <%= for conflict <- Enum.take(@candidate.existing_contradictions, 2) do %>
-                    <div class="text-sm"><%= conflict.object || inspect(conflict) %></div>
-                  <% end %>
-                </div>
-              </div>
+              <.alert variant={:warning} icon="hero-exclamation-triangle" class="mt-space-md">
+                <span class="font-semibold">Contradicts existing belief:</span>
+                <%= for conflict <- Enum.take(@candidate.existing_contradictions, 2) do %>
+                  <div class="text-body-dense"><%= conflict.object || inspect(conflict) %></div>
+                <% end %>
+              </.alert>
             <% end %>
 
             <!-- Confidence -->
-            <div class="mt-3">
-              <div class="flex justify-between text-xs mb-1">
+            <div class="mt-space-md">
+              <div class="flex justify-between text-caption text-ink mb-space-xs">
                 <span>Confidence</span>
-                <span><%= format_confidence(@candidate.aggregate_confidence) %>%</span>
+                <span class="text-offset"><%= format_confidence(@candidate.aggregate_confidence) %>%</span>
               </div>
-              <progress
-                class={"progress #{confidence_class(@candidate.aggregate_confidence)} w-full"}
-                value={@candidate.aggregate_confidence * 100}
-                max="100"
-              ></progress>
+              <div
+                class="w-full h-space-sm rounded-sm bg-surface-sunk"
+                role="meter"
+                aria-label="Confidence"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow={@candidate.aggregate_confidence * 100}
+              >
+                <div
+                  class="h-full rounded-sm bg-ink-muted"
+                  style={"width: #{@candidate.aggregate_confidence * 100}%"}
+                />
+              </div>
             </div>
           </div>
 
           <!-- Action Buttons (only for pending) -->
           <%= if @show_actions do %>
-            <div class="flex flex-col gap-2">
-              <button
-                class="btn btn-success btn-sm"
+            <div class="flex flex-col items-stretch gap-space-sm">
+              <.reach_shared_badge />
+              <.btn
+                variant={:primary}
+                size={:sm}
+                class="outline-mark outline-reach-shared"
                 phx-click="approve"
                 phx-value-id={@candidate.id}
               >
                 Approve
-              </button>
-              <button
-                class="btn btn-warning btn-sm"
+              </.btn>
+              <.btn
+                variant={:primary}
+                size={:sm}
                 phx-click="defer"
                 phx-value-id={@candidate.id}
               >
                 Defer
-              </button>
-              <button
-                class="btn btn-error btn-sm"
+              </.btn>
+              <.btn
+                variant={:primary}
+                size={:sm}
                 phx-click="reject"
                 phx-value-id={@candidate.id}
               >
                 Reject
-              </button>
+              </.btn>
             </div>
           <% else %>
             <!-- Reviewed timestamp for non-pending -->
             <%= if @show_reviewed_at && @candidate.reviewed_at do %>
-              <div class="text-xs text-base-content/50">
+              <div class="text-caption text-ink-muted">
                 Reviewed: <%= format_datetime(@candidate.reviewed_at) %>
               </div>
             <% end %>
           <% end %>
         </div>
-      </div>
-    </div>
+      </.card_body>
+    </.card>
     """
   end
 
-  defp status_badge_class(:approved) do
-    "badge-success"
+  defp reach_shared_badge(assigns) do
+    ~H"""
+    <span class="inline-flex items-center gap-space-xs rounded-sm border border-reach-shared px-space-xs text-caption font-semibold text-reach-shared">
+      <.icon name="hero-share-micro" class="size-3" /> writes shared
+    </span>
+    """
   end
 
-  defp status_badge_class(:rejected) do
-    "badge-error"
-  end
+  @candidate_status_variants %{
+    pending: :default,
+    approved: :success,
+    auto_approved: :default,
+    rejected: :error,
+    deferred: :warning
+  }
 
-  defp status_badge_class(:deferred) do
-    "badge-warning"
-  end
+  @trust_tier_variants %{
+    verified: :success,
+    neutral: :info,
+    untrusted: :warning,
+    blocked: :error
+  }
 
-  defp status_badge_class(_) do
-    "badge-ghost"
+  @session_status_variants %{
+    active: :primary,
+    completed: :success,
+    cancelled: :error
+  }
+
+  defp candidate_status_variant(status),
+    do: fetch_variant!(@candidate_status_variants, status, "candidate status")
+
+  defp trust_tier_variant(tier), do: fetch_variant!(@trust_tier_variants, tier, "source trust tier")
+
+  defp session_status_variant(status),
+    do: fetch_variant!(@session_status_variants, status, "session status")
+
+  defp fetch_variant!(variants, value, what) do
+    case Map.fetch(variants, value) do
+      {:ok, variant} ->
+        variant
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.Admin.KnowledgeReviewLive: no badge treatment for #{what} #{inspect(value)}. " <>
+                "The mapped values are #{inspect(Map.keys(variants))}."
+    end
   end
 
   defp format_datetime(nil) do
@@ -409,42 +435,15 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
     "N/A"
   end
 
-  defp source_badge(assigns) do
-    tier_class =
-      case assigns.source.trust_tier do
-        :verified -> "badge-success"
-        :neutral -> "badge-info"
-        :untrusted -> "badge-warning"
-        :blocked -> "badge-error"
-        _ -> "badge-ghost"
-      end
-
-    bias_label =
-      case assigns.source.bias_rating do
-        :left -> "L"
-        :center_left -> "CL"
-        :center -> "C"
-        :center_right -> "CR"
-        :right -> "R"
-        _ -> "?"
-      end
-
-    assigns = assign(assigns, :tier_class, tier_class)
-    assigns = assign(assigns, :bias_label, bias_label)
-
-    ~H"""
-    <div class="flex items-center gap-2">
-      <span class={"badge #{@tier_class}"}>
-        <%= @source.domain %>
-      </span>
-      <span class="badge badge-ghost" title={"Bias: #{@source.bias_rating}"}>
-        <%= @bias_label %>
-      </span>
-      <span class="badge badge-outline" title="Reliability score">
-        <%= format_confidence(@source.reliability_score) %>%
-      </span>
-    </div>
-    """
+  defp bias_label(bias_rating) do
+    case bias_rating do
+      :left -> "L"
+      :center_left -> "CL"
+      :center -> "C"
+      :center_right -> "CR"
+      :right -> "R"
+      _ -> "?"
+    end
   end
 
   @impl true
@@ -657,31 +656,4 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
     |> Enum.join(", ")
   end
 
-  defp confidence_class(score) when is_float(score) do
-    cond do
-      score >= 0.8 -> "progress-success"
-      score >= 0.5 -> "progress-warning"
-      true -> "progress-error"
-    end
-  end
-
-  defp confidence_class(_) do
-    "progress-info"
-  end
-
-  defp session_status_class(:active) do
-    "badge-primary"
-  end
-
-  defp session_status_class(:completed) do
-    "badge-success"
-  end
-
-  defp session_status_class(:cancelled) do
-    "badge-error"
-  end
-
-  defp session_status_class(_) do
-    "badge-ghost"
-  end
 end
