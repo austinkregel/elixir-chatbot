@@ -1144,8 +1144,9 @@ defmodule ChatWeb.UI do
   the baseline and the gate's allowance ("−0.4 pts against baseline · allows
   2"), and, when the gate failed on new unknown, errored or not-loaded
   predictions, how many. When the baseline or the latest result saved no
-  diagnostics, the error canary was not measured, and the line says so and
-  names which. With no baseline saved, or none for this task, it
+  diagnostics, the error canary was not measured: the gate failed, so the
+  verdict shows the fail mark, and the line says the canary was not measured
+  and names which side had no diagnostics. With no baseline saved, or none for this task, it
   shows the not-run verdict worded "gate not set", because the gate has
   judged nothing. A baseline with no current result to judge is a failure,
   as it is for the mix task.
@@ -1197,7 +1198,7 @@ defmodule ChatWeb.UI do
             class="text-caption text-ink-muted"
             data-gate-canary="not_measured"
           >
-            error canary not measured · no diagnostics in {diagnostics_absent_words(@verdict.diagnostics_absent)}
+            error canary not measured · no diagnostics in {Brain.Evaluation.Gate.diagnostics_absent_words(@verdict.diagnostics_absent)}
           </span>
       <% end %>
     </span>
@@ -1208,19 +1209,6 @@ defmodule ChatWeb.UI do
     raise ArgumentError,
           "ChatWeb.UI.gate_verdict/1: no treatment for a gate verdict #{inspect(verdict)}. " <>
             "A verdict's status is :pass, :fail or :not_set."
-  end
-
-  # The sides of a gate verdict that saved no diagnostics, as words.
-  defp diagnostics_absent_words(sides) do
-    case Enum.sort(sides) do
-      [:baseline] -> "the baseline"
-      [:current] -> "the latest result"
-      [:baseline, :current] -> "the baseline or the latest result"
-      other ->
-        raise ArgumentError,
-              "ChatWeb.UI.gate_verdict/1: an unmeasured canary names the sides with no diagnostics, " <>
-                "one or both of :baseline and :current; got #{inspect(other)}."
-    end
   end
 
   # A change in macro-F1 as points: a fraction of 1 times 100, one decimal,
