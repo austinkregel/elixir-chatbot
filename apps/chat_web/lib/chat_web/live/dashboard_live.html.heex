@@ -71,12 +71,23 @@
             <div class="rounded-md bg-surface-sunk border border-border p-space-md">
               <div class="text-label text-ink-muted mb-space-xs"><%= label %></div>
               <%= if data = @evaluation_summary[task] do %>
-                <div class="text-heading tabular-nums">
-                  <span class={accuracy_color(data.accuracy)}><%= Float.round(data.accuracy * 100, 1) %>%</span>
-                </div>
-                <div class="text-caption text-ink-muted mt-space-2xs">
-                  F1: <%= Float.round((data.macro_f1 || 0.0) * 100, 1) %>%
-                  · <%= data.total_examples || 0 %> examples
+                <%= if is_number(data.accuracy) do %>
+                  <div class="text-heading tabular-nums text-ink">{evaluation_percent(data.accuracy)}</div>
+                  <div class="text-caption text-ink-muted mt-space-2xs">
+                    accuracy · {examples_label(data.total_examples)}
+                  </div>
+                <% else %>
+                  <div class="text-body text-ink-muted">no accuracy in this result</div>
+                  <div class="text-caption text-ink-muted mt-space-2xs">
+                    {examples_label(data.total_examples)}
+                  </div>
+                <% end %>
+                <div class="mt-space-xs flex flex-wrap items-center gap-x-space-sm gap-y-space-2xs text-caption text-ink-muted">
+                  <span :if={is_number(data.macro_f1)}>
+                    <span class="text-value text-ink">{evaluation_percent(data.macro_f1)}</span> macro-F1
+                  </span>
+                  <span :if={not is_number(data.macro_f1)}>no macro-F1 in this result</span>
+                  <.macro_f1_gate task={task} />
                 </div>
                 <div class="text-caption text-ink-muted">
                   <%= if data.duration_ms, do: "#{data.duration_ms}ms", else: "" %>
@@ -109,7 +120,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-space-md">
           <div class="rounded-md bg-surface-sunk border border-border p-space-md">
             <div class="text-label text-ink-muted mb-space-xs">Master Switch</div>
-            <div class={"text-heading #{if @kg_signals_status[:enabled], do: "text-ink", else: "text-red"}"}>
+            <div class="text-heading text-ink">
               <%= if @kg_signals_status[:enabled], do: "ON", else: "OFF" %>
             </div>
           </div>
@@ -974,10 +985,14 @@
           </div>
           <div class="flex items-center gap-space-sm">
             <.btn
+              id="reload-training-worlds"
               variant={:ghost}
               size={:xs}
+              reach={:local}
+              target="world tables"
               phx-click="reload_training_worlds"
               title="Reload persisted worlds from disk"
+              aria-label="Reload persisted worlds from disk"
             >
               <.icon name="hero-arrow-path" class="size-3" />
             </.btn>
@@ -1114,9 +1129,9 @@
             </div>
           </div>
           <div class="flex items-center gap-space-sm">
-            <.button navigate={~p"/code"}>
-              <.icon name="hero-arrow-right" class="size-3" /> Open
-            </.button>
+            <.btn variant={:link} navigate={~p"/code"} icon="hero-arrow-right">
+              Open
+            </.btn>
             <.badge
               variant={if @code_analysis_status.ready, do: :success, else: :warning}
               size={:sm}
@@ -1217,9 +1232,9 @@
             </div>
           </div>
           <div class="flex items-center gap-space-sm">
-            <.button navigate={~p"/settings?section=services"}>
-              <.icon name="hero-cog-6-tooth" class="size-3" /> Configure
-            </.button>
+            <.btn variant={:link} navigate={~p"/settings?section=services"} icon="hero-cog-6-tooth">
+              Configure
+            </.btn>
             <.badge
               variant={if @services_status.ready, do: :success, else: :warning}
               size={:sm}
@@ -1551,9 +1566,9 @@
               </p>
             </div>
           </div>
-          <.button navigate={~p"/memories"} variant="primary">
-            <.icon name="hero-arrow-right" class="size-4" /> Open Explorer
-          </.button>
+          <.btn variant={:link} navigate={~p"/memories"} icon="hero-arrow-right">
+            Open Explorer
+          </.btn>
         </div>
       </div>
     </section>
@@ -1638,6 +1653,7 @@
                           </span>
                         </div>
                         <.badge variant={status_badge_variant(status.status)} size={:xs}>
+                          <.status_dot :if={status.status == :not_started} status={:not_started} size={:sm} />
                           {status.label}
                         </.badge>
                       </div>
@@ -1664,7 +1680,7 @@
                               Never Used
                             </.badge>
                           <% :high_cost -> %>
-                            <.badge variant={:error} size={:xs}>
+                            <.badge variant={:warning} size={:xs}>
                               <.icon name="hero-exclamation-triangle" class="size-2.5" />
                               High Cost
                             </.badge>
