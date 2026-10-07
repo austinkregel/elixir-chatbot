@@ -35,6 +35,7 @@ defmodule ChatWeb.ChatLive do
       |> assign(:current_conversation_id, nil)
       |> assign(:messages, [])
       |> assign(:input_text, "")
+      |> assign(:input_error, nil)
       |> assign(:is_connected, true)
       |> assign(:error_message, nil)
       |> assign(:knowledge, knowledge)
@@ -112,41 +113,29 @@ defmodule ChatWeb.ChatLive do
     {:noreply, socket}
   end
 
+  # A message must carry at least one character that is not whitespace. The
+  # input enforces this in the browser, but a submit can bypass the browser,
+  # so the send handler rejects a blank message before it creates a
+  # conversation or calls `Brain.evaluate/3`.
+  @blank_message_error "A message needs at least one character that is not a space."
+
   @impl true
   def handle_event("send_message", %{"input" => input}, socket) do
-    if socket.assigns.current_conversation_id do
-      send_message(socket.assigns.current_conversation_id, input, socket)
+    if blank_message?(input) do
+      {:noreply, socket |> assign(:input_text, input) |> assign(:input_error, @blank_message_error)}
     else
-      world_id = socket.assigns.current_world_id
-
-      case Brain.create_conversation(world_id: world_id) do
-        {:ok, conversation_id} ->
-          socket =
-            socket
-            |> assign(:current_conversation_id, conversation_id)
-            |> assign(:conversations, [
-              %{
-                id: conversation_id,
-                world_id: world_id,
-                message_count: 0,
-                created_at: System.system_time(:millisecond),
-                last_activity: System.system_time(:millisecond)
-              }
-              | socket.assigns.conversations
-            ])
-            |> push_patch(to: ~p"/chat/#{conversation_id}", replace: true)
-
-          send_message(conversation_id, input, socket)
-
-        {:error, reason} ->
-          socket = assign(socket, :error_message, "Failed to create conversation: #{reason}")
-          {:noreply, socket}
-      end
+      send_new_message(input, socket)
     end
   end
 
   def handle_event("input_change", %{"input" => value}, socket) do
-    {:noreply, assign(socket, :input_text, value)}
+    socket = assign(socket, :input_text, value)
+
+    if blank_message?(value) do
+      {:noreply, socket}
+    else
+      {:noreply, assign(socket, :input_error, nil)}
+    end
   end
 
   def handle_event("toggle_knowledge", _params, socket) do
@@ -369,6 +358,15 @@ defmodule ChatWeb.ChatLive do
   defp describe_reason(reason) when is_binary(reason), do: reason
   defp describe_reason(reason), do: inspect(reason)
 
+  # `Brain.evaluate/3` returns `{:error, {:generation_failed, message}}` when
+  # evaluation raised, carrying the exception's message; any other error
+  # reason is shown as its term.
+  defp describe_evaluation_error({:generation_failed, message}) when is_binary(message),
+    do: "Generating a response failed: #{message}"
+
+  defp describe_evaluation_error(reason),
+    do: "Evaluating the message failed: #{describe_reason(reason)}"
+
   defp reset_for_world_change(socket) do
     socket
     |> assign(:current_conversation_id, nil)
@@ -565,7 +563,7 @@ defmodule ChatWeb.ChatLive do
       {:error, reason} ->
         socket =
           if socket.assigns.current_conversation_id == conversation_id do
-            assign(socket, :error_message, "Error: #{reason}")
+            assign(socket, :error_message, describe_evaluation_error(reason))
           else
             socket
           end
@@ -653,6 +651,40 @@ defmodule ChatWeb.ChatLive do
     end
   end
 
+  defp blank_message?(input), do: String.trim(input) == ""
+
+  defp send_new_message(input, socket) do
+    if socket.assigns.current_conversation_id do
+      send_message(socket.assigns.current_conversation_id, input, socket)
+    else
+      world_id = socket.assigns.current_world_id
+
+      case Brain.create_conversation(world_id: world_id) do
+        {:ok, conversation_id} ->
+          socket =
+            socket
+            |> assign(:current_conversation_id, conversation_id)
+            |> assign(:conversations, [
+              %{
+                id: conversation_id,
+                world_id: world_id,
+                message_count: 0,
+                created_at: System.system_time(:millisecond),
+                last_activity: System.system_time(:millisecond)
+              }
+              | socket.assigns.conversations
+            ])
+            |> push_patch(to: ~p"/chat/#{conversation_id}", replace: true)
+
+          send_message(conversation_id, input, socket)
+
+        {:error, reason} ->
+          socket = assign(socket, :error_message, "Failed to create conversation: #{reason}")
+          {:noreply, socket}
+      end
+    end
+  end
+
   defp send_message(conversation_id, input, socket) do
     message_id = generate_message_id()
 
@@ -668,6 +700,7 @@ defmodule ChatWeb.ChatLive do
       socket
       |> assign(:messages, socket.assigns.messages ++ [user_message])
       |> assign(:input_text, "")
+      |> assign(:input_error, nil)
       |> assign(:error_message, nil)
 
     view_pid = self()
