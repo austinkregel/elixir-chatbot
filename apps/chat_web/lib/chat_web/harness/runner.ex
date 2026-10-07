@@ -4,7 +4,7 @@ defmodule ChatWeb.Harness.Runner do
 
   This is the shape `/code` and the Training Studio's Trace tab already prove:
   an input, one call into a subsystem, the result rendered beside the raw term.
-  Task 039 exists to build it once so that 18 pages are not 18 bespoke ones.
+  It is built once here so that 18 subsystem pages are not 18 bespoke ones.
 
   ## A page keeps its own events
 
@@ -20,8 +20,8 @@ defmodule ChatWeb.Harness.Runner do
   `run/2` catches at the subsystem boundary and returns `:raised` with the
   exception and its stacktrace.
 
-  Task 039 left this open on the grounds that crashing would be the choice
-  consistent with the no-fallbacks rule. It is not, and the reason is specific
+  Crashing might look like the choice consistent with the no-fallbacks rule.
+  It is not, and the reason is specific
   to this tool: a crashed LiveView shows the person nothing. The stacktrace goes
   to the server log, the page disconnects, and the human who came to verify a
   subsystem learns less than if the failure were on screen. Crashing would
@@ -34,7 +34,7 @@ defmodule ChatWeb.Harness.Runner do
   distinct from `"fail"`, because a subsystem that raised produced no answer
   while a failing one produced a wrong answer.
 
-  Two things keep this from becoming the pattern task 026 is deciding about.
+  Two things keep this from becoming a general pattern of catching failures.
   The catch is scoped to exactly one expression — the subsystem call — rather
   than wrapping a render or an event handler. And it never produces a value that
   flows onward: `:raised` has no `:value`, so nothing downstream can mistake a
@@ -42,12 +42,12 @@ defmodule ChatWeb.Harness.Runner do
 
   ## Provenance is collected, not asked for
 
-  Task 039's added criterion is that a value which came from a fallback default
-  must be visually distinguishable from a computed one. `run/2` turns
-  `Brain.Provenance` on around the subsystem call and returns what the
-  subsystem recorded, so a page gets this without gathering anything itself and
-  without the subsystem's signature changing — the per-request trace collector
-  task 039 asks for rather than provenance threaded through every return value.
+  A value which came from a fallback default must be visually distinguishable
+  from a computed one. `run/2` turns `Brain.Provenance` on around the subsystem
+  call and returns what the subsystem recorded, so a page gets this without
+  gathering anything itself and without the subsystem's signature changing — a
+  per-request trace collector rather than provenance threaded through every
+  return value.
 
   The panel renders each recorded value with where it came from, why, and which
   function said so, and the stand-ins — `:default`, `:absent`, `:unavailable` —
@@ -167,20 +167,45 @@ defmodule ChatWeb.Harness.Runner do
   defp elapsed(started), do: System.monotonic_time(:microsecond) - started
 
   @doc """
-  Renders an outcome: what was called, how long it took, the result or the
-  exception, the provenance, and the raw term.
+  Renders an outcome: what was called, in which world, how long it took, the
+  result or the exception, the provenance, and the raw term.
 
   `comparison` is optional — present when the outcome was checked against a
   saved case's expectation, absent for an ad-hoc run.
+
+  `world_id` is the world the run used; the same input can be right in two
+  worlds, so the world is part of the result. The applied language is not
+  shown: nothing in the application reads it yet.
+
+  `expected_sources` names the source prefixes the page expects to record
+  provenance on this call's path (for example `"Brain.Analysis.TypeHierarchy"`).
+  When the trace is empty, or some of them recorded nothing,
+  `Brain.Provenance.missing_sources/2` names them in a "not instrumented"
+  empty state, so a blank section says which blank it is. It must name at
+  least one source: with none, an empty trace could not say what was missing.
   """
   attr :outcome, :map, required: true
   attr :label, :string, required: true, doc: "what was called, e.g. \"SpeechActClassifier.classify/1\""
+  attr :world_id, :string, required: true
+  attr :expected_sources, :list, required: true
   attr :comparison, :map, default: nil
-  attr :class, :string, default: nil
+  attr :class, :any, default: nil
 
   slot :result, doc: "a page's own rendering of the value; the raw term is shown regardless"
 
   def result_panel(assigns) do
+    expected = assigns.expected_sources
+
+    unless is_list(expected) and expected != [] and Enum.all?(expected, &(is_binary(&1) and &1 != "")) do
+      raise ArgumentError,
+            "ChatWeb.Harness.Runner.result_panel/1: expected_sources must name at least one " <>
+              "source prefix, got #{inspect(expected)}. With none, an empty trace cannot say " <>
+              "which module failed to report."
+    end
+
+    missing = Provenance.missing_sources(provenance(assigns.outcome), expected)
+    assigns = assign(assigns, :missing_sources, missing)
+
     ~H"""
     <div class={["space-y-space-xl", @class]}>
       <div class="flex flex-wrap items-center gap-space-sm">
@@ -200,6 +225,7 @@ defmodule ChatWeb.Harness.Runner do
         <span class="text-ref text-ink-muted">
           {format_duration(@outcome.duration_us)}
         </span>
+        <.badge mono data-world={@world_id}>world {@world_id}</.badge>
       </div>
 
       <.card :if={@outcome.status == :raised} class="border-verdict-error bg-verdict-error-wash">
@@ -243,10 +269,16 @@ defmodule ChatWeb.Harness.Runner do
             </span>
           </div>
 
-          <p :if={provenance(@outcome) == []} class="text-body text-ink-muted">
-            Nothing on this path is instrumented yet. That is a gap, not an all-clear:
+          <.empty_panel
+            :if={provenance(@outcome) == []}
+            kind={:not_instrumented}
+            entries={provenance(@outcome)}
+            expected={@expected_sources}
+          >
+            Nothing on this call's path recorded where a value came from.
+            That is a gap, not an all-clear:
             a value with no recorded origin is a value nobody has checked the origin of.
-          </p>
+          </.empty_panel>
 
           <div :if={provenance(@outcome) != []} class="overflow-x-auto">
             <table class="w-full text-left text-body-dense tabular-nums">
@@ -292,13 +324,20 @@ defmodule ChatWeb.Harness.Runner do
               </tbody>
             </table>
           </div>
+
+          <.empty_panel
+            :if={provenance(@outcome) != [] and @missing_sources != []}
+            kind={:not_instrumented}
+            entries={provenance(@outcome)}
+            expected={@expected_sources}
+          />
         </.card_body>
       </.card>
 
       <.card :if={@outcome.status == :ok}>
         <.card_body class="space-y-space-sm">
           <h3 class="text-heading text-ink">Raw term</h3>
-          <Diff.term term={normalized(@outcome.value)} defaulted={stand_in_paths(@outcome)} />
+          <Diff.term term={normalized(@outcome.value)} stand_ins={stand_ins(@outcome)} />
         </.card_body>
       </.card>
     </div>
@@ -334,14 +373,21 @@ defmodule ChatWeb.Harness.Runner do
   end
 
   @doc """
-  Renders the saved cases for a subsystem, with their verdicts.
+  Renders the saved cases for a subsystem, with their verdicts and coverage.
 
   A case that has never run shows "Not run" rather than nothing, so the list
   distinguishes "checked and correct" from "never checked" — which is the
   distinction `/verify`'s counts rest on.
+
+  Every verdict carries its coverage, counted from the case itself: the values
+  its expectation asserts, against the values in the output it last judged.
+  A case that has not run, or whose call raised, has no output to count, so
+  its coverage says only how many values it asserts. A pass or fail with no
+  stored output, or an expectation that asserts nothing, raises: the store
+  refuses both, so either means the case did not come from it.
   """
   attr :cases, :list, required: true
-  attr :class, :string, default: nil
+  attr :class, :any, default: nil
 
   slot :actions, doc: "per-case buttons; receives the case"
 
@@ -357,12 +403,13 @@ defmodule ChatWeb.Harness.Runner do
         class="flex min-h-row-regular flex-wrap items-center justify-between gap-space-md rounded-md border border-border bg-surface px-space-md py-space-sm"
       >
         <div class="min-w-0 space-y-space-xs">
-          <div class="flex items-center gap-space-sm">
+          <div class="flex flex-wrap items-center gap-space-sm">
             <Diff.verdict status={saved.status} />
             <span class="truncate text-body font-semibold text-ink">{saved.name}</span>
+            <Diff.coverage {case_coverage(saved)} />
           </div>
           <div class="flex flex-wrap items-center gap-space-xs text-ref text-ink-muted">
-            <span class="rounded-sm bg-surface-sunk px-space-xs">world {saved.world_id}</span>
+            <.badge mono>world {saved.world_id}</.badge>
             <span :if={saved.last_run_at}>· last run {saved.last_run_at}</span>
             <span :if={is_nil(saved.last_run_at)}>· never run</span>
           </div>
@@ -423,13 +470,48 @@ defmodule ChatWeb.Harness.Runner do
   # path happens to name a path in the output. Provenance paths are about
   # internal values and often have no counterpart in what was returned, which is
   # why the table above is the primary display and this is the convenience.
-  defp stand_in_paths(outcome) do
-    outcome |> provenance() |> Provenance.stand_ins() |> Enum.map(& &1.path)
+  # Each keeps its own origin, so an unreadable source is not marked as a
+  # fallback default.
+  defp stand_ins(outcome) do
+    outcome
+    |> provenance()
+    |> Provenance.stand_ins()
+    |> Enum.map(&%{path: &1.path, origin: &1.origin})
+    |> Enum.uniq()
   end
 
-  # One treatment per origin. A function clause per origin, so an origin with
-  # no treatment raises rather than rendering as some other one.
-  defp origin_style(:computed) do
+  defp case_coverage(%{expected: expected} = saved) do
+    checked = Atlas.Verification.Comparison.leaf_count(expected || %{})
+
+    if checked == 0 do
+      raise ArgumentError,
+            "ChatWeb.Harness.Runner.case_list/1: case #{inspect(saved.name)} asserts nothing. " <>
+              "The store refuses such a case, so this one did not come from it."
+    end
+
+    case {saved.status, saved.last_actual} do
+      {status, nil} when status in ["pass", "fail"] ->
+        raise ArgumentError,
+              "ChatWeb.Harness.Runner.case_list/1: case #{inspect(saved.name)} has verdict " <>
+                "#{inspect(status)} and no stored output, so its coverage cannot be counted."
+
+      {status, actual} when status in ["pass", "fail"] ->
+        %{checked: checked, total: Atlas.Verification.Comparison.leaf_count(actual)}
+
+      {status, _} when status in ["pending", "error"] ->
+        %{checked: checked, total: nil}
+    end
+  end
+
+  @doc """
+  The treatment for an origin: its words, mark, text color, tag ground, row
+  wash and the underline under its value.
+
+  One function clause per origin, so an origin with no treatment raises rather
+  than rendering as some other one. `origin/1`, the provenance rows and
+  `ChatWeb.Harness.Diff.term/1` all draw from it.
+  """
+  def origin_style(:computed) do
     %{
       label: "your input",
       mark: :filled_circle,
@@ -440,7 +522,7 @@ defmodule ChatWeb.Harness.Runner do
     }
   end
 
-  defp origin_style(:declared) do
+  def origin_style(:declared) do
     %{
       label: "declared",
       mark: :filled_square,
@@ -451,7 +533,7 @@ defmodule ChatWeb.Harness.Runner do
     }
   end
 
-  defp origin_style(:default) do
+  def origin_style(:default) do
     %{
       label: "fallback default",
       mark: :hollow_circle,
@@ -462,7 +544,7 @@ defmodule ChatWeb.Harness.Runner do
     }
   end
 
-  defp origin_style(:absent) do
+  def origin_style(:absent) do
     %{
       label: "no data — stand-in",
       mark: :dotted_circle,
@@ -473,7 +555,7 @@ defmodule ChatWeb.Harness.Runner do
     }
   end
 
-  defp origin_style(:unavailable) do
+  def origin_style(:unavailable) do
     %{
       label: "source unreadable",
       mark: :struck_circle,
@@ -484,7 +566,7 @@ defmodule ChatWeb.Harness.Runner do
     }
   end
 
-  defp origin_style(:unobserved) do
+  def origin_style(:unobserved) do
     %{
       label: "not observed",
       mark: :dotted_square,
