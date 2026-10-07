@@ -27,6 +27,9 @@ defmodule ChatWeb.AccuracyLive do
     "mutation_sigma" => "0.25"
   }
 
+  @run_evaluation_confirm_id "confirm-run-evaluation"
+  @optimizer_confirm_id "confirm-start-optimizer-run"
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -53,6 +56,10 @@ defmodule ChatWeb.AccuracyLive do
       |> assign(:gold_stats, %{})
       |> assign(:optimizer_form, @optimizer_default_form)
       |> assign(:optimizer_error, nil)
+      |> assign(:open_confirm, nil)
+      |> assign(:confirm_error, nil)
+      |> assign(:run_evaluation_confirm_id, @run_evaluation_confirm_id)
+      |> assign(:optimizer_confirm_id, @optimizer_confirm_id)
       |> load_all_data()
       |> load_optimizer_runs()
 
@@ -81,18 +88,29 @@ defmodule ChatWeb.AccuracyLive do
     {:noreply, socket |> assign(:sort_field, new_field) |> assign(:sort_dir, new_dir)}
   end
 
+  def handle_event("open_confirm", %{"id" => id}, socket) do
+    {:noreply, socket |> assign(:open_confirm, id) |> assign(:confirm_error, nil)}
+  end
+
+  def handle_event("close_confirm", _params, socket) do
+    {:noreply, close_confirm(socket)}
+  end
+
   def handle_event("run_evaluation", _params, socket) do
     task = socket.assigns.active_tab
 
     case Brain.ML.TrainingServer.start_training(:evaluate, task: task) do
       {:ok, _} ->
-        {:noreply, put_flash(socket, :info, "Evaluation started for #{task}. Results will appear when complete.")}
+        {:noreply,
+         socket
+         |> close_confirm()
+         |> put_flash(:info, "Evaluation started for #{task}. Results will appear when complete.")}
 
       {:error, {:already_training, current}} ->
-        {:noreply, put_flash(socket, :error, "Already running: #{current}. Please wait.")}
+        {:noreply, assign(socket, :confirm_error, "Already running: #{current}. Wait for it to finish.")}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to start evaluation: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Failed to start evaluation: #{inspect(reason)}")}
     end
   end
 
@@ -105,27 +123,17 @@ defmodule ChatWeb.AccuracyLive do
     {:noreply, assign(socket, :optimizer_form, form)}
   end
 
-  def handle_event("start_optimizer_run", params, socket) do
+  def handle_event("request_optimizer_run", params, socket) do
     form = Map.merge(socket.assigns.optimizer_form, Map.take(params, Map.keys(@optimizer_default_form)))
 
-    with {:ok, classifier} <- pick_classifier(form),
-         {:ok, opts} <- parse_optimizer_opts(form) do
-      case WeightOptimizer.Tracker.start_run(classifier, opts) do
-        {:ok, run_id} ->
-          socket =
-            socket
-            |> assign(:optimizer_form, form)
-            |> assign(:optimizer_error, nil)
-            |> put_flash(:info, "Started GA run #{run_id} for #{classifier}")
-
-          {:noreply, socket}
-
-        {:error, reason} ->
-          {:noreply,
-           socket
-           |> assign(:optimizer_form, form)
-           |> assign(:optimizer_error, format_optimizer_error(reason))}
-      end
+    with {:ok, _classifier} <- pick_classifier(form),
+         {:ok, _opts} <- parse_optimizer_opts(form) do
+      {:noreply,
+       socket
+       |> assign(:optimizer_form, form)
+       |> assign(:optimizer_error, nil)
+       |> assign(:open_confirm, @optimizer_confirm_id)
+       |> assign(:confirm_error, nil)}
     else
       {:error, reason} ->
         {:noreply,
@@ -135,13 +143,34 @@ defmodule ChatWeb.AccuracyLive do
     end
   end
 
+  def handle_event("start_optimizer_run", _params, socket) do
+    form = socket.assigns.optimizer_form
+
+    with {:ok, classifier} <- pick_classifier(form),
+         {:ok, opts} <- parse_optimizer_opts(form) do
+      case WeightOptimizer.Tracker.start_run(classifier, opts) do
+        {:ok, run_id} ->
+          {:noreply,
+           socket
+           |> close_confirm()
+           |> put_flash(:info, "Started GA run #{run_id} for #{classifier}")}
+
+        {:error, reason} ->
+          {:noreply, assign(socket, :confirm_error, format_optimizer_error(reason))}
+      end
+    else
+      {:error, reason} ->
+        {:noreply, assign(socket, :confirm_error, reason)}
+    end
+  end
+
   def handle_event("cancel_optimizer_run", %{"run_id" => run_id}, socket) do
     case WeightOptimizer.Tracker.cancel_run(run_id) do
       :ok ->
-        {:noreply, put_flash(socket, :info, "Cancelled run #{run_id}")}
+        {:noreply, socket |> close_confirm() |> put_flash(:info, "Cancelled run #{run_id}")}
 
       {:error, :not_found} ->
-        {:noreply, put_flash(socket, :error, "Run #{run_id} is no longer active")}
+        {:noreply, assign(socket, :confirm_error, "Run #{run_id} is no longer active.")}
     end
   end
 
@@ -221,13 +250,36 @@ defmodule ChatWeb.AccuracyLive do
               ML model evaluation results and weight-optimizer runs
             </p>
           </div>
-          <div class="flex items-center gap-space-sm">
-            <.btn variant={:outline} size={:sm} phx-click="refresh_data">
-              <.icon name="hero-arrow-path" class="size-4" /> Refresh
-            </.btn>
-            <.btn variant={:primary} size={:sm} phx-click="run_evaluation">
-              <.icon name="hero-play" class="size-4" /> Run Evaluation
-            </.btn>
+          <div class="flex flex-col items-end gap-space-sm">
+            <div class="flex flex-wrap items-center gap-space-sm">
+              <.btn variant={:outline} size={:sm} phx-click="refresh_data">
+                <.icon name="hero-arrow-path" class="size-4" /> Refresh
+              </.btn>
+              <.btn
+                id="run-evaluation"
+                variant={:primary}
+                size={:sm}
+                reach={:shared}
+                target={"#{task_label(@active_tab)} evaluation"}
+                icon="hero-play"
+                phx-click="open_confirm"
+                phx-value-id={@run_evaluation_confirm_id}
+              >
+                Run Evaluation
+              </.btn>
+            </div>
+            <.execute_confirm
+              id={@run_evaluation_confirm_id}
+              open={@open_confirm == @run_evaluation_confirm_id}
+              reach={:shared}
+              verb="Run evaluation"
+              target={"#{task_label(@active_tab)} evaluation"}
+              consequence={"Runs the #{task_label(@active_tab)} evaluation on this node and saves its result to Atlas and to this node's evaluation results files. The dashboard and this page show the latest saved result."}
+              on_confirm="run_evaluation"
+              on_cancel="close_confirm"
+              trigger_id="run-evaluation"
+              error={@confirm_error}
+            />
           </div>
         </div>
       </:page_header>
@@ -269,6 +321,9 @@ defmodule ChatWeb.AccuracyLive do
               form={@optimizer_form}
               error={@optimizer_error}
               available_classifiers={@optimizer_classifiers}
+              confirm_id={@optimizer_confirm_id}
+              open_confirm={@open_confirm}
+              confirm_error={@confirm_error}
             />
           <% true -> %>
             <.task_panel
@@ -285,36 +340,54 @@ defmodule ChatWeb.AccuracyLive do
   end
 
   attr(:task, :string, required: true)
-  attr(:evaluation, :map, default: nil)
+  attr(:evaluation, :any,
+    default: nil,
+    doc: "the latest result, nil when none is saved, or {:could_not_ask, detail}"
+  )
   attr(:trend, :list, default: [])
   attr(:sort_field, :string, default: "label")
   attr(:sort_dir, :atom, default: :asc)
 
   defp task_panel(assigns) do
-    assigns = assign(assigns, :task_label, @task_labels[assigns.task] || assigns.task)
+    assigns = assign(assigns, :task_label, task_label(assigns.task))
 
     ~H"""
-    <%= if @evaluation do %>
+    <%= case @evaluation do %>
+      <% {:could_not_ask, detail} -> %>
+        <.empty_panel kind={:could_not_ask}>{detail}</.empty_panel>
+      <% nil -> %>
+        <.card>
+          <.empty_message icon="hero-chart-bar" title="No evaluations yet" command={"mix evaluate.#{@task} --save"}>
+            Run an evaluation to see accuracy metrics for {@task_label}.
+          </.empty_message>
+        </.card>
+      <% %{} -> %>
       <!-- Summary Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-space-lg">
         <.stat_kpi
           label="Accuracy"
-          value={format_percent(@evaluation["accuracy"])}
+          value={metric_value(@evaluation["accuracy"])}
+          sublabel={metric_sublabel("accuracy", @evaluation["accuracy"], @evaluation["total_examples"])}
           icon="hero-check-circle"
         />
         <.stat_kpi
           label="Macro F1"
-          value={format_percent(@evaluation["macro_f1"])}
+          value={metric_value(@evaluation["macro_f1"])}
+          sublabel={metric_sublabel("macro-F1", @evaluation["macro_f1"], @evaluation["total_examples"])}
           icon="hero-chart-bar"
-        />
+        >
+          <:verdict><.macro_f1_gate task={@task} /></:verdict>
+        </.stat_kpi>
         <.stat_kpi
           label="Weighted F1"
-          value={format_percent(@evaluation["weighted_f1"])}
+          value={metric_value(@evaluation["weighted_f1"])}
+          sublabel={metric_sublabel("weighted F1", @evaluation["weighted_f1"], @evaluation["total_examples"])}
           icon="hero-chart-bar-square"
         />
         <.stat_kpi
           label="Total Examples"
-          value={to_string(@evaluation["total_examples"] || 0)}
+          value={count_value(@evaluation["total_examples"])}
+          sublabel={if is_nil(@evaluation["total_examples"]), do: "no example count in this result"}
           icon="hero-document-text"
         />
       </div>
@@ -354,24 +427,22 @@ defmodule ChatWeb.AccuracyLive do
               >
                 <td class="h-row-compact px-space-sm text-value text-ink">{label}</td>
                 <td class={["h-row-compact px-space-sm", metric_class(:rate, metrics["precision"])]}>
-                  {format_percent(metrics["precision"])}
+                  {metric_value(metrics["precision"])}
                 </td>
                 <td class={["h-row-compact px-space-sm", metric_class(:rate, metrics["recall"])]}>
-                  {format_percent(metrics["recall"])}
+                  {metric_value(metrics["recall"])}
                 </td>
                 <td class={["h-row-compact px-space-sm", metric_class(:rate, metrics["f1"])]}>
-                  {format_percent(metrics["f1"])}
+                  {metric_value(metrics["f1"])}
                 </td>
                 <td class={["h-row-compact px-space-sm", metric_class(:count, metrics["support"])]}>
-                  {metrics["support"]}
+                  {count_value(metrics["support"])}
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
       </.card>
-    <% else %>
-      <.empty_state task={@task} task_label={@task_label} />
     <% end %>
     """
   end
@@ -404,19 +475,6 @@ defmodule ChatWeb.AccuracyLive do
     """
   end
 
-  attr(:task, :string, required: true)
-  attr(:task_label, :string, required: true)
-
-  defp empty_state(assigns) do
-    ~H"""
-    <.card>
-      <.empty_message icon="hero-chart-bar" title="No evaluations yet" command={"mix evaluate.#{@task} --save"}>
-        Run an evaluation to see accuracy metrics for {@task_label}.
-      </.empty_message>
-    </.card>
-    """
-  end
-
   attr(:icon, :string, required: true)
   attr(:title, :string, required: true)
   attr(:command, :string, required: true)
@@ -444,6 +502,9 @@ defmodule ChatWeb.AccuracyLive do
   attr(:form, :map, required: true)
   attr(:error, :string, default: nil)
   attr(:available_classifiers, :list, default: [])
+  attr(:confirm_id, :string, required: true)
+  attr(:open_confirm, :string, default: nil)
+  attr(:confirm_error, :string, default: nil)
 
   defp optimizer_panel(assigns) do
     ~H"""
@@ -452,7 +513,14 @@ defmodule ChatWeb.AccuracyLive do
       <.optimizer_summary active={@active_runs} recent={@recent_runs} />
 
       <!-- Run Launcher -->
-      <.optimizer_launcher form={@form} error={@error} available_classifiers={@available_classifiers} />
+      <.optimizer_launcher
+        form={@form}
+        error={@error}
+        available_classifiers={@available_classifiers}
+        confirm_id={@confirm_id}
+        open_confirm={@open_confirm}
+        confirm_error={@confirm_error}
+      />
 
       <!-- Active Runs -->
       <%= if @active_runs != [] do %>
@@ -462,7 +530,12 @@ defmodule ChatWeb.AccuracyLive do
             Active runs ({length(@active_runs)})
           </h3>
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg">
-            <.active_run_card :for={run <- @active_runs} run={run} />
+            <.active_run_card
+              :for={run <- @active_runs}
+              run={run}
+              open_confirm={@open_confirm}
+              confirm_error={@confirm_error}
+            />
           </div>
         </div>
       <% end %>
@@ -602,6 +675,9 @@ defmodule ChatWeb.AccuracyLive do
   attr(:form, :map, required: true)
   attr(:error, :string, default: nil)
   attr(:available_classifiers, :list, default: [])
+  attr(:confirm_id, :string, required: true)
+  attr(:open_confirm, :string, default: nil)
+  attr(:confirm_error, :string, default: nil)
 
   defp optimizer_launcher(assigns) do
     ~H"""
@@ -615,7 +691,7 @@ defmodule ChatWeb.AccuracyLive do
             Genetic algorithm — per-dimension feature weights
           </span>
         </div>
-        <form phx-change="update_optimizer_form" phx-submit="start_optimizer_run" class="space-y-space-md">
+        <form phx-change="update_optimizer_form" phx-submit="request_optimizer_run" class="space-y-space-md">
           <div class="grid grid-cols-2 lg:grid-cols-3 gap-space-md">
             <.input
               type="select"
@@ -634,11 +710,32 @@ defmodule ChatWeb.AccuracyLive do
             <div class="mt-space-xs text-caption text-red">{@error}</div>
           <% end %>
           <div class="flex justify-end">
-            <.btn type="submit" variant={:primary} size={:sm}>
-              <.icon name="hero-rocket-launch" class="size-4" /> Start run
+            <.btn
+              id="start-optimizer-run"
+              type="submit"
+              variant={:primary}
+              size={:sm}
+              reach={:shared}
+              target={"#{@form["classifier"]} run"}
+              icon="hero-rocket-launch"
+            >
+              Start run
             </.btn>
           </div>
         </form>
+        <.execute_confirm
+          id={@confirm_id}
+          open={@open_confirm == @confirm_id}
+          reach={:shared}
+          verb="Start run"
+          target={"#{@form["classifier"]} run"}
+          consequence={"Starts a #{@form["classifier"]} weight-optimizer run on this node. Everyone viewing this page sees it as it runs, and its record is written to this node's optimizer runs folder when it finishes."}
+          on_confirm="start_optimizer_run"
+          on_cancel="close_confirm"
+          trigger_id="start-optimizer-run"
+          error={@confirm_error}
+          class="mt-space-md ml-auto"
+        />
       </.card_body>
     </.card>
     """
@@ -666,17 +763,23 @@ defmodule ChatWeb.AccuracyLive do
   end
 
   attr(:run, :map, required: true)
+  attr(:open_confirm, :string, default: nil)
+  attr(:confirm_error, :string, default: nil)
 
   defp active_run_card(assigns) do
     history = Map.get(assigns.run, :history) || []
     max_gen = get_in(assigns.run, [:opts, :max_generations]) || get_in(assigns.run, [:opts, "max_generations"]) || 200
     progress_pct = min(round((Map.get(assigns.run, :generation, 0) + 1) / max(max_gen, 1) * 100), 100)
+    run_id = Map.fetch!(assigns.run, :run_id)
 
     assigns =
       assigns
       |> assign(:history, history)
       |> assign(:max_gen, max_gen)
       |> assign(:progress_pct, progress_pct)
+      |> assign(:run_id, run_id)
+      |> assign(:cancel_confirm_id, "confirm-cancel-run-#{run_id}")
+      |> assign(:cancel_trigger_id, "cancel-run-#{run_id}")
 
     ~H"""
     <.card>
@@ -687,18 +790,34 @@ defmodule ChatWeb.AccuracyLive do
             <span class="text-value-strong text-ink truncate">{Map.get(@run, :classifier, "-")}</span>
             <.run_status_badge status={Map.get(@run, :status, :running)} />
           </div>
-          <div class="text-ref text-ink-muted truncate">{Map.get(@run, :run_id)}</div>
+          <div class="text-ref text-ink-muted truncate">{@run_id}</div>
         </div>
         <.btn
-          variant={:ghost}
+          id={@cancel_trigger_id}
+          variant={:outline}
           size={:xs}
-          phx-click="cancel_optimizer_run"
-          phx-value-run_id={Map.get(@run, :run_id)}
-          title="Cancel run"
+          reach={:shared}
+          target={@run_id}
+          icon="hero-x-mark"
+          phx-click="open_confirm"
+          phx-value-id={@cancel_confirm_id}
         >
-          <.icon name="hero-x-mark" class="size-4" /> Cancel
+          Cancel run
         </.btn>
       </div>
+      <.execute_confirm
+        id={@cancel_confirm_id}
+        open={@open_confirm == @cancel_confirm_id}
+        reach={:shared}
+        verb="Cancel run"
+        target={@run_id}
+        consequence="Stops this run and moves it to recent runs as cancelled, for everyone viewing this page. A cancelled run is not written to disk, so it is gone after a restart."
+        on_confirm={JS.push("cancel_optimizer_run", value: %{run_id: @run_id})}
+        on_cancel="close_confirm"
+        trigger_id={@cancel_trigger_id}
+        error={@confirm_error}
+        class="ml-auto"
+      />
 
       <!-- Progress bar -->
       <div class="space-y-space-xs">
@@ -765,7 +884,7 @@ defmodule ChatWeb.AccuracyLive do
     running: {:info, "running"},
     complete: {:success, "complete"},
     early_stop: {:success, "early stop"},
-    cancelled: {:warning, "cancelled"},
+    cancelled: {:default, "cancelled"},
     error: {:error, "error"}
   }
 
@@ -965,6 +1084,12 @@ defmodule ChatWeb.AccuracyLive do
     end
   end
 
+  defp task_label(task), do: @task_labels[task] || task
+
+  defp close_confirm(socket) do
+    socket |> assign(:open_confirm, nil) |> assign(:confirm_error, nil)
+  end
+
   defp load_all_data(socket) do
     evaluations = load_evaluations()
     trends = load_trends()
@@ -1128,13 +1253,19 @@ defmodule ChatWeb.AccuracyLive do
 
   defp format_optimizer_error(other), do: inspect(other)
 
+  # A store that raised could not be asked, which is not the same finding as a
+  # store that holds no evaluation: the first shows as the "could not be
+  # asked" empty state with the exception, the second as no evaluations yet.
   defp load_evaluations do
     Map.new(@tasks, fn task ->
       result =
         try do
           EvaluationStore.latest(task)
         rescue
-          _ -> nil
+          e ->
+            {:could_not_ask,
+             "Brain.ML.EvaluationStore.latest(#{inspect(task)}) raised #{inspect(e.__struct__)}: " <>
+               Exception.message(e)}
         end
 
       {task, result}
@@ -1173,6 +1304,26 @@ defmodule ChatWeb.AccuracyLive do
   defp format_percent(_) do
     "-"
   end
+
+  # An evaluation metric is a 0..1 rate shown in ink with its kind beside it.
+  # One missing from the result reads as absent, never as a dash or a zero.
+  defp metric_value(nil), do: "absent"
+  defp metric_value(value) when is_number(value), do: format_percent(value)
+
+  defp metric_value(other) do
+    raise ArgumentError, "ChatWeb.AccuracyLive.metric_value/1: a metric must be a number, got #{inspect(other)}"
+  end
+
+  defp count_value(nil), do: "absent"
+  defp count_value(count) when is_integer(count), do: Integer.to_string(count)
+
+  defp count_value(other) do
+    raise ArgumentError, "ChatWeb.AccuracyLive.count_value/1: a count must be an integer, got #{inspect(other)}"
+  end
+
+  defp metric_sublabel(kind, nil, _examples), do: "no #{kind} in this result"
+  defp metric_sublabel(kind, _value, nil), do: "#{kind} · no example count in this result"
+  defp metric_sublabel(kind, _value, examples) when is_integer(examples), do: "#{kind} · #{examples} examples"
 
   defp run_opt(run, atom_key, string_key) do
     val =
