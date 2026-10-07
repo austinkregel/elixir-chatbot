@@ -476,27 +476,27 @@ defmodule ChatWeb.SessionsLive do
     >
       <:page_header>
         <%= if @view_mode == :detail and @session do %>
-          <div class="flex items-center gap-2 text-sm text-base-content/60 mb-1">
-            <.link navigate={~p"/sessions"} class="hover:text-primary transition-colors">
+          <div class="flex items-center gap-space-sm text-body-dense text-ink-muted mb-space-xs">
+            <.link navigate={~p"/sessions"} class="text-accent hover:underline">
               Sessions
             </.link>
             <.icon name="hero-chevron-right" class="size-3" />
-            <span class="text-base-content">{@session.topic || "Session"}</span>
+            <span class="text-ink">{@session.topic || "Session"}</span>
           </div>
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-xl font-bold">{@session.topic || "Session Detail"}</h1>
-              <p class="text-sm text-base-content/60 font-mono">{@session.id}</p>
+              <h1 class="text-title text-ink">{@session.topic || "Session Detail"}</h1>
+              <p class="text-ref text-ink-muted">{@session.id}</p>
             </div>
-            <span class={["badge", session_badge(@session.status)]}>
+            <.badge variant={session_variant(@session.status)}>
               {@session.status}
-            </span>
+            </.badge>
           </div>
         <% else %>
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-xl font-bold">Learning Sessions</h1>
-              <p class="text-sm text-base-content/60">
+              <h1 class="text-title text-ink">Learning Sessions</h1>
+              <p class="text-body text-ink-muted">
                 Inspect research sessions, goals, investigations, and evidence
               </p>
             </div>
@@ -504,7 +504,7 @@ defmodule ChatWeb.SessionsLive do
         <% end %>
       </:page_header>
 
-      <div class="p-4 sm:p-6">
+      <div class="p-space-lg sm:p-space-xl">
         <%= if @view_mode == :list do %>
           <.list_view
             sessions={@sessions}
@@ -530,56 +530,39 @@ defmodule ChatWeb.SessionsLive do
 
   defp list_view(assigns) do
     ~H"""
-    <div class="space-y-6">
+    <div class="space-y-space-xl">
       <!-- Stats Bar -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <div class="text-2xl font-bold">{@lc_stats[:total_sessions] || 0}</div>
-          <div class="text-sm text-base-content/60">Total Sessions</div>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <div class="text-2xl font-bold text-warning">{@lc_stats[:active_sessions] || 0}</div>
-          <div class="text-sm text-base-content/60">Active</div>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <div class="text-2xl font-bold text-info">{@lc_stats[:active_agents] || 0}</div>
-          <div class="text-sm text-base-content/60">Active Agents</div>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <div class="text-2xl font-bold text-success">{@lc_stats[:total_findings] || 0}</div>
-          <div class="text-sm text-base-content/60">Total Findings</div>
-        </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-space-lg">
+        <.stat_kpi label="Total Sessions" value={to_string(@lc_stats[:total_sessions] || 0)} />
+        <.stat_kpi label="Active" value={to_string(@lc_stats[:active_sessions] || 0)} />
+        <.stat_kpi label="Active Agents" value={to_string(@lc_stats[:active_agents] || 0)} />
+        <.stat_kpi label="Total Findings" value={to_string(@lc_stats[:total_findings] || 0)} />
       </div>
 
       <!-- Status Filter Tabs -->
-      <div class="flex gap-1 bg-base-100 rounded-xl border border-base-300/50 p-1">
+      <.tabs>
         <%= for {label, value} <- [{"All", "all"}, {"Active", "active"}, {"Completed", "completed"}, {"Cancelled", "cancelled"}] do %>
-          <button
+          <.tab
+            active={to_string(@status_filter) == value}
             phx-click="filter_status"
             phx-value-status={value}
-            class={[
-              "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-              if(to_string(@status_filter) == value,
-                do: "bg-primary text-primary-content",
-                else: "text-base-content/60 hover:bg-base-200")
-            ]}
           >
             {label}
-          </button>
+          </.tab>
         <% end %>
-      </div>
+      </.tabs>
 
       <!-- Session Cards -->
       <%= if length(@sessions) == 0 do %>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-12 text-center">
-          <.icon name="hero-beaker" class="size-12 mx-auto mb-4 text-base-content/20" />
-          <p class="text-base-content/50">No sessions found</p>
-          <p class="text-sm text-base-content/40 mt-1">
+        <.card class="p-space-3xl text-center">
+          <.icon name="hero-beaker" class="size-12 mx-auto mb-space-lg text-ink-muted" />
+          <p class="text-body text-ink-muted">No sessions found</p>
+          <p class="text-body-dense text-ink-muted mt-space-xs">
             Start a training session from the Settings page
           </p>
-        </div>
+        </.card>
       <% else %>
-        <div class="space-y-3">
+        <div class="space-y-space-md">
           <%= for session <- @sessions do %>
             <.session_card session={session} />
           <% end %>
@@ -603,63 +586,63 @@ defmodule ChatWeb.SessionsLive do
     ~H"""
     <.link
       navigate={~p"/sessions/#{@session.id}"}
-      class="block bg-base-100 rounded-xl border border-base-300/50 p-4 hover:border-primary/30 hover:shadow-lg transition-all group"
+      class="block rounded-md border border-border bg-surface p-space-lg hover:border-border-strong transition-colors group"
     >
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-3 min-w-0">
+      <div class="flex items-center justify-between mb-space-md">
+        <div class="flex items-center gap-space-md min-w-0">
           <div class="min-w-0">
-            <div class="font-semibold group-hover:text-primary transition-colors truncate">
+            <div class="text-subheading text-ink group-hover:text-accent transition-colors truncate">
               {@session.topic || "Untitled Session"}
             </div>
-            <div class="text-xs text-base-content/40 font-mono">{@session.id}</div>
+            <div class="text-ref text-ink-muted">{@session.id}</div>
           </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <span class={["badge badge-sm", session_badge(@session.status)]}>
+        <div class="flex items-center gap-space-sm shrink-0">
+          <.badge variant={session_variant(@session.status)}>
             {@session.status}
-          </span>
-          <.icon name="hero-chevron-right" class="size-4 text-base-content/30 group-hover:text-primary transition-colors" />
+          </.badge>
+          <.icon name="hero-chevron-right" class="size-4 text-ink-muted group-hover:text-accent transition-colors" />
         </div>
       </div>
 
       <!-- Progress & Stats -->
-      <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-base-content/60">
-        <span class="flex items-center gap-1">
+      <div class="flex flex-wrap gap-x-space-lg gap-y-space-xs text-caption text-ink-muted">
+        <span class="flex items-center gap-space-xs">
           <.icon name="hero-flag" class="size-3" />
           {@completed_goals}/{@total_goals} goals
         </span>
         <%= if @failed_goals > 0 do %>
-          <span class="flex items-center gap-1 text-error">
+          <span class="flex items-center gap-space-xs text-red">
             <.icon name="hero-exclamation-triangle" class="size-3" />
             {@failed_goals} failed
           </span>
         <% end %>
         <%= if @session.findings_count > 0 do %>
-          <span class="flex items-center gap-1 text-info">
+          <span class="flex items-center gap-space-xs">
             <.icon name="hero-document-magnifying-glass" class="size-3" />
             {@session.findings_count} findings
           </span>
         <% end %>
         <%= if @session.approved_count > 0 do %>
-          <span class="flex items-center gap-1 text-success">
+          <span class="flex items-center gap-space-xs">
             <.icon name="hero-check-circle" class="size-3" />
             {@session.approved_count} approved
           </span>
         <% end %>
         <%= if @session.rejected_count > 0 do %>
-          <span class="flex items-center gap-1 text-error/70">
+          <span class="flex items-center gap-space-xs">
             <.icon name="hero-x-circle" class="size-3" />
             {@session.rejected_count} rejected
           </span>
         <% end %>
         <%= if @session.hypotheses_tested > 0 do %>
-          <span class="flex items-center gap-1">
+          <span class="flex items-center gap-space-xs">
             <.icon name="hero-beaker" class="size-3" />
             {@session.hypotheses_tested} hypotheses
           </span>
         <% end %>
         <%= if @session.started_at do %>
-          <span class="text-base-content/40">
+          <span class="text-ink-muted">
             {Calendar.strftime(@session.started_at, "%Y-%m-%d %H:%M:%S")}
           </span>
         <% end %>
@@ -674,44 +657,41 @@ defmodule ChatWeb.SessionsLive do
 
   defp detail_view(assigns) do
     ~H"""
-    <div class="space-y-6">
+    <div class="space-y-space-xl">
       <!-- Timestamps -->
-      <div class="flex flex-wrap gap-4 text-sm text-base-content/60">
+      <div class="flex flex-wrap gap-space-lg text-body text-ink-muted">
         <%= if @session.started_at do %>
           <span>
-            Started: <span class="text-base-content font-medium">{Calendar.strftime(@session.started_at, "%Y-%m-%d %H:%M:%S")}</span>
+            Started: <span class="text-value-strong text-ink">{Calendar.strftime(@session.started_at, "%Y-%m-%d %H:%M:%S")}</span>
           </span>
         <% end %>
         <%= if @session.completed_at do %>
           <span>
-            Completed: <span class="text-base-content font-medium">{Calendar.strftime(@session.completed_at, "%Y-%m-%d %H:%M:%S")}</span>
+            Completed: <span class="text-value-strong text-ink">{Calendar.strftime(@session.completed_at, "%Y-%m-%d %H:%M:%S")}</span>
           </span>
         <% end %>
       </div>
 
       <!-- Tab Navigation -->
-      <div class="flex gap-1 bg-base-100 rounded-xl border border-base-300/50 p-1">
+      <.tabs>
         <%= for {label, value, icon} <- [
           {"Overview", "overview", "hero-chart-bar-square"},
           {"Goals", "goals", "hero-flag"},
           {"Investigations", "investigations", "hero-beaker"},
           {"Evidence", "evidence", "hero-document-magnifying-glass"}
         ] do %>
-          <button
+          <.tab
+            active={to_string(@detail_tab) == value}
             phx-click="change_tab"
             phx-value-tab={value}
-            class={[
-              "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-              if(to_string(@detail_tab) == value,
-                do: "bg-primary text-primary-content",
-                else: "text-base-content/60 hover:bg-base-200")
-            ]}
           >
-            <.icon name={icon} class="size-4" />
-            {label}
-          </button>
+            <span class="inline-flex items-center gap-space-xs">
+              <.icon name={icon} class="size-4" />
+              {label}
+            </span>
+          </.tab>
         <% end %>
-      </div>
+      </.tabs>
 
       <!-- Tab Content -->
       <%= case @detail_tab do %>
@@ -762,107 +742,97 @@ defmodule ChatWeb.SessionsLive do
       |> assign(:support_rate, support_rate)
 
     ~H"""
-    <div class="space-y-6">
+    <div class="space-y-space-xl">
       <!-- Metric Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-5 text-center">
-          <div class="text-3xl font-bold">{@session.findings_count}</div>
-          <div class="text-sm text-base-content/60 mt-1">Findings</div>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-5 text-center">
-          <div class="text-3xl font-bold text-success">{@session.approved_count}</div>
-          <div class="text-sm text-base-content/60 mt-1">Approved</div>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-5 text-center">
-          <div class="text-3xl font-bold text-error">{@session.rejected_count}</div>
-          <div class="text-sm text-base-content/60 mt-1">Rejected</div>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-5 text-center">
-          <div class="text-3xl font-bold">
-            <%= if @support_rate, do: "#{@support_rate}%", else: "N/A" %>
-          </div>
-          <div class="text-sm text-base-content/60 mt-1">Support Rate</div>
-        </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-space-lg">
+        <.stat_kpi label="Findings" value={to_string(@session.findings_count)} />
+        <.stat_kpi label="Approved" value={to_string(@session.approved_count)} />
+        <.stat_kpi label="Rejected" value={to_string(@session.rejected_count)} />
+        <.stat_kpi label="Support Rate" value={if @support_rate, do: "#{@support_rate}%", else: "N/A"} />
       </div>
 
       <!-- Goal Progress -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 p-5">
-        <h3 class="font-semibold mb-3">Goal Progress</h3>
-        <div class="flex gap-1 h-4 rounded-full overflow-hidden bg-base-300/30 mb-3">
-          <%= if @total_goals > 0 do %>
-            <%= if @completed > 0 do %>
-              <div
-                class="bg-success h-full transition-all"
-                style={"width: #{@completed / @total_goals * 100}%"}
-                title={"#{@completed} completed"}
-              />
+      <.card>
+        <.card_body>
+          <h3 class="text-heading text-ink mb-space-md">Goal Progress</h3>
+          <div class="flex gap-space-xs h-space-lg rounded-sm overflow-hidden bg-surface-sunk mb-space-md">
+            <%= if @total_goals > 0 do %>
+              <%= if @completed > 0 do %>
+                <div
+                  class="bg-ink h-full transition-all"
+                  style={"width: #{@completed / @total_goals * 100}%"}
+                  title={"#{@completed} completed"}
+                />
+              <% end %>
+              <%= if @failed > 0 do %>
+                <div
+                  class="bg-red h-full transition-all"
+                  style={"width: #{@failed / @total_goals * 100}%"}
+                  title={"#{@failed} failed"}
+                />
+              <% end %>
+              <%= if @in_progress > 0 do %>
+                <div
+                  class="bg-ochre h-full transition-all"
+                  style={"width: #{@in_progress / @total_goals * 100}%"}
+                  title={"#{@in_progress} in progress"}
+                />
+              <% end %>
+              <%= if @pending > 0 do %>
+                <div
+                  class="bg-border h-full transition-all"
+                  style={"width: #{@pending / @total_goals * 100}%"}
+                  title={"#{@pending} pending"}
+                />
+              <% end %>
             <% end %>
-            <%= if @failed > 0 do %>
-              <div
-                class="bg-error h-full transition-all"
-                style={"width: #{@failed / @total_goals * 100}%"}
-                title={"#{@failed} failed"}
-              />
-            <% end %>
-            <%= if @in_progress > 0 do %>
-              <div
-                class="bg-warning h-full transition-all"
-                style={"width: #{@in_progress / @total_goals * 100}%"}
-                title={"#{@in_progress} in progress"}
-              />
-            <% end %>
-            <%= if @pending > 0 do %>
-              <div
-                class="bg-base-300 h-full transition-all"
-                style={"width: #{@pending / @total_goals * 100}%"}
-                title={"#{@pending} pending"}
-              />
-            <% end %>
-          <% end %>
-        </div>
-        <div class="flex flex-wrap gap-4 text-xs">
-          <span class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded-full bg-success"></span>
-            {@completed} completed
-          </span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded-full bg-error"></span>
-            {@failed} failed
-          </span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded-full bg-warning"></span>
-            {@in_progress} in progress
-          </span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded-full bg-base-300"></span>
-            {@pending} pending
-          </span>
-        </div>
-      </div>
+          </div>
+          <div class="flex flex-wrap gap-space-lg text-caption text-ink">
+            <span class="flex items-center gap-space-xs">
+              <span class="size-3 rounded-pip bg-ink"></span>
+              {@completed} completed
+            </span>
+            <span class="flex items-center gap-space-xs">
+              <span class="size-3 rounded-pip bg-red"></span>
+              {@failed} failed
+            </span>
+            <span class="flex items-center gap-space-xs">
+              <span class="size-3 rounded-pip bg-ochre"></span>
+              {@in_progress} in progress
+            </span>
+            <span class="flex items-center gap-space-xs">
+              <span class="size-3 rounded-pip bg-border"></span>
+              {@pending} pending
+            </span>
+          </div>
+        </.card_body>
+      </.card>
 
       <!-- Hypotheses Summary -->
       <%= if @session.hypotheses_tested > 0 do %>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-5">
-          <h3 class="font-semibold mb-3">Scientific Investigation Summary</h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <div class="text-2xl font-bold">{length(@session.investigations)}</div>
-              <div class="text-xs text-base-content/60">Investigations</div>
+        <.card>
+          <.card_body>
+            <h3 class="text-heading text-ink mb-space-md">Scientific Investigation Summary</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-space-lg">
+              <div>
+                <div class="text-title tabular-nums text-ink">{length(@session.investigations)}</div>
+                <div class="text-label text-ink-muted">Investigations</div>
+              </div>
+              <div>
+                <div class="text-title tabular-nums text-ink">{@session.hypotheses_tested}</div>
+                <div class="text-label text-ink-muted">Hypotheses Tested</div>
+              </div>
+              <div>
+                <div class="text-title tabular-nums text-ink">{@session.hypotheses_supported}</div>
+                <div class="text-label text-ink-muted">Supported</div>
+              </div>
+              <div>
+                <div class="text-title tabular-nums text-ink">{@session.hypotheses_falsified}</div>
+                <div class="text-label text-ink-muted">Falsified</div>
+              </div>
             </div>
-            <div>
-              <div class="text-2xl font-bold">{@session.hypotheses_tested}</div>
-              <div class="text-xs text-base-content/60">Hypotheses Tested</div>
-            </div>
-            <div>
-              <div class="text-2xl font-bold text-success">{@session.hypotheses_supported}</div>
-              <div class="text-xs text-base-content/60">Supported</div>
-            </div>
-            <div>
-              <div class="text-2xl font-bold text-error">{@session.hypotheses_falsified}</div>
-              <div class="text-xs text-base-content/60">Falsified</div>
-            </div>
-          </div>
-        </div>
+          </.card_body>
+        </.card>
       <% end %>
     </div>
     """
@@ -874,12 +844,12 @@ defmodule ChatWeb.SessionsLive do
 
   defp goals_tab(assigns) do
     ~H"""
-    <div class="space-y-3">
+    <div class="space-y-space-md">
       <%= if length(@session.goals) == 0 do %>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-8 text-center">
-          <.icon name="hero-flag" class="size-10 mx-auto mb-3 text-base-content/20" />
-          <p class="text-base-content/50">No research goals defined</p>
-        </div>
+        <.card class="p-space-2xl text-center">
+          <.icon name="hero-flag" class="size-10 mx-auto mb-space-md text-ink-muted" />
+          <p class="text-body text-ink-muted">No research goals defined</p>
+        </.card>
       <% else %>
         <%= for goal <- @session.goals do %>
           <.goal_card goal={goal} />
@@ -891,27 +861,27 @@ defmodule ChatWeb.SessionsLive do
 
   defp goal_card(assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-      <div class="flex items-start justify-between gap-3">
+    <.card class="p-space-lg">
+      <div class="flex items-start justify-between gap-space-md">
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-2">
-            <span class={["badge badge-sm", goal_badge(@goal.status)]}>
+          <div class="flex items-center gap-space-sm mb-space-sm">
+            <.badge variant={goal_variant(@goal.status)}>
               {@goal.status}
-            </span>
-            <span class="font-semibold truncate">{@goal.topic}</span>
+            </.badge>
+            <span class="text-subheading text-ink truncate">{@goal.topic}</span>
             <%= if @goal.priority != :normal do %>
-              <span class={["badge badge-sm badge-outline", priority_badge(@goal.priority)]}>
+              <.badge variant={priority_variant(@goal.priority)} class="border border-border-strong">
                 {@goal.priority}
-              </span>
+              </.badge>
             <% end %>
           </div>
 
           <!-- Questions -->
           <%= if length(@goal.questions) > 0 do %>
-            <div class="space-y-1 mb-2">
+            <div class="space-y-space-xs mb-space-sm">
               <%= for question <- @goal.questions do %>
-                <div class="flex items-start gap-2 text-sm text-base-content/70">
-                  <.icon name="hero-question-mark-circle" class="size-4 shrink-0 mt-0.5 text-info" />
+                <div class="flex items-start gap-space-sm text-body text-ink">
+                  <.icon name="hero-question-mark-circle" class="size-4 shrink-0 mt-space-2xs text-ink-muted" />
                   <span>{safe_display(question)}</span>
                 </div>
               <% end %>
@@ -920,16 +890,16 @@ defmodule ChatWeb.SessionsLive do
 
           <!-- Constraints -->
           <%= if map_size(@goal.constraints) > 0 do %>
-            <div class="flex flex-wrap gap-1.5 mb-2">
+            <div class="flex flex-wrap gap-space-xs mb-space-sm">
               <%= for {key, val} <- @goal.constraints do %>
-                <span class="badge badge-sm badge-ghost">{key}: {safe_display(val)}</span>
+                <.badge>{key}: {safe_display(val)}</.badge>
               <% end %>
             </div>
           <% end %>
 
           <!-- Timestamps -->
           <%= if @goal.created_at do %>
-            <div class="text-xs text-base-content/40">
+            <div class="text-caption text-ink-muted">
               Created {Calendar.strftime(@goal.created_at, "%Y-%m-%d %H:%M:%S")}
             </div>
           <% end %>
@@ -938,17 +908,17 @@ defmodule ChatWeb.SessionsLive do
         <div class="shrink-0">
           <%= case @goal.status do %>
             <% :completed -> %>
-              <.icon name="hero-check-circle" class="size-6 text-success" />
+              <.icon name="hero-check-circle" class="size-6 text-ink" />
             <% :failed -> %>
-              <.icon name="hero-x-circle" class="size-6 text-error" />
+              <.icon name="hero-x-circle" class="size-6 text-red" />
             <% :in_progress -> %>
-              <span class="loading loading-spinner loading-sm text-warning"></span>
-            <% _ -> %>
-              <.icon name="hero-clock" class="size-6 text-base-content/30" />
+              <.icon name="hero-arrow-path" class="size-6 animate-spin text-progress-fill" />
+            <% :pending -> %>
+              <.icon name="hero-clock" class="size-6 text-ink-muted" />
           <% end %>
         </div>
       </div>
-    </div>
+    </.card>
     """
   end
 
@@ -958,15 +928,15 @@ defmodule ChatWeb.SessionsLive do
 
   defp investigations_tab(assigns) do
     ~H"""
-    <div class="space-y-3">
+    <div class="space-y-space-md">
       <%= if length(@session.investigations) == 0 do %>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-8 text-center">
-          <.icon name="hero-beaker" class="size-10 mx-auto mb-3 text-base-content/20" />
-          <p class="text-base-content/50">No scientific investigations conducted</p>
-          <p class="text-sm text-base-content/40 mt-1">
+        <.card class="p-space-2xl text-center">
+          <.icon name="hero-beaker" class="size-10 mx-auto mb-space-md text-ink-muted" />
+          <p class="text-body text-ink-muted">No scientific investigations conducted</p>
+          <p class="text-body-dense text-ink-muted mt-space-xs">
             Investigations are created when research goals generate testable hypotheses
           </p>
-        </div>
+        </.card>
       <% else %>
         <%= for investigation <- @session.investigations do %>
           <.investigation_card
@@ -991,48 +961,48 @@ defmodule ChatWeb.SessionsLive do
       |> assign(:inconclusive, inconclusive)
 
     ~H"""
-    <div class="bg-base-100 rounded-xl border border-base-300/50 overflow-hidden">
+    <.card class="overflow-hidden">
       <!-- Header (clickable) -->
       <div
-        class="p-4 cursor-pointer hover:bg-base-200/50 transition-colors"
+        class="p-space-lg cursor-pointer hover:bg-surface-sunk transition-colors"
         phx-click="toggle_investigation"
         phx-value-id={@investigation.id}
       >
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-2">
+        <div class="flex items-center justify-between mb-space-sm">
+          <div class="flex items-center gap-space-sm">
             <.icon
               name={if @expanded, do: "hero-chevron-down", else: "hero-chevron-right"}
-              class="size-4 text-base-content/40"
+              class="size-4 text-ink-muted"
             />
-            <span class="font-semibold">{@investigation.topic}</span>
+            <span class="text-subheading text-ink">{@investigation.topic}</span>
           </div>
-          <div class="flex items-center gap-2">
-            <span class={["badge badge-sm", investigation_badge(@investigation.status)]}>
+          <div class="flex items-center gap-space-sm">
+            <.badge variant={investigation_variant(@investigation.status)}>
               {@investigation.status}
-            </span>
+            </.badge>
             <%= if @investigation.conclusion do %>
-              <span class={["badge badge-sm", conclusion_badge(@investigation.conclusion)]}>
+              <.badge variant={conclusion_variant(@investigation.conclusion)}>
                 {format_conclusion(@investigation.conclusion)}
-              </span>
+              </.badge>
             <% end %>
           </div>
         </div>
 
         <!-- Summary stats -->
-        <div class="flex flex-wrap gap-3 ml-6 text-xs text-base-content/60">
+        <div class="flex flex-wrap gap-space-md ml-space-xl text-caption text-ink-muted">
           <span>{length(@investigation.hypotheses)} hypotheses</span>
           <span>{length(@investigation.evidence)} evidence items</span>
           <%= if @supported > 0 do %>
-            <span class="text-success">{@supported} supported</span>
+            <span>{@supported} supported</span>
           <% end %>
           <%= if @falsified > 0 do %>
-            <span class="text-error">{@falsified} falsified</span>
+            <span>{@falsified} falsified</span>
           <% end %>
           <%= if @inconclusive > 0 do %>
-            <span class="text-warning">{@inconclusive} inconclusive</span>
+            <span>{@inconclusive} inconclusive</span>
           <% end %>
           <%= if @investigation.concluded_at do %>
-            <span class="text-base-content/40">
+            <span class="text-ink-muted">
               Concluded {Calendar.strftime(@investigation.concluded_at, "%H:%M:%S")}
             </span>
           <% end %>
@@ -1041,39 +1011,39 @@ defmodule ChatWeb.SessionsLive do
 
       <!-- Expanded Content -->
       <%= if @expanded do %>
-        <div class="border-t border-base-300/50">
+        <div class="border-t border-border">
           <!-- Methodology -->
-          <div class="p-4 bg-base-200/20 border-b border-base-300/30">
-            <h4 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">
+          <div class="p-space-lg bg-surface-sunk border-b border-border">
+            <h4 class="text-label text-ink-muted mb-space-sm">
               Methodology
             </h4>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-space-md text-body">
               <div>
-                <span class="text-base-content/50">Independent Variable:</span>
-                <span class="ml-1 font-medium">{@investigation.independent_variable}</span>
+                <span class="text-ink-muted">Independent Variable:</span>
+                <span class="ml-space-xs font-semibold text-ink">{@investigation.independent_variable}</span>
               </div>
               <div>
-                <span class="text-base-content/50">Dependent Variable:</span>
-                <span class="ml-1 font-medium">{@investigation.dependent_variable}</span>
+                <span class="text-ink-muted">Dependent Variable:</span>
+                <span class="ml-space-xs font-semibold text-ink">{@investigation.dependent_variable}</span>
               </div>
               <div>
-                <span class="text-base-content/50">Constants:</span>
-                <span class="ml-1 font-medium">{Enum.join(@investigation.constants, ", ")}</span>
+                <span class="text-ink-muted">Constants:</span>
+                <span class="ml-space-xs font-semibold text-ink">{Enum.join(@investigation.constants, ", ")}</span>
               </div>
             </div>
             <%= if @investigation.methodology_notes do %>
-              <div class="mt-2 text-sm text-base-content/60 italic">
+              <div class="mt-space-sm text-body text-ink-muted italic">
                 {@investigation.methodology_notes}
               </div>
             <% end %>
           </div>
 
           <!-- Hypotheses -->
-          <div class="p-4">
-            <h4 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">
+          <div class="p-space-lg">
+            <h4 class="text-label text-ink-muted mb-space-md">
               Hypotheses ({length(@investigation.hypotheses)})
             </h4>
-            <div class="space-y-3">
+            <div class="space-y-space-md">
               <%= for hypothesis <- @investigation.hypotheses do %>
                 <.hypothesis_card hypothesis={hypothesis} />
               <% end %>
@@ -1082,11 +1052,11 @@ defmodule ChatWeb.SessionsLive do
 
           <!-- Control Evidence -->
           <%= if length(@investigation.control_evidence) > 0 do %>
-            <div class="p-4 border-t border-base-300/30">
-              <h4 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">
+            <div class="p-space-lg border-t border-border">
+              <h4 class="text-label text-ink-muted mb-space-md">
                 Control Evidence ({length(@investigation.control_evidence)})
               </h4>
-              <div class="space-y-2">
+              <div class="space-y-space-sm">
                 <%= for finding <- @investigation.control_evidence do %>
                   <.finding_inline finding={finding} />
                 <% end %>
@@ -1095,14 +1065,14 @@ defmodule ChatWeb.SessionsLive do
           <% end %>
 
           <!-- Evidence -->
-          <div class="p-4 border-t border-base-300/30">
-            <h4 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">
+          <div class="p-space-lg border-t border-border">
+            <h4 class="text-label text-ink-muted mb-space-md">
               Gathered Evidence ({length(@investigation.evidence)})
             </h4>
             <%= if length(@investigation.evidence) == 0 do %>
-              <p class="text-sm text-base-content/40">No evidence gathered</p>
+              <p class="text-body text-ink-muted">No evidence gathered</p>
             <% else %>
-              <div class="space-y-2">
+              <div class="space-y-space-sm">
                 <%= for finding <- @investigation.evidence do %>
                   <.finding_inline finding={finding} />
                 <% end %>
@@ -1111,50 +1081,50 @@ defmodule ChatWeb.SessionsLive do
           </div>
         </div>
       <% end %>
-    </div>
+    </.card>
     """
   end
 
   defp hypothesis_card(assigns) do
     ~H"""
-    <div class="bg-base-200/30 rounded-lg p-3 border border-base-300/20">
-      <div class="flex items-start justify-between gap-2 mb-2">
-        <div class="flex items-center gap-2 min-w-0">
-          <span class={["badge badge-xs shrink-0", hypothesis_badge(@hypothesis.status)]}>
+    <div class="bg-surface-sunk rounded-md p-space-md border border-border">
+      <div class="flex items-start justify-between gap-space-sm mb-space-sm">
+        <div class="flex items-center gap-space-sm min-w-0">
+          <.badge variant={hypothesis_variant(@hypothesis.status)} size={:xs} class="shrink-0">
             {@hypothesis.status}
-          </span>
-          <span class="font-medium text-sm">{@hypothesis.claim}</span>
+          </.badge>
+          <span class="text-subheading text-ink">{@hypothesis.claim}</span>
         </div>
         <%= if @hypothesis.confidence > 0 do %>
           <div class="shrink-0 text-right">
-            <div class="text-sm font-bold">{Float.round(@hypothesis.confidence * 100, 1)}%</div>
-            <div class="text-[10px] text-base-content/40">{@hypothesis.confidence_level}</div>
+            <div class="text-value-strong text-ink">{Float.round(@hypothesis.confidence * 100, 1)}%</div>
+            <div class="text-caption text-ink-muted">{@hypothesis.confidence_level}</div>
           </div>
         <% end %>
       </div>
 
       <!-- Prediction -->
       <%= if @hypothesis.prediction do %>
-        <div class="text-xs text-base-content/60 mb-2 pl-2 border-l-2 border-info/30 italic">
+        <div class="text-caption text-ink-muted mb-space-sm pl-space-sm border-l-2 border-border-strong italic">
           {@hypothesis.prediction}
         </div>
       <% end %>
 
       <!-- Derived From -->
       <%= if @hypothesis.derived_from do %>
-        <div class="text-xs text-base-content/50 mb-2">
-          Derived from: <span class="text-base-content/70">{@hypothesis.derived_from}</span>
+        <div class="text-caption text-ink-muted mb-space-sm">
+          Derived from: <span class="text-ink">{@hypothesis.derived_from}</span>
         </div>
       <% end %>
 
       <!-- Evidence Counts -->
-      <div class="flex flex-wrap gap-3 text-xs text-base-content/50">
-        <span class="flex items-center gap-1">
-          <.icon name="hero-check" class="size-3 text-success" />
+      <div class="flex flex-wrap gap-space-md text-caption text-ink-muted">
+        <span class="flex items-center gap-space-xs">
+          <.icon name="hero-check" class="size-3 text-ink" />
           {length(@hypothesis.supporting_evidence)} supporting
         </span>
-        <span class="flex items-center gap-1">
-          <.icon name="hero-x-mark" class="size-3 text-error" />
+        <span class="flex items-center gap-space-xs">
+          <.icon name="hero-x-mark" class="size-3 text-ink" />
           {length(@hypothesis.contradicting_evidence)} contradicting
         </span>
         <%= if @hypothesis.source_count > 0 do %>
@@ -1164,7 +1134,7 @@ defmodule ChatWeb.SessionsLive do
           <span>{@hypothesis.replication_count} replications</span>
         <% end %>
         <%= if @hypothesis.tested_at do %>
-          <span class="text-base-content/40">
+          <span class="text-ink-muted">
             Tested {Calendar.strftime(@hypothesis.tested_at, "%H:%M:%S")}
           </span>
         <% end %>
@@ -1172,12 +1142,9 @@ defmodule ChatWeb.SessionsLive do
 
       <!-- Confidence bar -->
       <%= if @hypothesis.confidence > 0 do %>
-        <div class="mt-2 h-1.5 rounded-full bg-base-300/50 overflow-hidden">
+        <div class="mt-space-sm h-space-xs rounded-sm bg-surface overflow-hidden">
           <div
-            class={[
-              "h-full rounded-full transition-all",
-              confidence_color(@hypothesis.confidence)
-            ]}
+            class="h-full rounded-sm bg-ink-muted transition-all"
             style={"width: #{@hypothesis.confidence * 100}%"}
           />
         </div>
@@ -1188,16 +1155,16 @@ defmodule ChatWeb.SessionsLive do
 
   defp finding_inline(assigns) do
     ~H"""
-    <div class="flex items-start gap-2 text-sm bg-base-200/20 rounded-lg p-2.5 border border-base-300/10">
-      <.icon name="hero-document-text" class="size-4 shrink-0 mt-0.5 text-base-content/40" />
+    <div class="flex items-start gap-space-sm text-body bg-surface-sunk rounded-md p-space-sm border border-border">
+      <.icon name="hero-document-text" class="size-4 shrink-0 mt-space-2xs text-ink-muted" />
       <div class="min-w-0 flex-1">
-        <div class="text-base-content/80">{@finding.claim}</div>
-        <div class="flex flex-wrap gap-2 mt-1 text-xs text-base-content/50">
+        <div class="text-ink">{@finding.claim}</div>
+        <div class="flex flex-wrap gap-space-sm mt-space-xs text-caption text-ink-muted">
           <%= if @finding.entity do %>
-            <span class="badge badge-xs badge-ghost">{@finding.entity}</span>
+            <.badge size={:xs}>{@finding.entity}</.badge>
           <% end %>
           <%= if @finding.entity_type do %>
-            <span class="badge badge-xs badge-outline">{@finding.entity_type}</span>
+            <.badge size={:xs} class="border border-border-strong">{@finding.entity_type}</.badge>
           <% end %>
           <%= if @finding.source do %>
             <span class="truncate max-w-[200px]" title={source_url(@finding.source)}>
@@ -1223,21 +1190,21 @@ defmodule ChatWeb.SessionsLive do
     assigns = assign(assigns, :all_evidence, all_evidence)
 
     ~H"""
-    <div class="space-y-3">
+    <div class="space-y-space-md">
       <%= if length(@all_evidence) == 0 do %>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-8 text-center">
-          <.icon name="hero-document-magnifying-glass" class="size-10 mx-auto mb-3 text-base-content/20" />
-          <p class="text-base-content/50">No evidence collected</p>
-          <p class="text-sm text-base-content/40 mt-1">
+        <.card class="p-space-2xl text-center">
+          <.icon name="hero-document-magnifying-glass" class="size-10 mx-auto mb-space-md text-ink-muted" />
+          <p class="text-body text-ink-muted">No evidence collected</p>
+          <p class="text-body-dense text-ink-muted mt-space-xs">
             Evidence is gathered during scientific investigations
           </p>
-        </div>
+        </.card>
       <% else %>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4 mb-3">
-          <span class="text-sm text-base-content/60">
+        <.card class="p-space-lg mb-space-md">
+          <span class="text-body text-ink-muted">
             {length(@all_evidence)} evidence items across {length(@session.investigations)} investigation(s)
           </span>
-        </div>
+        </.card>
 
         <%= for finding <- @all_evidence do %>
           <.evidence_card
@@ -1252,27 +1219,27 @@ defmodule ChatWeb.SessionsLive do
 
   defp evidence_card(assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-xl border border-base-300/50 overflow-hidden">
+    <.card class="overflow-hidden">
       <!-- Header (clickable) -->
       <div
-        class="p-4 cursor-pointer hover:bg-base-200/30 transition-colors"
+        class="p-space-lg cursor-pointer hover:bg-surface-sunk transition-colors"
         phx-click="toggle_evidence"
         phx-value-id={@finding.id}
       >
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex items-start gap-2 min-w-0 flex-1">
+        <div class="flex items-start justify-between gap-space-md">
+          <div class="flex items-start gap-space-sm min-w-0 flex-1">
             <.icon
               name={if @expanded, do: "hero-chevron-down", else: "hero-chevron-right"}
-              class="size-4 shrink-0 mt-0.5 text-base-content/40"
+              class="size-4 shrink-0 mt-space-2xs text-ink-muted"
             />
             <div class="min-w-0">
-              <div class="font-medium text-sm">{@finding.claim}</div>
-              <div class="flex flex-wrap gap-2 mt-1 text-xs text-base-content/50">
+              <div class="text-subheading text-ink">{@finding.claim}</div>
+              <div class="flex flex-wrap gap-space-sm mt-space-xs text-caption text-ink-muted">
                 <%= if @finding.entity do %>
-                  <span class="badge badge-xs badge-ghost">{@finding.entity}</span>
+                  <.badge size={:xs}>{@finding.entity}</.badge>
                 <% end %>
                 <%= if @finding.entity_type do %>
-                  <span class="badge badge-xs badge-outline">{@finding.entity_type}</span>
+                  <.badge size={:xs} class="border border-border-strong">{@finding.entity_type}</.badge>
                 <% end %>
                 <%= if @finding.source do %>
                   <span>{source_domain(@finding.source)}</span>
@@ -1281,61 +1248,58 @@ defmodule ChatWeb.SessionsLive do
             </div>
           </div>
           <div class="shrink-0">
-            <div class={[
-              "badge badge-sm",
-              confidence_badge(@finding.confidence)
-            ]}>
+            <.badge class="font-mono">
               {Float.round(@finding.confidence * 100, 1)}%
-            </div>
+            </.badge>
           </div>
         </div>
       </div>
 
       <!-- Expanded Detail -->
       <%= if @expanded do %>
-        <div class="border-t border-base-300/30 p-4 space-y-4">
+        <div class="border-t border-border p-space-lg space-y-space-lg">
           <!-- Source Info -->
           <%= if @finding.source do %>
             <div>
-              <h5 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">Source</h5>
-              <div class="bg-base-200/30 rounded-lg p-3 space-y-1.5 text-sm">
-                <div class="flex items-center gap-2">
-                  <span class="text-base-content/50 w-24 shrink-0">Domain:</span>
-                  <span class="font-medium">{source_domain(@finding.source)}</span>
+              <h5 class="text-label text-ink-muted mb-space-sm">Source</h5>
+              <div class="bg-surface-sunk rounded-md p-space-md space-y-space-xs text-body">
+                <div class="flex items-center gap-space-sm">
+                  <span class="text-ink-muted w-24 shrink-0">Domain:</span>
+                  <span class="font-semibold text-ink">{source_domain(@finding.source)}</span>
                 </div>
-                <div class="flex items-start gap-2">
-                  <span class="text-base-content/50 w-24 shrink-0">URL:</span>
-                  <span class="text-info break-all text-xs">{source_url(@finding.source)}</span>
+                <div class="flex items-start gap-space-sm">
+                  <span class="text-ink-muted w-24 shrink-0">URL:</span>
+                  <span class="text-ref text-ink break-all">{source_url(@finding.source)}</span>
                 </div>
                 <%= if source_title(@finding.source) do %>
-                  <div class="flex items-start gap-2">
-                    <span class="text-base-content/50 w-24 shrink-0">Title:</span>
-                    <span>{source_title(@finding.source)}</span>
+                  <div class="flex items-start gap-space-sm">
+                    <span class="text-ink-muted w-24 shrink-0">Title:</span>
+                    <span class="text-ink">{source_title(@finding.source)}</span>
                   </div>
                 <% end %>
-                <div class="flex items-center gap-2">
-                  <span class="text-base-content/50 w-24 shrink-0">Reliability:</span>
-                  <div class="flex items-center gap-2">
-                    <div class="w-20 h-2 rounded-full bg-base-300/50 overflow-hidden">
+                <div class="flex items-center gap-space-sm">
+                  <span class="text-ink-muted w-24 shrink-0">Reliability:</span>
+                  <div class="flex items-center gap-space-sm">
+                    <div class="w-20 h-space-sm rounded-sm bg-surface overflow-hidden">
                       <div
-                        class={["h-full rounded-full", confidence_color(source_reliability(@finding.source))]}
+                        class="h-full rounded-sm bg-ink-muted"
                         style={"width: #{source_reliability(@finding.source) * 100}%"}
                       />
                     </div>
-                    <span class="text-xs">{Float.round(source_reliability(@finding.source) * 100, 1)}%</span>
+                    <span class="text-offset text-ink">{Float.round(source_reliability(@finding.source) * 100, 1)}%</span>
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-base-content/50 w-24 shrink-0">Bias:</span>
-                  <span class={["badge badge-xs", bias_badge(source_bias(@finding.source))]}>
+                <div class="flex items-center gap-space-sm">
+                  <span class="text-ink-muted w-24 shrink-0">Bias:</span>
+                  <.badge size={:xs}>
                     {source_bias(@finding.source)}
-                  </span>
+                  </.badge>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-base-content/50 w-24 shrink-0">Trust Tier:</span>
-                  <span class={["badge badge-xs", trust_badge(source_trust(@finding.source))]}>
+                <div class="flex items-center gap-space-sm">
+                  <span class="text-ink-muted w-24 shrink-0">Trust Tier:</span>
+                  <.badge variant={trust_variant(source_trust(@finding.source))} size={:xs}>
                     {source_trust(@finding.source)}
-                  </span>
+                  </.badge>
                 </div>
               </div>
             </div>
@@ -1344,26 +1308,26 @@ defmodule ChatWeb.SessionsLive do
           <!-- Raw Context -->
           <%= if @finding.raw_context && @finding.raw_context != "" do %>
             <div>
-              <h5 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">Raw Context</h5>
-              <div class="bg-base-200/30 rounded-lg p-3 text-sm text-base-content/70 whitespace-pre-wrap font-mono text-xs max-h-48 overflow-y-auto">
+              <h5 class="text-label text-ink-muted mb-space-sm">Raw Context</h5>
+              <div class="bg-surface-sunk rounded-md p-space-md text-term text-ink whitespace-pre-wrap max-h-48 overflow-y-auto">
                 {@finding.raw_context}
               </div>
             </div>
           <% end %>
 
           <!-- Metadata -->
-          <div class="flex flex-wrap gap-4 text-xs text-base-content/50">
-            <span>ID: <span class="font-mono">{@finding.id}</span></span>
+          <div class="flex flex-wrap gap-space-lg text-caption text-ink-muted">
+            <span>ID: <span class="text-ref">{@finding.id}</span></span>
             <%= if @finding.extracted_at do %>
               <span>Extracted: {Calendar.strftime(@finding.extracted_at, "%Y-%m-%d %H:%M:%S")}</span>
             <% end %>
             <%= if @finding.corroboration_group do %>
-              <span>Corroboration Group: <span class="font-mono">{@finding.corroboration_group}</span></span>
+              <span>Corroboration Group: <span class="text-ref">{@finding.corroboration_group}</span></span>
             <% end %>
           </div>
         </div>
       <% end %>
-    </div>
+    </.card>
     """
   end
 
@@ -1371,67 +1335,72 @@ defmodule ChatWeb.SessionsLive do
   # HELPERS
   # ============================================================================
 
-  defp session_badge(:active), do: "badge-warning"
-  defp session_badge(:completed), do: "badge-success"
-  defp session_badge(:cancelled), do: "badge-error"
-  defp session_badge(_), do: "badge-ghost"
+  @session_variants %{active: :warning, completed: :success, cancelled: :error}
 
-  defp goal_badge(:completed), do: "badge-success"
-  defp goal_badge(:failed), do: "badge-error"
-  defp goal_badge(:in_progress), do: "badge-warning"
-  defp goal_badge(:pending), do: "badge-ghost"
-  defp goal_badge(_), do: "badge-ghost"
+  @goal_variants %{completed: :success, failed: :error, in_progress: :warning, pending: :default}
 
-  defp priority_badge(:high), do: "badge-error"
-  defp priority_badge(:low), do: "badge-ghost"
-  defp priority_badge(_), do: ""
+  @priority_variants %{high: :error, low: :default}
 
-  defp investigation_badge(:concluded), do: "badge-success"
-  defp investigation_badge(:evaluating), do: "badge-warning"
-  defp investigation_badge(:gathering_evidence), do: "badge-info"
-  defp investigation_badge(:planning), do: "badge-ghost"
-  defp investigation_badge(_), do: "badge-ghost"
+  @investigation_variants %{
+    concluded: :success,
+    evaluating: :warning,
+    gathering_evidence: :info,
+    planning: :default
+  }
 
-  defp conclusion_badge(:hypotheses_supported), do: "badge-success"
-  defp conclusion_badge(:hypotheses_falsified), do: "badge-error"
-  defp conclusion_badge(:inconclusive), do: "badge-warning"
-  defp conclusion_badge(:mixed), do: "badge-warning"
-  defp conclusion_badge(_), do: "badge-ghost"
+  @conclusion_variants %{
+    hypotheses_supported: :success,
+    hypotheses_falsified: :error,
+    inconclusive: :warning,
+    mixed: :warning
+  }
+
+  @hypothesis_variants %{
+    supported: :success,
+    falsified: :error,
+    inconclusive: :warning,
+    testing: :info,
+    untested: :default
+  }
+
+  @trust_variants %{
+    nil => :default,
+    :verified => :success,
+    :neutral => :default,
+    :untrusted => :warning,
+    :blocked => :error
+  }
+
+  defp session_variant(status), do: fetch_variant!(@session_variants, status, "session status")
+  defp goal_variant(status), do: fetch_variant!(@goal_variants, status, "goal status")
+  defp priority_variant(priority), do: fetch_variant!(@priority_variants, priority, "goal priority")
+
+  defp investigation_variant(status),
+    do: fetch_variant!(@investigation_variants, status, "investigation status")
+
+  defp conclusion_variant(conclusion),
+    do: fetch_variant!(@conclusion_variants, conclusion, "investigation conclusion")
+
+  defp hypothesis_variant(status), do: fetch_variant!(@hypothesis_variants, status, "hypothesis status")
+  defp trust_variant(tier), do: fetch_variant!(@trust_variants, tier, "source trust tier")
+
+  defp fetch_variant!(variants, value, what) do
+    case Map.fetch(variants, value) do
+      {:ok, variant} ->
+        variant
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.SessionsLive: no badge treatment for #{what} #{inspect(value)}. " <>
+                "The mapped values are #{inspect(Map.keys(variants))}."
+    end
+  end
 
   defp format_conclusion(:hypotheses_supported), do: "supported"
   defp format_conclusion(:hypotheses_falsified), do: "falsified"
   defp format_conclusion(:inconclusive), do: "inconclusive"
   defp format_conclusion(:mixed), do: "mixed"
   defp format_conclusion(other), do: to_string(other)
-
-  defp hypothesis_badge(:supported), do: "badge-success"
-  defp hypothesis_badge(:falsified), do: "badge-error"
-  defp hypothesis_badge(:inconclusive), do: "badge-warning"
-  defp hypothesis_badge(:testing), do: "badge-info"
-  defp hypothesis_badge(:untested), do: "badge-ghost"
-  defp hypothesis_badge(_), do: "badge-ghost"
-
-  defp confidence_color(c) when c >= 0.7, do: "bg-success"
-  defp confidence_color(c) when c >= 0.4, do: "bg-warning"
-  defp confidence_color(_), do: "bg-error"
-
-  defp confidence_badge(c) when c >= 0.7, do: "badge-success"
-  defp confidence_badge(c) when c >= 0.4, do: "badge-warning"
-  defp confidence_badge(_), do: "badge-error"
-
-  defp bias_badge(:center), do: "badge-success"
-  defp bias_badge(:center_left), do: "badge-info"
-  defp bias_badge(:center_right), do: "badge-info"
-  defp bias_badge(:left), do: "badge-warning"
-  defp bias_badge(:right), do: "badge-warning"
-  defp bias_badge(:unknown), do: "badge-ghost"
-  defp bias_badge(_), do: "badge-ghost"
-
-  defp trust_badge(:verified), do: "badge-success"
-  defp trust_badge(:neutral), do: "badge-ghost"
-  defp trust_badge(:untrusted), do: "badge-warning"
-  defp trust_badge(:blocked), do: "badge-error"
-  defp trust_badge(_), do: "badge-ghost"
 
   defp source_domain(%{domain: domain}) when is_binary(domain), do: domain
   defp source_domain(_), do: "unknown"
