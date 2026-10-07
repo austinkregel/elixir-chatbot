@@ -105,6 +105,9 @@ defmodule Brain.Services.SystemStatus do
   end
 
   @impl true
+  def writes?(_intent), do: false
+
+  @impl true
   def health_check(_credentials) do
     # Internal service — always healthy if the BEAM is running
     :ok
