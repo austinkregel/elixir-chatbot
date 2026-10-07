@@ -21,7 +21,7 @@ defmodule ChatWeb.TrainingStudioLive do
       Phoenix.PubSub.subscribe(Brain.PubSub, "training:progress")
     end
 
-    {:ok, socket}
+    {:ok, assign(socket, :page_size, @page_size)}
   end
 
   @impl true
@@ -39,6 +39,8 @@ defmodule ChatWeb.TrainingStudioLive do
       |> assign(:filter, filter)
       |> assign(:show_add_form, false)
       |> assign(:editing_index, nil)
+      |> assign(:open_confirm, nil)
+      |> assign(:confirm_error, nil)
       |> assign(:sources_by_category, Catalog.list_sources_by_category())
       |> assign(:summary_stats, Diagnostics.summary_stats())
       |> load_tab_data(active_tab, source_id, page, filter)
@@ -138,6 +140,16 @@ defmodule ChatWeb.TrainingStudioLive do
     end
   end
 
+  def handle_event("open_confirm", %{"id" => id}, socket) do
+    {:noreply, socket |> assign(:open_confirm, id) |> assign(:confirm_error, nil)}
+  end
+
+  def handle_event("close_confirm", _params, socket) do
+    {:noreply, close_confirm(socket)}
+  end
+
+  # Reached only from the delete confirmation. A failure stays in that panel,
+  # which remains open, rather than closing it and leaving only a flash.
   def handle_event("delete_record", %{"index" => index_str}, socket) do
     source_id = socket.assigns.selected_source
     index = parse_int(index_str, -1)
@@ -147,14 +159,15 @@ defmodule ChatWeb.TrainingStudioLive do
         :ok ->
           {:noreply,
            socket
+           |> close_confirm()
            |> put_flash(:info, "Record deleted")
            |> push_patch(to: current_path(socket))}
 
         {:error, reason} ->
-          {:noreply, put_flash(socket, :error, "Failed to delete: #{inspect(reason)}")}
+          {:noreply, assign(socket, :confirm_error, "Failed to delete record #{index + 1}: #{inspect(reason)}")}
       end
     else
-      {:noreply, socket}
+      {:noreply, assign(socket, :confirm_error, "No source is selected, or the record index is invalid.")}
     end
   end
 
@@ -287,17 +300,15 @@ defmodule ChatWeb.TrainingStudioLive do
   # ── Tab data loading ─────────────────────────────────────────────────
 
   defp load_tab_data(socket, "browse", source_id, page, filter) when not is_nil(source_id) do
-    offset = (page - 1) * @page_size
     desc = SourceDescriptors.get(source_id)
 
-    case Catalog.read_source_page(source_id, offset, @page_size, filter: filter) do
-      {:ok, records, total} ->
-        total_pages = max(1, ceil(total / @page_size))
-
+    case read_browse_page(source_id, page, filter) do
+      {:ok, records, total, page} ->
         socket
+        |> assign(:page, page)
         |> assign(:records, records)
         |> assign(:total_records, total)
-        |> assign(:total_pages, total_pages)
+        |> assign(:total_pages, last_page(total))
         |> assign(:source_desc, desc)
 
       {:error, reason} ->
@@ -420,10 +431,26 @@ defmodule ChatWeb.TrainingStudioLive do
   defp parse_int(n, _default) when is_integer(n) and n > 0, do: n
   defp parse_int(_, default), do: default
 
-  defp visible_pages(current, total) do
-    range_start = max(1, current - 2)
-    range_end = min(total, current + 2)
-    Enum.to_list(range_start..range_end)
+  # A page past the last one (a stale `?page=`, or the last record on the last
+  # page deleted) reads the last page instead, so `page_bar/1` is never handed a
+  # page outside its range.
+  defp read_browse_page(source_id, page, filter) do
+    case Catalog.read_source_page(source_id, (page - 1) * @page_size, @page_size, filter: filter) do
+      {:ok, _records, total} when page > 1 and (page - 1) * @page_size >= total ->
+        read_browse_page(source_id, last_page(total), filter)
+
+      {:ok, records, total} ->
+        {:ok, records, total, page}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp last_page(total), do: max(1, div(total + @page_size - 1, @page_size))
+
+  defp close_confirm(socket) do
+    socket |> assign(:open_confirm, nil) |> assign(:confirm_error, nil)
   end
 
   defp current_path(socket) do
