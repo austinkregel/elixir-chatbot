@@ -16,15 +16,19 @@ defmodule Brain.Evaluation.Gate do
       2 points for intent and sentiment, 1 for speech act, 3 for NER;
     * the count of unknown, errored and not-loaded predictions may not rise
       above the baseline's (the error canary);
+    * a canary that cannot be measured fails;
     * a task with a baseline but no current result fails, because there is
       nothing to show it did not regress.
 
   The error canary needs `"diagnostics"` on both the baseline entry and the
   latest result. When either has none, the canary is `:not_measured`, its
   `new_errors` is nil and `diagnostics_absent` names the side or sides that
-  had none: an absent count is not a count of zero. Macro-F1 is still judged.
-  A verdict that judged nothing (no baseline entry, or no current result) has
-  canary `:not_judged`.
+  had none: an absent count is not a count of zero. An unmeasured canary
+  fails the task, because a gate that cannot count new failed predictions
+  cannot show they did not rise; its reason in `failures` names the side or
+  sides with no diagnostics. Macro-F1 is still judged, and a regression adds
+  its own reason. A verdict that judged nothing (no baseline entry, or no
+  current result) has canary `:not_judged`.
 
   A task with no baseline entry, or no baseline file at all, has not been
   judged: its status is `:not_set`, never a pass.
@@ -215,7 +219,9 @@ defmodule Brain.Evaluation.Gate do
           delta < -allowance &&
             "macro_f1 regressed #{points(abs(delta))}pp (allowance: #{points(allowance)}pp)",
           canary == :measured and new_errors > 0 &&
-            "#{new_errors} new unknown/errored/not_loaded predictions"
+            "#{new_errors} new unknown/errored/not_loaded predictions",
+          canary == :not_measured &&
+            "error canary not measured: no diagnostics in #{diagnostics_absent_words(diagnostics_absent)}"
         ],
         &(&1 == false)
       )
@@ -249,6 +255,30 @@ defmodule Brain.Evaluation.Gate do
 
       sides ->
         {:not_measured, nil, sides}
+    end
+  end
+
+  @doc """
+  The sides a verdict's `diagnostics_absent` names, as words: "the baseline",
+  "the latest result", or "the baseline or the latest result". Anything other
+  than one or both of `:baseline` and `:current` raises.
+  """
+  @spec diagnostics_absent_words([:baseline | :current]) :: String.t()
+  def diagnostics_absent_words(sides) do
+    case Enum.sort(sides) do
+      [:baseline] ->
+        "the baseline"
+
+      [:current] ->
+        "the latest result"
+
+      [:baseline, :current] ->
+        "the baseline or the latest result"
+
+      other ->
+        raise ArgumentError,
+              "Brain.Evaluation.Gate: an unmeasured canary names the sides with no diagnostics, " <>
+                "one or both of :baseline and :current; got #{inspect(other)}."
     end
   end
 
