@@ -214,14 +214,14 @@ defmodule ChatWeb.AccuracyLive do
       flash={@flash}
     >
       <:page_header>
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-space-lg">
           <div>
-            <h1 class="text-xl font-bold">Accuracy Dashboard</h1>
-            <p class="text-sm text-base-content/60">
+            <h1 class="text-title text-ink">Accuracy Dashboard</h1>
+            <p class="text-body text-ink-muted">
               ML model evaluation results and weight-optimizer runs
             </p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-space-sm">
             <.btn variant={:outline} size={:sm} phx-click="refresh_data">
               <.icon name="hero-arrow-path" class="size-4" /> Refresh
             </.btn>
@@ -232,29 +232,33 @@ defmodule ChatWeb.AccuracyLive do
         </div>
       </:page_header>
 
-      <div class="p-4 sm:p-6 lg:p-8 space-y-6">
+      <div class="p-space-lg space-y-space-xl">
         <!-- Tab Navigation -->
-        <div class="border-b border-base-300">
-          <nav class="flex gap-1 -mb-px" role="tablist">
-            <.tab_button
+        <nav class="flex flex-wrap items-center gap-space-md">
+          <.tabs>
+            <.tab
               :for={task <- @tasks}
-              tab={task}
-              label={@task_labels[task]}
+              phx-click="switch_tab"
+              phx-value-tab={task}
               active={@active_tab == task}
-            />
-            <.tab_button
-              tab="optimizer"
-              label="Optimizer"
-              active={@active_tab == "optimizer"}
-            />
-            <.link
-              navigate={~p"/training-studio?tab=browse&source=intent_gold"}
-              class="px-3 py-1.5 text-sm font-medium rounded-lg text-base-content/70 hover:bg-base-200 transition-colors"
             >
-              Training Studio &rarr;
-            </.link>
-          </nav>
-        </div>
+              {@task_labels[task]}
+            </.tab>
+            <.tab
+              phx-click="switch_tab"
+              phx-value-tab="optimizer"
+              active={@active_tab == "optimizer"}
+            >
+              Optimizer
+            </.tab>
+          </.tabs>
+          <.link
+            navigate={~p"/training-studio?tab=browse&source=intent_gold"}
+            class="text-body-dense text-accent hover:underline"
+          >
+            Training Studio &rarr;
+          </.link>
+        </nav>
 
         <!-- Tab Content -->
         <%= cond do %>
@@ -280,30 +284,6 @@ defmodule ChatWeb.AccuracyLive do
     """
   end
 
-  attr(:tab, :string, required: true)
-  attr(:label, :string, required: true)
-  attr(:active, :boolean, default: false)
-
-  defp tab_button(assigns) do
-    ~H"""
-    <button
-      phx-click="switch_tab"
-      phx-value-tab={@tab}
-      role="tab"
-      aria-selected={to_string(@active)}
-      class={[
-        "px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
-        if(@active,
-          do: "border-primary text-primary",
-          else: "border-transparent text-base-content/60 hover:text-base-content hover:border-base-300"
-        )
-      ]}
-    >
-      {@label}
-    </button>
-    """
-  end
-
   attr(:task, :string, required: true)
   attr(:evaluation, :map, default: nil)
   attr(:trend, :list, default: [])
@@ -316,23 +296,23 @@ defmodule ChatWeb.AccuracyLive do
     ~H"""
     <%= if @evaluation do %>
       <!-- Summary Cards -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <.metric_card
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-space-lg">
+        <.stat_kpi
           label="Accuracy"
           value={format_percent(@evaluation["accuracy"])}
           icon="hero-check-circle"
         />
-        <.metric_card
+        <.stat_kpi
           label="Macro F1"
           value={format_percent(@evaluation["macro_f1"])}
           icon="hero-chart-bar"
         />
-        <.metric_card
+        <.stat_kpi
           label="Weighted F1"
           value={format_percent(@evaluation["weighted_f1"])}
           icon="hero-chart-bar-square"
         />
-        <.metric_card
+        <.stat_kpi
           label="Total Examples"
           value={to_string(@evaluation["total_examples"] || 0)}
           icon="hero-document-text"
@@ -341,23 +321,25 @@ defmodule ChatWeb.AccuracyLive do
 
       <!-- Accuracy Trend Chart -->
       <%= if length(@trend) > 1 do %>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <h3 class="text-sm font-semibold text-base-content/70 mb-3">Accuracy Trend</h3>
-          <.trend_chart points={@trend} />
-        </div>
+        <.card>
+          <.card_body>
+            <h3 class="text-heading text-ink mb-space-md">Accuracy Trend</h3>
+            <.trend_chart points={@trend} />
+          </.card_body>
+        </.card>
       <% end %>
 
       <!-- Per-Class Metrics Table -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 overflow-hidden">
-        <div class="p-4 border-b border-base-300/50">
-          <h3 class="text-sm font-semibold text-base-content/70">
+      <.card class="overflow-hidden">
+        <div class="p-space-lg border-b border-border">
+          <h3 class="text-heading text-ink">
             Per-Class Metrics ({@task_label})
           </h3>
         </div>
         <div class="overflow-x-auto">
-          <table class="table table-sm w-full">
-            <thead>
-              <tr class="border-b border-base-300/50">
+          <table class="w-full text-left text-body-dense text-ink tabular-nums">
+            <thead class="bg-surface-sunk">
+              <tr>
                 <.sortable_th field="label" label="Label" sort_field={@sort_field} sort_dir={@sort_dir} />
                 <.sortable_th field="precision" label="Precision" sort_field={@sort_field} sort_dir={@sort_dir} />
                 <.sortable_th field="recall" label="Recall" sort_field={@sort_field} sort_dir={@sort_dir} />
@@ -365,40 +347,32 @@ defmodule ChatWeb.AccuracyLive do
                 <.sortable_th field="support" label="Support" sort_field={@sort_field} sort_dir={@sort_dir} />
               </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-border">
               <tr
                 :for={{label, metrics} <- sorted_per_class(@evaluation["per_class"], @sort_field, @sort_dir)}
-                class="border-b border-base-300/30 hover:bg-base-200/30"
+                class="even:bg-surface-sunk"
               >
-                <td class="font-mono text-xs">{label}</td>
-                <td class={metric_color_class(metrics["precision"])}>{format_percent(metrics["precision"])}</td>
-                <td class={metric_color_class(metrics["recall"])}>{format_percent(metrics["recall"])}</td>
-                <td class={metric_color_class(metrics["f1"])}>{format_percent(metrics["f1"])}</td>
-                <td class="text-base-content/70">{metrics["support"]}</td>
+                <td class="h-row-compact px-space-sm text-value text-ink">{label}</td>
+                <td class={["h-row-compact px-space-sm", metric_class(:rate, metrics["precision"])]}>
+                  {format_percent(metrics["precision"])}
+                </td>
+                <td class={["h-row-compact px-space-sm", metric_class(:rate, metrics["recall"])]}>
+                  {format_percent(metrics["recall"])}
+                </td>
+                <td class={["h-row-compact px-space-sm", metric_class(:rate, metrics["f1"])]}>
+                  {format_percent(metrics["f1"])}
+                </td>
+                <td class={["h-row-compact px-space-sm", metric_class(:count, metrics["support"])]}>
+                  {metrics["support"]}
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
-      </div>
+      </.card>
     <% else %>
       <.empty_state task={@task} task_label={@task_label} />
     <% end %>
-    """
-  end
-
-  attr(:label, :string, required: true)
-  attr(:value, :string, required: true)
-  attr(:icon, :string, required: true)
-
-  defp metric_card(assigns) do
-    ~H"""
-    <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-      <div class="flex items-center gap-2 mb-1">
-        <.icon name={@icon} class="size-4 text-primary/70" />
-        <span class="text-xs text-base-content/60 font-medium">{@label}</span>
-      </div>
-      <div class="text-2xl font-bold">{@value}</div>
-    </div>
     """
   end
 
@@ -410,14 +384,14 @@ defmodule ChatWeb.AccuracyLive do
   defp sortable_th(assigns) do
     ~H"""
     <th
-      class="cursor-pointer select-none hover:bg-base-200/50 transition-colors text-xs font-semibold text-base-content/70 uppercase tracking-wider"
+      class="h-row-compact px-space-sm cursor-pointer select-none transition-colors text-label text-ink-muted hover:text-ink"
       phx-click="sort_table"
       phx-value-field={@field}
     >
-      <div class="flex items-center gap-1">
+      <div class="flex items-center gap-space-xs">
         {@label}
         <%= if @sort_field == @field do %>
-          <span class="text-primary">
+          <span class="text-accent">
             <%= if @sort_dir == :asc do %>
               <.icon name="hero-chevron-up-mini" class="size-3" />
             <% else %>
@@ -435,16 +409,31 @@ defmodule ChatWeb.AccuracyLive do
 
   defp empty_state(assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-xl border border-base-300/50 p-12 text-center">
-      <div class="mx-auto w-12 h-12 rounded-full bg-base-200 flex items-center justify-center mb-4">
-        <.icon name="hero-chart-bar" class="size-6 text-base-content/40" />
-      </div>
-      <h3 class="text-lg font-semibold text-base-content/70 mb-2">No evaluations yet</h3>
-      <p class="text-sm text-base-content/50 mb-4">
+    <.card>
+      <.empty_message icon="hero-chart-bar" title="No evaluations yet" command={"mix evaluate.#{@task} --save"}>
         Run an evaluation to see accuracy metrics for {@task_label}.
+      </.empty_message>
+    </.card>
+    """
+  end
+
+  attr(:icon, :string, required: true)
+  attr(:title, :string, required: true)
+  attr(:command, :string, required: true)
+  slot(:inner_block, required: true)
+
+  defp empty_message(assigns) do
+    ~H"""
+    <div class="p-space-3xl text-center">
+      <div class="mx-auto mb-space-lg flex size-12 items-center justify-center rounded-md bg-surface-sunk">
+        <.icon name={@icon} class="size-6 text-ink-muted" />
+      </div>
+      <h3 class="mb-space-sm text-heading text-ink">{@title}</h3>
+      <p class="mb-space-lg text-body text-ink-muted">
+        {render_slot(@inner_block)}
       </p>
-      <code class="text-xs bg-base-200 px-3 py-1.5 rounded-lg text-base-content/70">
-        mix evaluate.{@task} --save
+      <code class="rounded-sm bg-surface-sunk px-space-md py-space-xs text-ref text-ink">
+        {@command}
       </code>
     </div>
     """
@@ -458,7 +447,7 @@ defmodule ChatWeb.AccuracyLive do
 
   defp optimizer_panel(assigns) do
     ~H"""
-    <div class="space-y-6">
+    <div class="space-y-space-xl">
       <!-- Summary Cards -->
       <.optimizer_summary active={@active_runs} recent={@recent_runs} />
 
@@ -467,95 +456,88 @@ defmodule ChatWeb.AccuracyLive do
 
       <!-- Active Runs -->
       <%= if @active_runs != [] do %>
-        <div class="space-y-3">
-          <h3 class="text-sm font-semibold text-base-content/70 flex items-center gap-2">
-            <span class="flex h-2 w-2 rounded-full bg-success animate-pulse"></span>
+        <div class="space-y-space-md">
+          <h3 class="flex items-center gap-space-sm text-subheading text-ink">
+            <.status_dot status={:running} pulse={true} />
             Active runs ({length(@active_runs)})
           </h3>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg">
             <.active_run_card :for={run <- @active_runs} run={run} />
           </div>
         </div>
       <% end %>
 
       <!-- Recent Runs -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 overflow-hidden">
-        <div class="p-4 border-b border-base-300/50 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-base-content/70">
+      <.card class="overflow-hidden">
+        <div class="p-space-lg border-b border-border flex items-center justify-between">
+          <h3 class="text-heading text-ink">
             Recent runs
-            <span class="text-base-content/40 font-normal ml-1">
+            <span class="ml-space-xs text-body text-ink-muted">
               ({length(@recent_runs)} stored)
             </span>
           </h3>
         </div>
         <%= if @recent_runs == [] do %>
-          <div class="p-12 text-center">
-            <div class="mx-auto w-12 h-12 rounded-full bg-base-200 flex items-center justify-center mb-4">
-              <.icon name="hero-cpu-chip" class="size-6 text-base-content/40" />
-            </div>
-            <h3 class="text-lg font-semibold text-base-content/70 mb-2">No optimizer runs yet</h3>
-            <p class="text-sm text-base-content/50 mb-4">
-              Kick off a run from the launcher above, or train a feature-vector micro-classifier from the CLI.
-            </p>
-            <code class="text-xs bg-base-200 px-3 py-1.5 rounded-lg text-base-content/70">
-              mix train_micro --only intent_full
-            </code>
-          </div>
+          <.empty_message
+            icon="hero-cpu-chip"
+            title="No optimizer runs yet"
+            command="mix train_micro --only intent_full"
+          >
+            Kick off a run from the launcher above, or train a feature-vector micro-classifier from the CLI.
+          </.empty_message>
         <% else %>
           <div class="overflow-x-auto">
-            <table class="table table-sm w-full">
-              <thead>
-                <tr class="border-b border-base-300/50">
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Status</th>
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Classifier</th>
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Best Fitness</th>
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Best Gen</th>
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Generations</th>
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Alive Dims</th>
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Population</th>
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Mut Rate</th>
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Mut Sigma</th>
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Early Stop</th>
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Started</th>
-                  <th class="text-xs font-semibold text-base-content/70 uppercase tracking-wider">Duration</th>
+            <table class="w-full text-left text-body-dense text-ink tabular-nums">
+              <thead class="bg-surface-sunk">
+                <tr>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Status</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Classifier</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Best Fitness</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Best Gen</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Generations</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Alive Dims</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Population</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Mut Rate</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Mut Sigma</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Early Stop</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Started</th>
+                  <th class="h-row-compact px-space-sm text-label text-ink-muted">Duration</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr
-                  :for={{run, idx} <- Enum.with_index(@recent_runs)}
-                  class={[
-                    "border-b border-base-300/30 hover:bg-base-200/30",
-                    if(idx == 0 and run[:status] == :complete, do: "bg-success/5", else: "")
-                  ]}
-                >
-                  <td>
+              <tbody class="divide-y divide-border">
+                <tr :for={run <- @recent_runs} class="even:bg-surface-sunk">
+                  <td class="h-row-compact px-space-sm">
                     <.run_status_badge status={Map.get(run, :status, :complete)} />
                   </td>
-                  <td class="font-mono text-xs">{Map.get(run, :classifier, "-")}</td>
-                  <td class={metric_color_class(Map.get(run, :best_fitness))}>
+                  <td class="h-row-compact px-space-sm text-value text-ink">{Map.get(run, :classifier, "-")}</td>
+                  <td class={["h-row-compact px-space-sm", metric_class(:heuristic, Map.get(run, :best_fitness))]}>
                     {format_percent(Map.get(run, :best_fitness))}
                   </td>
-                  <td class="text-base-content/70">{Map.get(run, :best_generation, "-")}</td>
-                  <td class="text-base-content/70">{Map.get(run, :generations_run, "-")}</td>
-                  <td class="text-base-content/70">
+                  <td class="h-row-compact px-space-sm text-value text-score-count">
+                    {Map.get(run, :best_generation, "-")}
+                  </td>
+                  <td class="h-row-compact px-space-sm text-value text-score-count">
+                    {Map.get(run, :generations_run, "-")}
+                  </td>
+                  <td class="h-row-compact px-space-sm text-value text-score-count">
                     {format_alive_dims(Map.get(run, :alive_dims), Map.get(run, :total_dims))}
                   </td>
-                  <td class="text-base-content/70 text-xs">
+                  <td class="h-row-compact px-space-sm text-value text-ink">
                     {run_opt(run, :population_size, "population_size")}
                   </td>
-                  <td class="text-base-content/70 text-xs">
+                  <td class="h-row-compact px-space-sm text-value text-ink">
                     {run_opt(run, :mutation_rate, "mutation_rate")}
                   </td>
-                  <td class="text-base-content/70 text-xs">
+                  <td class="h-row-compact px-space-sm text-value text-ink">
                     {run_opt(run, :mutation_sigma, "mutation_sigma")}
                   </td>
-                  <td class="text-base-content/70 text-xs">
+                  <td class="h-row-compact px-space-sm text-value text-ink">
                     {run_opt(run, :early_stop_generations, "early_stop_generations")}
                   </td>
-                  <td class="text-xs text-base-content/60">
+                  <td class="h-row-compact px-space-sm text-caption text-ink-muted">
                     {format_time_ago(Map.get(run, :started_at))}
                   </td>
-                  <td class="text-xs text-base-content/60">
+                  <td class="h-row-compact px-space-sm text-caption text-ink-muted">
                     {format_duration(Map.get(run, :duration_ms))}
                   </td>
                 </tr>
@@ -563,7 +545,7 @@ defmodule ChatWeb.AccuracyLive do
             </table>
           </div>
         <% end %>
-      </div>
+      </.card>
     </div>
     """
   end
@@ -592,23 +574,23 @@ defmodule ChatWeb.AccuracyLive do
       |> assign(:last_completed, last_completed)
 
     ~H"""
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <.metric_card
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-space-lg">
+      <.stat_kpi
         label="Active runs"
         value={to_string(length(@active))}
         icon="hero-bolt"
       />
-      <.metric_card
+      <.stat_kpi
         label="Stored runs"
         value={to_string(length(@recent))}
         icon="hero-archive-box"
       />
-      <.metric_card
+      <.stat_kpi
         label="Best fitness"
         value={format_percent(@best_run && Map.get(@best_run, :best_fitness))}
         icon="hero-trophy"
       />
-      <.metric_card
+      <.stat_kpi
         label="Last completed"
         value={format_time_ago(@last_completed && Map.get(@last_completed, :completed_at))}
         icon="hero-clock"
@@ -623,41 +605,42 @@ defmodule ChatWeb.AccuracyLive do
 
   defp optimizer_launcher(assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-semibold text-base-content/70">
-          Launch a new GA run
-        </h3>
-        <span class="text-xs text-base-content/40">
-          Genetic algorithm — per-dimension feature weights
-        </span>
-      </div>
-      <form phx-change="update_optimizer_form" phx-submit="start_optimizer_run" class="space-y-3">
-        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          <div class="form-control">
-            <label class="label py-1"><span class="label-text text-xs">Classifier</span></label>
-            <select name="classifier" class="select select-sm select-bordered">
-              <option :for={c <- @available_classifiers} value={c} selected={@form["classifier"] == c}>
-                {c}
-              </option>
-            </select>
+    <.card>
+      <.card_body>
+        <div class="flex items-center justify-between mb-space-lg">
+          <h3 class="text-heading text-ink">
+            Launch a new GA run
+          </h3>
+          <span class="text-caption text-ink-muted">
+            Genetic algorithm — per-dimension feature weights
+          </span>
+        </div>
+        <form phx-change="update_optimizer_form" phx-submit="start_optimizer_run" class="space-y-space-md">
+          <div class="grid grid-cols-2 lg:grid-cols-3 gap-space-md">
+            <.input
+              type="select"
+              name="classifier"
+              label="Classifier"
+              options={@available_classifiers}
+              value={@form["classifier"]}
+            />
+            <.optimizer_input form={@form} field="population_size" label="Population size" min="10" step="10" />
+            <.optimizer_input form={@form} field="max_generations" label="Max generations" min="10" step="10" />
+            <.optimizer_input form={@form} field="early_stop_generations" label="Early stop (gens)" min="1" step="1" />
+            <.optimizer_input form={@form} field="mutation_rate" label="Mutation rate" min="0" max="1" step="0.01" />
+            <.optimizer_input form={@form} field="mutation_sigma" label="Mutation sigma" min="0" max="3" step="0.05" />
           </div>
-          <.optimizer_input form={@form} field="population_size" label="Population size" min="10" step="10" />
-          <.optimizer_input form={@form} field="max_generations" label="Max generations" min="10" step="10" />
-          <.optimizer_input form={@form} field="early_stop_generations" label="Early stop (gens)" min="1" step="1" />
-          <.optimizer_input form={@form} field="mutation_rate" label="Mutation rate" min="0" max="1" step="0.01" />
-          <.optimizer_input form={@form} field="mutation_sigma" label="Mutation sigma" min="0" max="3" step="0.05" />
-        </div>
-        <%= if @error do %>
-          <div class="text-error text-xs mt-1">{@error}</div>
-        <% end %>
-        <div class="flex justify-end">
-          <button type="submit" class="btn btn-primary btn-sm">
-            <.icon name="hero-rocket-launch" class="size-4" /> Start run
-          </button>
-        </div>
-      </form>
-    </div>
+          <%= if @error do %>
+            <div class="mt-space-xs text-caption text-red">{@error}</div>
+          <% end %>
+          <div class="flex justify-end">
+            <.btn type="submit" variant={:primary} size={:sm}>
+              <.icon name="hero-rocket-launch" class="size-4" /> Start run
+            </.btn>
+          </div>
+        </form>
+      </.card_body>
+    </.card>
     """
   end
 
@@ -670,18 +653,15 @@ defmodule ChatWeb.AccuracyLive do
 
   defp optimizer_input(assigns) do
     ~H"""
-    <div class="form-control">
-      <label class="label py-1"><span class="label-text text-xs">{@label}</span></label>
-      <input
-        type="number"
-        name={@field}
-        value={@form[@field]}
-        min={@min}
-        max={@max}
-        step={@step}
-        class="input input-sm input-bordered"
-      />
-    </div>
+    <.input
+      type="number"
+      name={@field}
+      label={@label}
+      value={@form[@field]}
+      min={@min}
+      max={@max}
+      step={@step}
+    />
     """
   end
 
@@ -699,36 +679,46 @@ defmodule ChatWeb.AccuracyLive do
       |> assign(:progress_pct, progress_pct)
 
     ~H"""
-    <div class="bg-base-100 rounded-xl border border-base-300/50 p-4 space-y-3">
-      <div class="flex items-start justify-between gap-2">
+    <.card>
+      <.card_body class="space-y-space-md">
+      <div class="flex items-start justify-between gap-space-sm">
         <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <span class="font-mono text-sm font-semibold truncate">{Map.get(@run, :classifier, "-")}</span>
+          <div class="flex items-center gap-space-sm">
+            <span class="text-value-strong text-ink truncate">{Map.get(@run, :classifier, "-")}</span>
             <.run_status_badge status={Map.get(@run, :status, :running)} />
           </div>
-          <div class="text-xs text-base-content/50 font-mono truncate">{Map.get(@run, :run_id)}</div>
+          <div class="text-ref text-ink-muted truncate">{Map.get(@run, :run_id)}</div>
         </div>
-        <button
+        <.btn
+          variant={:ghost}
+          size={:xs}
           phx-click="cancel_optimizer_run"
           phx-value-run_id={Map.get(@run, :run_id)}
-          class="btn btn-ghost btn-xs"
           title="Cancel run"
         >
           <.icon name="hero-x-mark" class="size-4" /> Cancel
-        </button>
+        </.btn>
       </div>
 
       <!-- Progress bar -->
-      <div class="space-y-1">
-        <div class="flex justify-between text-xs text-base-content/60">
+      <div class="space-y-space-xs">
+        <div class="flex justify-between text-caption text-ink-muted">
           <span>Generation {Map.get(@run, :generation, 0)} / {@max_gen}</span>
           <span>{@progress_pct}%</span>
         </div>
-        <progress class="progress progress-primary w-full" value={@progress_pct} max="100"></progress>
+        <div
+          class="h-space-sm w-full rounded-sm bg-progress-track"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow={@progress_pct}
+        >
+          <div class="h-full rounded-sm bg-progress-fill" style={"width: #{@progress_pct}%"} />
+        </div>
       </div>
 
       <!-- Metrics grid -->
-      <div class="grid grid-cols-3 gap-2 text-xs">
+      <div class="grid grid-cols-3 gap-space-sm">
         <.kv_block label="Best" value={format_percent(Map.get(@run, :best_fitness))} highlight={true} />
         <.kv_block label="Raw" value={format_percent(Map.get(@run, :raw_acc))} />
         <.kv_block label="Balanced" value={format_percent(Map.get(@run, :balanced_acc))} />
@@ -737,7 +727,7 @@ defmodule ChatWeb.AccuracyLive do
         <.kv_block label="Mut" value={format_mutation(Map.get(@run, :mutation_rate), Map.get(@run, :mutation_sigma))} />
       </div>
       <!-- Config grid -->
-      <div class="grid grid-cols-4 gap-2 text-xs">
+      <div class="grid grid-cols-4 gap-space-sm">
         <.kv_block label="Population" value={run_opt(@run, :population_size, "population_size")} />
         <.kv_block label="Mut Rate" value={run_opt(@run, :mutation_rate, "mutation_rate")} />
         <.kv_block label="Mut Sigma" value={run_opt(@run, :mutation_sigma, "mutation_sigma")} />
@@ -748,7 +738,8 @@ defmodule ChatWeb.AccuracyLive do
       <%= if length(@history) > 1 do %>
         <.sparkline history={@history} />
       <% end %>
-    </div>
+      </.card_body>
+    </.card>
     """
   end
 
@@ -759,29 +750,37 @@ defmodule ChatWeb.AccuracyLive do
   defp kv_block(assigns) do
     ~H"""
     <div class={[
-      "rounded-lg px-2 py-1.5",
-      if(@highlight, do: "bg-primary/10", else: "bg-base-200/40")
+      "rounded-sm px-space-sm py-space-xs",
+      if(@highlight, do: "bg-accent-wash", else: "bg-surface-sunk")
     ]}>
-      <div class="text-[10px] uppercase tracking-wider text-base-content/50">{@label}</div>
-      <div class={[
-        "font-mono text-sm",
-        if(@highlight, do: "font-semibold text-primary", else: "")
-      ]}>{@value}</div>
+      <div class="text-label text-ink-muted">{@label}</div>
+      <div class={
+        if(@highlight, do: "text-value-strong text-accent", else: "text-value text-ink")
+      }>{@value}</div>
     </div>
     """
   end
+
+  @run_status_badges %{
+    running: {:info, "running"},
+    complete: {:success, "complete"},
+    early_stop: {:success, "early stop"},
+    cancelled: {:warning, "cancelled"},
+    error: {:error, "error"}
+  }
 
   attr(:status, :atom, required: true)
 
   defp run_status_badge(assigns) do
     {variant, label} =
-      case assigns.status do
-        :running -> {:info, "running"}
-        :complete -> {:success, "complete"}
-        :early_stop -> {:success, "early stop"}
-        :cancelled -> {:warning, "cancelled"}
-        :error -> {:error, "error"}
-        other -> {:ghost, to_string(other)}
+      case Map.fetch(@run_status_badges, assigns.status) do
+        {:ok, badge} ->
+          badge
+
+        :error ->
+          raise ArgumentError,
+                "ChatWeb.AccuracyLive.run_status_badge/1: no treatment for optimizer run status " <>
+                  "#{inspect(assigns.status)}. The statuses are #{inspect(Map.keys(@run_status_badges))}."
       end
 
     assigns = assigns |> assign(:variant, variant) |> assign(:label, label)
@@ -825,18 +824,18 @@ defmodule ChatWeb.AccuracyLive do
       |> assign(:min_f, min_f)
 
     ~H"""
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-space-sm">
       <svg viewBox={"0 0 #{@width} #{@height}"} class="w-full h-12" preserveAspectRatio="none" role="img" aria-label="Fitness sparkline">
         <polyline
           points={@polyline}
           fill="none"
-          stroke="oklch(var(--p))"
+          stroke="var(--blue)"
           stroke-width="2"
           stroke-linejoin="round"
           stroke-linecap="round"
         />
       </svg>
-      <div class="text-[10px] text-base-content/50 font-mono whitespace-nowrap">
+      <div class="text-offset text-ink-muted whitespace-nowrap">
         {format_percent(@min_f)} → {format_percent(@max_f)}
       </div>
     </div>
@@ -853,7 +852,7 @@ defmodule ChatWeb.AccuracyLive do
       assigns = assign(assigns, :message, "Not enough data points for a chart.")
 
       ~H"""
-      <div class="text-sm text-base-content/50 text-center py-4">{@message}</div>
+      <div class="py-space-lg text-center text-body text-ink-muted">{@message}</div>
       """
     else
       width = 600
@@ -917,8 +916,7 @@ defmodule ChatWeb.AccuracyLive do
           y1={tick.y}
           x2={@padding_x + @chart_width}
           y2={tick.y}
-          stroke="currentColor"
-          stroke-opacity="0.1"
+          stroke="var(--border)"
           stroke-dasharray="4,4"
         />
         <!-- Y-axis labels -->
@@ -927,7 +925,7 @@ defmodule ChatWeb.AccuracyLive do
           x={@padding_x - 8}
           y={tick.y + 4}
           text-anchor="end"
-          class="fill-base-content/40"
+          class="fill-ink-muted"
           font-size="10"
         >
           {trunc(tick.val)}%
@@ -936,7 +934,7 @@ defmodule ChatWeb.AccuracyLive do
         <polyline
           points={@polyline_points}
           fill="none"
-          stroke="oklch(var(--p))"
+          stroke="var(--blue)"
           stroke-width="2"
           stroke-linejoin="round"
           stroke-linecap="round"
@@ -947,8 +945,8 @@ defmodule ChatWeb.AccuracyLive do
           cx={dot.x}
           cy={dot.y}
           r="4"
-          fill="oklch(var(--p))"
-          stroke="oklch(var(--b1))"
+          fill="var(--blue)"
+          stroke="var(--surface)"
           stroke-width="2"
         />
         <!-- Value labels on dots -->
@@ -957,7 +955,7 @@ defmodule ChatWeb.AccuracyLive do
           x={dot.x}
           y={dot.y - 10}
           text-anchor="middle"
-          class="fill-base-content/60"
+          class="fill-ink-muted"
           font-size="9"
         >
           {dot.val}%
@@ -1232,20 +1230,33 @@ defmodule ChatWeb.AccuracyLive do
 
   defp format_mutation(_, _), do: "-"
 
-  defp metric_color_class(nil) do
-    "text-base-content/50"
-  end
+  # A metric cell is styled by what kind of number it holds, never by how good
+  # the number is: a threshold coloring would be a verdict nobody declared.
+  #
+  #   * `:rate` — precision, recall and F1, measured against labeled examples:
+  #     bounded 0 to 1, shown as a percentage.
+  #   * `:heuristic` — the optimizer's composite fitness: bounded, but a blend
+  #     of raw and balanced accuracy rather than a probability.
+  #   * `:count` — whole numbers such as support, in the count style.
+  #
+  # Text takes ink in every kind; the score hues are for non-text marks only.
+  # A missing value is muted so it never reads as a measured zero.
+  @metric_kind_classes %{
+    rate: "text-value text-ink",
+    heuristic: "text-value text-ink",
+    count: "text-value text-score-count"
+  }
 
-  defp metric_color_class(val) when is_number(val) do
-    cond do
-      val >= 0.9 -> "text-success font-medium"
-      val >= 0.7 -> "text-warning font-medium"
-      true -> "text-error font-medium"
+  defp metric_class(kind, value) do
+    case Map.fetch(@metric_kind_classes, kind) do
+      {:ok, class} ->
+        if is_number(value), do: class, else: "text-value text-ink-muted"
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.AccuracyLive.metric_class/2: no treatment for metric kind #{inspect(kind)}. " <>
+                "The kinds are #{inspect(Map.keys(@metric_kind_classes))}."
     end
-  end
-
-  defp metric_color_class(_) do
-    "text-base-content/50"
   end
 
   defp sorted_per_class(nil, _field, _dir) do
