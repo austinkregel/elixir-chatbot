@@ -912,7 +912,7 @@ defmodule ChatWeb.SessionsLive do
             <% :failed -> %>
               <.icon name="hero-x-circle" class="size-6 text-red" />
             <% :in_progress -> %>
-              <.icon name="hero-arrow-path" class="size-6 animate-spin text-progress-fill" />
+              <.icon name="hero-arrow-path" class="size-6 motion-safe:animate-spin text-progress-fill" />
             <% :pending -> %>
               <.icon name="hero-clock" class="size-6 text-ink-muted" />
           <% end %>
