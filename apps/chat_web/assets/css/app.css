@@ -474,6 +474,20 @@
   outline-offset: var(--focus-offset);
 }
 
+/* The reach ring around the confirm button of a shared write or a device
+   action: a stroke-mark border on a wrapper, padded by focus-offset +
+   stroke-focus + space-2xs (6px), so the button's own focus outline fits
+   between the button and the ring and the reach color stays visible while the
+   button has focus. Its radius keeps the ring concentric with the button's
+   radius-md. Its color comes from border-reach-shared or border-reach-device. */
+@utility reach-ring {
+  display: inline-flex;
+  border-style: solid;
+  border-width: var(--stroke-mark);
+  padding: calc(var(--focus-offset) + var(--stroke-focus) + var(--spacing-space-2xs));
+  border-radius: calc(var(--radius-md) + var(--focus-offset) + var(--stroke-focus));
+}
+
 /* Add variants based on LiveView classes */
 @custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
 @custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
