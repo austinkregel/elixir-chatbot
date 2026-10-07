@@ -10,6 +10,7 @@ defmodule ChatWeb.CodeAnalysisLive do
 
   alias Brain.Code.{Pipeline, CodeGazetteer}
   @refresh_interval_ms 5000
+  @relation_types [:calls, :called_by, :extends, :implements, :imports, :uses]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -331,9 +332,8 @@ defmodule ChatWeb.CodeAnalysisLive do
 
   defp load_symbol_relations(world_id, symbol) do
     qualified_name = symbol.qualified_name
-    relation_types = [:calls, :called_by, :extends, :implements, :imports, :uses]
 
-    Enum.flat_map(relation_types, fn rel_type ->
+    Enum.flat_map(@relation_types, fn rel_type ->
       case CodeGazetteer.get_relations(world_id, qualified_name, rel_type) do
         targets when is_list(targets) ->
           Enum.map(targets, fn target -> %{type: rel_type, target: target} end)
@@ -488,100 +488,10 @@ defmodule ChatWeb.CodeAnalysisLive do
     "hero-bolt"
   end
 
-  def entity_type_icon(_) do
-    "hero-code-bracket"
-  end
-
-  def entity_type_color("code.function") do
-    "text-blue-500"
-  end
-
-  def entity_type_color("code.class") do
-    "text-purple-500"
-  end
-
-  def entity_type_color("code.method") do
-    "text-blue-400"
-  end
-
-  def entity_type_color("code.variable") do
-    "text-green-500"
-  end
-
-  def entity_type_color("code.constant") do
-    "text-amber-500"
-  end
-
-  def entity_type_color("code.type") do
-    "text-cyan-500"
-  end
-
-  def entity_type_color("code.interface") do
-    "text-violet-500"
-  end
-
-  def entity_type_color("code.enum") do
-    "text-orange-500"
-  end
-
-  def entity_type_color("code.namespace") do
-    "text-rose-500"
-  end
-
-  def entity_type_color("code.import") do
-    "text-gray-500"
-  end
-
-  def entity_type_color("code.keyword") do
-    "text-pink-500"
-  end
-
-  def entity_type_color(_) do
-    "text-base-content"
-  end
-
-  def entity_type_bg("code.function") do
-    "bg-blue-500/10"
-  end
-
-  def entity_type_bg("code.class") do
-    "bg-purple-500/10"
-  end
-
-  def entity_type_bg("code.method") do
-    "bg-blue-400/10"
-  end
-
-  def entity_type_bg("code.variable") do
-    "bg-green-500/10"
-  end
-
-  def entity_type_bg("code.constant") do
-    "bg-amber-500/10"
-  end
-
-  def entity_type_bg("code.type") do
-    "bg-cyan-500/10"
-  end
-
-  def entity_type_bg("code.interface") do
-    "bg-violet-500/10"
-  end
-
-  def entity_type_bg("code.enum") do
-    "bg-orange-500/10"
-  end
-
-  def entity_type_bg("code.namespace") do
-    "bg-rose-500/10"
-  end
-
-  def entity_type_bg("code.import") do
-    "bg-gray-500/10"
-  end
-
-  def entity_type_bg(_) do
-    "bg-base-200"
+  def entity_type_icon(type) do
+    raise ArgumentError,
+          "ChatWeb.CodeAnalysisLive.entity_type_icon/1: no icon for entity type #{inspect(type)}. " <>
+            "The entity types are #{inspect(CodeGazetteer.entity_types())}."
   end
 
   def relation_label(:calls) do
@@ -636,8 +546,10 @@ defmodule ChatWeb.CodeAnalysisLive do
     "hero-link"
   end
 
-  def relation_icon(_) do
-    "hero-arrow-right"
+  def relation_icon(type) do
+    raise ArgumentError,
+          "ChatWeb.CodeAnalysisLive.relation_icon/1: no icon for relation type #{inspect(type)}. " <>
+            "The relation types are #{inspect(@relation_types)}."
   end
 
   def format_metric_value(nil) do
