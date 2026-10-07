@@ -5,14 +5,32 @@ defmodule ChatWeb.TrainingStudio.Components do
 
   use Phoenix.Component
 
-  import ChatWeb.UI, only: [btn: 1]
+  import ChatWeb.UI, only: [icon_btn: 1, execute_confirm: 1]
 
+  alias Phoenix.LiveView.JS
+
+  @doc """
+  One record of a training-data source as a table row. When `editable`, the
+  row ends in ghost Edit and Delete icon buttons. Delete opens an
+  `execute_confirm/1` panel in a row of its own below this one, naming the
+  source file and the record; the page holds which panel is open
+  (`confirm_open`) and any failure (`confirm_error`).
+  """
   attr :record, :map, required: true
   attr :kind, :atom, required: true
   attr :index, :integer, required: true
   attr :editable, :boolean, default: false
+  attr :source_path, :string, default: nil, doc: "the source file, as the delete confirmation names it; required when editable"
+  attr :confirm_open, :boolean, default: false
+  attr :confirm_error, :string, default: nil
 
   def record_row(assigns) do
+    if assigns.editable and assigns.source_path in [nil, ""] do
+      raise ArgumentError,
+            "ChatWeb.TrainingStudio.Components.record_row/1: an editable row needs source_path, " <>
+              "the file its delete confirmation names."
+    end
+
     ~H"""
     <tr class="even:bg-surface-sunk border-b border-border text-body-dense text-ink">
       <%= case @kind do %>
@@ -94,26 +112,49 @@ defmodule ChatWeb.TrainingStudio.Components do
           </td>
       <% end %>
       <%= if @editable do %>
-        <td class="h-row-compact px-space-sm text-right whitespace-nowrap">
-          <.btn
-            phx-click="edit_record"
-            phx-value-index={@index}
-            size={:xs}
-            title="Edit"
-          >
-            Edit
-          </.btn>
-          <.btn
-            phx-click="delete_record"
-            phx-value-index={@index}
-            size={:xs}
-            title="Delete"
-            data-confirm="Delete this record?"
-          >
-            Del
-          </.btn>
+        <td class="h-row-compact px-space-sm whitespace-nowrap">
+          <div class="flex items-center justify-end gap-space-xs">
+            <.icon_btn
+              id={"record-#{@index}-edit"}
+              type="button"
+              size={:sm}
+              title="Edit record"
+              phx-click="edit_record"
+              phx-value-index={@index}
+            >
+              <span class="hero-pencil-square-micro size-4" aria-hidden="true" />
+            </.icon_btn>
+            <.icon_btn
+              id={"record-#{@index}-delete"}
+              type="button"
+              size={:sm}
+              title="Delete record"
+              phx-click="open_confirm"
+              phx-value-id={"confirm-delete-record-#{@index}"}
+            >
+              <span class="hero-trash-micro size-4" aria-hidden="true" />
+            </.icon_btn>
+          </div>
         </td>
       <% end %>
+    </tr>
+    <tr :if={@editable and @confirm_open} class="border-b border-border">
+      <td colspan="10" class="px-space-sm py-space-sm">
+        <.execute_confirm
+          id={"confirm-delete-record-#{@index}"}
+          open={@confirm_open}
+          reach={:local}
+          removes
+          verb="Delete record"
+          target={"#{@source_path} · record #{@index + 1}"}
+          consequence={"Rewrites #{@source_path} on this node without record #{@index + 1}. The revision log keeps only content hashes, so the record cannot be restored from here."}
+          on_confirm={JS.push("delete_record", value: %{index: @index})}
+          on_cancel="close_confirm"
+          trigger_id={"record-#{@index}-delete"}
+          error={@confirm_error}
+          class="ml-auto"
+        />
+      </td>
     </tr>
     """
   end
@@ -165,19 +206,21 @@ defmodule ChatWeb.TrainingStudio.Components do
     """
   end
 
+  # A strategy is a choice the system made, not a fault, and none asks the
+  # reader to act, so every strategy is ink and its name says which it is.
   @strategy_classes %{
     can_respond: "text-ink",
-    needs_clarification: "text-ochre",
-    hedged_response: "text-red",
+    needs_clarification: "text-ink",
+    hedged_response: "text-ink",
     partial_response_with_clarification: "text-ink",
     cannot_respond: "text-ink",
     defer_to_user: "text-ink"
   }
 
   @doc """
-  The text color for a traced response strategy. The strategy's name is always
-  shown beside it, so the color is never the only carrier of which one it is.
-  A strategy with no treatment raises.
+  The text color for a traced response strategy: ink for every one. The
+  strategy's name is always shown beside it. A strategy with no treatment
+  raises.
   """
   def strategy_class(strategy) do
     case Map.fetch(@strategy_classes, strategy) do
