@@ -130,9 +130,11 @@ defmodule ChatWeb.DesignLiveTest do
       assert fail =~ "5 new unknown, errored or not-loaded predictions"
 
       unmeasured = view |> element("#design-gate-canary_not_measured-#{theme}") |> render()
-      assert unmeasured =~ ~s(data-gate="pass")
+      assert unmeasured =~ ~s(data-gate="fail")
+      assert unmeasured =~ ~s(data-verdict="fail")
+      assert unmeasured =~ "−0.4 pts against baseline · allows 2"
       assert unmeasured =~ ~s(data-gate-canary="not_measured")
-      assert unmeasured =~ "canary not measured"
+      assert unmeasured =~ "error canary not measured · no diagnostics in the latest result"
       refute unmeasured =~ "new unknown, errored or not-loaded predictions"
     end
   end
