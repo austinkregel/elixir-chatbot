@@ -84,6 +84,8 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:response_domains, [])
       |> assign(:lattice_stats, %{})
       |> assign(:response_generating, false)
+      |> assign(:open_confirm, nil)
+      |> assign(:confirm_error, nil)
       |> load_section_data()
 
     {:noreply, socket}
@@ -334,6 +336,14 @@ defmodule ChatWeb.SettingsLive do
     {:noreply, socket}
   end
 
+  def handle_event("open_confirm", %{"id" => id}, socket) do
+    {:noreply, socket |> assign(:open_confirm, id) |> assign(:confirm_error, nil)}
+  end
+
+  def handle_event("close_confirm", _params, socket) do
+    {:noreply, close_confirm(socket)}
+  end
+
   def handle_event("switch_section", %{"section" => section}, socket) do
     {:noreply, push_patch(socket, to: ~p"/settings?section=#{section}")}
   end
@@ -373,17 +383,30 @@ defmodule ChatWeb.SettingsLive do
 
   @impl true
   def handle_event("delete_world", %{"id" => world_id}, socket) do
-    if world_id != "default" do
-      case WorldManager.destroy(world_id) do
-        :ok ->
-          {:noreply,
-           socket |> load_worlds_data() |> put_flash(:info, "Deleted world: #{world_id}")}
+    world = Enum.find(socket.assigns.worlds, &(&1.id == world_id))
 
-        {:error, reason} ->
-          {:noreply, put_flash(socket, :error, "Failed to delete world: #{inspect(reason)}")}
-      end
-    else
-      {:noreply, put_flash(socket, :error, "Cannot delete the default world")}
+    cond do
+      world_id == "default" ->
+        {:noreply, assign(socket, :confirm_error, "The default world cannot be removed.")}
+
+      is_nil(world) ->
+        {:noreply, assign(socket, :confirm_error, "World #{world_id} is not loaded on this node.")}
+
+      true ->
+        removal = world_removal(world.mode)
+
+        case WorldManager.destroy(world_id) do
+          :ok ->
+            {:noreply,
+             socket
+             |> close_confirm()
+             |> load_worlds_data()
+             |> put_flash(:info, "#{removal.done}: #{world_id}")}
+
+          {:error, reason} ->
+            {:noreply,
+             assign(socket, :confirm_error, "#{removal.verb} failed for #{world_id}: #{inspect(reason)}")}
+        end
     end
   end
 
@@ -496,6 +519,7 @@ defmodule ChatWeb.SettingsLive do
         socket =
           socket
           |> assign(:starting_training, false)
+          |> close_confirm()
           |> load_training_data()
           |> put_flash(:info, "Started training session: #{session.id}")
 
@@ -505,7 +529,7 @@ defmodule ChatWeb.SettingsLive do
         {:noreply,
          socket
          |> assign(:starting_training, false)
-         |> put_flash(:error, "Failed to start training: #{inspect(reason)}")}
+         |> assign(:confirm_error, "Failed to start training: #{inspect(reason)}")}
     end
   end
 
@@ -526,10 +550,13 @@ defmodule ChatWeb.SettingsLive do
     case LearningCenter.cancel_session(session_id) do
       :ok ->
         {:noreply,
-         socket |> load_training_data() |> put_flash(:info, "Cancelled session: #{session_id}")}
+         socket
+         |> close_confirm()
+         |> load_training_data()
+         |> put_flash(:info, "Cancelled session: #{session_id}")}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to cancel session: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Failed to cancel session: #{inspect(reason)}")}
     end
   end
 
@@ -766,15 +793,16 @@ defmodule ChatWeb.SettingsLive do
       :ok ->
         {:noreply,
          socket
+         |> close_confirm()
          |> load_services_data()
          |> put_flash(:info, "Credential saved for #{service_name}")}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to save credential: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Failed to save credential: #{inspect(reason)}")}
     end
   rescue
     ArgumentError ->
-      {:noreply, put_flash(socket, :error, "Invalid service or credential key")}
+      {:noreply, assign(socket, :confirm_error, "Invalid service or credential key")}
   end
 
   def handle_event("delete_credential", %{"service" => service_name, "key" => key}, socket) do
@@ -786,11 +814,12 @@ defmodule ChatWeb.SettingsLive do
 
     {:noreply,
      socket
+     |> close_confirm()
      |> load_services_data()
      |> put_flash(:info, "Credential removed")}
   rescue
     ArgumentError ->
-      {:noreply, put_flash(socket, :error, "Invalid service or credential key")}
+      {:noreply, assign(socket, :confirm_error, "Invalid service or credential key")}
   end
 
   def handle_event("check_service_health", %{"service" => service_name}, socket) do
@@ -1082,6 +1111,8 @@ defmodule ChatWeb.SettingsLive do
               new_world_name={@new_world_name}
               new_world_mode={@new_world_mode}
               creating_world={@creating_world}
+              open_confirm={@open_confirm}
+              confirm_error={@confirm_error}
             />
           <% :entities -> %>
             <.entities_section
@@ -1104,6 +1135,8 @@ defmodule ChatWeb.SettingsLive do
               starting_training={@starting_training}
               tasks_loading={@tasks_loading}
               lc_stats={@lc_stats}
+              open_confirm={@open_confirm}
+              confirm_error={@confirm_error}
             />
           <% :ml_training -> %>
             <.ml_training_section
@@ -1137,6 +1170,9 @@ defmodule ChatWeb.SettingsLive do
               checking={@service_checking}
               ha_discovered_entities={@ha_discovered_entities}
               ha_discovering={@ha_discovering}
+              current_world_id={@current_world_id}
+              open_confirm={@open_confirm}
+              confirm_error={@confirm_error}
             />
           <% :response_systems -> %>
             <.response_systems_section
@@ -1171,12 +1207,13 @@ defmodule ChatWeb.SettingsLive do
             <option value="persistent" selected={@new_world_mode == "persistent"}>Persistent</option>
             <option value="ephemeral" selected={@new_world_mode == "ephemeral"}>Ephemeral</option>
           </select>
-          <.btn type="submit" variant={:primary} disabled={@creating_world}>
-            <%= if @creating_world do %>
-              <.icon name="hero-arrow-path" class="size-4 animate-spin text-progress-fill" />
-            <% else %>
-              <.icon name="hero-plus" class="size-4" />
-            <% end %>
+          <.btn
+            type="submit"
+            variant={:primary}
+            icon="hero-plus"
+            busy={@creating_world}
+            busy_label="Creating world"
+          >
             Create World
           </.btn>
         </form>
@@ -1195,39 +1232,56 @@ defmodule ChatWeb.SettingsLive do
         <% else %>
           <div class="divide-y divide-border">
             <%= for world <- @worlds do %>
-              <div class="p-space-lg flex items-center justify-between hover:bg-surface-sunk">
-                <div>
-                  <div class="text-subheading text-ink">{world.name}</div>
-                  <div class="text-ref text-ink-muted">{world.id}</div>
+              <div class="p-space-lg space-y-space-sm hover:bg-surface-sunk">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-subheading text-ink">{world.name}</div>
+                    <div class="text-ref text-ink-muted">{world.id}</div>
+                  </div>
+                  <div class="flex items-center gap-space-sm">
+                    <.badge variant={world_mode_variant(world.mode)}>
+                      {world.mode}
+                    </.badge>
+                    <%= if world.mode == :persistent do %>
+                      <.icon_btn
+                        phx-click="save_world"
+                        phx-value-id={world.id}
+                        variant={:primary}
+                        size={:sm}
+                        title="Save to disk"
+                      >
+                        <.icon name="hero-cloud-arrow-up" class="size-4" />
+                      </.icon_btn>
+                    <% end %>
+                    <%= if world.id != "default" do %>
+                      <.icon_btn
+                        id={"remove-world-#{world.id}"}
+                        phx-click="open_confirm"
+                        phx-value-id={"confirm-remove-world-#{world.id}"}
+                        variant={:ghost}
+                        size={:sm}
+                        title={world_removal(world.mode).verb}
+                      >
+                        <.icon name="hero-trash" class="size-4" />
+                      </.icon_btn>
+                    <% end %>
+                  </div>
                 </div>
-                <div class="flex items-center gap-space-sm">
-                  <.badge variant={world_mode_variant(world.mode)}>
-                    {world.mode}
-                  </.badge>
-                  <%= if world.mode == :persistent do %>
-                    <.icon_btn
-                      phx-click="save_world"
-                      phx-value-id={world.id}
-                      variant={:primary}
-                      size={:sm}
-                      title="Save to disk"
-                    >
-                      <.icon name="hero-cloud-arrow-up" class="size-4" />
-                    </.icon_btn>
-                  <% end %>
-                  <%= if world.id != "default" do %>
-                    <.icon_btn
-                      phx-click="delete_world"
-                      phx-value-id={world.id}
-                      variant={:ghost}
-                      size={:sm}
-                      title="Delete world"
-                      data-confirm="Are you sure you want to delete this world?"
-                    >
-                      <.icon name="hero-trash" class="size-4" />
-                    </.icon_btn>
-                  <% end %>
-                </div>
+                <.execute_confirm
+                  :if={world.id != "default"}
+                  id={"confirm-remove-world-#{world.id}"}
+                  open={@open_confirm == "confirm-remove-world-#{world.id}"}
+                  reach={:local}
+                  removes
+                  verb={world_removal(world.mode).verb}
+                  target={"world #{world.id}"}
+                  consequence={world_removal(world.mode).consequence}
+                  on_confirm={JS.push("delete_world", value: %{id: world.id})}
+                  on_cancel="close_confirm"
+                  trigger_id={"remove-world-#{world.id}"}
+                  error={@confirm_error}
+                  class="ml-auto"
+                />
               </div>
             <% end %>
           </div>
@@ -1469,23 +1523,33 @@ defmodule ChatWeb.SettingsLive do
               </option>
             </select>
           </div>
-          <div class="flex items-center gap-space-sm">
-            <.btn
-              phx-click="start_task_training"
-              variant={:primary}
-              disabled={@starting_training}
-              class="outline-mark outline-reach-shared focus-visible:outline-focus"
-            >
-              <%= if @starting_training do %>
-                <.icon name="hero-arrow-path" class="size-4 animate-spin text-progress-fill" />
-              <% else %>
-                <.icon name="hero-play" class="size-4" />
-              <% end %>
-              Start Training
-            </.btn>
-            <.shared_reach_tag />
-          </div>
+          <.btn
+            id="start-task-training"
+            phx-click="open_confirm"
+            phx-value-id="confirm-start-task-training"
+            variant={:primary}
+            reach={:shared}
+            target="learning session"
+            icon="hero-play"
+            busy={@starting_training}
+            busy_label="Starting"
+          >
+            Start Training
+          </.btn>
         </div>
+        <.execute_confirm
+          id="confirm-start-task-training"
+          open={@open_confirm == "confirm-start-task-training"}
+          reach={:shared}
+          verb="Start training"
+          target="learning session"
+          consequence={"Saves a task-training session for #{capability_label(@selected_capability)} and its goals to Atlas; the agents it dispatches add candidates to the review queue."}
+          on_confirm="start_task_training"
+          on_cancel="close_confirm"
+          trigger_id="start-task-training"
+          error={@confirm_error}
+          class="mt-space-md"
+        />
       </.card>
 
       <!-- Active Sessions -->
@@ -1532,17 +1596,18 @@ defmodule ChatWeb.SettingsLive do
                         {session.status}
                       </.badge>
                       <%= if session.status == :active do %>
-                        <.icon_btn
-                          phx-click="cancel_session"
-                          phx-value-id={session.id}
-                          variant={:ghost}
+                        <.btn
+                          id={"cancel-session-#{session.id}"}
+                          phx-click="open_confirm"
+                          phx-value-id={"confirm-cancel-session-#{session.id}"}
+                          variant={:outline}
                           size={:sm}
-                          title="Cancel session"
-                          class="outline-mark outline-reach-shared focus-visible:outline-focus"
+                          reach={:shared}
+                          target={"session #{session.id}"}
+                          icon="hero-stop"
                         >
-                          <.icon name="hero-stop" class="size-4" />
-                        </.icon_btn>
-                        <.shared_reach_tag />
+                          Cancel session
+                        </.btn>
                       <% end %>
                     </div>
                   </div>
@@ -1572,7 +1637,7 @@ defmodule ChatWeb.SettingsLive do
                       </span>
                     <% end %>
                     <%= if session.rejected_count > 0 do %>
-                      <span class="flex items-center gap-space-xs text-red">
+                      <span class="flex items-center gap-space-xs text-ink">
                         <.icon name="hero-x-circle" class="size-3" />
                         {session.rejected_count} rejected
                       </span>
@@ -1595,6 +1660,21 @@ defmodule ChatWeb.SettingsLive do
                     <% end %>
                   </div>
                 </div>
+
+                <.execute_confirm
+                  :if={session.status == :active}
+                  id={"confirm-cancel-session-#{session.id}"}
+                  open={@open_confirm == "confirm-cancel-session-#{session.id}"}
+                  reach={:shared}
+                  verb="Cancel session"
+                  target={"session #{session.id}"}
+                  consequence="Marks this session cancelled, drops its running agent tasks from the learning center, and writes the change to Atlas."
+                  on_confirm={JS.push("cancel_session", value: %{id: session.id})}
+                  on_cancel="close_confirm"
+                  trigger_id={"cancel-session-#{session.id}"}
+                  error={@confirm_error}
+                  class="mb-space-lg ml-auto mr-space-lg"
+                />
 
                 <!-- Expanded Detail Panel -->
                 <%= if is_expanded do %>
@@ -1625,7 +1705,7 @@ defmodule ChatWeb.SettingsLive do
                                         size={:xs}
                                         class="border border-border-strong"
                                       >
-                                        {goal.priority}
+                                        {goal.priority} priority
                                       </.badge>
                                     <% end %>
                                   </div>
@@ -1654,7 +1734,7 @@ defmodule ChatWeb.SettingsLive do
                                     <% :failed -> %>
                                       <.icon name="hero-x-circle" class="size-5 text-red" />
                                     <% :in_progress -> %>
-                                      <.icon name="hero-arrow-path" class="size-4 animate-spin text-progress-fill" />
+                                      <.icon name="hero-arrow-path" class="size-4 motion-safe:animate-spin text-progress-fill" />
                                     <% :pending -> %>
                                       <.icon name="hero-clock" class="size-5 text-ink-muted" />
                                   <% end %>
@@ -1744,7 +1824,7 @@ defmodule ChatWeb.SettingsLive do
                         <div class="text-caption text-ink-muted">Approved</div>
                       </.card>
                       <.card class="p-space-md text-center">
-                        <div class="text-heading text-red tabular-nums">{session.rejected_count}</div>
+                        <div class="text-heading text-ink tabular-nums">{session.rejected_count}</div>
                         <div class="text-caption text-ink-muted">Rejected</div>
                       </.card>
                       <.card class="p-space-md text-center">
@@ -1774,7 +1854,7 @@ defmodule ChatWeb.SettingsLive do
         </div>
         <%= if @tasks_loading do %>
           <div class="p-space-2xl text-center text-ink-muted">
-            <.icon name="hero-arrow-path" class="size-8 mx-auto animate-spin text-progress-fill" />
+            <.icon name="hero-arrow-path" class="size-8 mx-auto motion-safe:animate-spin text-progress-fill" />
             <p class="mt-space-lg">Scanning task files...</p>
             <p class="text-body mt-space-sm">This may take a moment on first load</p>
           </div>
@@ -1886,7 +1966,7 @@ defmodule ChatWeb.SettingsLive do
                 </.btn>
               <% {:training, model_type, started_at} -> %>
                 <div class="flex items-center gap-space-md">
-                  <.icon name="hero-arrow-path" class="size-4 animate-spin text-progress-fill" />
+                  <.icon name="hero-arrow-path" class="size-4 motion-safe:animate-spin text-progress-fill" />
                   <div>
                     <div class="text-subheading text-ink">Training {model_type}...</div>
                     <div class="text-caption text-ink-muted">
@@ -1894,12 +1974,16 @@ defmodule ChatWeb.SettingsLive do
                     </div>
                   </div>
                   <.btn
+                    id="cancel-ml-training"
                     type="button"
                     phx-click="cancel_ml_training"
-                    variant={:danger}
+                    variant={:outline}
                     size={:sm}
+                    reach={:local}
+                    target={"#{model_type} training run"}
+                    icon="hero-stop"
                   >
-                    <.icon name="hero-stop" class="size-4" /> Cancel
+                    Cancel
                   </.btn>
                 </div>
             <% end %>
@@ -1983,7 +2067,7 @@ defmodule ChatWeb.SettingsLive do
     """
   end
 
-  @session_status_variants %{active: :warning, completed: :success, cancelled: :error}
+  @session_status_variants %{active: :warning, completed: :success, cancelled: :default}
 
   @goal_status_variants %{
     completed: :success,
@@ -1992,7 +2076,7 @@ defmodule ChatWeb.SettingsLive do
     pending: :default
   }
 
-  @priority_variants %{high: :error, low: :default}
+  @priority_variants %{high: :default, low: :default}
 
   @investigation_status_variants %{
     concluded: :success,
@@ -2003,14 +2087,14 @@ defmodule ChatWeb.SettingsLive do
 
   @conclusion_variants %{
     hypotheses_supported: :success,
-    hypotheses_falsified: :error,
+    hypotheses_falsified: :default,
     inconclusive: :warning,
     mixed: :warning
   }
 
   @hypothesis_status_variants %{
     supported: :success,
-    falsified: :error,
+    falsified: :default,
     inconclusive: :warning,
     testing: :info,
     untested: :default
@@ -2056,12 +2140,60 @@ defmodule ChatWeb.SettingsLive do
     end
   end
 
-  defp shared_reach_tag(assigns) do
-    ~H"""
-    <span class="inline-flex items-center gap-space-xs rounded-sm border border-reach-shared px-space-xs text-caption font-semibold text-reach-shared whitespace-nowrap">
-      <.icon name="hero-share-micro" class="size-3" /> writes shared
-    </span>
-    """
+  defp close_confirm(socket) do
+    socket |> assign(:open_confirm, nil) |> assign(:confirm_error, nil)
+  end
+
+  # World.Manager.destroy/1 drops a world's runtime state on this node. A
+  # persistent world keeps its folder and loads again at the next start, so for
+  # it the action is an unload; an ephemeral world lives only in ETS and is gone.
+  @world_removals %{
+    persistent: %{
+      verb: "Unload world",
+      done: "Unloaded world",
+      consequence:
+        "Drops this world's metrics, candidates, events and gazetteer overlay from this node. " <>
+          "Its folder on disk stays, and the world loads again at the next start."
+    },
+    ephemeral: %{
+      verb: "Delete world",
+      done: "Deleted world",
+      consequence:
+        "Drops this world's metrics, candidates, events and gazetteer overlay from this node. " <>
+          "An ephemeral world has no folder on disk, so nothing of it remains."
+    }
+  }
+
+  defp world_removal(mode) do
+    case Map.fetch(@world_removals, mode) do
+      {:ok, removal} ->
+        removal
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.SettingsLive: no removal is described for world mode #{inspect(mode)}. " <>
+                "The modes described are #{inspect(Map.keys(@world_removals))}."
+    end
+  end
+
+  @capability_labels %{
+    all: "all capabilities",
+    question_answering: "question answering",
+    commonsense: "commonsense reasoning",
+    sentiment: "sentiment analysis",
+    reasoning: "explanation and reasoning"
+  }
+
+  defp capability_label(capability) do
+    case Map.fetch(@capability_labels, capability) do
+      {:ok, label} ->
+        label
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.SettingsLive: no label for training capability #{inspect(capability)}. " <>
+                "The labeled capabilities are #{inspect(Map.keys(@capability_labels))}."
+    end
   end
 
   defp display_value(val) when is_binary(val), do: val
@@ -2281,45 +2413,78 @@ defmodule ChatWeb.SettingsLive do
                         </.badge>
                       <% end %>
                     </label>
-                    <div class="flex items-center gap-space-sm">
-                      <form
-                        phx-submit="save_credential"
-                        class="flex-1 flex items-center gap-space-sm"
+                    <% cred_id = "#{service.name}-#{cred_key}" %>
+                    <% cred_target = "credential #{service.name}.#{cred_key}" %>
+                    <div class="flex flex-wrap items-center gap-space-sm">
+                      <.btn
+                        id={"save-credential-#{cred_id}"}
+                        type="button"
+                        phx-click="open_confirm"
+                        phx-value-id={"confirm-save-credential-#{cred_id}"}
+                        variant={:primary}
+                        size={:sm}
+                        reach={:shared}
+                        target={cred_target}
+                        icon="hero-key"
                       >
+                        {if has_cred, do: "Replace", else: "Set"}
+                      </.btn>
+                      <%= if has_cred do %>
+                        <.btn
+                          id={"delete-credential-#{cred_id}"}
+                          type="button"
+                          phx-click="open_confirm"
+                          phx-value-id={"confirm-delete-credential-#{cred_id}"}
+                          variant={:ghost}
+                          size={:sm}
+                          reach={:shared}
+                          target={cred_target}
+                          icon="hero-trash"
+                        >
+                          Remove
+                        </.btn>
+                      <% end %>
+                    </div>
+                    <.execute_confirm
+                      id={"confirm-save-credential-#{cred_id}"}
+                      open={@open_confirm == "confirm-save-credential-#{cred_id}"}
+                      reach={:shared}
+                      verb="Save credential"
+                      target={cred_target}
+                      consequence={"Encrypts this value into the credential vault for world #{@current_world_id}, replacing any value set before, and writes it to Atlas."}
+                      on_confirm="save_credential"
+                      on_cancel="close_confirm"
+                      trigger_id={"save-credential-#{cred_id}"}
+                      error={@confirm_error}
+                      class="mt-space-sm"
+                    >
+                      <:fields>
                         <input type="hidden" name="service" value={service.name} />
                         <input type="hidden" name="key" value={cred_key} />
                         <input
                           type="password"
                           name="value"
-                          placeholder={if has_cred, do: "••••••••", else: "Enter #{humanize_credential(cred_key)}..."}
-                          class="flex-1 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
+                          aria-label={humanize_credential(cred_key)}
+                          placeholder={"Enter #{humanize_credential(cred_key)}..."}
+                          class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
                           autocomplete="off"
                         />
-                        <.btn
-                          type="submit"
-                          variant={:primary}
-                          size={:sm}
-                          class="outline-mark outline-reach-shared focus-visible:outline-focus"
-                        >
-                          <.icon name="hero-key" class="size-4" />
-                          Save
-                        </.btn>
-                      </form>
-                      <%= if has_cred do %>
-                        <.icon_btn
-                          phx-click="delete_credential"
-                          phx-value-service={service.name}
-                          phx-value-key={cred_key}
-                          variant={:ghost}
-                          size={:sm}
-                          title="Remove credential"
-                          class="outline-mark outline-reach-shared focus-visible:outline-focus"
-                        >
-                          <.icon name="hero-trash" class="size-4" />
-                        </.icon_btn>
-                      <% end %>
-                      <.shared_reach_tag />
-                    </div>
+                      </:fields>
+                    </.execute_confirm>
+                    <.execute_confirm
+                      :if={has_cred}
+                      id={"confirm-delete-credential-#{cred_id}"}
+                      open={@open_confirm == "confirm-delete-credential-#{cred_id}"}
+                      reach={:shared}
+                      verb="Remove credential"
+                      target={cred_target}
+                      consequence={"Removes this credential from the vault for world #{@current_world_id}. Its row in Atlas is not deleted, so the credential loads again at the next start."}
+                      on_confirm={JS.push("delete_credential", value: %{service: service.name, key: cred_key})}
+                      on_cancel="close_confirm"
+                      trigger_id={"delete-credential-#{cred_id}"}
+                      error={@confirm_error}
+                      class="mt-space-sm"
+                    />
                   </div>
                 <% end %>
               </div>
@@ -2333,15 +2498,11 @@ defmodule ChatWeb.SettingsLive do
                     variant={:outline}
                     size={:sm}
                     class="w-full"
-                    disabled={@checking == service.name}
+                    icon="hero-signal"
+                    busy={@checking == service.name}
+                    busy_label="Checking"
                   >
-                    <%= if @checking == service.name do %>
-                      <.icon name="hero-arrow-path" class="size-4 animate-spin text-progress-fill" />
-                      Checking...
-                    <% else %>
-                      <.icon name="hero-signal" class="size-4" />
-                      Test Connection
-                    <% end %>
+                    {if @checking == service.name, do: "Checking...", else: "Test Connection"}
                   </.btn>
                 </div>
               <% end %>
@@ -2368,15 +2529,11 @@ defmodule ChatWeb.SettingsLive do
                 phx-click="discover_ha_entities"
                 variant={:outline}
                 size={:sm}
-                disabled={@ha_discovering}
+                icon="hero-magnifying-glass"
+                busy={@ha_discovering}
+                busy_label="Discovering"
               >
-                <%= if @ha_discovering do %>
-                  <.icon name="hero-arrow-path" class="size-4 animate-spin text-progress-fill" />
-                  Discovering...
-                <% else %>
-                  <.icon name="hero-magnifying-glass" class="size-4" />
-                  Discover
-                <% end %>
+                {if @ha_discovering, do: "Discovering...", else: "Discover"}
               </.btn>
               <.btn
                 phx-click="register_ha_entities"
@@ -2441,15 +2598,11 @@ defmodule ChatWeb.SettingsLive do
             phx-click="regenerate_lattice"
             variant={:primary}
             size={:sm}
-            disabled={@generating}
+            icon="hero-arrow-path"
+            busy={@generating}
+            busy_label="Generating"
           >
-            <%= if @generating do %>
-              <.icon name="hero-arrow-path" class="size-4 animate-spin text-progress-fill" />
-              Generating...
-            <% else %>
-              <.icon name="hero-arrow-path" class="size-4" />
-              Regenerate
-            <% end %>
+            {if @generating, do: "Generating...", else: "Regenerate"}
           </.btn>
         </div>
 
