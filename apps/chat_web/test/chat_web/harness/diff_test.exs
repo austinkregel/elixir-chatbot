@@ -150,7 +150,7 @@ defmodule ChatWeb.Harness.DiffTest do
         )
 
       assert html =~ "default"
-      assert html =~ "text-warning"
+      assert html =~ "text-origin-default"
     end
 
     test "with no defaulted paths nothing is marked" do
@@ -158,7 +158,7 @@ defmodule ChatWeb.Harness.DiffTest do
 
       html = render_component(&Diff.term/1, term: term, defaulted: [])
 
-      refute html =~ "text-warning"
+      refute html =~ "text-origin-default"
     end
 
     test "a bare scalar renders without a surrounding structure" do
