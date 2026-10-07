@@ -40,6 +40,9 @@ defmodule Brain.Services.Service do
           # Validate API key works
           :ok
         end
+
+        @impl true
+        def writes?(_intent), do: false
       end
 
   ## Enrichment Fields
@@ -151,6 +154,15 @@ defmodule Brain.Services.Service do
     - {:error, reason} if validation fails
   """
   @callback health_check(credentials()) :: :ok | {:error, term()}
+
+  @doc """
+  Whether enriching this intent changes state outside the response, such as
+  actuating a device or storing an alarm, rather than only reading data.
+
+  The dispatcher refuses such a call for a conversation created with
+  `side_effects: false`.
+  """
+  @callback writes?(intent :: String.t()) :: boolean()
 
   # ============================================================================
   # Optional Callbacks with Defaults
