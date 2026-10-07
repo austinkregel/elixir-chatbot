@@ -9,7 +9,8 @@ defmodule Brain.Response.RealizationPacket do
   prompt must be readable prose, not a JSON blob.
 
   Debug JSON dumps are still written to tmp/realization_packets/ for
-  diagnostics, but the actual prompt sent to Ouro is natural language.
+  diagnostics, but the actual prompt sent to Ouro is natural language. A build
+  whose opts carry `side_effects: false` writes no dumps.
   """
 
   alias Brain.Response.Primitive
@@ -35,8 +36,9 @@ defmodule Brain.Response.RealizationPacket do
   def build(primitives, analysis, opts) when is_list(opts) do
     unified_context = Keyword.get(opts, :unified_context, %{})
     tone = extract_tone(analysis, opts)
+    dump? = Keyword.get(opts, :side_effects, true)
 
-    dump_debug_json(primitives, analysis, unified_context)
+    if dump?, do: dump_debug_json(primitives, analysis, unified_context)
 
     user_message =
       [
@@ -52,9 +54,11 @@ defmodule Brain.Response.RealizationPacket do
 
     Logger.info("RealizationPacket prompt: #{byte_size(user_message)} chars, #{length(primitives)} primitives")
 
-    dump_dir = Path.join([File.cwd!(), "tmp", "realization_packets"])
-    ts = System.system_time(:millisecond)
-    File.write(Path.join(dump_dir, "#{ts}_prompt.txt"), "=== SYSTEM ===\n#{@system_prompt}\n=== USER ===\n#{user_message}")
+    if dump? do
+      dump_dir = Path.join([File.cwd!(), "tmp", "realization_packets"])
+      ts = System.system_time(:millisecond)
+      File.write(Path.join(dump_dir, "#{ts}_prompt.txt"), "=== SYSTEM ===\n#{@system_prompt}\n=== USER ===\n#{user_message}")
+    end
 
     [
       %{role: "system", content: @system_prompt},
