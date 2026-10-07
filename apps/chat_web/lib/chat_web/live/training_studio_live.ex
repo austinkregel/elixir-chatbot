@@ -303,18 +303,20 @@ defmodule ChatWeb.TrainingStudioLive do
     desc = SourceDescriptors.get(source_id)
 
     case read_browse_page(source_id, page, filter) do
-      {:ok, records, total, page} ->
+      {:ok, %{rows: rows, total: total, matching: matching}, page} ->
         socket
         |> assign(:page, page)
-        |> assign(:records, records)
+        |> assign(:records, rows)
         |> assign(:total_records, total)
-        |> assign(:total_pages, last_page(total))
+        |> assign(:matching_records, if(filter == "", do: nil, else: matching))
+        |> assign(:total_pages, last_page(matching))
         |> assign(:source_desc, desc)
 
       {:error, reason} ->
         socket
         |> assign(:records, [])
         |> assign(:total_records, 0)
+        |> assign(:matching_records, nil)
         |> assign(:total_pages, 1)
         |> assign(:source_desc, desc)
         |> put_flash(:error, "Failed to load source: #{inspect(reason)}")
@@ -325,6 +327,7 @@ defmodule ChatWeb.TrainingStudioLive do
     socket
     |> assign(:records, [])
     |> assign(:total_records, 0)
+    |> assign(:matching_records, nil)
     |> assign(:total_pages, 1)
     |> assign(:source_desc, nil)
   end
@@ -398,6 +401,7 @@ defmodule ChatWeb.TrainingStudioLive do
     socket
     |> assign_new(:records, fn -> [] end)
     |> assign_new(:total_records, fn -> 0 end)
+    |> assign_new(:matching_records, fn -> nil end)
     |> assign_new(:total_pages, fn -> 1 end)
     |> assign_new(:source_desc, fn -> nil end)
     |> assign_new(:skew_rows, fn -> [] end)
@@ -431,23 +435,25 @@ defmodule ChatWeb.TrainingStudioLive do
   defp parse_int(n, _default) when is_integer(n) and n > 0, do: n
   defp parse_int(_, default), do: default
 
-  # A page past the last one (a stale `?page=`, or the last record on the last
-  # page deleted) reads the last page instead, so `page_bar/1` is never handed a
-  # page outside its range.
+  # Pages divide the records matching the filter. A page past the last one (a
+  # stale `?page=`, or the last match on the last page deleted) reads the last
+  # page instead, so `page_bar/1` is never handed a page outside its range.
+  # Each row is `{index, record}`, `index` being the record's position in the
+  # unfiltered source: the index Edit and Delete act on.
   defp read_browse_page(source_id, page, filter) do
     case Catalog.read_source_page(source_id, (page - 1) * @page_size, @page_size, filter: filter) do
-      {:ok, _records, total} when page > 1 and (page - 1) * @page_size >= total ->
-        read_browse_page(source_id, last_page(total), filter)
+      {:ok, %{matching: matching}} when page > 1 and (page - 1) * @page_size >= matching ->
+        read_browse_page(source_id, last_page(matching), filter)
 
-      {:ok, records, total} ->
-        {:ok, records, total, page}
+      {:ok, result} ->
+        {:ok, result, page}
 
       {:error, reason} ->
         {:error, reason}
     end
   end
 
-  defp last_page(total), do: max(1, div(total + @page_size - 1, @page_size))
+  defp last_page(count), do: max(1, div(count + @page_size - 1, @page_size))
 
   defp close_confirm(socket) do
     socket |> assign(:open_confirm, nil) |> assign(:confirm_error, nil)
