@@ -39,9 +39,9 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     end
   end
 
-  @doc "Checks if the text contains a meta-cognitive query.\nUses the intent classifier trained on meta.* intents.\n"
-  def is_self_knowledge_query?(text) do
-    case detect_meta_intent(text) do
+  @doc "Checks if the text contains a meta-cognitive query.\nUses the intent classifier trained on meta.* intents.\n\n`opts` may carry `:side_effects`, passed to the analysis the classifier runs on the text; `false` keeps it from writing.\n"
+  def is_self_knowledge_query?(text, opts \\ []) do
+    case detect_meta_intent(text, opts) do
       {:ok, _intent, confidence} when confidence >= @min_confidence -> true
       _ -> false
     end
@@ -73,8 +73,8 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
   end
 
   @doc "Detects if the text matches a meta-cognitive intent.\n\nUses the intent classifier and filters for meta.* intents.\nFalls back to keyword-based detection when classifier is unavailable.\nReturns {:ok, intent, confidence} or :no_match\n"
-  def detect_meta_intent(text) do
-    case classify_meta(text) do
+  def detect_meta_intent(text, opts \\ []) do
+    case classify_meta(text, Keyword.take(opts, [:side_effects])) do
       {:ok, %{intent: intent, confidence: confidence}} when is_binary(intent) ->
         if is_meta_intent?(intent) do
           {:ok, intent, confidence}
@@ -152,12 +152,12 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     []
   end
 
-  defp classify_meta(text) do
+  defp classify_meta(text, pipeline_opts) do
     alias Brain.Analysis.{FeatureExtractor, Pipeline}
     alias Brain.ML.MicroClassifiers
 
     if MicroClassifiers.ready?() do
-      analysis = Pipeline.analyze_chunk(text)
+      analysis = Pipeline.analyze_chunk(text, pipeline_opts)
       {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
 
       case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
