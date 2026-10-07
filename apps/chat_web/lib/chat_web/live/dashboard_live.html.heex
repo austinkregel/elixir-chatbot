@@ -319,7 +319,7 @@
           <div class="flex items-center gap-space-sm">
             <%= if @world_models_status.is_loading do %>
               <.badge variant={:warning} size={:sm}>
-                <.icon name="hero-arrow-path" class="size-3 animate-spin" /> Loading
+                <.icon name="hero-arrow-path" class="size-3 motion-safe:animate-spin" /> Loading
               </.badge>
             <% else %>
               <.badge
@@ -1378,10 +1378,7 @@
 
       <div class="p-space-lg">
         <div class="grid grid-cols-3 gap-space-md mb-space-lg">
-          <div class={[
-            "rounded-md border p-space-md text-center",
-            if(@knowledge_health.total_facts > 0, do: "bg-surface-sunk border-border", else: "bg-red-wash border-red")
-          ]}>
+          <div class="rounded-md border border-border bg-surface-sunk p-space-md text-center">
             <div class="text-title tabular-nums text-ink">
               {@knowledge_health.total_facts}
             </div>
@@ -1390,10 +1387,7 @@
               {@knowledge_health.curated_facts} curated / {@knowledge_health.learned_facts} learned
             </div>
           </div>
-          <div class={[
-            "rounded-md border p-space-md text-center",
-            if(@knowledge_health.beliefs > 0, do: "bg-surface-sunk border-border", else: "bg-red-wash border-red")
-          ]}>
+          <div class="rounded-md border border-border bg-surface-sunk p-space-md text-center">
             <div class="text-title tabular-nums text-ink">
               {@knowledge_health.beliefs}
             </div>
@@ -1500,11 +1494,28 @@
             </div>
             <div class="text-caption text-ink-muted">Verified</div>
           </div>
-          <div class="rounded-md bg-red-wash border border-red p-space-md text-center">
-            <div class="text-title tabular-nums text-red">
+          <div
+            class={[
+              "rounded-md border p-space-md text-center",
+              if(@epistemic_metrics.contradiction_count > 0,
+                do: "bg-ochre-wash border-ochre",
+                else: "bg-surface-sunk border-border"
+              )
+            ]}
+          >
+            <div class={[
+              "text-title tabular-nums",
+              if(@epistemic_metrics.contradiction_count > 0, do: "text-ochre", else: "text-ink")
+            ]}>
               {@epistemic_metrics.contradiction_count}
             </div>
-            <div class="text-caption text-ink-muted">Contradictions</div>
+            <div class="text-caption text-ink-muted inline-flex items-center gap-space-2xs">
+              <.icon
+                :if={@epistemic_metrics.contradiction_count > 0}
+                name="hero-exclamation-triangle"
+                class="size-3 shrink-0 text-ochre"
+              /> Contradictions
+            </div>
           </div>
           <div class="rounded-md bg-ochre-wash border border-ochre p-space-md text-center">
             <div class="text-title tabular-nums text-ochre">
