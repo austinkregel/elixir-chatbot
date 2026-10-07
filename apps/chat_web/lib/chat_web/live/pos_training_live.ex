@@ -170,9 +170,9 @@ defmodule ChatWeb.POSTrainingLive do
   end
 
   # A promotion writes the target model file with no copy of what was there,
-  # so one that overwrites a file is a removal and confirms first. Promoting
-  # to production always confirms; promoting to test confirms when the test
-  # model file exists.
+  # so one that overwrites a file is a removal and confirms first. Either
+  # target confirms when its model file exists, and acts at once when there
+  # is nothing there to overwrite.
   def handle_event("promote", %{"run_id" => id, "snapshot" => snapshot, "target" => target}, socket)
       when target in ["test", "production"] do
     promotion = {id, snapshot, String.to_existing_atom(target)}
@@ -284,8 +284,7 @@ defmodule ChatWeb.POSTrainingLive do
     |> start_async(:promote, fn -> POSRuns.promote!(id, snapshot, target) end)
   end
 
-  defp confirms_promotion?(:production), do: true
-  defp confirms_promotion?(:test), do: File.exists?(POSRuns.target_path(:test))
+  defp confirms_promotion?(target), do: File.exists?(POSRuns.target_path(target))
 
   defp promote_confirm_id(run_id), do: "confirm-promote-" <> run_id
 
