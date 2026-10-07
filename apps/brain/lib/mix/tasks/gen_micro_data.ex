@@ -192,12 +192,13 @@ defmodule Mix.Tasks.GenMicroData do
     :ok
   end
 
-  # Uses Pipeline.analyze_chunk/2 (single-chunk, no graph/memory side effects)
-  # rather than Pipeline.process/1 (full pipeline with persistence). Each
-  # gold-standard entry already corresponds to a single chunk.
+  # Uses Pipeline.analyze_chunk/2 (single chunk) rather than Pipeline.process/2.
+  # Each gold-standard entry already corresponds to a single chunk.
+  # `side_effects: false` keeps the corpus out of the belief store, the graph
+  # and the feedback statistics.
   defp enrich_entry(%{"text" => text} = entry) when is_binary(text) do
     try do
-      analysis = Pipeline.analyze_chunk(text)
+      analysis = Pipeline.analyze_chunk(text, side_effects: false)
       {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
 
       tokens = extract_tokens(analysis)
