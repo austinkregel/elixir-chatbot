@@ -7,9 +7,10 @@ defmodule Brain.Analysis.SlotDetector do
 
   @schemas_path "analysis/intent_registry.json"
 
-  @doc "Detects slots for the given intent and fills them from entities.\n\nReturns a SlotResult struct indicating which slots are filled and which are missing.\n"
-  def detect(intent, entities) when is_binary(intent) and is_list(entities) do
+  @doc "Detects slots for the given intent and fills them from entities.\n\nReturns a SlotResult struct indicating which slots are filled and which are missing.\n\nOptions:\n- `:side_effects` - when a slot is filled through a compatible (not exact)\n  entity type, the match is recorded as a Gazetteer type preference. `false`\n  skips that write. Defaults to `true`.\n"
+  def detect(intent, entities, opts \\ []) when is_binary(intent) and is_list(entities) do
     schemas = load_schemas()
+    record? = Keyword.get(opts, :side_effects, true)
 
     case Map.get(schemas, intent) do
       nil ->
@@ -19,15 +20,15 @@ defmodule Brain.Analysis.SlotDetector do
           nil ->
             case find_domain_prefix_schema(intent, entities, schemas) do
               nil -> build_unknown_result(entities)
-              {schema, matched_intent} -> process_schema(schema, matched_intent, entities)
+              {schema, matched_intent} -> process_schema(schema, matched_intent, entities, record?)
             end
 
           schema ->
-            process_schema(schema, intent, entities)
+            process_schema(schema, intent, entities, record?)
         end
 
       schema ->
-        process_schema(schema, intent, entities)
+        process_schema(schema, intent, entities, record?)
     end
   end
 
@@ -249,13 +250,13 @@ defmodule Brain.Analysis.SlotDetector do
     end
   end
 
-  defp process_schema(schema, intent, entities) do
+  defp process_schema(schema, intent, entities, record?) do
     required = Map.get(schema, "required", [])
     optional = Map.get(schema, "optional", [])
     defaults = Map.get(schema, "defaults", %{})
     mappings = Map.get(schema, "entity_mappings", %{})
     result = SlotResult.new(intent)
-    result = fill_slots_from_entities(result, required ++ optional, entities, mappings)
+    result = fill_slots_from_entities(result, required ++ optional, entities, mappings, record?)
     result = apply_defaults(result, defaults)
     filled_slot_names = Map.keys(result.filled_slots)
     missing_required = Enum.reject(required, &(&1 in filled_slot_names))
@@ -269,7 +270,7 @@ defmodule Brain.Analysis.SlotDetector do
     }
   end
 
-  defp fill_slots_from_entities(result, slots, entities, mappings) do
+  defp fill_slots_from_entities(result, slots, entities, mappings, record?) do
     Enum.reduce(slots, result, fn slot_name, acc ->
       mapped_entity_types = Map.get(mappings, slot_name, [slot_name])
 
@@ -294,7 +295,7 @@ defmodule Brain.Analysis.SlotDetector do
           acc
 
         entity ->
-          if via_compatibility do
+          if via_compatibility and record? do
             record_learned_type_preference(entity, slot_name, result.schema_name)
           end
 
