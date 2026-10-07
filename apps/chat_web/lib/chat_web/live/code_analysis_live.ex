@@ -41,6 +41,8 @@ defmodule ChatWeb.CodeAnalysisLive do
       |> assign(:last_updated, DateTime.utc_now())
       |> assign(:selected_symbol, nil)
       |> assign(:symbol_relations, [])
+      |> assign(:open_confirm, nil)
+      |> assign(:confirm_error, nil)
       |> load_world_symbols()
       |> load_world_stats()
       |> load_metrics()
@@ -63,6 +65,7 @@ defmodule ChatWeb.CodeAnalysisLive do
     socket =
       socket
       |> assign(:world_id, world_id)
+      |> close_confirm()
       |> load_world_symbols()
       |> load_world_stats()
 
@@ -178,6 +181,16 @@ defmodule ChatWeb.CodeAnalysisLive do
     {:noreply, socket}
   end
 
+  def handle_event("open_confirm", %{"id" => id}, socket) do
+    {:noreply, socket |> assign(:open_confirm, id) |> assign(:confirm_error, nil)}
+  end
+
+  def handle_event("close_confirm", _params, socket) do
+    {:noreply, close_confirm(socket)}
+  end
+
+  # Reached only from the clear confirmation. A failure stays in that panel,
+  # which remains open, rather than closing it and leaving only a flash.
   def handle_event("clear_world_symbols", _params, socket) do
     world_id = socket.assigns.world_id
 
@@ -185,6 +198,7 @@ defmodule ChatWeb.CodeAnalysisLive do
       :ok ->
         socket =
           socket
+          |> close_confirm()
           |> assign(:symbols, [])
           |> assign(:selected_symbol, nil)
           |> load_world_stats()
@@ -193,7 +207,7 @@ defmodule ChatWeb.CodeAnalysisLive do
         {:noreply, socket}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to clear: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Failed to clear symbols for world #{world_id}: #{inspect(reason)}")}
     end
   end
 
@@ -237,6 +251,10 @@ defmodule ChatWeb.CodeAnalysisLive do
       |> assign(:active_tab, :browse)
 
     {:noreply, socket}
+  end
+
+  defp close_confirm(socket) do
+    socket |> assign(:open_confirm, nil) |> assign(:confirm_error, nil)
   end
 
   defp load_code_status do
