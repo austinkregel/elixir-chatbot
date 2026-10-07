@@ -5,7 +5,9 @@ defmodule ChatWeb.POSTrainingLive do
   Start a recorded run (`Brain.Training.POSRuns`) through
   `Brain.ML.TrainingServer`, watch its learning curve epoch by epoch, compare
   runs to see where more epochs stop paying, and promote a snapshot to the
-  test suite's model or to the model the app serves.
+  test suite's model or to the model the app serves. A promotion that
+  overwrites a model file confirms first, because no copy of the replaced
+  model is kept.
 
   Runs are read from disk, so they outlive the page and the app; a run can
   be left going and looked at later.
@@ -33,6 +35,11 @@ defmodule ChatWeb.POSTrainingLive do
   @series_markers [:filled_circle, :hollow_square, :filled_triangle, :hollow_diamond]
   @compared_by_default 4
 
+  # How many runs the curve chart draws distinctly: one per pattern and marker
+  # pair. The compare control stops at this many; `series_style/1` raises past
+  # it, as the guard behind the control.
+  @max_compared length(@series_dashes) * length(@series_markers)
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket), do: Phoenix.PubSub.subscribe(Brain.PubSub, TrainingServer.pos_topic())
@@ -46,6 +53,10 @@ defmodule ChatWeb.POSTrainingLive do
      |> assign(:compared, runs |> Enum.take(@compared_by_default) |> MapSet.new(& &1["id"]))
      |> assign(:log_x, true)
      |> assign(:promoting, nil)
+     |> assign(:pending_promotion, nil)
+     |> assign(:open_confirm, nil)
+     |> assign(:confirm_error, nil)
+     |> assign(:left_out_run, nil)
      |> assign(:probe, to_form(%{"text" => @default_probe}, as: :probe))
      |> assign(:tagged, nil)
      |> assign(:tag_error, nil)
@@ -115,7 +126,7 @@ defmodule ChatWeb.POSTrainingLive do
       {:noreply,
        socket
        |> assign(:current_run, id)
-       |> assign(:compared, MapSet.put(socket.assigns.compared, id))
+       |> compare_new_run(id)
        |> assign(:form, to_form(form, as: :run))
        |> put_flash(:info, "Run #{id} started")}
     else
@@ -137,7 +148,8 @@ defmodule ChatWeb.POSTrainingLive do
   def handle_event("toggle_compare", %{"id" => id}, socket) do
     compared = socket.assigns.compared
     compared = if MapSet.member?(compared, id), do: MapSet.delete(compared, id), else: MapSet.put(compared, id)
-    {:noreply, assign(socket, :compared, compared)}
+    left_out = if socket.assigns.left_out_run == id, do: nil, else: socket.assigns.left_out_run
+    {:noreply, socket |> assign(:compared, compared) |> assign(:left_out_run, left_out)}
   end
 
   def handle_event("toggle_log_x", _params, socket) do
@@ -157,24 +169,53 @@ defmodule ChatWeb.POSTrainingLive do
     end
   end
 
+  # A promotion writes the target model file with no copy of what was there,
+  # so one that overwrites a file is a removal and confirms first. Promoting
+  # to production always confirms; promoting to test confirms when the test
+  # model file exists.
   def handle_event("promote", %{"run_id" => id, "snapshot" => snapshot, "target" => target}, socket)
       when target in ["test", "production"] do
-    target = String.to_existing_atom(target)
+    promotion = {id, snapshot, String.to_existing_atom(target)}
 
-    {:noreply,
-     socket
-     |> assign(:promoting, {id, snapshot, target})
-     |> start_async(:promote, fn -> POSRuns.promote!(id, snapshot, target) end)}
+    if confirms_promotion?(elem(promotion, 2)) do
+      {:noreply,
+       socket
+       |> assign(:pending_promotion, promotion)
+       |> assign(:open_confirm, promote_confirm_id(id))
+       |> assign(:confirm_error, nil)}
+    else
+      {:noreply, start_promotion(socket, promotion)}
+    end
+  end
+
+  def handle_event("confirm_promote", _params, socket) do
+    case {socket.assigns.pending_promotion, socket.assigns.promoting} do
+      {nil, _} ->
+        raise ArgumentError,
+              "ChatWeb.POSTrainingLive: confirm_promote arrived with no promotion awaiting confirmation."
+
+      {_pending, {id, snapshot, _target}} ->
+        {:noreply,
+         assign(socket, :confirm_error, "#{snapshot} of #{id} is still being measured. Confirm again when it finishes.")}
+
+      {pending, nil} ->
+        {:noreply, socket |> assign(:confirm_error, nil) |> start_promotion(pending)}
+    end
+  end
+
+  def handle_event("close_confirm", _params, socket) do
+    {:noreply, close_confirm(socket)}
   end
 
   @impl true
   def handle_async(:promote, {:ok, {path, model}}, socket) do
-    {_id, snapshot, target} = socket.assigns.promoting
+    {_id, snapshot, target} = promoted = socket.assigns.promoting
     e = model.evaluation
 
     {:noreply,
      socket
      |> assign(:promoting, nil)
+     |> close_confirm_for(promoted)
      |> reload_runs()
      |> put_flash(
        :info,
@@ -182,6 +223,8 @@ defmodule ChatWeb.POSTrainingLive do
      )}
   end
 
+  # A confirmed promotion that fails shows the failure in its confirmation
+  # panel, which stays open; one that needed no confirmation reports in a flash.
   def handle_async(:promote, {:exit, reason}, socket) do
     message =
       case reason do
@@ -189,7 +232,14 @@ defmodule ChatWeb.POSTrainingLive do
         other -> inspect(other)
       end
 
-    {:noreply, socket |> assign(:promoting, nil) |> put_flash(:error, "Promotion refused: #{message}")}
+    promoted = socket.assigns.promoting
+    socket = assign(socket, :promoting, nil)
+
+    if socket.assigns.pending_promotion == promoted do
+      {:noreply, assign(socket, :confirm_error, "Promotion refused: #{message}")}
+    else
+      {:noreply, put_flash(socket, :error, "Promotion refused: #{message}")}
+    end
   end
 
   @impl true
@@ -216,6 +266,65 @@ defmodule ChatWeb.POSTrainingLive do
         else: [run | runs]
 
     assign(socket, :runs, runs)
+  end
+
+  # A started run joins the comparison unless the chart already draws as many
+  # runs as it can tell apart; then it is left out, and the cap note says so.
+  defp compare_new_run(socket, id) do
+    if MapSet.size(socket.assigns.compared) >= @max_compared do
+      assign(socket, :left_out_run, id)
+    else
+      assign(socket, :compared, MapSet.put(socket.assigns.compared, id))
+    end
+  end
+
+  defp start_promotion(socket, {id, snapshot, target} = promotion) do
+    socket
+    |> assign(:promoting, promotion)
+    |> start_async(:promote, fn -> POSRuns.promote!(id, snapshot, target) end)
+  end
+
+  defp confirms_promotion?(:production), do: true
+  defp confirms_promotion?(:test), do: File.exists?(POSRuns.target_path(:test))
+
+  defp promote_confirm_id(run_id), do: "confirm-promote-" <> run_id
+
+  defp close_confirm(socket) do
+    socket
+    |> assign(:open_confirm, nil)
+    |> assign(:confirm_error, nil)
+    |> assign(:pending_promotion, nil)
+  end
+
+  defp close_confirm_for(socket, promotion) do
+    if socket.assigns.pending_promotion == promotion, do: close_confirm(socket), else: socket
+  end
+
+  # The confirmation for the promotion awaiting it: what it overwrites and
+  # what is lost.
+  defp promotion_confirm(nil), do: nil
+
+  defp promotion_confirm({id, snapshot, target}) do
+    path = model_file(target)
+    role = if target == :production, do: "the model the app serves", else: "the model the test suite loads"
+
+    consequence =
+      if File.exists?(POSRuns.target_path(target)),
+        do:
+          "Measures snapshot #{snapshot} of run #{id} on the test split, then writes it over #{path}, #{role}. " <>
+            "The model there now is overwritten and no copy of it is kept.",
+        else:
+          "Measures snapshot #{snapshot} of run #{id} on the test split, then writes it to #{path}, #{role}. " <>
+            "No model file is there now."
+
+    %{
+      run_id: id,
+      id: promote_confirm_id(id),
+      verb: if(target == :production, do: "Promote to production", else: "Promote to test"),
+      target: path,
+      consequence: consequence,
+      trigger_id: "promote-#{target}-#{id}"
+    }
   end
 
   # Form strings to run params; blank sentences means all of them, blank
@@ -257,7 +366,14 @@ defmodule ChatWeb.POSTrainingLive do
       |> Enum.with_index()
       |> Enum.map(fn {run, i} -> Map.put(series_style(i), :run, run) end)
 
-    assigns = assign(assigns, current: current, series: series)
+    assigns =
+      assign(assigns,
+        current: current,
+        series: series,
+        compare_full: MapSet.size(assigns.compared) >= @max_compared,
+        max_compared: @max_compared,
+        promotion_confirm: promotion_confirm(assigns.pending_promotion)
+      )
 
     ~H"""
     <.app_shell
@@ -365,10 +481,12 @@ defmodule ChatWeb.POSTrainingLive do
             <div class="flex items-center justify-between">
               <h2 class="text-heading text-ink">Running: <span class="text-value">{@current["id"]}</span></h2>
               <.btn
-                variant={:danger}
+                id="cancel-run"
+                variant={:outline}
                 size={:sm}
+                reach={:local}
+                target={"#{@current["id"]}/run.json"}
                 phx-click="cancel"
-                data-confirm="Stop this run? Its snapshots so far are kept."
               >
                 Cancel
               </.btn>
@@ -402,6 +520,12 @@ defmodule ChatWeb.POSTrainingLive do
           <.card_body class="space-y-space-sm">
             <h2 class="text-heading text-ink">Runs</h2>
             <p :if={@runs == []} class="text-body text-ink-muted">No runs yet.</p>
+            <p :if={@compare_full} id="compare-limit" class="text-caption text-ink-muted">
+              {@max_compared} runs compared, the most the chart draws distinctly. Untick one to compare another.
+              <span :if={@left_out_run && not MapSet.member?(@compared, @left_out_run)}>
+                Run <span class="text-ref">{@left_out_run}</span> started without joining the comparison.
+              </span>
+            </p>
             <div :if={@runs != []} class="overflow-x-auto">
               <table id="pos-runs" class="w-full text-left text-body-dense text-ink tabular-nums">
                 <thead class="bg-surface-sunk">
@@ -426,8 +550,10 @@ defmodule ChatWeb.POSTrainingLive do
                     <td class="px-space-sm py-space-xs">
                       <input
                         type="checkbox"
-                        class="size-4 accent-primary cursor-pointer"
+                        class="size-4 accent-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         checked={MapSet.member?(@compared, run["id"])}
+                        disabled={@compare_full and not MapSet.member?(@compared, run["id"])}
+                        aria-describedby={@compare_full && "compare-limit"}
                         phx-click="toggle_compare"
                         phx-value-id={run["id"]}
                       />
@@ -444,24 +570,42 @@ defmodule ChatWeb.POSTrainingLive do
                       <form :if={(run["snapshots"] || []) != []} phx-submit="promote" class="flex gap-space-xs items-start">
                         <input type="hidden" name="run_id" value={run["id"]} />
                         <.input type="select" name="snapshot" options={run["snapshots"]} value={nil} />
-                        <.button
-                          variant="primary"
+                        <.btn
+                          id={"promote-test-" <> run["id"]}
                           name="target"
                           value="test"
+                          reach={:local}
+                          target={model_file(:test)}
                           disabled={@promoting != nil}
                         >
                           Test
-                        </.button>
-                        <.button
-                          variant="primary"
+                        </.btn>
+                        <.btn
+                          id={"promote-production-" <> run["id"]}
                           name="target"
                           value="production"
+                          reach={:local}
+                          target={model_file(:production)}
                           disabled={@promoting != nil}
-                          data-confirm="Replace the POS model the app serves with this snapshot?"
                         >
                           Production
-                        </.button>
+                        </.btn>
                       </form>
+                      <.execute_confirm
+                        :if={@promotion_confirm && @promotion_confirm.run_id == run["id"]}
+                        id={@promotion_confirm.id}
+                        open={@open_confirm == @promotion_confirm.id}
+                        reach={:local}
+                        removes
+                        verb={@promotion_confirm.verb}
+                        target={@promotion_confirm.target}
+                        consequence={@promotion_confirm.consequence}
+                        on_confirm="confirm_promote"
+                        on_cancel="close_confirm"
+                        trigger_id={@promotion_confirm.trigger_id}
+                        error={@confirm_error}
+                        class="mt-space-sm"
+                      />
                       <div :for={p <- run["promotions"] || []} class="text-caption text-ink-muted">
                         {p["snapshot"]} → {p["target"]}: test {pct(p["test_accuracy"])} vs lookup {pct(p["lookup_baseline"])}
                       </div>
@@ -653,6 +797,9 @@ defmodule ChatWeb.POSTrainingLive do
                 "The statuses are #{inspect(Map.keys(@status_variants))}."
     end
   end
+
+  # The model file a promotion overwrites, as its reach badge names it.
+  defp model_file(target), do: target |> POSRuns.target_path() |> Path.relative_to_cwd()
 
   defp pct(nil), do: "—"
   defp pct(x), do: "#{Float.round(x * 100, 2)}%"
