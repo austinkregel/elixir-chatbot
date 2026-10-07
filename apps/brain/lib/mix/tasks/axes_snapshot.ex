@@ -121,7 +121,7 @@ defmodule Mix.Tasks.Axes.Snapshot do
   end
 
   defp observations_for(%{id: id, text: text}, axes, store_vectors?) do
-    analysis = Pipeline.analyze_chunk(text)
+    analysis = Pipeline.analyze_chunk(text, side_effects: false)
     vector = FeatureExtractor.extract_vector(analysis)
     profile = ChunkProfile.materialize(analysis, vector)
 
