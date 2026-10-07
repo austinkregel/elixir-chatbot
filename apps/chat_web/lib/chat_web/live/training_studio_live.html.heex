@@ -6,76 +6,72 @@
   flash={@flash}
 >
   <:page_header>
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-space-lg">
       <div>
-        <h1 class="text-xl font-bold">Training Data Studio</h1>
-        <p class="text-sm text-base-content/60">
+        <h1 class="text-title text-ink">Training Data Studio</h1>
+        <p class="text-body text-ink-muted">
           {@summary_stats.total_files} sources
           · {@summary_stats.total_records} records
           · {@summary_stats.editable} editable
           · {@summary_stats.missing_files} missing
         </p>
       </div>
-      <div class="flex items-center gap-2">
-        <button
+      <.tabs>
+        <.tab
           :for={tab <- [{"browse", "Browse"}, {"drift", "Drift"}, {"orphans", "Orphans"}, {"trace", "Trace"}, {"pipeline", "Pipeline"}]}
+          active={@active_tab == elem(tab, 0)}
           phx-click="switch_tab"
           phx-value-tab={elem(tab, 0)}
-          class={[
-            "px-3 py-1.5 text-sm font-medium rounded-lg transition-colors",
-            if(@active_tab == elem(tab, 0),
-              do: "bg-primary text-primary-content",
-              else: "bg-base-200 text-base-content/70 hover:bg-base-300"
-            )
-          ]}
         >
           {elem(tab, 1)}
-        </button>
-      </div>
+        </.tab>
+      </.tabs>
     </div>
   </:page_header>
 
   <div class="flex h-[calc(100vh-8rem)]">
     <!-- Sidebar: source tree -->
-    <aside class="w-72 shrink-0 border-r border-base-300 overflow-y-auto bg-base-100">
-      <div class="p-3">
-        <div :for={{category, sources} <- @sources_by_category} class="mb-4">
-          <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-wider mb-1 px-2">
+    <aside class="w-72 shrink-0 border-r border-border overflow-y-auto bg-surface">
+      <div class="p-space-md">
+        <div :for={{category, sources} <- @sources_by_category} class="mb-space-lg">
+          <div class="text-label text-ink-muted mb-space-xs px-space-sm">
             {category}
           </div>
-          <ul class="space-y-0.5">
+          <ul class="space-y-space-2xs">
             <li :for={source <- sources}>
               <button
                 phx-click="select_source"
                 phx-value-source={source.id}
                 class={[
-                  "w-full text-left px-2 py-1.5 rounded-md text-xs transition-colors flex items-center justify-between gap-1",
+                  "w-full text-left px-space-sm h-row-compact rounded-sm text-body-dense transition-colors flex items-center justify-between gap-space-xs",
                   if(@selected_source == source.id,
-                    do: "bg-primary/10 text-primary font-medium",
-                    else: "text-base-content/70 hover:bg-base-200"
+                    do: "bg-accent-wash text-accent font-semibold",
+                    else: "text-ink-muted hover:bg-surface-sunk"
                   )
                 ]}
               >
                 <span class="truncate">{source.label}</span>
-                <span class="flex items-center gap-1 shrink-0">
-                  <span :if={source.exists} class="text-[10px] text-base-content/40">
+                <span class="flex items-center gap-space-xs shrink-0">
+                  <span :if={source.exists} class="text-offset text-ink-muted">
                     {source.record_count}
                   </span>
-                  <span :if={!source.exists} class="text-[10px] text-error">missing</span>
-                  <span
+                  <span :if={!source.exists} class="text-caption text-red">missing</span>
+                  <.badge
                     :if={source.tag == :build_artifact}
-                    class="text-[10px] px-1 py-0.5 bg-warning/10 text-warning rounded"
+                    variant={:warning}
+                    size={:xs}
                     title="Build artifact — read only"
                   >
                     auto
-                  </span>
-                  <span
+                  </.badge>
+                  <.badge
                     :if={source.tag == :external_corpus}
-                    class="text-[10px] px-1 py-0.5 bg-info/10 text-info rounded"
+                    variant={:info}
+                    size={:xs}
                     title="External corpus — read only"
                   >
                     ext
-                  </span>
+                  </.badge>
                 </span>
               </button>
             </li>
@@ -85,115 +81,115 @@
     </aside>
 
     <!-- Main content -->
-    <main class="flex-1 overflow-y-auto bg-base-200/30">
+    <main class="flex-1 overflow-y-auto bg-ground">
       <!-- Browse tab -->
-      <div :if={@active_tab == "browse"} class="p-4 space-y-4">
+      <div :if={@active_tab == "browse"} class="p-space-lg space-y-space-lg">
         <%= if @source_desc do %>
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-lg font-bold">{@source_desc.label}</h2>
-              <p class="text-xs text-base-content/50">
+              <h2 class="text-heading text-ink">{@source_desc.label}</h2>
+              <p class="text-caption text-ink-muted">
                 {@source_desc.description}
                 · {@total_records} records
-                · <span class="font-mono">{Path.basename(@source_desc.path)}</span>
+                · <span class="text-ref">{Path.basename(@source_desc.path)}</span>
               </p>
-              <p :if={@source_desc.generated_by} class="text-xs text-warning mt-0.5">
-                Build artifact — generated by <code>{@source_desc.generated_by}</code>
+              <p :if={@source_desc.generated_by} class="text-caption text-ochre mt-space-2xs">
+                Build artifact — generated by <code class="text-ref">{@source_desc.generated_by}</code>
               </p>
             </div>
-            <div class="flex items-center gap-2">
-              <form phx-change="filter" class="flex gap-2">
+            <div class="flex items-center gap-space-sm">
+              <form phx-change="filter" class="flex gap-space-sm">
                 <input
                   type="text"
                   name="filter"
                   value={@filter}
                   placeholder="Filter..."
-                  class="input input-sm input-bordered w-48"
+                  class="w-48 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
                   phx-debounce="300"
                 />
               </form>
-              <button
+              <.btn
                 :if={source_editable?(assigns)}
                 phx-click="show_add_form"
-                class="btn btn-sm btn-primary"
+                size={:sm}
               >
                 + Add Record
-              </button>
+              </.btn>
             </div>
           </div>
 
           <!-- Add record form -->
-          <div :if={assigns[:show_add_form] && source_editable?(assigns)} class="bg-base-100 rounded-xl border border-primary/30 p-4 mb-4">
-            <h3 class="text-sm font-semibold mb-3">Add New Record</h3>
-            <form phx-submit="add_record" class="space-y-3">
+          <.card :if={assigns[:show_add_form] && source_editable?(assigns)} class="p-space-lg mb-space-lg">
+            <h3 class="text-subheading text-ink mb-space-md">Add New Record</h3>
+            <form phx-submit="add_record" class="space-y-space-md">
               <%= case @source_desc.record_kind do %>
                 <% kind when kind in [:intent_example, :text_classifier_row] -> %>
-                  <div class="grid grid-cols-2 gap-3">
+                  <div class="grid grid-cols-2 gap-space-md">
                     <div>
-                      <label class="text-xs font-medium text-base-content/60 mb-1 block">
+                      <label class="block mb-space-xs text-label text-ink-muted">
                         {if kind == :intent_example, do: "Intent / Label", else: "Label"}
                       </label>
-                      <input type="text" name="record[label]" placeholder="e.g. weather.query" class="input input-sm input-bordered w-full" required />
+                      <input type="text" name="record[label]" placeholder="e.g. weather.query" class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted" required />
                     </div>
                     <div>
-                      <label class="text-xs font-medium text-base-content/60 mb-1 block">Text</label>
-                      <input type="text" name="record[text]" placeholder="What's the weather like?" class="input input-sm input-bordered w-full" required />
+                      <label class="block mb-space-xs text-label text-ink-muted">Text</label>
+                      <input type="text" name="record[text]" placeholder="What's the weather like?" class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted" required />
                     </div>
                   </div>
 
                 <% :kg_negative -> %>
-                  <div class="grid grid-cols-3 gap-3">
+                  <div class="grid grid-cols-3 gap-space-md">
                     <div>
-                      <label class="text-xs font-medium text-base-content/60 mb-1 block">Head</label>
-                      <input type="text" name="record[head]" class="input input-sm input-bordered w-full" required />
+                      <label class="block mb-space-xs text-label text-ink-muted">Head</label>
+                      <input type="text" name="record[head]" class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted" required />
                     </div>
                     <div>
-                      <label class="text-xs font-medium text-base-content/60 mb-1 block">Relation</label>
-                      <input type="text" name="record[relation]" class="input input-sm input-bordered w-full" required />
+                      <label class="block mb-space-xs text-label text-ink-muted">Relation</label>
+                      <input type="text" name="record[relation]" class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted" required />
                     </div>
                     <div>
-                      <label class="text-xs font-medium text-base-content/60 mb-1 block">Tail</label>
-                      <input type="text" name="record[tail]" class="input input-sm input-bordered w-full" required />
+                      <label class="block mb-space-xs text-label text-ink-muted">Tail</label>
+                      <input type="text" name="record[tail]" class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted" required />
                     </div>
                   </div>
 
                 <% :gazetteer_entry -> %>
-                  <div class="grid grid-cols-2 gap-3">
+                  <div class="grid grid-cols-2 gap-space-md">
                     <div>
-                      <label class="text-xs font-medium text-base-content/60 mb-1 block">Value / Name</label>
-                      <input type="text" name="record[value]" placeholder="e.g. New York" class="input input-sm input-bordered w-full" required />
+                      <label class="block mb-space-xs text-label text-ink-muted">Value / Name</label>
+                      <input type="text" name="record[value]" placeholder="e.g. New York" class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted" required />
                     </div>
                     <div>
-                      <label class="text-xs font-medium text-base-content/60 mb-1 block">Synonyms (comma-separated)</label>
-                      <input type="text" name="record[synonyms]" placeholder="NYC, New York City" class="input input-sm input-bordered w-full" />
+                      <label class="block mb-space-xs text-label text-ink-muted">Synonyms (comma-separated)</label>
+                      <input type="text" name="record[synonyms]" placeholder="NYC, New York City" class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted" />
                     </div>
                   </div>
 
                 <% _ -> %>
-                  <p class="text-xs text-base-content/50">Editing not yet supported for this record type.</p>
+                  <p class="text-caption text-ink-muted">Editing not yet supported for this record type.</p>
               <% end %>
 
-              <div class="flex gap-2">
-                <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                <button type="button" phx-click="cancel_add" class="btn btn-sm btn-ghost">Cancel</button>
+              <div class="flex gap-space-sm">
+                <.btn type="submit" size={:sm}>Save</.btn>
+                <.btn type="button" phx-click="cancel_add" variant={:ghost} size={:sm}>Cancel</.btn>
               </div>
             </form>
-          </div>
+          </.card>
 
-          <div class="bg-base-100 rounded-xl border border-base-300/50 overflow-hidden">
+          <.card class="overflow-hidden">
             <div class="overflow-x-auto">
-              <table class="table table-sm w-full">
-                <thead class="bg-base-200/50">
+              <table class="w-full text-left text-body-dense text-ink">
+                <thead class="bg-surface-sunk">
                   <ChatWeb.TrainingStudio.Components.table_headers kind={@source_desc.record_kind} />
-                  <th :if={source_editable?(assigns)} class="px-3 py-2 text-xs font-semibold text-base-content/60 uppercase tracking-wider text-right">Actions</th>
+                  <th :if={source_editable?(assigns)} class="h-row-compact px-space-sm text-label text-ink-muted text-right">Actions</th>
                 </thead>
                 <tbody>
                   <%= for {record, idx} <- Enum.with_index(@records) do %>
                     <% abs_idx = (@page - 1) * 50 + idx %>
                     <%= if assigns[:editing_index] == abs_idx do %>
-                      <tr class="bg-primary/5 border-b border-base-300/30">
-                        <td colspan="10" class="px-3 py-2">
-                          <form phx-submit="save_edit" class="flex items-center gap-2">
+                      <tr class="bg-accent-wash border-b border-border">
+                        <td colspan="10" class="px-space-sm py-space-sm">
+                          <form phx-submit="save_edit" class="flex items-center gap-space-sm">
                             <input type="hidden" name="index" value={abs_idx} />
                             <%= case @source_desc.record_kind do %>
                               <% kind when kind in [:intent_example, :text_classifier_row] -> %>
@@ -201,41 +197,41 @@
                                   type="text"
                                   name="record[label]"
                                   value={Map.get(record, "intent") || Map.get(record, "label") || ""}
-                                  class="input input-xs input-bordered w-48"
+                                  class="w-48 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
                                 />
                                 <input
                                   type="text"
                                   name="record[text]"
                                   value={Map.get(record, "text") || ""}
-                                  class="input input-xs input-bordered flex-1"
+                                  class="flex-1 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
                                 />
 
                               <% :kg_negative -> %>
-                                <input type="text" name="record[head]" value={Map.get(record, "head", "")} class="input input-xs input-bordered w-32" />
-                                <input type="text" name="record[relation]" value={Map.get(record, "relation", "")} class="input input-xs input-bordered w-32" />
-                                <input type="text" name="record[tail]" value={Map.get(record, "tail", "")} class="input input-xs input-bordered w-32" />
+                                <input type="text" name="record[head]" value={Map.get(record, "head", "")} class="w-32 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted" />
+                                <input type="text" name="record[relation]" value={Map.get(record, "relation", "")} class="w-32 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted" />
+                                <input type="text" name="record[tail]" value={Map.get(record, "tail", "")} class="w-32 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted" />
 
                               <% :gazetteer_entry -> %>
                                 <input
                                   type="text"
                                   name="record[value]"
                                   value={Map.get(record, "value") || Map.get(record, "name") || ""}
-                                  class="input input-xs input-bordered w-48"
+                                  class="w-48 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
                                   placeholder="Value"
                                 />
                                 <input
                                   type="text"
                                   name="record[synonyms]"
                                   value={Enum.join(Map.get(record, "synonyms", []), ", ")}
-                                  class="input input-xs input-bordered flex-1"
+                                  class="flex-1 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
                                   placeholder="Synonyms (comma-separated)"
                                 />
 
                               <% _ -> %>
-                                <span class="text-xs text-base-content/50">Inline edit not available</span>
+                                <span class="text-caption text-ink-muted">Inline edit not available</span>
                             <% end %>
-                            <button type="submit" class="btn btn-xs btn-primary">Save</button>
-                            <button type="button" phx-click="cancel_edit" class="btn btn-xs btn-ghost">Cancel</button>
+                            <.btn type="submit" size={:xs}>Save</.btn>
+                            <.btn type="button" phx-click="cancel_edit" variant={:ghost} size={:xs}>Cancel</.btn>
                           </form>
                         </td>
                       </tr>
@@ -253,139 +249,142 @@
             </div>
 
             <!-- Pagination -->
-            <div :if={@total_pages > 1} class="flex items-center justify-between px-4 py-3 border-t border-base-300/50">
-              <div class="text-xs text-base-content/50">
+            <div :if={@total_pages > 1} class="flex items-center justify-between px-space-lg py-space-md border-t border-border">
+              <div class="text-caption text-ink-muted">
                 Page {@page} of {@total_pages} · {@total_records} total records
               </div>
-              <div class="flex gap-1">
-                <button
+              <div class="flex gap-space-xs">
+                <.btn
                   :if={@page > 1}
                   phx-click="page"
                   phx-value-page={@page - 1}
-                  class="btn btn-xs btn-ghost"
+                  variant={:ghost}
+                  size={:xs}
                 >
                   Prev
-                </button>
-                <button
+                </.btn>
+                <.btn
                   :for={p <- visible_pages(@page, @total_pages)}
                   phx-click="page"
                   phx-value-page={p}
-                  class={["btn btn-xs", if(p == @page, do: "btn-primary", else: "btn-ghost")]}
+                  variant={if p == @page, do: :primary, else: :ghost}
+                  size={:xs}
                 >
                   {p}
-                </button>
-                <button
+                </.btn>
+                <.btn
                   :if={@page < @total_pages}
                   phx-click="page"
                   phx-value-page={@page + 1}
-                  class="btn btn-xs btn-ghost"
+                  variant={:ghost}
+                  size={:xs}
                 >
                   Next
-                </button>
+                </.btn>
               </div>
             </div>
-          </div>
+          </.card>
         <% else %>
-          <div class="flex items-center justify-center h-64 text-base-content/40">
+          <div class="flex items-center justify-center h-64 text-ink-muted">
             <div class="text-center">
-              <.icon name="hero-document-text" class="size-12 mx-auto mb-2 opacity-30" />
-              <p class="text-sm">Select a source from the sidebar to browse its records</p>
+              <.icon name="hero-document-text" class="size-12 mx-auto mb-space-sm" />
+              <p class="text-body">Select a source from the sidebar to browse its records</p>
             </div>
           </div>
         <% end %>
       </div>
 
       <!-- Drift tab -->
-      <div :if={@active_tab == "drift"} class="p-4 space-y-4">
+      <div :if={@active_tab == "drift"} class="p-space-lg space-y-space-lg">
         <%= if @source_desc do %>
           <div>
-            <h2 class="text-lg font-bold">Class Distribution: {@source_desc.label}</h2>
-            <p class="text-xs text-base-content/50">{@source_desc.description}</p>
+            <h2 class="text-heading text-ink">Class Distribution: {@source_desc.label}</h2>
+            <p class="text-caption text-ink-muted">{@source_desc.description}</p>
           </div>
 
-          <div :if={@skew_rows != []} class="bg-base-100 rounded-xl border border-base-300/50 overflow-hidden">
-            <table class="table table-sm w-full">
-              <thead class="bg-base-200/50">
-                <tr class="text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                  <th class="px-3 py-2 text-left">Label</th>
-                  <th class="px-3 py-2 text-right">Count</th>
-                  <th class="px-3 py-2 text-right">%</th>
-                  <th class="px-3 py-2 text-left">Bar</th>
-                  <th class="px-3 py-2 text-left">Warning</th>
+          <.card :if={@skew_rows != []} class="overflow-hidden">
+            <table class="w-full text-left text-body-dense text-ink">
+              <thead class="bg-surface-sunk">
+                <tr class="text-label text-ink-muted">
+                  <th class="h-row-compact px-space-sm text-left">Label</th>
+                  <th class="h-row-compact px-space-sm text-right">Count</th>
+                  <th class="h-row-compact px-space-sm text-right">%</th>
+                  <th class="h-row-compact px-space-sm text-left">Bar</th>
+                  <th class="h-row-compact px-space-sm text-left">Warning</th>
                 </tr>
               </thead>
               <tbody>
-                <tr :for={row <- @skew_rows} class="border-b border-base-300/30 text-sm hover:bg-base-200/50">
-                  <td class="px-3 py-1.5 font-mono text-xs max-w-[200px] truncate">
+                <tr :for={row <- @skew_rows} class="border-b border-border even:bg-surface-sunk">
+                  <td class="h-row-compact px-space-sm text-ref max-w-[200px] truncate">
                     <button
                       phx-click="select_source"
                       phx-value-source={@selected_source}
-                      class="hover:text-primary hover:underline"
+                      class="hover:text-accent hover:underline"
                     >
                       {row.label}
                     </button>
                   </td>
-                  <td class="px-3 py-1.5 text-right tabular-nums">{row.count}</td>
-                  <td class="px-3 py-1.5 text-right tabular-nums">{row.pct}%</td>
-                  <td class="px-3 py-1.5 w-48">
-                    <div class="w-full bg-base-200 rounded-full h-2">
+                  <td class="h-row-compact px-space-sm text-right text-value">{row.count}</td>
+                  <td class="h-row-compact px-space-sm text-right text-value">{row.pct}%</td>
+                  <td class="h-row-compact px-space-sm w-48">
+                    <div class="w-full bg-score-track rounded-sm h-space-sm">
                       <div
                         class={[
-                          "h-2 rounded-full",
-                          if(row.skew_warning, do: "bg-warning", else: "bg-primary")
+                          "h-space-sm rounded-sm",
+                          if(row.skew_warning, do: "bg-ochre", else: "bg-score-count")
                         ]}
                         style={"width: #{min(row.pct, 100)}%"}
                       />
                     </div>
                   </td>
-                  <td class="px-3 py-1.5 text-xs">
-                    <span :if={row.skew_warning} class="text-warning font-medium">{row.skew_warning}</span>
+                  <td class="h-row-compact px-space-sm text-caption">
+                    <span :if={row.skew_warning} class="text-ochre font-semibold">{row.skew_warning}</span>
                   </td>
                 </tr>
               </tbody>
             </table>
-          </div>
+          </.card>
 
-          <div :if={@skew_rows == []} class="text-sm text-base-content/50 py-8 text-center">
+          <div :if={@skew_rows == []} class="text-body text-ink-muted py-space-2xl text-center">
             No class distribution data available for this source.
           </div>
         <% else %>
           <!-- Global skew overview -->
           <div>
-            <h2 class="text-lg font-bold">Drift Overview</h2>
-            <p class="text-xs text-base-content/50">Sources with class-distribution skew warnings</p>
+            <h2 class="text-heading text-ink">Drift Overview</h2>
+            <p class="text-caption text-ink-muted">Sources with class-distribution skew warnings</p>
           </div>
 
           <%= if assigns[:all_skew_warnings] && @all_skew_warnings != [] do %>
-            <div :for={{desc, warnings} <- @all_skew_warnings} class="bg-base-100 rounded-xl border border-base-300/50 overflow-hidden mb-4">
-              <div class="px-4 py-3 border-b border-base-300/50 bg-base-200/30 flex items-center justify-between">
+            <.card :for={{desc, warnings} <- @all_skew_warnings} class="overflow-hidden mb-space-lg">
+              <div class="px-space-lg py-space-md border-b border-border bg-surface-sunk flex items-center justify-between">
                 <div>
-                  <span class="font-semibold text-sm">{desc.label}</span>
-                  <span class="text-xs text-base-content/50 ml-2">{desc.category}</span>
+                  <span class="text-subheading text-ink">{desc.label}</span>
+                  <span class="text-caption text-ink-muted ml-space-sm">{desc.category}</span>
                 </div>
                 <button
                   phx-click="select_source"
                   phx-value-source={desc.id}
-                  class="text-xs text-primary hover:underline"
+                  class="text-caption text-accent hover:underline"
                 >
                   View full distribution
                 </button>
               </div>
-              <table class="table table-sm w-full">
+              <table class="w-full text-left text-body-dense text-ink">
                 <tbody>
-                  <tr :for={row <- warnings} class="border-b border-base-300/30 text-sm">
-                    <td class="px-3 py-1.5 font-mono text-xs w-48">{row.label}</td>
-                    <td class="px-3 py-1.5 tabular-nums text-right w-20">{row.count}</td>
-                    <td class="px-3 py-1.5 text-xs text-warning">{row.skew_warning}</td>
+                  <tr :for={row <- warnings} class="border-b border-border">
+                    <td class="h-row-compact px-space-sm text-ref w-48">{row.label}</td>
+                    <td class="h-row-compact px-space-sm text-value text-right w-20">{row.count}</td>
+                    <td class="h-row-compact px-space-sm text-caption text-ochre">{row.skew_warning}</td>
                   </tr>
                 </tbody>
               </table>
-            </div>
+            </.card>
           <% else %>
-            <div class="flex items-center justify-center h-48 text-base-content/40">
+            <div class="flex items-center justify-center h-48 text-ink-muted">
               <div class="text-center">
-                <.icon name="hero-check-circle" class="size-12 mx-auto mb-2 opacity-30" />
-                <p class="text-sm">No significant class skew detected across sources</p>
+                <.icon name="hero-check-circle" class="size-12 mx-auto mb-space-sm" />
+                <p class="text-body">No significant class skew detected across sources</p>
               </div>
             </div>
           <% end %>
@@ -393,106 +392,106 @@
       </div>
 
       <!-- Orphans tab -->
-      <div :if={@active_tab == "orphans"} class="p-4 space-y-6">
+      <div :if={@active_tab == "orphans"} class="p-space-lg space-y-space-xl">
         <div>
-          <h2 class="text-lg font-bold">Orphan Analysis</h2>
-          <p class="text-xs text-base-content/50">
+          <h2 class="text-heading text-ink">Orphan Analysis</h2>
+          <p class="text-caption text-ink-muted">
             Intents present in one source but missing from another
           </p>
         </div>
 
         <%= if assigns[:orphan_report] && @orphan_report != %{} do %>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-              <div class="flex items-center gap-2 mb-2">
-                <div class="text-2xl font-bold text-warning">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg">
+            <.card class="p-space-lg">
+              <div class="flex items-center gap-space-sm mb-space-sm">
+                <div class="text-title tabular-nums text-ochre">
                   {length(Map.get(@orphan_report, :gold_without_registry, []))}
                 </div>
-                <div class="text-xs text-base-content/60">
+                <div class="text-caption text-ink-muted">
                   in gold standard but NOT in intent registry
                 </div>
               </div>
-              <p class="text-[10px] text-base-content/40 mb-3">
+              <p class="text-caption text-ink-muted mb-space-md">
                 These intents have training data but no registry entry — slot detection and domain routing may fail.
               </p>
-              <div class="max-h-64 overflow-y-auto space-y-0.5">
+              <div class="max-h-64 overflow-y-auto space-y-space-2xs">
                 <div
                   :for={intent <- Map.get(@orphan_report, :gold_without_registry, [])}
-                  class="text-xs font-mono px-2 py-1 bg-base-200/50 rounded"
+                  class="text-ref text-ink px-space-sm py-space-xs bg-surface-sunk rounded-sm"
                 >
                   {intent}
                 </div>
               </div>
-            </div>
+            </.card>
 
-            <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-              <div class="flex items-center gap-2 mb-2">
-                <div class="text-2xl font-bold text-info">
+            <.card class="p-space-lg">
+              <div class="flex items-center gap-space-sm mb-space-sm">
+                <div class="text-title tabular-nums text-ink-muted">
                   {length(Map.get(@orphan_report, :registry_without_gold, []))}
                 </div>
-                <div class="text-xs text-base-content/60">
+                <div class="text-caption text-ink-muted">
                   in intent registry but NOT in gold standard
                 </div>
               </div>
-              <p class="text-[10px] text-base-content/40 mb-3">
+              <p class="text-caption text-ink-muted mb-space-md">
                 These intents are registered but have no training examples — the classifier cannot learn them.
               </p>
-              <div class="max-h-64 overflow-y-auto space-y-0.5">
+              <div class="max-h-64 overflow-y-auto space-y-space-2xs">
                 <div
                   :for={intent <- Map.get(@orphan_report, :registry_without_gold, [])}
-                  class="text-xs font-mono px-2 py-1 bg-base-200/50 rounded"
+                  class="text-ref text-ink px-space-sm py-space-xs bg-surface-sunk rounded-sm"
                 >
                   {intent}
                 </div>
               </div>
-            </div>
+            </.card>
           </div>
 
-          <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-            <h3 class="text-sm font-semibold mb-2">Summary</h3>
-            <div class="grid grid-cols-2 gap-4 text-sm">
+          <.card class="p-space-lg">
+            <h3 class="text-subheading text-ink mb-space-sm">Summary</h3>
+            <div class="grid grid-cols-2 gap-space-lg text-body">
               <div>
-                <span class="text-base-content/50">Unique intents in gold:</span>
-                <span class="font-bold ml-2">{Map.get(@orphan_report, :gold_intent_count, 0)}</span>
+                <span class="text-ink-muted">Unique intents in gold:</span>
+                <span class="text-value-strong text-ink ml-space-sm">{Map.get(@orphan_report, :gold_intent_count, 0)}</span>
               </div>
               <div>
-                <span class="text-base-content/50">Intents in registry:</span>
-                <span class="font-bold ml-2">{Map.get(@orphan_report, :registry_intent_count, 0)}</span>
+                <span class="text-ink-muted">Intents in registry:</span>
+                <span class="text-value-strong text-ink ml-space-sm">{Map.get(@orphan_report, :registry_intent_count, 0)}</span>
               </div>
             </div>
-          </div>
+          </.card>
 
           <!-- Cross-source lookup -->
-          <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-            <h3 class="text-sm font-semibold mb-2">Cross-Source Lookup</h3>
-            <p class="text-xs text-base-content/50 mb-3">
+          <.card class="p-space-lg">
+            <h3 class="text-subheading text-ink mb-space-sm">Cross-Source Lookup</h3>
+            <p class="text-caption text-ink-muted mb-space-md">
               Find every source file that mentions a given intent or label.
             </p>
-            <form phx-submit="lookup" class="flex gap-2 mb-4">
+            <form phx-submit="lookup" class="flex gap-space-sm mb-space-lg">
               <input
                 type="text"
                 name="query"
                 value={assigns[:lookup_query] || ""}
                 placeholder="e.g. account.balance.check"
-                class="input input-sm input-bordered flex-1"
+                class="flex-1 h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
               />
-              <button type="submit" class="btn btn-sm btn-primary">Search</button>
+              <.btn type="submit" size={:sm}>Search</.btn>
             </form>
 
             <%= if assigns[:lookup_results] && @lookup_results != [] do %>
-              <div class="space-y-2">
+              <div class="space-y-space-sm">
                 <div
                   :for={result <- @lookup_results}
-                  class="bg-base-200/50 rounded-lg p-3"
+                  class="bg-surface-sunk rounded-md p-space-md"
                 >
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="text-sm font-medium">{result.source_label}</span>
-                    <span class="text-xs text-base-content/50">{result.count} match(es)</span>
+                  <div class="flex items-center justify-between mb-space-xs">
+                    <span class="text-subheading text-ink">{result.source_label}</span>
+                    <span class="text-caption text-ink-muted">{result.count} match(es)</span>
                   </div>
-                  <div class="space-y-0.5">
+                  <div class="space-y-space-2xs">
                     <div
                       :for={sample <- result.sample_texts}
-                      class="text-xs font-mono text-base-content/60 truncate"
+                      class="text-ref text-ink-muted truncate"
                     >
                       {sample}
                     </div>
@@ -503,63 +502,63 @@
 
             <div
               :if={assigns[:lookup_query] && assigns[:lookup_query] != "" && (assigns[:lookup_results] || []) == []}
-              class="text-xs text-base-content/40 text-center py-4"
+              class="text-caption text-ink-muted text-center py-space-lg"
             >
               No matches found for "{@lookup_query}"
             </div>
-          </div>
+          </.card>
         <% else %>
-          <div class="text-sm text-base-content/50 text-center py-8">
+          <div class="text-body text-ink-muted text-center py-space-2xl">
             Loading orphan analysis...
           </div>
         <% end %>
       </div>
 
       <!-- Trace Prediction tab -->
-      <div :if={@active_tab == "trace"} class="p-4 space-y-6">
+      <div :if={@active_tab == "trace"} class="p-space-lg space-y-space-xl">
         <div>
-          <h2 class="text-lg font-bold">Trace Prediction</h2>
-          <p class="text-xs text-base-content/50">
+          <h2 class="text-heading text-ink">Trace Prediction</h2>
+          <p class="text-caption text-ink-muted">
             Paste an utterance to see how the pipeline classifies it and which gold-standard entries pull it there.
           </p>
         </div>
 
-        <form phx-submit="trace" class="flex gap-2">
+        <form phx-submit="trace" class="flex gap-space-sm">
           <input
             type="text"
             name="text"
             value={assigns[:trace_text] || ""}
             placeholder="e.g. What's my checking balance?"
-            class="input input-bordered flex-1"
+            class="flex-1 h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
           />
-          <button type="submit" class="btn btn-primary">Trace</button>
+          <.btn type="submit">Trace</.btn>
         </form>
 
         <%= if assigns[:trace_result] do %>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg">
             <!-- Classification result -->
-            <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-              <h3 class="text-sm font-semibold mb-3">Classification Result</h3>
-              <div class="space-y-2 text-sm">
+            <.card class="p-space-lg">
+              <h3 class="text-subheading text-ink mb-space-md">Classification Result</h3>
+              <div class="space-y-space-sm text-body text-ink">
                 <div class="flex justify-between">
-                  <span class="text-base-content/60">Chosen Intent:</span>
-                  <span class="font-mono font-bold">{@trace_result.intent || "—"}</span>
+                  <span class="text-ink-muted">Chosen Intent:</span>
+                  <span class="text-value-strong">{@trace_result.intent || "—"}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-base-content/60">Classifier Raw:</span>
-                  <span class="font-mono text-base-content/70">{@trace_result.classifier_raw}</span>
+                  <span class="text-ink-muted">Classifier Raw:</span>
+                  <span class="text-value text-ink-muted">{@trace_result.classifier_raw}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-base-content/60">Domain Classifier:</span>
-                  <span class="font-mono">{@trace_result.intent_domain || "—"}</span>
+                  <span class="text-ink-muted">Domain Classifier:</span>
+                  <span class="text-value">{@trace_result.intent_domain || "—"}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-base-content/60">Speech Act:</span>
+                  <span class="text-ink-muted">Speech Act:</span>
                   <span>{@trace_result.speech_act_category}/{@trace_result.speech_act_sub_type}{if @trace_result.is_question, do: "(?)", else: ""}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-base-content/60">Confidence:</span>
-                  <span>
+                  <span class="text-ink-muted">Confidence:</span>
+                  <span class="text-value">
                     <%= if @trace_result.confidence do %>
                       {Float.round(@trace_result.confidence * 1.0, 3)}
                     <% else %>
@@ -568,86 +567,81 @@
                   </span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-base-content/60">Strategy:</span>
+                  <span class="text-ink-muted">Strategy:</span>
                   <span class={[
-                    "font-medium",
-                    case @trace_result.strategy do
-                      :can_respond -> "text-success"
-                      :needs_clarification -> "text-warning"
-                      :hedged_response -> "text-error"
-                      _ -> ""
-                    end
+                    "font-semibold",
+                    ChatWeb.TrainingStudio.Components.strategy_class(@trace_result.strategy)
                   ]}>
                     {@trace_result.strategy}
                   </span>
                 </div>
                 <div :if={@trace_result.missing_context != []} class="flex justify-between">
-                  <span class="text-base-content/60">Missing Slots:</span>
-                  <span class="text-warning font-mono">{Enum.join(@trace_result.missing_context, ", ")}</span>
+                  <span class="text-ink-muted">Missing Slots:</span>
+                  <span class="text-value text-ochre">{Enum.join(@trace_result.missing_context, ", ")}</span>
                 </div>
               </div>
 
               <!-- Entities -->
-              <div :if={@trace_result.entities != []} class="mt-3 pt-3 border-t border-base-300/30">
-                <div class="text-xs font-semibold text-base-content/60 mb-1">Entities</div>
-                <div :for={e <- @trace_result.entities} class="text-xs font-mono py-0.5">
+              <div :if={@trace_result.entities != []} class="mt-space-md pt-space-md border-t border-border">
+                <div class="text-label text-ink-muted mb-space-xs">Entities</div>
+                <div :for={e <- @trace_result.entities} class="text-ref text-ink py-space-2xs">
                   {e.entity}: {e.value} ({e.type})
                 </div>
               </div>
-            </div>
+            </.card>
 
             <!-- Nearest gold neighbors -->
-            <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-              <h3 class="text-sm font-semibold mb-3">Nearest Gold Examples</h3>
-              <p class="text-[10px] text-base-content/40 mb-2">
+            <.card class="p-space-lg">
+              <h3 class="text-subheading text-ink mb-space-md">Nearest Gold Examples</h3>
+              <p class="text-caption text-ink-muted mb-space-sm">
                 Gold-standard entries closest to this input by feature-vector cosine similarity.
                 These are what the classifier "sees" when making its decision.
               </p>
 
               <%= if @trace_result.neighbors != [] do %>
-                <div class="space-y-2">
-                  <div :for={n <- @trace_result.neighbors} class="bg-base-200/50 rounded-lg p-3">
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="font-mono text-xs font-medium text-primary">{n.intent}</span>
-                      <span class="text-xs tabular-nums text-base-content/50">
+                <div class="space-y-space-sm">
+                  <div :for={n <- @trace_result.neighbors} class="bg-surface-sunk rounded-md p-space-md">
+                    <div class="flex items-center justify-between mb-space-xs">
+                      <span class="text-ref font-semibold text-ink">{n.intent}</span>
+                      <span class="text-value text-ink-muted">
                         sim: {n.similarity}
                       </span>
                     </div>
-                    <div class="text-sm text-base-content/80 truncate">{n.text}</div>
+                    <div class="text-body text-ink truncate">{n.text}</div>
                     <button
                       phx-click="select_source"
                       phx-value-source="intent_gold"
-                      class="text-[10px] text-primary hover:underline mt-1"
+                      class="text-caption text-accent hover:underline mt-space-xs"
                     >
                       View in gold standard
                     </button>
                   </div>
                 </div>
               <% else %>
-                <div class="text-xs text-base-content/40 text-center py-4">
-                  No feature vectors in gold standard — run <code>mix gen_micro_data</code> to populate them.
+                <div class="text-caption text-ink-muted text-center py-space-lg">
+                  No feature vectors in gold standard — run <code class="text-ref">mix gen_micro_data</code> to populate them.
                 </div>
               <% end %>
-            </div>
+            </.card>
           </div>
         <% end %>
       </div>
 
       <!-- Pipeline tab -->
-      <div :if={@active_tab == "pipeline"} class="p-4 space-y-6">
+      <div :if={@active_tab == "pipeline"} class="p-space-lg space-y-space-xl">
         <div>
-          <h2 class="text-lg font-bold">Training Pipeline</h2>
-          <p class="text-xs text-base-content/50">
+          <h2 class="text-heading text-ink">Training Pipeline</h2>
+          <p class="text-caption text-ink-muted">
             Regenerate derived data, retrain models, reload classifiers, and run evaluations.
           </p>
         </div>
 
         <!-- Current status -->
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <h3 class="text-sm font-semibold mb-2">Current Status</h3>
+        <.card class="p-space-lg">
+          <h3 class="text-subheading text-ink mb-space-sm">Current Status</h3>
           <div class={[
-            "text-sm font-medium px-3 py-2 rounded-lg inline-block",
-            if(assigns[:training_status] == :idle, do: "bg-success/10 text-success", else: "bg-warning/10 text-warning")
+            "text-body font-semibold px-space-md py-space-sm rounded-md inline-block",
+            if(assigns[:training_status] == :idle, do: "bg-surface-sunk text-avail-ready", else: "bg-ochre-wash text-ochre")
           ]}>
             <%= case assigns[:training_status] do %>
               <% :idle -> %>
@@ -658,94 +652,94 @@
                 Idle
             <% end %>
           </div>
-        </div>
+        </.card>
 
         <!-- Pipeline stages -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <!-- Step 1: Regenerate -->
-          <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-            <div class="flex items-center gap-2 mb-3">
-              <span class="text-lg font-bold text-primary">1</span>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg">
+          <!-- Regenerate -->
+          <.card class="p-space-lg">
+            <div class="flex items-center gap-space-sm mb-space-md">
+              <span class="text-heading tabular-nums text-ink-muted">1</span>
               <div>
-                <h3 class="text-sm font-semibold">Regenerate Training Data</h3>
-                <p class="text-[10px] text-base-content/40">Derives feature-vector JSONs from gold standard</p>
+                <h3 class="text-subheading text-ink">Regenerate Training Data</h3>
+                <p class="text-caption text-ink-muted">Derives feature-vector JSONs from gold standard</p>
               </div>
             </div>
-            <div class="space-y-2">
-              <button phx-click="run_pipeline" phx-value-action="gen_micro_data" class="btn btn-sm btn-outline w-full">
+            <div class="space-y-space-sm">
+              <.btn phx-click="run_pipeline" phx-value-action="gen_micro_data" size={:sm} class="w-full">
                 Regenerate all micro data (gen_micro_data)
-              </button>
-              <button phx-click="run_pipeline" phx-value-action="gen_framing_data" class="btn btn-sm btn-outline w-full">
+              </.btn>
+              <.btn phx-click="run_pipeline" phx-value-action="gen_framing_data" size={:sm} class="w-full">
                 Regenerate framing data (gen_framing_data)
-              </button>
+              </.btn>
             </div>
-          </div>
+          </.card>
 
-          <!-- Step 2: Retrain -->
-          <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-            <div class="flex items-center gap-2 mb-3">
-              <span class="text-lg font-bold text-primary">2</span>
+          <!-- Retrain -->
+          <.card class="p-space-lg">
+            <div class="flex items-center gap-space-sm mb-space-md">
+              <span class="text-heading tabular-nums text-ink-muted">2</span>
               <div>
-                <h3 class="text-sm font-semibold">Retrain Models</h3>
-                <p class="text-[10px] text-base-content/40">Trains classifiers from generated data</p>
+                <h3 class="text-subheading text-ink">Retrain Models</h3>
+                <p class="text-caption text-ink-muted">Trains classifiers from generated data</p>
               </div>
             </div>
-            <div class="space-y-2">
-              <button phx-click="run_pipeline" phx-value-action="train_micro" class="btn btn-sm btn-outline w-full">
+            <div class="space-y-space-sm">
+              <.btn phx-click="run_pipeline" phx-value-action="train_micro" size={:sm} class="w-full">
                 Retrain all micro-classifiers (train_micro)
-              </button>
-              <button phx-click="run_pipeline" phx-value-action="train_framing" class="btn btn-sm btn-outline w-full">
+              </.btn>
+              <.btn phx-click="run_pipeline" phx-value-action="train_framing" size={:sm} class="w-full">
                 Retrain framing classifier (train_framing)
-              </button>
-              <button phx-click="run_pipeline" phx-value-action="tfidf" class="btn btn-sm btn-outline w-full">
+              </.btn>
+              <.btn phx-click="run_pipeline" phx-value-action="tfidf" size={:sm} class="w-full">
                 Retrain TF-IDF models (train)
-              </button>
+              </.btn>
             </div>
-          </div>
+          </.card>
 
-          <!-- Step 3: Reload -->
-          <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-            <div class="flex items-center gap-2 mb-3">
-              <span class="text-lg font-bold text-primary">3</span>
+          <!-- Reload -->
+          <.card class="p-space-lg">
+            <div class="flex items-center gap-space-sm mb-space-md">
+              <span class="text-heading tabular-nums text-ink-muted">3</span>
               <div>
-                <h3 class="text-sm font-semibold">Reload Models</h3>
-                <p class="text-[10px] text-base-content/40">Hot-reload trained models into running system</p>
+                <h3 class="text-subheading text-ink">Reload Models</h3>
+                <p class="text-caption text-ink-muted">Hot-reload trained models into running system</p>
               </div>
             </div>
-            <button phx-click="run_pipeline" phx-value-action="reload_models" class="btn btn-sm btn-primary w-full">
+            <.btn phx-click="run_pipeline" phx-value-action="reload_models" size={:sm} class="w-full">
               Reload all classifiers
-            </button>
-          </div>
+            </.btn>
+          </.card>
 
-          <!-- Step 4: Evaluate -->
-          <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-            <div class="flex items-center gap-2 mb-3">
-              <span class="text-lg font-bold text-primary">4</span>
+          <!-- Evaluate -->
+          <.card class="p-space-lg">
+            <div class="flex items-center gap-space-sm mb-space-md">
+              <span class="text-heading tabular-nums text-ink-muted">4</span>
               <div>
-                <h3 class="text-sm font-semibold">Evaluate</h3>
-                <p class="text-[10px] text-base-content/40">Run evaluation and save results</p>
+                <h3 class="text-subheading text-ink">Evaluate</h3>
+                <p class="text-caption text-ink-muted">Run evaluation and save results</p>
               </div>
             </div>
-            <div class="space-y-2">
-              <button :for={task <- ~w(intent ner sentiment speech_act)} phx-click="run_pipeline" phx-value-action="evaluate" phx-value-task={task} class="btn btn-sm btn-outline w-full">
+            <div class="space-y-space-sm">
+              <.btn :for={task <- ~w(intent ner sentiment speech_act)} phx-click="run_pipeline" phx-value-action="evaluate" phx-value-task={task} size={:sm} class="w-full">
                 Evaluate {task}
-              </button>
+              </.btn>
             </div>
-          </div>
+          </.card>
         </div>
 
         <!-- Recent pipeline activity (revision log) -->
-        <div :if={assigns[:recent_revisions] && @recent_revisions != []} class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <h3 class="text-sm font-semibold mb-2">Recent Edits</h3>
-          <div class="space-y-1">
-            <div :for={rev <- @recent_revisions} class="flex items-center gap-3 text-xs py-1 border-b border-base-300/20 last:border-0">
-              <span class="text-base-content/40 font-mono w-44 shrink-0">{Map.get(rev, "ts", "?")}</span>
-              <span class="font-medium">{Map.get(rev, "source_id", "?")}</span>
-              <span class="text-base-content/50">{Map.get(rev, "action", "?")}</span>
-              <span class="text-base-content/30 font-mono">{Map.get(rev, "before_hash", "")}&rarr;{Map.get(rev, "after_hash", "")}</span>
+        <.card :if={assigns[:recent_revisions] && @recent_revisions != []} class="p-space-lg">
+          <h3 class="text-subheading text-ink mb-space-sm">Recent Edits</h3>
+          <div class="space-y-space-xs">
+            <div :for={rev <- @recent_revisions} class="flex items-center gap-space-md text-caption py-space-xs border-b border-border last:border-0">
+              <span class="text-ref text-ink-muted w-44 shrink-0">{Map.get(rev, "ts", "?")}</span>
+              <span class="font-semibold text-ink">{Map.get(rev, "source_id", "?")}</span>
+              <span class="text-ink-muted">{Map.get(rev, "action", "?")}</span>
+              <span class="text-ref text-ink-muted">{Map.get(rev, "before_hash", "")}&rarr;{Map.get(rev, "after_hash", "")}</span>
             </div>
           </div>
-        </div>
+        </.card>
       </div>
     </main>
   </div>
