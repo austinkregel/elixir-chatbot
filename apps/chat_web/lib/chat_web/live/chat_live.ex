@@ -51,7 +51,10 @@ defmodule ChatWeb.ChatLive do
       |> assign(:world_models_loading, false)
       |> assign(:world_models_status, get_world_models_status(socket))
       |> assign(:inspector_correction_form, nil)
+      |> assign(:correction_error, nil)
       |> assign(:authority_profiles, [])
+      |> assign(:open_confirm, nil)
+      |> assign(:confirm_error, nil)
 
     {:ok, socket}
   end
@@ -204,24 +207,43 @@ defmodule ChatWeb.ChatLive do
     {:noreply, socket}
   end
 
+  # Ending a conversation, confirming and retracting a belief each write state
+  # every session reads, so each opens its `execute_confirm/1` panel first.
+  # `open_confirm` is the id of the one open panel; `confirm_error` is the
+  # failure it shows when its confirmation did not go through.
+  def handle_event("open_confirm", %{"id" => id}, socket) do
+    {:noreply, socket |> assign(:open_confirm, id) |> assign(:confirm_error, nil)}
+  end
+
+  def handle_event("close_confirm", _params, socket) do
+    {:noreply, close_confirm(socket)}
+  end
+
   def handle_event("end_conversation", _params, socket) do
-    if socket.assigns.current_conversation_id do
-      Brain.end_conversation(socket.assigns.current_conversation_id)
+    conversation_id = socket.assigns.current_conversation_id
 
-      socket =
-        socket
-        |> assign(:current_conversation_id, nil)
-        |> assign(:messages, [])
-        |> assign(
-          :conversations,
-          Enum.reject(
-            socket.assigns.conversations,
-            &(&1.id == socket.assigns.current_conversation_id)
-          )
-        )
-        |> assign(:error_message, nil)
+    if conversation_id do
+      case Brain.end_conversation(conversation_id) do
+        :ok ->
+          socket =
+            socket
+            |> assign(:current_conversation_id, nil)
+            |> assign(:messages, [])
+            |> assign(
+              :conversations,
+              Enum.reject(socket.assigns.conversations, &(&1.id == conversation_id))
+            )
+            |> assign(:error_message, nil)
+            |> close_confirm()
 
-      {:noreply, socket}
+          {:noreply, socket}
+
+        {:error, reason} ->
+          message =
+            "Could not end conversation #{String.slice(conversation_id, 0, 8)}: #{describe_reason(reason)}"
+
+          {:noreply, assign(socket, :confirm_error, message)}
+      end
     else
       {:noreply, socket}
     end
@@ -234,10 +256,10 @@ defmodule ChatWeb.ChatLive do
 
     case BeliefStore.confirm_belief(belief_id) do
       {:ok, _updated} ->
-        {:noreply, put_flash(socket, :info, "Belief confirmed")}
+        {:noreply, socket |> close_confirm() |> put_flash(:info, "Belief confirmed")}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to confirm: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Could not confirm this belief: #{describe_reason(reason)}")}
     end
   end
 
@@ -246,10 +268,10 @@ defmodule ChatWeb.ChatLive do
 
     case BeliefStore.retract_belief(belief_id) do
       :ok ->
-        {:noreply, put_flash(socket, :info, "Belief retracted")}
+        {:noreply, socket |> close_confirm() |> put_flash(:info, "Belief retracted")}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to retract: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Could not retract this belief: #{describe_reason(reason)}")}
     end
   end
 
@@ -270,13 +292,14 @@ defmodule ChatWeb.ChatLive do
     socket =
       socket
       |> assign(:inspector_correction_form, form)
+      |> assign(:correction_error, nil)
       |> assign(:authority_profiles, authority_profiles)
 
     {:noreply, socket}
   end
 
   def handle_event("cancel_correction_form", _params, socket) do
-    {:noreply, assign(socket, :inspector_correction_form, nil)}
+    {:noreply, socket |> assign(:inspector_correction_form, nil) |> assign(:correction_error, nil)}
   end
 
   def handle_event("submit_correction_belief", params, socket) do
@@ -314,17 +337,37 @@ defmodule ChatWeb.ChatLive do
           socket =
             socket
             |> assign(:inspector_correction_form, nil)
+            |> assign(:correction_error, nil)
             |> put_flash(:info, "Guided belief added (#{authority})")
 
           {:noreply, socket}
 
         {:error, reason} ->
-          {:noreply, put_flash(socket, :error, "Failed: #{inspect(reason)}")}
+          {:noreply, keep_correction_form(socket, params, "Could not add this belief: #{describe_reason(reason)}")}
       end
     else
-      {:noreply, put_flash(socket, :error, "Predicate and object are required")}
+      {:noreply, keep_correction_form(socket, params, "Predicate and object are required.")}
     end
   end
+
+  # A failed add keeps the form open with what the person entered and the
+  # failure in the same panel.
+  defp keep_correction_form(socket, params, error) do
+    form = Map.merge(socket.assigns.inspector_correction_form, Map.take(params, ["subject", "predicate", "object", "authority"]))
+
+    socket
+    |> assign(:inspector_correction_form, form)
+    |> assign(:correction_error, error)
+  end
+
+  defp close_confirm(socket) do
+    socket
+    |> assign(:open_confirm, nil)
+    |> assign(:confirm_error, nil)
+  end
+
+  defp describe_reason(reason) when is_binary(reason), do: reason
+  defp describe_reason(reason), do: inspect(reason)
 
   defp reset_for_world_change(socket) do
     socket
@@ -739,11 +782,7 @@ defmodule ChatWeb.ChatLive do
 
       :discourse_complete ->
         addr = step[:addressee] || step["addressee"]
-        conf = step[:confidence] || step["confidence"]
-        parts = []
-        parts = if addr, do: parts ++ ["→ #{addr}"], else: parts
-        parts = if conf != nil, do: parts ++ [score_text(conf, :unestablished)], else: parts
-        Enum.join(parts, " ")
+        if addr, do: "→ #{addr}", else: ""
 
       :speech_act_complete ->
         cat = step[:category] || step["category"]
@@ -758,11 +797,7 @@ defmodule ChatWeb.ChatLive do
 
       :sentiment_complete ->
         label = step[:label] || step["label"]
-        conf = step[:confidence] || step["confidence"]
-        parts = []
-        parts = if label, do: parts ++ ["#{label}"], else: parts
-        parts = if conf != nil, do: parts ++ [score_text(conf, :unestablished)], else: parts
-        Enum.join(parts, " ")
+        if label, do: "#{label}", else: ""
 
       :entities_extracted ->
         count = step[:entity_count] || step["entity_count"] || 0
@@ -775,11 +810,9 @@ defmodule ChatWeb.ChatLive do
       :intent_determined ->
         intent = step[:intent] || step["intent"]
         method = step[:intent_method] || step["intent_method"]
-        conf = step[:intent_confidence] || step["intent_confidence"]
         parts = []
         parts = if intent, do: parts ++ ["#{intent}"], else: parts
         parts = if method, do: parts ++ ["via #{method}"], else: parts
-        parts = if conf != nil, do: parts ++ ["(#{score_text(conf, :unestablished)})"], else: parts
         Enum.join(parts, " ")
 
       :entities_filtered ->
@@ -823,12 +856,7 @@ defmodule ChatWeb.ChatLive do
       :memory_query ->
         count = step[:match_count] || step["match_count"] || 0
 
-        if count > 0 do
-          sim = step[:top_similarity] || step["top_similarity"]
-          "#{count} match(es), top #{score_text(sim, :cosine_similarity)}"
-        else
-          "no matches"
-        end
+        if count > 0, do: "#{count} match(es)", else: "no matches"
 
       :response_generated ->
         type = step[:response_type] || step["response_type"]
@@ -879,20 +907,179 @@ defmodule ChatWeb.ChatLive do
 
   def stage_detail(_), do: ""
 
-  # Badge variant per response strategy. The strategies are the pipeline's
+  @doc """
+  The score a progress step carries, beside its `stage_detail/1` text: `nil`
+  for a step without one, `{:score, kind, value, prefix}` for a scored step,
+  or `{:intent, method, confidence}` for an intent, whose kind depends on the
+  method that chose it.
+  """
+  def stage_score_spec(step) when is_map(step) do
+    case step_value(step, :step) do
+      :discourse_complete -> present_score(:mapped_confidence, step_value(step, :confidence), nil)
+      :sentiment_complete -> present_score(:cosine_similarity, step_value(step, :confidence), nil)
+      :intent_determined -> intent_spec(step_value(step, :intent_method), step_value(step, :intent_confidence))
+      :memory_query -> memory_spec(step_value(step, :match_count) || 0, step_value(step, :top_similarity))
+      _ -> nil
+    end
+  end
+
+  def stage_score_spec(_), do: nil
+
+  defp present_score(_kind, nil, _prefix), do: nil
+  defp present_score(kind, value, prefix), do: {:score, kind, value, prefix}
+
+  defp intent_spec(nil, _confidence), do: nil
+  defp intent_spec(method, confidence), do: {:intent, method, confidence}
+
+  defp memory_spec(count, similarity) when count > 0, do: {:score, :cosine_similarity, similarity, "top"}
+  defp memory_spec(_count, _similarity), do: nil
+
+  defp step_value(step, key), do: step[key] || step[Atom.to_string(key)]
+
+  attr(:spec, :any, required: true)
+
+  defp stage_score(%{spec: {:score, kind, value, prefix}} = assigns) do
+    assigns = assign(assigns, kind: kind, value: value, prefix: prefix)
+
+    ~H"""
+    <span class="inline-flex items-baseline gap-space-xs">
+      <span :if={@prefix}>{@prefix}</span>
+      <.score_display value={@value} kind={@kind} />
+    </span>
+    """
+  end
+
+  defp stage_score(%{spec: {:intent, method, confidence}} = assigns) do
+    assigns = assign(assigns, method: method, confidence: confidence)
+
+    ~H"""
+    <.intent_confidence method={@method} confidence={@confidence} />
+    """
+  end
+
+  @speech_act_intent_methods [:speech_act, :speech_act_fallback]
+
+  # An intent's confidence takes its kind from the method that chose the
+  # intent (`Brain.Analysis.Pipeline.determine_intent/6`):
+  # `:atlas_disambiguation` returns a lattice candidate's confidence reranked
+  # by graph context; `:classifier` returns `intent_confidence || confidence`
+  # from the speech act, a model confidence or a weighted vote, and the
+  # returned shape does not say which; the speech-act methods return none.
+  attr(:method, :atom, required: true)
+  attr(:confidence, :any, required: true)
+
+  defp intent_confidence(%{method: :atlas_disambiguation} = assigns) do
+    ~H"""
+    <.score_display value={@confidence} kind={:reranked_confidence} />
+    """
+  end
+
+  defp intent_confidence(%{method: :classifier} = assigns) do
+    ~H"""
+    <.score_display value={@confidence} kind={:unestablished} candidates="model confidence or weighted vote" />
+    """
+  end
+
+  defp intent_confidence(%{method: method, confidence: nil} = assigns)
+       when method in @speech_act_intent_methods do
+    ~H"""
+    <.no_confidence method={Atom.to_string(@method)} />
+    """
+  end
+
+  defp intent_confidence(%{method: method, confidence: confidence}) do
+    raise ArgumentError,
+          "ChatWeb.ChatLive.intent_confidence/1: no treatment for intent method #{inspect(method)} " <>
+            "with confidence #{inspect(confidence)}. :atlas_disambiguation and :classifier return a " <>
+            "confidence; #{inspect(@speech_act_intent_methods)} return none."
+  end
+
+  # A gazetteer entity's confidence is a match confidence: the match's base
+  # confidence times the probability that the span is not an ordinary word
+  # (`Brain.Analysis.EntityTypeScorer`). Every other source sets a value fixed
+  # by its extraction rule, and which rule produced which source is not
+  # recorded, so its kind is not established.
+  attr(:source, :any, required: true)
+  attr(:confidence, :any, required: true)
+
+  defp entity_confidence(%{source: :gazetteer} = assigns) do
+    ~H"""
+    <.score_display value={@confidence} kind={:match_confidence} />
+    """
+  end
+
+  defp entity_confidence(assigns) do
+    ~H"""
+    <.score_display value={@confidence} kind={:unestablished} />
+    """
+  end
+
+  # An event's confidence is its completeness (`Brain.Analysis.EventExtractor`):
+  # 0.5, plus 0.2 for an actor, 0.2 for an object and 0.1 for a verb tagged
+  # VERB. Events are built only at VERB-tagged positions, so the verb is
+  # always one of the parts found; the actor and object are found when the
+  # event carries them.
+  attr(:event, :map, required: true)
+
+  defp event_confidence(assigns) do
+    event = assigns.event
+
+    parts =
+      [
+        {"actor", event[:actor] || event["actor"]},
+        {"object", event[:object] || event["object"]},
+        {"verb", true}
+      ]
+      |> Enum.filter(fn {_part, found} -> found end)
+      |> Enum.map(fn {part, _found} -> part end)
+
+    assigns =
+      assigns
+      |> assign(:value, event[:confidence] || event["confidence"])
+      |> assign(:parts, parts)
+
+    ~H"""
+    <.score_display value={@value} kind={:completeness} parts={@parts} />
+    """
+  end
+
+  # A fact verification's result. The confidence a verified fact carries has
+  # no kind established from `Brain.FactIntegration.verify_fact/2`.
+  attr(:verification, :any, required: true)
+
+  defp verification_result(%{verification: {:verified, confidence}} = assigns) when is_number(confidence) do
+    assigns = assign(assigns, :confidence, confidence)
+
+    ~H"""
+    <span class="inline-flex flex-wrap items-baseline gap-x-space-xs">
+      <span>Verified</span>
+      <.score_display value={@confidence} kind={:unestablished} />
+    </span>
+    """
+  end
+
+  defp verification_result(assigns) do
+    ~H"""
+    <span>{format_verification(@verification)}</span>
+    """
+  end
+
+  # Badge variant per response strategy. A strategy is a choice the system
+  # made, not a fault, so every strategy is ink and its name says which.
+  # The strategies are the pipeline's
   # (`Brain.Analysis.InternalModel.response_strategy/0`), the response gate's
   # `:response_optional` and `:response_deferred`, and ProcessingTrace's
   # `:low_confidence`; `nil` is a strategy that was not reported.
   @strategy_badge_variants %{
     can_respond: :success,
-    hedged_response: :default,
-    needs_clarification: :warning,
-    partial_response_with_clarification: :info,
-    cannot_respond: :error,
-    defer_to_user: :default,
-    response_optional: :default,
-    response_deferred: :default,
-    low_confidence: :warning,
+    hedged_response: :success,
+    needs_clarification: :success,
+    partial_response_with_clarification: :success,
+    cannot_respond: :success,
+    defer_to_user: :success,
+    response_optional: :success,
+    response_deferred: :success,
+    low_confidence: :success,
     nil: :default
   }
 
@@ -1395,9 +1582,8 @@ defmodule ChatWeb.ChatLive do
             <%= for {analyzer, idx} <- Enum.with_index(@trace.analyzers) do %>
               <div class="flex items-center gap-space-sm">
                 <div class="w-24 truncate text-ink-muted">{analyzer.analyzer}</div>
-                <div class="flex-1 flex items-center gap-space-xs min-w-0">
-                  <.score_bar value={analyzer.calibrated} kind={:analyzer_activation} />
-                  <.score value={analyzer.calibrated} kind={:analyzer_activation} />
+                <div class="flex-1 min-w-0">
+                  <.score_display value={analyzer.calibrated} kind={:analyzer_activation} form={:bar} />
                 </div>
                 <%= if idx == 0 do %>
                   <.badge variant={:primary} size={:xs}>Winner</.badge>
@@ -1418,7 +1604,7 @@ defmodule ChatWeb.ChatLive do
             <%= for alt <- @trace.alternatives do %>
               <.badge>
                 {alt.intent}
-                <.score value={alt.activation} kind={:activation} />
+                <.score_display value={alt.activation} kind={:activation} />
               </.badge>
             <% end %>
           </div>
@@ -1439,7 +1625,7 @@ defmodule ChatWeb.ChatLive do
                 <div class="flex items-center gap-space-xs">
                   <.badge size={:xs} class="border border-border-strong">{entity.type}</.badge>
                   <%= if confidence != nil do %>
-                    <.score value={confidence} kind={:unestablished} />
+                    <.entity_confidence source={Map.get(entity, :source)} confidence={confidence} />
                   <% end %>
                   <span class="text-ink truncate">{entity.value}</span>
                 </div>
@@ -1507,7 +1693,7 @@ defmodule ChatWeb.ChatLive do
       <div class="mt-space-sm pt-space-sm border-t border-border flex items-center justify-between text-ink-muted">
         <div class="flex items-center gap-space-sm">
           <span>Total Activation:</span>
-          <.score value={@trace.total_activation} kind={:activation_sum} />
+          <.score_display value={@trace.total_activation} kind={:activation_sum} />
           <%= if @trace.was_normalized do %>
             <.badge variant={:warning} size={:xs}>Normalized</.badge>
           <% end %>
@@ -1519,12 +1705,13 @@ defmodule ChatWeb.ChatLive do
   end
 
   # Badge variant per `Brain.Analysis.Interpretation.confidence_level/1`, which
-  # buckets an interpretation's activation into these four levels.
+  # buckets an interpretation's activation into these four levels. A very low
+  # activation is a measurement, not a breakage, so it takes no red.
   @confidence_level_variants %{
     high: :success,
     medium: :info,
     low: :warning,
-    very_low: :error
+    very_low: :default
   }
 
   attr(:level, :atom, required: true)
@@ -1547,15 +1734,14 @@ defmodule ChatWeb.ChatLive do
     ~H"""
     <.badge variant={@variant}>
       <span class="text-value">{@confidence}</span>
-      <span class="font-normal">{score_kind!(:activation).label}</span>
+      <span class="font-normal">activation</span>
       <span>· {String.replace(Atom.to_string(@level), "_", " ")}</span>
     </.badge>
     """
   end
 
-  # What each number on this page is, per the score kinds of the Retroduct
-  # design language. `:unit` kinds lie in 0..1 and may be drawn on a bar;
-  # the others are never drawn on a 0..1 scale.
+  # The producers behind the score kinds this page passes to
+  # `ChatWeb.UI.score_display/1`, beyond those named where they are shown:
   #
   # - `:weighted_vote`: the speech-act combiner's clamped weighted vote
   #   (`Brain.Analysis.SpeechActClassifier`).
@@ -1576,87 +1762,6 @@ defmodule ChatWeb.ChatLive do
   #   (`Brain.Analysis.Pipeline` via `ContextAccumulator.effective_confidence/1`).
   # - `:unestablished`: a confidence whose kind has not been established from
   #   its producer, shown as such rather than as a probability.
-  @score_kinds %{
-    weighted_vote: %{label: "weighted vote", range: :unit},
-    cosine_similarity: %{label: "cosine similarity", range: :signed_unit},
-    raw_score: %{label: "raw score", range: :source_specific},
-    analyzer_activation: %{label: "analyzer activation", range: :unit},
-    activation: %{label: "activation", range: :unit},
-    activation_sum: %{label: "sum of activations", range: :unbounded},
-    accumulated_confidence: %{label: "accumulated confidence", range: :unit},
-    unestablished: %{label: "confidence, kind not established", range: :unit}
-  }
-
-  defp score_kind!(kind) do
-    case Map.fetch(@score_kinds, kind) do
-      {:ok, score_kind} ->
-        score_kind
-
-      :error ->
-        raise ArgumentError,
-              "ChatWeb.ChatLive: no score kind #{inspect(kind)}. " <>
-                "The kinds are #{inspect(Map.keys(@score_kinds))}."
-    end
-  end
-
-  defp format_score(value, _kind) when is_number(value) do
-    :erlang.float_to_binary(value * 1.0, decimals: 2)
-  end
-
-  defp format_score(value, kind) do
-    raise ArgumentError,
-          "ChatWeb.ChatLive: a #{inspect(kind)} score must be a number, got #{inspect(value)}."
-  end
-
-  @doc false
-  def score_text(value, kind) do
-    "#{format_score(value, kind)} #{score_kind!(kind).label}"
-  end
-
-  attr(:value, :any, required: true)
-  attr(:kind, :atom, required: true)
-  attr(:class, :string, default: nil)
-
-  defp score(assigns) do
-    assigns =
-      assigns
-      |> assign(:label, score_kind!(assigns.kind).label)
-      |> assign(:formatted, format_score(assigns.value, assigns.kind))
-
-    ~H"""
-    <span class={["inline-flex flex-wrap items-baseline gap-x-space-xs", @class]}>
-      <span class="text-value text-ink">{@formatted}</span>
-      <span class="text-caption font-normal text-ink-muted">{@label}</span>
-    </span>
-    """
-  end
-
-  attr(:value, :any, required: true)
-  attr(:kind, :atom, required: true)
-
-  defp score_bar(assigns) do
-    %{range: range} = score_kind!(assigns.kind)
-
-    unless range == :unit do
-      raise ArgumentError,
-            "ChatWeb.ChatLive.score_bar/1: a #{inspect(assigns.kind)} score is #{inspect(range)}, " <>
-              "and only a 0..1 score is drawn on a bar."
-    end
-
-    unless is_number(assigns.value) and assigns.value >= 0 and assigns.value <= 1 do
-      raise ArgumentError,
-            "ChatWeb.ChatLive.score_bar/1: a #{inspect(assigns.kind)} score must lie in 0..1, " <>
-              "got #{inspect(assigns.value)}."
-    end
-
-    assigns = assign(assigns, :width, Float.round(assigns.value * 100.0, 1))
-
-    ~H"""
-    <div class="flex-1 h-space-sm rounded-sm bg-score-track">
-      <div class="h-full rounded-sm border border-score-heuristic" style={"width: #{@width}%"}></div>
-    </div>
-    """
-  end
 
   def format_strategy(:can_respond) do
     "Ready"
@@ -1817,13 +1922,21 @@ defmodule ChatWeb.ChatLive do
   # `Brain.Analysis.Pipeline.verify_facts_in_chunk/4` reports, plus `nil` for a
   # chunk whose verification was not reported. Every status is printed as a
   # word beside its treatment, so none rests on color alone. A verified fact is
-  # not a test verdict, so it takes ink, not the pass green.
+  # not a test verdict, so it takes ink, not the pass green. A contradicted
+  # fact asks the reader to look but is not a breakage, so it takes the ochre
+  # attention treatment with the attention triangle, not red; it is the
+  # strongest finding here, so it draws at least as much attention as an
+  # uncertain one.
   @epistemic_status_treatments %{
-    verified: %{text: "text-ink font-semibold", panel: "bg-surface-sunk border-border-strong"},
-    contradicted: %{text: "text-red font-semibold", panel: "bg-red-wash border-red"},
-    uncertain: %{text: "text-ochre font-semibold", panel: "bg-ochre-wash border-ochre"},
-    unchecked: %{text: "text-ink-muted", panel: "bg-surface-sunk border-border"},
-    nil: %{text: "text-ink-muted", panel: "bg-surface-sunk border-border"}
+    verified: %{text: "text-ink font-semibold", panel: "bg-surface-sunk border-border-strong", icon: nil},
+    contradicted: %{
+      text: "text-ochre font-semibold",
+      panel: "bg-ochre-wash border-ochre",
+      icon: "hero-exclamation-triangle"
+    },
+    uncertain: %{text: "text-ochre font-semibold", panel: "bg-ochre-wash border-ochre", icon: nil},
+    unchecked: %{text: "text-ink-muted", panel: "bg-surface-sunk border-border", icon: nil},
+    nil: %{text: "text-ink-muted", panel: "bg-surface-sunk border-border", icon: nil}
   }
 
   defp epistemic_status_treatment!(status) do
@@ -1838,9 +1951,24 @@ defmodule ChatWeb.ChatLive do
     end
   end
 
-  def epistemic_status_class(status), do: epistemic_status_treatment!(status).text
-
   def epistemic_panel_class(status), do: epistemic_status_treatment!(status).panel
+
+  # The status word in its treatment, after its glyph when the status has one.
+  # A missing status reads "unchecked".
+  attr :status, :atom, required: true
+  attr :class, :any, default: nil
+
+  def epistemic_status_label(assigns) do
+    treatment = epistemic_status_treatment!(assigns.status)
+    assigns = assign(assigns, :treatment, treatment)
+
+    ~H"""
+    <span class={["inline-flex items-center gap-space-2xs", @treatment.text, @class]}>
+      <.icon :if={@treatment.icon} name={@treatment.icon} class="size-3 shrink-0" />
+      {@status || "unchecked"}
+    </span>
+    """
+  end
 
   # Step-number indicator and status badge per response-path step status, the
   # two statuses `Brain` records in a response path.
@@ -1865,7 +1993,6 @@ defmodule ChatWeb.ChatLive do
   end
 
   def format_verification(nil), do: "-"
-  def format_verification({:verified, conf}) when is_number(conf), do: "Verified (#{score_text(conf, :unestablished)})"
   def format_verification({:contradicted, beliefs}) when is_list(beliefs), do: "Contradicted (#{length(beliefs)} conflicts)"
   def format_verification({:uncertain, reason}), do: "Uncertain: #{reason}"
   def format_verification(_), do: "-"
