@@ -320,14 +320,14 @@
   "music.play": {
     "templates": [
       {
-        "condition": "has_entity:music-artist",
+        "condition": "has_entity:music_artist",
         "source": "custom",
-        "text": "Playing $music-artist for you."
+        "text": "Playing $music_artist for you."
       },
       {
-        "condition": "has_entity:music-album",
+        "condition": "has_entity:music_album",
         "source": "custom",
-        "text": "Playing $music-album."
+        "text": "Playing $music_album."
       },
       {
         "condition": null,
