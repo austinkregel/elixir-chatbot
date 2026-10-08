@@ -44,8 +44,17 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   ## Options
 
   - `:world_id` -- World scope for TypeInferrer (default: "default")
+  - `:intent_confidence` -- required: the current intent's confidence, or `nil`
+    when the intent was decided without one. Another intent's hypothesis
+    replaces the current intent only when it scores higher than this; with
+    `nil` there is nothing to compare against, so only the current intent's
+    own hypothesis is applied and the intent never changes.
+  - `:side_effects` -- required boolean. Narrowings teach `World.TypeInferrer`
+    and become `World.Manager` entity candidates only when `true`; an
+    evaluation or measurement run passes `false` and writes nothing.
   """
   def infer(text, entities, intent, intent_details, opts \\ []) do
+    intent_confidence = Keyword.fetch!(opts, :intent_confidence)
     narrowable = find_narrowable_entities(entities, intent, intent_details)
 
     if narrowable == [] do
@@ -62,6 +71,9 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
           )
         end)
         |> Enum.reject(&is_nil/1)
+        |> then(fn hs ->
+          if is_number(intent_confidence), do: hs, else: Enum.filter(hs, &(&1.intent == intent))
+        end)
 
       case select_best_hypothesis(hypotheses) do
         nil ->
@@ -443,8 +455,14 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
         end
       end)
 
+    # The current intent's confidence comes from the caller. It was read from
+    # intent_details, which never carries it, so it was always 0.0 and any other
+    # intent whose hypothesis found a narrowing replaced the classifier's.
+    current_confidence = Keyword.fetch!(opts, :intent_confidence)
+
     updated_intent =
-      if hypothesis.intent != current_intent and hypothesis.intent_score > (Map.get(current_details, :intent_confidence) || 0.0) do
+      if hypothesis.intent != current_intent and is_number(current_confidence) and
+           hypothesis.intent_score > current_confidence do
         hypothesis.intent
       else
         current_intent
@@ -468,7 +486,9 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
         "ContextualEntityInferrer: narrowed #{narrowed_count} entities for intent #{updated_intent}"
       )
 
-      report_narrowings_for_learning(hypothesis.narrowings, text, Keyword.get(opts, :world_id, "default"))
+      if Keyword.fetch!(opts, :side_effects) do
+        report_narrowings_for_learning(hypothesis.narrowings, text, Keyword.get(opts, :world_id, "default"))
+      end
     end
 
     {updated_entities, updated_intent, updated_details}
