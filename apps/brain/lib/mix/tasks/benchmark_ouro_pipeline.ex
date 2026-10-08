@@ -19,8 +19,8 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
       mix benchmark_ouro_pipeline --runs 5     # Repeat each measurement N times (default 3)
 
   Every stage runs with side effects off: conversations are created with
-  `side_effects: false`, and the packet and refinement stages pass the same
-  option, so a run writes nothing to the stores, the graph or disk.
+  `side_effects: false`, and the refinement stages pass the same option, so a
+  run writes nothing to the stores, the graph or disk.
   """
 
   use Mix.Task
@@ -124,7 +124,7 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
 
     analysis = build_test_chunk_analysis()
     primitives = build_test_primitives()
-    messages = Brain.Response.RealizationPacket.build(primitives, analysis, side_effects: false)
+    messages = Brain.Response.RealizationPacket.build(primitives, analysis, [])
 
     info("  --- Chat template as sent to format_chatml ---")
     Enum.each(messages, fn %{role: role, content: content} ->
@@ -266,7 +266,7 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
     primitives = build_test_primitives()
 
     messages =
-      Brain.Response.RealizationPacket.build(primitives, analysis, side_effects: false)
+      Brain.Response.RealizationPacket.build(primitives, analysis, [])
 
     info("  Packet size: #{Jason.encode!(messages) |> byte_size()} bytes")
     info("")
