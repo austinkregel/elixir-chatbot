@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.GenerateNewsSources do
   @moduledoc """
-  Generate a bounded news-source entity list from Wikidata (CC0).
+  Generate a bounded news_source entity list from Wikidata (CC0).
 
   This task is designed to produce a *reasonable* list (hundreds to low thousands)
   rather than an exhaustive corpus, keeping gazetteer size and false-positives manageable.
@@ -13,7 +13,7 @@ defmodule Mix.Tasks.GenerateNewsSources do
 
     --limit N             Max number of sources to include (default: 1000)
     --download            Force re-download (ignore cached response)
-    --output PATH         Output JSON path (default: data/entities/news-source_entries_en.json)
+    --output PATH         Output JSON path (default: data/entities/news_source_entries_en.json)
 
   ## Data Source
 
@@ -23,10 +23,10 @@ defmodule Mix.Tasks.GenerateNewsSources do
   use Mix.Task
   require Logger
 
-  @shortdoc "Generate news-source entities from Wikidata"
+  @shortdoc "Generate news_source entities from Wikidata"
 
   @default_limit 1000
-  @default_output "data/entities/news-source_entries_en.json"
+  @default_output "data/entities/news_source_entries_en.json"
   @cache_dir "priv/data_cache"
   @cache_file "wikidata_news_sources.json"
 
@@ -49,7 +49,7 @@ defmodule Mix.Tasks.GenerateNewsSources do
     force_download = Keyword.get(opts, :download, false)
     output_path = Keyword.get(opts, :output, @default_output)
 
-    Mix.shell().info("Generating news-source entities from Wikidata...")
+    Mix.shell().info("Generating news_source entities from Wikidata...")
     Mix.shell().info("  Limit: #{limit}")
     Mix.shell().info("  Output: #{output_path}")
     Mix.shell().info("")
@@ -72,7 +72,7 @@ defmodule Mix.Tasks.GenerateNewsSources do
 
     write_json(entries, output_path)
 
-    Mix.shell().info("Successfully generated #{length(entries)} news-source entries")
+    Mix.shell().info("Successfully generated #{length(entries)} news_source entries")
     Mix.shell().info("Next steps:")
     Mix.shell().info("  1. Restart the app; the gazetteer is rebuilt from data/entities at startup")
   end
