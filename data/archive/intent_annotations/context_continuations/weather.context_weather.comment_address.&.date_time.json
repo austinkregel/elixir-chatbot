@@ -28,7 +28,7 @@
       }
     ],
     "id": "6fa1145a-18e3-4c85-9bc1-f2a6df219319",
-    "intent": "weather.context_weather.comment_address.&.date-time"
+    "intent": "weather.context_weather.comment_address.&.date_time"
   },
   {
     "text": "in Moscow this weekend",
@@ -59,7 +59,7 @@
       }
     ],
     "id": "1942f085-b095-4ee4-908f-6c0748410051",
-    "intent": "weather.context_weather.comment_address.&.date-time"
+    "intent": "weather.context_weather.comment_address.&.date_time"
   },
   {
     "text": "and what about Paris next Friday",
@@ -94,7 +94,7 @@
       }
     ],
     "id": "8413e5f0-7895-4629-8150-c2d89888ac23",
-    "intent": "weather.context_weather.comment_address.&.date-time"
+    "intent": "weather.context_weather.comment_address.&.date_time"
   },
   {
     "text": "tomorrow in Madrid",
@@ -123,6 +123,6 @@
       }
     ],
     "id": "120f6032-cda8-4cb5-a9ee-63ada1ef353f",
-    "intent": "weather.context_weather.comment_address.&.date-time"
+    "intent": "weather.context_weather.comment_address.&.date_time"
   }
 ]
