@@ -104,9 +104,9 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
   describe "invariant: proper-noun identity does not change ChunkProfile.domain" do
     test "'My name is <PERSON>.' yields the same :domain for every person" do
       names = ["Austin Kregel", "Jane Smith", "Ravi Patel", "Yuki Nakamura"]
-      domains = domains_for_template("My name is ", ".", names)
-
-      refute_all_default(domains, :unknown, :domain)
+      profiles = profiles_for_template("My name is ", ".", names)
+      assert_computed(profiles, :domain, names)
+      domains = Enum.map(profiles, & &1.domain)
 
       assert length(Enum.uniq(domains)) == 1,
              "domain swung across name permutations. pairs: " <>
@@ -115,9 +115,9 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
 
     test "'I live in <LOCATION>.' yields the same :domain for every location" do
       places = ["Owosso Michigan", "Tokyo Japan", "Madrid Spain", "Accra Ghana"]
-      domains = domains_for_template("I live in ", ".", places)
-
-      refute_all_default(domains, :unknown, :domain)
+      profiles = profiles_for_template("I live in ", ".", places)
+      assert_computed(profiles, :domain, places)
+      domains = Enum.map(profiles, & &1.domain)
 
       assert length(Enum.uniq(domains)) == 1,
              "domain swung across location permutations. pairs: " <>
@@ -146,9 +146,9 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
         "the matter"
       ]
 
-      domains = domains_for_template("Can you help me understand ", "?", topics)
-
-      refute_all_default(domains, :unknown, :domain)
+      profiles = profiles_for_template("Can you help me understand ", "?", topics)
+      assert_computed(profiles, :domain, topics)
+      domains = Enum.map(profiles, & &1.domain)
 
       assert length(Enum.uniq(domains)) == 1,
              "domain swung across domain-neutral topic permutations. pairs: " <>
@@ -162,35 +162,13 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
 
       profiles = profiles_for_template("My name is ", ".", names)
 
-      # Guard against false-green: at least one axis must return a non-default
-      # on at least one permutation. Otherwise the classifier isn't engaging.
-      nondefault_observed? =
-        [
-          {:tense, :present},
-          {:aspect, :simple},
-          {:urgency, :low},
-          {:certainty, :committed}
-        ]
-        |> Enum.any?(fn {axis, default} ->
-          profiles |> Enum.map(&Map.get(&1, axis)) |> Enum.any?(&(&1 != default))
-        end)
-
-      assert nondefault_observed?,
-             "Every axis returned its default for every permutation. " <>
-               "No trained axis classifier is engaging. " <>
-               "Run `mix gen_micro_data && mix train_micro` and retry."
+      for axis <- [:tense, :aspect, :urgency, :certainty], do: assert_computed(profiles, axis, names)
 
       assert_axis_stable(profiles, :tense, names)
       assert_axis_stable(profiles, :aspect, names)
       assert_axis_stable(profiles, :urgency, names)
       assert_axis_stable(profiles, :certainty, names)
     end
-  end
-
-  defp domains_for_template(prefix, suffix, fillers) do
-    prefix
-    |> profiles_for_template(suffix, fillers)
-    |> Enum.map(& &1.domain)
   end
 
   defp profiles_for_template(prefix, suffix, fillers) when is_list(fillers) do
@@ -212,14 +190,21 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
              inspect(Enum.zip(fillers, values))
   end
 
-  # Guards against a false-green: if no trained classifier is loaded, every
-  # permutation returns the axis default, and the uniqueness check passes
-  # vacuously. Force the test to fail loudly in that case.
-  defp refute_all_default(values, default, axis) do
-    refute Enum.all?(values, &(&1 == default)),
-           "axis #{inspect(axis)} returned its default (#{inspect(default)}) for " <>
-             "every permutation. This usually means no trained model is loaded. " <>
-             "Run `mix gen_micro_data && mix train_micro` with the new " <>
-             "feature-vector classifier, then rerun this test."
+  # Guards against a false-green: a stability check passes vacuously when no
+  # classifier answered and every permutation holds the axis default. Asks the
+  # profile's provenance whether the axis was computed, rather than whether the
+  # value differs from the default -- a computed axis can legitimately land on
+  # its default ("My name is X." is present tense), which the value cannot tell
+  # apart from a classifier that never ran.
+  defp assert_computed(profiles, axis, fillers) do
+    not_computed =
+      for {profile, filler} <- Enum.zip(profiles, fillers),
+          not ChunkProfile.computed?(profile, axis),
+          do: {filler, ChunkProfile.default_reason(profile, axis)}
+
+    assert not_computed == [],
+           "axis #{inspect(axis)} was not computed (it holds #{inspect(ChunkProfile.axis_default(axis))}) " <>
+             "for: #{inspect(not_computed)}. Promote the trained classifiers with " <>
+             "`MIX_ENV=test mix test.models` and rerun."
   end
 end
