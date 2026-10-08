@@ -24,6 +24,7 @@ defmodule Brain.Application do
       Brain.Services.CredentialVault,
       Brain.Services.Cache,
       Brain.ML.Lexicon,
+      Brain.ML.POSTagger.LexicalFeatures,
       Brain.Lexicon.Loader,
       Brain.Lexicon.UserDefined,
       Brain.ML.InformalExpansions,
