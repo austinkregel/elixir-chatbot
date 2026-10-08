@@ -81,8 +81,8 @@
   {
     "text": "for speakers too",
     "sources": [
-      "smarthome.device.volume - context_device-volume - comment_device_usersays_en.json",
-      "smarthome.device.volume.check - context_volume-check - comment_device_usersays_en.json"
+      "smarthome.device.volume - context_device_volume - comment_device_usersays_en.json",
+      "smarthome.device.volume.check - context_volume_check - comment_device_usersays_en.json"
     ],
     "candidates": [
       "smarthome.device.volume",
@@ -151,8 +151,8 @@
   {
     "text": "in the kitchen",
     "sources": [
-      "smarthome.device.volume - context_device-volume - comment_room_usersays_en.json",
-      "smarthome.device.volume.check - context_volume-check - comment_room_usersays_en.json"
+      "smarthome.device.volume - context_device_volume - comment_room_usersays_en.json",
+      "smarthome.device.volume.check - context_volume_check - comment_room_usersays_en.json"
     ],
     "candidates": [
       "smarthome.device.volume",
@@ -184,8 +184,8 @@
   {
     "text": "it's dark here",
     "sources": [
-      "smarthome.device.brightness.up - context_device-brightness - comment_not bright enough_usersays_en.json",
-      "smarthome.lights.brightness.up - context_lights-brightness - comment_not bright enough_usersays_en.json",
+      "smarthome.device.brightness.up - context_device_brightness - comment_not bright enough_usersays_en.json",
+      "smarthome.lights.brightness.up - context_lights_brightness - comment_not bright enough_usersays_en.json",
       "smarthome.lights.brightness.up.implicit_usersays_en.json"
     ],
     "candidates": [
@@ -196,9 +196,9 @@
   {
     "text": "it's too bright",
     "sources": [
-      "smarthome.device.brightness.down - context_device-brightness - comment_not dim enough_usersays_en.json",
+      "smarthome.device.brightness.down - context_device_brightness - comment_not dim enough_usersays_en.json",
       "smarthome.device.brightness.down.implicit_usersays_en.json",
-      "smarthome.lights.brightness.down - context_lights-brightness - comment_not dim enough_usersays_en.json",
+      "smarthome.lights.brightness.down - context_lights_brightness - comment_not dim enough_usersays_en.json",
       "smarthome.lights.brightness.down.implicit_usersays_en.json"
     ],
     "candidates": [
@@ -209,8 +209,8 @@
   {
     "text": "it's too dark",
     "sources": [
-      "smarthome.device.brightness.up - context_device-brightness - comment_not bright enough_usersays_en.json",
-      "smarthome.lights.brightness.up - context_lights-brightness - comment_not bright enough_usersays_en.json",
+      "smarthome.device.brightness.up - context_device_brightness - comment_not bright enough_usersays_en.json",
+      "smarthome.lights.brightness.up - context_lights_brightness - comment_not bright enough_usersays_en.json",
       "smarthome.lights.brightness.up.implicit_usersays_en.json"
     ],
     "candidates": [
@@ -221,9 +221,9 @@
   {
     "text": "less",
     "sources": [
-      "smarthome.device.brightness.down - context_device-brightness - comment_not dim enough_usersays_en.json",
-      "smarthome.device.volume - context_device-volume - comment_down_usersays_en.json",
-      "smarthome.lights.brightness.down - context_lights-brightness - comment_not dim enough_usersays_en.json"
+      "smarthome.device.brightness.down - context_device_brightness - comment_not dim enough_usersays_en.json",
+      "smarthome.device.volume - context_device_volume - comment_down_usersays_en.json",
+      "smarthome.lights.brightness.down - context_lights_brightness - comment_not dim enough_usersays_en.json"
     ],
     "candidates": [
       "smarthome.device.brightness.down",
@@ -290,8 +290,8 @@
   {
     "text": "now on Spotify",
     "sources": [
-      "music.play - context_play-music_usersays_en.json",
-      "music.search - context_search-music_usersays_en.json"
+      "music.play - context_play_music_usersays_en.json",
+      "music.search - context_search_music_usersays_en.json"
     ],
     "candidates": [
       "music.play",
@@ -516,8 +516,8 @@
   {
     "text": "speakers too",
     "sources": [
-      "smarthome.device.volume - context_device-volume - comment_device_usersays_en.json",
-      "smarthome.device.volume.check - context_volume-check - comment_device_usersays_en.json"
+      "smarthome.device.volume - context_device_volume - comment_device_usersays_en.json",
+      "smarthome.device.volume.check - context_volume_check - comment_device_usersays_en.json"
     ],
     "candidates": [
       "smarthome.device.volume",
