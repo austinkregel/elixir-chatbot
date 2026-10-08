@@ -11,6 +11,7 @@ defmodule Brain.Analysis.Pipeline do
     SemanticChunker,
     DiscourseAnalyzer,
     SpeechActClassifier,
+    SpeechActTable,
     SlotDetector,
     ContextResolver,
     AnaphoraResolver,
@@ -38,7 +39,7 @@ defmodule Brain.Analysis.Pipeline do
   alias Brain.Telemetry
   require Logger
 
-  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n\nReturns an InternalModel struct with complete analysis.\n"
+  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n- :language - the `Brain.Language` code to analyze in. Absent means the caller\n  named no language, which is English; an unsupported code raises.\n- :lexical_evidence - a `Brain.Analysis.LexicalEvidence` model used in place of\n  the one loaded for the language. Training passes each row's out-of-fold model.\n\nReturns an InternalModel struct with complete analysis.\n"
   def process(text, opts \\ []) when is_binary(text) do
     side_effects?(opts)
     refuse_stale_classifiers!()
@@ -382,6 +383,7 @@ defmodule Brain.Analysis.Pipeline do
 
     pass1_analysis =
       ChunkAnalysis.new(chunk.index, chunk.text)
+      |> Map.put(:language, language!(opts))
       |> Map.put(:discourse, discourse_result)
       |> Map.put(:speech_act, speech_act_result)
       |> Map.put(:sentiment, sentiment_result)
@@ -727,10 +729,14 @@ defmodule Brain.Analysis.Pipeline do
   # on the refined speech act. A lightweight ChunkProfile is materialized so
   # determine_intent can prefer `derived_label` when intent_full is uncertain.
   defp classify_intent_full_and_refine(pass1_with_context, opts) do
-    {lattice, feature_vector} = classify_intent_full(pass1_with_context)
+    {lattice, feature_vector} = classify_intent_full(pass1_with_context, opts)
 
     refined_speech_act =
-      SpeechActClassifier.refine_with_intent(pass1_with_context.speech_act, lattice)
+      SpeechActClassifier.refine_with_intent(
+        pass1_with_context.speech_act,
+        lattice,
+        SpeechActTable.loaded!(pass1_with_context.language)
+      )
 
     profile = ChunkProfile.materialize(pass1_with_context, feature_vector)
     lattice = apply_profile_rerank(lattice, profile)
@@ -789,9 +795,11 @@ defmodule Brain.Analysis.Pipeline do
 
   # Returns the lattice and the feature vector it was classified from. The vector
   # is kept on the analysis, so training data and the profile are built from
-  # exactly what the classifier saw.
-  defp classify_intent_full(pass1_with_context) do
-    {feature_vector, _word_feats} = FeatureExtractor.extract(pass1_with_context)
+  # exactly what the classifier saw. `:lexical_evidence` replaces the loaded
+  # model; `mix gen_micro_data` passes each training row's out-of-fold model.
+  defp classify_intent_full(pass1_with_context, opts) do
+    {feature_vector, _word_feats} =
+      FeatureExtractor.extract(pass1_with_context, Keyword.take(opts, [:lexical_evidence]))
 
     lattice =
       if MicroClassifiers.ready?() do
@@ -877,7 +885,7 @@ defmodule Brain.Analysis.Pipeline do
   # The tagger is required, not optional. `pos_tags` feeds WordFeatures, and
   # WordFeatures feeds every WordNet group (supersenses, lexical domains,
   # selectional preferences, subcategorization, meaning depth), ConceptNet
-  # edges and pos_distribution -- 169 of the 337 feature dimensions.
+  # edges and pos_distribution -- 169 feature dimensions.
   #
   # This used to return `{:error, reason}` and the callers turned that into
   # `[]`, so an unloadable model produced a *constant* feature vector instead
@@ -897,9 +905,9 @@ defmodule Brain.Analysis.Pipeline do
 
         #{reason}
 
-        Analysis cannot continue without part-of-speech tags: they feed 169 of
-        the 337 feature dimensions, so proceeding would yield a constant
-        feature vector rather than a wrong one.
+        Analysis cannot continue without part-of-speech tags: they feed 169
+        feature dimensions, so proceeding would yield a constant feature
+        vector rather than a wrong one.
 
         Train one with `mix pos.train`, or install an existing run with
         `Brain.Training.POSRuns.promote!(run_id, "best", :production)`.
@@ -1820,6 +1828,15 @@ defmodule Brain.Analysis.Pipeline do
       other ->
         raise ArgumentError,
               "Pipeline option :side_effects must be true or false, got: #{inspect(other)}"
+    end
+  end
+
+  # The language the turn is analyzed in: the code `Brain.evaluate` resolved from
+  # the browser, or English when the caller names none.
+  defp language!(opts) do
+    case Keyword.fetch(opts, :language) do
+      {:ok, code} -> Brain.Language.validate!(code)
+      :error -> Brain.Language.resolve!(nil)
     end
   end
 
