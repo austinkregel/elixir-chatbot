@@ -35,9 +35,17 @@ defmodule Mix.Tasks.Test.Models do
   checks with `Brain.Training.POS.check_current!/2`. Copying it from priv would
   bypass that, so this task leaves it alone.
 
-  The `micro/` subdirectory is not promoted either: the factory writes its own
-  micro-classifiers there, which is why the test suite needs a writable models
-  directory of its own rather than pointing at priv.
+  ## The feature-vector micro-classifiers
+
+  The feature-vector classifiers in `micro/` (`intent_full`, `intent_domain`, the
+  four axis classifiers and `framing_class`, with `framing_neutral_centroid.term`)
+  are promoted too. `mix train_micro` and `mix train_framing` train them with
+  GA-tuned per-dimension weights, and the suite exercises production behavior, so
+  it runs against those models rather than unweighted substitutes.
+
+  The text micro-classifiers in the same directory are not promoted: the factory
+  trains them from test fixtures and writes them there, which is why the test
+  suite needs a writable models directory of its own rather than pointing at priv.
   """
 
   use Mix.Task
@@ -52,6 +60,14 @@ defmodule Mix.Tasks.Test.Models do
     gazetteer.term
     sentiment_classifier.term
     speech_act_classifier.term
+    micro/intent_full.term
+    micro/intent_domain.term
+    micro/tense_class.term
+    micro/aspect_class.term
+    micro/urgency.term
+    micro/certainty_level.term
+    micro/framing_class.term
+    micro/framing_neutral_centroid.term
   )
 
   @impl Mix.Task
@@ -110,9 +126,10 @@ defmodule Mix.Tasks.Test.Models do
     expected = RunProvenance.sha256_file!(from)
 
     if File.regular?(to) and RunProvenance.sha256_file!(to) == expected do
-      Mix.shell().info("  #{String.pad_trailing(name, 30)} unchanged  #{short(expected)}")
+      Mix.shell().info("  #{String.pad_trailing(name, 36)} unchanged  #{short(expected)}")
       :unchanged
     else
+      File.mkdir_p!(Path.dirname(to))
       File.cp!(from, to)
       actual = RunProvenance.sha256_file!(to)
 
@@ -125,7 +142,7 @@ defmodule Mix.Tasks.Test.Models do
         """)
       end
 
-      Mix.shell().info("  #{String.pad_trailing(name, 30)} promoted   #{short(expected)}")
+      Mix.shell().info("  #{String.pad_trailing(name, 36)} promoted   #{short(expected)}")
       :copied
     end
   end
