@@ -27,7 +27,7 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   - **Atlas context**: Entity neighborhood in knowledge_graph
   """
 
-  alias Brain.Analysis.{TypeHierarchy, ChunkProfile, SlotDetector, Pipeline}
+  alias Brain.Analysis.{TypeHierarchy, ChunkProfile, SlotDetector}
   alias Brain.Lattice
   alias Brain.ML.{POSTagger, Tokenizer}
   require Logger
@@ -46,13 +46,6 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   - `:world_id` -- World scope for TypeInferrer (default: "default")
   """
   def infer(text, entities, intent, intent_details, opts \\ []) do
-    opts =
-      case Map.get(intent_details, :profile) do
-        nil -> opts
-        %ChunkProfile{} = p -> Keyword.put(opts, :profile, p)
-        _ -> opts
-      end
-
     narrowable = find_narrowable_entities(entities, intent, intent_details)
 
     if narrowable == [] do
@@ -98,20 +91,21 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
     end)
   end
 
+  # Expected types come from the intent registry's slot schemas: those of each
+  # candidate intent, plus every intent in the profile's domain.
   defp collect_all_expected_types(top_k, profile) do
     profile_types =
       case profile do
         %ChunkProfile{domain: domain} when domain != :unknown ->
-          Pipeline.expected_entity_types_from_domain(domain)
+          domain |> SlotDetector.entity_types_for_domain() |> MapSet.to_list()
 
         _ ->
           []
       end
 
     registry_types =
-      top_k
-      |> Enum.flat_map(fn {intent, _score} ->
-        Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
+      Enum.flat_map(top_k, fn {intent, _score} ->
+        intent |> SlotDetector.get_entity_types_for_intent() |> MapSet.to_list()
       end)
 
     (profile_types ++ registry_types) |> Enum.uniq()
@@ -121,41 +115,33 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   # Pass 2: Evaluate Hypotheses
   # ============================================================================
 
+  # A hypothesis is evaluated against its intent's own slot schema in the
+  # registry. A candidate intent with no schema, or one whose schema maps no
+  # entity types, has no slots to narrow toward.
   defp evaluate_hypothesis(candidate_intent, candidate_score, entities, narrowable, text, pos_tags, opts) do
-    profile = Keyword.get(opts, :profile)
-
     entity_mappings =
-      case profile do
-        %ChunkProfile{domain: domain} when domain != :unknown ->
-          domain_mappings = entity_mappings_from_domain(domain)
-          if domain_mappings == %{} do
-            entity_mappings_from_domain(domain_from_intent(candidate_intent))
-          else
-            domain_mappings
-          end
-
-        _ ->
-          entity_mappings_from_domain(domain_from_intent(candidate_intent))
+      case SlotDetector.get_schema(candidate_intent) do
+        nil -> %{}
+        schema -> Map.get(schema, "entity_mappings", %{})
       end
 
     if entity_mappings == %{} do
       nil
     else
-      current_slot_result = SlotDetector.detect(candidate_intent, entities)
+      # Evaluating a hypothesis must not write: only the hypothesis that wins
+      # is the turn's reading.
+      current_slot_result = SlotDetector.detect(candidate_intent, entities, side_effects: false)
+
+      # A slot is open to narrowing when it is missing, or when it was filled
+      # only through type compatibility (a "person" holding a music_artist
+      # slot), whose entity can still be refined to the type the slot asks for.
+      compatibility_filled =
+        for {slot, %{source: :type_compatible}} <- current_slot_result.filled_slots, do: slot
 
       unfilled_slots =
-        if current_slot_result.schema_name == "unknown" do
-          filled_types = entities |> Enum.map(& &1[:entity_type]) |> MapSet.new()
-          entity_mappings
-          |> Map.keys()
-          |> Enum.reject(fn slot ->
-            slot_types = Map.get(entity_mappings, slot, [])
-            Enum.any?(slot_types, &MapSet.member?(filled_types, &1))
-          end)
-        else
-          (current_slot_result.missing_required ++ current_slot_result.missing_optional)
-          |> Enum.uniq()
-        end
+        (current_slot_result.missing_required ++
+           current_slot_result.missing_optional ++ compatibility_filled)
+        |> Enum.uniq()
 
       narrowings =
         Enum.flat_map(unfilled_slots, fn slot_name ->
@@ -612,23 +598,4 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
     end)
   end
 
-  defp entity_mappings_from_domain(domain) do
-    case domain do
-      :weather -> %{"location" => ["location"], "date" => ["date"], "time" => ["time"]}
-      :music -> %{"song" => ["song"], "artist" => ["artist", "person"], "genre" => ["genre"]}
-      :smarthome -> %{"device" => ["device"], "room" => ["room"], "setting" => ["setting"]}
-      :reminder -> %{"date" => ["date"], "time" => ["time"], "description" => ["description"]}
-      :navigation -> %{"destination" => ["location"], "origin" => ["location"]}
-      _ -> %{}
-    end
-  end
-
-  defp domain_from_intent(nil), do: nil
-  defp domain_from_intent(intent) when is_binary(intent) do
-    case String.split(intent, ".", parts: 2) do
-      [d, _] -> String.to_atom(d)
-      _ -> nil
-    end
-  end
-  defp domain_from_intent(_), do: nil
 end
