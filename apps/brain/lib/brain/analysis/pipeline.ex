@@ -611,7 +611,9 @@ defmodule Brain.Analysis.Pipeline do
         rescored_entities,
         intent,
         intent_details,
-        world_id: Keyword.get(opts, :world_id, "default")
+        world_id: Keyword.get(opts, :world_id, "default"),
+        intent_confidence: intent_confidence,
+        side_effects: side_effects?(opts)
       )
 
     if debug_pass2?, do: Logger.info("  pass2:entity_inference=#{System.monotonic_time(:millisecond) - t0}ms")
