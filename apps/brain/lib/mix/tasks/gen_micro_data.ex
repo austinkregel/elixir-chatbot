@@ -36,6 +36,13 @@ defmodule Mix.Tasks.GenMicroData do
   classifier trains on what it is shown at runtime. This is slow but is a
   one-time cost per regen.
 
+  Before the app boots, the same training rows fit
+  `Brain.Analysis.LexicalEvidence` (written to `lexical_evidence.en.term`) and
+  `Brain.Analysis.SpeechActTable` (`speech_act_table.en.term`), both directly
+  under the models directory, since boot loads them. A row's lexical evidence
+  dimensions come from the fold model that did not see it. `--stats` writes
+  neither and uses the stored ones.
+
   ## Usage
 
       mix gen_micro_data [options]
@@ -49,10 +56,14 @@ defmodule Mix.Tasks.GenMicroData do
   use Mix.Task
   require Logger
 
-  alias Brain.Analysis.Pipeline
+  alias Brain.Analysis.{LexicalEvidence, Pipeline, SlotDetector, SpeechActTable}
   alias Brain.Lexicon.IntentDomains
 
   @shortdoc "Generate training data for new micro-classifiers from gold_standard.json"
+
+  # The intent gold standard is English text; its rows carry no language of
+  # their own. The lexical evidence model and speech-act table are fitted for it.
+  @gold_language "en"
 
   @feature_vector_classifiers ~w(intent_full intent_domain tense_class aspect_class urgency certainty_level)
   @text_classifiers ~w(coarse_semantic_class)
@@ -96,7 +107,12 @@ defmodule Mix.Tasks.GenMicroData do
       check_lexicon_data()
     end
 
-    enriched = maybe_enrich_with_feature_vectors(gold_standard, names)
+    fold_models =
+      if Enum.any?(names, &(&1 in @feature_vector_classifiers)) and not opts[:stats] do
+        train_language_artifacts!(gold_standard)
+      end
+
+    enriched = maybe_enrich_with_feature_vectors(gold_standard, names, fold_models)
 
     Enum.each(names, fn name ->
       data = generate_data(name, enriched)
@@ -114,11 +130,55 @@ defmodule Mix.Tasks.GenMicroData do
     end)
   end
 
+  # The lexical evidence model and the speech-act table, fitted on the training
+  # rows and written to the models directory before the app starts, because boot
+  # loads both. Returns the out-of-fold models as `LexicalEvidence.fold_models/2`
+  # gives them, so no training row's evidence is computed by a model that saw
+  # its label.
+  #
+  # `--stats` writes nothing, so it trains neither and computes vectors with the
+  # stored ones.
+  defp train_language_artifacts!(entries) do
+    Mix.Task.run("app.config")
+
+    rows =
+      Enum.map(entries, fn
+        %{"text" => text, "intent" => intent} when is_binary(text) and text != "" and is_binary(intent) and intent != "" ->
+          {text, intent}
+
+        entry ->
+          Mix.raise("gen_micro_data: training row has no text or intent: #{inspect(entry, limit: 5)}")
+      end)
+
+    {model, accuracies} = LexicalEvidence.select(rows, language: @gold_language)
+    LexicalEvidence.save!(model)
+
+    Mix.shell().info(
+      "Lexical evidence (#{@gold_language}): #{length(model.intents)} intents, #{map_size(model.scores)} n-grams, " <>
+        "prior strength #{model.prior_strength} (cross-validated accuracy #{Float.round(accuracies[model.prior_strength] * 100, 1)}%) " <>
+        "-> #{LexicalEvidence.path(@gold_language)}"
+    )
+
+    table = SpeechActTable.build(rows, SlotDetector.registry(), @gold_language)
+    SpeechActTable.save!(table)
+    learned = Enum.count(table.entries, fn {_intent, entry} -> entry.sub_type_source == :learned end)
+
+    Mix.shell().info(
+      "Speech-act table (#{@gold_language}): #{map_size(table.entries)} intents, #{learned} sub-types learned " <>
+        "-> #{SpeechActTable.path(@gold_language)}"
+    )
+
+    LexicalEvidence.fold_models(rows, model)
+  end
+
   # Boots the Brain app (if not already started) and computes a dense feature
   # vector for every gold_standard entry by running the full analysis
   # pipeline. This is the per-example cost of having feature-vector axis
   # classifiers instead of token-bag TF-IDF ones; it runs once per regen.
-  defp maybe_enrich_with_feature_vectors(entries, names) do
+  #
+  # `fold_models` holds the entries' out-of-fold lexical evidence models, or is
+  # nil when none were trained (`--stats`), which uses the loaded model.
+  defp maybe_enrich_with_feature_vectors(entries, names, fold_models) do
     needs_vectors? = Enum.any?(names, &(&1 in @feature_vector_classifiers))
 
     if needs_vectors? do
@@ -131,8 +191,20 @@ defmodule Mix.Tasks.GenMicroData do
 
       started_at = System.monotonic_time(:millisecond)
 
+      # Each fold model is put in :persistent_term once and read by the task that
+      # needs it, rather than copied into every task with the entry.
+      jobs =
+        case fold_models do
+          nil ->
+            Enum.map(entries, &{&1, nil})
+
+          {folds, models} ->
+            Enum.each(models, fn {k, model} -> :persistent_term.put({__MODULE__, :fold_model, k}, model) end)
+            Enum.zip(entries, Enum.map(folds, &{__MODULE__, :fold_model, &1}))
+        end
+
       enriched =
-        entries
+        jobs
         |> Task.async_stream(
           &enrich_entry/1,
           max_concurrency: System.schedulers_online(),
@@ -203,9 +275,18 @@ defmodule Mix.Tasks.GenMicroData do
   # the speech act had been refined by the previous model's intent, slots and
   # entities filtered by it, and the confidence accumulator replaced, so the
   # models trained on vectors they never saw at runtime.
-  defp enrich_entry(%{"text" => text} = entry) when is_binary(text) do
+  #
+  # `fold_key` names the entry's out-of-fold lexical evidence model in
+  # :persistent_term; nil uses the model loaded at boot.
+  defp enrich_entry({%{"text" => text} = entry, fold_key}) when is_binary(text) do
     try do
-      analysis = Pipeline.analyze_chunk(text, side_effects: false)
+      pipeline_opts =
+        case fold_key do
+          nil -> [side_effects: false]
+          key -> [side_effects: false, lexical_evidence: :persistent_term.get(key)]
+        end
+
+      analysis = Pipeline.analyze_chunk(text, pipeline_opts)
 
       feature_vector =
         case analysis.feature_vector do
@@ -237,7 +318,7 @@ defmodule Mix.Tasks.GenMicroData do
     end
   end
 
-  defp enrich_entry(entry) do
+  defp enrich_entry({entry, _fold_key}) do
     entry
     |> Map.put("feature_vector", nil)
     |> Map.put("tokens", nil)
