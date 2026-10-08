@@ -1,7 +1,7 @@
 defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   @moduledoc """
   Aggregates per-word features and existing analysis signals into a
-  per-chunk feature vector spanning 22 groups.
+  per-chunk feature vector spanning the groups below.
 
   ## Feature Groups
 
@@ -29,6 +29,9 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   22. **Speech-act × wh-target interaction grid** *(Tier 2, materializes joint
       that the linear centroid cannot learn on its own)*
   23. **Entity type semantics** *(parent concept histogram, coherence, KG coverage)*
+  24. **Lexical evidence** *(one value per intent: how strongly the chunk's 1- and
+      2-grams are associated with it in the training data; see
+      `Brain.Analysis.LexicalEvidence`)*
 
   Groups 15-22 are produced by
   `Brain.Analysis.FeatureExtractor.EnrichmentFeatures` and are
@@ -38,6 +41,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   """
 
   alias Brain.Analysis.FeatureExtractor.{WordFeatures, EnrichmentFeatures}
+  alias Brain.Analysis.LexicalEvidence
   alias Brain.Lexicon
   alias Brain.Provenance
 
@@ -64,9 +68,12 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   Extracts a full chunk feature vector from a ChunkAnalysis struct
   and its per-word features.
 
-  Returns a flat list of floats representing the ~140-dimension vector.
+  Returns a flat list of floats, named by `dimension_manifest/0`.
+
+  Options: `:lexical_evidence`, a `Brain.Analysis.LexicalEvidence` model used
+  in place of the one loaded for the analysis's language.
   """
-  def extract(%{} = analysis, word_features \\ nil) do
+  def extract(%{} = analysis, word_features \\ nil, opts \\ []) do
     tokens = extract_tokens(analysis)
     pos_tags = Map.get(analysis, :pos_tags) || []
 
@@ -108,13 +115,14 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
       )
 
     group23 = EnrichmentFeatures.entity_type_semantics(analysis)
+    group24 = lexical_evidence_features(analysis, opts)
 
     group1 ++ group2 ++ group3 ++ group4 ++ group5 ++ group6 ++
       group7 ++ group8 ++ group9 ++ group10 ++ group11 ++ group12 ++
       group14 ++
       group15 ++ group16 ++ group17_verb ++ group17_noun ++ group17_adj ++
       group18 ++ group19 ++
-      group20 ++ group21 ++ group22 ++ group23
+      group20 ++ group21 ++ group22 ++ group23 ++ group24
   end
 
   # Builds `[{token, pos}]` pairs for `subcategorization_frame/1`. The
@@ -176,7 +184,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   The width alone was already guarded — `chunk_features_test.exs` asserts
   `length(extract(...)) == vector_dimension()`, so a group that changed size
   without updating the total would fail. What was missing is *identity*: a
-  337-float list where nothing says which slot is which cannot be diffed,
+  list of floats where nothing says which slot is which cannot be diffed,
   snapshotted or attributed. When a value moves between two runs there was no
   way to name the feature that moved, and when the width changes a total tells
   you only that something did.
@@ -317,10 +325,55 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
       in_group(
         :entity_type_semantics,
         EnrichmentFeatures.entity_type_semantics_names()
-      )
+      ) ++
+      in_group(:lexical_evidence, Enum.map(lexical_evidence_intents(), &String.to_atom("lex_" <> &1)))
   end
 
   defp in_group(group, names), do: Enum.map(names, &{group, &1})
+
+  # The intents the lexical evidence group scores: those of the models loaded at
+  # boot, which every supported language's model must share, since one vector
+  # schema serves them all.
+  defp lexical_evidence_intents do
+    case Brain.Language.supported() |> Enum.map(&LexicalEvidence.loaded!(&1).intents) |> Enum.uniq() do
+      [intents] ->
+        intents
+
+      differing ->
+        raise "ChunkFeatures: the loaded lexical evidence models score #{length(differing)} different intent lists; " <>
+                "retrain them with `mix gen_micro_data` so every language shares one vector schema"
+    end
+  end
+
+  # Group 24: what the chunk's words say about each intent. The model is the
+  # one loaded for the chunk's language unless `:lexical_evidence` supplies one
+  # (training passes each row's out-of-fold model), which must score the same
+  # intents in the same order.
+  defp lexical_evidence_features(analysis, opts) do
+    language =
+      case Map.get(analysis, :language) do
+        code when is_binary(code) -> code
+        other -> raise ArgumentError, "ChunkFeatures: the analysis has no language (got #{inspect(other)}); the pipeline sets it"
+      end
+
+    model =
+      case Keyword.fetch(opts, :lexical_evidence) do
+        {:ok, %LexicalEvidence{} = model} ->
+          unless model.intents == lexical_evidence_intents() do
+            raise ArgumentError, "ChunkFeatures: the :lexical_evidence model scores different intents than the loaded model"
+          end
+
+          model
+
+        {:ok, other} ->
+          raise ArgumentError, "ChunkFeatures: :lexical_evidence must be a LexicalEvidence model, got #{inspect(other, limit: 3)}"
+
+        :error ->
+          LexicalEvidence.loaded!(language)
+      end
+
+    LexicalEvidence.features(model, Map.fetch!(analysis, :text))
+  end
 
   @doc """
   Returns the total dimension count of the chunk feature vector.
