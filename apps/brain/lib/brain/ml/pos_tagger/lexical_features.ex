@@ -151,10 +151,30 @@ defmodule Brain.ML.POSTagger.LexicalFeatures do
     :ok
   end
 
-  defp cache do
+  # The memo table belongs to this module's supervised process, started at boot,
+  # so it outlives every caller. It used to be created by whichever process
+  # tagged first, and an ETS table dies with its owner: once that process
+  # exited, the next tagging call raised on a table that no longer existed.
+  use GenServer
+
+  @doc false
+  def start_link(_opts), do: GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
+
+  @impl GenServer
+  def init(:ok) do
     :ets.new(@cache, [:set, :public, :named_table, read_concurrency: true])
-  rescue
-    ArgumentError -> @cache
+    {:ok, nil}
+  end
+
+  defp cache do
+    case :ets.whereis(@cache) do
+      :undefined ->
+        raise "pos_tagger lexical features: the #{inspect(@cache)} table does not exist. " <>
+                "#{inspect(__MODULE__)} owns it and must be started (it is a child of Brain.Application)."
+
+      _ref ->
+        @cache
+    end
   end
 
   @doc """
