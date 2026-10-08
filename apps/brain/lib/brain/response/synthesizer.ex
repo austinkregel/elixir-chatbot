@@ -128,7 +128,7 @@ defmodule Brain.Response.Synthesizer do
             :not_enriched ->
               # Fall back to standard response frames
               frame_key = determine_frame_key(domain_config, entities)
-              frames = get_in(domain_config, ["response_frames", frame_key]) || []
+              frames = if frame_key, do: get_in(domain_config, ["response_frames", frame_key]), else: []
 
               if frames == [] do
                 :not_synthesized
@@ -421,48 +421,70 @@ defmodule Brain.Response.Synthesizer do
     ""
   end
 
+  # The frame for the slots the entities fill, looked up in this order:
+  #
+  #   1. a missing required slot gives "missing_<slot>" ("missing_both" for more);
+  #   2. the domain's own frame keyed by every filled slot, required and
+  #      optional ("device,room");
+  #   3. the domain's own frame keyed by the filled required slots ("device");
+  #   4. a frame whose key names an entity's graph type;
+  #   5. the shared slot-to-frame mapping, for either key;
+  #   6. the domain's "general" frame, only when no slot is filled at all.
+  #
+  # A candidate counts only if the domain has frames under it. Nil when none
+  # does: the caller answers :not_synthesized rather than a generic frame that
+  # ignores the slots that were filled.
   defp determine_frame_key(domain_config, entities) do
     slot_requirements = Map.get(domain_config, "slot_requirements", %{})
     required_slots = Map.get(slot_requirements, "required", [])
+    optional_slots = Map.get(slot_requirements, "optional", [])
     slot_type_aliases = Map.get(slot_requirements, "slot_type_aliases", %{})
+    frames = Map.get(domain_config, "response_frames", %{})
 
-    filled_required =
-      Enum.filter(required_slots, fn slot ->
-        acceptable_types = Map.get(slot_type_aliases, slot, [slot])
-        find_entity_value_by_types(entities, acceptable_types) != nil
-      end)
+    filled? = fn slot ->
+      find_entity_value_by_types(entities, Map.get(slot_type_aliases, slot, [slot])) != nil
+    end
 
+    filled_required = Enum.filter(required_slots, filled?)
+    filled_optional = Enum.filter(optional_slots, filled?)
     missing_required = required_slots -- filled_required
 
-    graph_type_key = infer_frame_from_graph_types(entities, domain_config)
+    if missing_required != [] do
+      case missing_required do
+        [single] -> "missing_#{single}"
+        _ -> "missing_both"
+      end
+    else
+      all_key = slot_key(filled_required ++ filled_optional)
+      required_key = slot_key(filled_required)
 
-    cond do
-      missing_required != [] ->
-        case missing_required do
-          [single] -> "missing_#{single}"
-          _ -> "missing_both"
-        end
+      no_slot_filled =
+        if filled_required == [] and filled_optional == [], do: [@frame_key_default], else: []
 
-      graph_type_key != nil ->
-        graph_type_key
-
-      filled_required == [] ->
-        "general"
-
-      true ->
-        sorted_key = filled_required |> Enum.sort() |> Enum.join(",")
-        Map.get(@frame_key_mappings, sorted_key, @frame_key_default)
+      [
+        all_key,
+        required_key,
+        infer_frame_from_graph_types(entities, domain_config),
+        Map.get(@frame_key_mappings, all_key),
+        Map.get(@frame_key_mappings, required_key)
+      ]
+      |> Kernel.++(no_slot_filled)
+      |> Enum.find(fn key -> is_binary(key) and Map.get(frames, key, []) != [] end)
     end
   end
+
+  defp slot_key(slots), do: slots |> Enum.uniq() |> Enum.sort() |> Enum.join(",")
 
   defp infer_frame_from_graph_types(entities, domain_config) do
     response_frames = Map.get(domain_config, "response_frames", %{})
     frame_keys = Map.keys(response_frames)
 
+    # An empty graph type (a node with no type or label) names nothing; kept,
+    # it is a substring of every key and picked whichever frame came first.
     graph_types =
       entities
       |> Enum.map(&Map.get(&1, :graph_type))
-      |> Enum.reject(&is_nil/1)
+      |> Enum.reject(&(&1 in [nil, ""]))
       |> Enum.map(&String.downcase/1)
 
     Enum.find(frame_keys, fn key ->
@@ -470,23 +492,27 @@ defmodule Brain.Response.Synthesizer do
     end)
   end
 
+  # Every entity first fills the placeholder named by its own type, and only then
+  # do aliases fill what is left. Filling both in one pass let an entity reach a
+  # slot it is merely an alias for before the entity that is that slot's own type
+  # got there: smarthome aliases "room" to $device, so "$device in the $room"
+  # could come out as "the kitchen in the kitchen".
   defp fill_entity_slots(frame, entities, slot_type_aliases \\ %{}) do
     reverse_alias_map = build_reverse_alias_map(slot_type_aliases)
 
-    Enum.reduce(entities, frame, fn entity, acc ->
-      entity_type = to_string(entity[:entity_type] || entity["entity_type"] || "")
-      entity_value = entity[:value] || entity["value"] || ""
+    typed =
+      for entity <- entities,
+          type = to_string(entity[:entity_type] || entity["entity_type"] || ""),
+          value = entity[:value] || entity["value"] || "",
+          type != "" and value != "",
+          do: {type, value}
 
-      if entity_type != "" and entity_value != "" do
-        acc = String.replace(acc, "$#{entity_type}", entity_value)
+    exact = Enum.reduce(typed, frame, fn {type, value}, acc -> String.replace(acc, "$#{type}", value) end)
 
-        slot_names = Map.get(reverse_alias_map, entity_type, [])
-        Enum.reduce(slot_names, acc, fn slot_name, inner_acc ->
-          String.replace(inner_acc, "$#{slot_name}", entity_value)
-        end)
-      else
-        acc
-      end
+    Enum.reduce(typed, exact, fn {type, value}, acc ->
+      reverse_alias_map
+      |> Map.get(type, [])
+      |> Enum.reduce(acc, fn slot_name, inner_acc -> String.replace(inner_acc, "$#{slot_name}", value) end)
     end)
   end
 
