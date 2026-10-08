@@ -42,6 +42,21 @@ defmodule ChatWeb.ChatLiveTest do
     end
   end
 
+  describe "language" do
+    test "an English browser, regional variant included, mounts in English", %{conn: conn} do
+      conn = Plug.Conn.put_req_header(conn, "accept-language", "en-GB,en;q=0.9,fr;q=0.8")
+      {:ok, view, _html} = live(conn, "/chat")
+
+      assert :sys.get_state(view.pid).socket.assigns.language == "en"
+    end
+
+    test "a browser whose top choice is unsupported fails, naming the language", %{conn: conn} do
+      conn = Plug.Conn.put_req_header(conn, "accept-language", "fr-FR,en;q=0.9")
+
+      assert_raise ArgumentError, ~r/"fr" is not supported/, fn -> live(conn, "/chat") end
+    end
+  end
+
   describe "conversation management" do
     test "creates new conversation when sending first message", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/chat")
