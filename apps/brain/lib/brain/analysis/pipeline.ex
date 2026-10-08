@@ -1334,13 +1334,15 @@ defmodule Brain.Analysis.Pipeline do
 
   @doc false
   defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile) do
+    # The entity types the intent registry's slot schemas expect: every intent
+    # in the profile's domain, or else the intent's own.
     expected_types =
       case profile do
         %ChunkProfile{domain: domain} when domain != :unknown ->
-          expected_entity_types_from_domain(domain)
+          domain |> SlotDetector.entity_types_for_domain() |> MapSet.to_list()
 
         _ ->
-          expected_entity_types_from_domain(extract_domain_from_intent(intent))
+          Brain.Analysis.EntityTypeScorer.expected_types(intent) || []
       end
 
     graph_entity_types =
@@ -2318,20 +2320,5 @@ defmodule Brain.Analysis.Pipeline do
         _ -> nil
       end
     end)
-  end
-
-  @doc false
-  def expected_entity_types_from_domain(domain) do
-    case domain do
-      :weather -> ["location", "date", "time"]
-      :music -> ["artist", "song", "genre", "album"]
-      :smarthome -> ["device", "room", "setting"]
-      :reminder -> ["date", "time", "description"]
-      :navigation -> ["location", "address"]
-      :search -> ["query", "topic"]
-      :meta -> []
-      :smalltalk -> ["person", "name"]
-      _ -> []
-    end
   end
 end
