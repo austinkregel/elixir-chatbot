@@ -66,7 +66,27 @@ defmodule Brain.ML.ModelPreflight do
         {:triple_scorer, validate_triple_scorer()}
       ]
 
-    core ++ micro ++ graph
+    language =
+      Enum.flat_map(Brain.Language.supported(), fn code ->
+        [
+          {:"lexical_evidence_#{code}", validate_language_artifact(Brain.Analysis.LexicalEvidence, code)},
+          {:"speech_act_table_#{code}", validate_language_artifact(Brain.Analysis.SpeechActTable, code)}
+        ]
+      end)
+
+    core ++ micro ++ graph ++ language
+  end
+
+  # `read!/1` checks the file holds that language's struct; the entries checked
+  # here are what the feature vector and the speech-act refinement read.
+  defp validate_language_artifact(module, code) do
+    case module.read!(code) do
+      %Brain.Analysis.LexicalEvidence{intents: [_ | _], scores: scores} when map_size(scores) > 0 -> :ok
+      %Brain.Analysis.SpeechActTable{entries: entries} when map_size(entries) > 0 -> :ok
+      other -> {:error, "#{inspect(module)} #{code}: empty #{inspect(other.__struct__)}"}
+    end
+  rescue
+    e in RuntimeError -> {:error, Exception.message(e)}
   end
 
   defp validate_embedder do
