@@ -41,7 +41,10 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       intent_details = %{lattice: lattice, top_k: []}
 
       {updated_entities, updated_intent, _details} =
-        ContextualEntityInferrer.infer("Play some Taylor Swift", entities, intent, intent_details)
+        ContextualEntityInferrer.infer("Play some Taylor Swift", entities, intent, intent_details,
+          intent_confidence: 0.85,
+          side_effects: false
+        )
 
       assert updated_intent == "music.play"
       narrowed = Enum.find(updated_entities, &(&1[:value] == "Taylor Swift"))
@@ -66,7 +69,10 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       intent_details = %{top_k: [{"music.play", 0.8}]}
 
       {updated_entities, updated_intent, _details} =
-        ContextualEntityInferrer.infer("Play some Taylor Swift", entities, intent, intent_details)
+        ContextualEntityInferrer.infer("Play some Taylor Swift", entities, intent, intent_details,
+          intent_confidence: 0.8,
+          side_effects: false
+        )
 
       assert updated_intent == "music.play"
 
@@ -100,7 +106,10 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       intent_details = %{top_k: [{"introduction.self", 0.7}]}
 
       {updated_entities, _intent, _details} =
-        ContextualEntityInferrer.infer("I am Austin", entities, intent, intent_details)
+        ContextualEntityInferrer.infer("I am Austin", entities, intent, intent_details,
+          intent_confidence: 0.7,
+          side_effects: false
+        )
 
       narrowed = Enum.find(updated_entities, &(&1[:value] == "Austin"))
 
@@ -127,7 +136,10 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       intent_details = %{top_k: [{"weather.query", 0.9}]}
 
       {updated_entities, _intent, _details} =
-        ContextualEntityInferrer.infer("What's the weather in London", entities, intent, intent_details)
+        ContextualEntityInferrer.infer("What's the weather in London", entities, intent, intent_details,
+          intent_confidence: 0.9,
+          side_effects: false
+        )
 
       london = Enum.find(updated_entities, &(&1[:value] == "London"))
       assert london[:entity_type] == "city"
@@ -140,7 +152,10 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       intent_details = %{}
 
       {updated_entities, updated_intent, _details} =
-        ContextualEntityInferrer.infer("Hello there", entities, intent, intent_details)
+        ContextualEntityInferrer.infer("Hello there", entities, intent, intent_details,
+          intent_confidence: nil,
+          side_effects: false
+        )
 
       assert updated_entities == []
       assert updated_intent == "smalltalk.greetings.hello"
@@ -163,7 +178,10 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       intent_details = %{top_k: [{"weather.query", 0.85}]}
 
       {updated_entities, _intent, _details} =
-        ContextualEntityInferrer.infer("What is the weather in Paris", entities, intent, intent_details)
+        ContextualEntityInferrer.infer("What is the weather in Paris", entities, intent, intent_details,
+          intent_confidence: 0.85,
+          side_effects: false
+        )
 
       paris = Enum.find(updated_entities, &(&1[:value] == "Paris"))
       assert paris != nil
@@ -171,6 +189,64 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       # Location can narrow to city if the intent expects city
       # The filter will accept both location and city via hierarchy
       assert paris[:entity_type] in ["location", "city"]
+    end
+
+    test "a lower-scored intent that can narrow does not replace the current intent" do
+      # The smarthome hypothesis can narrow "location" to "room" (a room IS-A
+      # location), but it scored far below the classifier's weather intent.
+      entities = [
+        %{
+          entity_type: "location",
+          value: "London",
+          match: "London",
+          start_pos: 23,
+          end_pos: 28,
+          confidence: 0.7,
+          source: :pos_tagger_propn
+        }
+      ]
+
+      intent_details = %{
+        top_k: [{"weather.query", 0.85}, {"smarthome.device.brightness.check", 0.2}]
+      }
+
+      {_entities, updated_intent, _details} =
+        ContextualEntityInferrer.infer("How's the weather in London?", entities, "weather.query", intent_details,
+          intent_confidence: 0.85,
+          side_effects: false
+        )
+
+      assert updated_intent == "weather.query"
+    end
+
+    test "without the current intent's confidence, the intent is never replaced" do
+      entities = [
+        %{
+          entity_type: "person",
+          value: "Beyonce",
+          match: "Beyonce",
+          start_pos: 5,
+          end_pos: 12,
+          confidence: 0.65,
+          source: :pos_tagger_propn
+        }
+      ]
+
+      intent_details = %{top_k: [{"smalltalk.greetings.hello", 0.3}, {"music.play", 0.9}]}
+
+      {_entities, updated_intent, _details} =
+        ContextualEntityInferrer.infer("Play Beyonce", entities, "smalltalk.greetings.hello", intent_details,
+          intent_confidence: nil,
+          side_effects: false
+        )
+
+      assert updated_intent == "smalltalk.greetings.hello"
+    end
+
+    test "the current intent's confidence is required" do
+      assert_raise KeyError, ~r/:intent_confidence/, fn ->
+        ContextualEntityInferrer.infer("Hello there", [], "smalltalk.greetings.hello", %{})
+      end
     end
 
     test "evaluates multiple intent hypotheses" do
@@ -195,7 +271,10 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       }
 
       {updated_entities, updated_intent, _details} =
-        ContextualEntityInferrer.infer("Play Beyonce", entities, intent, intent_details)
+        ContextualEntityInferrer.infer("Play Beyonce", entities, intent, intent_details,
+          intent_confidence: 0.6,
+          side_effects: false
+        )
 
       # music.play should win because it can fill the artist slot
       assert updated_intent == "music.play"
@@ -245,7 +324,10 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       intent_details = %{top_k: [{"music.play", 0.8}]}
 
       {narrowed_entities, _intent, _details} =
-        ContextualEntityInferrer.infer("Play some Taylor Swift", entities, intent, intent_details)
+        ContextualEntityInferrer.infer("Play some Taylor Swift", entities, intent, intent_details,
+          intent_confidence: 0.8,
+          side_effects: false
+        )
 
       # Now apply the filter (testing pipeline's filter logic)
       schema = Brain.Analysis.SlotDetector.get_schema(intent)
