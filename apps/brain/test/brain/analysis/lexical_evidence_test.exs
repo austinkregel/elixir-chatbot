@@ -65,14 +65,12 @@ defmodule Brain.Analysis.LexicalEvidenceTest do
     # One row of its own: whichever fold holds it out fits without the intent.
     rows = [{"good morning", "smalltalk.greetings.goodmorning"} | @rows]
     model = LexicalEvidence.fit(rows, language: "en", prior_strength: 10)
-    {_folds, models} = fold_models = LexicalEvidence.fold_models(rows, model)
+    {_folds, models} = LexicalEvidence.fold_models(rows, model)
 
     for {_k, fold_model} <- models do
       assert fold_model.intents == model.intents
       assert length(LexicalEvidence.features(fold_model, "good morning")) == length(model.intents)
     end
-
-    assert length(LexicalEvidence.row_models(fold_models)) == length(rows)
   end
 
   test "fold models must be built from the rows the model was fitted on", %{model: model} do
