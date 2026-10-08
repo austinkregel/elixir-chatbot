@@ -113,7 +113,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       assert hd(result).entity_type == "location"
     end
 
-    test "prefers music-artist for music intents", %{world_id: world_id} do
+    test "prefers music_artist for music intents", %{world_id: world_id} do
       person_info = %{entity_type: "person", value: "Prince"}
       artist_info = %{entity_type: "music_artist", value: "Prince"}
 
@@ -140,7 +140,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       result = EntityDisambiguator.disambiguate(entities, pos_tagged, context)
 
       assert length(result) == 1
-      # For music intent, should prefer music-artist
+      # For music intent, should prefer music_artist
       assert hd(result).entity_type == "music_artist"
     end
 
