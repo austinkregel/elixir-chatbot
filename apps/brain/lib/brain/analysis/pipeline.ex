@@ -208,7 +208,7 @@ defmodule Brain.Analysis.Pipeline do
       if substantive?(pass1, cross_context) do
         refine_chunk_pass2(pass1, cross_context, opts)
       else
-        finalize_pass1(pass1, opts)
+        finalize_pass1(pass1, cross_context, opts)
       end
     end)
     |> Enum.sort_by(& &1.chunk_index)
@@ -391,12 +391,6 @@ defmodule Brain.Analysis.Pipeline do
       |> Map.put(:srl_frames, srl_frames)
       |> Map.put(:pos_tags, pos_result_to_tags(pos_result))
 
-    if debug_pass1?, do: Logger.info("pipeline:pass1 domain_classify_start=#{System.monotonic_time(:millisecond) - t0}ms")
-
-    pass1_domain = classify_intent_domain_lightweight(pass1_analysis)
-
-    if debug_pass1?, do: Logger.info("pipeline:pass1 domain_classify_end=#{System.monotonic_time(:millisecond) - t0}ms")
-
     {prelim_intent, intent_method, prelim_intent_conf, prelim_intent_details} =
       determine_intent(
         speech_act_result,
@@ -417,13 +411,11 @@ defmodule Brain.Analysis.Pipeline do
       original_intent: Map.get(prelim_intent_details, :original_intent),
       original_score: Map.get(prelim_intent_details, :original_score),
       margin: Map.get(prelim_intent_details, :margin, 0.0),
-      pass: 1,
-      domain: pass1_domain
+      pass: 1
     })
 
     pass1_analysis
     |> Map.put(:intent, prelim_intent)
-    |> Map.put(:intent_domain, pass1_domain)
     |> Map.put(:pass, 1)
     |> Map.put(
       :_prelim_intent,
@@ -434,33 +426,6 @@ defmodule Brain.Analysis.Pipeline do
         details: prelim_intent_details
       }
     )
-  end
-
-  # Returns the domain, or nil when the classifier had no answer for this input.
-  #
-  # Does not rescue. A crash in feature extraction or in the classifier is a
-  # defect in this pipeline, and returning nil for it made three different
-  # outcomes -- classifier unavailable, no confident label, and an exception --
-  # indistinguishable at the call site.
-  #
-  # Unavailability is reported once per call rather than swallowed;
-  # `MicroClassifiers.stale/0` names any model that was rejected at load.
-  defp classify_intent_domain_lightweight(analysis) do
-    if MicroClassifiers.ready?() do
-      {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
-
-      case MicroClassifiers.classify_vector(:intent_domain, feature_vector) do
-        {:ok, domain, _confidence} ->
-          to_string(domain)
-
-        {:error, reason} ->
-          Logger.warning("intent_domain unavailable (#{inspect(reason)}); domain left unset")
-          nil
-      end
-    else
-      Logger.warning("MicroClassifiers not ready — intent_domain classification skipped")
-      nil
-    end
   end
 
   # Builds the cross-chunk context that pass 2 uses to enrich each
@@ -540,21 +505,43 @@ defmodule Brain.Analysis.Pipeline do
     cat in [:directive, :assertive] and length(ents || []) > 0
   end
 
-  # For non-substantive chunks: don't run pass 2, but do compute confidence
-  # + response_strategy from the pass-1 data so downstream components see a
-  # complete `ChunkAnalysis` regardless of pass.
-  defp finalize_pass1(%ChunkAnalysis{} = pass1, opts) do
+  # For non-substantive chunks ("hi" in "hi, can you play jazz"): the intent is
+  # still classified, so a greeting chunk is read as one, but the substantive
+  # work -- entity inference, slot detection, fact verification, novelty and
+  # belief extraction -- is skipped.
+  defp finalize_pass1(%ChunkAnalysis{} = pass1, cross_context, opts) do
     Progress.report(opts, :chunk_pass2_skipped, %{
       chunk_index: pass1.chunk_index,
       reason: :non_substantive,
       speech_act: Map.get(pass1.speech_act || %{}, :category)
     })
 
+    pass1_with_context = Map.put(pass1, :accumulated_context, cross_context.accumulator)
+
+    {refined_speech_act, intent, _intent_method, _intent_confidence, _intent_details, _profile,
+     feature_vector} =
+      classify_intent_full_and_refine(pass1_with_context, opts)
+
     pass1
     |> Map.delete(:_prelim_intent)
+    |> Map.put(:speech_act, refined_speech_act)
+    |> Map.put(:intent, intent)
     |> Map.put(:slots, default_empty_slots())
-    |> calculate_confidence()
+    |> Map.put(:feature_vector, feature_vector)
+    |> calculate_confidence(cross_context.accumulator)
+    |> put_final_profile()
     |> ChunkAnalysis.determine_response_strategy()
+  end
+
+  # The chunk's profile, from its final analysis and the vector its intent was
+  # classified from: the axes match what the classifiers saw, and the posture
+  # reflects the final confidence. Its domain is the chunk's intent domain.
+  defp put_final_profile(%ChunkAnalysis{feature_vector: [_ | _] = vector} = analysis) do
+    profile = ChunkProfile.materialize(analysis, vector)
+
+    analysis
+    |> Map.put(:profile, profile)
+    |> Map.put(:intent_domain, if(profile.domain == :unknown, do: nil, else: to_string(profile.domain)))
   end
 
   defp default_empty_slots do
@@ -575,7 +562,8 @@ defmodule Brain.Analysis.Pipeline do
 
     pass1_with_context = Map.put(pass1, :accumulated_context, cross_context.accumulator)
 
-    {refined_speech_act, intent, intent_method, intent_confidence, intent_details, chunk_profile} =
+    {refined_speech_act, intent, intent_method, intent_confidence, intent_details, chunk_profile,
+     feature_vector} =
       classify_intent_full_and_refine(pass1_with_context, opts)
 
     if debug_pass2?, do: Logger.info("  pass2:classify_intent_full=#{System.monotonic_time(:millisecond) - t0}ms")
@@ -712,9 +700,10 @@ defmodule Brain.Analysis.Pipeline do
       |> Map.put(:fact_verification, fact_result.verification)
       |> Map.put(:related_beliefs, fact_result.beliefs)
       |> Map.put(:epistemic_status, fact_result.status)
-      |> Map.put(:accumulated_context, cross_context.accumulator)
+      |> Map.put(:feature_vector, feature_vector)
       |> Map.put(:pass, 2)
-      |> calculate_confidence()
+      |> calculate_confidence(cross_context.accumulator)
+      |> put_final_profile()
       |> ChunkAnalysis.determine_response_strategy()
 
     maybe_extract_beliefs_from_events(pass1.events, opts)
@@ -738,12 +727,12 @@ defmodule Brain.Analysis.Pipeline do
   # on the refined speech act. A lightweight ChunkProfile is materialized so
   # determine_intent can prefer `derived_label` when intent_full is uncertain.
   defp classify_intent_full_and_refine(pass1_with_context, opts) do
-    lattice = classify_intent_full(pass1_with_context)
+    {lattice, feature_vector} = classify_intent_full(pass1_with_context)
 
     refined_speech_act =
       SpeechActClassifier.refine_with_intent(pass1_with_context.speech_act, lattice)
 
-    profile = materialize_early_profile(pass1_with_context)
+    profile = ChunkProfile.materialize(pass1_with_context, feature_vector)
     lattice = apply_profile_rerank(lattice, profile)
 
     {intent, intent_method, intent_confidence, intent_details} =
@@ -756,7 +745,7 @@ defmodule Brain.Analysis.Pipeline do
         profile
       )
 
-    {refined_speech_act, intent, intent_method, intent_confidence, intent_details, profile}
+    {refined_speech_act, intent, intent_method, intent_confidence, intent_details, profile, feature_vector}
   end
 
   # Exact-match boost is only applied to candidates whose label is a *registered*
@@ -770,8 +759,6 @@ defmodule Brain.Analysis.Pipeline do
   # final action verb.
   @profile_domain_boost 0.05
 
-  defp apply_profile_rerank(lattice, nil), do: lattice
-
   defp apply_profile_rerank(lattice, %ChunkProfile{} = profile) do
     derived = profile.derived_label
     domain = profile_domain_string(profile)
@@ -783,8 +770,6 @@ defmodule Brain.Analysis.Pipeline do
       true -> do_profile_rerank(lattice, label_match, domain)
     end
   end
-
-  defp apply_profile_rerank(lattice, _), do: lattice
 
   defp do_profile_rerank(%Lattice{} = lattice, label_match, domain) do
     Lattice.rerank(lattice, fn %LatticeCandidate{label: lab} ->
@@ -802,34 +787,33 @@ defmodule Brain.Analysis.Pipeline do
     end)
   end
 
-  defp materialize_early_profile(analysis) do
-    {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
-    ChunkProfile.materialize(analysis, feature_vector)
-  rescue
-    _ -> nil
-  end
-
+  # Returns the lattice and the feature vector it was classified from. The vector
+  # is kept on the analysis, so training data and the profile are built from
+  # exactly what the classifier saw.
   defp classify_intent_full(pass1_with_context) do
-    if MicroClassifiers.ready?() do
-      {feature_vector, _word_feats} = FeatureExtractor.extract(pass1_with_context)
+    {feature_vector, _word_feats} = FeatureExtractor.extract(pass1_with_context)
 
-      case MicroClassifiers.classify_vector_detailed(:intent_full, feature_vector) do
-        {:ok, %Lattice{} = lattice} ->
-          case Lattice.best_label(lattice) do
-            l when l in [nil, "", "unknown"] ->
-              Lattice.empty(:intent_full, error: :unknown_intent)
+    lattice =
+      if MicroClassifiers.ready?() do
+        case MicroClassifiers.classify_vector_detailed(:intent_full, feature_vector) do
+          {:ok, %Lattice{} = lattice} ->
+            case Lattice.best_label(lattice) do
+              l when l in [nil, "", "unknown"] ->
+                Lattice.empty(:intent_full, error: :unknown_intent)
 
-            _ ->
-              lattice
-          end
+              _ ->
+                lattice
+            end
 
-        {:error, reason} ->
-          Lattice.empty(:intent_full, error: reason)
+          {:error, reason} ->
+            Lattice.empty(:intent_full, error: reason)
+        end
+      else
+        Logger.warning("MicroClassifiers not ready — intent_full classification skipped (not_loaded)")
+        Lattice.empty(:intent_full, error: :not_loaded)
       end
-    else
-      Logger.warning("MicroClassifiers not ready — intent_full classification skipped (not_loaded)")
-      Lattice.empty(:intent_full, error: :not_loaded)
-    end
+
+    {lattice, feature_vector}
   end
 
   defp extract_entities(text, opts) do
@@ -1839,7 +1823,13 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp calculate_confidence(analysis) do
+  # Refines the turn's accumulator with this chunk's own measurements. The base
+  # carries the turn's memory context (episodes, semantics, topics, interlocutor
+  # adaptations) and its cross-chunk signals; each per-chunk measurement
+  # replaces the turn-level signal from the same source, so no source counts
+  # twice. This used to start from an empty accumulator, which discarded the
+  # memory context on every turn.
+  defp calculate_confidence(analysis, %ContextAccumulator{} = base_acc) do
     discourse_conf =
       case analysis.discourse do
         %{confidence: c} when is_number(c) -> c
@@ -1889,13 +1879,13 @@ defmodule Brain.Analysis.Pipeline do
       end
 
     acc =
-      %ContextAccumulator{}
-      |> ContextAccumulator.add_signal(:discourse, Map.get(analysis.discourse, :addressee), discourse_conf)
-      |> ContextAccumulator.add_signal(:speech_act, Map.get(analysis.speech_act, :category), speech_act_conf)
-      |> ContextAccumulator.add_signal(:slot_fill, Map.get(analysis.slots || %{}, :all_required_filled, false), slot_conf)
-      |> ContextAccumulator.add_signal(:sentiment, Map.get(analysis.sentiment || %{}, :label, :neutral), sentiment_conf)
-      |> ContextAccumulator.add_signal(:entity_familiarity, entity_fam > 0.5, entity_fam)
-      |> add_intent_signal(analysis.intent, intent_conf)
+      base_acc
+      |> ContextAccumulator.put_signal(:discourse, Map.get(analysis.discourse, :addressee), discourse_conf)
+      |> ContextAccumulator.put_signal(:speech_act, Map.get(analysis.speech_act, :category), speech_act_conf)
+      |> ContextAccumulator.put_signal(:slot_fill, Map.get(analysis.slots || %{}, :all_required_filled, false), slot_conf)
+      |> ContextAccumulator.put_signal(:sentiment, Map.get(analysis.sentiment || %{}, :label, :neutral), sentiment_conf)
+      |> ContextAccumulator.put_signal(:entity_familiarity, entity_fam > 0.5, entity_fam)
+      |> put_intent_signal(analysis.intent, intent_conf)
       |> ContextAccumulator.accumulate()
 
     confidence = ContextAccumulator.effective_confidence(acc) |> Float.round(3)
@@ -1905,10 +1895,10 @@ defmodule Brain.Analysis.Pipeline do
     |> Map.put(:accumulated_context, acc)
   end
 
-  defp add_intent_signal(acc, _intent, nil), do: acc
+  defp put_intent_signal(acc, _intent, nil), do: acc
 
-  defp add_intent_signal(acc, intent, confidence),
-    do: ContextAccumulator.add_signal(acc, :intent, intent, confidence)
+  defp put_intent_signal(acc, intent, confidence),
+    do: ContextAccumulator.put_signal(acc, :intent, intent, confidence)
 
   defp record_pipeline_result(%InternalModel{} = model) do
     feedback_type =
