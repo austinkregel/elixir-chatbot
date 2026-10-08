@@ -229,12 +229,22 @@ defmodule Brain.Analysis.SemanticChunker do
     end)
   end
 
+  # Cuts between the same tokens `count_words/1` counts, so a part never holds
+  # more than `max_words` of them. Each part runs from its first token up to
+  # the next part's first token, so punctuation and spacing stay with the text.
   defp split_by_word_count(text, max_words) do
-    words = Tokenizer.split_words(text)
+    starts =
+      text
+      |> counted_tokens()
+      |> Enum.chunk_every(max_words)
+      |> Enum.map(fn [first | _] -> first.start_pos end)
+      |> List.replace_at(0, 0)
 
-    words
-    |> Enum.chunk_every(max_words)
-    |> Enum.map(&Enum.join(&1, " "))
+    ends = Enum.map(Enum.drop(starts, 1), &(&1 - 1)) ++ [String.length(text) - 1]
+
+    starts
+    |> Enum.zip(ends)
+    |> Enum.map(fn {from, to} -> text |> String.slice(from..to//1) |> String.trim() end)
   end
 
   defp split_on_clause_boundaries(text) do
@@ -297,11 +307,17 @@ defmodule Brain.Analysis.SemanticChunker do
     end
   end
 
-  defp count_words(text) do
+  # Words are the tokenizer's word, number and clitic tokens, the same filter
+  # `Tokenizer.tokenize_normalized/2` applies: "It's amazing!" is three ("it",
+  # "'s", "amazing"). This used to count after expanding contractions, which no
+  # longer happens for clitics the tokenizer splits itself, so "It's" counted
+  # as one word.
+  defp count_words(text), do: text |> counted_tokens() |> length()
+
+  defp counted_tokens(text) do
     text
-    |> Tokenizer.expand_contractions()
-    |> Tokenizer.split_words()
-    |> Enum.count()
+    |> Tokenizer.tokenize()
+    |> Enum.filter(&(&1.type in [:word, :number, :contraction]))
   end
 
   defp contains_quoted_text?(text) do
