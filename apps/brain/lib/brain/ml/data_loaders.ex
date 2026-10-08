@@ -713,7 +713,18 @@ defmodule Brain.ML.DataLoaders do
     filename
     |> String.replace("_entries_en.json", "")
     |> String.replace(".json", "")
-    |> String.replace("-", "_")
+    |> underscored_name!(filename)
+  end
+
+  # Entity types, slot names and context names are written with underscores
+  # everywhere; a hyphenated one is data that was not migrated, not a second
+  # spelling to convert.
+  defp underscored_name!(name, source) do
+    if String.contains?(name, "-") do
+      raise "DataLoaders: #{inspect(name)} from #{inspect(source)} contains a hyphen; names use underscores"
+    end
+
+    name
   end
 
   # A source entry may declare several readings of the same surface form, as
@@ -863,7 +874,7 @@ defmodule Brain.ML.DataLoaders do
     meta
     |> String.replace("@sys.", "")
     |> String.replace("@", "")
-    |> String.replace("-", "_")
+    |> underscored_name!(meta)
   end
 
   defp normalize_text(text) when is_binary(text) do
