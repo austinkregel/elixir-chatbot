@@ -32,6 +32,14 @@ defmodule BrainTest do
       assert {:error, "Conversation not found"} = Brain.evaluate("nonexistent", "Hello!")
     end
 
+    test "raises for an unsupported language before reaching the Brain", %{brain: _brain} do
+      {:ok, conversation_id} = Brain.create_conversation()
+
+      assert_raise ArgumentError, ~r/"fr" is not supported/, fn ->
+        Brain.evaluate(conversation_id, "Bonjour", language: "fr")
+      end
+    end
+
     test "ends a conversation", %{brain: _brain} do
       {:ok, conversation_id} = Brain.create_conversation()
       assert :ok = Brain.end_conversation(conversation_id)
