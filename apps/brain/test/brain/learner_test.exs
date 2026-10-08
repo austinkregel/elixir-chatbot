@@ -61,14 +61,14 @@ defmodule Brain.LearnerDataTest do
     end
   end
 
-  # Test learn_from_classical_extraction/3
+  # Test learn_from_classical_extraction/3. Entities are in the analysis
+  # shape a conversation turn passes: the type is under :entity_type.
   @classical_extraction_cases [
     # {persona, entities, input, description}
     {@test_persona, [], "empty entities", "empty entity list"},
-    {@test_persona, [%{value: "Paris", entity: "location"}], "Paris is nice", "single location entity"},
-    {@test_persona, [%{value: "John", entity: "person"}, %{value: "Seattle", entity: "location"}],
+    {@test_persona, [%{value: "Paris", entity_type: "location"}], "Paris is nice", "single location entity"},
+    {@test_persona, [%{value: "John", entity_type: "person"}, %{value: "Seattle", entity_type: "location"}],
       "John lives in Seattle", "multiple entities"},
-    {@test_persona, [%{"value" => "Test", "entity" => "device"}], "Test device", "string key entity"},
   ]
 
   describe "learn_from_classical_extraction/3 - data driven" do
@@ -81,6 +81,21 @@ defmodule Brain.LearnerDataTest do
       test "#{description}" do
         {:ok, data} = Learner.learn_from_classical_extraction(@persona, @entities, @input)
         assert is_map(data)
+      end
+    end
+
+    test "each entity's type is read from :entity_type" do
+      entities = [%{value: "John", entity_type: "person"}, %{value: "Seattle", entity_type: "location"}]
+
+      {:ok, data} = Learner.learn_from_classical_extraction(@test_persona, entities, "John lives in Seattle")
+
+      assert Enum.map(data["entities"], &{&1["name"], &1["type"]}) ==
+               [{"John", "person"}, {"Seattle", "location"}]
+    end
+
+    test "an entity without :entity_type raises" do
+      assert_raise KeyError, ~r/:entity_type/, fn ->
+        Learner.learn_from_classical_extraction(@test_persona, [%{value: "Paris", entity: "location"}], "Paris")
       end
     end
   end
