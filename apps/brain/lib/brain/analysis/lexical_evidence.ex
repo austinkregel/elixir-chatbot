@@ -60,17 +60,28 @@ defmodule Brain.Analysis.LexicalEvidence do
   @doc """
   Fits a model from `{text, intent}` rows.
 
-  Options: `:language` (required) and `:prior_strength` (required).
+  Options: `:language` (required), `:prior_strength` (required), and `:intents`,
+  the intents the model scores, in order. It defaults to the intents of `rows`;
+  a fold model passes the full model's, so an intent whose rows all fell in the
+  held-out fold keeps its place in the vector. Every intent of `rows` must be
+  in it.
   """
   @spec fit([{String.t(), String.t()}], keyword()) :: t()
   def fit([_ | _] = rows, opts) do
     language = Brain.Language.validate!(Keyword.fetch!(opts, :language))
     prior_strength = Keyword.fetch!(opts, :prior_strength)
+    row_intents = rows |> Enum.map(&elem(&1, 1)) |> Enum.uniq() |> Enum.sort()
+    intents = Keyword.get(opts, :intents, row_intents)
 
-    intents = rows |> Enum.map(&elem(&1, 1)) |> Enum.uniq() |> Enum.sort()
+    case row_intents -- intents do
+      [] -> :ok
+      unknown -> raise ArgumentError, "LexicalEvidence: rows have intents outside :intents: #{inspect(unknown)}"
+    end
+
     by_intent = Enum.group_by(rows, &elem(&1, 1), &ngrams(elem(&1, 0)))
 
-    counts_by_intent = Map.new(by_intent, fn {intent, grams} -> {intent, Enum.frequencies(List.flatten(grams))} end)
+    counts_by_intent =
+      Map.new(intents, fn intent -> {intent, by_intent |> Map.get(intent, []) |> List.flatten() |> Enum.frequencies()} end)
     totals = Enum.reduce(counts_by_intent, %{}, fn {_i, c}, acc -> Map.merge(acc, c, fn _k, a, b -> a + b end) end)
     n_total = totals |> Map.values() |> Enum.sum()
     n_by_intent = Map.new(counts_by_intent, fn {i, c} -> {i, c |> Map.values() |> Enum.sum()} end)
@@ -135,13 +146,20 @@ defmodule Brain.Analysis.LexicalEvidence do
   end
 
   @doc """
-  Out-of-fold models for `rows`: `{fold_of_row, models}`, where a row's fold
-  model was fitted without that row. A training row's features come from its
-  fold model, so they never reflect its own label.
+  Out-of-fold models for the rows `model` was fitted on: `{fold_of_row,
+  models}`, where a row's fold model was fitted without that row, with
+  `model`'s language, prior strength and intents. A training row's features come
+  from its fold model, so they never reflect its own label.
   """
-  @spec fold_models([{String.t(), String.t()}], keyword()) :: {[non_neg_integer()], %{non_neg_integer() => t()}}
-  def fold_models(rows, opts) do
+  @spec fold_models([{String.t(), String.t()}], t()) :: {[non_neg_integer()], %{non_neg_integer() => t()}}
+  def fold_models(rows, %__MODULE__{} = model) do
+    if length(rows) != model.fitted_rows do
+      raise ArgumentError,
+            "LexicalEvidence: #{length(rows)} rows given for a model fitted on #{model.fitted_rows}; fold models must use the same rows"
+    end
+
     folds = fold_assignment(rows)
+    opts = [language: model.language, prior_strength: model.prior_strength, intents: model.intents]
 
     models =
       Map.new(0..(@folds - 1), fn k ->
@@ -185,6 +203,10 @@ defmodule Brain.Analysis.LexicalEvidence do
   def save!(%__MODULE__{language: language} = model) do
     File.write!(path(language), Brain.ML.ModelStore.serialize(model))
   end
+
+  @doc "The fold model for each row, in row order, from `fold_models/2`'s result."
+  @spec row_models({[non_neg_integer()], %{non_neg_integer() => t()}}) :: [t()]
+  def row_models({folds, models}), do: Enum.map(folds, &Map.fetch!(models, &1))
 
   @doc "Reads the stored model for `language`. Raises when it is missing or is not a model."
   @spec read!(String.t()) :: t()
