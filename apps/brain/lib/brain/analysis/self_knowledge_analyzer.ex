@@ -5,7 +5,6 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
   alias Brain.Epistemic.Types.{SelfKnowledgeAssessment, Config}
   alias Brain.Epistemic.UserModelStore
 
-  alias Brain.ML.Tokenizer
   require Logger
   @min_confidence 0.5
 
@@ -72,68 +71,15 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     end
   end
 
-  @doc "Detects if the text matches a meta-cognitive intent.\n\nUses the intent classifier and filters for meta.* intents.\nFalls back to keyword-based detection when classifier is unavailable.\nReturns {:ok, intent, confidence} or :no_match\n"
+  @doc "Detects if the text matches a meta-cognitive intent.\n\nUses the intent classifier and filters for meta.* intents. The classifier is\nrequired: when it is not ready, or classification fails, this raises rather\nthan guessing from keywords.\nReturns {:ok, intent, confidence} or :no_match\n"
   def detect_meta_intent(text, opts \\ []) do
-    case classify_meta(text, Keyword.take(opts, [:side_effects])) do
-      {:ok, %{intent: intent, confidence: confidence}} when is_binary(intent) ->
-        if is_meta_intent?(intent) do
-          {:ok, intent, confidence}
-        else
-          keyword_fallback_detection(text)
-        end
+    %{intent: intent, confidence: confidence} = classify_meta(text, Keyword.take(opts, [:side_effects]))
 
-      _ ->
-        keyword_fallback_detection(text)
+    if is_meta_intent?(intent) do
+      {:ok, intent, confidence}
+    else
+      :no_match
     end
-  rescue
-    _ ->
-      keyword_fallback_detection(text)
-  end
-
-  defp keyword_fallback_detection(text) do
-    tokens = Tokenizer.tokenize_normalized(text)
-    token_set = MapSet.new(tokens)
-
-    cond do
-      is_self_knowledge_pattern?(tokens, token_set) ->
-        {:ok, "meta.self_knowledge", 0.75}
-
-      is_memory_check_pattern?(tokens, token_set) ->
-        {:ok, "meta.memory_check", 0.75}
-
-      is_privacy_probe_pattern?(tokens, token_set) ->
-        {:ok, "meta.privacy_probe", 0.75}
-
-      true ->
-        :no_match
-    end
-  end
-
-  defp is_self_knowledge_pattern?(_tokens, token_set) do
-    has_know = MapSet.member?(token_set, "know") or MapSet.member?(token_set, "learned")
-    has_about_me = MapSet.member?(token_set, "about") and MapSet.member?(token_set, "me")
-    has_you = MapSet.member?(token_set, "you")
-    has_question = MapSet.member?(token_set, "what") or MapSet.member?(token_set, "how")
-
-    (has_know and has_about_me and has_you) or
-      (has_question and has_know and MapSet.member?(token_set, "me"))
-  end
-
-  defp is_memory_check_pattern?(_tokens, token_set) do
-    has_remember = MapSet.member?(token_set, "remember") or MapSet.member?(token_set, "recall")
-    has_you = MapSet.member?(token_set, "you")
-    has_me = MapSet.member?(token_set, "me") or MapSet.member?(token_set, "anything")
-
-    has_remember and has_you and has_me
-  end
-
-  defp is_privacy_probe_pattern?(_tokens, token_set) do
-    tracking_words = ~w(tracking watching monitoring spying collecting)
-    has_tracking = Enum.any?(tracking_words, &MapSet.member?(token_set, &1))
-    has_you = MapSet.member?(token_set, "you")
-    has_me = MapSet.member?(token_set, "me")
-
-    has_tracking and has_you and has_me
   end
 
   @doc "Determines the type of meta-cognitive query from the intent.\n"
@@ -156,22 +102,20 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     alias Brain.Analysis.{FeatureExtractor, Pipeline}
     alias Brain.ML.MicroClassifiers
 
-    if MicroClassifiers.ready?() do
-      analysis = Pipeline.analyze_chunk(text, pipeline_opts)
-      {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
-
-      case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
-        {:ok, intent, confidence} ->
-          {:ok, %{intent: intent, confidence: confidence}}
-
-        _ ->
-          {:error, :classification_failed}
-      end
-    else
-      {:error, :no_classifier}
+    unless MicroClassifiers.ready?() do
+      raise "SelfKnowledgeAnalyzer: the intent classifier is not ready, so #{inspect(text)} cannot be checked for a meta-cognitive query"
     end
-  rescue
-    _ -> {:error, :classification_failed}
+
+    analysis = Pipeline.analyze_chunk(text, pipeline_opts)
+    {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+
+    case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
+      {:ok, intent, confidence} when is_binary(intent) ->
+        %{intent: intent, confidence: confidence}
+
+      other ->
+        raise "SelfKnowledgeAnalyzer: intent classification of #{inspect(text)} failed: #{inspect(other)}"
+    end
   end
 
   defp is_meta_intent?(intent, profile \\ nil) do
