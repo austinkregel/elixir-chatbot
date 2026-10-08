@@ -171,14 +171,18 @@ defmodule Brain.Analysis.ChunkAnalysis do
           fact_verification: fact_verification(),
           related_beliefs: list(map()),
           epistemic_status: epistemic_status(),
-          pass: pass()
+          pass: pass(),
+          language: String.t() | nil
         }
 
+  # `language` is the code (`Brain.Language`) the chunk was analyzed in. The
+  # pipeline sets it; feature extraction requires it.
   defstruct [
     :chunk_index,
     :text,
     :discourse,
     :speech_act,
+    :language,
     intent: nil,
     profile: nil,
     feature_vector: [],
