@@ -832,6 +832,7 @@ defmodule Brain do
           world_id: world_id,
           timestamp: System.system_time(:millisecond),
           input: input,
+          intent: Map.get(context, :intent),
           response: learning_response
         }
 
@@ -2141,7 +2142,7 @@ defmodule Brain do
   defp store_in_cognitive_memory(entries) do
     if Process.whereis(Brain.Memory.Store) != nil do
       Enum.each(entries, fn entry ->
-        tags = extract_tags_for_memory(entry.input)
+        tags = intent_tags(entry.intent)
         world_id = Map.get(entry, :world_id, "default")
 
         WorldContext.add_episode(
@@ -2158,17 +2159,11 @@ defmodule Brain do
       Logger.warning("Failed to store in cognitive memory: #{inspect(e)}")
   end
 
-  defp extract_tags_for_memory(input) do
-    case Brain.ML.NLPPipeline.process(input) do
-      {:ok, %{intent: intent}} when is_binary(intent) and intent != "unknown" ->
-        [intent]
-
-      _ ->
-        []
-    end
-  rescue
-    _ -> []
-  end
+  # An episode is tagged with the intent the turn already resolved. This used to
+  # run NLPPipeline on the input again, which repeated the turn's whole analysis
+  # in the Brain process, with writes on, after the reply had been sent.
+  defp intent_tags(intent) when is_binary(intent) and intent not in ["", "unknown"], do: [intent]
+  defp intent_tags(_intent), do: []
 
   defp handle_meta_cognitive_query(_persona, input, user_id, opts) do
     Logger.info("Handling meta-cognitive query", %{input: input, user_id: user_id})
