@@ -4,6 +4,7 @@ defmodule ChatWeb.Router do
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
+    plug ChatWeb.Plugs.AcceptLanguage
     plug :fetch_live_flash
     plug :put_root_layout, html: {ChatWeb.Layouts, :root}
     plug :protect_from_forgery
