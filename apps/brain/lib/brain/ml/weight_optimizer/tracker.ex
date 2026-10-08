@@ -24,7 +24,9 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
   ## Persisted runs
 
   Completed runs are written to
-  `priv/weight_optimizer/runs/<run_id>.json`. On startup, the most
+  `priv/weight_optimizer/runs/<run_id>.json`, or to the directory set by
+  `config :brain, :weight_optimizer_runs_dir` (the test environment sets one per
+  run). On startup, the most
   recent `recent_limit` runs are loaded back into memory so the UI is
   populated immediately after a restart.
   """
@@ -726,7 +728,12 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
   defp encode_value(list) when is_list(list), do: Enum.map(list, &encode_value/1)
   defp encode_value(value), do: value
 
+  # `:weight_optimizer_runs_dir` overrides the location; the test environment
+  # sets it so test runs stay out of priv.
   defp runs_dir do
-    Path.join(Brain.priv_path("weight_optimizer"), "runs")
+    case Application.get_env(:brain, :weight_optimizer_runs_dir) do
+      nil -> Path.join(Brain.priv_path("weight_optimizer"), "runs")
+      dir -> dir
+    end
   end
 end
