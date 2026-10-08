@@ -7,10 +7,10 @@ defmodule Brain.Analysis.AnaphoraResolver do
   require Logger
 
   @entity_type_compatibility %{
-    "pronoun_object" => ~w(device song music-artist topic location item),
-    "pronoun_subject" => ~w(person music-artist),
+    "pronoun_object" => ~w(device song music_artist topic location item),
+    "pronoun_subject" => ~w(person music_artist),
     "demonstrative" => ~w(device song topic item location action),
-    "location_reference" => ~w(location room city place-name geo-location),
+    "location_reference" => ~w(location room city place_name geo_location),
     "indefinite" => ~w(device song topic item),
     "identity_reference" => ~w(device song topic item action),
     "possessive" => ~w(person device)
