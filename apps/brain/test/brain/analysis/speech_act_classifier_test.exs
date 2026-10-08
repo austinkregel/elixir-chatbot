@@ -3,6 +3,7 @@ defmodule Brain.Analysis.SpeechActClassifierTest do
 
   alias Brain.Analysis.SpeechActClassifier
   alias Brain.Analysis.SpeechActResult
+  alias Brain.Analysis.SpeechActTable
   import Brain.TestHelpers
 
   setup_all do
@@ -200,6 +201,30 @@ defmodule Brain.Analysis.SpeechActClassifierTest do
 
       # Should be recognized as information request
       assert result.category == :directive or result.is_question == true
+    end
+
+    test "the classified intent's speech act comes from the speech-act table" do
+      table =
+        SpeechActTable.build(
+          [{"hello there", "smalltalk.greetings.hello"}, {"what is the weather", "weather.query"}],
+          %{
+            "smalltalk.greetings.hello" => %{"category" => "expressive", "speech_act" => "greeting"},
+            "weather.query" => %{"category" => "directive", "speech_act" => "request_information"}
+          },
+          "en"
+        )
+
+      lattice = Brain.Lattice.from_top_k([{"smalltalk.greetings.hello", 5.0}, {"weather.query", 0.1}], stage: :intent_full)
+      refined = SpeechActClassifier.refine_with_intent(SpeechActClassifier.classify("hello there"), lattice, table)
+
+      assert refined.raw_analyses.intent.intent == "smalltalk.greetings.hello"
+      assert {refined.raw_analyses.intent.category, refined.raw_analyses.intent.sub_type} == {:expressive, :greeting}
+
+      unknown = Brain.Lattice.from_top_k([{"music.play", 5.0}], stage: :intent_full)
+
+      assert_raise RuntimeError, ~r/no en speech act for intent "music.play"/, fn ->
+        SpeechActClassifier.refine_with_intent(SpeechActClassifier.classify("play jazz"), unknown, table)
+      end
     end
 
     test "does not confuse greeting with farewell" do
