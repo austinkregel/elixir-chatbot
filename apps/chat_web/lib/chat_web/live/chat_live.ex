@@ -11,7 +11,11 @@ defmodule ChatWeb.ChatLive do
   require Logger
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
+    # The language every turn is analyzed in: the browser's top
+    # Accept-Language choice. An unsupported one raises here, naming it.
+    language = Brain.Language.resolve!(Map.get(session, "accept_language"))
+
     if connected?(socket) do
       PubSub.subscribe(Brain.PubSub, "brain:status")
       PubSub.subscribe(Brain.PubSub, "brain:learning")
@@ -48,6 +52,7 @@ defmodule ChatWeb.ChatLive do
       |> assign(:memory_stats, memory_stats)
       |> assign(:system_status, system_status)
       |> assign(:user_id, user_id)
+      |> assign(:language, language)
       |> assign(:selected_message_id, nil)
       |> assign(:world_models_loading, false)
       |> assign(:world_models_status, get_world_models_status(socket))
@@ -706,11 +711,13 @@ defmodule ChatWeb.ChatLive do
     view_pid = self()
 
     user_id = socket.assigns.user_id
+    language = socket.assigns.language
 
     Task.start(fn ->
       result =
         Brain.evaluate(conversation_id, input,
           user_id: user_id,
+          language: language,
           progress: %{conversation_id: conversation_id, message_id: message_id}
         )
 
