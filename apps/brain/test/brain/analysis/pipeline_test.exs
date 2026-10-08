@@ -146,4 +146,35 @@ defmodule Brain.Analysis.PipelineTest do
       assert Enum.all?(respondable, &(&1.response_strategy in [:can_respond, :hedged_response]))
     end
   end
+
+  describe "the classified feature vector and the chunk profile" do
+    test "every chunk keeps the vector its intent was classified from, and a profile computed from it" do
+      model = Pipeline.process("Hi! Can you play some jazz?", side_effects: false)
+
+      assert length(model.analyses) >= 2
+
+      for analysis <- model.analyses do
+        assert [_ | _] = analysis.feature_vector
+        assert %Brain.Analysis.ChunkProfile{} = analysis.profile
+        assert is_binary(analysis.intent) and analysis.intent != ""
+
+        # The profile's domain is :intent_domain's answer for the stored vector.
+        {:ok, domain, _confidence} =
+          Brain.ML.MicroClassifiers.classify_vector(:intent_domain, analysis.feature_vector)
+
+        assert to_string(analysis.profile.domain) == to_string(domain)
+      end
+    end
+
+    test "a chunk's accumulator keeps the turn's memory context and counts each source once" do
+      model = Pipeline.process("Hello there. What is the weather in Paris?", side_effects: false)
+
+      for analysis <- model.analyses do
+        sources = Enum.map(analysis.accumulated_context.signals, &elem(&1, 0))
+        assert sources == Enum.uniq(sources)
+        assert Enum.count(sources, &(&1 == :speech_act)) == 1
+        assert is_list(analysis.accumulated_context.relevant_episodes)
+      end
+    end
+  end
 end
