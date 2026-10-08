@@ -25,6 +25,29 @@ defmodule Brain.Analysis.ContextAccumulatorTest do
     end
   end
 
+  describe "put_signal/4" do
+    test "replaces the signal from the same source, so each source counts once" do
+      acc =
+        %ContextAccumulator{}
+        |> ContextAccumulator.add_signal(:speech_act, :assertive, 0.6)
+        |> ContextAccumulator.add_signal(:discourse, :bot, 0.8)
+        |> ContextAccumulator.put_signal(:speech_act, :directive, 0.9)
+
+      assert Enum.filter(acc.signals, &(elem(&1, 0) == :speech_act)) == [{:speech_act, :directive, 0.9}]
+      assert {:discourse, :bot, 0.8} in acc.signals
+    end
+
+    test "keeps the accumulator's memory context" do
+      acc =
+        %ContextAccumulator{relevant_episodes: [:an_episode], conversation_topics: ["weather"]}
+        |> ContextAccumulator.put_signal(:intent, "weather.query", 0.7)
+        |> ContextAccumulator.accumulate()
+
+      assert acc.relevant_episodes == [:an_episode]
+      assert acc.conversation_topics == ["weather"]
+    end
+  end
+
   describe "log-odds combination" do
     test "two agreeing high-confidence signals produce higher combined confidence" do
       acc =
