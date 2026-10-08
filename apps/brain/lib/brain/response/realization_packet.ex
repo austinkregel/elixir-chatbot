@@ -8,9 +8,7 @@ defmodule Brain.Response.RealizationPacket do
   science, chat) in ChatML format -- never on structured JSON -- so the
   prompt must be readable prose, not a JSON blob.
 
-  Debug JSON dumps are still written to tmp/realization_packets/ for
-  diagnostics, but the actual prompt sent to Ouro is natural language. A build
-  whose opts carry `side_effects: false` writes no dumps.
+  Building a packet writes nothing.
   """
 
   alias Brain.Response.Primitive
@@ -36,9 +34,6 @@ defmodule Brain.Response.RealizationPacket do
   def build(primitives, analysis, opts) when is_list(opts) do
     unified_context = Keyword.get(opts, :unified_context, %{})
     tone = extract_tone(analysis, opts)
-    dump? = Keyword.get(opts, :side_effects, true)
-
-    if dump?, do: dump_debug_json(primitives, analysis, unified_context)
 
     user_message =
       [
@@ -53,12 +48,6 @@ defmodule Brain.Response.RealizationPacket do
       |> Enum.join("\n")
 
     Logger.info("RealizationPacket prompt: #{byte_size(user_message)} chars, #{length(primitives)} primitives")
-
-    if dump? do
-      dump_dir = Path.join([File.cwd!(), "tmp", "realization_packets"])
-      ts = System.system_time(:millisecond)
-      File.write(Path.join(dump_dir, "#{ts}_prompt.txt"), "=== SYSTEM ===\n#{@system_prompt}\n=== USER ===\n#{user_message}")
-    end
 
     [
       %{role: "system", content: @system_prompt},
@@ -645,68 +634,10 @@ defmodule Brain.Response.RealizationPacket do
     lines
   end
 
-  # --- Debug JSON dumps (not sent to Ouro) ---
+  # --- Primitive serialization (for DecompressorCollector) ---
 
-  defp dump_debug_json(primitives, analysis, unified_context) do
-    analysis_data = serialize_analysis_for_debug(analysis)
-    context_data = serialize_context_for_debug(unified_context)
-    plan_data = Enum.map(primitives, &serialize_primitive_for_debug/1)
-
-    analysis_json = Jason.encode!(analysis_data, pretty: true)
-    context_json = Jason.encode!(context_data, pretty: true)
-    plan_json = Jason.encode!(plan_data, pretty: true)
-
-    dump_dir = Path.join([File.cwd!(), "tmp", "realization_packets"])
-    File.mkdir_p!(dump_dir)
-    ts = System.system_time(:millisecond)
-
-    File.write!(Path.join(dump_dir, "#{ts}_plan.json"), plan_json)
-    File.write!(Path.join(dump_dir, "#{ts}_analysis.json"), analysis_json)
-    File.write!(Path.join(dump_dir, "#{ts}_context.json"), context_json)
-
-    Logger.info(
-      "RealizationPacket debug dump: tmp/realization_packets/#{ts}_*.json | " <>
-        "plan=#{byte_size(plan_json)} analysis=#{byte_size(analysis_json)} " <>
-        "context=#{byte_size(context_json)}"
-    )
-  rescue
-    e -> Logger.warning("Failed to dump debug JSON: #{inspect(e)}")
-  end
-
-  defp serialize_analysis_for_debug(analysis) do
-    profile = safe_get(analysis, :profile)
-
-    base = %{
-      "text" => safe_get(analysis, :text),
-      "intent" => safe_get(analysis, :intent),
-      "confidence" => safe_get(analysis, :confidence, 0.5),
-      "response_strategy" => safe_get(analysis, :response_strategy) |> stringify_atom(),
-      "entities" => safe_get(analysis, :entities, []) |> Enum.map(&serialize_value/1),
-      "sentiment" => serialize_value(safe_get(analysis, :sentiment)),
-      "speech_act" => serialize_value(safe_get(analysis, :speech_act))
-    }
-
-    if match?(%ChunkProfile{}, profile) do
-      Map.put(base, "profile", %{
-        "derived_label" => profile.derived_label,
-        "domain" => stringify_atom(profile.domain),
-        "modality" => stringify_atom(profile.modality),
-        "response_posture" => stringify_atom(profile.response_posture),
-        "engagement_level" => stringify_atom(profile.engagement_level),
-        "confidence" => profile.confidence
-      })
-    else
-      base
-    end
-  end
-
-  defp serialize_context_for_debug(ctx) when ctx in [nil, %{}], do: nil
-  defp serialize_context_for_debug(ctx), do: serialize_value(ctx)
-
-  @doc "Serializes a primitive to a map for JSON encoding. Used by debug dumps and DecompressorCollector."
-  def serialize_primitive(%Primitive{} = p), do: serialize_primitive_for_debug(p)
-
-  defp serialize_primitive_for_debug(%Primitive{} = p) do
+  @doc "Serializes a primitive to a map for JSON encoding. Used by DecompressorCollector."
+  def serialize_primitive(%Primitive{} = p) do
     content =
       p.content
       |> Enum.map(fn {k, v} -> {to_string(k), serialize_value(v)} end)
@@ -719,7 +650,7 @@ defmodule Brain.Response.RealizationPacket do
     }
   end
 
-  # --- Value serialization (for debug dumps) ---
+  # --- Value serialization ---
 
   @doc false
   def serialize_value(v) when is_atom(v) and not is_nil(v) and not is_boolean(v), do: to_string(v)
