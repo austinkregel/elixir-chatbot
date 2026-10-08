@@ -23,7 +23,7 @@ defmodule Brain.Analysis.TypeHierarchyTest do
       assert TypeHierarchy.is_a?("artist", "person")
     end
 
-    test "music-artist is a person" do
+    test "music_artist is a person" do
       assert TypeHierarchy.is_a?("music_artist", "person")
     end
 
@@ -59,7 +59,7 @@ defmodule Brain.Analysis.TypeHierarchyTest do
       assert "name" in specs
     end
 
-    test "artist has music-artist as child" do
+    test "artist has music_artist as child" do
       specs = TypeHierarchy.specializations("artist")
       assert "music_artist" in specs
     end
@@ -96,7 +96,7 @@ defmodule Brain.Analysis.TypeHierarchyTest do
       refute TypeHierarchy.compatible?("person", "song")
     end
 
-    test "person is compatible with music-artist" do
+    test "person is compatible with music_artist" do
       assert TypeHierarchy.compatible?("person", "music_artist")
     end
   end
@@ -112,7 +112,7 @@ defmodule Brain.Analysis.TypeHierarchyTest do
       assert "artist" in candidates
     end
 
-    test "artist can narrow to music-artist" do
+    test "artist can narrow to music_artist" do
       candidates = TypeHierarchy.narrowing_candidates("artist", ["music_artist", "song"])
       assert "music_artist" in candidates
     end
@@ -142,11 +142,11 @@ defmodule Brain.Analysis.TypeHierarchyTest do
       assert TypeHierarchy.parent_type?("location")
     end
 
-    test "artist is a parent type (has music-artist)" do
+    test "artist is a parent type (has music_artist)" do
       assert TypeHierarchy.parent_type?("artist")
     end
 
-    test "music-artist is not a parent type" do
+    test "music_artist is not a parent type" do
       refute TypeHierarchy.parent_type?("music_artist")
     end
   end
