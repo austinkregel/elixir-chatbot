@@ -472,11 +472,7 @@ defmodule Brain.Memory.Embedder do
   end
 
   defp expand_tokens_with_lexicon(tokens, vocabulary) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      Brain.ML.Lexicon.expand_with_synonyms(tokens, vocabulary)
-    else
-      tokens
-    end
+    Brain.Lexicon.expand_with_synonyms(tokens, vocabulary)
   end
 
   defp normalize_vector(vector) do

@@ -1,0 +1,146 @@
+[
+  {
+    "text": "hey turn on heating",
+    "tokens": [
+      "hey",
+      "turn",
+      "on",
+      "heating"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-c54c8c9a",
+    "intent": "smarthome.heating.switch.on"
+  },
+  {
+    "text": "I want to turn on heating",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "turn",
+      "on",
+      "heating"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-a2172524",
+    "intent": "smarthome.heating.switch.on"
+  },
+  {
+    "text": "turn on heating in living room",
+    "tokens": [
+      "turn",
+      "on",
+      "heating",
+      "in",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "VERB",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-90e9b84d",
+    "intent": "smarthome.heating.switch.on"
+  },
+  {
+    "text": "turn heating everywhere",
+    "tokens": [
+      "turn",
+      "heating",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-b8efedfc",
+    "intent": "smarthome.heating.switch.on"
+  },
+  {
+    "text": "turn on heating in the room living",
+    "tokens": [
+      "turn",
+      "on",
+      "heating",
+      "in",
+      "the",
+      "room",
+      "living"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-ac18453a",
+    "intent": "smarthome.heating.switch.on"
+  },
+  {
+    "text": "could you turn on heating",
+    "tokens": [
+      "could",
+      "you",
+      "turn",
+      "on",
+      "heating"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-318be693",
+    "intent": "smarthome.heating.switch.on"
+  },
+  {
+    "text": "turn on heating the living room",
+    "tokens": [
+      "turn",
+      "on",
+      "heating",
+      "the",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-228d98f2",
+    "intent": "smarthome.heating.switch.on"
+  }
+]

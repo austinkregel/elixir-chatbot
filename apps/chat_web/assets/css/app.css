@@ -1,5 +1,18 @@
-/* See the Tailwind configuration guide for advanced usage
-   https://tailwindcss.com/docs/configuration */
+/* Retroduct design tokens on Tailwind CSS v4, CSS-first.
+
+   Every color, type style, space, radius, density and stroke comes from the
+   Retroduct Design Language (tokens.json). Utilities read from the token name:
+   the token `ink-muted` is `text-ink-muted`, `surface-sunk` is `bg-surface-sunk`,
+   `border-strong` is `border-border-strong`, `space-md` is `p-space-md`,
+   `control-md` is `h-control-md`, `radius-sm` is `rounded-sm`, `title` is
+   `text-title`.
+
+   Colors are themed through raw CSS variables named exactly after their token
+   (`--ink`, `--surface-sunk`, `--verdict-error` resolves to `--plum`). The
+   `@theme inline` block maps each one to a Tailwind color, so a utility such as
+   `bg-surface` compiles to `background-color: var(--surface)` and resolves
+   where it is used. That is what lets a subtree carrying its own `data-theme`
+   render in that theme. */
 
 @import "tailwindcss" source(none);
 @source "../css";
@@ -10,85 +23,469 @@
    The heroicons installation itself is managed by your mix.exs */
 @plugin "../vendor/heroicons";
 
-/* daisyUI Tailwind Plugin. You can update this file by fetching the latest version with:
-   curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js
-   Make sure to look at the daisyUI changelog: https://daisyui.com/docs/changelog/ */
-@plugin "../vendor/daisyui" {
-  themes: false;
+/* IBM Plex, from the @ibm/plex-sans and @ibm/plex-mono npm packages pinned in
+   assets/package.json. `mix chat_web.fonts`, part of assets.build and
+   assets.deploy, publishes the files to priv/static/fonts with their SIL Open
+   Font License 1.1 (IBM-Plex-OFL.txt). */
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
-/* daisyUI theme plugin. You can update this file by fetching the latest version with:
-  curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js
-  We ship with two themes, a light one inspired on Phoenix colors and a dark one inspired
-  on Elixir colors. Build your own at: https://daisyui.com/theme-generator/ */
-@plugin "../vendor/daisyui-theme" {
-  name: "dark";
-  default: false;
-  prefersdark: true;
-  color-scheme: "dark";
-  --color-base-100: oklch(30.33% 0.016 252.42);
-  --color-base-200: oklch(25.26% 0.014 253.1);
-  --color-base-300: oklch(20.15% 0.012 254.09);
-  --color-base-content: oklch(97.807% 0.029 256.847);
-  --color-primary: oklch(58% 0.233 277.117);
-  --color-primary-content: oklch(96% 0.018 272.314);
-  --color-secondary: oklch(58% 0.233 277.117);
-  --color-secondary-content: oklch(96% 0.018 272.314);
-  --color-accent: oklch(60% 0.25 292.717);
-  --color-accent-content: oklch(96% 0.016 293.756);
-  --color-neutral: oklch(37% 0.044 257.287);
-  --color-neutral-content: oklch(98% 0.003 247.858);
-  --color-info: oklch(58% 0.158 241.966);
-  --color-info-content: oklch(97% 0.013 236.62);
-  --color-success: oklch(60% 0.118 184.704);
-  --color-success-content: oklch(98% 0.014 180.72);
-  --color-warning: oklch(66% 0.179 58.318);
-  --color-warning-content: oklch(98% 0.022 95.277);
-  --color-error: oklch(58% 0.253 17.585);
-  --color-error-content: oklch(96% 0.015 12.422);
-  --radius-selector: 0.25rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.5rem;
-  --size-selector: 0.21875rem;
-  --size-field: 0.21875rem;
-  --border: 1.5px;
-  --depth: 1;
-  --noise: 0;
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
 }
 
-@plugin "../vendor/daisyui-theme" {
-  name: "light";
-  default: true;
-  prefersdark: false;
-  color-scheme: "light";
-  --color-base-100: oklch(98% 0 0);
-  --color-base-200: oklch(96% 0.001 286.375);
-  --color-base-300: oklch(92% 0.004 286.32);
-  --color-base-content: oklch(21% 0.006 285.885);
-  --color-primary: oklch(70% 0.213 47.604);
-  --color-primary-content: oklch(98% 0.016 73.684);
-  --color-secondary: oklch(55% 0.027 264.364);
-  --color-secondary-content: oklch(98% 0.002 247.839);
-  --color-accent: oklch(0% 0 0);
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(44% 0.017 285.786);
-  --color-neutral-content: oklch(98% 0 0);
-  --color-info: oklch(62% 0.214 259.815);
-  --color-info-content: oklch(97% 0.014 254.604);
-  --color-success: oklch(70% 0.14 182.503);
-  --color-success-content: oklch(98% 0.014 180.72);
-  --color-warning: oklch(66% 0.179 58.318);
-  --color-warning-content: oklch(98% 0.022 95.277);
-  --color-error: oklch(58% 0.253 17.585);
-  --color-error-content: oklch(96% 0.015 12.422);
-  --radius-selector: 0.25rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.5rem;
-  --size-selector: 0.21875rem;
-  --size-field: 0.21875rem;
-  --border: 1.5px;
-  --depth: 1;
-  --noise: 0;
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Color utilities. Each points at the raw themed variable of the same token
+   name; meaning tokens point at the base token tokens.json aliases them to. */
+@theme inline {
+  /* Tailwind's default palette is cleared first, so the only color utilities
+     are the Retroduct tokens declared after it. */
+  --color-*: initial;
+
+  /* Surfaces */
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-sunk: var(--surface-sunk);
+  --color-surface-raised: var(--surface-raised);
+
+  /* Text */
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+
+  /* Borders */
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  /* Action, selection and focus */
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-wash: var(--primary-wash);
+  --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-accent-wash: var(--accent-wash);
+  --color-on-accent: var(--on-accent);
+  --color-focus: var(--focus);
+
+  /* Base hues. Use them through the meaning tokens below. */
+  --color-slate: var(--slate);
+  --color-slate-wash: var(--slate-wash);
+  --color-ochre: var(--ochre);
+  --color-ochre-wash: var(--ochre-wash);
+  --color-sienna: var(--sienna);
+  --color-sienna-wash: var(--sienna-wash);
+  --color-red: var(--red);
+  --color-red-wash: var(--red-wash);
+  --color-plum: var(--plum);
+  --color-plum-wash: var(--plum-wash);
+  --color-green: var(--green);
+  --color-green-wash: var(--green-wash);
+  --color-blue: var(--blue);
+  --color-blue-light: var(--blue-light);
+  --color-blue-track: var(--blue-track);
+
+  /* Value origin */
+  --color-origin-computed: var(--ink);
+  --color-origin-declared: var(--slate);
+  --color-origin-declared-wash: var(--slate-wash);
+  --color-origin-default: var(--ochre);
+  --color-origin-standin-wash: var(--ochre-wash);
+  --color-origin-absent: var(--sienna);
+  --color-origin-absent-wash: var(--sienna-wash);
+  --color-origin-unavailable: var(--red);
+  --color-origin-unavailable-wash: var(--red-wash);
+  --color-origin-unobserved: var(--ink-muted);
+
+  /* What a score means */
+  --color-score-calibrated: var(--blue);
+  --color-score-relative: var(--blue-light);
+  --color-score-heuristic: var(--blue);
+  --color-score-unbounded: var(--blue);
+  --color-score-track: var(--blue-track);
+  --color-score-axis: var(--border-strong);
+  --color-score-count: var(--ink);
+
+  /* Candidate versus resolved */
+  --color-candidate-outline: var(--border-strong);
+  --color-candidate-wash: var(--surface-sunk);
+  --color-resolved-mark: var(--accent);
+  --color-resolved-wash: var(--accent-wash);
+
+  /* Reach of an action */
+  --color-reach-read: var(--primary);
+  --color-reach-local: var(--primary);
+  --color-reach-shared: var(--ochre);
+  --color-reach-shared-confirm: var(--primary);
+  --color-on-reach-shared: var(--on-primary);
+  --color-reach-device: var(--red);
+  --color-reach-device-confirm: var(--primary);
+  --color-on-reach-device: var(--on-primary);
+
+  /* Verdict */
+  --color-verdict-pass: var(--green);
+  --color-verdict-pass-wash: var(--green-wash);
+  --color-verdict-fail: var(--red);
+  --color-verdict-fail-wash: var(--red-wash);
+  --color-verdict-error: var(--plum);
+  --color-verdict-error-wash: var(--plum-wash);
+  --color-verdict-pending: var(--ink-muted);
+
+  /* Availability */
+  --color-avail-ready: var(--ink);
+  --color-avail-stale: var(--ochre);
+  --color-avail-stale-wash: var(--ochre-wash);
+  --color-avail-untrained: var(--ink-muted);
+  --color-avail-missing: var(--ink-muted);
+  --color-avail-corrupt: var(--red);
+  --color-avail-corrupt-wash: var(--red-wash);
+  --color-avail-kind: var(--ink-muted);
+
+  /* Job progress */
+  --color-progress-fill: var(--accent);
+  --color-progress-track: var(--blue-track);
+
+  /* The one elevation. Themed through --elevation-overlay, because the dark
+     value differs in geometry as well as color. */
+  --shadow-overlay: var(--elevation-overlay);
+}
+
+/* Type, spacing, density, radius and stroke. `static` emits every variable,
+   used or not, so plain CSS can read any token with var(). */
+@theme static {
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Type styles. Each `text-<style>` utility below also sets the family, so
+     one class carries the whole style. */
+  --text-title: 22px;
+  --text-title--line-height: 28px;
+  --text-title--font-weight: 600;
+  --text-title--letter-spacing: -0.01em;
+  --text-heading: 17px;
+  --text-heading--line-height: 24px;
+  --text-heading--font-weight: 600;
+  --text-subheading: 14px;
+  --text-subheading--line-height: 20px;
+  --text-subheading--font-weight: 600;
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+  --text-body--font-weight: 400;
+  --text-body-dense: 13px;
+  --text-body-dense--line-height: 18px;
+  --text-body-dense--font-weight: 400;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-caption--font-weight: 400;
+  --text-label: 11px;
+  --text-label--line-height: 16px;
+  --text-label--font-weight: 600;
+  --text-label--letter-spacing: 0.06em;
+  --text-value: 13px;
+  --text-value--line-height: 18px;
+  --text-value--font-weight: 400;
+  --text-value-strong: 13px;
+  --text-value-strong--line-height: 18px;
+  --text-value-strong--font-weight: 600;
+  --text-term: 12px;
+  --text-term--line-height: 18px;
+  --text-term--font-weight: 400;
+  --text-ref: 12px;
+  --text-ref--line-height: 16px;
+  --text-ref--font-weight: 400;
+  --text-offset: 11px;
+  --text-offset--line-height: 14px;
+  --text-offset--font-weight: 500;
+
+  /* Spacing: 4px base with a 2px half-step. `p-space-md`, `gap-space-sm`. */
+  --spacing-space-2xs: 2px;
+  --spacing-space-xs: 4px;
+  --spacing-space-sm: 8px;
+  --spacing-space-md: 12px;
+  --spacing-space-lg: 16px;
+  --spacing-space-xl: 24px;
+  --spacing-space-2xl: 32px;
+  --spacing-space-3xl: 48px;
+
+  /* Density: row and control heights. `h-row-compact`, `h-control-md`. */
+  --spacing-row-compact: 24px;
+  --spacing-row-regular: 32px;
+  --spacing-row-relaxed: 40px;
+  --spacing-control-sm: 24px;
+  --spacing-control-md: 32px;
+
+  /* Radius. `rounded-pip` is for circular marks only. */
+  --radius-none: 0px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-pip: 9999px;
+
+  /* Stroke. Tailwind has no theme namespace for border or outline widths, so
+     these are plain variables, applied through the border-hairline,
+     border-mark and outline-mark utilities below and the global focus rule. */
+  --stroke-hairline: 1px;
+  --stroke-mark: 2px;
+  --stroke-focus: 2px;
+  --focus-offset: 2px;
+}
+
+/* Themed values. Light is the default and also applies to any subtree marked
+   data-theme="light"; dark applies under data-theme="dark", and under
+   prefers-color-scheme: dark when no explicit theme is set on the root. */
+@layer base {
+  :root,
+  [data-theme="light"] {
+    color-scheme: light;
+    --ground: #f4f7fa;
+    --surface: #ffffff;
+    --surface-sunk: #eff2f7;
+    --surface-raised: #ffffff;
+    --ink: #171d26;
+    --ink-muted: #565e6a;
+    --border: #dce0e5;
+    --border-strong: #7f8791;
+    --primary: #203254;
+    --primary-hover: #33476d;
+    --primary-wash: #e7edf8;
+    --on-primary: #ffffff;
+    --accent: #5344c3;
+    --accent-wash: #ecedfd;
+    --on-accent: #ffffff;
+    --focus: #5d4ed6;
+    --slate: #135360;
+    --slate-wash: #e4f2f6;
+    --ochre: #8b641a;
+    --ochre-wash: #fdf2d6;
+    --sienna: #5e2402;
+    --sienna-wash: #fcebe2;
+    --red: #a01819;
+    --red-wash: #feebe9;
+    --plum: #620e47;
+    --plum-wash: #fae9f2;
+    --green: #21763c;
+    --green-wash: #e3f7e6;
+    --blue: #2684ae;
+    --blue-light: #abd1e6;
+    --blue-track: #e4ebee;
+    --elevation-overlay: 0 4px 12px #171d261f, 0 1px 2px #171d2614;
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1217;
+    --surface: #151a1f;
+    --surface-sunk: #0a0e12;
+    --surface-raised: #1e232a;
+    --ink: #e9edf2;
+    --ink-muted: #a5adb8;
+    --border: #2a3036;
+    --border-strong: #6e757f;
+    --primary: #cbd8ef;
+    --primary-hover: #aebedc;
+    --primary-wash: #222a39;
+    --on-primary: #0b0f18;
+    --accent: #acaffc;
+    --accent-wash: #272746;
+    --on-accent: #0d0e1c;
+    --focus: #b3b6fd;
+    --slate: #68a8b8;
+    --slate-wash: #13292e;
+    --ochre: #eec46e;
+    --ochre-wash: #36270e;
+    --sienna: #e19e78;
+    --sienna-wash: #351f15;
+    --red: #e45d58;
+    --red-wash: #381614;
+    --plum: #f9c4e0;
+    --plum-wash: #3a1c2e;
+    --green: #66c483;
+    --green-wash: #162b1b;
+    --blue: #4a9dc5;
+    --blue-light: #164e67;
+    --blue-track: #262c30;
+    --elevation-overlay: 0 8px 24px #000000b3;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1217;
+      --surface: #151a1f;
+      --surface-sunk: #0a0e12;
+      --surface-raised: #1e232a;
+      --ink: #e9edf2;
+      --ink-muted: #a5adb8;
+      --border: #2a3036;
+      --border-strong: #6e757f;
+      --primary: #cbd8ef;
+      --primary-hover: #aebedc;
+      --primary-wash: #222a39;
+      --on-primary: #0b0f18;
+      --accent: #acaffc;
+      --accent-wash: #272746;
+      --on-accent: #0d0e1c;
+      --focus: #b3b6fd;
+      --slate: #68a8b8;
+      --slate-wash: #13292e;
+      --ochre: #eec46e;
+      --ochre-wash: #36270e;
+      --sienna: #e19e78;
+      --sienna-wash: #351f15;
+      --red: #e45d58;
+      --red-wash: #381614;
+      --plum: #f9c4e0;
+      --plum-wash: #3a1c2e;
+      --green: #66c483;
+      --green-wash: #162b1b;
+      --blue: #4a9dc5;
+      --blue-light: #164e67;
+      --blue-track: #262c30;
+      --elevation-overlay: 0 8px 24px #000000b3;
+    }
+  }
+
+  body {
+    background-color: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  /* Keyboard focus is a 2px outline at a 2px offset, never a box-shadow, so it
+     survives forced colors. */
+  :focus-visible {
+    outline: var(--stroke-focus) solid var(--focus);
+    outline-offset: var(--focus-offset);
+  }
+}
+
+/* A panel: surface with a hairline edge, radius-md, no shadow. It lives in the
+   components layer so a utility passed alongside it (a verdict-error border, a
+   stand-in wash) overrides it, instead of two utilities for the same property
+   competing on CSS order. */
+@layer components {
+  .panel {
+    border-radius: var(--radius-md);
+    border: var(--stroke-hairline) solid var(--border);
+    background-color: var(--surface);
+  }
+}
+
+/* One class per type style, carrying its family with its size, line height,
+   weight and tracking. */
+@utility text-title {
+  font-family: var(--font-sans);
+}
+
+@utility text-heading {
+  font-family: var(--font-sans);
+}
+
+@utility text-subheading {
+  font-family: var(--font-sans);
+}
+
+@utility text-body {
+  font-family: var(--font-sans);
+}
+
+@utility text-body-dense {
+  font-family: var(--font-sans);
+}
+
+@utility text-caption {
+  font-family: var(--font-sans);
+}
+
+@utility text-label {
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+}
+
+@utility text-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@utility text-value-strong {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@utility text-term {
+  font-family: var(--font-mono);
+}
+
+@utility text-ref {
+  font-family: var(--font-mono);
+}
+
+@utility text-offset {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Stroke widths that carry meaning. */
+@utility border-hairline {
+  border-width: var(--stroke-hairline);
+}
+
+@utility border-mark {
+  border-width: var(--stroke-mark);
+}
+
+/* The reach outline around a confirm button: stroke-mark wide, at
+   focus-offset. Its color comes from outline-reach-shared or
+   outline-reach-device. */
+@utility outline-mark {
+  outline-style: solid;
+  outline-width: var(--stroke-mark);
+  outline-offset: var(--focus-offset);
+}
+
+/* The reach ring around the confirm button of a shared write or a device
+   action: a stroke-mark border on a wrapper, padded by focus-offset +
+   stroke-focus + space-2xs (6px), so the button's own focus outline fits
+   between the button and the ring and the reach color stays visible while the
+   button has focus. Its radius keeps the ring concentric with the button's
+   radius-md. Its color comes from border-reach-shared or border-reach-device. */
+@utility reach-ring {
+  display: inline-flex;
+  border-style: solid;
+  border-width: var(--stroke-mark);
+  padding: calc(var(--focus-offset) + var(--stroke-focus) + var(--spacing-space-2xs));
+  border-radius: calc(var(--radius-md) + var(--focus-offset) + var(--stroke-focus));
 }
 
 /* Add variants based on LiveView classes */
@@ -96,13 +493,22 @@
 @custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
 @custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
 
-/* Use the data attribute for dark mode  */
-@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+/* Dark, by the same rule the tokens follow: an explicit data-theme="dark", or
+   the system preference when no explicit light theme is set. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *):not(:where([data-theme="light"] *)) {
+    @slot;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *):not(:where([data-theme="light"], [data-theme="light"] *)) {
+      @slot;
+    }
+  }
+}
 
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
-
-/* This file is for your main application CSS */
 
 /* Custom animations for world entities */
 @keyframes fade-in {

@@ -1,0 +1,178 @@
+[
+  {
+    "text": "is TV n't volume too loud",
+    "tokens": [
+      "is",
+      "TV",
+      "n't",
+      "volume",
+      "too",
+      "loud"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADV",
+      "NOUN",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-21d5a1b2",
+    "intent": "smarthome.device.volume.check.implicit"
+  },
+  {
+    "text": "is n't TV too loud everywhere",
+    "tokens": [
+      "is",
+      "n't",
+      "TV",
+      "too",
+      "loud",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV",
+      "PROPN",
+      "ADV",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-0d98cd12",
+    "intent": "smarthome.device.volume.check.implicit"
+  },
+  {
+    "text": "I'd like to isn't tv volume too loud",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "is",
+      "n't",
+      "tv",
+      "volume",
+      "too",
+      "loud"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "NOUN",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-b06b9d4c",
+    "intent": "smarthome.device.volume.check.implicit"
+  },
+  {
+    "text": "is n't TV too volume loud",
+    "tokens": [
+      "is",
+      "n't",
+      "TV",
+      "too",
+      "volume",
+      "loud"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV",
+      "PROPN",
+      "ADV",
+      "NOUN",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-55aef4a2",
+    "intent": "smarthome.device.volume.check.implicit"
+  },
+  {
+    "text": "is n't TV too loud",
+    "tokens": [
+      "is",
+      "n't",
+      "TV",
+      "too",
+      "loud"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADV",
+      "PROPN",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-158ca163",
+    "intent": "smarthome.device.volume.check.implicit"
+  },
+  {
+    "text": "I'd like to isn't tv too loud everywhere",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "is",
+      "n't",
+      "tv",
+      "too",
+      "loud",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADV",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-fda737f4",
+    "intent": "smarthome.device.volume.check.implicit"
+  },
+  {
+    "text": "could you isn't tv too loud in the kitchen",
+    "tokens": [
+      "could",
+      "you",
+      "is",
+      "n't",
+      "tv",
+      "too",
+      "loud",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-e95f51bb",
+    "intent": "smarthome.device.volume.check.implicit"
+  }
+]

@@ -33,7 +33,8 @@ defmodule Brain.Memory.Types do
             outcome: String.t(),
             tags: [String.t()],
             embedding: [float()],
-            semantic_id: String.t() | nil
+            semantic_id: String.t() | nil,
+            entity_names: [String.t()]
           }
 
     defstruct [
@@ -44,7 +45,8 @@ defmodule Brain.Memory.Types do
       :outcome,
       tags: [],
       embedding: [],
-      semantic_id: nil
+      semantic_id: nil,
+      entity_names: []
     ]
 
     @doc """
@@ -59,7 +61,8 @@ defmodule Brain.Memory.Types do
         outcome: outcome,
         tags: tags,
         embedding: embedding,
-        semantic_id: nil
+        semantic_id: nil,
+        entity_names: []
       }
     end
 

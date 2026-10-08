@@ -37,6 +37,7 @@ This is a Phoenix LiveView chatbot application built around **classical NLP tech
 - **Elixir** >= 1.18 (`.tool-versions` pins 1.19.5)
 - **Erlang/OTP** >= 27 (`.tool-versions` pins 28.3.3)
 - **PostgreSQL** — local install or the `apache/age` container via Docker Compose
+- **Node.js with npm** — `mix assets.setup` installs the web fonts from npm (`apps/chat_web/assets/package.json`)
 
 **Optional:**
 
@@ -233,7 +234,7 @@ For detailed documentation, see the `docs/` folder:
 
 ### Outputs (generated / trained)
 
-- **Classical models**: `apps/brain/priv/ml_models/*.term` (intent classifier, entity model, gazetteer, embedder, POS tagger, sentiment classifier)
+- **Classical models**: `apps/brain/priv/ml_models/*.term` (intent classifier, entity model, embedder, POS tagger, sentiment classifier)
 - **Feature-vector micro-classifiers**: `apps/brain/priv/ml_models/micro/*.term` (intent_full, intent_domain, framing_class, tense_class, aspect_class, urgency, certainty_level, framing_neutral_centroid, ...)
 - **Knowledge-graph triple scorer**: `apps/brain/priv/ml_models/kg_lstm/<world_id>/*.term` (BiLSTM, trained per world via `mix train.kg_lstm`)
 - **Comprehension weights**: `apps/brain/priv/analysis/comprehension_weights.json` (EMA-evolved dimension weights)
@@ -355,9 +356,9 @@ Tests are tagged for CI optimization:
 
 Assets (aliases defined in `mix.exs`):
 
-- **`mix assets.setup`**: install Tailwind + esbuild if missing
-- **`mix assets.build`**: compile + build Tailwind + esbuild
-- **`mix assets.deploy`**: minify assets + `phx.digest` (for production)
+- **`mix assets.setup`**: install Tailwind + esbuild if missing, and the npm packages in `assets/package.json` (`npm ci`)
+- **`mix assets.build`**: compile + build Tailwind + esbuild, and publish the IBM Plex fonts to `priv/static/fonts` (`mix chat_web.fonts`)
+- **`mix assets.deploy`**: publish the fonts, minify assets + `phx.digest` (for production)
 
 ### Train ML models
 
@@ -375,8 +376,10 @@ Models are loaded on app boot; train them when you change intent/entity data.
 - **`mix train_models`**: train TF-IDF models; saves to `priv/ml_models/`
 - **`mix train_models --intent-only`**: train only intent classifier
 - **`mix train_models --entity-only`**: train only entity recognition model
-- **`mix train_models --gazetteer-only`**: build only gazetteer lookup tables
-- **`mix train_models --skip-gazetteer`**: train models but skip gazetteer build (faster / lower memory)
+
+The gazetteer is not a trained model. `Brain.ML.Gazetteer` builds it in memory
+from `data/entities/` and the city, artist and emoji CSVs every time the app
+starts, and the app will not start if any of those sources is missing.
 
 #### LSTM models (Axon/Nx)
 
@@ -433,9 +436,9 @@ Available fixers: `trailing_whitespace`, `large_numbers`, `length_check`, `map_j
 - **`mix clear_knowledge --entities`**: clear only admin-added gazetteer entries
 - **`mix clear_knowledge --reload`**: clear and reload gazetteer from data files
 
-### Generate / refresh entity datasets (then rebuild gazetteer)
+### Generate / refresh entity datasets (then restart)
 
-These tasks download bounded datasets, write JSON into `data/entities/`, and cache remote responses in `priv/data_cache/`. After running any of them, typically run `mix train_models --gazetteer-only` and restart the app.
+These tasks download bounded datasets, write JSON into `data/entities/`, and cache remote responses in `priv/data_cache/`. After running any of them, restart the app; the gazetteer is rebuilt from `data/entities/` at startup.
 
 - **`mix generate_person_names`**
   - Source: US SSA baby names dataset (`names.zip`)
@@ -548,8 +551,9 @@ mix train --name "v2" --compare
 
 ### I generated new entity lists (SSA/countries/Wikidata/etc.)
 
+Restart the app; the gazetteer is rebuilt from `data/entities/` at startup.
+
 ```bash
-mix train_models --gazetteer-only
 mix phx.server
 ```
 

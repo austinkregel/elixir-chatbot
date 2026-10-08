@@ -1,0 +1,332 @@
+[
+  {
+    "intent": "music.play",
+    "labeled_by": "augmented",
+    "source_file": "music.play_usersays_en.json",
+    "text": "Play Bohemian Rhapsody"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "augmented",
+    "source_file": "music.search_usersays_en.json",
+    "text": "now find Hello Darling song"
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.greetings.hello_usersays_en.json",
+    "text": "ello"
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.greetings.hello_usersays_en.json",
+    "text": "Hello! It is nice to meet you"
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.greetings.hello_usersays_en.json",
+    "text": "Hello! I have a question"
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.greetings.hello_usersays_en.json",
+    "text": "holla"
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.greetings.hello_usersays_en.json",
+    "text": "Hello, I'm Sarah. Nice to meet you."
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.greetings.hello_usersays_en.json",
+    "text": "howdy!"
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.greetings.hello_usersays_en.json",
+    "text": "Hi there! I need some help"
+  },
+  {
+    "intent": "smarthome.device.brightness.check.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.lights.brightness.check.implicit_usersays_en.json",
+    "text": "is bright it enough everywhere"
+  },
+  {
+    "intent": "smarthome.device.brightness.check.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.lights.brightness.check.implicit_usersays_en.json",
+    "text": "can you are the decorations bright enough everywhere"
+  },
+  {
+    "intent": "smarthome.device.brightness.check.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.lights.brightness.check.implicit_usersays_en.json",
+    "text": "I'd like to is it bright enough everywhere"
+  },
+  {
+    "intent": "smarthome.device.brightness.check.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.lights.brightness.check.implicit_usersays_en.json",
+    "text": "is the TV dark in living room"
+  },
+  {
+    "intent": "smarthome.device.brightness.up.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.lights.brightness.up.implicit_usersays_en.json",
+    "text": "I'd like to it's dark in here"
+  },
+  {
+    "intent": "smarthome.device.brightness.up.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.lights.brightness.up.implicit_usersays_en.json",
+    "text": "my laptop screen is way too"
+  },
+  {
+    "intent": "smalltalk.greetings.nice_to_meet_you",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.greetings.nice_to_meet_you_usersays_en.json",
+    "text": "Hi there, it's nice to meet you"
+  },
+  {
+    "intent": "smalltalk.user.lonely",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.lonely_usersays_en.json",
+    "text": "I want to i feel lonely"
+  },
+  {
+    "intent": "smalltalk.user.sleepy",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.sleepy_usersays_en.json",
+    "text": "I want to i'm sleeping"
+  },
+  {
+    "intent": "smalltalk.user.sleepy",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.sleepy_usersays_en.json",
+    "text": "want I to sleep"
+  },
+  {
+    "intent": "smarthome.device.volume.down.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.device.volume.down.implicit_usersays_en.json",
+    "text": "TV is so loud kitchen"
+  },
+  {
+    "intent": "smalltalk.user.good",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.good_usersays_en.json",
+    "text": "I want to i'm doing just great"
+  },
+  {
+    "intent": "smalltalk.agent.birth_date",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.agent.birth_date_usersays_en.json",
+    "text": "birth your date"
+  },
+  {
+    "intent": "smalltalk.user.looks_like",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.looks_like_usersays_en.json",
+    "text": "what do you think I look"
+  },
+  {
+    "intent": "smalltalk.user.here",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.here_usersays_en.json",
+    "text": "I here am"
+  },
+  {
+    "intent": "smalltalk.user.here",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.here_usersays_en.json",
+    "text": "could you i am here"
+  },
+  {
+    "intent": "smalltalk.user.sad",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.sad_usersays_en.json",
+    "text": "I sad am"
+  },
+  {
+    "intent": "smarthome.device.volume.up.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.device.volume.up.implicit_usersays_en.json",
+    "text": "I'd like to tv volume is too low in bedroom"
+  },
+  {
+    "intent": "smarthome.device.volume.up.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.device.volume.up.implicit_usersays_en.json",
+    "text": "I want to tv volume is too low in bedroom"
+  },
+  {
+    "intent": "smarthome.locks.check.close",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.locks.check.close_usersays_en.json",
+    "text": "hey is kitchen door closed"
+  },
+  {
+    "intent": "smalltalk.greetings.goodevening",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.greetings.goodevening_usersays_en.json",
+    "text": "can you good evening there"
+  },
+  {
+    "intent": "smalltalk.agent.boring",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.agent.boring_usersays_en.json",
+    "text": "please you are boring me"
+  },
+  {
+    "intent": "smalltalk.user.loves_agent",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.loves_agent_usersays_en.json",
+    "text": "I'd like to love you"
+  },
+  {
+    "intent": "smalltalk.agent.hungry",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.agent.hungry_usersays_en.json",
+    "text": "can you do you want to eat"
+  },
+  {
+    "intent": "smarthome.locks.check",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.locks.check_usersays_en.json",
+    "text": "could you front door status"
+  },
+  {
+    "intent": "smarthome.locks.check",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.locks.check_usersays_en.json",
+    "text": "status front door"
+  },
+  {
+    "intent": "smarthome.heating.switch.on",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.heating.switch.on_usersays_en.json",
+    "text": "could you turn on heating"
+  },
+  {
+    "intent": "smarthome.device.volume.check.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.device.volume.check.implicit_usersays_en.json",
+    "text": "is n't TV too loud everywhere"
+  },
+  {
+    "intent": "smarthome.device.volume.check.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.device.volume.check.implicit_usersays_en.json",
+    "text": "I'd like to isn't tv volume too loud"
+  },
+  {
+    "intent": "smalltalk.user.angry",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.angry_usersays_en.json",
+    "text": "could you i am angry with you"
+  },
+  {
+    "intent": "smalltalk.dialog.i_do_not_care",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.dialog.i_do_not_care_usersays_en.json",
+    "text": "could you not care at all"
+  },
+  {
+    "intent": "smalltalk.agent.age",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.agent.age_usersays_en.json",
+    "text": "what 's your age"
+  },
+  {
+    "intent": "smarthome.device.volume.unmute.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.device.volume.unmute.implicit_usersays_en.json",
+    "text": "please i can't hear the tv"
+  },
+  {
+    "intent": "smarthome.device.volume.unmute.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.device.volume.unmute.implicit_usersays_en.json",
+    "text": "I ca n't hear the TV"
+  },
+  {
+    "intent": "smalltalk.agent.hobby",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.agent.hobby_usersays_en.json",
+    "text": "what your hobby"
+  },
+  {
+    "intent": "smalltalk.user.busy",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.busy_usersays_en.json",
+    "text": "I'd like to i'm overloaded"
+  },
+  {
+    "intent": "smalltalk.user.back",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.back_usersays_en.json",
+    "text": "here am I again"
+  },
+  {
+    "intent": "smalltalk.dialog.what_do_you_mean",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.dialog.what_do_you_mean_usersays_en.json",
+    "text": "I want to what do you mean"
+  },
+  {
+    "intent": "smalltalk.user.going_to_bed",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.going_to_bed_usersays_en.json",
+    "text": "I want to i'm going to bed"
+  },
+  {
+    "intent": "smarthome.device.volume.mute.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.device.volume.mute.implicit_usersays_en.json",
+    "text": "I want to i don't like hearing tv sound from kitchen"
+  },
+  {
+    "intent": "smarthome.device.volume.mute.implicit",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.device.volume.mute.implicit_usersays_en.json",
+    "text": "TV sound is disturbing me everywhere the house"
+  },
+  {
+    "intent": "smalltalk.user.will_be_back",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.user.will_be_back_usersays_en.json",
+    "text": "I promise come back"
+  },
+  {
+    "intent": "smarthome.heating.switch.off",
+    "labeled_by": "augmented",
+    "source_file": "smarthome.heating.switch.off_usersays_en.json",
+    "text": "turn off heating the living room"
+  },
+  {
+    "intent": "smalltalk.emotions.wow",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.emotions.wow_usersays_en.json",
+    "text": "I want to woah"
+  },
+  {
+    "intent": "smalltalk.greetings.nice_to_talk_to_you",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.greetings.nice_to_talk_to_you_usersays_en.json",
+    "text": "hey it is nice talking to you"
+  },
+  {
+    "intent": "smalltalk.dialog.hold_on",
+    "labeled_by": "augmented",
+    "source_file": "smalltalk.dialog.hold_on_usersays_en.json",
+    "text": "I want to wait please"
+  }
+]

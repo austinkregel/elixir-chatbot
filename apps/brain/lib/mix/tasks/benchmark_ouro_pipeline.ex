@@ -17,6 +17,10 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
       mix benchmark_ouro_pipeline              # Run all stages
       mix benchmark_ouro_pipeline --stage 1    # Run only stage 1
       mix benchmark_ouro_pipeline --runs 5     # Repeat each measurement N times (default 3)
+
+  Every stage runs with side effects off: conversations are created with
+  `side_effects: false`, and the refinement stages pass the same option, so a
+  run writes nothing to the stores, the graph or disk.
   """
 
   use Mix.Task
@@ -295,7 +299,7 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
         {elapsed, result} =
           timed(fn ->
             try do
-              Brain.Response.RefinementLoop.single_pass(model, [])
+              Brain.Response.RefinementLoop.single_pass(model, side_effects: false)
             rescue
               e -> {:error, Exception.message(e)}
             end
@@ -337,7 +341,7 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
         {elapsed, result} =
           timed(fn ->
             try do
-              Brain.Response.RefinementLoop.generate(model, [])
+              Brain.Response.RefinementLoop.generate(model, side_effects: false)
             rescue
               e -> {:error, Exception.message(e)}
             end
@@ -486,8 +490,10 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
     end
   end
 
+  # Benchmark turns measure latency only; with side effects off they write
+  # nothing to the stores and send no device actions.
   defp ensure_conversation do
-    case Brain.create_conversation() do
+    case Brain.create_conversation(side_effects: false) do
       {:ok, id} when is_binary(id) -> {:ok, id}
       other -> {:error, "Could not create conversation: #{inspect(other)}"}
     end

@@ -1,0 +1,100 @@
+{
+  "domain": "smarthome",
+  "description": "Smart home device control and queries",
+  "response_frames": {
+    "device": [
+      "Done, I've adjusted the $device.",
+      "Okay, the $device has been updated.",
+      "Got it, I've taken care of the $device."
+    ],
+    "device,room": [
+      "Done, I've adjusted the $device in the $room.",
+      "The $device in the $room has been updated."
+    ],
+    "general": [
+      "I've taken care of that for you.",
+      "Done.",
+      "All set."
+    ],
+    "missing_device": [
+      "Which device would you like me to control?",
+      "What device should I adjust?"
+    ],
+    "missing_both": [
+      "What device would you like me to control, and what should I do with it?",
+      "Which device and what action?"
+    ]
+  },
+  "enriched_response_frames": {
+    "action_confirmed": {
+      "condition": "enriched:action",
+      "requires_enrichment": ["action", "device"],
+      "templates": [
+        "Done, I've set the $device to $action.",
+        "Got it, the $device has been set to $action.",
+        "All set — $device is now $action."
+      ]
+    },
+    "with_status": {
+      "condition": "enriched:device_status",
+      "requires_enrichment": ["device_status"],
+      "templates": [
+        "The $device is currently $device_status.",
+        "Right now, the $device is $device_status."
+      ]
+    },
+    "with_brightness": {
+      "condition": "enriched:brightness",
+      "requires_enrichment": ["device_status", "brightness"],
+      "templates": [
+        "The $device is $device_status at $brightness brightness.",
+        "Currently, the $device is set to $brightness."
+      ]
+    },
+    "with_temperature": {
+      "condition": "enriched:current_temp",
+      "requires_enrichment": ["current_temp", "target_temp", "mode"],
+      "templates": [
+        "The thermostat is set to $mode at $target_temp. Current temperature is $current_temp.",
+        "It's currently $current_temp inside, with the target set to $target_temp in $mode mode."
+      ]
+    },
+    "service_not_configured": {
+      "condition": "service_missing",
+      "requires_enrichment": [],
+      "templates": [
+        "I'd need a smart home connection to check that. You can set one up in settings.",
+        "Smart home integration isn't configured yet."
+      ]
+    },
+    "service_error": {
+      "condition": "service_error",
+      "requires_enrichment": [],
+      "templates": [
+        "I had trouble reaching the smart home system. It might be offline.",
+        "Couldn't connect to the smart home system right now."
+      ]
+    }
+  },
+  "entity_verbalizations": {
+    "device": ["the $value", "$value"],
+    "room": ["in the $value", "in $value"]
+  },
+  "acknowledgment_prefixes": ["Sure,", "On it.", "Done.", "Got it."],
+  "slot_requirements": {
+    "required": ["device"],
+    "optional": ["room", "brightness", "color", "temperature"],
+    "slot_type_aliases": {
+      "device": ["device", "appliance", "light", "switch", "room"]
+    }
+  },
+  "enrichment_service": "home_assistant",
+  "enrichment_fields": {
+    "device_status": {"description": "Current on/off state", "source": "home_assistant"},
+    "brightness": {"description": "Brightness percentage", "source": "home_assistant"},
+    "color": {"description": "Current color setting", "source": "home_assistant"},
+    "current_temp": {"description": "Current temperature reading", "source": "home_assistant"},
+    "target_temp": {"description": "Target temperature setting", "source": "home_assistant"},
+    "mode": {"description": "HVAC mode (heat/cool/auto)", "source": "home_assistant"}
+  }
+}

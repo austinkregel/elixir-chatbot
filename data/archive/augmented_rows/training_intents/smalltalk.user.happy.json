@@ -1,0 +1,90 @@
+[
+  {
+    "text": "could you i am happy",
+    "tokens": [
+      "could",
+      "you",
+      "i",
+      "am",
+      "happy"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-66857ec4",
+    "intent": "smalltalk.user.happy"
+  },
+  {
+    "text": "I 'm happy to see you",
+    "tokens": [
+      "I",
+      "'m",
+      "happy",
+      "to",
+      "see",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-62aac77c",
+    "intent": "smalltalk.user.happy"
+  },
+  {
+    "text": "I 'm happy to help",
+    "tokens": [
+      "I",
+      "'m",
+      "happy",
+      "to",
+      "help"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-789bab13",
+    "intent": "smalltalk.user.happy"
+  },
+  {
+    "text": "if you 're then happy I 'm happy",
+    "tokens": [
+      "if",
+      "you",
+      "'re",
+      "then",
+      "happy",
+      "I",
+      "'m",
+      "happy"
+    ],
+    "pos_tags": [
+      "ADP",
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-a1ec1ef9",
+    "intent": "smalltalk.user.happy"
+  }
+]

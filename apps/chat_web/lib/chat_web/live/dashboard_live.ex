@@ -363,10 +363,10 @@ defmodule ChatWeb.DashboardLive do
 
         result ->
           Map.put(acc, task, %{
-            accuracy: result["accuracy"] || 0.0,
-            macro_f1: result["macro_f1"] || 0.0,
-            weighted_f1: result["weighted_f1"] || 0.0,
-            total_examples: result["total_examples"] || 0,
+            accuracy: result["accuracy"],
+            macro_f1: result["macro_f1"],
+            weighted_f1: result["weighted_f1"],
+            total_examples: result["total_examples"],
             duration_ms: result["duration_ms"],
             completed_at: result["timestamp"]
           })
@@ -524,164 +524,38 @@ defmodule ChatWeb.DashboardLive do
     "hero-map"
   end
 
-  def category_icon(_) do
-    "hero-cube"
+  def category_icon(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.category_icon/1: no icon for category #{inspect(other)}"
   end
 
-  # Epistemic status helpers for dashboard display
-  def status_badge_class(:verified), do: "bg-success/20 text-success border border-success/30"
-  def status_badge_class(:contradicted), do: "bg-error/20 text-error border border-error/30"
-  def status_badge_class(:uncertain), do: "bg-warning/20 text-warning border border-warning/30"
-  def status_badge_class(:unchecked), do: "bg-base-300/50 text-base-content/60 border border-base-300"
-  def status_badge_class(_), do: "bg-base-300/50 text-base-content/60 border border-base-300"
+  # Epistemic status helpers for dashboard display. The statuses are the closed
+  # set Brain.Metrics.Aggregator.get_epistemic_metrics/0 counts.
+  def epistemic_status_variant(:verified), do: :success
+  def epistemic_status_variant(:contradicted), do: :error
+  def epistemic_status_variant(:uncertain), do: :warning
+  def epistemic_status_variant(:unchecked), do: :default
+
+  def epistemic_status_variant(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.epistemic_status_variant/1: no treatment for epistemic status #{inspect(other)}"
+  end
 
   def status_icon(:verified), do: "hero-check-circle"
   def status_icon(:contradicted), do: "hero-x-circle"
   def status_icon(:uncertain), do: "hero-question-mark-circle"
   def status_icon(:unchecked), do: "hero-minus-circle"
-  def status_icon(_), do: "hero-minus-circle"
+
+  def status_icon(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.status_icon/1: no icon for epistemic status #{inspect(other)}"
+  end
 
   def reason_label(:no_subject), do: "No Subject"
   def reason_label(:no_facts), do: "No Facts"
   def reason_label(:no_beliefs), do: "No Beliefs"
   def reason_label(:low_confidence), do: "Low Confidence"
   def reason_label(other), do: to_string(other)
-
-  def status_color(:ready) do
-    "text-success"
-  end
-
-  def status_color(:running) do
-    "text-success"
-  end
-
-  def status_color(:initializing) do
-    "text-warning"
-  end
-
-  def status_color(:building_vocabulary) do
-    "text-warning"
-  end
-
-  def status_color(:tokenizing) do
-    "text-warning"
-  end
-
-  def status_color(:building_frequencies) do
-    "text-warning"
-  end
-
-  def status_color(:calculating_idf) do
-    "text-warning"
-  end
-
-  def status_color(:loading) do
-    "text-warning"
-  end
-
-  def status_color(:busy) do
-    "text-warning"
-  end
-
-  def status_color(:idle) do
-    "text-info"
-  end
-
-  def status_color(:not_started) do
-    "text-error"
-  end
-
-  def status_color(_) do
-    "text-base-content/50"
-  end
-
-  def status_dot_color(:ready) do
-    "bg-success"
-  end
-
-  def status_dot_color(:running) do
-    "bg-success"
-  end
-
-  def status_dot_color(:initializing) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:building_vocabulary) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:tokenizing) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:building_frequencies) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:calculating_idf) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:loading) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:busy) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:idle) do
-    "bg-info"
-  end
-
-  def status_dot_color(:not_started) do
-    "bg-error"
-  end
-
-  def status_dot_color(_) do
-    "bg-base-content/50"
-  end
-
-  def health_status_color(:healthy) do
-    "text-success"
-  end
-
-  def health_status_color(:degraded) do
-    "text-warning"
-  end
-
-  def health_status_color(:warning) do
-    "text-warning"
-  end
-
-  def health_status_color(:critical) do
-    "text-error"
-  end
-
-  def health_status_color(_) do
-    "text-base-content/50"
-  end
-
-  def health_badge_class(:healthy) do
-    "badge-success"
-  end
-
-  def health_badge_class(:degraded) do
-    "badge-warning"
-  end
-
-  def health_badge_class(:warning) do
-    "badge-warning"
-  end
-
-  def health_badge_class(:critical) do
-    "badge-error"
-  end
-
-  def health_badge_class(_) do
-    "badge-ghost"
-  end
 
   def health_variant(:healthy) do
     :success
@@ -699,8 +573,9 @@ defmodule ChatWeb.DashboardLive do
     :error
   end
 
-  def health_variant(_) do
-    :default
+  def health_variant(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.health_variant/1: no treatment for health status #{inspect(other)}"
   end
 
   def format_bytes(nil) do
@@ -771,15 +646,26 @@ defmodule ChatWeb.DashboardLive do
     Calendar.strftime(dt, "%H:%M:%S")
   end
 
-  def accuracy_color(accuracy) when is_number(accuracy) do
-    cond do
-      accuracy >= 0.8 -> "text-success"
-      accuracy >= 0.6 -> "text-warning"
-      true -> "text-error"
-    end
+  # An evaluation metric is a 0..1 rate shown as a percentage in ink. Its size
+  # never picks a color: no code declares an accuracy target, and the one
+  # declared criterion, the regression gate, speaks through its own verdict.
+  def evaluation_percent(value) when is_number(value) do
+    "#{Float.round(value * 100.0, 1)}%"
   end
 
-  def accuracy_color(_), do: "text-base-content/50"
+  def evaluation_percent(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.evaluation_percent/1: a metric must be a number, got #{inspect(other)}. " <>
+            "A metric missing from the result is shown as missing, never formatted."
+  end
+
+  def examples_label(count) when is_integer(count), do: "#{count} examples"
+  def examples_label(nil), do: "no example count in this result"
+
+  def examples_label(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.examples_label/1: an example count must be an integer, got #{inspect(other)}"
+  end
 
   def category_servers(categories, category) do
     Map.get(categories, category, %{})
@@ -793,102 +679,6 @@ defmodule ChatWeb.DashboardLive do
 
   def count_total_in_category(categories, category) do
     Map.get(categories, category, %{}) |> map_size()
-  end
-
-  def category_bg_class(:core) do
-    "bg-primary/10"
-  end
-
-  def category_bg_class(:epistemic) do
-    "bg-secondary/10"
-  end
-
-  def category_bg_class(:analysis) do
-    "bg-accent/10"
-  end
-
-  def category_bg_class(:ml) do
-    "bg-warning/10"
-  end
-
-  def category_bg_class(:knowledge) do
-    "bg-cyan-500/10"
-  end
-
-  def category_bg_class(:learning) do
-    "bg-error/10"
-  end
-
-  def category_bg_class(:storage) do
-    "bg-info/10"
-  end
-
-  def category_bg_class(:metrics) do
-    "bg-success/10"
-  end
-
-  def category_bg_class(:code_analysis) do
-    "bg-violet-500/10"
-  end
-
-  def category_bg_class(:services) do
-    "bg-sky-500/10"
-  end
-
-  def category_bg_class(:atlas) do
-    "bg-teal-500/10"
-  end
-
-  def category_bg_class(_) do
-    "bg-base-200"
-  end
-
-  def category_text_class(:core) do
-    "text-primary"
-  end
-
-  def category_text_class(:epistemic) do
-    "text-secondary"
-  end
-
-  def category_text_class(:analysis) do
-    "text-accent"
-  end
-
-  def category_text_class(:ml) do
-    "text-warning"
-  end
-
-  def category_text_class(:knowledge) do
-    "text-cyan-500"
-  end
-
-  def category_text_class(:learning) do
-    "text-error"
-  end
-
-  def category_text_class(:storage) do
-    "text-info"
-  end
-
-  def category_text_class(:metrics) do
-    "text-success"
-  end
-
-  def category_text_class(:code_analysis) do
-    "text-violet-500"
-  end
-
-  def category_text_class(:services) do
-    "text-sky-500"
-  end
-
-  def category_text_class(:atlas) do
-    "text-teal-500"
-  end
-
-  def category_text_class(_) do
-    "text-base-content"
   end
 
   def status_badge_variant(:ready) do
@@ -932,11 +722,12 @@ defmodule ChatWeb.DashboardLive do
   end
 
   def status_badge_variant(:not_started) do
-    :error
+    :default
   end
 
-  def status_badge_variant(_) do
-    :default
+  def status_badge_variant(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.status_badge_variant/1: no treatment for GenServer status #{inspect(other)}"
   end
 
   def format_stat_value(value) when is_binary(value) do
@@ -987,8 +778,9 @@ defmodule ChatWeb.DashboardLive do
     :error
   end
 
-  def model_status_variant(_) do
-    :default
+  def model_status_variant(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.model_status_variant/1: model status has neither :exists nor :loaded: #{inspect(other)}"
   end
 
   def model_status_label(%{exists: true, loaded: true}) do
@@ -1043,8 +835,13 @@ defmodule ChatWeb.DashboardLive do
     :error
   end
 
-  def training_status_variant(_) do
+  def training_status_variant(nil) do
     :default
+  end
+
+  def training_status_variant(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.training_status_variant/1: no treatment for training status #{inspect(other)}"
   end
 
   def training_status_label(:completed) do
@@ -1112,13 +909,16 @@ defmodule ChatWeb.DashboardLive do
   end
 
   def file_based_models(ml_models_status) do
-    [:pos_model, :entity_model, :gazetteer, :sentiment_classifier, :speech_act_classifier]
+    [:pos_model, :entity_model, :sentiment_classifier, :speech_act_classifier]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end
 
+  # The gazetteer is built in memory from its sources, so it has no file on disk;
+  # Brain.SystemStatus reports it as a process. Size-on-disk and modified-at are
+  # not meaningful for it, so it belongs with the runtime agents.
   def agent_based_models(ml_models_status) do
-    [:entity_extractor]
+    [:gazetteer, :entity_extractor]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end
@@ -1219,8 +1019,14 @@ defmodule ChatWeb.DashboardLive do
     :warning
   end
 
-  def world_embedder_status_for_dot(_) do
+  def world_embedder_status_for_dot(%{phase: phase})
+      when phase in [:loading_episodes, :tokenizing, :building_frequencies, :calculating_idf] do
     :initializing
+  end
+
+  def world_embedder_status_for_dot(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.world_embedder_status_for_dot/1: no treatment for world embedder status #{inspect(other)}"
   end
 
   @doc "Check if the world embedder is actively building vocabulary.\n"

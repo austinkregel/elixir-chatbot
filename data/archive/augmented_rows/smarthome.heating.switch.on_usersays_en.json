@@ -1,0 +1,93 @@
+[
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "hey turn on heating",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-c54c8c9a",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "I want to turn on heating",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-a2172524",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "turn on heating in living room",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-90e9b84d",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "turn heating everywhere",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-b8efedfc",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "turn on heating in the room living",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-ac18453a",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "could you turn on heating",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-318be693",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "turn on heating the living room",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-228d98f2",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  }
+]

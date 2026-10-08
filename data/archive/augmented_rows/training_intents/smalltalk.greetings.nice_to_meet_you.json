@@ -1,0 +1,200 @@
+[
+  {
+    "text": "Hello, pleased to meet you",
+    "tokens": [
+      "Hello",
+      ",",
+      "pleased",
+      "to",
+      "meet",
+      "you"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-c2cb2808",
+    "intent": "smalltalk.greetings.nice_to_meet_you"
+  },
+  {
+    "text": "Hi there, it's nice to meet you",
+    "tokens": [
+      "Hi",
+      "there",
+      ",",
+      "it",
+      "'s",
+      "nice",
+      "to",
+      "meet",
+      "you"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "ADV",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-88f8d1da",
+    "intent": "smalltalk.greetings.nice_to_meet_you"
+  },
+  {
+    "text": "My name is Sarah, nice to meet you",
+    "tokens": [
+      "My",
+      "name",
+      "is",
+      "Sarah",
+      ",",
+      "nice",
+      "to",
+      "meet",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "VERB",
+      "PROPN",
+      "PUNCT",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-5fe6b325",
+    "intent": "smalltalk.greetings.nice_to_meet_you"
+  },
+  {
+    "text": "I'm Austin, nice to meet you",
+    "tokens": [
+      "I",
+      "'m",
+      "Austin",
+      ",",
+      "nice",
+      "to",
+      "meet",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PROPN",
+      "PUNCT",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-8cd44a12",
+    "intent": "smalltalk.greetings.nice_to_meet_you"
+  },
+  {
+    "text": "Hey, nice to meet you!",
+    "tokens": [
+      "Hey",
+      ",",
+      "nice",
+      "to",
+      "meet",
+      "you",
+      "!"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PRON",
+      "PUNCT"
+    ],
+    "entities": [],
+    "id": "augmented-e2d50ffd",
+    "intent": "smalltalk.greetings.nice_to_meet_you"
+  },
+  {
+    "text": "Hello! Nice to meet you",
+    "tokens": [
+      "Hello",
+      "!",
+      "Nice",
+      "to",
+      "meet",
+      "you"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PUNCT",
+      "PROPN",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-7e1e78d6",
+    "intent": "smalltalk.greetings.nice_to_meet_you"
+  },
+  {
+    "text": "Hi, nice to meet you",
+    "tokens": [
+      "Hi",
+      ",",
+      "nice",
+      "to",
+      "meet",
+      "you"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-e6cc9208",
+    "intent": "smalltalk.greetings.nice_to_meet_you"
+  },
+  {
+    "text": "Hello, it is nice to meet you",
+    "tokens": [
+      "Hello",
+      ",",
+      "it",
+      "is",
+      "nice",
+      "to",
+      "meet",
+      "you"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PUNCT",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-586f7595",
+    "intent": "smalltalk.greetings.nice_to_meet_you"
+  }
+]

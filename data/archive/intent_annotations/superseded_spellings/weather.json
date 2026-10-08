@@ -1,0 +1,2661 @@
+[
+  {
+    "text": "whats the weather like near Owosso, Mi",
+    "tokens": [
+      "whats",
+      "the",
+      "weather",
+      "like",
+      "near",
+      "Owosso",
+      ",",
+      "Mi"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "PROPN",
+      "PUNCT",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Owosso, Mi",
+        "type": "location",
+        "start": 5,
+        "end": 7
+      }
+    ],
+    "id": "a50f8053-2f83-4e85-96e3-96501970acf5",
+    "intent": "weather"
+  },
+  {
+    "text": "weather in London in 5 days",
+    "tokens": [
+      "weather",
+      "in",
+      "London",
+      "in",
+      "5",
+      "days"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "London",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "in 5 days",
+        "type": "date_time",
+        "start": 3,
+        "end": 5
+      }
+    ],
+    "id": "5817f680-f60d-402d-b3ab-7312d08b29d3",
+    "intent": "weather"
+  },
+  {
+    "text": "weather in Paris in Celsius",
+    "tokens": [
+      "weather",
+      "in",
+      "Paris",
+      "in",
+      "Celsius"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Paris",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Celsius",
+        "type": "unit_temperature",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "51a6634f-76b5-4393-9bee-767fe7ca1ef4",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather like in Delft",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "like",
+      "in",
+      "Delft"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Delft",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "7c70f901-bc92-4afb-a93c-08760982574e",
+    "intent": "weather"
+  },
+  {
+    "text": "show me weather for today",
+    "tokens": [
+      "show",
+      "me",
+      "weather",
+      "for",
+      "today"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "15336d90-f4a0-49fb-a74c-a1b4e0e3283b",
+    "intent": "weather"
+  },
+  {
+    "text": "what is the weather tomorrow in Campbell",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "weather",
+      "tomorrow",
+      "in",
+      "Campbell"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Campbell",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "ecaa3aa8-178c-4c4d-834f-5cbf81c87a02",
+    "intent": "weather"
+  },
+  {
+    "text": "what is the weather tomorrow in Canberra",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "weather",
+      "tomorrow",
+      "in",
+      "Canberra"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "Canberra",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "6e68e4b6-ff5c-459c-9fde-99a3bbe173f6",
+    "intent": "weather"
+  },
+  {
+    "text": "could you give me the weather forecast for Hong Kong please",
+    "tokens": [
+      "could",
+      "you",
+      "give",
+      "me",
+      "the",
+      "weather",
+      "forecast",
+      "for",
+      "Hong",
+      "Kong",
+      "please"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "Hong Kong",
+        "type": "location",
+        "start": 8,
+        "end": 9
+      }
+    ],
+    "id": "8d8e8f96-5cd8-4b44-be14-238c61418b56",
+    "intent": "weather"
+  },
+  {
+    "text": "weather Durban",
+    "tokens": [
+      "weather",
+      "Durban"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Durban",
+        "type": "location",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "3f09b47e-5986-4a2d-8337-30b803a117ec",
+    "intent": "weather"
+  },
+  {
+    "text": "what is the weather in Cape Town",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "weather",
+      "in",
+      "Cape",
+      "Town"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Cape Town",
+        "type": "location",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "43d30c60-38c1-4c18-8e72-a9ed94496f7f",
+    "intent": "weather"
+  },
+  {
+    "text": "weather in Nirmal",
+    "tokens": [
+      "weather",
+      "in",
+      "Nirmal"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Nirmal",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "22641e1b-a1ca-4425-a2c2-d631210ed527",
+    "intent": "weather"
+  },
+  {
+    "text": "current forecast in Valencia",
+    "tokens": [
+      "current",
+      "forecast",
+      "in",
+      "Valencia"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Valencia",
+        "type": "location",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "ee4a071f-efb3-4a99-a283-b5bcb27fb5ea",
+    "intent": "weather"
+  },
+  {
+    "text": "how's the weather gonna be on Monday",
+    "tokens": [
+      "how",
+      "'s",
+      "the",
+      "weather",
+      "gon",
+      "na",
+      "be",
+      "on",
+      "Monday"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "PART",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Monday",
+        "type": "date_time",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "17db48a4-517a-456e-9a11-00cb6a9b5806",
+    "intent": "weather"
+  },
+  {
+    "text": "how's the weather today",
+    "tokens": [
+      "how",
+      "'s",
+      "the",
+      "weather",
+      "today"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "7e7581e5-b2ed-4d67-bf0b-d9e54a14f7c4",
+    "intent": "weather"
+  },
+  {
+    "text": "weather in Khanapur",
+    "tokens": [
+      "weather",
+      "in",
+      "Khanapur"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Khanapur",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "d7c5233b-6695-4723-8978-395b71d8fdda",
+    "intent": "weather"
+  },
+  {
+    "text": "weather of Salalah",
+    "tokens": [
+      "weather",
+      "of",
+      "Salalah"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Salalah",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "ef36172e-3a68-44d4-af58-8724656e089d",
+    "intent": "weather"
+  },
+  {
+    "text": "weather forecast in Oakland next week",
+    "tokens": [
+      "weather",
+      "forecast",
+      "in",
+      "Oakland",
+      "next",
+      "week"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Oakland",
+        "type": "location",
+        "start": 3,
+        "end": 3
+      },
+      {
+        "text": "next week",
+        "type": "date_time",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "6950fe14-87ae-43b9-a61a-65abe6138b81",
+    "intent": "weather"
+  },
+  {
+    "text": "weather in Mamda",
+    "tokens": [
+      "weather",
+      "in",
+      "Mamda"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Mamda",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "4c48fa0c-088d-4c54-bf56-7064a89d43e1",
+    "intent": "weather"
+  },
+  {
+    "text": "find weather India",
+    "tokens": [
+      "find",
+      "weather",
+      "India"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "India",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "741269e9-46c2-4190-8454-4323ddba8436",
+    "intent": "weather"
+  },
+  {
+    "text": "what is the current weather in Pune",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "current",
+      "weather",
+      "in",
+      "Pune"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Pune",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "7913fe29-1f53-4e07-9eb7-0a7d8bcf800b",
+    "intent": "weather"
+  },
+  {
+    "text": "what is the weather for Kernersville",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "weather",
+      "for",
+      "Kernersville"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Kernersville",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "d50f0da9-ec76-495f-b8f5-547d5ad4ccd1",
+    "intent": "weather"
+  },
+  {
+    "text": "weather in New York this morning",
+    "tokens": [
+      "weather",
+      "in",
+      "New",
+      "York",
+      "this",
+      "morning"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "New York",
+        "type": "location",
+        "start": 2,
+        "end": 3
+      },
+      {
+        "text": "this morning",
+        "type": "date_time",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "279bd798-358e-482b-a199-7784d2bfbd83",
+    "intent": "weather"
+  },
+  {
+    "text": "what is today's weather like",
+    "tokens": [
+      "what",
+      "is",
+      "today",
+      "'s",
+      "weather",
+      "like"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "NOUN",
+      "PART",
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "da9090b4-c3c2-452d-ae92-f55e5c6f3684",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather going to be tomorrow",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "going",
+      "to",
+      "be",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "85024efd-70ca-4af2-9310-f077bffa12ca",
+    "intent": "weather"
+  },
+  {
+    "text": "what is the current weather at SVO",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "current",
+      "weather",
+      "at",
+      "SVO"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "SVO",
+        "type": "location",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "43c0498f-eb86-4bd7-8b47-c0077a9aad56",
+    "intent": "weather"
+  },
+  {
+    "text": "weather Montana",
+    "tokens": [
+      "weather",
+      "Montana"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Montana",
+        "type": "location",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "c4d2d0d9-bb04-4657-95b9-064d796b18d0",
+    "intent": "weather"
+  },
+  {
+    "text": "India weather report",
+    "tokens": [
+      "India",
+      "weather",
+      "report"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "India",
+        "type": "location",
+        "start": 0,
+        "end": 0
+      }
+    ],
+    "id": "22c0ff3f-04bb-430c-a75f-62bf7fddb99b",
+    "intent": "weather"
+  },
+  {
+    "text": "how's the weather going to be today",
+    "tokens": [
+      "how",
+      "'s",
+      "the",
+      "weather",
+      "going",
+      "to",
+      "be",
+      "today"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "349e664c-7c78-4b6a-9647-b552206a64d3",
+    "intent": "weather"
+  },
+  {
+    "text": "what is the weather forecast for tomorrow morning",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "weather",
+      "forecast",
+      "for",
+      "tomorrow",
+      "morning"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow morning",
+        "type": "date_time",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "a2f79f8c-f804-4983-9d76-801ae17588c8",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather like in New York",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "like",
+      "in",
+      "New",
+      "York"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "New York",
+        "type": "location",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "8103da64-534c-49dc-bafb-09d1997d87f7",
+    "intent": "weather"
+  },
+  {
+    "text": "today's weather in London",
+    "tokens": [
+      "today",
+      "'s",
+      "weather",
+      "in",
+      "London"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 0,
+        "end": 0
+      },
+      {
+        "text": "London",
+        "type": "location",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "52a1fd5d-4578-46ea-b723-8b13598b3560",
+    "intent": "weather"
+  },
+  {
+    "text": "weather for April 3",
+    "tokens": [
+      "weather",
+      "for",
+      "April",
+      "3"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "April 3",
+        "type": "date_time",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "78f1090b-bca9-4170-a6c6-c52822c27440",
+    "intent": "weather"
+  },
+  {
+    "text": "what is the weather like today",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "weather",
+      "like",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "a5940bcd-769f-4cf7-a7b7-7de61c87f042",
+    "intent": "weather"
+  },
+  {
+    "text": "what is today's weather",
+    "tokens": [
+      "what",
+      "is",
+      "today",
+      "'s",
+      "weather"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "NOUN",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "872226be-8d3c-40f9-8d66-b863e0535f2a",
+    "intent": "weather"
+  },
+  {
+    "text": "tell me what's the weather like in Atlanta",
+    "tokens": [
+      "tell",
+      "me",
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "like",
+      "in",
+      "Atlanta"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Atlanta",
+        "type": "location",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "a8443b35-c2a6-456c-83d5-4b66fc39ab43",
+    "intent": "weather"
+  },
+  {
+    "text": "what will be the weather today",
+    "tokens": [
+      "what",
+      "will",
+      "be",
+      "the",
+      "weather",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "c1fda108-b401-4069-ad8b-f3c43663978e",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather going to be like later today",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "going",
+      "to",
+      "be",
+      "like",
+      "later",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "b4cc4ef5-602c-4633-a741-06f9be402594",
+    "intent": "weather"
+  },
+  {
+    "text": "what is the weather for Greenville",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "weather",
+      "for",
+      "Greenville"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Greenville",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "238125d6-3ccd-4143-9d19-de85ebdf0d2e",
+    "intent": "weather"
+  },
+  {
+    "text": "forecast in Tokyo",
+    "tokens": [
+      "forecast",
+      "in",
+      "Tokyo"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Tokyo",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "ef9ed59a-4c4d-4b6f-8645-6fa187a2ac75",
+    "intent": "weather"
+  },
+  {
+    "text": "the weather in Miami is what",
+    "tokens": [
+      "the",
+      "weather",
+      "in",
+      "Miami",
+      "is",
+      "what"
+    ],
+    "pos_tags": [
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [
+      {
+        "text": "Miami",
+        "type": "location",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "b59a120a-c416-45f4-ac5c-e595cb8596a5",
+    "intent": "weather"
+  },
+  {
+    "text": "what was the weather for March 2nd",
+    "tokens": [
+      "what",
+      "was",
+      "the",
+      "weather",
+      "for",
+      "March",
+      "2nd"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "March 2nd",
+        "type": "date_time",
+        "start": 5,
+        "end": 6
+      }
+    ],
+    "id": "d18ccbbf-b379-4b55-9a6a-ad38b4000db0",
+    "intent": "weather"
+  },
+  {
+    "text": "weather Seattle",
+    "tokens": [
+      "weather",
+      "Seattle"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Seattle",
+        "type": "location",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "f87ffc46-8975-4360-926d-a0c8488d126f",
+    "intent": "weather"
+  },
+  {
+    "text": "what is the weather going to be like today",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "weather",
+      "going",
+      "to",
+      "be",
+      "like",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "23f3b9cf-245d-4a9d-942a-57a638b2da9a",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather like in San Diego tomorrow",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "like",
+      "in",
+      "San",
+      "Diego",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "San Diego",
+        "type": "location",
+        "start": 6,
+        "end": 7
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "e2ae1fe2-71db-4ba4-8545-5e4e058c5c94",
+    "intent": "weather"
+  },
+  {
+    "text": "what is the weather today",
+    "tokens": [
+      "what",
+      "is",
+      "the",
+      "weather",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "6ec34b1c-c47e-4c19-8167-349d94736461",
+    "intent": "weather"
+  },
+  {
+    "text": "weather forecast in Denver",
+    "tokens": [
+      "weather",
+      "forecast",
+      "in",
+      "Denver"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Denver",
+        "type": "location",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "0deb9168-a629-4df2-940f-8517b8fe0cf7",
+    "intent": "weather"
+  },
+  {
+    "text": "weather in Moscow tomorrow",
+    "tokens": [
+      "weather",
+      "in",
+      "Moscow",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Moscow",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "daa7e39b-da12-4e18-a3c7-be71007aeb5b",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather forecast in San Francisco",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "forecast",
+      "in",
+      "San",
+      "Francisco"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "San Francisco",
+        "type": "location",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "15d672f4-4afa-49fb-b0c3-9b3aceda2f10",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather for tomorrow",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "for",
+      "tomorrow"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow",
+        "type": "date_time",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "722bb2c3-115a-426d-8f00-d91800988027",
+    "intent": "weather"
+  },
+  {
+    "text": "how's the weather in Rome",
+    "tokens": [
+      "how",
+      "'s",
+      "the",
+      "weather",
+      "in",
+      "Rome"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Rome",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "e82a8f7c-ecce-4a43-8c3b-b6379334574e",
+    "intent": "weather"
+  },
+  {
+    "text": "weather",
+    "tokens": [
+      "weather"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "582a5dbc-2ecf-4e40-8260-75681be897bd",
+    "intent": "weather"
+  },
+  {
+    "text": "weather report",
+    "tokens": [
+      "weather",
+      "report"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "0fc37b4f-3aa3-4fa1-8902-9144849b1575",
+    "intent": "weather"
+  },
+  {
+    "text": "how is the weather today",
+    "tokens": [
+      "how",
+      "is",
+      "the",
+      "weather",
+      "today"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "83e452a9-60fd-4005-9f46-8f72f9811e67",
+    "intent": "weather"
+  },
+  {
+    "text": "show me the weather",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "weather"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "9a73bcca-f160-44d1-8194-de6dfae81390",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather like",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "like"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "e062505a-e718-4900-a441-c486c22597f5",
+    "intent": "weather"
+  },
+  {
+    "text": "I'd like to know the weather",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "know",
+      "the",
+      "weather"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6a642edd-af8c-4db9-b60f-166318bc0914",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather forecast for today",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "forecast",
+      "for",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "db624948-da8e-4722-85a1-1646f22b4a83",
+    "intent": "weather"
+  },
+  {
+    "text": "what is today's weather going to be in London",
+    "tokens": [
+      "what",
+      "is",
+      "today",
+      "'s",
+      "weather",
+      "going",
+      "to",
+      "be",
+      "in",
+      "London"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "NOUN",
+      "PART",
+      "NOUN",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "London",
+        "type": "location",
+        "start": 9,
+        "end": 9
+      }
+    ],
+    "id": "3aa4a9c1-c21a-4434-a201-f2edb22ea637",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather supposed to be",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "supposed",
+      "to",
+      "be"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "b8372b8c-a3ca-407e-b0b7-38e79d567048",
+    "intent": "weather"
+  },
+  {
+    "text": "weather outside",
+    "tokens": [
+      "weather",
+      "outside"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "d631e007-9d9e-44fd-987e-fd956f787791",
+    "intent": "weather"
+  },
+  {
+    "text": "weather today in New York",
+    "tokens": [
+      "weather",
+      "today",
+      "in",
+      "New",
+      "York"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "New York",
+        "type": "location",
+        "start": 3,
+        "end": 4
+      }
+    ],
+    "id": "a70bc96e-21a9-4ca6-b010-dc71447914b6",
+    "intent": "weather"
+  },
+  {
+    "text": "now tell me the weather forecast in Aspen",
+    "tokens": [
+      "now",
+      "tell",
+      "me",
+      "the",
+      "weather",
+      "forecast",
+      "in",
+      "Aspen"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Aspen",
+        "type": "location",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "d0d7236e-4ea4-4111-ab79-3e16322d5901",
+    "intent": "weather"
+  },
+  {
+    "text": "what's it like outside",
+    "tokens": [
+      "what",
+      "'s",
+      "it",
+      "like",
+      "outside"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADP",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "97ec4113-1289-4d03-a15b-0a663f03be7a",
+    "intent": "weather"
+  },
+  {
+    "text": "weather today",
+    "tokens": [
+      "weather",
+      "today"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 1,
+        "end": 1
+      }
+    ],
+    "id": "9ea48818-7950-4d61-a1ad-1d12683436f4",
+    "intent": "weather"
+  },
+  {
+    "text": "tomorrow's weather",
+    "tokens": [
+      "tomorrow",
+      "'s",
+      "weather"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow's",
+        "type": "date_time",
+        "start": 0,
+        "end": 1
+      }
+    ],
+    "id": "a3d5ae0e-a8f3-4fc7-a902-7f5ceaf30d63",
+    "intent": "weather"
+  },
+  {
+    "text": "weather outside this evening",
+    "tokens": [
+      "weather",
+      "outside",
+      "this",
+      "evening"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "this evening",
+        "type": "date_time",
+        "start": 2,
+        "end": 3
+      }
+    ],
+    "id": "308e308e-a2ca-41d1-b88f-df0e6f73339b",
+    "intent": "weather"
+  },
+  {
+    "text": "weather forecast for Tuesday",
+    "tokens": [
+      "weather",
+      "forecast",
+      "for",
+      "Tuesday"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Tuesday",
+        "type": "date_time",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "ac6f61f1-6ce0-4042-afa5-41d749b585ef",
+    "intent": "weather"
+  },
+  {
+    "text": "tell me the weather for the next week",
+    "tokens": [
+      "tell",
+      "me",
+      "the",
+      "weather",
+      "for",
+      "the",
+      "next",
+      "week"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "next week",
+        "type": "date_time",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "4976f73b-9355-41af-8d7e-70774d344266",
+    "intent": "weather"
+  },
+  {
+    "text": "what will be the weather like on the weekend",
+    "tokens": [
+      "what",
+      "will",
+      "be",
+      "the",
+      "weather",
+      "like",
+      "on",
+      "the",
+      "weekend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "weekend",
+        "type": "date_time",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "fcadec27-9fba-4426-b3b7-6820b11b6fbf",
+    "intent": "weather"
+  },
+  {
+    "text": "I'd like to get the weather for July 22",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "get",
+      "the",
+      "weather",
+      "for",
+      "July",
+      "22"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NUM"
+    ],
+    "entities": [
+      {
+        "text": "July 22",
+        "type": "date_time",
+        "start": 8,
+        "end": 9
+      }
+    ],
+    "id": "f9e2a1eb-d2ab-4e3d-907e-ce2d4641ca9d",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather supposed to be this week",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "supposed",
+      "to",
+      "be",
+      "this",
+      "week"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "this week",
+        "type": "date_time",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "b5030999-92df-46c5-8980-8df4f1c9541f",
+    "intent": "weather"
+  },
+  {
+    "text": "weather in London",
+    "tokens": [
+      "weather",
+      "in",
+      "London"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "London",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      }
+    ],
+    "id": "c1dbd035-917e-4f9e-a0b3-3c5aeafb7d75",
+    "intent": "weather"
+  },
+  {
+    "text": "weather report for Paris",
+    "tokens": [
+      "weather",
+      "report",
+      "for",
+      "Paris"
+    ],
+    "pos_tags": [
+      "PRON",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Paris",
+        "type": "location",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "50935fc4-001b-417c-896f-9d7e1bbf3866",
+    "intent": "weather"
+  },
+  {
+    "text": "show me the weather in Munich",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "weather",
+      "in",
+      "Munich"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Munich",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "f9e04746-d016-40e0-acd5-d1c5725a6db1",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather like at New York",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "like",
+      "at",
+      "New",
+      "York"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "New York",
+        "type": "location",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "44b8c0a8-e970-4ff5-8170-b035498004ff",
+    "intent": "weather"
+  },
+  {
+    "text": "I'd like to know the weather in Madrid",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "know",
+      "the",
+      "weather",
+      "in",
+      "Madrid"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Madrid",
+        "type": "location",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "33076c6e-7ad2-4b4b-a340-1b0fe7bd98e2",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather supposed to be in Moscow",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "supposed",
+      "to",
+      "be",
+      "in",
+      "Moscow"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Moscow",
+        "type": "location",
+        "start": 8,
+        "end": 8
+      }
+    ],
+    "id": "1a263e1a-09b8-42ae-90fa-3e9ec5728c42",
+    "intent": "weather"
+  },
+  {
+    "text": "show me the weather in Fahrenheit",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "weather",
+      "in",
+      "Fahrenheit"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Fahrenheit",
+        "type": "unit_temperature",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "d60e8e79-7d80-4117-b4d7-c469de2f22fa",
+    "intent": "weather"
+  },
+  {
+    "text": "weather in Valencia for today",
+    "tokens": [
+      "weather",
+      "in",
+      "Valencia",
+      "for",
+      "today"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Valencia",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "0fff86ba-6240-4d54-b191-9b642788ab0a",
+    "intent": "weather"
+  },
+  {
+    "text": "tomorrow's weather report for Brussels",
+    "tokens": [
+      "tomorrow",
+      "'s",
+      "weather",
+      "report",
+      "for",
+      "Brussels"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PART",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "tomorrow's",
+        "type": "date_time",
+        "start": 0,
+        "end": 1
+      },
+      {
+        "text": "Brussels",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      }
+    ],
+    "id": "25dccd03-0a9e-4c38-a890-9078df7f432e",
+    "intent": "weather"
+  },
+  {
+    "text": "weather forecast in Oakland",
+    "tokens": [
+      "weather",
+      "forecast",
+      "in",
+      "Oakland"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Oakland",
+        "type": "location",
+        "start": 3,
+        "end": 3
+      }
+    ],
+    "id": "e41ddc6a-3d5c-4696-97b6-26dab4aec8ec",
+    "intent": "weather"
+  },
+  {
+    "text": "show me the weather in Milan for Wednesday",
+    "tokens": [
+      "show",
+      "me",
+      "the",
+      "weather",
+      "in",
+      "Milan",
+      "for",
+      "Wednesday"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Milan",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "Wednesday",
+        "type": "date_time",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "4a5bb3ff-4189-40f7-8612-917fa97de839",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather today",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "today",
+        "type": "date_time",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "6b063750-5153-4fec-97ba-5543ade6b8e7",
+    "intent": "weather"
+  },
+  {
+    "text": "what will be the weather like in Tokyo on the next weekend",
+    "tokens": [
+      "what",
+      "will",
+      "be",
+      "the",
+      "weather",
+      "like",
+      "in",
+      "Tokyo",
+      "on",
+      "the",
+      "next",
+      "weekend"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "DET",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "Tokyo",
+        "type": "location",
+        "start": 7,
+        "end": 7
+      },
+      {
+        "text": "next weekend",
+        "type": "date_time",
+        "start": 10,
+        "end": 11
+      }
+    ],
+    "id": "327ee321-976e-4f2b-824a-c8133cd384c8",
+    "intent": "weather"
+  },
+  {
+    "text": "I'd like to know the weather for November 13 in Zurich",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "know",
+      "the",
+      "weather",
+      "for",
+      "November",
+      "13",
+      "in",
+      "Zurich"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "NUM",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "November 13",
+        "type": "date_time",
+        "start": 8,
+        "end": 9
+      },
+      {
+        "text": "Zurich",
+        "type": "location",
+        "start": 11,
+        "end": 11
+      }
+    ],
+    "id": "cd97ccee-ecf9-49d2-bc1f-8a1541ca0353",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather supposed to be next Friday in San Francisco",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "supposed",
+      "to",
+      "be",
+      "next",
+      "Friday",
+      "in",
+      "San",
+      "Francisco"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADJ",
+      "PROPN",
+      "ADP",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "next Friday",
+        "type": "date_time",
+        "start": 7,
+        "end": 8
+      },
+      {
+        "text": "San Francisco",
+        "type": "location",
+        "start": 10,
+        "end": 11
+      }
+    ],
+    "id": "248b6dbe-8665-4109-a9ca-ba1e54ce59c3",
+    "intent": "weather"
+  },
+  {
+    "text": "weather in Brooklyn in Celsius",
+    "tokens": [
+      "weather",
+      "in",
+      "Brooklyn",
+      "in",
+      "Celsius"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Brooklyn",
+        "type": "location",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "Celsius",
+        "type": "unit_temperature",
+        "start": 4,
+        "end": 4
+      }
+    ],
+    "id": "bced988c-be58-4b19-aa4a-6ffcd8783e32",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather in New York this morning",
+    "tokens": [
+      "what",
+      "'s",
+      "the",
+      "weather",
+      "in",
+      "New",
+      "York",
+      "this",
+      "morning"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "PROPN",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "New York",
+        "type": "location",
+        "start": 5,
+        "end": 6
+      },
+      {
+        "text": "this morning",
+        "type": "date_time",
+        "start": 7,
+        "end": 8
+      }
+    ],
+    "id": "f9e8efe2-6045-406a-91d3-359cddca61b7",
+    "intent": "weather"
+  },
+  {
+    "text": "tell me the weather in Rome in Fahrenheit",
+    "tokens": [
+      "tell",
+      "me",
+      "the",
+      "weather",
+      "in",
+      "Rome",
+      "in",
+      "Fahrenheit"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN",
+      "ADP",
+      "PROPN",
+      "ADP",
+      "PROPN"
+    ],
+    "entities": [
+      {
+        "text": "Rome",
+        "type": "location",
+        "start": 5,
+        "end": 5
+      },
+      {
+        "text": "Fahrenheit",
+        "type": "unit_temperature",
+        "start": 7,
+        "end": 7
+      }
+    ],
+    "id": "f761a19e-195a-40b6-afce-b8513df24bb4",
+    "intent": "weather"
+  }
+]

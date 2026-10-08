@@ -1,0 +1,93 @@
+[
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "I'd like to turn off heating everywhere",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-a666b16b",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "I'd like to turn off heating in the living room",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-a5e7ae03",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "can you turn off heating",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-1946346c",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "turn off heating the living room",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-3d376ccf",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "could you turn off heating",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-3e07d262",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "I'd like to turn off heating",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-48c685b4",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "hey turn off heating",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-311385f6",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  }
+]

@@ -19,16 +19,9 @@ defmodule Brain.Analysis.DiscourseAnalyzer do
   @discourse_config_path "priv/analysis/discourse_config.json"
   @external_resource @discourse_config_path
 
-  @discourse_config (case File.read(@discourse_config_path) do
-                       {:ok, content} ->
-                         case Jason.decode(content) do
-                           {:ok, data} -> data
-                           {:error, _} -> %{}
-                         end
-
-                       {:error, _} ->
-                         %{}
-                     end)
+  # An unreadable discourse_config.json used to compile to %{}, silently
+  # swapping every configured value for the hardcoded defaults below.
+  @discourse_config @discourse_config_path |> File.read!() |> Jason.decode!()
 
   # Bot name patterns - loaded from discourse_config.json
   @default_bot_names Map.get(@discourse_config, "bot_names", ["companion", "bot", "assistant", "ai", "echo"])

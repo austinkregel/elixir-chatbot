@@ -12,8 +12,11 @@ defmodule Brain.Epistemic.SelfKnowledgeFlowTest do
     start_test_services()
     ensure_started(UserModelStore)
     ensure_started(BeliefStore)
-    UserModelStore.clear_all()
-    BeliefStore.clear()
+    # Empty before each test and empty again after: both stores keep their
+    # contents in GenServer state, which the Sandbox does not roll back.
+    # Empty is the boot state for both (0 rows in atlas_user_models and
+    # atlas_beliefs).
+    Brain.Test.Singletons.reset_epistemic_stores!([:user_models, :beliefs])
 
     :ok
   end

@@ -1,0 +1,202 @@
+{
+  "version": "1.0",
+  "description": "POS-based patterns for event extraction. Patterns define structural roles for actor-verb-object extraction.",
+  "pos_tag_indices": {
+    "PRON": 1,
+    "VERB": 2,
+    "NOUN": 3,
+    "PROPN": 4,
+    "AUX": 5,
+    "DET": 6,
+    "ADJ": 7,
+    "ADV": 8,
+    "ADP": 9,
+    "PART": 10,
+    "CCONJ": 11,
+    "SCONJ": 12,
+    "NUM": 13,
+    "PUNCT": 14,
+    "SYM": 15,
+    "X": 16,
+    "INTJ": 17
+  },
+  "actor_pos_tags": ["PRON", "NOUN", "PROPN"],
+  "action_pos_tags": ["VERB"],
+  "object_pos_tags": ["NOUN", "PROPN", "NUM"],
+  "modifier_pos_tags": ["ADV", "ADJ", "ADP"],
+  "patterns": [
+    {
+      "id": "svo_basic",
+      "name": "Subject-Verb-Object",
+      "description": "Standard SVO pattern: I want coffee",
+      "structure": ["PRON", "VERB", "NOUN"],
+      "roles": {
+        "actor": 0,
+        "action": 1,
+        "object": 2
+      },
+      "examples": ["I want coffee", "She plays music", "He reads books"],
+      "weight": 1.0
+    },
+    {
+      "id": "svo_propn",
+      "name": "Subject-Verb-ProperNoun",
+      "description": "SVO with proper noun object: I love London",
+      "structure": ["PRON", "VERB", "PROPN"],
+      "roles": {
+        "actor": 0,
+        "action": 1,
+        "object": 2
+      },
+      "examples": ["I love London", "She visited Paris", "He met John"],
+      "weight": 1.0
+    },
+    {
+      "id": "imperative_basic",
+      "name": "Imperative-Object",
+      "description": "Command pattern: Play music",
+      "structure": ["VERB", "NOUN"],
+      "roles": {
+        "action": 0,
+        "object": 1
+      },
+      "tense_hint": "imperative",
+      "examples": ["Play music", "Open door", "Turn lights"],
+      "weight": 0.95
+    },
+    {
+      "id": "imperative_benefactive",
+      "name": "Imperative-Benefactive-Object",
+      "description": "Command with benefactive: Play me music",
+      "structure": ["VERB", "PRON", "NOUN"],
+      "roles": {
+        "action": 0,
+        "benefactive": 1,
+        "object": 2
+      },
+      "tense_hint": "imperative",
+      "examples": ["Play me music", "Show me weather", "Get me coffee"],
+      "weight": 0.95
+    },
+    {
+      "id": "imperative_det_object",
+      "name": "Imperative-Det-Object",
+      "description": "Command with determiner: Play the song",
+      "structure": ["VERB", "DET", "NOUN"],
+      "roles": {
+        "action": 0,
+        "object": 2
+      },
+      "tense_hint": "imperative",
+      "examples": ["Play the song", "Open the door", "Turn the lights"],
+      "weight": 0.9
+    },
+    {
+      "id": "svo_aux",
+      "name": "Subject-Aux-Verb-Object",
+      "description": "SVO with auxiliary: I will play music",
+      "structure": ["PRON", "AUX", "VERB", "NOUN"],
+      "roles": {
+        "actor": 0,
+        "action": 2,
+        "object": 3
+      },
+      "examples": ["I will play music", "She can help you", "He would like tea"],
+      "weight": 0.9
+    },
+    {
+      "id": "question_wh_verb",
+      "name": "WH-Question",
+      "description": "WH-question pattern: What is the weather",
+      "structure": ["PRON", "AUX", "DET", "NOUN"],
+      "roles": {
+        "action": 1,
+        "object": 3
+      },
+      "examples": ["What is the weather", "What is the time", "Who is the president"],
+      "weight": 0.85
+    },
+    {
+      "id": "svo_adj_object",
+      "name": "Subject-Verb-Adj-Object",
+      "description": "SVO with adjective modifier: I want hot coffee",
+      "structure": ["PRON", "VERB", "ADJ", "NOUN"],
+      "roles": {
+        "actor": 0,
+        "action": 1,
+        "modifier": 2,
+        "object": 3
+      },
+      "examples": ["I want hot coffee", "She likes loud music", "He needs new shoes"],
+      "weight": 0.9
+    },
+    {
+      "id": "svo_det_object",
+      "name": "Subject-Verb-Det-Object",
+      "description": "SVO with determiner: I want the coffee",
+      "structure": ["PRON", "VERB", "DET", "NOUN"],
+      "roles": {
+        "actor": 0,
+        "action": 1,
+        "object": 3
+      },
+      "examples": ["I want the coffee", "She loves the music", "He needs a book"],
+      "weight": 0.9
+    },
+    {
+      "id": "svo_propn_subject",
+      "name": "ProperNoun-Verb-Object",
+      "description": "Named subject: John wants coffee",
+      "structure": ["PROPN", "VERB", "NOUN"],
+      "roles": {
+        "actor": 0,
+        "action": 1,
+        "object": 2
+      },
+      "examples": ["John wants coffee", "Mary plays piano", "Echo knows facts"],
+      "weight": 1.0
+    },
+    {
+      "id": "noun_verb_noun",
+      "name": "Noun-Verb-Noun",
+      "description": "Generic NVN pattern: Dogs chase cats",
+      "structure": ["NOUN", "VERB", "NOUN"],
+      "roles": {
+        "actor": 0,
+        "action": 1,
+        "object": 2
+      },
+      "examples": ["Dogs chase cats", "Music plays loudly", "Weather changes daily"],
+      "weight": 0.85
+    },
+    {
+      "id": "imperative_adp_object",
+      "name": "Imperative-Preposition-Object",
+      "description": "Command with prepositional object: Look at this",
+      "structure": ["VERB", "ADP", "PRON"],
+      "roles": {
+        "action": 0,
+        "object": 2
+      },
+      "tense_hint": "imperative",
+      "examples": ["Look at this", "Think about it", "Listen to me"],
+      "weight": 0.8
+    }
+  ],
+  "tense_indicators": {
+    "past": {
+      "suffixes": ["ed", "ought", "ught"],
+      "irregulars": ["was", "were", "had", "went", "came", "saw", "did", "made", "got", "took"]
+    },
+    "present": {
+      "indicators": ["is", "am", "are", "do", "does", "have", "has"]
+    },
+    "future": {
+      "indicators": ["will", "shall", "going to", "gonna"]
+    },
+    "imperative": {
+      "position": "first",
+      "no_subject": true
+    }
+  }
+}

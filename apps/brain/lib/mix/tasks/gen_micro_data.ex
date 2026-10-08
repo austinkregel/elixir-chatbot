@@ -50,41 +50,13 @@ defmodule Mix.Tasks.GenMicroData do
 
   alias Brain.Analysis.FeatureExtractor
   alias Brain.Analysis.Pipeline
+  alias Brain.Lexicon.IntentDomains
 
   @shortdoc "Generate training data for new micro-classifiers from gold_standard.json"
 
   @feature_vector_classifiers ~w(intent_full intent_domain tense_class aspect_class urgency certainty_level)
   @text_classifiers ~w(coarse_semantic_class)
   @new_classifiers @feature_vector_classifiers ++ @text_classifiers
-
-  @domain_consolidation %{
-    "account" => "account",
-    "alarm" => "reminder",
-    "analysis" => "knowledge",
-    "calendar" => "calendar",
-    "code" => "code",
-    "communication" => "communication",
-    "date" => "time",
-    "dialog" => "smalltalk",
-    "display" => "smarthome",
-    "knowledge" => "knowledge",
-    "meta" => "meta",
-    "music" => "music",
-    "navigation" => "navigation",
-    "news" => "knowledge",
-    "payment" => "account",
-    "reminder" => "reminder",
-    "search" => "knowledge",
-    "smalltalk" => "smalltalk",
-    "smarthome" => "smarthome",
-    "statement" => "smalltalk",
-    "status" => "meta",
-    "time" => "time",
-    "timer" => "reminder",
-    "todo" => "calendar",
-    "weather" => "weather",
-    "web" => "knowledge"
-  }
 
   @modal_urgency_words MapSet.new(~w(
     urgent immediately now asap emergency hurry quick quickly rush
@@ -128,6 +100,10 @@ defmodule Mix.Tasks.GenMicroData do
 
     Enum.each(names, fn name ->
       data = generate_data(name, enriched)
+
+      if name == "intent_full" do
+        validate_intent_labels(data)
+      end
 
       if opts[:stats] do
         show_stats(name, data)
@@ -177,18 +153,52 @@ defmodule Mix.Tasks.GenMicroData do
           "successful in #{elapsed_ms} ms"
       )
 
+      fail_on_missing_vectors!(enriched)
+
       enriched
     else
       entries
     end
   end
 
-  # Uses Pipeline.analyze_chunk/2 (single-chunk, no graph/memory side effects)
-  # rather than Pipeline.process/1 (full pipeline with persistence). Each
-  # gold-standard entry already corresponds to a single chunk.
+  # A row whose pipeline run failed carries no feature vector, and every
+  # feature-vector classifier silently omits it from training. Raising here keeps
+  # the corpus and the training set the same size, so a model's row count can be
+  # traced back to the gold standard.
+  defp fail_on_missing_vectors!(entries) do
+    failed = Enum.reject(entries, &has_feature_vector?/1)
+
+    if failed != [] do
+      sample =
+        failed
+        |> Enum.take(5)
+        |> Enum.map_join("\n", fn entry ->
+          text = entry["text"] || "(no text)"
+          reason = entry["__pipeline_error"] || "no feature vector and no recorded error"
+          "  #{inspect(String.slice(to_string(text), 0, 60))}\n    #{reason}"
+        end)
+
+      Mix.raise("""
+      #{length(failed)} of #{length(entries)} entries produced no feature vector.
+
+      #{sample}
+
+      Training on the remainder would silently shrink the corpus. Fix the
+      failures, or remove the entries from the gold standard if they are not
+      valid input.
+      """)
+    end
+
+    :ok
+  end
+
+  # Uses Pipeline.analyze_chunk/2 (single chunk) rather than Pipeline.process/2.
+  # Each gold-standard entry already corresponds to a single chunk.
+  # `side_effects: false` keeps the corpus out of the belief store, the graph
+  # and the feedback statistics.
   defp enrich_entry(%{"text" => text} = entry) when is_binary(text) do
     try do
-      analysis = Pipeline.analyze_chunk(text)
+      analysis = Pipeline.analyze_chunk(text, side_effects: false)
       {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
 
       tokens = extract_tokens(analysis)
@@ -239,6 +249,44 @@ defmodule Mix.Tasks.GenMicroData do
   defp has_feature_vector?(%{"feature_vector" => v}) when is_list(v) and length(v) > 0, do: true
   defp has_feature_vector?(_), do: false
 
+  defp validate_intent_labels(data) do
+    registry_path =
+      Application.app_dir(:brain)
+      |> Path.join("priv/analysis/intent_registry.json")
+
+    case File.read(registry_path) do
+      {:ok, content} ->
+        registry_intents =
+          content
+          |> Jason.decode!()
+          |> Map.keys()
+          |> MapSet.new()
+
+        unregistered =
+          data
+          |> Enum.map(& &1["label"])
+          |> Enum.reject(&MapSet.member?(registry_intents, &1))
+          |> Enum.frequencies()
+          |> Enum.sort_by(fn {_, count} -> -count end)
+
+        if unregistered != [] do
+          total = Enum.reduce(unregistered, 0, fn {_, c}, acc -> acc + c end)
+
+          Mix.shell().error(
+            "[gen_micro_data] WARNING: #{length(unregistered)} intent_full labels (#{total} examples) " <>
+              "are NOT in intent_registry.json — run `mix cleanup_gold_standard` first:"
+          )
+
+          Enum.each(unregistered, fn {label, count} ->
+            Mix.shell().error("  #{count} examples: #{label}")
+          end)
+        end
+
+      {:error, _} ->
+        Mix.shell().error("[gen_micro_data] Could not read intent_registry.json for validation")
+    end
+  end
+
   defp generate_data("intent_full", entries) do
     entries
     |> Enum.filter(&has_feature_vector?/1)
@@ -252,9 +300,10 @@ defmodule Mix.Tasks.GenMicroData do
     entries
     |> Enum.filter(&has_feature_vector?/1)
     |> Enum.map(fn entry ->
-      raw_domain = entry["intent"] |> String.split(".") |> List.first()
-      label = Map.get(@domain_consolidation, raw_domain, "other")
-      %{"feature_vector" => entry["feature_vector"], "label" => label}
+      %{
+        "feature_vector" => entry["feature_vector"],
+        "label" => IntentDomains.consolidate(entry["intent"])
+      }
     end)
   end
 
@@ -483,6 +532,25 @@ defmodule Mix.Tasks.GenMicroData do
     json = Jason.encode!(data, pretty: true)
     File.write!(path, json)
     Mix.shell().info("Wrote #{length(data)} examples to #{path}")
+    write_environment(name)
+  end
+
+  # The vectors above were computed against the POS tagger, the speech-act voter,
+  # the lexicon, the gazetteer and the AGE graph as they are right now. That state
+  # is recorded beside the data rather than at training time, because it describes
+  # the vectors and not the fitting: a model stamped with the environment in force
+  # when `mix train_micro` ran would be asserting something about data it did not
+  # compute.
+  #
+  # A sidecar rather than a key in the data file, which is a plain JSON array that
+  # several readers index into positionally. The data file's own SHA-256 keeps the
+  # pair together: regenerate the data without its sidecar and
+  # `MicroProvenance.check_inputs!/3` fires on the changed hash.
+  defp write_environment(name) do
+    path = Brain.ML.MicroProvenance.training_environment_path(name)
+    env = Brain.Analysis.RunProvenance.vector_environment!()
+    File.write!(path, Jason.encode!(env, pretty: true) <> "\n")
+    Mix.shell().info("  environment #{env.digest} -> #{Path.basename(path)}")
   end
 
   defp show_stats(name, data) do
@@ -496,46 +564,16 @@ defmodule Mix.Tasks.GenMicroData do
     end)
   end
 
+  # Training rows only, so the classifiers are not fitted to the rows
+  # `mix evaluate.intent` scores them on. Raises if the held-out split has not
+  # been carved.
   defp load_gold_standard do
-    path =
-      case :code.priv_dir(:brain) do
-        {:error, _} -> "apps/brain/priv/evaluation/intent/gold_standard.json"
-        priv -> Path.join(priv, "evaluation/intent/gold_standard.json")
-      end
-
-    case File.read(path) do
-      {:ok, json} ->
-        case Jason.decode(json) do
-          {:ok, data} -> data
-          {:error, reason} ->
-            Mix.raise("Failed to parse gold_standard.json: #{inspect(reason)}")
-        end
-
-      {:error, reason} ->
-        Mix.raise("Failed to read #{path}: #{inspect(reason)}")
-    end
+    Brain.ML.EvaluationStore.load_gold_standard("intent", :train)
   end
 
-  defp output_dir do
-    priv_dir =
-      case :code.priv_dir(:brain) do
-        {:error, _} -> "apps/brain/priv"
-        dir -> to_string(dir)
-      end
-
-    umbrella_root =
-      case File.read_link(priv_dir) do
-        {:ok, link_target} ->
-          parent = Path.dirname(priv_dir)
-          real_priv = Path.join(parent, link_target) |> Path.expand()
-          Path.join(real_priv, "../../..") |> Path.expand()
-
-        {:error, _} ->
-          Path.join(priv_dir, "../../../../..") |> Path.expand()
-      end
-
-    Path.join(umbrella_root, "data/classifiers")
-  end
+  # Must match the path Brain.ML.MicroProvenance hashes, or a model is stamped
+  # with provenance for a file it did not train on.
+  defp output_dir, do: Brain.data_path("classifiers")
 
   defp check_lexicon_data do
     priv_dir =

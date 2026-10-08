@@ -1,0 +1,66 @@
+[
+  {
+    "text": "please you are boring me",
+    "tokens": [
+      "please",
+      "you",
+      "are",
+      "boring",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "VERB",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-1996367b",
+    "intent": "smalltalk.agent.boring"
+  },
+  {
+    "text": "I'd like to how boring you are",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "how",
+      "boring",
+      "you",
+      "are"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "ADV",
+      "ADJ",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-ec201e6e",
+    "intent": "smalltalk.agent.boring"
+  },
+  {
+    "text": "how boring are you",
+    "tokens": [
+      "how",
+      "boring",
+      "are",
+      "you"
+    ],
+    "pos_tags": [
+      "ADV",
+      "ADJ",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-653e6204",
+    "intent": "smalltalk.agent.boring"
+  }
+]

@@ -52,53 +52,97 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
   end
 
   describe "approve action" do
-    test "approving removes candidate from list", %{conn: conn} do
+    test "the trigger opens the confirmation, and confirming removes the candidate from the list",
+         %{conn: conn} do
       candidate = build_test_candidate("Test", "Test claim")
       ReviewQueue.add(candidate)
 
       {:ok, view, _html} = live(conn, "/knowledge-review")
-      view |> element("button[phx-click=approve]") |> render_click()
-      html = render(view)
-      refute html =~ "Test claim"
+      open_confirmation(view, "approve", candidate.id)
+
+      assert render(view) =~ "Test claim"
+      assert_status(candidate.id, :pending)
+
+      confirm(view, "approve", candidate.id)
+
+      refute has_element?(view, panel("approve", candidate.id))
+      refute render(view) =~ "Test claim"
+      assert_status(candidate.id, :approved)
     end
 
-    test "approving updates stats", %{conn: conn} do
+    test "confirming an approval updates stats", %{conn: conn} do
       candidate = build_test_candidate("Test", "Test claim")
       ReviewQueue.add(candidate)
 
       {:ok, view, _html} = live(conn, "/knowledge-review")
+      before = ReviewQueue.stats().approved_today
 
-      view |> element("button[phx-click=approve]") |> render_click()
-      stats = ReviewQueue.stats()
-      assert stats.approved_today >= 1
+      open_confirmation(view, "approve", candidate.id)
+      assert ReviewQueue.stats().approved_today == before
+
+      confirm(view, "approve", candidate.id)
+      assert ReviewQueue.stats().approved_today == before + 1
     end
   end
 
   describe "reject action" do
-    test "rejecting removes candidate from list", %{conn: conn} do
+    test "the trigger opens the confirmation, and confirming removes the candidate from the list",
+         %{conn: conn} do
       candidate = build_test_candidate("Test", "Reject this claim")
       ReviewQueue.add(candidate)
 
       {:ok, view, _html} = live(conn, "/knowledge-review")
+      open_confirmation(view, "reject", candidate.id)
 
-      view |> element("button[phx-click=reject]") |> render_click()
+      assert render(view) =~ "Reject this claim"
+      assert_status(candidate.id, :pending)
 
-      html = render(view)
-      refute html =~ "Reject this claim"
+      confirm(view, "reject", candidate.id)
+
+      refute has_element?(view, panel("reject", candidate.id))
+      refute render(view) =~ "Reject this claim"
+      assert_status(candidate.id, :rejected)
     end
   end
 
   describe "defer action" do
-    test "deferring removes candidate from pending list", %{conn: conn} do
+    test "the trigger opens the confirmation, and confirming removes the candidate from the pending list",
+         %{conn: conn} do
       candidate = build_test_candidate("Test", "Defer this claim")
       ReviewQueue.add(candidate)
 
       {:ok, view, _html} = live(conn, "/knowledge-review")
+      open_confirmation(view, "defer", candidate.id)
 
-      view |> element("button[phx-click=defer]") |> render_click()
+      assert render(view) =~ "Defer this claim"
+      assert_status(candidate.id, :pending)
 
-      html = render(view)
-      refute html =~ "Defer this claim"
+      confirm(view, "defer", candidate.id)
+
+      refute has_element?(view, panel("defer", candidate.id))
+      refute render(view) =~ "Defer this claim"
+      assert_status(candidate.id, :deferred)
+    end
+  end
+
+  describe "cancel" do
+    for action <- ["approve", "defer", "reject"] do
+      test "cancelling #{action} closes the confirmation and leaves the candidate pending",
+           %{conn: conn} do
+        action = unquote(action)
+        candidate = build_test_candidate("Test", "Cancelled claim")
+        ReviewQueue.add(candidate)
+
+        {:ok, view, _html} = live(conn, "/knowledge-review")
+        open_confirmation(view, action, candidate.id)
+
+        view |> element("#{panel(action, candidate.id)}-cancel") |> render_click()
+
+        refute has_element?(view, panel(action, candidate.id))
+        assert render(view) =~ "Cancelled claim"
+        assert_status(candidate.id, :pending)
+        assert Enum.any?(ReviewQueue.get_pending(), &(&1.id == candidate.id))
+      end
     end
   end
 
@@ -219,11 +263,34 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
       candidate = build_test_candidate("Test", "High confidence claim", confidence: 0.95)
       ReviewQueue.add(candidate)
 
-      {:ok, _view, html} = live(conn, "/knowledge-review")
+      {:ok, view, html} = live(conn, "/knowledge-review")
 
       assert html =~ "95"
-      assert html =~ "progress"
+      assert has_element?(view, ~s([role="meter"][aria-label="Confidence"]))
     end
+  end
+
+  defp panel(action, candidate_id), do: "#kr-confirm-#{action}-#{candidate_id}"
+
+  # Pressing the trigger only opens the confirmation panel: the panel and its
+  # confirm button are absent before the press and present after it.
+  defp open_confirmation(view, action, candidate_id) do
+    refute has_element?(view, panel(action, candidate_id))
+    refute has_element?(view, "#{panel(action, candidate_id)}-confirm")
+
+    view |> element("#kr-#{action}-#{candidate_id}") |> render_click()
+
+    assert has_element?(view, panel(action, candidate_id))
+    assert has_element?(view, "#{panel(action, candidate_id)}-confirm")
+    assert has_element?(view, "#{panel(action, candidate_id)}-cancel")
+  end
+
+  defp confirm(view, action, candidate_id) do
+    view |> element("#{panel(action, candidate_id)}-confirm") |> render_click()
+  end
+
+  defp assert_status(candidate_id, status) do
+    assert {:ok, %ReviewCandidate{status: ^status}} = ReviewQueue.get(candidate_id)
   end
 
   defp build_test_candidate(entity, claim, opts \\ []) do

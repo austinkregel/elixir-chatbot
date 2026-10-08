@@ -56,9 +56,15 @@ defmodule Brain.Response.ResponseEvaluator do
   Evaluates the realized response against the analysis context.
 
   Returns a `%Score{}` with per-dimension scores and the overall score.
+
+  The response is itself run through the analysis pipeline. `opts` may carry
+  `:side_effects`, which is passed to that run; `false` keeps the analysis of
+  the bot's own response from writing.
   """
-  def evaluate(primitives, response, %ChunkAnalysis{} = analysis) when is_list(primitives) do
-    response_analysis = analyze_response(response)
+  def evaluate(primitives, response, analysis, opts \\ [])
+
+  def evaluate(primitives, response, %ChunkAnalysis{} = analysis, opts) when is_list(primitives) do
+    response_analysis = analyze_response(response, Keyword.take(opts, [:side_effects]))
 
     speech_act = score_speech_act_alignment(response_analysis, analysis)
     confidence = score_confidence_alignment(primitives, analysis)
@@ -115,7 +121,7 @@ defmodule Brain.Response.ResponseEvaluator do
     }
   end
 
-  def evaluate(_, _, _), do: %Score{converged: true, overall: 0.5}
+  def evaluate(_, _, _, _), do: %Score{converged: true, overall: 0.5}
 
   @doc "Maps a weak dimension to the pipeline stage that should be re-run."
   def dimension_to_stage(:speech_act_alignment), do: :discourse_planner
@@ -131,8 +137,8 @@ defmodule Brain.Response.ResponseEvaluator do
 
   # --- Response analysis ---
 
-  defp analyze_response(response) when is_binary(response) and response != "" do
-    Pipeline.process(response)
+  defp analyze_response(response, pipeline_opts) when is_binary(response) and response != "" do
+    Pipeline.process(response, pipeline_opts)
   rescue
     e ->
       Logger.debug("ResponseEvaluator: Pipeline.process on response failed: #{Exception.message(e)}")
@@ -141,7 +147,7 @@ defmodule Brain.Response.ResponseEvaluator do
     :exit, _ -> nil
   end
 
-  defp analyze_response(_), do: nil
+  defp analyze_response(_, _), do: nil
 
   # --- Dimension scorers ---
 

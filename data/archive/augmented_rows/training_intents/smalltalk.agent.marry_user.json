@@ -1,0 +1,22 @@
+[
+  {
+    "text": "I want to marry me",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "marry",
+      "me"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-3aed8736",
+    "intent": "smalltalk.agent.marry_user"
+  }
+]

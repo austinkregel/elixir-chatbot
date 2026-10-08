@@ -1,0 +1,98 @@
+[
+  {
+    "text": "please i'm waiting",
+    "tokens": [
+      "please",
+      "i",
+      "'m",
+      "waiting"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADJ",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-79932627",
+    "intent": "smalltalk.user.waits"
+  },
+  {
+    "text": "can you i'm waiting",
+    "tokens": [
+      "can",
+      "you",
+      "i",
+      "'m",
+      "waiting"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-a6631cc0",
+    "intent": "smalltalk.user.waits"
+  },
+  {
+    "text": "I'd like to still waiting",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "still",
+      "waiting"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-2874e9c1",
+    "intent": "smalltalk.user.waits"
+  },
+  {
+    "text": "ca I n't wait anymore",
+    "tokens": [
+      "ca",
+      "I",
+      "n't",
+      "wait",
+      "anymore"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "ADV",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-6e91e64d",
+    "intent": "smalltalk.user.waits"
+  },
+  {
+    "text": "'ll I wait",
+    "tokens": [
+      "'ll",
+      "I",
+      "wait"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-e20bd881",
+    "intent": "smalltalk.user.waits"
+  }
+]

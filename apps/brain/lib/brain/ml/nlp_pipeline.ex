@@ -4,7 +4,7 @@ defmodule Brain.ML.NLPPipeline do
   alias Brain.ML
   require Logger
 
-  alias ML.{EntityExtractor, Gazetteer, Tokenizer}
+  alias ML.{EntityExtractor, Tokenizer}
 
   @type pipeline_result :: %{
           intent: String.t(),
@@ -13,41 +13,6 @@ defmodule Brain.ML.NLPPipeline do
           context: String.t(),
           processing_method: :classical
         }
-
-  @doc "Initialize the NLP pipeline by loading all required models and data.\nShould be called at application startup.\n"
-  def init do
-    Logger.info("Initializing NLP pipeline...")
-
-    case Gazetteer.start_link() do
-      {:ok, _pid} ->
-        Logger.info("Gazetteer GenServer started")
-
-      {:error, {:already_started, _pid}} ->
-        Logger.debug("Gazetteer already running")
-
-      {:error, reason} ->
-        Logger.warning("Failed to start Gazetteer GenServer", %{reason: reason})
-    end
-
-    case Gazetteer.load_all() do
-      {:ok, stats} ->
-        Logger.info("Gazetteer loaded", stats)
-
-      {:error, reason} ->
-        Logger.warning("Gazetteer loading failed, will use fallback", %{reason: reason})
-    end
-
-    case EntityExtractor.load_entity_maps() do
-      {:ok, maps} ->
-        Logger.info("Entity maps loaded", %{count: map_size(maps)})
-
-      {:error, reason} ->
-        Logger.warning("Entity maps loading failed", %{reason: reason})
-    end
-
-    Logger.info("NLP pipeline initialization complete")
-    :ok
-  end
 
   @doc """
   Main entry point for text processing using classical NLP.
@@ -66,6 +31,8 @@ defmodule Brain.ML.NLPPipeline do
     produced a full-features intent in pass 2.
   - `:reuse_entities` - list of pre-extracted entities. When provided, skip
     `EntityExtractor.extract_entities/2`.
+  - `:side_effects` - passed to `Pipeline.analyze_chunk/2` when the intent is
+    classified here; `false` keeps that analysis from writing.
   """
   def process(text, opts \\ []) do
     Logger.debug("Processing text with classical NLP", %{text: text})
@@ -135,7 +102,7 @@ defmodule Brain.ML.NLPPipeline do
         {:ok, intent, confidence / 1}
 
       _ ->
-        classify_intent(text)
+        classify_intent(text, Keyword.take(opts, [:side_effects]))
     end
   end
 
@@ -211,18 +178,13 @@ defmodule Brain.ML.NLPPipeline do
     confidence >= threshold
   end
 
-  @doc "Check if the pipeline is ready (models loaded).\n"
-  def ready? do
-    Gazetteer.loaded?() or EntityExtractor.get_entity_maps() != %{}
-  end
-
-  defp classify_intent(text) do
+  defp classify_intent(text, pipeline_opts \\ []) do
     alias Brain.Analysis.{FeatureExtractor, Pipeline}
     alias Brain.ML.MicroClassifiers
 
     if MicroClassifiers.ready?() do
       try do
-        analysis = Pipeline.analyze_chunk(text)
+        analysis = Pipeline.analyze_chunk(text, pipeline_opts)
         {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
 
         case MicroClassifiers.classify_vector(:intent_full, feature_vector) do

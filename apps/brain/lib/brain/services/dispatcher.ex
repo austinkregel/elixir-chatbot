@@ -34,7 +34,8 @@ defmodule Brain.Services.Dispatcher do
   # supported intents and route requests accordingly.
   @registered_services [
     Brain.Services.Weather,
-    Brain.Services.SystemStatus
+    Brain.Services.SystemStatus,
+    Brain.Services.HomeAssistant
   ]
 
   # Build intent -> service lookup dynamically to handle module compilation order
@@ -58,7 +59,10 @@ defmodule Brain.Services.Dispatcher do
   ## Parameters
     - intent: The classified intent name
     - slots: Map of filled slot values (e.g., %{location: "NYC"})
-    - context: Additional context (world_id, user_id, etc.)
+    - context: Additional context (world_id, user_id, etc.). With
+      `side_effects: false`, an intent the service says `writes?/1` (a device
+      action, a stored alarm) is refused with `{:error, :side_effects_off}`
+      and the service is not called; read-only intents still run.
 
   ## Returns
     - {:ok, enrichment_data} on success
@@ -72,10 +76,17 @@ defmodule Brain.Services.Dispatcher do
   def dispatch(intent, slots, context) when is_binary(intent) and is_map(slots) do
     case find_service(intent) do
       nil ->
+        Logger.debug("Dispatcher: no handler for intent=#{intent}")
         :no_handler
 
       service ->
-        dispatch_to_service(service, intent, slots, context)
+        if Map.get(context, :side_effects, true) == false and service.writes?(intent) do
+          Logger.info("Dispatcher: refused intent=#{intent} for #{inspect(service)}: it writes and side effects are off")
+          {:error, :side_effects_off}
+        else
+          Logger.info("Dispatcher: routing intent=#{intent} to #{inspect(service)}")
+          dispatch_to_service(service, intent, slots, context)
+        end
     end
   end
 
@@ -134,15 +145,14 @@ defmodule Brain.Services.Dispatcher do
   @doc """
   Collects slot schemas from all registered services that implement `slot_schema/0`.
 
-  Returns a map of intent name to schema, suitable for merging into
-  SlotDetector's runtime schema map. Each service's schema is registered
-  for every intent in its `supported_intents/0`. Additionally, each
-  service's domain prefix is registered so that derived intents like
-  `"weather.request_information"` can find the schema.
+  Returns a map of intent/domain name to schema, suitable for merging into
+  SlotDetector's runtime schema map. Services using `supported_domains/0` have
+  their schema registered under each domain prefix. Services using
+  `supported_intents/0` have their schema registered per-intent.
   """
   @spec service_schemas() :: %{String.t() => map()}
   def service_schemas do
-    entries =
+    intent_entries =
       for service <- @registered_services,
           Code.ensure_loaded?(service),
           function_exported?(service, :slot_schema, 0),
@@ -154,18 +164,25 @@ defmodule Brain.Services.Dispatcher do
     domain_entries =
       for service <- @registered_services,
           Code.ensure_loaded?(service),
-          function_exported?(service, :slot_schema, 0),
-          function_exported?(service, :supported_intents, 0) do
-        domains =
-          service.supported_intents()
-          |> Enum.map(fn intent ->
-            case String.split(intent, ".", parts: 2) do
-              [domain, _] -> domain
-              _ -> nil
-            end
-          end)
-          |> Enum.uniq()
-          |> Enum.reject(&is_nil/1)
+          function_exported?(service, :slot_schema, 0) do
+        domains = cond do
+          function_exported?(service, :supported_domains, 0) ->
+            service.supported_domains()
+
+          function_exported?(service, :supported_intents, 0) ->
+            service.supported_intents()
+            |> Enum.map(fn intent ->
+              case String.split(intent, ".", parts: 2) do
+                [domain, _] -> domain
+                _ -> nil
+              end
+            end)
+            |> Enum.uniq()
+            |> Enum.reject(&is_nil/1)
+
+          true ->
+            []
+        end
 
         Enum.map(domains, fn domain ->
           {domain, service.slot_schema()}
@@ -173,15 +190,16 @@ defmodule Brain.Services.Dispatcher do
       end
       |> List.flatten()
 
-    Map.new(entries ++ domain_entries)
+    Map.new(intent_entries ++ domain_entries)
   end
 
   @doc """
   Get the service module for an intent.
 
-  First tries an exact match, then falls back to domain-prefix matching
-  (e.g. `"weather.request_information"` matches a service that declares
-  `"weather.query"` because they share the `"weather"` domain prefix).
+  Routing priority:
+  1. Exact intent match from `supported_intents/0`
+  2. Domain match from `supported_domains/0` (e.g., "smarthome" matches "smarthome.switch")
+  3. Domain-prefix fallback (service declares "weather.query", matches "weather.forecast")
   """
   @spec find_service(String.t() | nil) :: module() | nil
   def find_service(nil), do: nil
@@ -190,21 +208,34 @@ defmodule Brain.Services.Dispatcher do
     service_map = intent_to_service_map()
 
     case Map.get(service_map, intent) do
-      nil -> find_service_by_domain_prefix(intent, service_map)
+      nil -> find_service_by_domain(intent)
       service -> service
     end
   end
 
-  defp find_service_by_domain_prefix(intent, service_map) do
-    case String.split(intent, ".", parts: 2) do
-      [domain, _] ->
-        Enum.find_value(service_map, fn {registered_intent, service} ->
-          if String.starts_with?(registered_intent, domain <> "."), do: service
-        end)
-
-      _ ->
-        nil
+  defp find_service_by_domain(intent) do
+    domain = case String.split(intent, ".", parts: 2) do
+      [d, _] -> d
+      _ -> nil
     end
+
+    if domain do
+      Enum.find(@registered_services, fn service ->
+        Code.ensure_loaded?(service) and
+          function_exported?(service, :supported_domains, 0) and
+          domain in service.supported_domains()
+      end) || find_service_by_intent_prefix(domain)
+    else
+      nil
+    end
+  end
+
+  defp find_service_by_intent_prefix(domain) do
+    service_map = intent_to_service_map()
+
+    Enum.find_value(service_map, fn {registered_intent, service} ->
+      if String.starts_with?(registered_intent, domain <> "."), do: service
+    end)
   end
 
   @doc """

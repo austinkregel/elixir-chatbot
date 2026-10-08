@@ -1,0 +1,227 @@
+{
+  "description": "What a word DOES in discourse, as distinct from its part of speech (priv/knowledge/closed_class.json) and its lexical sense (WordNet, Brain.Lexicon). A word carries any number of functions: 'ok' is a backchannel, an acknowledgment and a confirmation. WordNet cannot supply these -- it indexes by sense, and function is not a sense -- so they are declared here and expanded through the brain's own lexicon. See .claude/tasks/077-canonical-vocabularies.md, domain 5.",
+
+  "these_are_candidates_not_readings": "A lookup against this file answers 'which functions could this token be performing', not 'which one is it'. 'are' is seeded under polar_interrogative, so 'you are very kind' reports one -- the copula is not an inverted auxiliary, but no amount of word-level declaration can tell the two apart. Resolving a candidate set to a reading needs context, exactly as lexical sense does (Brain.Lexicon.disambiguate/3), and that layer does not exist yet.",
+
+  "inventory_is_closed": "The set of function NAMES is closed: Brain.Lexicon.PragmaticFunction raises on any seed or owned fact naming a function absent from `functions`, and consumers take their vector width from all_functions/0, so adding a function here widens them rather than being silently dropped. The set of WORDS per function is open: these are seeds, expanded at runtime by owned lexicon facts of kind 'property', key 'pragmatic_function', with the function name as the fact's `ref` -- it is the ref rather than a field of `value` because ref is part of a fact's identity, so a word can own as many functions as it performs instead of exactly one.",
+
+  "entries_may_be_phrases": "3 of 10 declared hedges, 3 of 4 polite markers and 1 of 4 attention words are multi-token. Entries are matched as n-grams by the owning module; a consumer must never match these against single tokens, which is the defect chunk_features.ex:508 has -- it token-matches bare 'kind' and 'sort' from 'kind of' and 'sort of', and scores 'you are very kind' as a hedge.",
+
+  "functions": {
+    "backchannel": {
+      "description": "Signals continued attention without committing to content -- a continuer. Schegloff's sense: 'mhm' asks the speaker to go on.",
+      "seeded_from": ["apps/brain/lib/brain/analysis/speech_act_classifier.ex:285"]
+    },
+    "acknowledgment": {
+      "description": "Signals that the message was received and understood. Distinct from backchannel, which does not claim understanding, and from confirmation, which agrees.",
+      "seeded_from": [
+        "apps/brain/lib/brain/analysis/speech_act_classifier.ex:287",
+        "apps/brain/lib/brain/response/chunk_segmenter.ex:235"
+      ]
+    },
+    "confirmation": {
+      "description": "Agrees with what was said. Distinct from acknowledgment: 'noted' receives without agreeing, 'exactly' agrees.",
+      "seeded_from": ["apps/brain/lib/brain/analysis/feature_extractor/enrichment_features.ex:777"]
+    },
+    "negation": {
+      "description": "Reverses the polarity of what it scopes over. Closed class plus contractions; the morphological half ('unable', 'hopeless') is derived from WordNet antonymy by Brain.Lexicon.Seeder and read through owned facts, not listed here.",
+      "seeded_from": [
+        "apps/brain/priv/knowledge/linguistic.json#negation_words",
+        "apps/brain/lib/brain/linguistic_data.ex"
+      ]
+    },
+    "hedge": {
+      "description": "Weakens the speaker's commitment to the proposition. Orthogonal to part of speech: 'could' is AUX by class and hedges by function.",
+      "seeded_from": [
+        "apps/brain/priv/knowledge/linguistic.json#hedges",
+        "apps/brain/lib/brain/analysis/feature_extractor/chunk_features.ex:508",
+        "apps/brain/lib/brain/analysis/feature_extractor/enrichment_features.ex:776",
+        "apps/brain/lib/brain/analysis/speech_act_classifier.ex:284",
+        "apps/brain/lib/brain/response/chunk_segmenter.ex:114"
+      ]
+    },
+    "intensifier": {
+      "description": "Strengthens what it modifies. Overlaps certainty on 'absolutely', 'certainly', 'definitely', 'surely' -- those both amplify and assert confidence.",
+      "seeded_from": [
+        "apps/brain/priv/knowledge/linguistic.json#intensifiers",
+        "apps/brain/lib/brain/analysis/feature_extractor/chunk_features.ex:507"
+      ]
+    },
+    "certainty": {
+      "description": "Asserts high confidence in the proposition. The polar opposite of hedge, and not the same as intensifier, which amplifies without asserting confidence ('very', 'extremely').",
+      "seeded_from": ["apps/brain/lib/brain/analysis/feature_extractor/chunk_features.ex:509"]
+    },
+    "politeness": {
+      "description": "Mitigates the imposition of a request. Mostly phrase-shaped: 'could you' is politeness where bare 'could' is a hedge.",
+      "seeded_from": [
+        "apps/brain/lib/brain/analysis/speech_act_classifier.ex:281",
+        "apps/brain/priv/analysis/discourse_config.json#polite_markers"
+      ]
+    },
+    "greeting": {
+      "description": "Opens contact. Seeded from discourse_config.json's address_prefixes EXCEPT its 'ok' and 'okay', which prefix an address without opening contact ('ok, turn the lights on') and are seeded under backchannel and acknowledgment instead. Whether addressing deserves its own function is an open question; it is not one today rather than being quietly folded in here.",
+      "seeded_from": [
+        "apps/brain/lib/brain/response/chunk_segmenter.ex:231",
+        "apps/brain/lib/brain/analysis/racing_analyzer.ex:330",
+        "apps/brain/priv/analysis/discourse_config.json#address_prefixes"
+      ]
+    },
+    "farewell": {
+      "description": "Closes contact.",
+      "seeded_from": ["apps/brain/lib/brain/response/chunk_segmenter.ex:232"]
+    },
+    "thanks": {
+      "description": "Expresses gratitude.",
+      "seeded_from": ["apps/brain/lib/brain/analysis/speech_act_classifier.ex:282"]
+    },
+    "urgency": {
+      "description": "Marks the request as time-critical.",
+      "seeded_from": ["apps/brain/lib/brain/analysis/speech_act_classifier.ex:283"]
+    },
+    "attention": {
+      "description": "Bids for the addressee's attention before the substantive utterance.",
+      "seeded_from": ["apps/brain/priv/analysis/discourse_config.json#attention_words"]
+    },
+    "interrogative": {
+      "description": "Opens a wh-question. Includes the wh-adverbs ('how', 'where', 'when'); the pronoun-only subset is a part-of-speech question, answered by Brain.Lexicon.ClosedClass, not here.",
+      "seeded_from": [
+        "apps/brain/lib/brain/analysis/feature_extractor/chunk_features.ex:54",
+        "apps/brain/lib/brain/analysis/racing_analyzer.ex:305",
+        "apps/brain/lib/brain/ml/tokenizer.ex:345"
+      ]
+    },
+    "polar_interrogative": {
+      "description": "Opens a yes/no question by auxiliary inversion. A different question from `interrogative`, which is why the two were measured as independent vocabularies rather than one careless split.",
+      "seeded_from": [
+        "apps/brain/lib/brain/knowledge/types.ex:867",
+        "apps/brain/lib/brain/knowledge/research_agent.ex:118"
+      ]
+    },
+    "clarification_request": {
+      "description": "Asks for a value that is missing or ambiguous. Lexically a subset of `interrogative`; pragmatically a directive, which is why it is its own function.",
+      "seeded_from": ["apps/brain/lib/brain/response/chunk_segmenter.ex:234"]
+    },
+    "conditional": {
+      "description": "Marks a condition on what follows. The SCONJ class of these words belongs to Brain.Lexicon.ClosedClass; marking a conditional relation is the function.",
+      "seeded_from": [
+        "apps/brain/lib/brain/analysis/feature_extractor/chunk_features.ex:506",
+        "apps/brain/lib/brain/analysis/feature_extractor/enrichment_features.ex:774"
+      ]
+    },
+    "causal": {
+      "description": "Marks cause or consequence between two spans.",
+      "seeded_from": ["apps/brain/lib/brain/analysis/feature_extractor/enrichment_features.ex:770"]
+    },
+    "contrast": {
+      "description": "Marks opposition between two spans.",
+      "seeded_from": ["apps/brain/lib/brain/analysis/feature_extractor/enrichment_features.ex:771"]
+    },
+    "continuation": {
+      "description": "Adds to what preceded without changing direction.",
+      "seeded_from": ["apps/brain/lib/brain/analysis/feature_extractor/enrichment_features.ex:772"]
+    },
+    "temporal_relation": {
+      "description": "Orders events relative to one another. Distinct from temporal reference ('today', 'tomorrow'), which locates an event on a calendar and is owned by EnrichmentFeatures' time categories.",
+      "seeded_from": ["apps/brain/lib/brain/analysis/feature_extractor/enrichment_features.ex:773"]
+    },
+    "topic_shift": {
+      "description": "Abandons the current topic.",
+      "seeded_from": ["apps/brain/lib/brain/analysis/feature_extractor/enrichment_features.ex:775"]
+    },
+    "commitment": {
+      "description": "Commits the speaker to future action -- Searle's commissive. Overlaps the AUX class on 'will' and 'shall', which is the two-axis case again.",
+      "seeded_from": [
+        "apps/brain/lib/brain/analysis/speech_act_classifier.ex:288",
+        "apps/brain/lib/brain/analysis/speech_act_classifier.ex:290"
+      ]
+    },
+    "offer": {
+      "description": "Proposes the speaker's help or resources.",
+      "seeded_from": [
+        "apps/brain/lib/brain/analysis/speech_act_classifier.ex:289",
+        "apps/brain/lib/brain/response/chunk_segmenter.ex:233"
+      ]
+    },
+    "compliment": {
+      "description": "Praises the addressee.",
+      "seeded_from": ["apps/brain/lib/brain/analysis/speech_act_classifier.ex:286"]
+    },
+    "formality": {
+      "description": "Marks the register as formal. Overlaps the discourse connectives heavily -- 'furthermore', 'consequently' and 'nevertheless' both connect and raise register.",
+      "seeded_from": ["apps/brain/lib/brain/response/chunk_segmenter.ex:116"]
+    }
+  },
+
+  "seeds": {
+    "backchannel": [
+      "ok", "okay", "sure", "yeah", "yes", "no", "nah", "right",
+      "hmm", "mhm", "uh", "huh", "yep", "nope"
+    ],
+    "acknowledgment": [
+      "ok", "okay", "got", "understood", "acknowledged", "roger", "noted", "sure", "right"
+    ],
+    "confirmation": [
+      "yes", "yeah", "yep", "ok", "okay", "sure", "right", "exactly", "absolutely", "definitely"
+    ],
+    "negation": [
+      "not", "no", "never", "none", "cannot", "can't", "won't", "don't",
+      "doesn't", "didn't", "isn't", "aren't", "wasn't", "weren't",
+      "neither", "nor", "nobody", "nothing", "nowhere"
+    ],
+    "hedge": [
+      "maybe", "perhaps", "possibly", "probably", "likely", "seemingly", "apparently",
+      "arguably", "might", "could", "somewhat", "presumably", "supposedly",
+      "potentially", "conceivably", "kind of", "sort of", "a bit"
+    ],
+    "intensifier": [
+      "very", "really", "extremely", "quite", "absolutely", "totally",
+      "completely", "highly", "incredibly", "especially",
+      "definitely", "certainly", "surely"
+    ],
+    "certainty": [
+      "definitely", "certainly", "absolutely", "surely", "clearly", "obviously", "undoubtedly"
+    ],
+    "politeness": [
+      "please", "pls", "plz", "kindly", "could you", "would you", "can you"
+    ],
+    "greeting": [
+      "hello", "hi", "hey", "welcome", "howdy", "greetings", "yo"
+    ],
+    "farewell": ["goodbye", "bye", "farewell"],
+    "thanks": ["thanks", "thank", "thankyou", "thx"],
+    "urgency": ["urgent", "asap", "immediately", "emergency", "now", "quickly", "hurry"],
+    "attention": ["listen", "look", "wait", "hold on"],
+    "interrogative": ["who", "whom", "whose", "which", "what", "where", "when", "why", "how"],
+    "polar_interrogative": ["is", "are", "was", "were", "do", "does", "did"],
+    "clarification_request": ["which", "what", "where", "when", "how"],
+    "conditional": ["if", "unless", "whether", "provided", "assuming", "otherwise"],
+    "causal": [
+      "because", "since", "so", "therefore", "thus", "hence", "consequently", "accordingly"
+    ],
+    "contrast": [
+      "but", "however", "although", "though", "yet", "whereas", "nevertheless", "nonetheless"
+    ],
+    "continuation": [
+      "and", "also", "moreover", "furthermore", "additionally", "besides", "plus"
+    ],
+    "temporal_relation": [
+      "then", "now", "after", "before", "while", "when", "meanwhile",
+      "eventually", "finally", "later"
+    ],
+    "topic_shift": ["anyway", "incidentally", "regardless"],
+    "commitment": [
+      "will", "shall", "promise", "guarantee", "commit", "pledge", "vow", "ensure",
+      "gonna", "going"
+    ],
+    "offer": ["offer", "help", "assist", "volunteer", "provide", "lend", "anything"],
+    "compliment": [
+      "great", "awesome", "amazing", "wonderful", "excellent", "nice", "good",
+      "brilliant", "fantastic"
+    ],
+    "formality": [
+      "furthermore", "moreover", "consequently", "nevertheless", "accordingly",
+      "henceforth", "whereas", "hereby", "therein", "notwithstanding",
+      "pursuant", "regarding", "respectfully"
+    ]
+  }
+}

@@ -281,14 +281,15 @@ defmodule Brain.Response.ContextBuilder do
     end
   end
 
-  defp extract_enrichment_context(primary, _opts) do
+  defp extract_enrichment_context(primary, opts) do
     entities = primary.entities || []
     intent = primary.intent
     slots = extract_slot_values(primary.slots)
 
     base_context = %{
       entities: entities,
-      intent: intent
+      intent: intent,
+      side_effects: Keyword.get(opts, :side_effects, true)
     }
 
     enriched = Enricher.prepare_context(intent, slots, base_context)

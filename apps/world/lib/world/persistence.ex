@@ -430,16 +430,35 @@ defmodule World.Persistence do
     end
   end
 
+  # A persisted row that is not a valid candidate is corrupt data, not something
+  # to route around. Left as a bare map it would flow into
+  # World.EntityPromoter and fail there instead -- which is the crash the
+  # enforced shape exists to prevent, just moved somewhere harder to read.
+  defp load_candidate!(attrs, path) do
+    World.EntityCandidate.new!(attrs)
+  rescue
+    e in ArgumentError ->
+      raise ArgumentError, """
+      #{path} holds a row that is not a valid entity candidate.
+
+      #{Exception.message(e)}
+
+      Delete the file to discard this world's stale candidates; they are
+      regenerated from observation.
+      """
+  end
+
   defp load_candidates(path) do
     candidates_path = Path.join(path, "discovered_entities.json")
 
     case read_json(candidates_path) do
       {:ok, data} when is_list(data) ->
         candidates =
-          Enum.map(data, fn candidate ->
-            candidate
+          Enum.map(data, fn row ->
+            row
             |> atomize_keys()
             |> Map.update(:discovered_at, nil, &parse_datetime/1)
+            |> load_candidate!(candidates_path)
           end)
 
         {:ok, candidates}

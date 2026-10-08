@@ -94,12 +94,13 @@ defmodule ChatWeb.ExplorerLive do
     |> assign(:beliefs_source_filter, nil)
     |> assign(:beliefs_category_filter, nil)
     |> assign(:selected_user, nil)
-    # Add belief form state
-    |> assign(:show_add_belief_form, false)
+    # The open confirmation panel, if any, and its failure
+    |> assign(:confirming, nil)
+    |> assign(:confirm_error, nil)
+    # The confidence (0-100) chosen on the open Set-confidence slider, nil until it moves
+    |> assign(:chosen_confidence, nil)
     |> assign(:add_belief_form, %{"subject" => "", "predicate" => "", "object" => "", "confidence" => "100", "authority" => "mentor"})
     |> assign(:authority_filter, nil)
-    # Inline confidence editing
-    |> assign(:editing_confidence_id, nil)
   end
 
   defp apply_url_params(socket, params) do
@@ -143,32 +144,35 @@ defmodule ChatWeb.ExplorerLive do
   defp apply_filters(socket) do
     tab = socket.assigns.tab
     search = socket.assigns.search_query |> String.downcase()
-    page = socket.assigns.page
     page_size = socket.assigns.page_size
 
-    {filtered, total} =
+    {items, total, total_rows, filter_active, paged?} =
       case tab do
         :entities ->
           type = socket.assigns.selected_type
           entities = Map.get(socket.assigns.overlay_by_type, type, [])
           filtered = filter_by_search(entities, search, fn {key, _info} -> key end)
-          {paginate(filtered, page, page_size), length(filtered)}
+          {filtered, length(filtered), length(entities), search != "", true}
 
         :candidates ->
           filtered = filter_by_search(socket.assigns.candidates, search, & &1.value)
-          {paginate(filtered, page, page_size), length(filtered)}
+
+          {filtered, length(filtered), length(socket.assigns.candidates), search != "", true}
 
         :episodes ->
           filtered = filter_by_search(socket.assigns.episodes, search, & &1.state)
-          {paginate(filtered, page, page_size), length(filtered)}
+
+          {filtered, length(filtered), length(socket.assigns.episodes), search != "", true}
 
         :semantics ->
           filtered = filter_by_search(socket.assigns.semantics, search, & &1.representation)
-          {paginate(filtered, page, page_size), length(filtered)}
+
+          {filtered, length(filtered), length(socket.assigns.semantics), search != "", true}
 
         :knowledge ->
           # Knowledge is a map, don't paginate
-          {socket.assigns.knowledge, map_size(socket.assigns.knowledge)}
+          knowledge_size = map_size(socket.assigns.knowledge)
+          {socket.assigns.knowledge, knowledge_size, knowledge_size, false, false}
 
         :beliefs ->
           # Load beliefs data lazily on first access
@@ -178,7 +182,8 @@ defmodule ChatWeb.ExplorerLive do
 
           case sub_tab do
             :beliefs ->
-              items = Map.get(beliefs_data, :beliefs, [])
+              all_items = Map.get(beliefs_data, :beliefs, [])
+              items = all_items
               source_filter = socket.assigns.beliefs_source_filter
               authority_filter = socket.assigns.authority_filter
 
@@ -202,10 +207,12 @@ defmodule ChatWeb.ExplorerLive do
                 "#{b.subject} #{b.predicate} #{b.object}"
               end)
 
-              {paginate(filtered, page, page_size), length(filtered)}
+              {filtered, length(filtered), length(all_items),
+               search != "" or not is_nil(source_filter) or not is_nil(authority_filter), true}
 
             :facts ->
-              items = Map.get(beliefs_data, :facts, [])
+              all_items = Map.get(beliefs_data, :facts, [])
+              items = all_items
               cat_filter = socket.assigns.beliefs_category_filter
 
               items =
@@ -219,19 +226,23 @@ defmodule ChatWeb.ExplorerLive do
                 "#{f.entity} #{f.fact}"
               end)
 
-              {paginate(filtered, page, page_size), length(filtered)}
+              {filtered, length(filtered), length(all_items),
+               search != "" or not is_nil(cat_filter), true}
 
             _ ->
-              {%{}, 0}
+              {%{}, 0, 0, false, false}
           end
       end
 
-    total_pages = max(1, ceil(total / page_size))
+    page = clamp_page(socket.assigns.page, total, page_size)
+    filtered = if paged?, do: paginate(items, page, page_size), else: items
 
     socket
+    |> assign(:page, page)
     |> assign(:filtered_data, filtered)
     |> assign(:total_entries, total)
-    |> assign(:total_pages, total_pages)
+    |> assign(:total_rows, total_rows)
+    |> assign(:matching_rows, if(filter_active, do: total))
   end
 
   # ============================================================================
@@ -359,8 +370,18 @@ defmodule ChatWeb.ExplorerLive do
 
   # ---- Belief management actions ----
 
-  def handle_event("toggle_add_belief_form", _params, socket) do
-    {:noreply, assign(socket, :show_add_belief_form, !socket.assigns.show_add_belief_form)}
+  def handle_event("open_confirm", %{"id" => confirm_id}, socket) do
+    {:noreply, assign(socket, confirming: confirm_id, confirm_error: nil, chosen_confidence: nil)}
+  end
+
+  def handle_event("close_confirm", _params, socket) do
+    {:noreply, assign(socket, confirming: nil, confirm_error: nil, chosen_confidence: nil)}
+  end
+
+  # The Set-confidence slider reports each position as it moves, so the panel
+  # can show the value the person is about to confirm.
+  def handle_event("choose_confidence", %{"confidence" => value}, socket) do
+    {:noreply, assign(socket, :chosen_confidence, slider_percent!(value))}
   end
 
   def handle_event("update_add_belief_form", %{"belief" => params}, socket) do
@@ -397,7 +418,7 @@ defmodule ChatWeb.ExplorerLive do
         {:ok, _id} ->
           socket =
             socket
-            |> assign(:show_add_belief_form, false)
+            |> assign(confirming: nil, confirm_error: nil)
             |> assign(:add_belief_form, %{"subject" => "", "predicate" => "", "object" => "", "confidence" => "100", "authority" => "mentor"})
             |> assign(:beliefs_data, nil)
             |> maybe_load_beliefs_data()
@@ -407,10 +428,10 @@ defmodule ChatWeb.ExplorerLive do
           {:noreply, socket}
 
         {:error, reason} ->
-          {:noreply, put_flash(socket, :error, "Failed to add belief: #{inspect(reason)}")}
+          {:noreply, assign(socket, :confirm_error, "Adding the belief failed: #{inspect(reason)}")}
       end
     else
-      {:noreply, put_flash(socket, :error, "Subject, predicate, and object are all required")}
+      {:noreply, assign(socket, :confirm_error, "Subject, predicate, and object are all required.")}
     end
   end
 
@@ -419,6 +440,7 @@ defmodule ChatWeb.ExplorerLive do
       :ok ->
         socket =
           socket
+          |> assign(confirming: nil, confirm_error: nil)
           |> assign(:beliefs_data, nil)
           |> maybe_load_beliefs_data()
           |> apply_filters()
@@ -427,7 +449,7 @@ defmodule ChatWeb.ExplorerLive do
         {:noreply, socket}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to retract: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Retract failed: #{inspect(reason)}")}
     end
   end
 
@@ -436,6 +458,7 @@ defmodule ChatWeb.ExplorerLive do
       {:ok, _updated} ->
         socket =
           socket
+          |> assign(confirming: nil, confirm_error: nil)
           |> assign(:beliefs_data, nil)
           |> maybe_load_beliefs_data()
           |> apply_filters()
@@ -444,12 +467,8 @@ defmodule ChatWeb.ExplorerLive do
         {:noreply, socket}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to confirm: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Confirm failed: #{inspect(reason)}")}
     end
-  end
-
-  def handle_event("edit_confidence", %{"id" => belief_id}, socket) do
-    {:noreply, assign(socket, :editing_confidence_id, belief_id)}
   end
 
   def handle_event("save_confidence", %{"belief_id" => belief_id, "confidence" => conf_str}, socket) do
@@ -459,20 +478,17 @@ defmodule ChatWeb.ExplorerLive do
       {:ok, _updated} ->
         socket =
           socket
-          |> assign(:editing_confidence_id, nil)
+          |> assign(confirming: nil, confirm_error: nil, chosen_confidence: nil)
           |> assign(:beliefs_data, nil)
           |> maybe_load_beliefs_data()
           |> apply_filters()
+          |> put_flash(:info, "Belief confidence set to #{round(confidence * 100)}%")
 
         {:noreply, socket}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to update confidence: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Setting the confidence failed: #{inspect(reason)}")}
     end
-  end
-
-  def handle_event("cancel_edit_confidence", _params, socket) do
-    {:noreply, assign(socket, :editing_confidence_id, nil)}
   end
 
   def handle_event("authority_filter", %{"authority" => authority}, socket) do
@@ -496,6 +512,20 @@ defmodule ChatWeb.ExplorerLive do
   end
 
   defp parse_confidence(_), do: 1.0
+
+  # A range input with min 0 and max 100 sends a whole number in that range;
+  # anything else did not come from the slider.
+  defp slider_percent!(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {percent, ""} when percent in 0..100 ->
+        percent
+
+      _ ->
+        raise ArgumentError,
+              "ChatWeb.ExplorerLive: choose_confidence expects a whole number from 0 to 100 " <>
+                "from the confidence slider, got #{inspect(value)}."
+    end
+  end
 
   defp normalize_subject("user"), do: :user
   defp normalize_subject("world"), do: :world
@@ -557,77 +587,79 @@ defmodule ChatWeb.ExplorerLive do
       <:page_header>
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-xl font-bold">Data Explorer</h1>
-            <p class="text-sm text-base-content/60">
-              Explore data in world: <span class="font-medium text-primary">{@current_world_id}</span>
+            <h1 class="text-title text-ink">Data Explorer</h1>
+            <p class="text-body text-ink-muted">
+              Explore data in world: <span class="text-value-strong text-ink">{@current_world_id}</span>
             </p>
           </div>
-          <button phx-click="refresh" class="btn btn-ghost btn-sm">
+          <.btn phx-click="refresh" variant={:ghost} size={:sm}>
             <.icon name="hero-arrow-path" class="size-4" /> Refresh
-          </button>
+          </.btn>
         </div>
       </:page_header>
 
-      <div class="p-4 sm:p-6 space-y-6">
+      <div class="p-space-lg sm:p-space-xl space-y-space-xl">
         <!-- Stats Summary -->
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <.stat_card label="Entities" value={length(@overlay)} />
-          <.stat_card label="Candidates" value={length(@candidates)} />
-          <.stat_card label="Episodes" value={length(@episodes)} />
-          <.stat_card label="Semantics" value={length(@semantics)} />
-          <.stat_card label="Knowledge" value={map_size(@knowledge)} />
-          <.stat_card
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-space-lg">
+          <.stat_kpi label="Entities" value={to_string(length(@overlay))} />
+          <.stat_kpi label="Candidates" value={to_string(length(@candidates))} />
+          <.stat_kpi label="Episodes" value={to_string(length(@episodes))} />
+          <.stat_kpi label="Semantics" value={to_string(length(@semantics))} />
+          <.stat_kpi label="Knowledge" value={to_string(map_size(@knowledge))} />
+          <.stat_kpi
             label="Beliefs"
-            value={if @beliefs_data, do: length(@beliefs_data[:beliefs] || []), else: "-"}
+            value={if @beliefs_data, do: to_string(length(@beliefs_data[:beliefs] || [])), else: "-"}
           />
         </div>
 
     <!-- Tabs -->
-        <div class="flex flex-wrap items-center gap-4">
-          <div class="tabs tabs-boxed">
-            <.tab_button
-              tab={:entities}
-              current={@tab}
-              count={length(@overlay)}
-              icon="hero-tag"
-              label="Entities"
-            />
-            <.tab_button
-              tab={:candidates}
-              current={@tab}
-              count={length(@candidates)}
-              icon="hero-queue-list"
-              label="Candidates"
-            />
-            <.tab_button
-              tab={:episodes}
-              current={@tab}
-              count={length(@episodes)}
-              icon="hero-clock"
-              label="Episodes"
-            />
-            <.tab_button
-              tab={:semantics}
-              current={@tab}
-              count={length(@semantics)}
-              icon="hero-light-bulb"
-              label="Semantics"
-            />
-            <.tab_button
-              tab={:knowledge}
-              current={@tab}
-              count={map_size(@knowledge)}
-              icon="hero-book-open"
-              label="Knowledge"
-            />
-            <.tab_button
-              tab={:beliefs}
-              current={@tab}
-              count={if @beliefs_data, do: length(@beliefs_data[:beliefs] || []), else: 0}
-              icon="hero-eye"
-              label="Beliefs"
-            />
-          </div>
+        <div class="flex flex-wrap items-center gap-space-lg">
+          <.tabs class="flex-wrap">
+            <.tab active={@tab == :entities} phx-click="switch_tab" phx-value-tab={:entities}>
+              <span class="inline-flex items-center gap-space-xs">
+                <.icon name="hero-tag" class="size-4" />
+                <span class="hidden sm:inline">Entities</span>
+                <span class="text-offset">{length(@overlay)}</span>
+              </span>
+            </.tab>
+            <.tab active={@tab == :candidates} phx-click="switch_tab" phx-value-tab={:candidates}>
+              <span class="inline-flex items-center gap-space-xs">
+                <.icon name="hero-queue-list" class="size-4" />
+                <span class="hidden sm:inline">Candidates</span>
+                <span class="text-offset">{length(@candidates)}</span>
+              </span>
+            </.tab>
+            <.tab active={@tab == :episodes} phx-click="switch_tab" phx-value-tab={:episodes}>
+              <span class="inline-flex items-center gap-space-xs">
+                <.icon name="hero-clock" class="size-4" />
+                <span class="hidden sm:inline">Episodes</span>
+                <span class="text-offset">{length(@episodes)}</span>
+              </span>
+            </.tab>
+            <.tab active={@tab == :semantics} phx-click="switch_tab" phx-value-tab={:semantics}>
+              <span class="inline-flex items-center gap-space-xs">
+                <.icon name="hero-light-bulb" class="size-4" />
+                <span class="hidden sm:inline">Semantics</span>
+                <span class="text-offset">{length(@semantics)}</span>
+              </span>
+            </.tab>
+            <.tab active={@tab == :knowledge} phx-click="switch_tab" phx-value-tab={:knowledge}>
+              <span class="inline-flex items-center gap-space-xs">
+                <.icon name="hero-book-open" class="size-4" />
+                <span class="hidden sm:inline">Knowledge</span>
+                <span class="text-offset">{map_size(@knowledge)}</span>
+              </span>
+            </.tab>
+            <.tab active={@tab == :beliefs} phx-click="switch_tab" phx-value-tab={:beliefs}>
+              <span class="inline-flex items-center gap-space-xs">
+                <.icon name="hero-eye" class="size-4" />
+                <span class="hidden sm:inline">Beliefs</span>
+                <span class="text-offset">
+                  {if @beliefs_data, do: length(@beliefs_data[:beliefs] || []), else: 0}
+                </span>
+              </span>
+            </.tab>
+          </.tabs>
 
     <!-- Search -->
           <div class="flex-1 max-w-md">
@@ -638,62 +670,60 @@ defmodule ChatWeb.ExplorerLive do
               phx-keyup="search"
               name="query"
               phx-debounce="150"
-              class="input input-sm input-bordered w-full"
+              class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
             />
           </div>
         </div>
 
     <!-- Type Selector (for entities tab) -->
         <%= if @tab == :entities and length(@entity_types) > 0 do %>
-          <div class="flex flex-wrap gap-2">
+          <div class="flex flex-wrap gap-space-sm">
             <%= for type <- @entity_types do %>
-              <button
+              <.btn
                 phx-click="select_type"
                 phx-value-type={type}
-                class={[
-                  "btn btn-sm",
-                  if(type == @selected_type, do: "btn-primary", else: "btn-ghost")
-                ]}
+                variant={if(type == @selected_type, do: :secondary, else: :ghost)}
+                size={:sm}
               >
                 {type}
-                <span class="badge badge-xs">{length(Map.get(@overlay_by_type, type, []))}</span>
-              </button>
+                <.badge size={:xs}>{length(Map.get(@overlay_by_type, type, []))}</.badge>
+              </.btn>
             <% end %>
           </div>
         <% end %>
 
     <!-- Recently Promoted Toast -->
         <%= if MapSet.size(@recently_promoted) > 0 do %>
-          <div class="bg-success/10 border border-success/30 rounded-xl px-4 py-3 flex items-center gap-3 animate-fade-in">
-            <.icon name="hero-check" class="size-5 text-success" />
-            <span class="text-sm">Just promoted:</span>
-            <div class="flex flex-wrap gap-1">
+          <.alert variant={:success} icon="hero-check" class="animate-fade-in">
+            <div class="flex flex-wrap items-center gap-space-sm">
+              <span>Just promoted:</span>
               <%= for value <- MapSet.to_list(@recently_promoted) do %>
-                <span class="badge badge-success badge-sm">{value}</span>
+                <.badge variant={:success}>{value}</.badge>
               <% end %>
             </div>
-          </div>
+          </.alert>
         <% end %>
 
     <!-- Content -->
-        <div class="bg-base-100 rounded-xl border border-base-300/50 overflow-hidden">
+        <.card class="overflow-hidden">
           <%= case @tab do %>
             <% :entities -> %>
               <.entities_table
                 data={@filtered_data}
                 loading={@loading}
                 page={@page}
-                total_pages={@total_pages}
-                total_entries={@total_entries}
+                total_rows={@total_rows}
+                matching_rows={@matching_rows}
                 page_size={@page_size}
               />
             <% :candidates -> %>
               <.candidates_table
                 data={@filtered_data}
                 loading={@loading}
+                world_id={@current_world_id}
                 page={@page}
-                total_pages={@total_pages}
-                total_entries={@total_entries}
+                total_rows={@total_rows}
+                matching_rows={@matching_rows}
                 page_size={@page_size}
               />
             <% :episodes -> %>
@@ -701,8 +731,8 @@ defmodule ChatWeb.ExplorerLive do
                 data={@filtered_data}
                 expanded_id={@expanded_id}
                 page={@page}
-                total_pages={@total_pages}
-                total_entries={@total_entries}
+                total_rows={@total_rows}
+                matching_rows={@matching_rows}
                 page_size={@page_size}
               />
             <% :semantics -> %>
@@ -710,8 +740,8 @@ defmodule ChatWeb.ExplorerLive do
                 data={@filtered_data}
                 expanded_id={@expanded_id}
                 page={@page}
-                total_pages={@total_pages}
-                total_entries={@total_entries}
+                total_rows={@total_rows}
+                matching_rows={@matching_rows}
                 page_size={@page_size}
               />
             <% :knowledge -> %>
@@ -724,17 +754,18 @@ defmodule ChatWeb.ExplorerLive do
                 source_filter={@beliefs_source_filter}
                 category_filter={@beliefs_category_filter}
                 selected_user={@selected_user}
-                show_add_belief_form={@show_add_belief_form}
+                confirming={@confirming}
+                confirm_error={@confirm_error}
+                chosen_confidence={@chosen_confidence}
                 add_belief_form={@add_belief_form}
-                editing_confidence_id={@editing_confidence_id}
                 expanded_id={@expanded_id}
                 page={@page}
-                total_pages={@total_pages}
-                total_entries={@total_entries}
+                total_rows={@total_rows}
+                matching_rows={@matching_rows}
                 page_size={@page_size}
               />
           <% end %>
-        </div>
+        </.card>
       </div>
     </.app_shell>
     """
@@ -744,65 +775,44 @@ defmodule ChatWeb.ExplorerLive do
   # Sub-components
   # ============================================================================
 
-  defp stat_card(assigns) do
-    ~H"""
-    <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-      <div class="text-2xl font-bold">{@value}</div>
-      <div class="text-xs text-base-content/60">{@label}</div>
-    </div>
-    """
-  end
-
-  defp tab_button(assigns) do
-    ~H"""
-    <button
-      phx-click="switch_tab"
-      phx-value-tab={@tab}
-      class={["tab gap-1", if(@tab == @current, do: "tab-active", else: "")]}
-    >
-      <.icon name={@icon} class="size-4" />
-      <span class="hidden sm:inline">{@label}</span>
-      <span class="badge badge-xs">{@count}</span>
-    </button>
-    """
-  end
-
   defp entities_table(assigns) do
     ~H"""
     <%= if length(@data) == 0 do %>
-      <.empty_state icon="hero-tag" message="No entities found" />
+      <.empty_panel kind={:plain} words="No entities found" class="m-space-lg" />
     <% else %>
-      <table class="table table-sm">
-        <thead class="bg-base-200/50">
+      <table class="w-full text-left text-body-dense text-ink">
+        <thead class="bg-surface-sunk">
           <tr>
-            <th>Lookup Key</th>
-            <th>Canonical Value</th>
-            <th>Source</th>
+            <th class="h-row-compact px-space-sm text-label text-ink-muted">Lookup Key</th>
+            <th class="h-row-compact px-space-sm text-label text-ink-muted">Canonical Value</th>
+            <th class="h-row-compact px-space-sm text-label text-ink-muted">Source</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-border">
           <%= for {key, info} <- @data do %>
-            <tr class="hover:bg-base-200/30">
-              <td class="font-medium">{key}</td>
-              <td>
+            <tr class="even:bg-surface-sunk">
+              <td class="h-row-compact px-space-sm font-semibold">{key}</td>
+              <td class="h-row-compact px-space-sm">
                 <%= if info[:value] && info[:value] != key do %>
                   {info[:value]}
                 <% else %>
-                  <span class="text-base-content/40">—</span>
+                  <span class="text-ink-muted">—</span>
                 <% end %>
               </td>
-              <td>
-                <span class="badge badge-sm badge-ghost">{info[:source] || "unknown"}</span>
+              <td class="h-row-compact px-space-sm">
+                <.badge>{info[:source] || "unknown"}</.badge>
               </td>
             </tr>
           <% end %>
         </tbody>
       </table>
-      <.pagination
+      <.page_bar
         page={@page}
-        total_pages={@total_pages}
-        total_entries={@total_entries}
         page_size={@page_size}
+        total={@total_rows}
+        matching={@matching_rows}
+        event="change_page"
+        class="px-space-lg py-space-md border-t border-border"
       />
     <% end %>
     """
@@ -811,62 +821,76 @@ defmodule ChatWeb.ExplorerLive do
   defp candidates_table(assigns) do
     ~H"""
     <%= if length(@data) == 0 do %>
-      <.empty_state icon="hero-queue-list" message="No candidates found" />
+      <.empty_panel kind={:plain} words="No candidates found" class="m-space-lg" />
     <% else %>
-      <table class="table table-sm">
-        <thead class="bg-base-200/50">
+      <table class="w-full text-left text-body-dense text-ink">
+        <thead class="bg-surface-sunk">
           <tr>
-            <th>Value</th>
-            <th>Inferred Type</th>
-            <th>Confidence</th>
-            <th>Occurrences</th>
-            <th>Action</th>
+            <th class="h-row-compact px-space-sm text-label text-ink-muted">Value</th>
+            <th class="h-row-compact px-space-sm text-label text-ink-muted">Inferred Type</th>
+            <th class="h-row-compact px-space-sm text-label text-ink-muted">Confidence</th>
+            <th class="h-row-compact px-space-sm text-label text-ink-muted">Occurrences</th>
+            <th class="h-row-compact px-space-sm text-label text-ink-muted">
+              <span class="inline-flex items-center gap-space-sm">
+                Action
+                <.reach_badge
+                  id="explorer-promote-reach"
+                  reach={:local}
+                  target={"gazetteer overlay · #{@world_id}"}
+                />
+              </span>
+            </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-border">
           <%= for candidate <- @data do %>
             <% is_loading = @loading == candidate.value %>
-            <tr class="hover:bg-base-200/30 group">
-              <td class="font-medium">
-                <div class="flex items-center gap-2">
+            <tr class="even:bg-surface-sunk group">
+              <td class="h-row-compact px-space-sm font-semibold">
+                <div class="flex items-center gap-space-sm">
                   <%= if is_loading do %>
-                    <span class="loading loading-spinner loading-xs text-success"></span>
+                    <.icon name="hero-arrow-path" class="size-4 motion-safe:animate-spin text-progress-fill" />
                   <% end %>
                   {candidate.value}
                 </div>
               </td>
-              <td>
-                <span class="badge badge-sm badge-ghost">{candidate.inferred_type || "unknown"}</span>
+              <td class="h-row-compact px-space-sm">
+                <.badge>{candidate.inferred_type || "unknown"}</.badge>
               </td>
-              <td>
-                <span class={confidence_color(candidate.confidence)}>
+              <td class="h-row-compact px-space-sm">
+                <span class={confidence_text_class(candidate.confidence)}>
                   {format_confidence(candidate.confidence)}
                 </span>
               </td>
-              <td>{candidate[:occurrences] || 1}</td>
-              <td>
+              <td class="h-row-compact px-space-sm text-value">{candidate.occurrences}</td>
+              <td class="h-row-compact px-space-sm">
                 <%= if candidate.inferred_type && candidate.inferred_type != "unknown" do %>
-                  <button
+                  <.btn
                     phx-click="promote_candidate"
                     phx-value-value={candidate.value}
                     phx-value-type={candidate.inferred_type}
                     disabled={is_loading}
-                    class="btn btn-ghost btn-xs text-success opacity-0 group-hover:opacity-100"
+                    variant={:primary}
+                    size={:xs}
+                    class="opacity-0 group-hover:opacity-100"
                     title="Promote to gazetteer"
+                    aria-describedby="explorer-promote-reach"
                   >
                     <.icon name="hero-arrow-up-circle" class="size-4" />
-                  </button>
+                  </.btn>
                 <% end %>
               </td>
             </tr>
           <% end %>
         </tbody>
       </table>
-      <.pagination
+      <.page_bar
         page={@page}
-        total_pages={@total_pages}
-        total_entries={@total_entries}
         page_size={@page_size}
+        total={@total_rows}
+        matching={@matching_rows}
+        event="change_page"
+        class="px-space-lg py-space-md border-t border-border"
       />
     <% end %>
     """
@@ -875,51 +899,51 @@ defmodule ChatWeb.ExplorerLive do
   defp episodes_list(assigns) do
     ~H"""
     <%= if length(@data) == 0 do %>
-      <.empty_state icon="hero-clock" message="No episodes found" />
+      <.empty_panel kind={:plain} words="No episodes found" class="m-space-lg" />
     <% else %>
-      <div class="divide-y divide-base-300/50">
+      <div class="divide-y divide-border">
         <%= for episode <- @data do %>
-          <div class="p-4 hover:bg-base-200/50 transition-colors">
+          <div class="p-space-lg hover:bg-surface-sunk transition-colors">
             <div
               class="flex items-start justify-between cursor-pointer"
               phx-click="toggle_expand"
               phx-value-id={episode.id}
             >
               <div class="flex-1 min-w-0">
-                <div class="font-medium text-sm truncate">{episode.state}</div>
-                <div class="text-xs text-base-content/60 mt-1">
+                <div class="text-subheading text-ink truncate">{episode.state}</div>
+                <div class="text-caption text-ink-muted mt-space-xs">
                   Action: {episode.action}
                 </div>
               </div>
-              <div class="flex items-center gap-2 ml-4">
-                <div class="flex flex-wrap gap-1">
+              <div class="flex items-center gap-space-sm ml-space-lg">
+                <div class="flex flex-wrap gap-space-xs">
                   <%= for tag <- Enum.take(episode.tags, 3) do %>
-                    <span class="badge badge-xs badge-ghost">{tag}</span>
+                    <.badge size={:xs}>{tag}</.badge>
                   <% end %>
                 </div>
                 <.icon
                   name={
                     if @expanded_id == episode.id, do: "hero-chevron-up", else: "hero-chevron-down"
                   }
-                  class="size-4 text-base-content/40"
+                  class="size-4 text-ink-muted"
                 />
               </div>
             </div>
             <%= if @expanded_id == episode.id do %>
-              <div class="mt-4 pt-4 border-t border-base-300/50 text-sm space-y-2">
+              <div class="mt-space-lg pt-space-lg border-t border-border text-body space-y-space-sm">
                 <div>
-                  <span class="text-base-content/60">ID:</span>
-                  <span class="font-mono text-xs">{episode.id}</span>
+                  <span class="text-ink-muted">ID:</span>
+                  <span class="text-ref text-ink">{episode.id}</span>
                 </div>
                 <%= if episode.outcome && episode.outcome != "" do %>
                   <div>
-                    <span class="text-base-content/60">Outcome:</span>
-                    <p class="mt-1 bg-base-200 rounded-lg p-2">{episode.outcome}</p>
+                    <span class="text-ink-muted">Outcome:</span>
+                    <p class="mt-space-xs bg-surface-sunk rounded-sm p-space-sm text-ink">{episode.outcome}</p>
                   </div>
                 <% end %>
-                <div class="flex flex-wrap gap-1">
+                <div class="flex flex-wrap gap-space-xs">
                   <%= for tag <- episode.tags do %>
-                    <span class="badge badge-sm badge-ghost">{tag}</span>
+                    <.badge>{tag}</.badge>
                   <% end %>
                 </div>
               </div>
@@ -927,11 +951,13 @@ defmodule ChatWeb.ExplorerLive do
           </div>
         <% end %>
       </div>
-      <.pagination
+      <.page_bar
         page={@page}
-        total_pages={@total_pages}
-        total_entries={@total_entries}
         page_size={@page_size}
+        total={@total_rows}
+        matching={@matching_rows}
+        event="change_page"
+        class="px-space-lg py-space-md border-t border-border"
       />
     <% end %>
     """
@@ -940,19 +966,19 @@ defmodule ChatWeb.ExplorerLive do
   defp semantics_list(assigns) do
     ~H"""
     <%= if length(@data) == 0 do %>
-      <.empty_state icon="hero-light-bulb" message="No semantic facts found" />
+      <.empty_panel kind={:plain} words="No semantic facts found" class="m-space-lg" />
     <% else %>
-      <div class="divide-y divide-base-300/50">
+      <div class="divide-y divide-border">
         <%= for semantic <- @data do %>
-          <div class="p-4 hover:bg-base-200/50 transition-colors">
+          <div class="p-space-lg hover:bg-surface-sunk transition-colors">
             <div
               class="flex items-start justify-between cursor-pointer"
               phx-click="toggle_expand"
               phx-value-id={semantic.id}
             >
               <div class="flex-1 min-w-0">
-                <div class="font-medium text-sm">{semantic.representation}</div>
-                <div class="text-xs text-base-content/60 mt-1">
+                <div class="text-subheading text-ink">{semantic.representation}</div>
+                <div class="text-caption text-ink-muted mt-space-xs">
                   Evidence: {length(semantic.evidence_ids)} episodes
                 </div>
               </div>
@@ -960,20 +986,20 @@ defmodule ChatWeb.ExplorerLive do
                 name={
                   if @expanded_id == semantic.id, do: "hero-chevron-up", else: "hero-chevron-down"
                 }
-                class="size-4 text-base-content/40 ml-4"
+                class="size-4 text-ink-muted ml-space-lg"
               />
             </div>
             <%= if @expanded_id == semantic.id do %>
-              <div class="mt-4 pt-4 border-t border-base-300/50 text-sm space-y-2">
+              <div class="mt-space-lg pt-space-lg border-t border-border text-body space-y-space-sm">
                 <div>
-                  <span class="text-base-content/60">ID:</span>
-                  <span class="font-mono text-xs">{semantic.id}</span>
+                  <span class="text-ink-muted">ID:</span>
+                  <span class="text-ref text-ink">{semantic.id}</span>
                 </div>
-                <div class="flex flex-wrap gap-1">
+                <div class="flex flex-wrap gap-space-xs">
                   <%= for ep_id <- semantic.evidence_ids do %>
-                    <span class="badge badge-sm badge-ghost font-mono text-xs">
+                    <.badge class="font-mono">
                       {String.slice(ep_id, 0, 8)}...
-                    </span>
+                    </.badge>
                   <% end %>
                 </div>
               </div>
@@ -981,11 +1007,13 @@ defmodule ChatWeb.ExplorerLive do
           </div>
         <% end %>
       </div>
-      <.pagination
+      <.page_bar
         page={@page}
-        total_pages={@total_pages}
-        total_entries={@total_entries}
         page_size={@page_size}
+        total={@total_rows}
+        matching={@matching_rows}
+        event="change_page"
+        class="px-space-lg py-space-md border-t border-border"
       />
     <% end %>
     """
@@ -994,34 +1022,34 @@ defmodule ChatWeb.ExplorerLive do
   defp knowledge_view(assigns) do
     ~H"""
     <%= if map_size(@data) == 0 do %>
-      <.empty_state icon="hero-book-open" message="No knowledge stored" />
+      <.empty_panel kind={:plain} words="No knowledge stored" class="m-space-lg" />
     <% else %>
-      <div class="divide-y divide-base-300/50">
+      <div class="divide-y divide-border">
         <%= for {category, items} <- @data do %>
-          <div class="p-4">
-            <h3 class="font-semibold text-sm flex items-center gap-2 mb-3">
-              <.icon name="hero-folder" class="size-4 text-primary" />
+          <div class="p-space-lg">
+            <h3 class="text-subheading text-ink flex items-center gap-space-sm mb-space-md">
+              <.icon name="hero-folder" class="size-4 text-ink-muted" />
               {category}
-              <span class="badge badge-sm badge-primary/20 text-primary">
+              <.badge>
                 {if is_map(items), do: map_size(items), else: length(items)} items
-              </span>
+              </.badge>
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-sm">
               <%= if is_map(items) do %>
                 <%= for {key, value} <- Enum.take(items, 12) do %>
-                  <div class="bg-base-200/50 rounded-lg px-3 py-2 text-sm">
-                    <span class="font-medium">{key}:</span>
-                    <span class="text-base-content/60 ml-1">{format_value(value)}</span>
+                  <div class="bg-surface-sunk rounded-sm px-space-md py-space-sm text-body">
+                    <span class="font-semibold text-ink">{key}:</span>
+                    <span class="text-ink-muted ml-space-xs">{format_value(value)}</span>
                   </div>
                 <% end %>
                 <%= if map_size(items) > 12 do %>
-                  <div class="text-xs text-base-content/40 px-3 py-2">
+                  <div class="text-caption text-ink-muted px-space-md py-space-sm">
                     ... and {map_size(items) - 12} more
                   </div>
                 <% end %>
               <% else %>
                 <%= for item <- Enum.take(items, 12) do %>
-                  <div class="bg-base-200/50 rounded-lg px-3 py-2 text-sm">{format_value(item)}</div>
+                  <div class="bg-surface-sunk rounded-sm px-space-md py-space-sm text-body text-ink">{format_value(item)}</div>
                 <% end %>
               <% end %>
             </div>
@@ -1047,51 +1075,57 @@ defmodule ChatWeb.ExplorerLive do
     assigns = assign(assigns, :authority_profiles, authority_profiles)
 
     ~H"""
-    <div class="divide-y divide-base-300/50">
+    <div class="divide-y divide-border">
       <!-- Sub-tab navigation -->
-      <div class="p-4 bg-base-200/30">
-        <div class="flex flex-wrap gap-2">
-          <%= for {sub, label, icon} <- [
-            {:beliefs, "Beliefs", "hero-eye"},
-            {:facts, "Facts", "hero-book-open"},
-            {:jtms, "JTMS Graph", "hero-share"},
-            {:users, "User Models", "hero-user-group"}
-          ] do %>
-            <button
-              phx-click="beliefs_sub_tab"
-              phx-value-sub_tab={sub}
-              class={[
-                "btn btn-sm gap-1",
-                if(sub == @sub_tab, do: "btn-primary", else: "btn-ghost")
-              ]}
-            >
-              <.icon name={icon} class="size-4" />
-              {label}
-              <%= case sub do %>
-                <% :beliefs -> %>
-                  <span class="badge badge-xs">{length(@beliefs_data[:beliefs] || [])}</span>
-                <% :facts -> %>
-                  <span class="badge badge-xs">{length(@beliefs_data[:facts] || [])}</span>
-                <% :jtms -> %>
-                  <span class="badge badge-xs">
-                    {Map.get(@beliefs_data[:jtms_stats] || %{}, :total_nodes, 0)}
-                  </span>
-                <% :users -> %>
-                  <span class="badge badge-xs">{length(@beliefs_data[:user_ids] || [])}</span>
-              <% end %>
-            </button>
-          <% end %>
+      <div class="p-space-lg bg-surface-sunk">
+        <div class="flex flex-wrap items-center gap-space-sm">
+          <.tabs class="flex-wrap">
+            <%= for {sub, label, icon} <- [
+              {:beliefs, "Beliefs", "hero-eye"},
+              {:facts, "Facts", "hero-book-open"},
+              {:jtms, "JTMS Graph", "hero-share"},
+              {:users, "User Models", "hero-user-group"}
+            ] do %>
+              <.tab active={sub == @sub_tab} phx-click="beliefs_sub_tab" phx-value-sub_tab={sub}>
+                <span class="inline-flex items-center gap-space-xs">
+                  <.icon name={icon} class="size-4" />
+                  {label}
+                  <%= case sub do %>
+                    <% :beliefs -> %>
+                      <span class="text-offset">{length(@beliefs_data[:beliefs] || [])}</span>
+                    <% :facts -> %>
+                      <span class="text-offset">{length(@beliefs_data[:facts] || [])}</span>
+                    <% :jtms -> %>
+                      <span class="text-offset">
+                        {Map.get(@beliefs_data[:jtms_stats] || %{}, :total_nodes, 0)}
+                      </span>
+                    <% :users -> %>
+                      <span class="text-offset">{length(@beliefs_data[:user_ids] || [])}</span>
+                  <% end %>
+                </span>
+              </.tab>
+            <% end %>
+          </.tabs>
 
-          <div class="flex items-center gap-2 ml-auto">
+          <div class="flex items-center gap-space-sm ml-auto">
             <%= if @sub_tab == :beliefs do %>
-              <button phx-click="toggle_add_belief_form" class="btn btn-primary btn-sm gap-1" title="Add guided belief">
+              <.btn
+                id="explorer-add-belief"
+                phx-click="open_confirm"
+                phx-value-id="explorer-confirm-add-belief"
+                variant={:primary}
+                size={:sm}
+                reach={:shared}
+                target="belief store"
+                title="Add guided belief"
+              >
                 <.icon name="hero-plus" class="size-4" />
                 Add Belief
-              </button>
+              </.btn>
             <% end %>
-            <button phx-click="refresh_beliefs" class="btn btn-ghost btn-sm btn-square" title="Refresh beliefs data">
+            <.icon_btn phx-click="refresh_beliefs" variant={:ghost} size={:sm} title="Refresh beliefs data">
               <.icon name="hero-arrow-path" class="size-4" />
-            </button>
+            </.icon_btn>
           </div>
         </div>
       </div>
@@ -1100,40 +1134,33 @@ defmodule ChatWeb.ExplorerLive do
       <%= if @sub_tab == :beliefs and length(@authority_profiles) > 0 do %>
         <% active_profiles = Enum.filter(@authority_profiles, fn p -> p.total_added > 0 end) %>
         <%= if length(active_profiles) > 0 do %>
-          <div class="p-4 bg-base-200/20">
-            <div class="text-xs font-semibold text-base-content/70 mb-2 flex items-center gap-1">
+          <div class="p-space-lg bg-surface-sunk">
+            <div class="text-label text-ink-muted mb-space-sm flex items-center gap-space-xs">
               <.icon name="hero-shield-check" class="size-4" />
               Authority Credibility
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-space-sm">
               <%= for p <- active_profiles do %>
-                <div class="bg-base-100 rounded-lg p-2 border border-base-300/50">
-                  <div class="flex items-center justify-between mb-1">
-                    <span class={["badge badge-xs", authority_badge_class(p.profile.category)]}>
+                <div class="bg-surface rounded-md p-space-sm border border-border">
+                  <div class="flex items-center justify-between mb-space-xs">
+                    <.badge size={:xs}>
                       {p.profile.label}
-                    </span>
-                    <span class="text-[10px] text-base-content/50">{p.total_added} beliefs</span>
+                    </.badge>
+                    <span class="text-caption text-ink-muted">{p.total_added} beliefs</span>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <div class="flex-1 bg-base-300 rounded-full h-1.5">
+                  <div class="flex items-center gap-space-sm">
+                    <div class="flex-1 bg-surface-sunk rounded-sm h-space-xs">
                       <div
-                        class={[
-                          "h-1.5 rounded-full",
-                          cond do
-                            p.credibility >= 0.7 -> "bg-success"
-                            p.credibility >= 0.5 -> "bg-warning"
-                            true -> "bg-error"
-                          end
-                        ]}
+                        class="h-space-xs rounded-sm bg-ink-muted"
                         style={"width: #{Float.round(p.credibility * 100, 1)}%"}
                       >
                       </div>
                     </div>
-                    <span class="text-[10px] font-mono">{Float.round(p.credibility * 100, 0)}%</span>
+                    <span class="text-offset text-ink">{Float.round(p.credibility * 100, 0)}%</span>
                   </div>
-                  <div class="flex items-center gap-2 mt-1 text-[10px] text-base-content/50">
-                    <span class="text-success">{p.confirmed_count} confirmed</span>
-                    <span class="text-error">{p.contradicted_count} contradicted</span>
+                  <div class="flex items-center gap-space-sm mt-space-xs text-caption text-ink-muted">
+                    <span>{p.confirmed_count} confirmed</span>
+                    <span>{p.contradicted_count} contradicted</span>
                   </div>
                 </div>
               <% end %>
@@ -1142,71 +1169,85 @@ defmodule ChatWeb.ExplorerLive do
         <% end %>
       <% end %>
 
-      <!-- Add belief form (collapsible) -->
-      <%= if @show_add_belief_form do %>
-        <div class="p-4 bg-primary/5 border-b border-primary/20">
-          <form phx-submit="add_guided_belief" phx-change="update_add_belief_form" class="space-y-3">
-            <div class="flex items-center gap-2 mb-2">
-              <.icon name="hero-light-bulb" class="size-5 text-primary" />
-              <span class="text-sm font-semibold">Add Guided Belief</span>
-              <span class="text-xs text-base-content/50 ml-2">Confidence set by authority tier</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
-              <div>
-                <label class="label text-xs">Subject</label>
-                <select name="belief[subject]" class="select select-bordered select-sm w-full">
-                  <option value="world" selected={@add_belief_form["subject"] == "world"}>world</option>
-                  <option value="self" selected={@add_belief_form["subject"] == "self"}>self</option>
-                  <option value="user" selected={@add_belief_form["subject"] == "user"}>user</option>
-                </select>
+      <!-- Add belief: the form is the confirmation -->
+      <%= if @sub_tab == :beliefs and @confirming == "explorer-confirm-add-belief" do %>
+        <div class="p-space-lg bg-surface-sunk border-b border-border flex justify-end">
+          <.execute_confirm
+            id="explorer-confirm-add-belief"
+            open={true}
+            reach={:shared}
+            verb="Add belief"
+            target="belief store"
+            consequence="Adds this belief to the belief store every query reads, with a JTMS node, and saves it to Atlas. Its confidence comes from the chosen authority's tier and tracked credibility."
+            on_confirm="add_guided_belief"
+            on_cancel="close_confirm"
+            trigger_id="explorer-add-belief"
+            error={@confirm_error}
+            class="w-full"
+          >
+            <:fields>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+                <div>
+                  <label for="explorer-belief-subject" class="block mb-space-xs text-label text-ink-muted">Subject</label>
+                  <select
+                    id="explorer-belief-subject"
+                    name="belief[subject]"
+                    phx-change="update_add_belief_form"
+                    class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
+                  >
+                    <option value="world" selected={@add_belief_form["subject"] == "world"}>world</option>
+                    <option value="self" selected={@add_belief_form["subject"] == "self"}>self</option>
+                    <option value="user" selected={@add_belief_form["subject"] == "user"}>user</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="explorer-belief-predicate" class="block mb-space-xs text-label text-ink-muted">Predicate</label>
+                  <input
+                    id="explorer-belief-predicate"
+                    type="text"
+                    name="belief[predicate]"
+                    value={@add_belief_form["predicate"]}
+                    phx-change="update_add_belief_form"
+                    placeholder="e.g. name, likes, location"
+                    class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
+                    required
+                  />
+                </div>
+                <div>
+                  <label for="explorer-belief-object" class="block mb-space-xs text-label text-ink-muted">Object</label>
+                  <input
+                    id="explorer-belief-object"
+                    type="text"
+                    name="belief[object]"
+                    value={@add_belief_form["object"]}
+                    phx-change="update_add_belief_form"
+                    placeholder="The value"
+                    class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
+                    required
+                  />
+                </div>
+                <div>
+                  <label for="explorer-belief-authority" class="block mb-space-xs text-label text-ink-muted">Authority</label>
+                  <select
+                    id="explorer-belief-authority"
+                    name="belief[authority]"
+                    phx-change="update_add_belief_form"
+                    class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
+                  >
+                    <%= for {category, profiles} <- group_authority_profiles(@authority_profiles) do %>
+                      <optgroup label={String.capitalize(category)}>
+                        <%= for p <- profiles do %>
+                          <option value={p.key} selected={to_string(p.key) == @add_belief_form["authority"]}>
+                            {p.profile.label} ({Float.round(p.profile.initial_confidence * 100, 0)}%)
+                          </option>
+                        <% end %>
+                      </optgroup>
+                    <% end %>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label class="label text-xs">Predicate</label>
-                <input
-                  type="text"
-                  name="belief[predicate]"
-                  value={@add_belief_form["predicate"]}
-                  placeholder="e.g. name, likes, location"
-                  class="input input-bordered input-sm w-full"
-                  required
-                />
-              </div>
-              <div>
-                <label class="label text-xs">Object</label>
-                <input
-                  type="text"
-                  name="belief[object]"
-                  value={@add_belief_form["object"]}
-                  placeholder="The value"
-                  class="input input-bordered input-sm w-full"
-                  required
-                />
-              </div>
-              <div>
-                <label class="label text-xs">Authority</label>
-                <select name="belief[authority]" class="select select-bordered select-sm w-full">
-                  <%= for {category, profiles} <- group_authority_profiles(@authority_profiles) do %>
-                    <optgroup label={String.capitalize(category)}>
-                      <%= for p <- profiles do %>
-                        <option value={p.key} selected={to_string(p.key) == @add_belief_form["authority"]}>
-                          {p.profile.label} ({Float.round(p.profile.initial_confidence * 100, 0)}%)
-                        </option>
-                      <% end %>
-                    </optgroup>
-                  <% end %>
-                </select>
-              </div>
-            </div>
-            <div class="flex items-center gap-4">
-              <div class="text-xs text-base-content/50">
-                Confidence will be based on authority tier and tracked credibility
-              </div>
-              <div class="flex gap-2 ml-auto">
-                <button type="button" phx-click="toggle_add_belief_form" class="btn btn-ghost btn-sm">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-sm">Add Belief</button>
-              </div>
-            </div>
-          </form>
+            </:fields>
+          </.execute_confirm>
         </div>
       <% end %>
 
@@ -1219,10 +1260,12 @@ defmodule ChatWeb.ExplorerLive do
             source_filter={@source_filter}
             authority_filter={assigns[:authority_filter]}
             authority_types={@beliefs_data[:belief_authorities] || []}
-            editing_confidence_id={@editing_confidence_id}
+            confirming={@confirming}
+            confirm_error={@confirm_error}
+            chosen_confidence={@chosen_confidence}
             page={@page}
-            total_pages={@total_pages}
-            total_entries={@total_entries}
+            total_rows={@total_rows}
+            matching_rows={@matching_rows}
             page_size={@page_size}
           />
         <% :facts -> %>
@@ -1231,8 +1274,8 @@ defmodule ChatWeb.ExplorerLive do
             categories={@beliefs_data[:fact_categories] || []}
             category_filter={@category_filter}
             page={@page}
-            total_pages={@total_pages}
-            total_entries={@total_entries}
+            total_rows={@total_rows}
+            matching_rows={@matching_rows}
             page_size={@page_size}
           />
         <% :jtms -> %>
@@ -1254,178 +1297,223 @@ defmodule ChatWeb.ExplorerLive do
   defp beliefs_sub_view(assigns) do
     ~H"""
     <!-- Source + Authority filter buttons -->
-    <div class="px-4 pt-3 flex flex-wrap gap-2">
+    <div class="px-space-lg pt-space-md flex flex-wrap gap-space-sm">
       <%= if length(@sources) > 0 do %>
         <%= for source <- @sources do %>
-          <button
+          <.btn
             phx-click="beliefs_source_filter"
             phx-value-source={source}
-            class={[
-              "btn btn-xs",
-              if(to_string(@source_filter) == to_string(source), do: "btn-primary", else: "btn-ghost")
-            ]}
+            variant={if(to_string(@source_filter) == to_string(source), do: :secondary, else: :ghost)}
+            size={:xs}
           >
             {source}
-          </button>
+          </.btn>
         <% end %>
       <% end %>
       <%= if length(@authority_types) > 0 do %>
-        <span class="text-base-content/30 self-center">|</span>
+        <span class="text-ink-muted self-center">|</span>
         <%= for auth <- @authority_types do %>
-          <button
+          <.btn
             phx-click="authority_filter"
             phx-value-authority={auth}
-            class={[
-              "btn btn-xs",
-              if(to_string(@authority_filter) == to_string(auth), do: "btn-secondary", else: "btn-ghost")
-            ]}
+            variant={if(to_string(@authority_filter) == to_string(auth), do: :secondary, else: :ghost)}
+            size={:xs}
           >
             {auth}
-          </button>
+          </.btn>
         <% end %>
       <% end %>
     </div>
 
     <%= if is_list(@data) and length(@data) == 0 do %>
-      <.empty_state icon="hero-eye" message="No beliefs found" />
+      <.empty_panel kind={:plain} words="No beliefs found" class="m-space-lg" />
     <% else %>
       <%= if is_list(@data) do %>
-        <div class="divide-y divide-base-300/50">
+        <div class="px-space-lg pt-space-md flex items-center gap-space-sm text-caption text-ink-muted">
+          Confirm, Adjust confidence and Retract
+          <.reach_badge id="explorer-belief-actions-reach" reach={:shared} target="belief store" />
+        </div>
+        <div class="divide-y divide-border">
           <%= for belief <- @data do %>
             <% b_conf = belief.confidence || 0.0
             b_authority = Map.get(belief, :source_authority) %>
             <div class={[
-              "p-4 hover:bg-base-200/30 transition-colors",
-              if(b_authority, do: "border-l-2 border-primary/40", else: "")
+              "p-space-lg hover:bg-surface-sunk transition-colors",
+              if(b_authority, do: "border-l-2 border-border-strong", else: "")
             ]}>
-              <div class="flex items-start justify-between gap-4">
+              <div class="flex items-start justify-between gap-space-lg">
                 <div class="flex-1 min-w-0">
                   <!-- Subject / Predicate / Object -->
-                  <div class="flex items-center gap-1.5 text-sm font-medium">
-                    <span class="text-primary font-mono">{belief.subject}</span>
-                    <span class="text-base-content/40">/</span>
-                    <span class="text-base-content/70 font-mono">{belief.predicate}</span>
-                    <span class="text-base-content/40">/</span>
-                    <span class="font-mono">{inspect(belief.object)}</span>
+                  <div class="flex items-center gap-space-xs text-value">
+                    <span class="text-value-strong text-ink">{belief.subject}</span>
+                    <span class="text-ink-muted">/</span>
+                    <span class="text-ink-muted">{belief.predicate}</span>
+                    <span class="text-ink-muted">/</span>
+                    <span class="text-ink">{inspect(belief.object)}</span>
                   </div>
 
-                  <!-- Confidence bar or editor -->
-                  <%= if @editing_confidence_id == belief.id do %>
-                    <form phx-submit="save_confidence" class="flex items-center gap-2 mt-2 max-w-xs">
-                      <input type="hidden" name="belief_id" value={belief.id} />
-                      <input
-                        type="range"
-                        name="confidence"
-                        min="0"
-                        max="100"
-                        value={round(b_conf * 100)}
-                        class="range range-xs range-primary flex-1"
-                      />
-                      <span class="text-xs font-mono w-10 text-right">{round(b_conf * 100)}%</span>
-                      <button type="submit" class="btn btn-xs btn-success btn-square" title="Save">
-                        <.icon name="hero-check" class="size-3" />
-                      </button>
-                      <button type="button" phx-click="cancel_edit_confidence" class="btn btn-xs btn-ghost btn-square" title="Cancel">
-                        <.icon name="hero-x-mark" class="size-3" />
-                      </button>
-                    </form>
-                  <% else %>
-                    <div class="flex items-center gap-2 mt-2 max-w-xs">
-                      <div class="flex-1 bg-base-300 rounded-full h-1.5">
-                        <div
-                          class={[
-                            "h-1.5 rounded-full",
-                            cond do
-                              b_conf >= 0.8 -> "bg-success"
-                              b_conf >= 0.5 -> "bg-warning"
-                              true -> "bg-error"
-                            end
-                          ]}
-                          style={"width: #{Float.round(b_conf * 100, 1)}%"}
-                        >
-                        </div>
+                  <!-- Confidence bar -->
+                  <div class="flex items-center gap-space-sm mt-space-sm max-w-xs">
+                    <div class="flex-1 bg-surface-sunk rounded-sm h-space-xs">
+                      <div
+                        class="h-space-xs rounded-sm bg-ink-muted"
+                        style={"width: #{Float.round(b_conf * 100, 1)}%"}
+                      >
                       </div>
-                      <span class="text-xs font-mono text-base-content/60">
-                        {Float.round(b_conf * 100, 1)}%
-                      </span>
                     </div>
-                  <% end %>
+                    <span class="text-offset text-ink-muted">
+                      {Float.round(b_conf * 100, 1)}%
+                    </span>
+                  </div>
                 </div>
 
                 <!-- Badges + Actions -->
-                <div class="flex items-center gap-2 shrink-0">
+                <div class="flex items-center gap-space-sm shrink-0">
                   <%= if b_authority do %>
-                    <span class={["badge badge-sm", authority_badge_class(authority_category(b_authority))]}>
+                    <.badge>
                       {b_authority}
-                    </span>
+                    </.badge>
                   <% end %>
                   <%= if belief.source do %>
-                    <span class={[
-                      "badge badge-sm",
-                      case belief.source do
-                        :explicit -> "badge-primary"
-                        :learned -> "badge-info"
-                        :inferred -> "badge-warning"
-                        :assumed -> "badge-ghost"
-                        _ -> "badge-ghost"
-                      end
-                    ]}>
+                    <.badge>
                       {belief.source}
-                    </span>
+                    </.badge>
                   <% end %>
                   <%= if belief.node_id do %>
-                    <span class="badge badge-sm badge-secondary badge-outline">JTMS</span>
+                    <.badge class="border border-border-strong">JTMS</.badge>
                   <% end %>
 
                   <!-- Action buttons -->
-                  <div class="flex items-center gap-1 ml-1">
-                    <button
-                      phx-click="confirm_belief"
-                      phx-value-id={belief.id}
-                      class="btn btn-xs btn-ghost btn-square text-success"
+                  <div class="flex items-center gap-space-xs ml-space-xs">
+                    <.icon_btn
+                      id={belief_trigger_id("confirm", belief.id)}
+                      phx-click="open_confirm"
+                      phx-value-id={belief_confirm_id("confirm", belief.id)}
+                      aria-describedby="explorer-belief-actions-reach"
+                      variant={:primary}
+                      size={:sm}
                       title="Confirm (boost confidence +10%)"
                     >
                       <.icon name="hero-check-circle" class="size-4" />
-                    </button>
-                    <button
-                      phx-click="edit_confidence"
-                      phx-value-id={belief.id}
-                      class="btn btn-xs btn-ghost btn-square"
+                    </.icon_btn>
+                    <.icon_btn
+                      id={belief_trigger_id("adjust", belief.id)}
+                      phx-click="open_confirm"
+                      phx-value-id={belief_confirm_id("adjust", belief.id)}
+                      aria-describedby="explorer-belief-actions-reach"
+                      variant={:ghost}
+                      size={:sm}
                       title="Adjust confidence"
                     >
                       <.icon name="hero-adjustments-horizontal" class="size-4" />
-                    </button>
-                    <button
-                      phx-click="retract_belief"
-                      phx-value-id={belief.id}
-                      data-confirm="Retract this belief?"
-                      class="btn btn-xs btn-ghost btn-square text-error"
+                    </.icon_btn>
+                    <.icon_btn
+                      id={belief_trigger_id("retract", belief.id)}
+                      phx-click="open_confirm"
+                      phx-value-id={belief_confirm_id("retract", belief.id)}
+                      aria-describedby="explorer-belief-actions-reach"
+                      variant={:primary}
+                      size={:sm}
                       title="Retract belief"
                     >
                       <.icon name="hero-x-circle" class="size-4" />
-                    </button>
+                    </.icon_btn>
                   </div>
                 </div>
               </div>
 
+              <div class="flex justify-end">
+                <.execute_confirm
+                  id={belief_confirm_id("confirm", belief.id)}
+                  open={@confirming == belief_confirm_id("confirm", belief.id)}
+                  reach={:shared}
+                  verb="Confirm"
+                  target={belief_target(belief)}
+                  consequence="Raises this belief's confidence by 0.1, to at most 1.0, in the belief store every query reads, and records a confirmation against its authority's credibility when it has one. Nothing is written to Atlas."
+                  on_confirm={JS.push("confirm_belief", value: %{id: belief.id})}
+                  on_cancel="close_confirm"
+                  trigger_id={belief_trigger_id("confirm", belief.id)}
+                  error={@confirm_error}
+                  class="mt-space-sm"
+                />
+                <.execute_confirm
+                  id={belief_confirm_id("adjust", belief.id)}
+                  open={@confirming == belief_confirm_id("adjust", belief.id)}
+                  reach={:shared}
+                  verb="Set confidence"
+                  target={belief_target(belief)}
+                  consequence="Sets this belief's confidence to the chosen value in the belief store every query reads, and saves it to Atlas."
+                  on_confirm="save_confidence"
+                  on_cancel="close_confirm"
+                  trigger_id={belief_trigger_id("adjust", belief.id)}
+                  error={@confirm_error}
+                  class="mt-space-sm w-full"
+                >
+                  <:fields>
+                    <input type="hidden" name="belief_id" value={belief.id} />
+                    <label
+                      for={"explorer-belief-confidence-#{belief.id}"}
+                      class="block mb-space-xs text-label text-ink-muted"
+                    >
+                      Confidence (now {Float.round(b_conf * 100, 1)}%)
+                    </label>
+                    <div class="flex items-center gap-space-sm">
+                      <input
+                        id={"explorer-belief-confidence-#{belief.id}"}
+                        type="range"
+                        name="confidence"
+                        min="0"
+                        max="100"
+                        value={@chosen_confidence || round(b_conf * 100)}
+                        phx-change="choose_confidence"
+                        class="min-w-0 flex-1 accent-primary"
+                      />
+                      <output
+                        id={"explorer-belief-confidence-#{belief.id}-chosen"}
+                        for={"explorer-belief-confidence-#{belief.id}"}
+                        aria-live="polite"
+                        class="w-12 shrink-0 text-right text-value-strong tabular-nums text-ink"
+                      >
+                        {@chosen_confidence || round(b_conf * 100)}%
+                      </output>
+                    </div>
+                  </:fields>
+                </.execute_confirm>
+                <.execute_confirm
+                  id={belief_confirm_id("retract", belief.id)}
+                  open={@confirming == belief_confirm_id("retract", belief.id)}
+                  reach={:shared}
+                  verb="Retract"
+                  target={belief_target(belief)}
+                  consequence="Retracts this belief: the belief store stops returning it to every query, Atlas marks it retracted, and its authority's credibility records a contradiction when it has one."
+                  on_confirm={JS.push("retract_belief", value: %{id: belief.id})}
+                  on_cancel="close_confirm"
+                  trigger_id={belief_trigger_id("retract", belief.id)}
+                  error={@confirm_error}
+                  class="mt-space-sm"
+                />
+              </div>
+
               <!-- Metadata row -->
-              <div class="flex items-center gap-4 mt-2 text-xs text-base-content/50">
+              <div class="flex items-center gap-space-lg mt-space-sm text-caption text-ink-muted">
                 <%= if belief.user_id do %>
                   <span>User: {String.slice(belief.user_id, 0, 12)}...</span>
                 <% end %>
                 <%= if belief.created_at do %>
                   <span>Created: {format_datetime(belief.created_at)}</span>
                 <% end %>
-                <span class="font-mono text-[10px]">{String.slice(belief.id || "", 0, 8)}</span>
+                <span class="text-ref">{String.slice(belief.id || "", 0, 8)}</span>
               </div>
             </div>
           <% end %>
         </div>
-        <.pagination
+        <.page_bar
           page={@page}
-          total_pages={@total_pages}
-          total_entries={@total_entries}
           page_size={@page_size}
+          total={@total_rows}
+          matching={@matching_rows}
+          event="change_page"
+          class="px-space-lg py-space-md border-t border-border"
         />
       <% end %>
     <% end %>
@@ -1436,63 +1524,63 @@ defmodule ChatWeb.ExplorerLive do
     ~H"""
     <!-- Category filter buttons -->
     <%= if length(@categories) > 0 do %>
-      <div class="px-4 pt-3 flex flex-wrap gap-2">
+      <div class="px-space-lg pt-space-md flex flex-wrap gap-space-sm">
         <%= for category <- @categories do %>
-          <button
+          <.btn
             phx-click="beliefs_category_filter"
             phx-value-category={category}
-            class={[
-              "btn btn-xs",
-              if(@category_filter == category, do: "btn-primary", else: "btn-ghost")
-            ]}
+            variant={if(@category_filter == category, do: :secondary, else: :ghost)}
+            size={:xs}
           >
             {category}
-          </button>
+          </.btn>
         <% end %>
       </div>
     <% end %>
 
     <%= if is_list(@data) and length(@data) == 0 do %>
-      <.empty_state icon="hero-book-open" message="No facts found" />
+      <.empty_panel kind={:plain} words="No facts found" class="m-space-lg" />
     <% else %>
       <%= if is_list(@data) do %>
-        <table class="table table-sm">
-          <thead class="bg-base-200/50">
+        <table class="w-full text-left text-body-dense text-ink">
+          <thead class="bg-surface-sunk">
             <tr>
-              <th>Entity</th>
-              <th>Fact</th>
-              <th>Category</th>
-              <th>Confidence</th>
-              <th>Source</th>
+              <th class="h-row-compact px-space-sm text-label text-ink-muted">Entity</th>
+              <th class="h-row-compact px-space-sm text-label text-ink-muted">Fact</th>
+              <th class="h-row-compact px-space-sm text-label text-ink-muted">Category</th>
+              <th class="h-row-compact px-space-sm text-label text-ink-muted">Confidence</th>
+              <th class="h-row-compact px-space-sm text-label text-ink-muted">Source</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-border">
             <%= for fact <- @data do %>
-              <tr class="hover:bg-base-200/30">
-                <td class="font-medium text-primary font-mono">{fact.entity}</td>
-                <td class="max-w-md">
+              <tr class="even:bg-surface-sunk">
+                <td class="h-row-compact px-space-sm text-value-strong text-ink">{fact.entity}</td>
+                <td class="h-row-compact px-space-sm max-w-md">
                   <div class="truncate">{fact.fact}</div>
                 </td>
-                <td>
-                  <span class="badge badge-sm badge-ghost">{fact.category}</span>
+                <td class="h-row-compact px-space-sm">
+                  <.badge>{fact.category}</.badge>
                 </td>
-                <td>
-                  <span class={confidence_color(fact.confidence)}>
+                <td class="h-row-compact px-space-sm">
+                  <span class={confidence_text_class(fact.confidence)}>
                     {format_confidence(fact.confidence)}
                   </span>
                 </td>
-                <td class="text-xs text-base-content/50">
+                <td class="h-row-compact px-space-sm text-caption text-ink-muted">
                   {fact.verification_source || "-"}
                 </td>
               </tr>
             <% end %>
           </tbody>
         </table>
-        <.pagination
+        <.page_bar
           page={@page}
-          total_pages={@total_pages}
-          total_entries={@total_entries}
           page_size={@page_size}
+          total={@total_rows}
+          matching={@matching_rows}
+          event="change_page"
+          class="px-space-lg py-space-md border-t border-border"
         />
       <% end %>
     <% end %>
@@ -1501,75 +1589,58 @@ defmodule ChatWeb.ExplorerLive do
 
   defp jtms_sub_view(assigns) do
     ~H"""
-    <div class="p-4 space-y-4">
+    <div class="p-space-lg space-y-space-lg">
       <!-- JTMS Stats -->
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div class="bg-base-200/50 rounded-lg p-3 text-center">
-          <div class="text-xl font-bold">{Map.get(@stats, :total_nodes, 0)}</div>
-          <div class="text-xs text-base-content/60">Total Nodes</div>
-        </div>
-        <div class="bg-success/10 rounded-lg p-3 text-center">
-          <div class="text-xl font-bold text-success">{Map.get(@stats, :in_count, 0)}</div>
-          <div class="text-xs text-base-content/60">IN</div>
-        </div>
-        <div class="bg-base-200/50 rounded-lg p-3 text-center">
-          <div class="text-xl font-bold text-base-content/50">{Map.get(@stats, :out_count, 0)}</div>
-          <div class="text-xs text-base-content/60">OUT</div>
-        </div>
-        <div class="bg-error/10 rounded-lg p-3 text-center">
-          <div class="text-xl font-bold text-error">{Map.get(@stats, :contradiction_count, 0)}</div>
-          <div class="text-xs text-base-content/60">Contradictions</div>
-        </div>
-        <div class="bg-info/10 rounded-lg p-3 text-center">
-          <div class="text-xl font-bold text-info">{Map.get(@stats, :justification_count, 0)}</div>
-          <div class="text-xs text-base-content/60">Justifications</div>
-        </div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-space-md">
+        <.stat_kpi label="Total Nodes" value={to_string(Map.get(@stats, :total_nodes, 0))} />
+        <.stat_kpi label="IN" value={to_string(Map.get(@stats, :in_count, 0))} />
+        <.stat_kpi label="OUT" value={to_string(Map.get(@stats, :out_count, 0))} />
+        <.stat_kpi label="Contradictions" value={to_string(Map.get(@stats, :contradiction_count, 0))} />
+        <.stat_kpi label="Justifications" value={to_string(Map.get(@stats, :justification_count, 0))} />
       </div>
 
       <!-- Contradictions list -->
       <div>
-        <h3 class="font-semibold text-sm mb-2 flex items-center gap-2">
-          <.icon name="hero-exclamation-triangle" class="size-4 text-error" />
+        <h3 class="text-subheading text-ink mb-space-sm flex items-center gap-space-sm">
+          <.icon name="hero-exclamation-triangle" class="size-4 text-ochre" />
           Active Contradictions
         </h3>
         <%= if length(@contradictions) == 0 do %>
-          <div class="text-sm text-base-content/50 italic p-4 bg-base-200/30 rounded-lg text-center">
-            No active contradictions
-          </div>
+          <.empty_panel kind={:plain} words="No active contradictions" />
         <% else %>
-          <div class="space-y-2">
+          <div class="space-y-space-sm">
             <%= for node <- @contradictions do %>
-              <div class="bg-error/5 border border-error/20 rounded-lg p-3">
+              <div class="bg-ochre-wash border border-ochre rounded-md p-space-md">
                 <div
                   class="flex items-start justify-between cursor-pointer"
                   phx-click="toggle_expand"
                   phx-value-id={node.id}
                 >
                   <div class="flex-1">
-                    <div class="font-medium text-sm text-error">
+                    <div class="text-value-strong text-ink">
                       {inspect(node.datum)}
                     </div>
-                    <div class="text-xs text-base-content/50 mt-1">
+                    <div class="text-caption text-ink-muted mt-space-xs">
                       Type: {node.node_type} | Label: {node.label} | {length(node.justifications)} justification(s)
                     </div>
                   </div>
                   <.icon
                     name={if @expanded_id == node.id, do: "hero-chevron-up", else: "hero-chevron-down"}
-                    class="size-4 text-base-content/40"
+                    class="size-4 text-ink-muted"
                   />
                 </div>
                 <%= if @expanded_id == node.id do %>
-                  <div class="mt-3 pt-3 border-t border-error/20 text-xs space-y-1">
+                  <div class="mt-space-md pt-space-md border-t border-ochre text-caption text-ink space-y-space-xs">
                     <div>
-                      <span class="text-base-content/60">Node ID:</span>
-                      <span class="font-mono">{node.id}</span>
+                      <span class="text-ink-muted">Node ID:</span>
+                      <span class="text-ref">{node.id}</span>
                     </div>
                     <div>
-                      <span class="text-base-content/60">Justifications:</span>
+                      <span class="text-ink-muted">Justifications:</span>
                       <span>{Enum.join(node.justifications, ", ")}</span>
                     </div>
                     <div>
-                      <span class="text-base-content/60">Consequences:</span>
+                      <span class="text-ink-muted">Consequences:</span>
                       <span>{Enum.join(node.consequences, ", ")}</span>
                     </div>
                   </div>
@@ -1583,24 +1654,24 @@ defmodule ChatWeb.ExplorerLive do
       <!-- Node type distribution -->
       <%= if Map.get(@stats, :total_nodes, 0) > 0 do %>
         <div>
-          <h3 class="font-semibold text-sm mb-2">Node Distribution</h3>
-          <div class="bg-base-200/30 rounded-lg p-3">
-            <div class="grid grid-cols-2 gap-2 text-sm">
+          <h3 class="text-subheading text-ink mb-space-sm">Node Distribution</h3>
+          <div class="bg-surface-sunk rounded-md p-space-md">
+            <div class="grid grid-cols-2 gap-space-sm text-body">
               <div class="flex justify-between">
-                <span class="text-base-content/60">Premises:</span>
-                <span class="font-medium">{Map.get(@stats, :premise_count, 0)}</span>
+                <span class="text-ink-muted">Premises:</span>
+                <span class="text-value-strong text-ink">{Map.get(@stats, :premise_count, 0)}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-base-content/60">Assumptions:</span>
-                <span class="font-medium">{Map.get(@stats, :assumption_count, 0)}</span>
+                <span class="text-ink-muted">Assumptions:</span>
+                <span class="text-value-strong text-ink">{Map.get(@stats, :assumption_count, 0)}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-base-content/60">Derived:</span>
-                <span class="font-medium">{Map.get(@stats, :derived_count, 0)}</span>
+                <span class="text-ink-muted">Derived:</span>
+                <span class="text-value-strong text-ink">{Map.get(@stats, :derived_count, 0)}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-base-content/60">Contradiction nodes:</span>
-                <span class="font-medium">{Map.get(@stats, :contradiction_count, 0)}</span>
+                <span class="text-ink-muted">Contradiction nodes:</span>
+                <span class="text-value-strong text-ink">{Map.get(@stats, :contradiction_count, 0)}</span>
               </div>
             </div>
           </div>
@@ -1614,35 +1685,33 @@ defmodule ChatWeb.ExplorerLive do
     assigns = assign_new(assigns, :user_data, fn -> load_user_data(assigns.selected_user) end)
 
     ~H"""
-    <div class="divide-y divide-base-300/50">
+    <div class="divide-y divide-border">
       <%= if length(@user_ids) == 0 do %>
-        <.empty_state icon="hero-user-group" message="No user models found" />
+        <.empty_panel kind={:plain} words="No user models found" class="m-space-lg" />
       <% else %>
         <!-- User list -->
-        <div class="p-4">
-          <h3 class="font-semibold text-sm mb-3">Users ({length(@user_ids)})</h3>
-          <div class="flex flex-wrap gap-2">
+        <div class="p-space-lg">
+          <h3 class="text-subheading text-ink mb-space-md">Users ({length(@user_ids)})</h3>
+          <div class="flex flex-wrap gap-space-sm">
             <%= for user_id <- @user_ids do %>
-              <button
+              <.btn
                 phx-click="select_user"
                 phx-value-user_id={user_id}
-                class={[
-                  "btn btn-sm",
-                  if(@selected_user == user_id, do: "btn-primary", else: "btn-ghost")
-                ]}
+                variant={if(@selected_user == user_id, do: :secondary, else: :ghost)}
+                size={:sm}
               >
                 {String.slice(user_id, 0, 16)}{if String.length(user_id) > 16, do: "...", else: ""}
-              </button>
+              </.btn>
             <% end %>
           </div>
         </div>
 
         <!-- Selected user details -->
         <%= if @selected_user && @user_data do %>
-          <div class="p-4 space-y-4">
-            <h3 class="font-semibold text-sm flex items-center gap-2">
-              <.icon name="hero-user" class="size-4 text-primary" />
-              User: <span class="font-mono text-primary">{@selected_user}</span>
+          <div class="p-space-lg space-y-space-lg">
+            <h3 class="text-subheading text-ink flex items-center gap-space-sm">
+              <.icon name="hero-user" class="size-4 text-ink-muted" />
+              User: <span class="text-value-strong text-ink">{@selected_user}</span>
             </h3>
 
             <!-- Facts table -->
@@ -1652,52 +1721,50 @@ defmodule ChatWeb.ExplorerLive do
 
             <%= if map_size(facts) > 0 do %>
               <div>
-                <h4 class="text-xs font-semibold text-base-content/60 mb-2">
+                <h4 class="text-label text-ink-muted mb-space-sm">
                   Known Facts ({map_size(facts)})
                 </h4>
-                <table class="table table-sm">
-                  <thead class="bg-base-200/50">
+                <table class="w-full text-left text-body-dense text-ink">
+                  <thead class="bg-surface-sunk">
                     <tr>
-                      <th>Key</th>
-                      <th>Value</th>
-                      <th>Confidence</th>
-                      <th>Source</th>
+                      <th class="h-row-compact px-space-sm text-label text-ink-muted">Key</th>
+                      <th class="h-row-compact px-space-sm text-label text-ink-muted">Value</th>
+                      <th class="h-row-compact px-space-sm text-label text-ink-muted">Confidence</th>
+                      <th class="h-row-compact px-space-sm text-label text-ink-muted">Source</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody class="divide-y divide-border">
                     <%= for {key, value} <- Enum.sort(facts) do %>
                       <% conf = Map.get(bounds, key, 0.5)
                       source = Map.get(provenance, key) %>
-                      <tr class="hover:bg-base-200/30">
-                        <td class="font-mono text-primary text-sm">{key}</td>
-                        <td class="text-sm">{inspect(value)}</td>
-                        <td>
-                          <span class={confidence_color(conf)}>{format_confidence(conf)}</span>
+                      <tr class="even:bg-surface-sunk">
+                        <td class="h-row-compact px-space-sm text-value-strong text-ink">{key}</td>
+                        <td class="h-row-compact px-space-sm text-value">{inspect(value)}</td>
+                        <td class="h-row-compact px-space-sm">
+                          <span class={confidence_text_class(conf)}>{format_confidence(conf)}</span>
                         </td>
-                        <td class="text-xs text-base-content/50">{source || "-"}</td>
+                        <td class="h-row-compact px-space-sm text-caption text-ink-muted">{source || "-"}</td>
                       </tr>
                     <% end %>
                   </tbody>
                 </table>
               </div>
             <% else %>
-              <div class="text-sm text-base-content/50 italic p-4 bg-base-200/30 rounded-lg text-center">
-                No facts recorded for this user
-              </div>
+              <.empty_panel kind={:plain} words="No facts recorded for this user" />
             <% end %>
 
             <!-- Interaction patterns -->
             <% patterns = Map.get(@user_data, :interaction_patterns, %{}) %>
             <%= if map_size(patterns) > 0 do %>
               <div>
-                <h4 class="text-xs font-semibold text-base-content/60 mb-2">
+                <h4 class="text-label text-ink-muted mb-space-sm">
                   Interaction Patterns
                 </h4>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-2 gap-space-sm">
                   <%= for {pattern_type, data} <- Enum.sort(patterns) do %>
-                    <div class="bg-base-200/50 rounded-lg px-3 py-2 text-sm">
-                      <span class="font-medium">{pattern_type}:</span>
-                      <span class="text-base-content/60 ml-1">{inspect(data)}</span>
+                    <div class="bg-surface-sunk rounded-sm px-space-md py-space-sm text-body">
+                      <span class="font-semibold text-ink">{pattern_type}:</span>
+                      <span class="text-ink-muted ml-space-xs">{inspect(data)}</span>
                     </div>
                   <% end %>
                 </div>
@@ -1721,51 +1788,16 @@ defmodule ChatWeb.ExplorerLive do
     _ -> nil
   end
 
+  defp belief_trigger_id(action, belief_id), do: "explorer-#{action}-belief-#{belief_id}"
+  defp belief_confirm_id(action, belief_id), do: "explorer-confirm-#{action}-belief-#{belief_id}"
+
+  defp belief_target(belief), do: "belief #{String.slice(belief.id, 0, 8)}"
+
   defp format_datetime(%DateTime{} = dt) do
     Calendar.strftime(dt, "%Y-%m-%d %H:%M")
   end
 
   defp format_datetime(_), do: "-"
-
-  defp empty_state(assigns) do
-    ~H"""
-    <div class="p-16 text-center text-base-content/50">
-      <.icon name={@icon} class="size-12 mx-auto mb-4 text-base-content/30" />
-      <p>{@message}</p>
-    </div>
-    """
-  end
-
-  defp pagination(assigns) do
-    ~H"""
-    <%= if @total_pages > 1 do %>
-      <div class="flex items-center justify-between px-4 py-3 border-t border-base-300">
-        <div class="text-sm text-base-content/60">
-          Showing {(@page - 1) * @page_size + 1}-{min(@page * @page_size, @total_entries)} of {@total_entries}
-        </div>
-        <div class="flex items-center gap-1">
-          <button
-            phx-click="change_page"
-            phx-value-page={@page - 1}
-            disabled={@page == 1}
-            class="btn btn-ghost btn-xs btn-square"
-          >
-            <.icon name="hero-chevron-left" class="size-4" />
-          </button>
-          <span class="px-2 text-sm">Page {@page} of {@total_pages}</span>
-          <button
-            phx-click="change_page"
-            phx-value-page={@page + 1}
-            disabled={@page == @total_pages}
-            class="btn btn-ghost btn-xs btn-square"
-          >
-            <.icon name="hero-chevron-right" class="size-4" />
-          </button>
-        </div>
-      </div>
-    <% end %>
-    """
-  end
 
   # ============================================================================
   # Helpers
@@ -1956,6 +1988,13 @@ defmodule ChatWeb.ExplorerLive do
     end)
   end
 
+  # A page from the URL or a page event can be anything; the page shown is the
+  # nearest one that exists, from 1 to the last page of the matching rows.
+  defp clamp_page(page, total, page_size) do
+    last_page = max(div(total + page_size - 1, page_size), 1)
+    page |> max(1) |> min(last_page)
+  end
+
   defp paginate(items, page, page_size) do
     items
     |> Enum.drop((page - 1) * page_size)
@@ -1970,29 +2009,11 @@ defmodule ChatWeb.ExplorerLive do
     _ -> default
   end
 
-  defp confidence_color(nil), do: "text-base-content/40"
-  defp confidence_color(c) when c >= 0.8, do: "text-success font-medium"
-  defp confidence_color(c) when c >= 0.5, do: "text-warning"
-  defp confidence_color(_), do: "text-error"
+  defp confidence_text_class(nil), do: "text-value text-ink-muted"
+  defp confidence_text_class(c) when is_number(c), do: "text-value text-ink"
 
   defp format_confidence(nil), do: "—"
   defp format_confidence(c), do: "#{Float.round(c * 100, 1)}%"
-
-  defp authority_badge_class("professional"), do: "badge-info"
-  defp authority_badge_class("personal"), do: "badge-secondary"
-  defp authority_badge_class("academic"), do: "badge-accent"
-  defp authority_badge_class("entertainment"), do: "badge-warning"
-  defp authority_badge_class("unknown"), do: "badge-ghost"
-  defp authority_badge_class(_), do: "badge-ghost"
-
-  defp authority_category(authority_key) do
-    case SourceAuthority.get_profile(authority_key) do
-      nil -> "unknown"
-      profile -> profile.category
-    end
-  rescue
-    _ -> "unknown"
-  end
 
   defp group_authority_profiles(profiles) do
     profiles

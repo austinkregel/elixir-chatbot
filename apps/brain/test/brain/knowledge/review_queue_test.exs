@@ -5,6 +5,7 @@ defmodule Brain.Knowledge.ReviewQueueTest do
   import Brain.TestHelpers
 
   alias Knowledge.{ReviewQueue, SourceReliability}
+  alias Brain.ML.Gazetteer
   alias Types.{Finding, SourceInfo, ReviewCandidate}
 
   setup _context do
@@ -205,6 +206,167 @@ defmodule Brain.Knowledge.ReviewQueueTest do
       pending = ReviewQueue.get_pending()
       found = Enum.find(pending, &(&1.id == candidate.id))
       assert found != nil
+    end
+  end
+
+  describe "teaching the gazetteer" do
+    # Names no source knows, so every entry a test finds was put there by the
+    # approval under test. Removed from the global gazetteer afterwards.
+    setup do
+      name = "Zorblax#{System.unique_integer([:positive])}"
+      on_exit(fn -> Gazetteer.remove_entry(name) end)
+      {:ok, name: name}
+    end
+
+    test "a human approval teaches whatever type the reviewer approved", %{name: name} do
+      # No allow-list: a type outside the old five (person, location, ...) is
+      # learned like any other.
+      candidate = entity_candidate(name, "music_album")
+      {:ok, _} = ReviewQueue.add(candidate)
+      assert types_of(name) == []
+
+      {:ok, _} = ReviewQueue.approve(candidate.id, "checked")
+
+      assert types_of(name) == [{"music_album", :reviewed}]
+    end
+
+    test "approving a known name under a new type adds a reading", %{name: name} do
+      {:ok, _} = Gazetteer.add_reviewed(name, "location")
+
+      candidate = entity_candidate(name, "person")
+      {:ok, _} = ReviewQueue.add(candidate)
+      {:ok, _} = ReviewQueue.approve(candidate.id)
+
+      assert Enum.sort(types_of(name)) == [{"location", :reviewed}, {"person", :reviewed}]
+    end
+
+    test "a bulk approval teaches too, and is persisted", %{name: name} do
+      candidate = entity_candidate(name, "song")
+      {:ok, _} = ReviewQueue.add(candidate)
+
+      {:ok, 1} = ReviewQueue.bulk_approve([candidate.id])
+
+      assert types_of(name) == [{"song", :reviewed}]
+      {:ok, reviewed} = Brain.AtlasIntegration.load_reviewed_entities()
+      assert {name, "song", nil} in reviewed
+    end
+
+    test "a world-scoped approval teaches that world's overlay, not the global gazetteer", %{
+      name: name
+    } do
+      world_id = "review_test_world_#{System.unique_integer([:positive])}"
+      :ok = Gazetteer.create_world_overlay(world_id)
+      on_exit(fn -> Gazetteer.destroy_world_overlay(world_id) end)
+
+      candidate = entity_candidate(name, "person", world_id: world_id)
+      {:ok, _} = ReviewQueue.add(candidate)
+      {:ok, _} = ReviewQueue.approve(candidate.id)
+
+      assert types_of(name) == []
+      assert {:ok, [info]} = Gazetteer.lookup(name, world_id)
+      assert info.entity_type == "person"
+    end
+
+    test "rejecting, deferring or leaving pending teaches nothing", %{name: name} do
+      pending = entity_candidate(name, "person")
+      rejected = entity_candidate(name, "location")
+      deferred = entity_candidate(name, "song")
+
+      for c <- [pending, rejected, deferred], do: {:ok, _} = ReviewQueue.add(c)
+      {:ok, _} = ReviewQueue.reject(rejected.id)
+      {:ok, _} = ReviewQueue.defer(deferred.id)
+
+      assert types_of(name) == []
+      {:ok, reviewed} = Brain.AtlasIntegration.load_reviewed_entities()
+      refute Enum.any?(reviewed, fn {entity, _t, _w} -> entity == name end)
+    end
+
+    test "an auto-approval is recorded as such and teaches nothing", %{name: name} do
+      ensure_started(Brain.Analysis.ComprehensionAssessor)
+      profile_id = "review_test_profile_#{System.unique_integer([:positive])}"
+      :ets.insert(:comprehension_profiles, {profile_id, %{verdict: :comprehended}, 0})
+      on_exit(fn -> :ets.delete(:comprehension_profiles, profile_id) end)
+
+      previous = Application.get_env(:brain, :auto_approval_enabled)
+      Application.put_env(:brain, :auto_approval_enabled, true)
+      on_exit(fn -> Application.put_env(:brain, :auto_approval_enabled, previous) end)
+
+      sources =
+        for i <- 1..3 do
+          SourceInfo.new("https://corroborator#{i}.example/a", reliability_score: 0.9)
+        end
+
+      candidate =
+        entity_candidate(name, "person",
+          confidence: 0.95,
+          corroborating_sources: sources,
+          comprehension_profile_id: profile_id
+        )
+
+      {:ok, _} = ReviewQueue.add(candidate)
+
+      assert {:ok, %{status: :auto_approved}} = ReviewQueue.get(candidate.id)
+      assert types_of(name) == []
+
+      {:ok, reviewed} = Brain.AtlasIntegration.load_reviewed_entities()
+      refute Enum.any?(reviewed, fn {entity, _t, _w} -> entity == name end)
+    end
+
+    test "the gazetteer reloads what was approved when it loads its sources", %{name: name} do
+      candidate = entity_candidate(name, "music_album")
+      {:ok, _} = ReviewQueue.add(candidate)
+      {:ok, _} = ReviewQueue.approve(candidate.id)
+
+      # Forget it, as a restart would, then load the sources again.
+      :ok = Gazetteer.remove_entry(name)
+      assert types_of(name) == []
+
+      {:ok, _stats} = Gazetteer.load_all()
+
+      assert types_of(name) == [{"music_album", :reviewed}]
+    end
+  end
+
+  describe "has_entity_candidate?/3" do
+    test "matches entity case-insensitively, by type and world, in any status" do
+      source = SourceInfo.new("https://review-test.example/x")
+
+      finding =
+        Finding.new("Qux is a person", "Qux", source, entity_type: "person", world_id: "w1")
+
+      candidate = ReviewCandidate.new(finding)
+      {:ok, _} = ReviewQueue.add(candidate)
+      {:ok, _} = ReviewQueue.reject(candidate.id)
+
+      assert ReviewQueue.has_entity_candidate?("qux", "person", "w1")
+      refute ReviewQueue.has_entity_candidate?("qux", "location", "w1")
+      refute ReviewQueue.has_entity_candidate?("qux", "person", "w2")
+      refute ReviewQueue.has_entity_candidate?("qux", "person", nil)
+    end
+  end
+
+  defp entity_candidate(entity, type, opts \\ []) do
+    source = SourceInfo.new("https://review-test.example/#{entity}", reliability_score: 0.9)
+
+    finding =
+      Finding.new("#{entity} is a #{type}", entity, source,
+        entity_type: type,
+        confidence: Keyword.get(opts, :confidence, 0.7),
+        world_id: Keyword.get(opts, :world_id),
+        comprehension_profile_id: Keyword.get(opts, :comprehension_profile_id)
+      )
+
+    ReviewCandidate.new(finding,
+      aggregate_confidence: Keyword.get(opts, :confidence, 0.7),
+      corroborating_sources: Keyword.get(opts, :corroborating_sources, [])
+    )
+  end
+
+  # The gazetteer's readings of a name, as {entity_type, source}.
+  defp types_of(name) do
+    case Gazetteer.lookup(name) do
+      {:ok, infos} -> infos |> List.wrap() |> Enum.map(&{&1[:entity_type], &1[:source]})
+      :not_found -> []
     end
   end
 

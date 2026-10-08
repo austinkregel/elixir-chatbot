@@ -14,12 +14,14 @@ defmodule Brain.ML.TrainingData.SourceDescriptors do
           | :text_classifier_row
           | :fv_classifier_row
           | :registry_entry
-          | :slot_schema_entry
           | :speech_act_map_entry
           | :entity_type_entry
           | :gazetteer_entry
           | :kg_negative
           | :csv_row
+          | :response_frame
+          | :phrase_inventory_entry
+          | :response_config_entry
 
   @type t :: %{
           id: atom(),
@@ -305,17 +307,10 @@ defmodule Brain.ML.TrainingData.SourceDescriptors do
       },
 
       # ── Analysis registries ────────────────────────────────────────────
-      %{
-        id: :slot_schemas,
-        label: "Slot Schemas",
-        category: "Analysis Registries",
-        tag: :registry,
-        record_kind: :slot_schema_entry,
-        path: brain_priv("analysis/slot_schemas.json"),
-        description: "Per-intent required/optional slots and clarification templates",
-        upstream_of: [],
-        generated_by: nil
-      },
+      # Slot schemas are not a separate source: per-intent required/optional
+      # slots and clarification templates live in :intent_registry above, which
+      # is what SlotDetector reads. A :slot_schemas descriptor used to point at
+      # priv/analysis/slot_schemas.json -- a file nothing ever generated.
       %{
         id: :entity_types,
         label: "Entity Type Hierarchy",
@@ -337,6 +332,197 @@ defmodule Brain.ML.TrainingData.SourceDescriptors do
         record_kind: :kg_negative,
         path: data_path("kg/hard_negatives.json"),
         description: "Curated hard negative triples for KG-LSTM training",
+        upstream_of: [],
+        generated_by: nil
+      },
+
+      # ── Response Domains ──────────────────────────────────────────────
+      %{
+        id: :domain_weather,
+        label: "Weather Domain",
+        category: "Response Domains",
+        tag: :authoring,
+        record_kind: :response_frame,
+        path: brain_priv("knowledge/domains/weather.json"),
+        description: "Weather response frames and enrichment templates",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :domain_smalltalk,
+        label: "Smalltalk Domain",
+        category: "Response Domains",
+        tag: :authoring,
+        record_kind: :response_frame,
+        path: brain_priv("knowledge/domains/smalltalk.json"),
+        description: "Smalltalk response frames and chunk type seeds",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :domain_music,
+        label: "Music Domain",
+        category: "Response Domains",
+        tag: :authoring,
+        record_kind: :response_frame,
+        path: brain_priv("knowledge/domains/music.json"),
+        description: "Music response frames",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :domain_device,
+        label: "Device Domain",
+        category: "Response Domains",
+        tag: :authoring,
+        record_kind: :response_frame,
+        path: brain_priv("knowledge/domains/device.json"),
+        description: "Device control response frames",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :domain_reminder,
+        label: "Reminder Domain",
+        category: "Response Domains",
+        tag: :authoring,
+        record_kind: :response_frame,
+        path: brain_priv("knowledge/domains/reminder.json"),
+        description: "Reminder response frames",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :domain_code,
+        label: "Code Domain",
+        category: "Response Domains",
+        tag: :authoring,
+        record_kind: :response_frame,
+        path: brain_priv("knowledge/domains/code.json"),
+        description: "Code analysis response frames",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :domain_news,
+        label: "News Domain",
+        category: "Response Domains",
+        tag: :authoring,
+        record_kind: :response_frame,
+        path: brain_priv("knowledge/domains/news.json"),
+        description: "News query response frames",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :domain_factual,
+        label: "Factual Domain",
+        category: "Response Domains",
+        tag: :authoring,
+        record_kind: :response_frame,
+        path: brain_priv("knowledge/domains/factual.json"),
+        description: "Factual Q&A response frames",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :domain_status,
+        label: "Status Domain",
+        category: "Response Domains",
+        tag: :authoring,
+        record_kind: :response_frame,
+        path: brain_priv("knowledge/domains/status.json"),
+        description: "System status response frames",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :response_primitives,
+        label: "Response Primitives",
+        category: "Response Domains",
+        tag: :authoring,
+        record_kind: :response_frame,
+        path: brain_priv("knowledge/domains/primitives.json"),
+        description: "Phrasing pools per primitive type and variant",
+        upstream_of: [],
+        generated_by: nil
+      },
+
+      # ── Response System ───────────────────────────────────────────────
+      %{
+        id: :discourse_patterns,
+        label: "Discourse Patterns",
+        category: "Response System",
+        tag: :authoring,
+        record_kind: :registry_entry,
+        path: brain_priv("response/discourse_patterns.json"),
+        description: "Maps analysis signals to primitive sequences",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :response_system_config,
+        label: "Response System Config",
+        category: "Response System",
+        tag: :registry,
+        record_kind: :response_config_entry,
+        path: brain_priv("response/system_config.json"),
+        description: "Per-domain response system and tone configuration",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :phrase_inventory,
+        label: "Phrase Inventory",
+        category: "Response System",
+        tag: :build_artifact,
+        record_kind: :phrase_inventory_entry,
+        path: brain_priv("ml_models/lattice/phrase_inventory.json"),
+        description: "Fragment inventory for lattice realizer",
+        upstream_of: [],
+        generated_by: "mix gen_lattice_data"
+      },
+      %{
+        id: :lattice_transition_scores,
+        label: "Transition Scores",
+        category: "Response System",
+        tag: :build_artifact,
+        record_kind: :phrase_inventory_entry,
+        path: brain_priv("ml_models/lattice/transition_scores.json"),
+        description: "N-gram transition scores for lattice boundary smoothing",
+        upstream_of: [],
+        generated_by: "mix gen_lattice_data"
+      },
+      %{
+        id: :lattice_scorer_weights,
+        label: "Scorer Weights",
+        category: "Response System",
+        tag: :build_artifact,
+        record_kind: :phrase_inventory_entry,
+        path: brain_priv("ml_models/lattice/scorer_weights.json"),
+        description: "Learned weight vector for lattice scoring",
+        upstream_of: [],
+        generated_by: "mix gen_lattice_data"
+      },
+      %{
+        id: :entity_slot_mappings,
+        label: "Entity Slot Mappings",
+        category: "Response System",
+        tag: :registry,
+        record_kind: :registry_entry,
+        path: brain_priv("knowledge/entity_slot_mappings.json"),
+        description: "Maps entity types to template slot names",
+        upstream_of: [],
+        generated_by: nil
+      },
+      %{
+        id: :frame_key_mappings,
+        label: "Frame Key Mappings",
+        category: "Response System",
+        tag: :registry,
+        record_kind: :registry_entry,
+        path: brain_priv("response/frame_key_mappings.json"),
+        description: "Maps filled-slot combos to response frame keys",
         upstream_of: [],
         generated_by: nil
       },
@@ -410,7 +596,9 @@ defmodule Brain.ML.TrainingData.SourceDescriptors do
   defp category_sort_key("Gazetteers"), do: 7
   defp category_sort_key("Knowledge"), do: 8
   defp category_sort_key("External Corpora"), do: 9
-  defp category_sort_key(_), do: 10
+  defp category_sort_key("Response Domains"), do: 10
+  defp category_sort_key("Response System"), do: 11
+  defp category_sort_key(_), do: 12
 
   defp gazetteer_descriptors do
     entities_path = data_path("entities")

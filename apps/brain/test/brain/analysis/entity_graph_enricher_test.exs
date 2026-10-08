@@ -3,6 +3,19 @@ defmodule Brain.Analysis.EntityGraphEnricherTest do
 
   alias Brain.Analysis.EntityGraphEnricher
 
+  # `enrich/1` queries the knowledge graph, so these tests need a checked-out
+  # connection. Without one the query failed with a sandbox ownership error,
+  # which the enricher read as "the graph does not know this entity" — the
+  # tests passed on a broken lookup, and the miss was cached for every later
+  # reader (see .claude/findings/2026-09-19-test-failure-trace.md). The graph
+  # is empty here, so what they assert — that enrichment adds its fields and
+  # keeps the originals — now holds because the entity is genuinely absent.
+  setup tags do
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+    :ok
+  end
+
   describe "enrich/1" do
     test "returns default enrichment for empty entity list" do
       assert EntityGraphEnricher.enrich([]) == []

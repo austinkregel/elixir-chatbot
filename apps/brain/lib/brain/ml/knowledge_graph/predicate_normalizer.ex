@@ -141,7 +141,7 @@ defmodule Brain.ML.KnowledgeGraph.PredicateNormalizer do
   end
 
   defp try_lemma_passthrough(predicate) do
-    lemma = Brain.ML.Lexicon.lemma(predicate)
+    lemma = Brain.Lexicon.lemma(predicate)
     capitalized = String.capitalize(lemma)
 
     table = alias_table()

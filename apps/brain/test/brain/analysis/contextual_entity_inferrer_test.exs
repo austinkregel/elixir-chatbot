@@ -11,7 +11,6 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
     ensure_started(Brain.ML.SpeechActClassifierSimple)
     ensure_started(Brain.ML.SentimentClassifierSimple)
     ensure_started(Brain.ML.MicroClassifiers)
-    ensure_started(Brain.ML.EntityExtractor)
     ensure_started(Brain.Memory.Embedder)
     :ok
   end
@@ -47,7 +46,7 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       assert updated_intent == "music.play"
       narrowed = Enum.find(updated_entities, &(&1[:value] == "Taylor Swift"))
       assert narrowed != nil
-      assert narrowed[:entity_type] in ["artist", "music-artist", "person"]
+      assert narrowed[:entity_type] in ["artist", "music_artist", "person"]
     end
 
     test "narrows person to artist in music context" do
@@ -75,7 +74,7 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       assert narrowed != nil
 
       # The entity type should be narrowed from person to artist or music-artist
-      assert narrowed[:entity_type] in ["artist", "music-artist"],
+      assert narrowed[:entity_type] in ["artist", "music_artist"],
         "Expected type narrowing to artist or music-artist, got: #{narrowed[:entity_type]}"
 
       assert narrowed[:source] == :type_narrowing
@@ -203,7 +202,7 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
 
       beyonce = Enum.find(updated_entities, &(&1[:value] == "Beyonce"))
       assert beyonce != nil
-      assert beyonce[:entity_type] in ["artist", "music-artist"]
+      assert beyonce[:entity_type] in ["artist", "music_artist"]
     end
   end
 
@@ -228,7 +227,7 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
 
           if taylor != nil do
             # If Taylor was extracted and narrowed, check the type
-            assert taylor[:entity_type] in ["person", "artist", "music-artist"],
+            assert taylor[:entity_type] in ["person", "artist", "music_artist"],
               "Expected person, artist, or music-artist type, got: #{taylor[:entity_type]}"
           end
         end

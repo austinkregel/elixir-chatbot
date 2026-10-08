@@ -6,6 +6,7 @@ defmodule World.Manager do
   use GenServer
   require Logger
 
+  alias World.EntityCandidate
   alias World.TrainingWorld
   alias World.Events, as: WorldEvents
   alias World.Metrics, as: WorldMetrics
@@ -123,9 +124,22 @@ defmodule World.Manager do
     end
   end
 
-  @doc "Adds an entity candidate to a world's candidate pool.\n"
+  @doc """
+  Adds an entity candidate to a world's candidate pool.
+
+  The attributes are validated into a `World.EntityCandidate` here, in the
+  caller's process, before the cast. That placement is deliberate: this is a
+  cast, so raising inside the handler would take the Manager down with it, and
+  it is the one boundary every producer passes through -- two of the five live
+  in `:brain`, which cannot reference a `World` struct without inverting the
+  umbrella dependency.
+
+  Raises `ArgumentError` on an incomplete candidate rather than storing one. A
+  candidate with no `:context` used to reach `EntityPromoter` and kill it with a
+  `KeyError` on the next scan.
+  """
   def add_candidate(world_id, candidate) when is_binary(world_id) and is_map(candidate) do
-    GenServer.cast(__MODULE__, {:add_candidate, world_id, candidate})
+    GenServer.cast(__MODULE__, {:add_candidate, world_id, EntityCandidate.new!(candidate)})
   end
 
   @doc "Gets all entity candidates for a world.\n"

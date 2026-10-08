@@ -1,0 +1,28 @@
+[
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "garage is locked",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-9dfd59e3",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "I want to did i lock the door in the kitchen",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-902964e5",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  }
+]

@@ -108,23 +108,19 @@ defmodule Brain.Analysis.NoveltyDetector do
   end
 
   defp lexicon_content_weight(tokens) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      tokens
-      |> Enum.map(fn token ->
-        lower = String.downcase(token)
-        pos_tags = Brain.ML.Lexicon.pos(lower)
+    tokens
+    |> Enum.map(fn token ->
+      lower = String.downcase(token)
+      pos_tags = Brain.Lexicon.pos(lower)
 
-        cond do
-          :noun in pos_tags or :verb in pos_tags -> 1.0
-          :adj in pos_tags or :adj_satellite in pos_tags -> 0.7
-          :adv in pos_tags -> 0.3
-          true -> 0.1
-        end
-      end)
-      |> Enum.sum()
-    else
-      0.0
-    end
+      cond do
+        :noun in pos_tags or :verb in pos_tags -> 1.0
+        :adj in pos_tags or :adj_satellite in pos_tags -> 0.7
+        :adv in pos_tags -> 0.3
+        true -> 0.1
+      end
+    end)
+    |> Enum.sum()
   end
 
   defp has_researchable_entities?(entities) when is_list(entities) do
@@ -158,13 +154,9 @@ defmodule Brain.Analysis.NoveltyDetector do
     if normalized in ["person", "pronoun"] do
       false
     else
-      if Process.whereis(Brain.ML.Lexicon) do
-        chain = Brain.ML.Lexicon.hypernym_chain(normalized, :noun, max_depth: 8)
-        non_researchable = ~w(person pronoun function_word)
-        not Enum.any?(chain, &(&1 in non_researchable))
-      else
-        true
-      end
+      chain = Brain.Lexicon.hypernym_chain(normalized, :noun, max_depth: 8)
+      non_researchable = ~w(person pronoun function_word)
+      not Enum.any?(chain, &(&1 in non_researchable))
     end
   end
 

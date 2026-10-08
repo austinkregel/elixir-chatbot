@@ -21,12 +21,13 @@ defmodule Atlas.Schemas.Episode do
     field :tags, {:array, :string}, default: []
     field :embedding, {:array, :float}, default: []
     field :semantic_id, :binary_id
+    field :entity_names, {:array, :string}, default: []
 
     timestamps(type: :utc_datetime_usec)
   end
 
   @required_fields ~w(state action)a
-  @optional_fields ~w(outcome world_id tags embedding semantic_id)a
+  @optional_fields ~w(outcome world_id tags embedding semantic_id entity_names)a
 
   @doc false
   def changeset(episode, attrs) do

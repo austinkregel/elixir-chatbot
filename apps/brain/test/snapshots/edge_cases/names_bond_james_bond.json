@@ -5,34 +5,30 @@
       "text": "The name's Bond, James Bond",
       "entities": [
         {
-          "type": "person",
+          "type": "location",
           "value": "Bond",
           "confidence": 0.73
         },
         {
-          "type": "person",
+          "type": "location",
           "value": "Bond",
           "confidence": 0.67
-        },
-        {
-          "type": "person",
-          "value": "James",
-          "confidence": 0.75
         }
       ],
-      "response_strategy": "can_respond",
-      "slots_filled": [
-        "person"
-      ],
-      "slots_missing": [],
-      "detected_intent": "smalltalk.user.introduction",
+      "response_strategy": "hedged_response",
+      "detected_intent": "weather.query",
       "speech_act_category": "assertive",
       "speech_act_type": "statement",
-      "speech_act_confidence": 0.41,
+      "speech_act_confidence": 0.59,
       "discourse_addressee": "bot",
-      "discourse_self_referential": "false"
+      "discourse_self_referential": "false",
+      "slots_filled": [
+        "date",
+        "location"
+      ],
+      "slots_missing": []
     }
   ],
-  "overall_strategy": "can_respond",
+  "overall_strategy": "hedged_response",
   "chunk_count": 1
 }

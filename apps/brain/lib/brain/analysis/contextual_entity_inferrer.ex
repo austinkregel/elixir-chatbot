@@ -594,6 +594,10 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
                 value: entity_value,
                 inferred_type: narrowing.narrowed_type,
                 confidence: narrowing.score,
+                # The text the narrowing was observed in. Omitting it is what
+                # killed World.EntityPromoter with a KeyError on every scan --
+                # this is the producer the crash traced to. Measured 2026-09-23.
+                context: text,
                 source: :type_narrowing,
                 original_type: narrowing.original_type
               })

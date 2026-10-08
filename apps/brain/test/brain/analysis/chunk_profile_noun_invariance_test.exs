@@ -45,6 +45,15 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
 
   @moduletag :requires_micro_models
 
+  # The pipeline reads the knowledge graph; without a checked-out connection
+  # every lookup fails and the graph-derived features read as "unknown",
+  # which is one of the inputs this file's invariant depends on.
+  setup tags do
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+    :ok
+  end
+
   describe "contract: axis classifier input dim matches ChunkFeatures.vector_dimension/0" do
     test ":intent_domain model's input_dim equals ChunkFeatures.vector_dimension/0" do
       case MicroClassifiers.input_dim(:intent_domain) do

@@ -21,9 +21,7 @@ defmodule Brain.ML.Trainer do
 
   @type training_stats :: %{
           intent_samples: integer(),
-          vocab_size: integer(),
-          entity_types: integer(),
-          gazetteer_entries: integer()
+          vocab_size: integer()
         }
 
   @doc "Main training function that loads data, trains all models, and saves them.\nReturns {:ok, stats} or {:error, reason}.\n\n## Options\n  - models_path: Override the default models output path\n"
@@ -39,8 +37,6 @@ defmodule Brain.ML.Trainer do
     stats = %{
       intent_samples: 0,
       vocab_size: 0,
-      entity_types: 0,
-      gazetteer_entries: 0,
       entity_model_trained: false,
       sentiment_samples: 0,
       sentiment_labels: 0
@@ -51,7 +47,6 @@ defmodule Brain.ML.Trainer do
     case result do
       :ok ->
         stats = train_entity_model(stats, models_path: models_path)
-        stats = build_gazetteer_data(stats, models_path: models_path)
         stats = train_sentiment_classifier(stats, models_path: models_path)
 
         Logger.info("Training pipeline completed", stats)
@@ -91,7 +86,7 @@ defmodule Brain.ML.Trainer do
       }
 
       embedder_path = Path.join(models_path, "embedder.term")
-      File.write!(embedder_path, :erlang.term_to_binary(embedder_model))
+      File.write!(embedder_path, Brain.ML.ModelStore.serialize(embedder_model))
       Logger.info("Embedder vocabulary saved", %{path: embedder_path})
 
       updated_stats = %{
@@ -150,7 +145,7 @@ defmodule Brain.ML.Trainer do
 
       File.mkdir_p!(models_path)
       model_path = Path.join(models_path, "sentiment_classifier.term")
-      File.write!(model_path, :erlang.term_to_binary(model))
+      File.write!(model_path, Brain.ML.ModelStore.serialize(model))
       Logger.info("Sentiment classifier saved", %{path: model_path})
 
       %{
@@ -182,136 +177,6 @@ defmodule Brain.ML.Trainer do
         Logger.warning("Entity model training failed", %{reason: reason})
         stats
     end
-  end
-
-  @doc "Build gazetteer lookup data and save for fast runtime access.\n\n## Options\n  - models_path: Override the default models output path\n"
-  def build_gazetteer_data(stats \\ %{}, opts \\ []) do
-    Logger.info("Building gazetteer data...")
-
-    models_path =
-      Keyword.get(opts, :models_path) ||
-        Application.get_env(:brain, :ml)[:models_path] ||
-        Brain.priv_path("ml_models")
-
-    File.mkdir_p!(models_path)
-
-    gazetteer_data = %{
-      entities: %{},
-      cities: %{},
-      artists: %{},
-      emojis: %{}
-    }
-
-    gazetteer_data =
-      case DataLoaders.load_all_entities() do
-        {:ok, entities} ->
-          entity_lookup = DataLoaders.build_entity_lookup(entities)
-          Logger.info("Built entity lookup", %{entries: map_size(entity_lookup)})
-          %{gazetteer_data | entities: entity_lookup}
-
-        {:error, _} ->
-          gazetteer_data
-      end
-
-    gazetteer_data =
-      case DataLoaders.load_cities() do
-        {:ok, cities} ->
-          sampled_cities =
-            if length(cities) > 10_000 do
-              Enum.take(cities, 10_000)
-            else
-              cities
-            end
-
-          city_lookup = DataLoaders.build_city_lookup(sampled_cities)
-          Logger.info("Built city lookup", %{entries: map_size(city_lookup)})
-          %{gazetteer_data | cities: city_lookup}
-
-        {:error, _} ->
-          gazetteer_data
-      end
-
-    gazetteer_data =
-      case DataLoaders.load_artists() do
-        {:ok, artists} ->
-          sampled_artists =
-            if length(artists) > 10_000 do
-              Enum.take(artists, 10_000)
-            else
-              artists
-            end
-
-          artist_lookup = DataLoaders.build_artist_lookup(sampled_artists)
-          Logger.info("Built artist lookup", %{entries: map_size(artist_lookup)})
-          %{gazetteer_data | artists: artist_lookup}
-
-        {:error, _} ->
-          gazetteer_data
-      end
-
-    gazetteer_data =
-      case DataLoaders.load_emojis() do
-        {:ok, emojis} ->
-          emoji_lookup = DataLoaders.build_emoji_lookup(emojis)
-          Logger.info("Built emoji lookup", %{entries: map_size(emoji_lookup)})
-          %{gazetteer_data | emojis: emoji_lookup}
-
-        {:error, _} ->
-          gazetteer_data
-      end
-
-    combined_lookup =
-      gazetteer_data.entities
-      |> Map.merge(gazetteer_data.cities)
-      |> Map.merge(gazetteer_data.artists)
-      |> Map.merge(gazetteer_data.emojis)
-
-    gazetteer_path = Path.join(models_path, "gazetteer.term")
-    File.write!(gazetteer_path, :erlang.term_to_binary(combined_lookup))
-
-    Logger.info("Gazetteer saved", %{
-      path: gazetteer_path,
-      total_entries: map_size(combined_lookup)
-    })
-
-    total_entries =
-      map_size(gazetteer_data.entities) +
-        map_size(gazetteer_data.cities) +
-        map_size(gazetteer_data.artists) +
-        map_size(gazetteer_data.emojis)
-
-    stats
-    |> Map.put(:gazetteer_entries, total_entries)
-    |> Map.put(:entity_types, count_entity_types(gazetteer_data))
-  end
-
-  defp count_entity_types(gazetteer_data) do
-    all_lookups = [
-      gazetteer_data.entities,
-      gazetteer_data.cities,
-      gazetteer_data.artists,
-      gazetteer_data.emojis
-    ]
-
-    all_lookups
-    |> Enum.flat_map(fn lookup ->
-      Map.values(lookup)
-      |> Enum.flat_map(fn info ->
-        case info do
-          entries when is_list(entries) ->
-            Enum.map(entries, fn entry -> Map.get(entry, :entity_type) end)
-
-          entry when is_map(entry) ->
-            [Map.get(entry, :entity_type)]
-
-          _ ->
-            []
-        end
-      end)
-    end)
-    |> Enum.uniq()
-    |> Enum.filter(&(&1 != nil))
-    |> length()
   end
 
   @doc "Load training data from intent files using DataLoaders.\nReturns a list of {text, intent_label} tuples.\n"

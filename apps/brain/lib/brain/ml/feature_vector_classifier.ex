@@ -75,7 +75,6 @@ defmodule Brain.ML.FeatureVectorClassifier do
 
   @k_max 4
   @min_per_proto 10
-  @kmeans_seed 42
   @kmeans_max_iters 100
   @convergence_threshold 1.0e-6
 
@@ -102,14 +101,18 @@ defmodule Brain.ML.FeatureVectorClassifier do
     vectors are multiplied element-wise by the weights before computing
     centroids, and the weights are stored in the model for use at
     classification time.
-  - `:balance` — when `true`, subsample majority classes to the median
-    class size before computing centroids. This prevents large classes
-    from dominating the centroid space while preserving minority classes.
+  - `:seed` — seed for K-means++. Defaults to `Brain.ML.TrainingSeed.get!/0`
+    and is stored in the model as `:training_seed`.
+
+  Every training example is used; none are dropped to even out class sizes.
 
   Each class receives `k = min(#{@k_max}, max(1, n ÷ #{@min_per_proto}))`
-  sub-centroids, computed via K-means++ with a fixed seed for
-  determinism. When sufficient validation data is available, Platt
-  scaling parameters are fitted for confidence calibration.
+  sub-centroids, computed via K-means++ from the seed, so the same training
+  data and seed always produce the same model. When sufficient validation
+  data is available, Platt scaling parameters are fitted for confidence
+  calibration.
+
+  Raises `ArgumentError` on an unknown option.
 
   Raises `ArgumentError` if training examples disagree on vector
   dimensionality. Empty input produces an empty model (which always
@@ -120,12 +123,13 @@ defmodule Brain.ML.FeatureVectorClassifier do
   def train([], _opts), do: empty_model()
 
   def train(training, opts) when is_list(training) do
-    weights = Keyword.get(opts, :weights)
-    balance? = Keyword.get(opts, :balance, false)
+    opts = Keyword.validate!(opts, [:weights, :seed])
+    weights = opts[:weights]
+    seed = opts[:seed] || Brain.ML.TrainingSeed.get!()
 
     training
     |> validate_dimensions!()
-    |> build_model(weights, balance?)
+    |> build_model(weights, seed)
   end
 
   @doc """
@@ -196,7 +200,7 @@ defmodule Brain.ML.FeatureVectorClassifier do
     training
   end
 
-  defp build_model([{first_vec, _} | _] = training, weights, balance?) do
+  defp build_model([{first_vec, _} | _] = training, weights, seed) do
     input_dim = length(first_vec)
 
     if weights != nil and length(weights) != input_dim do
@@ -204,10 +208,8 @@ defmodule Brain.ML.FeatureVectorClassifier do
             "weights length #{length(weights)} does not match input_dim #{input_dim}"
     end
 
-    centroid_training = if balance?, do: balance_classes(training), else: training
-
     sorted_training =
-      Enum.sort_by(centroid_training, fn {vec, label} ->
+      Enum.sort_by(training, fn {vec, label} ->
         {label, :erlang.phash2(vec)}
       end)
 
@@ -232,7 +234,7 @@ defmodule Brain.ML.FeatureVectorClassifier do
           if k == 1 do
             [centroid(vecs, input_dim)]
           else
-            kmeans_plus_plus(vecs, k, @kmeans_seed)
+            kmeans_plus_plus(vecs, k, seed)
           end
 
         {label, protos}
@@ -245,7 +247,8 @@ defmodule Brain.ML.FeatureVectorClassifier do
       input_dim: input_dim,
       label_centroids: label_centroids,
       weights: weights,
-      platt_params: nil
+      platt_params: nil,
+      training_seed: seed
     }
 
     maybe_fit_platt(base_model, sorted_training)
@@ -253,40 +256,27 @@ defmodule Brain.ML.FeatureVectorClassifier do
 
   defp k_for_class(n), do: min(@k_max, max(1, div(n, @min_per_proto)))
 
-  defp balance_classes(training) do
-    by_label = Enum.group_by(training, fn {_vec, label} -> label end)
-    class_sizes = Enum.map(by_label, fn {_label, examples} -> length(examples) end) |> Enum.sort()
-
-    n = length(class_sizes)
-    cap = Enum.at(class_sizes, min(3 * div(n, 4), n - 1))
-
-    Enum.flat_map(by_label, fn {_label, examples} ->
-      if length(examples) > cap do
-        Enum.take_random(examples, cap)
-      else
-        examples
-      end
-    end)
-  end
-
   # ---- K-means++ ----
 
+  # Draws from its own random state, never the process's, so it neither
+  # depends on nor changes what any other code in this process draws.
   defp kmeans_plus_plus(vectors, k, seed) do
-    :rand.seed(:exsss, {seed, seed, seed})
+    rand = Brain.ML.TrainingSeed.state(seed)
     n = length(vectors)
     vec_array = :array.from_list(vectors)
     dim = length(hd(vectors))
 
-    first_idx = :rand.uniform(n) - 1
-    centers = [:array.get(first_idx, vec_array)]
+    {first, rand} = :rand.uniform_s(n, rand)
+    centers = [:array.get(first - 1, vec_array)]
 
-    centers = init_remaining_centers(centers, vec_array, n, k)
+    centers = init_remaining_centers(centers, vec_array, n, k, rand)
     lloyds(vectors, centers, dim, @kmeans_max_iters)
   end
 
-  defp init_remaining_centers(centers, _vec_array, _n, k) when length(centers) >= k, do: centers
+  defp init_remaining_centers(centers, _vec_array, _n, k, _rand) when length(centers) >= k,
+    do: centers
 
-  defp init_remaining_centers(centers, vec_array, n, k) do
+  defp init_remaining_centers(centers, vec_array, n, k, rand) do
     distances =
       for i <- 0..(n - 1) do
         vec = :array.get(i, vec_array)
@@ -295,16 +285,17 @@ defmodule Brain.ML.FeatureVectorClassifier do
 
     total = Enum.sum(distances)
 
-    new_idx =
+    {new_idx, rand} =
       if total == 0.0 do
-        :rand.uniform(n) - 1
+        {pick, rand} = :rand.uniform_s(n, rand)
+        {pick - 1, rand}
       else
-        threshold = :rand.uniform() * total
-        pick_index(distances, threshold, 0)
+        {draw, rand} = :rand.uniform_s(rand)
+        {pick_index(distances, draw * total, 0), rand}
       end
 
     new_center = :array.get(new_idx, vec_array)
-    init_remaining_centers(centers ++ [new_center], vec_array, n, k)
+    init_remaining_centers(centers ++ [new_center], vec_array, n, k, rand)
   end
 
   defp pick_index([d | _rest], threshold, idx) when threshold <= d, do: idx

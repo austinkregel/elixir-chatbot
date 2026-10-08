@@ -35,6 +35,7 @@ defmodule ChatWeb.SettingsLive do
         "ml_training" -> :ml_training
         "templates" -> :templates
         "services" -> :services
+        "response_systems" -> :response_systems
         _ -> :worlds
       end
 
@@ -78,6 +79,13 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:service_credentials, %{})
       |> assign(:service_health_status, %{})
       |> assign(:service_checking, nil)
+      |> assign(:ha_discovered_entities, [])
+      |> assign(:ha_discovering, false)
+      |> assign(:response_domains, [])
+      |> assign(:lattice_stats, %{})
+      |> assign(:response_generating, false)
+      |> assign(:open_confirm, nil)
+      |> assign(:confirm_error, nil)
       |> load_section_data()
 
     {:noreply, socket}
@@ -91,6 +99,7 @@ defmodule ChatWeb.SettingsLive do
       :ml_training -> load_ml_training_data(socket)
       :templates -> load_templates_data(socket)
       :services -> load_services_data(socket)
+      :response_systems -> load_response_systems_data(socket)
       _ -> socket
     end
   end
@@ -294,6 +303,30 @@ defmodule ChatWeb.SettingsLive do
     |> assign(:service_credentials, service_credentials)
   end
 
+  defp load_response_systems_data(socket) do
+    domains =
+      try do
+        Brain.Response.ResponseSystemRouter.list_domains()
+      rescue
+        _ -> []
+      catch
+        :exit, _ -> []
+      end
+
+    lattice_stats =
+      try do
+        Brain.Response.PhraseInventory.stats()
+      rescue
+        _ -> %{status: :unavailable}
+      catch
+        :exit, _ -> %{status: :unavailable}
+      end
+
+    socket
+    |> assign(:response_domains, domains)
+    |> assign(:lattice_stats, lattice_stats)
+  end
+
   @impl true
   def handle_event("switch_world", %{"world_id" => _world_id}, socket) do
     {:noreply, load_section_data(socket)}
@@ -301,6 +334,14 @@ defmodule ChatWeb.SettingsLive do
 
   def handle_event("refresh_worlds", _params, socket) do
     {:noreply, socket}
+  end
+
+  def handle_event("open_confirm", %{"id" => id}, socket) do
+    {:noreply, socket |> assign(:open_confirm, id) |> assign(:confirm_error, nil)}
+  end
+
+  def handle_event("close_confirm", _params, socket) do
+    {:noreply, close_confirm(socket)}
   end
 
   def handle_event("switch_section", %{"section" => section}, socket) do
@@ -342,17 +383,30 @@ defmodule ChatWeb.SettingsLive do
 
   @impl true
   def handle_event("delete_world", %{"id" => world_id}, socket) do
-    if world_id != "default" do
-      case WorldManager.destroy(world_id) do
-        :ok ->
-          {:noreply,
-           socket |> load_worlds_data() |> put_flash(:info, "Deleted world: #{world_id}")}
+    world = Enum.find(socket.assigns.worlds, &(&1.id == world_id))
 
-        {:error, reason} ->
-          {:noreply, put_flash(socket, :error, "Failed to delete world: #{inspect(reason)}")}
-      end
-    else
-      {:noreply, put_flash(socket, :error, "Cannot delete the default world")}
+    cond do
+      world_id == "default" ->
+        {:noreply, assign(socket, :confirm_error, "The default world cannot be removed.")}
+
+      is_nil(world) ->
+        {:noreply, assign(socket, :confirm_error, "World #{world_id} is not loaded on this node.")}
+
+      true ->
+        removal = world_removal(world.mode)
+
+        case WorldManager.destroy(world_id) do
+          :ok ->
+            {:noreply,
+             socket
+             |> close_confirm()
+             |> load_worlds_data()
+             |> put_flash(:info, "#{removal.done}: #{world_id}")}
+
+          {:error, reason} ->
+            {:noreply,
+             assign(socket, :confirm_error, "#{removal.verb} failed for #{world_id}: #{inspect(reason)}")}
+        end
     end
   end
 
@@ -465,6 +519,7 @@ defmodule ChatWeb.SettingsLive do
         socket =
           socket
           |> assign(:starting_training, false)
+          |> close_confirm()
           |> load_training_data()
           |> put_flash(:info, "Started training session: #{session.id}")
 
@@ -474,7 +529,7 @@ defmodule ChatWeb.SettingsLive do
         {:noreply,
          socket
          |> assign(:starting_training, false)
-         |> put_flash(:error, "Failed to start training: #{inspect(reason)}")}
+         |> assign(:confirm_error, "Failed to start training: #{inspect(reason)}")}
     end
   end
 
@@ -495,10 +550,13 @@ defmodule ChatWeb.SettingsLive do
     case LearningCenter.cancel_session(session_id) do
       :ok ->
         {:noreply,
-         socket |> load_training_data() |> put_flash(:info, "Cancelled session: #{session_id}")}
+         socket
+         |> close_confirm()
+         |> load_training_data()
+         |> put_flash(:info, "Cancelled session: #{session_id}")}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to cancel session: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Failed to cancel session: #{inspect(reason)}")}
     end
   end
 
@@ -735,15 +793,16 @@ defmodule ChatWeb.SettingsLive do
       :ok ->
         {:noreply,
          socket
+         |> close_confirm()
          |> load_services_data()
          |> put_flash(:info, "Credential saved for #{service_name}")}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to save credential: #{inspect(reason)}")}
+        {:noreply, assign(socket, :confirm_error, "Failed to save credential: #{inspect(reason)}")}
     end
   rescue
     ArgumentError ->
-      {:noreply, put_flash(socket, :error, "Invalid service or credential key")}
+      {:noreply, assign(socket, :confirm_error, "Invalid service or credential key")}
   end
 
   def handle_event("delete_credential", %{"service" => service_name, "key" => key}, socket) do
@@ -755,11 +814,12 @@ defmodule ChatWeb.SettingsLive do
 
     {:noreply,
      socket
+     |> close_confirm()
      |> load_services_data()
      |> put_flash(:info, "Credential removed")}
   rescue
     ArgumentError ->
-      {:noreply, put_flash(socket, :error, "Invalid service or credential key")}
+      {:noreply, assign(socket, :confirm_error, "Invalid service or credential key")}
   end
 
   def handle_event("check_service_health", %{"service" => service_name}, socket) do
@@ -805,7 +865,101 @@ defmodule ChatWeb.SettingsLive do
        |> put_flash(:error, "Invalid service name")}
   end
 
+  def handle_event("discover_ha_entities", _params, socket) do
+    socket = assign(socket, :ha_discovering, true)
+
+    Task.start(fn ->
+      result =
+        case fetch_ha_credentials() do
+          {:ok, creds} ->
+            Brain.Services.HomeAssistant.Discovery.discover(creds)
+
+          {:error, _} ->
+            {:error, :no_credentials}
+        end
+
+      send(socket.root_pid, {:ha_discovery_result, result})
+    end)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("register_ha_entities", _params, socket) do
+    case fetch_ha_credentials() do
+      {:ok, creds} ->
+        case Brain.Services.HomeAssistant.Discovery.discover_and_register(creds) do
+          {:ok, %{total: count}} ->
+            {:noreply, put_flash(socket, :info, "Registered #{count} entities in Gazetteer")}
+
+          {:error, reason} ->
+            {:noreply, put_flash(socket, :error, "Registration failed: #{inspect(reason)}")}
+        end
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Home Assistant credentials not configured")}
+    end
+  end
+
+  # ============================================================================
+  # Response Systems Section Event Handlers
+  # ============================================================================
+
+  def handle_event("update_domain_system", %{"domain" => domain, "system" => system}, socket) do
+    Brain.Response.ResponseSystemRouter.update_domain_config(domain, %{"system" => system})
+    {:noreply, socket |> load_response_systems_data() |> put_flash(:info, "Updated #{domain} response system")}
+  rescue
+    _ -> {:noreply, put_flash(socket, :error, "Failed to update")}
+  end
+
+  def handle_event("update_domain_tone", %{"domain" => domain, "tone_bias" => tone}, socket) do
+    Brain.Response.ResponseSystemRouter.update_domain_config(domain, %{"tone_bias" => tone})
+    {:noreply, socket |> load_response_systems_data() |> put_flash(:info, "Updated #{domain} tone")}
+  rescue
+    _ -> {:noreply, put_flash(socket, :error, "Failed to update")}
+  end
+
+  def handle_event("update_domain_mirror", %{"domain" => domain, "mirror" => mirror_str}, socket) do
+    {mirror, _} = Float.parse(mirror_str)
+    mirror = max(0.0, min(1.0, mirror))
+    Brain.Response.ResponseSystemRouter.update_domain_config(domain, %{"mirror_coefficient" => mirror})
+    {:noreply, socket |> load_response_systems_data() |> put_flash(:info, "Updated #{domain} mirror coefficient")}
+  rescue
+    _ -> {:noreply, put_flash(socket, :error, "Failed to update")}
+  end
+
+  def handle_event("regenerate_lattice", _params, socket) do
+    socket = assign(socket, :response_generating, true)
+
+    case Brain.ML.TrainingServer.start_training(:lattice, []) do
+      {:ok, _} ->
+        {:noreply, put_flash(socket, :info, "Lattice regeneration started")}
+
+      {:error, reason} ->
+        {:noreply, socket |> assign(:response_generating, false) |> put_flash(:error, "Failed: #{inspect(reason)}")}
+    end
+  rescue
+    _ -> {:noreply, socket |> assign(:response_generating, false) |> put_flash(:error, "Training server not available")}
+  end
+
   @impl true
+  def handle_info({:ha_discovery_result, result}, socket) do
+    case result do
+      {:ok, entities_by_domain} when is_map(entities_by_domain) ->
+        flat_entities = Enum.flat_map(entities_by_domain, fn {_domain, entities} -> entities end)
+
+        {:noreply,
+         socket
+         |> assign(:ha_discovered_entities, flat_entities)
+         |> assign(:ha_discovering, false)}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> assign(:ha_discovering, false)
+         |> put_flash(:error, "Discovery failed: #{inspect(reason)}")}
+    end
+  end
+
   def handle_info({:world_context_changed, _world_id}, socket) do
     {:noreply, load_section_data(socket)}
   end
@@ -878,61 +1032,75 @@ defmodule ChatWeb.SettingsLive do
       <:page_header>
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-xl font-bold">Settings</h1>
-            <p class="text-sm text-base-content/60">Manage worlds and entities</p>
+            <h1 class="text-title text-ink">Settings</h1>
+            <p class="text-body text-ink-muted">Manage worlds and entities</p>
           </div>
-          <button phx-click="refresh" class="btn btn-ghost btn-sm">
+          <.btn phx-click="refresh" variant={:ghost} size={:sm}>
             <.icon name="hero-arrow-path" class="size-4" /> Refresh
-          </button>
+          </.btn>
         </div>
       </:page_header>
 
-      <div class="p-4 sm:p-6">
+      <div class="p-space-lg sm:p-space-xl">
         <!-- Section Tabs -->
-        <div class="tabs tabs-boxed mb-6">
-          <button
+        <.tabs class="mb-space-xl flex-wrap">
+          <.tab
             phx-click="switch_section"
             phx-value-section="worlds"
-            class={["tab gap-1", if(@section == :worlds, do: "tab-active", else: "")]}
+            active={@section == :worlds}
+            class="inline-flex items-center gap-space-xs"
           >
             <.icon name="hero-globe-alt" class="size-4" /> Worlds
-          </button>
-          <button
+          </.tab>
+          <.tab
             phx-click="switch_section"
             phx-value-section="entities"
-            class={["tab gap-1", if(@section == :entities, do: "tab-active", else: "")]}
+            active={@section == :entities}
+            class="inline-flex items-center gap-space-xs"
           >
             <.icon name="hero-tag" class="size-4" /> Entities
-          </button>
-          <button
+          </.tab>
+          <.tab
             phx-click="switch_section"
             phx-value-section="training"
-            class={["tab gap-1", if(@section == :training, do: "tab-active", else: "")]}
+            active={@section == :training}
+            class="inline-flex items-center gap-space-xs"
           >
             <.icon name="hero-academic-cap" class="size-4" /> Training
-          </button>
-          <button
+          </.tab>
+          <.tab
             phx-click="switch_section"
             phx-value-section="ml_training"
-            class={["tab gap-1", if(@section == :ml_training, do: "tab-active", else: "")]}
+            active={@section == :ml_training}
+            class="inline-flex items-center gap-space-xs"
           >
             <.icon name="hero-cpu-chip" class="size-4" /> ML Models
-          </button>
-          <button
+          </.tab>
+          <.tab
             phx-click="switch_section"
             phx-value-section="templates"
-            class={["tab gap-1", if(@section == :templates, do: "tab-active", else: "")]}
+            active={@section == :templates}
+            class="inline-flex items-center gap-space-xs"
           >
             <.icon name="hero-chat-bubble-bottom-center-text" class="size-4" /> Templates
-          </button>
-          <button
+          </.tab>
+          <.tab
             phx-click="switch_section"
             phx-value-section="services"
-            class={["tab gap-1", if(@section == :services, do: "tab-active", else: "")]}
+            active={@section == :services}
+            class="inline-flex items-center gap-space-xs"
           >
             <.icon name="hero-cloud" class="size-4" /> Services
-          </button>
-        </div>
+          </.tab>
+          <.tab
+            phx-click="switch_section"
+            phx-value-section="response_systems"
+            active={@section == :response_systems}
+            class="inline-flex items-center gap-space-xs"
+          >
+            <.icon name="hero-sparkles" class="size-4" /> Response
+          </.tab>
+        </.tabs>
 
     <!-- Content -->
         <%= case @section do %>
@@ -943,6 +1111,8 @@ defmodule ChatWeb.SettingsLive do
               new_world_name={@new_world_name}
               new_world_mode={@new_world_mode}
               creating_world={@creating_world}
+              open_confirm={@open_confirm}
+              confirm_error={@confirm_error}
             />
           <% :entities -> %>
             <.entities_section
@@ -965,6 +1135,8 @@ defmodule ChatWeb.SettingsLive do
               starting_training={@starting_training}
               tasks_loading={@tasks_loading}
               lc_stats={@lc_stats}
+              open_confirm={@open_confirm}
+              confirm_error={@confirm_error}
             />
           <% :ml_training -> %>
             <.ml_training_section
@@ -996,6 +1168,17 @@ defmodule ChatWeb.SettingsLive do
               credentials={@service_credentials}
               health_status={@service_health_status}
               checking={@service_checking}
+              ha_discovered_entities={@ha_discovered_entities}
+              ha_discovering={@ha_discovering}
+              current_world_id={@current_world_id}
+              open_confirm={@open_confirm}
+              confirm_error={@confirm_error}
+            />
+          <% :response_systems -> %>
+            <.response_systems_section
+              domains={@response_domains}
+              lattice_stats={@lattice_stats}
+              generating={@response_generating}
             />
         <% end %>
       </div>
@@ -1005,112 +1188,133 @@ defmodule ChatWeb.SettingsLive do
 
   defp worlds_section(assigns) do
     ~H"""
-    <div class="space-y-6">
+    <div class="space-y-space-xl">
       <!-- Create World -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-        <h3 class="font-semibold mb-4">Create New World</h3>
-        <form phx-change="update_new_world" phx-submit="create_world" class="flex flex-wrap gap-4">
+      <.card class="p-space-lg">
+        <h3 class="text-heading text-ink mb-space-lg">Create New World</h3>
+        <form phx-change="update_new_world" phx-submit="create_world" class="flex flex-wrap gap-space-lg">
           <input
             type="text"
             name="name"
             value={@new_world_name}
             placeholder="World name"
-            class="input input-bordered flex-1 min-w-[200px]"
+            class="flex-1 min-w-[200px] h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
           />
-          <select name="mode" class="select select-bordered">
+          <select
+            name="mode"
+            class="h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink"
+          >
             <option value="persistent" selected={@new_world_mode == "persistent"}>Persistent</option>
             <option value="ephemeral" selected={@new_world_mode == "ephemeral"}>Ephemeral</option>
           </select>
-          <button type="submit" class="btn btn-primary" disabled={@creating_world}>
-            <%= if @creating_world do %>
-              <span class="loading loading-spinner loading-sm"></span>
-            <% else %>
-              <.icon name="hero-plus" class="size-4" />
-            <% end %>
+          <.btn
+            type="submit"
+            variant={:primary}
+            icon="hero-plus"
+            busy={@creating_world}
+            busy_label="Creating world"
+          >
             Create World
-          </button>
+          </.btn>
         </form>
-      </div>
+      </.card>
 
     <!-- Active Worlds -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50">
-        <div class="p-4 border-b border-base-300">
-          <h3 class="font-semibold">Active Worlds</h3>
+      <.card>
+        <div class="p-space-lg border-b border-border">
+          <h3 class="text-heading text-ink">Active Worlds</h3>
         </div>
         <%= if length(@worlds) == 0 do %>
-          <div class="p-8 text-center text-base-content/50">
-            <.icon name="hero-globe-alt" class="size-12 mx-auto mb-4 text-base-content/30" />
+          <div class="p-space-2xl text-center text-ink-muted">
+            <.icon name="hero-globe-alt" class="size-12 mx-auto mb-space-lg text-ink-muted" />
             <p>No active worlds</p>
           </div>
         <% else %>
-          <div class="divide-y divide-base-300/50">
+          <div class="divide-y divide-border">
             <%= for world <- @worlds do %>
-              <div class="p-4 flex items-center justify-between hover:bg-base-200/50">
-                <div>
-                  <div class="font-medium">{world.name}</div>
-                  <div class="text-sm text-base-content/60 font-mono">{world.id}</div>
+              <div class="p-space-lg space-y-space-sm hover:bg-surface-sunk">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-subheading text-ink">{world.name}</div>
+                    <div class="text-ref text-ink-muted">{world.id}</div>
+                  </div>
+                  <div class="flex items-center gap-space-sm">
+                    <.badge variant={world_mode_variant(world.mode)}>
+                      {world.mode}
+                    </.badge>
+                    <%= if world.mode == :persistent do %>
+                      <.icon_btn
+                        phx-click="save_world"
+                        phx-value-id={world.id}
+                        variant={:primary}
+                        size={:sm}
+                        title="Save to disk"
+                      >
+                        <.icon name="hero-cloud-arrow-up" class="size-4" />
+                      </.icon_btn>
+                    <% end %>
+                    <%= if world.id != "default" do %>
+                      <.icon_btn
+                        id={"remove-world-#{world.id}"}
+                        phx-click="open_confirm"
+                        phx-value-id={"confirm-remove-world-#{world.id}"}
+                        variant={:ghost}
+                        size={:sm}
+                        title={world_removal(world.mode).verb}
+                      >
+                        <.icon name="hero-trash" class="size-4" />
+                      </.icon_btn>
+                    <% end %>
+                  </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class={[
-                    "badge badge-sm",
-                    if(world.mode == :persistent, do: "badge-info", else: "badge-ghost")
-                  ]}>
-                    {world.mode}
-                  </span>
-                  <%= if world.mode == :persistent do %>
-                    <button
-                      phx-click="save_world"
-                      phx-value-id={world.id}
-                      class="btn btn-ghost btn-xs"
-                      title="Save to disk"
-                    >
-                      <.icon name="hero-cloud-arrow-up" class="size-4" />
-                    </button>
-                  <% end %>
-                  <%= if world.id != "default" do %>
-                    <button
-                      phx-click="delete_world"
-                      phx-value-id={world.id}
-                      class="btn btn-ghost btn-xs text-error"
-                      title="Delete world"
-                      data-confirm="Are you sure you want to delete this world?"
-                    >
-                      <.icon name="hero-trash" class="size-4" />
-                    </button>
-                  <% end %>
-                </div>
+                <.execute_confirm
+                  :if={world.id != "default"}
+                  id={"confirm-remove-world-#{world.id}"}
+                  open={@open_confirm == "confirm-remove-world-#{world.id}"}
+                  reach={:local}
+                  removes
+                  verb={world_removal(world.mode).verb}
+                  target={"world #{world.id}"}
+                  consequence={world_removal(world.mode).consequence}
+                  on_confirm={JS.push("delete_world", value: %{id: world.id})}
+                  on_cancel="close_confirm"
+                  trigger_id={"remove-world-#{world.id}"}
+                  error={@confirm_error}
+                  class="ml-auto"
+                />
               </div>
             <% end %>
           </div>
         <% end %>
-      </div>
+      </.card>
 
     <!-- Persisted Worlds (not loaded) -->
       <% not_loaded =
         Enum.filter(@persisted_worlds, fn pw -> not Enum.any?(@worlds, &(&1.id == pw.id)) end) %>
       <%= if length(not_loaded) > 0 do %>
-        <div class="bg-base-100 rounded-xl border border-base-300/50">
-          <div class="p-4 border-b border-base-300">
-            <h3 class="font-semibold">Persisted Worlds (Not Loaded)</h3>
+        <.card>
+          <div class="p-space-lg border-b border-border">
+            <h3 class="text-heading text-ink">Persisted Worlds (Not Loaded)</h3>
           </div>
-          <div class="divide-y divide-base-300/50">
+          <div class="divide-y divide-border">
             <%= for world <- not_loaded do %>
-              <div class="p-4 flex items-center justify-between hover:bg-base-200/50">
+              <div class="p-space-lg flex items-center justify-between hover:bg-surface-sunk">
                 <div>
-                  <div class="font-medium text-base-content/70">{world.name}</div>
-                  <div class="text-sm text-base-content/50 font-mono">{world.id}</div>
+                  <div class="text-subheading text-ink-muted">{world.name}</div>
+                  <div class="text-ref text-ink-muted">{world.id}</div>
                 </div>
-                <button
+                <.btn
                   phx-click="load_world"
                   phx-value-id={world.id}
-                  class="btn btn-ghost btn-xs"
+                  variant={:primary}
+                  size={:xs}
                 >
                   <.icon name="hero-arrow-down-tray" class="size-4" /> Load
-                </button>
+                </.btn>
               </div>
             <% end %>
           </div>
-        </div>
+        </.card>
       <% end %>
     </div>
     """
@@ -1118,53 +1322,56 @@ defmodule ChatWeb.SettingsLive do
 
   defp entities_section(assigns) do
     ~H"""
-    <div class="space-y-6">
+    <div class="space-y-space-xl">
       <!-- Add Entity -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-        <h3 class="font-semibold mb-4">
-          Add Entity to World: <span class="text-primary">{@current_world_id}</span>
+      <.card class="p-space-lg">
+        <h3 class="text-heading text-ink mb-space-lg">
+          Add Entity to World: <span class="text-value-strong text-ink">{@current_world_id}</span>
         </h3>
-        <form phx-change="update_new_entity" phx-submit="add_entity" class="flex flex-wrap gap-4">
+        <form phx-change="update_new_entity" phx-submit="add_entity" class="flex flex-wrap gap-space-lg">
           <input
             type="text"
             name="key"
             value={@new_entity_key}
             placeholder="Lookup key (e.g., 'new york')"
-            class="input input-bordered flex-1 min-w-[200px]"
+            class="flex-1 min-w-[200px] h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
           />
           <input
             type="text"
             name="value"
             value={@new_entity_value}
             placeholder="Canonical value (optional)"
-            class="input input-bordered flex-1 min-w-[200px]"
+            class="flex-1 min-w-[200px] h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
           />
-          <select name="type" class="select select-bordered">
+          <select
+            name="type"
+            class="h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink"
+          >
             <%= for type <- @entity_types do %>
               <option value={type} selected={@new_entity_type == type}>{type}</option>
             <% end %>
           </select>
-          <button type="submit" class="btn btn-primary">
+          <.btn type="submit" variant={:primary}>
             <.icon name="hero-plus" class="size-4" /> Add
-          </button>
+          </.btn>
         </form>
-      </div>
+      </.card>
 
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-space-xl">
         <!-- Entity Type Sidebar -->
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <h3 class="font-semibold mb-4">Entity Types</h3>
-          <ul class="space-y-1">
+        <.card class="p-space-lg">
+          <h3 class="text-heading text-ink mb-space-lg">Entity Types</h3>
+          <ul class="space-y-space-xs">
             <%= for type <- @entity_types do %>
               <li>
                 <button
                   phx-click="select_entity_type"
                   phx-value-type={type}
                   class={[
-                    "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
+                    "w-full text-left px-space-md py-space-sm rounded-md text-body transition-colors",
                     if(type == @selected_entity_type,
-                      do: "bg-primary/10 text-primary font-medium",
-                      else: "hover:bg-base-200"
+                      do: "bg-accent-wash text-accent font-semibold",
+                      else: "text-ink hover:bg-surface-sunk"
                     )
                   ]}
                 >
@@ -1173,12 +1380,12 @@ defmodule ChatWeb.SettingsLive do
               </li>
             <% end %>
           </ul>
-        </div>
+        </.card>
 
     <!-- Entities List -->
-        <div class="lg:col-span-3 bg-base-100 rounded-xl border border-base-300/50">
-          <div class="p-4 border-b border-base-300 flex items-center gap-4">
-            <h3 class="font-semibold">{@selected_entity_type || "Select a type"}</h3>
+        <.card class="lg:col-span-3">
+          <div class="p-space-lg border-b border-border flex items-center gap-space-lg">
+            <h3 class="text-heading text-ink">{@selected_entity_type || "Select a type"}</h3>
             <input
               type="text"
               placeholder="Search entities..."
@@ -1186,50 +1393,48 @@ defmodule ChatWeb.SettingsLive do
               phx-keyup="search_entities"
               name="query"
               phx-debounce="150"
-              class="input input-sm input-bordered flex-1 max-w-xs"
+              class="flex-1 max-w-xs h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
             />
           </div>
           <%= if length(@type_entities) == 0 do %>
-            <div class="p-8 text-center text-base-content/50">
-              <.icon name="hero-tag" class="size-12 mx-auto mb-4 text-base-content/30" />
+            <div class="p-space-2xl text-center text-ink-muted">
+              <.icon name="hero-tag" class="size-12 mx-auto mb-space-lg text-ink-muted" />
               <p>No entities of this type</p>
             </div>
           <% else %>
             <% filtered = filter_entities(@type_entities, @entity_search) %>
             <div class="max-h-96 overflow-y-auto">
-              <table class="table table-sm">
-                <thead class="bg-base-200/50 sticky top-0">
+              <table class="w-full text-left text-body-dense text-ink">
+                <thead class="bg-surface-sunk sticky top-0">
                   <tr>
-                    <th>Key</th>
-                    <th>Value</th>
-                    <th>Source</th>
-                    <th></th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Key</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Value</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Source</th>
+                    <th class="h-row-compact px-space-sm"></th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-border">
                   <%= for entity <- Enum.take(filtered, 100) do %>
                     <% is_from_overlay = is_overlay_entity(entity, @world_overlay) %>
-                    <tr class="hover:bg-base-200/30">
-                      <td class="font-medium">{entity.key}</td>
-                      <td>{entity.value || entity.key}</td>
-                      <td>
-                        <span class={[
-                          "badge badge-xs",
-                          if(is_from_overlay, do: "badge-primary", else: "badge-ghost")
-                        ]}>
+                    <tr class="hover:bg-surface-sunk">
+                      <td class="h-row-compact px-space-sm font-semibold">{entity.key}</td>
+                      <td class="h-row-compact px-space-sm">{entity.value || entity.key}</td>
+                      <td class="h-row-compact px-space-sm">
+                        <.badge variant={if is_from_overlay, do: :primary, else: :default} size={:xs}>
                           {if is_from_overlay, do: "world", else: "global"}
-                        </span>
+                        </.badge>
                       </td>
-                      <td>
+                      <td class="h-row-compact px-space-sm">
                         <%= if is_from_overlay do %>
-                          <button
+                          <.icon_btn
                             phx-click="remove_entity"
                             phx-value-key={entity.key}
-                            class="btn btn-ghost btn-xs text-error"
+                            variant={:ghost}
+                            size={:sm}
                             title="Remove from world"
                           >
                             <.icon name="hero-x-mark" class="size-4" />
-                          </button>
+                          </.icon_btn>
                         <% end %>
                       </td>
                     </tr>
@@ -1237,13 +1442,13 @@ defmodule ChatWeb.SettingsLive do
                 </tbody>
               </table>
               <%= if length(filtered) > 100 do %>
-                <div class="p-4 text-center text-sm text-base-content/60">
+                <div class="p-space-lg text-center text-body text-ink-muted">
                   Showing 100 of {length(filtered)} entities
                 </div>
               <% end %>
             </div>
           <% end %>
-        </div>
+        </.card>
       </div>
     </div>
     """
@@ -1251,59 +1456,57 @@ defmodule ChatWeb.SettingsLive do
 
   defp training_section(assigns) do
     ~H"""
-    <div class="space-y-6">
+    <div class="space-y-space-xl">
       <!-- Stats Overview -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <.icon name="hero-academic-cap" class="size-5 text-primary" />
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-space-lg">
+        <.card class="p-space-lg">
+          <div class="flex items-center gap-space-md">
+            <div class="w-10 h-10 rounded-md bg-surface-sunk flex items-center justify-center">
+              <.icon name="hero-academic-cap" class="size-5 text-ink-muted" />
             </div>
             <div>
-              <div class="text-2xl font-bold">{@lc_stats[:total_sessions] || 0}</div>
-              <div class="text-sm text-base-content/60">Total Sessions</div>
+              <div class="text-title text-ink tabular-nums">{@lc_stats[:total_sessions] || 0}</div>
+              <div class="text-body text-ink-muted">Total Sessions</div>
             </div>
           </div>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
-              <.icon name="hero-cpu-chip" class="size-5 text-warning" />
+        </.card>
+        <.card class="p-space-lg">
+          <div class="flex items-center gap-space-md">
+            <div class="w-10 h-10 rounded-md bg-surface-sunk flex items-center justify-center">
+              <.icon name="hero-cpu-chip" class="size-5 text-ink-muted" />
             </div>
             <div>
-              <div class="text-2xl font-bold">{@lc_stats[:active_agents] || 0}</div>
-              <div class="text-sm text-base-content/60">Active Agents</div>
+              <div class="text-title text-ink tabular-nums">{@lc_stats[:active_agents] || 0}</div>
+              <div class="text-body text-ink-muted">Active Agents</div>
             </div>
           </div>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
-              <.icon name="hero-document-text" class="size-5 text-success" />
+        </.card>
+        <.card class="p-space-lg">
+          <div class="flex items-center gap-space-md">
+            <div class="w-10 h-10 rounded-md bg-surface-sunk flex items-center justify-center">
+              <.icon name="hero-document-text" class="size-5 text-ink-muted" />
             </div>
             <div>
-              <div class="text-2xl font-bold">{map_size(@available_tasks)}</div>
-              <div class="text-sm text-base-content/60">Task Categories</div>
+              <div class="text-title text-ink tabular-nums">{map_size(@available_tasks)}</div>
+              <div class="text-body text-ink-muted">Task Categories</div>
             </div>
           </div>
-        </div>
+        </.card>
       </div>
 
       <!-- Start Training -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-        <h3 class="font-semibold mb-4">Start Task-Based Training</h3>
-        <p class="text-sm text-base-content/60 mb-4">
+      <.card class="p-space-lg">
+        <h3 class="text-heading text-ink mb-space-lg">Start Task-Based Training</h3>
+        <p class="text-body text-ink-muted mb-space-lg">
           Train child agents using curated NLP benchmark tasks. Select a capability to focus the training.
         </p>
-        <div class="flex flex-wrap gap-4 items-end">
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">Capability</span>
-            </label>
+        <div class="flex flex-wrap gap-space-lg items-end">
+          <div>
+            <label class="block mb-space-xs text-label text-ink-muted">Capability</label>
             <select
               phx-change="select_capability"
               name="capability"
-              class="select select-bordered"
+              class="h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink"
             >
               <option value="all" selected={@selected_capability == :all}>All Capabilities</option>
               <option value="question_answering" selected={@selected_capability == :question_answering}>
@@ -1320,169 +1523,206 @@ defmodule ChatWeb.SettingsLive do
               </option>
             </select>
           </div>
-          <button
-            phx-click="start_task_training"
-            class="btn btn-primary"
-            disabled={@starting_training}
+          <.btn
+            id="start-task-training"
+            phx-click="open_confirm"
+            phx-value-id="confirm-start-task-training"
+            variant={:primary}
+            reach={:shared}
+            target="learning session"
+            icon="hero-play"
+            busy={@starting_training}
+            busy_label="Starting"
           >
-            <%= if @starting_training do %>
-              <span class="loading loading-spinner loading-sm"></span>
-            <% else %>
-              <.icon name="hero-play" class="size-4" />
-            <% end %>
             Start Training
-          </button>
+          </.btn>
         </div>
-      </div>
+        <.execute_confirm
+          id="confirm-start-task-training"
+          open={@open_confirm == "confirm-start-task-training"}
+          reach={:shared}
+          verb="Start training"
+          target="learning session"
+          consequence={"Saves a task-training session for #{capability_label(@selected_capability)} and its goals to Atlas; the agents it dispatches add candidates to the review queue."}
+          on_confirm="start_task_training"
+          on_cancel="close_confirm"
+          trigger_id="start-task-training"
+          error={@confirm_error}
+          class="mt-space-md"
+        />
+      </.card>
 
       <!-- Active Sessions -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50">
-        <div class="p-4 border-b border-base-300 flex items-center justify-between">
-          <h3 class="font-semibold">Training Sessions</h3>
-          <.link navigate={~p"/sessions"} class="text-sm text-primary hover:underline">
+      <.card>
+        <div class="p-space-lg border-b border-border flex items-center justify-between">
+          <h3 class="text-heading text-ink">Training Sessions</h3>
+          <.link navigate={~p"/sessions"} class="text-body text-accent hover:underline">
             View All Sessions
           </.link>
         </div>
         <%= if length(@training_sessions) == 0 do %>
-          <div class="p-8 text-center text-base-content/50">
-            <.icon name="hero-academic-cap" class="size-12 mx-auto mb-4 text-base-content/30" />
+          <div class="p-space-2xl text-center text-ink-muted">
+            <.icon name="hero-academic-cap" class="size-12 mx-auto mb-space-lg text-ink-muted" />
             <p>No active training sessions</p>
-            <p class="text-sm mt-2">Start a training session above to begin</p>
+            <p class="text-body mt-space-sm">Start a training session above to begin</p>
           </div>
         <% else %>
-          <div class="divide-y divide-base-300/50">
+          <div class="divide-y divide-border">
             <%= for session <- @training_sessions do %>
               <% is_expanded = @expanded_session_id == session.id %>
               <% failed_goals = Enum.count(session.goals, &(&1.status == :failed)) %>
               <% completed_goals = Enum.count(session.goals, &(&1.status == :completed)) %>
               <% total_goals = length(session.goals) %>
-              <div class={["transition-colors", if(is_expanded, do: "bg-base-200/30", else: "hover:bg-base-200/50")]}>
+              <div class={["transition-colors", if(is_expanded, do: "bg-surface-sunk", else: "hover:bg-surface-sunk")]}>
                 <!-- Session Header (clickable) -->
                 <div
-                  class="p-4 cursor-pointer"
+                  class="p-space-lg cursor-pointer"
                   phx-click="toggle_session_detail"
                   phx-value-id={session.id}
                 >
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-2">
+                  <div class="flex items-center justify-between mb-space-sm">
+                    <div class="flex items-center gap-space-sm">
                       <.icon
                         name={if is_expanded, do: "hero-chevron-down", else: "hero-chevron-right"}
-                        class="size-4 text-base-content/40"
+                        class="size-4 text-ink-muted"
                       />
                       <div>
-                        <div class="font-medium">{session.topic || "Untitled Session"}</div>
-                        <div class="text-xs text-base-content/40 font-mono">{session.id}</div>
+                        <div class="text-subheading text-ink">{session.topic || "Untitled Session"}</div>
+                        <div class="text-ref text-ink-muted">{session.id}</div>
                       </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                      <span class={["badge badge-sm", session_status_badge(session.status)]}>
+                    <div class="flex items-center gap-space-sm">
+                      <.badge variant={session_status_variant(session.status)}>
                         {session.status}
-                      </span>
+                      </.badge>
                       <%= if session.status == :active do %>
-                        <button
-                          phx-click="cancel_session"
-                          phx-value-id={session.id}
-                          class="btn btn-ghost btn-xs text-error"
-                          title="Cancel session"
+                        <.btn
+                          id={"cancel-session-#{session.id}"}
+                          phx-click="open_confirm"
+                          phx-value-id={"confirm-cancel-session-#{session.id}"}
+                          variant={:outline}
+                          size={:sm}
+                          reach={:shared}
+                          target={"session #{session.id}"}
+                          icon="hero-stop"
                         >
-                          <.icon name="hero-stop" class="size-4" />
-                        </button>
+                          Cancel session
+                        </.btn>
                       <% end %>
                     </div>
                   </div>
 
                   <!-- Summary stats row -->
-                  <div class="flex flex-wrap gap-3 ml-6 text-xs">
-                    <span class="flex items-center gap-1 text-base-content/60">
+                  <div class="flex flex-wrap gap-space-md ml-space-xl text-caption">
+                    <span class="flex items-center gap-space-xs text-ink-muted">
                       <.icon name="hero-flag" class="size-3" />
                       {completed_goals}/{total_goals} goals
                     </span>
                     <%= if failed_goals > 0 do %>
-                      <span class="flex items-center gap-1 text-error">
+                      <span class="flex items-center gap-space-xs text-red">
                         <.icon name="hero-exclamation-triangle" class="size-3" />
                         {failed_goals} failed
                       </span>
                     <% end %>
                     <%= if session.findings_count > 0 do %>
-                      <span class="flex items-center gap-1 text-info">
+                      <span class="flex items-center gap-space-xs text-ink-muted">
                         <.icon name="hero-document-magnifying-glass" class="size-3" />
                         {session.findings_count} findings
                       </span>
                     <% end %>
                     <%= if session.approved_count > 0 do %>
-                      <span class="flex items-center gap-1 text-success">
+                      <span class="flex items-center gap-space-xs text-ink">
                         <.icon name="hero-check-circle" class="size-3" />
                         {session.approved_count} approved
                       </span>
                     <% end %>
                     <%= if session.rejected_count > 0 do %>
-                      <span class="flex items-center gap-1 text-error/70">
+                      <span class="flex items-center gap-space-xs text-ink">
                         <.icon name="hero-x-circle" class="size-3" />
                         {session.rejected_count} rejected
                       </span>
                     <% end %>
                     <%= if session.hypotheses_tested > 0 do %>
-                      <span class="flex items-center gap-1 text-base-content/60">
+                      <span class="flex items-center gap-space-xs text-ink-muted">
                         <.icon name="hero-beaker" class="size-3" />
                         {session.hypotheses_tested} hypotheses
                       </span>
                     <% end %>
                     <%= if session.started_at do %>
-                      <span class="text-base-content/40">
+                      <span class="text-ink-muted">
                         Started {Calendar.strftime(session.started_at, "%H:%M:%S")}
                       </span>
                     <% end %>
                     <%= if session.completed_at do %>
-                      <span class="text-base-content/40">
+                      <span class="text-ink-muted">
                         Completed {Calendar.strftime(session.completed_at, "%H:%M:%S")}
                       </span>
                     <% end %>
                   </div>
                 </div>
 
+                <.execute_confirm
+                  :if={session.status == :active}
+                  id={"confirm-cancel-session-#{session.id}"}
+                  open={@open_confirm == "confirm-cancel-session-#{session.id}"}
+                  reach={:shared}
+                  verb="Cancel session"
+                  target={"session #{session.id}"}
+                  consequence="Marks this session cancelled, drops its running agent tasks from the learning center, and writes the change to Atlas."
+                  on_confirm={JS.push("cancel_session", value: %{id: session.id})}
+                  on_cancel="close_confirm"
+                  trigger_id={"cancel-session-#{session.id}"}
+                  error={@confirm_error}
+                  class="mb-space-lg ml-auto mr-space-lg"
+                />
+
                 <!-- Expanded Detail Panel -->
                 <%= if is_expanded do %>
-                  <div class="px-4 pb-4 ml-6 space-y-4">
+                  <div class="px-space-lg pb-space-lg ml-space-xl space-y-space-lg">
                     <!-- Goals Detail -->
-                    <div class="bg-base-100 rounded-lg border border-base-300/30">
-                      <div class="px-3 py-2 border-b border-base-300/30">
-                        <h4 class="text-sm font-semibold text-base-content/80">
+                    <.card>
+                      <div class="px-space-md py-space-sm border-b border-border">
+                        <h4 class="text-subheading text-ink">
                           Research Goals ({total_goals})
                         </h4>
                       </div>
                       <%= if total_goals == 0 do %>
-                        <div class="p-3 text-sm text-base-content/50">No goals defined</div>
+                        <div class="p-space-md text-body text-ink-muted">No goals defined</div>
                       <% else %>
-                        <div class="divide-y divide-base-300/20">
+                        <div class="divide-y divide-border">
                           <%= for goal <- session.goals do %>
-                            <div class="p-3">
-                              <div class="flex items-start justify-between gap-2">
+                            <div class="p-space-md">
+                              <div class="flex items-start justify-between gap-space-sm">
                                 <div class="flex-1 min-w-0">
-                                  <div class="flex items-center gap-2 mb-1">
-                                    <span class={["badge badge-xs", goal_status_badge(goal.status)]}>
+                                  <div class="flex items-center gap-space-sm mb-space-xs">
+                                    <.badge variant={goal_status_variant(goal.status)} size={:xs}>
                                       {goal.status}
-                                    </span>
-                                    <span class="font-medium text-sm truncate">{goal.topic}</span>
+                                    </.badge>
+                                    <span class="text-subheading text-ink truncate">{goal.topic}</span>
                                     <%= if goal.priority != :normal do %>
-                                      <span class={["badge badge-xs badge-outline", priority_badge(goal.priority)]}>
-                                        {goal.priority}
-                                      </span>
+                                      <.badge
+                                        variant={priority_variant(goal.priority)}
+                                        size={:xs}
+                                        class="border border-border-strong"
+                                      >
+                                        {goal.priority} priority
+                                      </.badge>
                                     <% end %>
                                   </div>
                                   <%= if length(goal.questions) > 0 do %>
-                                    <div class="ml-2 mt-1 space-y-0.5">
+                                    <div class="ml-space-sm mt-space-xs space-y-space-2xs">
                                       <%= for question <- goal.questions do %>
-                                        <div class="text-xs text-base-content/50 flex items-start gap-1">
-                                          <span class="text-base-content/30 shrink-0">Q:</span>
+                                        <div class="text-caption text-ink-muted flex items-start gap-space-xs">
+                                          <span class="text-ink-muted shrink-0">Q:</span>
                                           <span>{display_value(question)}</span>
                                         </div>
                                       <% end %>
                                     </div>
                                   <% end %>
                                   <%= if map_size(goal.constraints) > 0 do %>
-                                    <div class="flex flex-wrap gap-1 mt-1 ml-2">
+                                    <div class="flex flex-wrap gap-space-xs mt-space-xs ml-space-sm">
                                       <%= for {key, val} <- goal.constraints do %>
-                                        <span class="badge badge-xs badge-ghost">{key}: {display_value(val)}</span>
+                                        <.badge size={:xs}>{key}: {display_value(val)}</.badge>
                                       <% end %>
                                     </div>
                                   <% end %>
@@ -1490,13 +1730,13 @@ defmodule ChatWeb.SettingsLive do
                                 <div class="shrink-0">
                                   <%= case goal.status do %>
                                     <% :completed -> %>
-                                      <.icon name="hero-check-circle" class="size-5 text-success" />
+                                      <.icon name="hero-check-circle" class="size-5 text-ink" />
                                     <% :failed -> %>
-                                      <.icon name="hero-x-circle" class="size-5 text-error" />
+                                      <.icon name="hero-x-circle" class="size-5 text-red" />
                                     <% :in_progress -> %>
-                                      <span class="loading loading-spinner loading-xs text-warning"></span>
-                                    <% _ -> %>
-                                      <.icon name="hero-clock" class="size-5 text-base-content/30" />
+                                      <.icon name="hero-arrow-path" class="size-4 motion-safe:animate-spin text-progress-fill" />
+                                    <% :pending -> %>
+                                      <.icon name="hero-clock" class="size-5 text-ink-muted" />
                                   <% end %>
                                 </div>
                               </div>
@@ -1504,45 +1744,49 @@ defmodule ChatWeb.SettingsLive do
                           <% end %>
                         </div>
                       <% end %>
-                    </div>
+                    </.card>
 
                     <!-- Investigations Detail -->
                     <%= if length(session.investigations) > 0 do %>
-                      <div class="bg-base-100 rounded-lg border border-base-300/30">
-                        <div class="px-3 py-2 border-b border-base-300/30">
-                          <h4 class="text-sm font-semibold text-base-content/80">
-                            <.icon name="hero-beaker" class="size-4 inline-block mr-1" />
+                      <.card>
+                        <div class="px-space-md py-space-sm border-b border-border">
+                          <h4 class="text-subheading text-ink">
+                            <.icon name="hero-beaker" class="size-4 inline-block mr-space-xs" />
                             Scientific Investigations ({length(session.investigations)})
                           </h4>
                         </div>
-                        <div class="divide-y divide-base-300/20">
+                        <div class="divide-y divide-border">
                           <%= for investigation <- session.investigations do %>
-                            <div class="p-3">
-                              <div class="flex items-center justify-between mb-2">
-                                <span class="font-medium text-sm">{investigation.topic}</span>
-                                <div class="flex items-center gap-2">
-                                  <span class={["badge badge-xs", investigation_status_badge(investigation.status)]}>
+                            <div class="p-space-md">
+                              <div class="flex items-center justify-between mb-space-sm">
+                                <span class="text-subheading text-ink">{investigation.topic}</span>
+                                <div class="flex items-center gap-space-sm">
+                                  <.badge variant={investigation_status_variant(investigation.status)} size={:xs}>
                                     {investigation.status}
-                                  </span>
+                                  </.badge>
                                   <%= if investigation.conclusion do %>
-                                    <span class={["badge badge-xs", conclusion_badge(investigation.conclusion)]}>
+                                    <.badge variant={conclusion_variant(investigation.conclusion)} size={:xs}>
                                       {investigation.conclusion}
-                                    </span>
+                                    </.badge>
                                   <% end %>
                                 </div>
                               </div>
                               <!-- Hypotheses within investigation -->
                               <%= if length(investigation.hypotheses) > 0 do %>
-                                <div class="ml-2 space-y-1">
+                                <div class="ml-space-sm space-y-space-xs">
                                   <%= for hypothesis <- investigation.hypotheses do %>
-                                    <div class="flex items-start gap-2 text-xs">
-                                      <span class={["badge badge-xs shrink-0 mt-0.5", hypothesis_status_badge(hypothesis.status)]}>
+                                    <div class="flex items-start gap-space-sm text-caption">
+                                      <.badge
+                                        variant={hypothesis_status_variant(hypothesis.status)}
+                                        size={:xs}
+                                        class="shrink-0 mt-space-2xs"
+                                      >
                                         {hypothesis.status}
-                                      </span>
+                                      </.badge>
                                       <div class="min-w-0">
-                                        <span class="text-base-content/70">{hypothesis.claim}</span>
+                                        <span class="text-ink-muted">{hypothesis.claim}</span>
                                         <%= if hypothesis.confidence > 0 do %>
-                                          <span class="text-base-content/40 ml-1">
+                                          <span class="text-ink-muted ml-space-xs">
                                             ({Float.round(hypothesis.confidence * 100, 1)}% confidence)
                                           </span>
                                         <% end %>
@@ -1552,7 +1796,7 @@ defmodule ChatWeb.SettingsLive do
                                 </div>
                               <% end %>
                               <!-- Evidence counts -->
-                              <div class="flex flex-wrap gap-2 mt-2 text-xs text-base-content/50">
+                              <div class="flex flex-wrap gap-space-sm mt-space-sm text-caption text-ink-muted">
                                 <span>{length(investigation.evidence)} evidence items</span>
                                 <%= if length(investigation.control_evidence) > 0 do %>
                                   <span>{length(investigation.control_evidence)} control items</span>
@@ -1566,33 +1810,33 @@ defmodule ChatWeb.SettingsLive do
                             </div>
                           <% end %>
                         </div>
-                      </div>
+                      </.card>
                     <% end %>
 
                     <!-- Session Metrics Summary -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      <div class="bg-base-100 rounded-lg border border-base-300/30 p-3 text-center">
-                        <div class="text-lg font-bold">{session.findings_count}</div>
-                        <div class="text-xs text-base-content/50">Findings</div>
-                      </div>
-                      <div class="bg-base-100 rounded-lg border border-base-300/30 p-3 text-center">
-                        <div class="text-lg font-bold text-success">{session.approved_count}</div>
-                        <div class="text-xs text-base-content/50">Approved</div>
-                      </div>
-                      <div class="bg-base-100 rounded-lg border border-base-300/30 p-3 text-center">
-                        <div class="text-lg font-bold text-error">{session.rejected_count}</div>
-                        <div class="text-xs text-base-content/50">Rejected</div>
-                      </div>
-                      <div class="bg-base-100 rounded-lg border border-base-300/30 p-3 text-center">
-                        <div class="text-lg font-bold">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-space-sm">
+                      <.card class="p-space-md text-center">
+                        <div class="text-heading text-ink tabular-nums">{session.findings_count}</div>
+                        <div class="text-caption text-ink-muted">Findings</div>
+                      </.card>
+                      <.card class="p-space-md text-center">
+                        <div class="text-heading text-ink tabular-nums">{session.approved_count}</div>
+                        <div class="text-caption text-ink-muted">Approved</div>
+                      </.card>
+                      <.card class="p-space-md text-center">
+                        <div class="text-heading text-ink tabular-nums">{session.rejected_count}</div>
+                        <div class="text-caption text-ink-muted">Rejected</div>
+                      </.card>
+                      <.card class="p-space-md text-center">
+                        <div class="text-heading text-ink tabular-nums">
                           <%= if session.hypotheses_tested > 0 do %>
                             {Float.round(session.hypotheses_supported / session.hypotheses_tested * 100, 1)}%
                           <% else %>
                             N/A
                           <% end %>
                         </div>
-                        <div class="text-xs text-base-content/50">Support Rate</div>
-                      </div>
+                        <div class="text-caption text-ink-muted">Support Rate</div>
+                      </.card>
                     </div>
                   </div>
                 <% end %>
@@ -1600,41 +1844,41 @@ defmodule ChatWeb.SettingsLive do
             <% end %>
           </div>
         <% end %>
-      </div>
+      </.card>
 
       <!-- Available Task Categories -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50">
-        <div class="p-4 border-b border-base-300">
-          <h3 class="font-semibold">Available Task Categories</h3>
-          <p class="text-sm text-base-content/60">Domain-specific NLP tasks from benchmarks</p>
+      <.card>
+        <div class="p-space-lg border-b border-border">
+          <h3 class="text-heading text-ink">Available Task Categories</h3>
+          <p class="text-body text-ink-muted">Domain-specific NLP tasks from benchmarks</p>
         </div>
         <%= if @tasks_loading do %>
-          <div class="p-8 text-center text-base-content/50">
-            <span class="loading loading-spinner loading-lg text-primary"></span>
-            <p class="mt-4">Scanning task files...</p>
-            <p class="text-sm mt-2">This may take a moment on first load</p>
+          <div class="p-space-2xl text-center text-ink-muted">
+            <.icon name="hero-arrow-path" class="size-8 mx-auto motion-safe:animate-spin text-progress-fill" />
+            <p class="mt-space-lg">Scanning task files...</p>
+            <p class="text-body mt-space-sm">This may take a moment on first load</p>
           </div>
         <% else %>
           <%= if map_size(@available_tasks) == 0 do %>
-            <div class="p-8 text-center text-base-content/50">
-              <.icon name="hero-document-text" class="size-12 mx-auto mb-4 text-base-content/30" />
+            <div class="p-space-2xl text-center text-ink-muted">
+              <.icon name="hero-document-text" class="size-12 mx-auto mb-space-lg text-ink-muted" />
               <p>No tasks available</p>
-              <p class="text-sm mt-2">Check that domain task files are in data/domain_specific_tasks/</p>
+              <p class="text-body mt-space-sm">Check that domain task files are in data/domain_specific_tasks/</p>
             </div>
           <% else %>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg p-space-lg">
               <%= for {category, tasks} <- @available_tasks do %>
-                <div class="bg-base-200/50 rounded-lg p-3">
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="font-medium text-sm">{category}</span>
-                    <span class="badge badge-sm badge-ghost">{length(tasks)} tasks</span>
+                <div class="bg-surface-sunk rounded-md p-space-md">
+                  <div class="flex items-center justify-between mb-space-sm">
+                    <span class="text-subheading text-ink">{category}</span>
+                    <.badge>{length(tasks)} tasks</.badge>
                   </div>
-                  <div class="text-xs text-base-content/60">
+                  <div class="text-caption text-ink-muted">
                     <%= for task <- Enum.take(tasks, 3) do %>
                       <div class="truncate">{task.task_id}</div>
                     <% end %>
                     <%= if length(tasks) > 3 do %>
-                      <div class="text-primary">+{length(tasks) - 3} more</div>
+                      <div class="text-ink-muted">+{length(tasks) - 3} more</div>
                     <% end %>
                   </div>
                 </div>
@@ -1642,145 +1886,141 @@ defmodule ChatWeb.SettingsLive do
             </div>
           <% end %>
         <% end %>
-      </div>
+      </.card>
     </div>
     """
   end
 
   defp ml_training_section(assigns) do
     ~H"""
-    <div class="space-y-6">
+    <div class="space-y-space-xl">
       <!-- Training Form -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-        <h3 class="font-semibold mb-4">Train ML Model</h3>
-        <p class="text-sm text-base-content/60 mb-4">
+      <.card class="p-space-lg">
+        <h3 class="text-heading text-ink mb-space-lg">Train ML Model</h3>
+        <p class="text-body text-ink-muted mb-space-lg">
           Start an async training job for a specific model. Training runs in the background.
         </p>
         <form phx-change="update_ml_training_form" phx-submit="start_ml_training">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Model Type</span>
-              </label>
-              <select name="model_type" class="select select-bordered">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-space-lg mb-space-lg">
+            <div>
+              <label class="block mb-space-xs text-label text-ink-muted">Model Type</label>
+              <select
+                name="model_type"
+                class="w-full h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink"
+              >
                 <option value="tfidf" selected={@selected_model == "tfidf"}>
                   TF-IDF Classifier
                 </option>
               </select>
             </div>
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Encoder Epochs</span>
-              </label>
+            <div>
+              <label class="block mb-space-xs text-label text-ink-muted">Encoder Epochs</label>
               <input
                 type="number"
                 name="epochs"
                 value={@epochs}
                 min="1"
                 max="200"
-                class="input input-bordered"
+                class="w-full h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
               />
             </div>
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Head Epochs</span>
-              </label>
+            <div>
+              <label class="block mb-space-xs text-label text-ink-muted">Head Epochs</label>
               <input
                 type="number"
                 name="head_epochs"
                 value={@head_epochs}
                 min="1"
                 max="200"
-                class="input input-bordered"
+                class="w-full h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
                 title="Epochs for task heads (sentiment, speech act) trained with frozen encoder"
               />
             </div>
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Batch Size</span>
-              </label>
+            <div>
+              <label class="block mb-space-xs text-label text-ink-muted">Batch Size</label>
               <input
                 type="number"
                 name="batch_size"
                 value={@batch_size}
                 min="1"
                 max="256"
-                class="input input-bordered"
+                class="w-full h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
               />
             </div>
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Experiment Name</span>
-              </label>
+            <div>
+              <label class="block mb-space-xs text-label text-ink-muted">Experiment Name</label>
               <input
                 type="text"
                 name="experiment_name"
                 value={@experiment_name}
                 placeholder="Optional"
-                class="input input-bordered"
+                class="w-full h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
               />
             </div>
           </div>
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-space-lg">
             <%= case @training_status do %>
               <% :idle -> %>
-                <button type="submit" class="btn btn-primary">
+                <.btn type="submit" variant={:primary}>
                   <.icon name="hero-play" class="size-4" /> Train
-                </button>
+                </.btn>
               <% {:training, model_type, started_at} -> %>
-                <div class="flex items-center gap-3">
-                  <span class="loading loading-spinner loading-md text-warning"></span>
+                <div class="flex items-center gap-space-md">
+                  <.icon name="hero-arrow-path" class="size-4 motion-safe:animate-spin text-progress-fill" />
                   <div>
-                    <div class="font-medium">Training {model_type}...</div>
-                    <div class="text-xs text-base-content/60">
+                    <div class="text-subheading text-ink">Training {model_type}...</div>
+                    <div class="text-caption text-ink-muted">
                       Started {Calendar.strftime(started_at, "%H:%M:%S")}
                     </div>
                   </div>
-                  <button
+                  <.btn
+                    id="cancel-ml-training"
                     type="button"
                     phx-click="cancel_ml_training"
-                    class="btn btn-error btn-sm"
+                    variant={:outline}
+                    size={:sm}
+                    reach={:local}
+                    target={"#{model_type} training run"}
+                    icon="hero-stop"
                   >
-                    <.icon name="hero-stop" class="size-4" /> Cancel
-                  </button>
+                    Cancel
+                  </.btn>
                 </div>
             <% end %>
           </div>
         </form>
-      </div>
+      </.card>
 
       <!-- Training Progress Log -->
       <%= if length(@training_log) > 0 do %>
-        <div class="bg-base-100 rounded-xl border border-base-300/50">
-          <div class="p-4 border-b border-base-300">
-            <h3 class="font-semibold">Training Log</h3>
+        <.card>
+          <div class="p-space-lg border-b border-border">
+            <h3 class="text-heading text-ink">Training Log</h3>
           </div>
-          <div class="max-h-48 overflow-y-auto p-4 font-mono text-sm space-y-1">
+          <div class="max-h-48 overflow-y-auto p-space-lg text-term space-y-space-xs">
             <%= for {message, timestamp} <- Enum.reverse(@training_log) do %>
-              <div class="text-base-content/80">
-                <span class="text-base-content/40">[{Calendar.strftime(timestamp, "%H:%M:%S")}]</span>
+              <div class="text-ink">
+                <span class="text-ink-muted">[{Calendar.strftime(timestamp, "%H:%M:%S")}]</span>
                 {message}
               </div>
             <% end %>
           </div>
-        </div>
+        </.card>
       <% end %>
 
       <!-- Scheduling -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-        <h3 class="font-semibold mb-4">Training Schedules</h3>
-        <p class="text-sm text-base-content/60 mb-4">
+      <.card class="p-space-lg">
+        <h3 class="text-heading text-ink mb-space-lg">Training Schedules</h3>
+        <p class="text-body text-ink-muted mb-space-lg">
           Schedule recurring training runs. Uses the model type and parameters from the form above.
         </p>
-        <div class="flex flex-wrap gap-4 items-end mb-4">
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">Interval (hours)</span>
-            </label>
+        <div class="flex flex-wrap gap-space-lg items-end mb-space-lg">
+          <div>
+            <label class="block mb-space-xs text-label text-ink-muted">Interval (hours)</label>
             <select
               name="interval"
               phx-change="update_ml_schedule_interval"
-              class="select select-bordered"
+              class="h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink"
             >
               <option value="1" selected={@schedule_interval == "1"}>Every 1 hour</option>
               <option value="6" selected={@schedule_interval == "6"}>Every 6 hours</option>
@@ -1790,86 +2030,171 @@ defmodule ChatWeb.SettingsLive do
               <option value="168" selected={@schedule_interval == "168"}>Every 7 days</option>
             </select>
           </div>
-          <button phx-click="add_ml_schedule" class="btn btn-outline btn-primary">
+          <.btn phx-click="add_ml_schedule" variant={:primary}>
             <.icon name="hero-clock" class="size-4" /> Schedule
-          </button>
+          </.btn>
         </div>
 
         <!-- Active Schedules -->
         <%= if length(@schedules) == 0 do %>
-          <div class="text-sm text-base-content/50 p-4 text-center">
+          <div class="text-body text-ink-muted p-space-lg text-center">
             No active schedules
           </div>
         <% else %>
-          <div class="divide-y divide-base-300/50 border border-base-300/50 rounded-lg">
+          <div class="divide-y divide-border border border-border rounded-md">
             <%= for schedule <- @schedules do %>
-              <div class="p-3 flex items-center justify-between hover:bg-base-200/50">
+              <div class="p-space-md flex items-center justify-between hover:bg-surface-sunk">
                 <div>
-                  <span class="badge badge-sm badge-primary mr-2">{schedule.model_type}</span>
-                  <span class="text-sm">Every {schedule.interval_hours} hour(s)</span>
-                  <span class="text-xs text-base-content/50 ml-2 font-mono">{schedule.id}</span>
+                  <.badge variant={:primary} class="mr-space-sm">{schedule.model_type}</.badge>
+                  <span class="text-body text-ink">Every {schedule.interval_hours} hour(s)</span>
+                  <span class="text-ref text-ink-muted ml-space-sm">{schedule.id}</span>
                 </div>
-                <button
+                <.icon_btn
                   phx-click="cancel_ml_schedule"
                   phx-value-id={schedule.id}
-                  class="btn btn-ghost btn-xs text-error"
+                  variant={:ghost}
+                  size={:sm}
                   title="Cancel schedule"
                 >
                   <.icon name="hero-x-mark" class="size-4" />
-                </button>
+                </.icon_btn>
               </div>
             <% end %>
           </div>
         <% end %>
-      </div>
+      </.card>
     </div>
     """
   end
 
-  defp session_status_badge(:active) do
-    "badge-warning"
+  @session_status_variants %{active: :warning, completed: :success, cancelled: :default}
+
+  @goal_status_variants %{
+    completed: :success,
+    failed: :error,
+    in_progress: :warning,
+    pending: :default
+  }
+
+  @priority_variants %{high: :default, low: :default}
+
+  @investigation_status_variants %{
+    concluded: :success,
+    evaluating: :warning,
+    gathering_evidence: :info,
+    planning: :default
+  }
+
+  @conclusion_variants %{
+    hypotheses_supported: :success,
+    hypotheses_falsified: :default,
+    inconclusive: :warning,
+    mixed: :warning
+  }
+
+  @hypothesis_status_variants %{
+    supported: :success,
+    falsified: :default,
+    inconclusive: :warning,
+    testing: :info,
+    untested: :default
+  }
+
+  @world_mode_variants %{persistent: :info, ephemeral: :default}
+
+  @template_source_variants %{admin: :primary, file: :default}
+
+  defp session_status_variant(status),
+    do: fetch_variant!(@session_status_variants, status, "session status")
+
+  defp goal_status_variant(status),
+    do: fetch_variant!(@goal_status_variants, status, "goal status")
+
+  defp priority_variant(priority),
+    do: fetch_variant!(@priority_variants, priority, "goal priority")
+
+  defp investigation_status_variant(status),
+    do: fetch_variant!(@investigation_status_variants, status, "investigation status")
+
+  defp conclusion_variant(conclusion),
+    do: fetch_variant!(@conclusion_variants, conclusion, "investigation conclusion")
+
+  defp hypothesis_status_variant(status),
+    do: fetch_variant!(@hypothesis_status_variants, status, "hypothesis status")
+
+  defp world_mode_variant(mode),
+    do: fetch_variant!(@world_mode_variants, mode, "world mode")
+
+  defp template_source_variant(source),
+    do: fetch_variant!(@template_source_variants, source, "template source")
+
+  defp fetch_variant!(variants, value, what) do
+    case Map.fetch(variants, value) do
+      {:ok, variant} ->
+        variant
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.SettingsLive: no badge treatment for #{what} #{inspect(value)}. " <>
+                "The #{what} values with a treatment are #{inspect(Map.keys(variants))}."
+    end
   end
 
-  defp session_status_badge(:completed) do
-    "badge-success"
+  defp close_confirm(socket) do
+    socket |> assign(:open_confirm, nil) |> assign(:confirm_error, nil)
   end
 
-  defp session_status_badge(:cancelled) do
-    "badge-error"
+  # World.Manager.destroy/1 drops a world's runtime state on this node. A
+  # persistent world keeps its folder and loads again at the next start, so for
+  # it the action is an unload; an ephemeral world lives only in ETS and is gone.
+  @world_removals %{
+    persistent: %{
+      verb: "Unload world",
+      done: "Unloaded world",
+      consequence:
+        "Drops this world's metrics, candidates, events and gazetteer overlay from this node. " <>
+          "Its folder on disk stays, and the world loads again at the next start."
+    },
+    ephemeral: %{
+      verb: "Delete world",
+      done: "Deleted world",
+      consequence:
+        "Drops this world's metrics, candidates, events and gazetteer overlay from this node. " <>
+          "An ephemeral world has no folder on disk, so nothing of it remains."
+    }
+  }
+
+  defp world_removal(mode) do
+    case Map.fetch(@world_removals, mode) do
+      {:ok, removal} ->
+        removal
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.SettingsLive: no removal is described for world mode #{inspect(mode)}. " <>
+                "The modes described are #{inspect(Map.keys(@world_removals))}."
+    end
   end
 
-  defp session_status_badge(_) do
-    "badge-ghost"
+  @capability_labels %{
+    all: "all capabilities",
+    question_answering: "question answering",
+    commonsense: "commonsense reasoning",
+    sentiment: "sentiment analysis",
+    reasoning: "explanation and reasoning"
+  }
+
+  defp capability_label(capability) do
+    case Map.fetch(@capability_labels, capability) do
+      {:ok, label} ->
+        label
+
+      :error ->
+        raise ArgumentError,
+              "ChatWeb.SettingsLive: no label for training capability #{inspect(capability)}. " <>
+                "The labeled capabilities are #{inspect(Map.keys(@capability_labels))}."
+    end
   end
-
-  defp goal_status_badge(:completed), do: "badge-success"
-  defp goal_status_badge(:failed), do: "badge-error"
-  defp goal_status_badge(:in_progress), do: "badge-warning"
-  defp goal_status_badge(:pending), do: "badge-ghost"
-  defp goal_status_badge(_), do: "badge-ghost"
-
-  defp priority_badge(:high), do: "badge-error"
-  defp priority_badge(:low), do: "badge-ghost"
-  defp priority_badge(_), do: ""
-
-  defp investigation_status_badge(:concluded), do: "badge-success"
-  defp investigation_status_badge(:evaluating), do: "badge-warning"
-  defp investigation_status_badge(:gathering_evidence), do: "badge-info"
-  defp investigation_status_badge(:planning), do: "badge-ghost"
-  defp investigation_status_badge(_), do: "badge-ghost"
-
-  defp conclusion_badge(:hypotheses_supported), do: "badge-success"
-  defp conclusion_badge(:hypotheses_falsified), do: "badge-error"
-  defp conclusion_badge(:inconclusive), do: "badge-warning"
-  defp conclusion_badge(:mixed), do: "badge-warning"
-  defp conclusion_badge(_), do: "badge-ghost"
-
-  defp hypothesis_status_badge(:supported), do: "badge-success"
-  defp hypothesis_status_badge(:falsified), do: "badge-error"
-  defp hypothesis_status_badge(:inconclusive), do: "badge-warning"
-  defp hypothesis_status_badge(:testing), do: "badge-info"
-  defp hypothesis_status_badge(:untested), do: "badge-ghost"
-  defp hypothesis_status_badge(_), do: "badge-ghost"
 
   defp display_value(val) when is_binary(val), do: val
   defp display_value(val) when is_atom(val), do: Atom.to_string(val)
@@ -1882,40 +2207,34 @@ defmodule ChatWeb.SettingsLive do
 
   defp templates_section(assigns) do
     ~H"""
-    <div class="space-y-6">
+    <div class="space-y-space-xl">
       <!-- Stats & Actions Bar -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="flex flex-wrap gap-4">
-            <div class="stat p-0">
-              <div class="stat-title text-xs">Intents</div>
-              <div class="stat-value text-lg">{Map.get(@stats, :intent_count, 0)}</div>
-            </div>
-            <div class="stat p-0">
-              <div class="stat-title text-xs">Templates</div>
-              <div class="stat-value text-lg">{Map.get(@stats, :template_count, 0)}</div>
-            </div>
-            <div class="stat p-0">
-              <div class="stat-title text-xs">Admin Added</div>
-              <div class="stat-value text-lg">{Map.get(@stats, :admin_template_count, 0)}</div>
-            </div>
+      <.card class="p-space-lg">
+        <div class="flex flex-wrap items-center justify-between gap-space-lg">
+          <div class="flex flex-wrap gap-space-lg">
+            <.stat_kpi label="Intents" value={to_string(Map.get(@stats, :intent_count, 0))} />
+            <.stat_kpi label="Templates" value={to_string(Map.get(@stats, :template_count, 0))} />
+            <.stat_kpi
+              label="Admin Added"
+              value={to_string(Map.get(@stats, :admin_template_count, 0))}
+            />
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-space-sm">
             <%= if @has_unsaved do %>
-              <button phx-click="sync_templates" class="btn btn-primary btn-sm gap-1">
+              <.btn phx-click="sync_templates" variant={:primary} size={:sm}>
                 <.icon name="hero-arrow-down-tray" class="size-4" />
                 Save Changes
-              </button>
+              </.btn>
             <% end %>
           </div>
         </div>
-      </div>
+      </.card>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-space-xl">
         <!-- Intent List -->
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <h3 class="font-semibold mb-4">Intents</h3>
-          <div class="mb-3">
+        <.card class="p-space-lg">
+          <h3 class="text-heading text-ink mb-space-lg">Intents</h3>
+          <div class="mb-space-md">
             <input
               type="text"
               name="query"
@@ -1923,19 +2242,19 @@ defmodule ChatWeb.SettingsLive do
               placeholder="Search intents..."
               phx-debounce="300"
               phx-change="search_templates"
-              class="input input-sm input-bordered w-full"
+              class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
             />
           </div>
-          <div class="overflow-y-auto max-h-[400px] space-y-1">
+          <div class="overflow-y-auto max-h-[400px] space-y-space-xs">
             <%= for intent <- filter_intents(@intents, @search) do %>
               <button
                 phx-click="select_template_intent"
                 phx-value-intent={intent}
                 class={[
-                  "w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors",
+                  "w-full text-left px-space-md py-space-sm rounded-md text-body truncate transition-colors",
                   if(intent == @selected_intent,
-                    do: "bg-primary text-primary-content",
-                    else: "hover:bg-base-200")
+                    do: "bg-accent-wash text-accent font-semibold",
+                    else: "text-ink hover:bg-surface-sunk")
                 ]}
                 title={intent}
               >
@@ -1943,20 +2262,20 @@ defmodule ChatWeb.SettingsLive do
               </button>
             <% end %>
           </div>
-        </div>
+        </.card>
 
         <!-- Templates for Selected Intent -->
-        <div class="lg:col-span-2 bg-base-100 rounded-xl border border-base-300/50 p-4">
-          <h3 class="font-semibold mb-4">
+        <.card class="lg:col-span-2 p-space-lg">
+          <h3 class="text-heading text-ink mb-space-lg">
             Templates
             <%= if @selected_intent do %>
-              <span class="text-sm font-normal text-base-content/60">for {@selected_intent}</span>
+              <span class="text-body text-ink-muted">for {@selected_intent}</span>
             <% end %>
           </h3>
 
           <%= if @selected_intent do %>
             <!-- Add Template Form -->
-            <form phx-submit="add_template" class="mb-4 flex gap-2">
+            <form phx-submit="add_template" class="mb-space-lg flex gap-space-sm">
               <input type="hidden" name="intent" value={@selected_intent} />
               <input
                 type="text"
@@ -1964,56 +2283,55 @@ defmodule ChatWeb.SettingsLive do
                 value={@new_template_text}
                 placeholder="Enter new template text..."
                 phx-change="update_new_template"
-                class="input input-bordered flex-1"
+                class="flex-1 h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink placeholder:text-ink-muted"
               />
-              <button type="submit" class="btn btn-primary">
+              <.btn type="submit" variant={:primary}>
                 <.icon name="hero-plus" class="size-4" /> Add
-              </button>
+              </.btn>
             </form>
 
             <!-- Template List -->
-            <div class="space-y-2 max-h-[400px] overflow-y-auto">
+            <div class="space-y-space-sm max-h-[400px] overflow-y-auto">
               <%= if length(@templates) == 0 do %>
-                <div class="text-sm text-base-content/50 p-4 text-center">
+                <div class="text-body text-ink-muted p-space-lg text-center">
                   No templates for this intent
                 </div>
               <% else %>
                 <%= for template <- @templates do %>
-                  <div class="flex items-start gap-3 p-3 bg-base-200/50 rounded-lg group">
+                  <div class="flex items-start gap-space-md p-space-md bg-surface-sunk rounded-md group">
                     <div class="flex-1 min-w-0">
-                      <p class="text-sm">{template.text}</p>
-                      <div class="flex gap-2 mt-1">
-                        <span class={[
-                          "badge badge-xs",
-                          if(template.source == :admin, do: "badge-primary", else: "badge-ghost")
-                        ]}>
+                      <p class="text-body text-ink">{template.text}</p>
+                      <div class="flex gap-space-sm mt-space-xs">
+                        <.badge variant={template_source_variant(template.source)} size={:xs}>
                           {template.source}
-                        </span>
+                        </.badge>
                         <%= if template.condition do %>
-                          <span class="badge badge-xs badge-info" title={template.condition}>
+                          <.badge variant={:info} size={:xs} title={template.condition}>
                             conditional
-                          </span>
+                          </.badge>
                         <% end %>
                       </div>
                     </div>
-                    <button
+                    <.icon_btn
                       phx-click="remove_template"
                       phx-value-text={template.text}
-                      class="btn btn-ghost btn-xs text-error opacity-0 group-hover:opacity-100 transition-opacity"
+                      variant={:ghost}
+                      size={:sm}
+                      class="opacity-0 group-hover:opacity-100 transition-opacity"
                       title="Remove template"
                     >
                       <.icon name="hero-trash" class="size-4" />
-                    </button>
+                    </.icon_btn>
                   </div>
                 <% end %>
               <% end %>
             </div>
           <% else %>
-            <div class="text-sm text-base-content/50 p-8 text-center">
+            <div class="text-body text-ink-muted p-space-2xl text-center">
               Select an intent to view its templates
             </div>
           <% end %>
-        </div>
+        </.card>
       </div>
     </div>
     """
@@ -2021,178 +2339,414 @@ defmodule ChatWeb.SettingsLive do
 
   defp services_section(assigns) do
     ~H"""
-    <div class="space-y-6">
+    <div class="space-y-space-xl">
       <!-- Services Overview -->
-      <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
-        <div class="flex items-center justify-between mb-4">
+      <.card class="p-space-lg">
+        <div class="flex items-center justify-between mb-space-lg">
           <div>
-            <h3 class="font-semibold">External Services</h3>
-            <p class="text-sm text-base-content/60">
+            <h3 class="text-heading text-ink">External Services</h3>
+            <p class="text-body text-ink-muted">
               Configure API credentials for live data enrichment
             </p>
           </div>
-          <div class="badge badge-outline gap-1">
+          <.badge class="border border-border-strong">
             <.icon name="hero-shield-check" class="size-3" />
             Credentials are encrypted
-          </div>
+          </.badge>
         </div>
 
-        <div class="alert alert-info mb-4">
-          <.icon name="hero-information-circle" class="size-5" />
-          <span>
-            API keys are stored encrypted and never exposed in responses or logs.
-            Each world can have its own service credentials.
-          </span>
-        </div>
-      </div>
+        <.alert variant={:info} class="mb-space-lg">
+          API keys are stored encrypted and never exposed in responses or logs.
+          Each world can have its own service credentials.
+        </.alert>
+      </.card>
 
       <!-- Service Cards -->
       <%= if length(@services) == 0 do %>
-        <div class="bg-base-100 rounded-xl border border-base-300/50 p-8 text-center">
-          <.icon name="hero-cloud" class="size-12 mx-auto text-base-content/30 mb-4" />
-          <h3 class="font-semibold mb-2">No Services Available</h3>
-          <p class="text-sm text-base-content/60">
+        <.card class="p-space-2xl text-center">
+          <.icon name="hero-cloud" class="size-12 mx-auto text-ink-muted mb-space-lg" />
+          <h3 class="text-heading text-ink mb-space-sm">No Services Available</h3>
+          <p class="text-body text-ink-muted">
             No external services are configured in this installation.
           </p>
-        </div>
+        </.card>
       <% else %>
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="grid gap-space-lg md:grid-cols-2">
           <%= for service <- @services do %>
-            <div class="bg-base-100 rounded-xl border border-base-300/50 p-4">
+            <% {state_variant, state_status, state_label} =
+              service_state(service.configured, Map.get(@health_status, service.name)) %>
+            <.card class="p-space-lg">
               <!-- Service Header -->
-              <div class="flex items-start justify-between mb-4">
+              <div class="flex items-start justify-between mb-space-lg">
                 <div>
-                  <h4 class="font-semibold flex items-center gap-2">
+                  <h4 class="text-subheading text-ink flex items-center gap-space-sm">
                     <.icon name={service_icon(service.name)} class="size-5" />
                     {service.display_name}
                   </h4>
-                  <p class="text-sm text-base-content/60 mt-1">{service.description}</p>
+                  <p class="text-body text-ink-muted mt-space-xs">{service.description}</p>
                 </div>
-                <.service_status_badge
-                  configured={service.configured}
-                  health={Map.get(@health_status, service.name)}
-                />
+                <.badge variant={state_variant}>
+                  <.status_dot status={state_status} size={:sm} /> {state_label}
+                </.badge>
               </div>
 
               <!-- Supported Intents -->
-              <div class="mb-4">
-                <div class="text-xs text-base-content/60 mb-1">Supports:</div>
-                <div class="flex flex-wrap gap-1">
+              <div class="mb-space-lg">
+                <div class="text-caption text-ink-muted mb-space-xs">Supports:</div>
+                <div class="flex flex-wrap gap-space-xs">
                   <%= for intent <- service.supported_intents do %>
-                    <span class="badge badge-sm badge-ghost">{intent}</span>
+                    <.badge>{intent}</.badge>
                   <% end %>
                 </div>
               </div>
 
               <!-- Credential Forms -->
-              <div class="space-y-3">
+              <div class="space-y-space-md">
                 <%= for cred_key <- service.required_credentials do %>
                   <% has_cred = get_in(@credentials, [service.name, cred_key]) %>
-                  <div class="form-control">
-                    <label class="label py-1">
-                      <span class="label-text text-sm">{humanize_credential(cred_key)}</span>
+                  <div>
+                    <label class="flex items-center justify-between py-space-xs mb-space-xs text-label text-ink-muted">
+                      <span>{humanize_credential(cred_key)}</span>
                       <%= if has_cred do %>
-                        <span class="badge badge-success badge-xs gap-1">
+                        <.badge variant={:success} size={:xs}>
                           <.icon name="hero-check" class="size-3" /> Set
-                        </span>
+                        </.badge>
                       <% end %>
                     </label>
-                    <div class="flex gap-2">
-                      <form
-                        phx-submit="save_credential"
-                        class="flex-1 flex gap-2"
+                    <% cred_id = "#{service.name}-#{cred_key}" %>
+                    <% cred_target = "credential #{service.name}.#{cred_key}" %>
+                    <div class="flex flex-wrap items-center gap-space-sm">
+                      <.btn
+                        id={"save-credential-#{cred_id}"}
+                        type="button"
+                        phx-click="open_confirm"
+                        phx-value-id={"confirm-save-credential-#{cred_id}"}
+                        variant={:primary}
+                        size={:sm}
+                        reach={:shared}
+                        target={cred_target}
+                        icon="hero-key"
                       >
+                        {if has_cred, do: "Replace", else: "Set"}
+                      </.btn>
+                      <%= if has_cred do %>
+                        <.btn
+                          id={"delete-credential-#{cred_id}"}
+                          type="button"
+                          phx-click="open_confirm"
+                          phx-value-id={"confirm-delete-credential-#{cred_id}"}
+                          variant={:ghost}
+                          size={:sm}
+                          reach={:shared}
+                          target={cred_target}
+                          icon="hero-trash"
+                        >
+                          Remove
+                        </.btn>
+                      <% end %>
+                    </div>
+                    <.execute_confirm
+                      id={"confirm-save-credential-#{cred_id}"}
+                      open={@open_confirm == "confirm-save-credential-#{cred_id}"}
+                      reach={:shared}
+                      verb="Save credential"
+                      target={cred_target}
+                      consequence={"Encrypts this value into the credential vault for world #{@current_world_id}, replacing any value set before, and writes it to Atlas."}
+                      on_confirm="save_credential"
+                      on_cancel="close_confirm"
+                      trigger_id={"save-credential-#{cred_id}"}
+                      error={@confirm_error}
+                      class="mt-space-sm"
+                    >
+                      <:fields>
                         <input type="hidden" name="service" value={service.name} />
                         <input type="hidden" name="key" value={cred_key} />
                         <input
                           type="password"
                           name="value"
-                          placeholder={if has_cred, do: "••••••••", else: "Enter #{humanize_credential(cred_key)}..."}
-                          class="input input-sm input-bordered flex-1"
+                          aria-label={humanize_credential(cred_key)}
+                          placeholder={"Enter #{humanize_credential(cred_key)}..."}
+                          class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink placeholder:text-ink-muted"
                           autocomplete="off"
                         />
-                        <button type="submit" class="btn btn-sm btn-primary">
-                          <.icon name="hero-key" class="size-4" />
-                          Save
-                        </button>
-                      </form>
-                      <%= if has_cred do %>
-                        <button
-                          phx-click="delete_credential"
-                          phx-value-service={service.name}
-                          phx-value-key={cred_key}
-                          class="btn btn-sm btn-ghost text-error"
-                          title="Remove credential"
-                        >
-                          <.icon name="hero-trash" class="size-4" />
-                        </button>
-                      <% end %>
-                    </div>
+                      </:fields>
+                    </.execute_confirm>
+                    <.execute_confirm
+                      :if={has_cred}
+                      id={"confirm-delete-credential-#{cred_id}"}
+                      open={@open_confirm == "confirm-delete-credential-#{cred_id}"}
+                      reach={:shared}
+                      verb="Remove credential"
+                      target={cred_target}
+                      consequence={"Removes this credential from the vault for world #{@current_world_id}. Its row in Atlas is not deleted, so the credential loads again at the next start."}
+                      on_confirm={JS.push("delete_credential", value: %{service: service.name, key: cred_key})}
+                      on_cancel="close_confirm"
+                      trigger_id={"delete-credential-#{cred_id}"}
+                      error={@confirm_error}
+                      class="mt-space-sm"
+                    />
                   </div>
                 <% end %>
               </div>
 
               <!-- Health Check -->
               <%= if service.configured do %>
-                <div class="mt-4 pt-4 border-t border-base-300/50">
-                  <button
+                <div class="mt-space-lg pt-space-lg border-t border-border">
+                  <.btn
                     phx-click="check_service_health"
                     phx-value-service={service.name}
-                    class="btn btn-sm btn-outline w-full gap-1"
-                    disabled={@checking == service.name}
+                    variant={:outline}
+                    size={:sm}
+                    class="w-full"
+                    icon="hero-signal"
+                    busy={@checking == service.name}
+                    busy_label="Checking"
                   >
-                    <%= if @checking == service.name do %>
-                      <span class="loading loading-spinner loading-xs"></span>
-                      Checking...
-                    <% else %>
-                      <.icon name="hero-signal" class="size-4" />
-                      Test Connection
-                    <% end %>
-                  </button>
+                    {if @checking == service.name, do: "Checking...", else: "Test Connection"}
+                  </.btn>
                 </div>
               <% end %>
-            </div>
+            </.card>
           <% end %>
         </div>
+      <% end %>
+
+      <!-- Home Assistant Entity Discovery -->
+      <%= if Enum.any?(@services, & &1.name == :home_assistant && &1.configured) do %>
+        <.card class="p-space-lg">
+          <div class="flex items-center justify-between mb-space-lg">
+            <div>
+              <h3 class="text-heading text-ink flex items-center gap-space-sm">
+                <.icon name="hero-home" class="size-5" />
+                Home Assistant Entity Discovery
+              </h3>
+              <p class="text-body text-ink-muted">
+                Discover HA devices and register them in the Gazetteer
+              </p>
+            </div>
+            <div class="flex gap-space-sm">
+              <.btn
+                phx-click="discover_ha_entities"
+                variant={:outline}
+                size={:sm}
+                icon="hero-magnifying-glass"
+                busy={@ha_discovering}
+                busy_label="Discovering"
+              >
+                {if @ha_discovering, do: "Discovering...", else: "Discover"}
+              </.btn>
+              <.btn
+                phx-click="register_ha_entities"
+                variant={:primary}
+                size={:sm}
+                disabled={@ha_discovering}
+              >
+                <.icon name="hero-plus-circle" class="size-4" />
+                Register All
+              </.btn>
+            </div>
+          </div>
+
+          <%= if length(@ha_discovered_entities) > 0 do %>
+            <div class="overflow-x-auto max-h-96">
+              <table class="w-full text-left text-body-dense text-ink">
+                <thead class="bg-surface-sunk">
+                  <tr>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Entity ID</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Name</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Domain</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">State</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  <%= for entity <- @ha_discovered_entities do %>
+                    <tr class="even:bg-surface-sunk">
+                      <td class="h-row-compact px-space-sm text-ref">{entity.ha_entity_id}</td>
+                      <td class="h-row-compact px-space-sm">{entity.name}</td>
+                      <td class="h-row-compact px-space-sm">
+                        <.badge>
+                          {entity.ha_domain}
+                        </.badge>
+                      </td>
+                      <td class="h-row-compact px-space-sm">{entity.state}</td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+            <div class="mt-space-sm text-body text-ink-muted">
+              {length(@ha_discovered_entities)} entities found
+            </div>
+          <% end %>
+        </.card>
       <% end %>
     </div>
     """
   end
 
-  defp service_status_badge(assigns) do
+  defp response_systems_section(assigns) do
     ~H"""
-    <div class={[
-      "badge gap-1",
-      cond do
-        @health == :healthy -> "badge-success"
-        @health in [:invalid_credentials, :missing_credentials] -> "badge-error"
-        @health != nil -> "badge-warning"
-        @configured -> "badge-info"
-        true -> "badge-ghost"
-      end
-    ]}>
-      <%= cond do %>
-        <% @health == :healthy -> %>
-          <.icon name="hero-check-circle" class="size-3" /> Healthy
-        <% @health == :invalid_credentials -> %>
-          <.icon name="hero-x-circle" class="size-3" /> Invalid Key
-        <% @health == :missing_credentials -> %>
-          <.icon name="hero-exclamation-circle" class="size-3" /> Missing
-        <% @health != nil -> %>
-          <.icon name="hero-exclamation-triangle" class="size-3" /> Error
-        <% @configured -> %>
-          <.icon name="hero-check" class="size-3" /> Configured
-        <% true -> %>
-          <.icon name="hero-minus-circle" class="size-3" /> Not Set
-      <% end %>
+    <div class="space-y-space-xl">
+      <!-- Lattice Stats -->
+      <.card class="p-space-lg">
+        <div class="flex items-center justify-between mb-space-lg">
+          <div>
+            <h3 class="text-heading text-ink">Phrase Lattice</h3>
+            <p class="text-body text-ink-muted">Fragment inventory for response generation</p>
+          </div>
+          <.btn
+            phx-click="regenerate_lattice"
+            variant={:primary}
+            size={:sm}
+            icon="hero-arrow-path"
+            busy={@generating}
+            busy_label="Generating"
+          >
+            {if @generating, do: "Generating...", else: "Regenerate"}
+          </.btn>
+        </div>
+
+        <%= if @lattice_stats[:status] == :ok do %>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-space-lg">
+            <div class="bg-surface-sunk rounded-md p-space-md text-center">
+              <div class="text-title text-ink tabular-nums">{Map.get(@lattice_stats, :total_fragments, 0)}</div>
+              <div class="text-caption text-ink-muted">Total Fragments</div>
+            </div>
+            <%= for {chunk_type, count} <- Map.get(@lattice_stats, :by_chunk_type, %{}) do %>
+              <div class="bg-surface-sunk rounded-md p-space-md text-center">
+                <div class="text-heading text-ink tabular-nums">{count}</div>
+                <div class="text-caption text-ink-muted">{chunk_type}</div>
+              </div>
+            <% end %>
+          </div>
+
+          <%= if map_size(Map.get(@lattice_stats, :tone_distribution, %{})) > 0 do %>
+            <div class="mt-space-lg">
+              <h4 class="text-subheading text-ink mb-space-sm">Tone Distribution</h4>
+              <div class="flex flex-wrap gap-space-sm">
+                <%= for {tone, count} <- Enum.sort_by(Map.get(@lattice_stats, :tone_distribution, %{}), fn {_, c} -> c end, :desc) do %>
+                  <.badge class="border border-border-strong">
+                    {tone}: {count}
+                  </.badge>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="text-body text-ink-muted p-space-lg text-center">
+            <.icon name="hero-exclamation-circle" class="size-8 mx-auto mb-space-sm text-ink-muted" />
+            <p>No phrase inventory loaded</p>
+            <p class="mt-space-xs">Run "Regenerate" or <code class="text-term">mix gen_lattice_data</code> to build the inventory</p>
+          </div>
+        <% end %>
+      </.card>
+
+      <!-- Per-Domain Configuration -->
+      <.card>
+        <div class="p-space-lg border-b border-border">
+          <h3 class="text-heading text-ink">Per-Domain Response System</h3>
+          <p class="text-body text-ink-muted">Configure which system handles each domain</p>
+        </div>
+
+        <%= if length(@domains) == 0 do %>
+          <div class="p-space-2xl text-center text-ink-muted">
+            No domain configurations found
+          </div>
+        <% else %>
+          <div class="divide-y divide-border">
+            <%= for domain <- @domains do %>
+              <div class="p-space-lg">
+                <div class="flex flex-wrap items-center gap-space-lg">
+                  <div class="min-w-[120px]">
+                    <span class="text-subheading text-ink">{domain.domain}</span>
+                  </div>
+
+                  <div>
+                    <label class="block mb-space-xs text-label text-ink-muted">System</label>
+                    <select
+                      phx-change="update_domain_system"
+                      name="system"
+                      class="h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
+                    >
+                      <input type="hidden" name="domain" value={domain.domain} />
+                      <option value="lattice" selected={domain.system == "lattice"}>Lattice</option>
+                      <option value="ouro" selected={domain.system == "ouro"}>Ouro</option>
+                      <option value="template" selected={domain.system == "template"}>Template</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block mb-space-xs text-label text-ink-muted">Tone Bias</label>
+                    <select
+                      phx-change="update_domain_tone"
+                      name="tone_bias"
+                      class="h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
+                    >
+                      <input type="hidden" name="domain" value={domain.domain} />
+                      <%= for tone <- ~w(enthusiastic cheery playful warm encouraging calm neutral professional matter_of_fact dry deadpan sardonic empathetic gentle patient) do %>
+                        <option value={tone} selected={domain.tone_bias == tone}>{tone}</option>
+                      <% end %>
+                    </select>
+                  </div>
+
+                  <div class="min-w-[200px]">
+                    <label class="block mb-space-xs text-label text-ink-muted">
+                      Mirror: {domain.mirror_coefficient}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={domain.mirror_coefficient}
+                      phx-change="update_domain_mirror"
+                      name="mirror"
+                      class="w-full accent-primary"
+                    />
+                    <input type="hidden" name="domain" value={domain.domain} />
+                  </div>
+
+                  <.badge>{domain.fallback} fallback</.badge>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </.card>
     </div>
     """
+  end
+
+  defp service_state(_configured, :healthy), do: {:success, :healthy, "Healthy"}
+  defp service_state(_configured, :invalid_credentials), do: {:error, :error, "Invalid Key"}
+  defp service_state(_configured, :missing_credentials), do: {:error, :error, "Missing"}
+  defp service_state(_configured, {:error, _reason}), do: {:warning, :degraded, "Error"}
+  defp service_state(true, nil), do: {:info, :idle, "Configured"}
+  defp service_state(false, nil), do: {:default, :not_started, "Not Set"}
+
+  defp service_state(configured, health) do
+    raise ArgumentError,
+          "ChatWeb.SettingsLive: no service state treatment for configured=#{inspect(configured)}, " <>
+            "health=#{inspect(health)}. Health is nil, :healthy, :missing_credentials, " <>
+            ":invalid_credentials or {:error, reason}; configured is a boolean."
   end
 
   defp service_icon(:weather), do: "hero-sun"
   defp service_icon(:news), do: "hero-newspaper"
   defp service_icon(:geocoding), do: "hero-map-pin"
+  defp service_icon(:home_assistant), do: "hero-home"
   defp service_icon(_), do: "hero-cloud"
+
+  defp fetch_ha_credentials do
+    vault = Brain.Services.CredentialVault
+
+    with {:ok, url} <- vault.get(:home_assistant, :url),
+         {:ok, token} <- vault.get(:home_assistant, :access_token) do
+      {:ok, %{url: url, access_token: token}}
+    else
+      _ -> {:error, :missing_credentials}
+    end
+  end
 
   defp humanize_credential(:api_key), do: "API Key"
   defp humanize_credential(:client_id), do: "Client ID"

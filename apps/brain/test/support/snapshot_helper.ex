@@ -28,7 +28,15 @@ defmodule Brain.SnapshotHelper do
       UPDATE_SNAPSHOTS=true mix test --only snapshot
   """
 
-  @snapshots_dir Path.join(["test", "snapshots"])
+  # Absolute, resolved from this file at compile time.
+  #
+  # This was `Path.join(["test", "snapshots"])`, relative to the current working
+  # directory -- and an umbrella run has two of those. Mix boots the
+  # applications from the umbrella root, then runs this app's tests from
+  # apps/brain, so a relative path names two different directories in one run:
+  # whatever a test wrote was never read back. `config/test.exs:118-128`
+  # documents the same trap for `learning_params_path`.
+  @snapshots_dir Path.expand("../snapshots", __DIR__)
 
   @doc """
   Asserts that the actual value matches the stored snapshot.

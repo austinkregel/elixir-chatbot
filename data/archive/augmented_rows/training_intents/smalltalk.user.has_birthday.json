@@ -1,0 +1,96 @@
+[
+  {
+    "text": "'m I celebrating my birthday today",
+    "tokens": [
+      "'m",
+      "I",
+      "celebrating",
+      "my",
+      "birthday",
+      "today"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-a943f9b7",
+    "intent": "smalltalk.user.has_birthday"
+  },
+  {
+    "text": "I 'm celebrating birthday my today",
+    "tokens": [
+      "I",
+      "'m",
+      "celebrating",
+      "birthday",
+      "my",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "NOUN",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-ca837b77",
+    "intent": "smalltalk.user.has_birthday"
+  },
+  {
+    "text": "I'd like to i was born today",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "i",
+      "was",
+      "born",
+      "today"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-a87f516b",
+    "intent": "smalltalk.user.has_birthday"
+  },
+  {
+    "text": "I want to it is my birthday",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "it",
+      "is",
+      "my",
+      "birthday"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-1176abf3",
+    "intent": "smalltalk.user.has_birthday"
+  }
+]

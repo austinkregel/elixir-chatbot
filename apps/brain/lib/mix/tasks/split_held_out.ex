@@ -74,7 +74,17 @@ defmodule Mix.Tasks.Split.HeldOut do
 
     File.mkdir_p!(Path.dirname(held_path))
     File.write!(held_path, Jason.encode!(held_out, pretty: true) <> "\n")
-    File.write!(gold_path, Jason.encode!(remaining, pretty: true) <> "\n")
+
+    # The gold standard is deliberately left whole. This used to rewrite it with
+    # only `remaining`, which made the split a one-shot destructive edit --
+    # and `mix rebuild_gold_standard`, `cleanup_gold_standard`,
+    # `normalize_gold_standard` and `augment_training_data` all regenerate that
+    # file from data/intents/, so any of them would have quietly pulled the
+    # held-out rows back into training with no signal.
+    #
+    # Instead the split is applied at read time:
+    # `EvaluationStore.load_gold_standard/2` takes :train or :held_out and
+    # filters against this file.
 
     report(examples, held_out, remaining, label_key, gold_path, held_path)
   end
@@ -155,11 +165,61 @@ defmodule Mix.Tasks.Split.HeldOut do
     IO.puts("\nRemaining training: #{length(remaining)} examples")
     print_distribution(remain_dist)
 
-    IO.puts("\nFiles written:")
+    report_provenance(original, held_out, remaining)
+
+    IO.puts("\nWritten:")
     IO.puts("  Held-out test set: #{held_path}")
-    IO.puts("  Training set:      #{gold_path}")
+    IO.puts("\nLeft whole:")
+    IO.puts("  Gold standard:     #{gold_path}")
+
+    IO.puts(
+      "\nThe split is applied at read time. Training reads " <>
+        "EvaluationStore.load_gold_standard(task, :train), evaluation reads :held_out. " <>
+        "Regenerating the gold standard will not undo it."
+    )
+
     IO.puts("")
   end
+
+  # A corpus can mix genuine utterances with texts materialized back into its
+  # source and with synthetic mutations. Accuracy measured on the synthetic part
+  # is not accuracy on user input, so the split states its own composition.
+  defp report_provenance(original, held_out, remaining) do
+    kinds =
+      original
+      |> Enum.map(&provenance_of/1)
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    if kinds != ["dialogflow"] do
+      IO.puts("\nProvenance (from labeled_by):")
+
+      Enum.each([{"original", original}, {"held-out", held_out}, {"training", remaining}], fn {name, rows} ->
+        total = max(length(rows), 1)
+
+        breakdown =
+          kinds
+          |> Enum.map(fn kind ->
+            n = Enum.count(rows, &(provenance_of(&1) == kind))
+            "#{kind} #{n} (#{Float.round(n / total * 100, 1)}%)"
+          end)
+          |> Enum.join(", ")
+
+        IO.puts("  #{String.pad_trailing(name, 10)} #{breakdown}")
+      end)
+
+      synthetic = Enum.count(held_out, &(provenance_of(&1) != "dialogflow"))
+
+      if synthetic > 0 do
+        IO.puts(
+          "\n  #{synthetic} of #{length(held_out)} held-out rows did not come from Dialogflow. " <>
+            "Accuracy measured on this split includes them."
+        )
+      end
+    end
+  end
+
+  defp provenance_of(row), do: Map.get(row, "labeled_by") || "unrecorded"
 
   defp print_distribution(dist) do
     dist

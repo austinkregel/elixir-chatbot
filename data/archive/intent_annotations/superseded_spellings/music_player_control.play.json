@@ -1,0 +1,200 @@
+[
+  {
+    "text": "play it",
+    "tokens": [
+      "play",
+      "it"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "a2d6d560-3620-4355-a98e-0bba1006f9bb",
+    "intent": "music_player_control.play"
+  },
+  {
+    "text": "I want you to play it",
+    "tokens": [
+      "I",
+      "want",
+      "you",
+      "to",
+      "play",
+      "it"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "1137335f-8e6a-42d5-8b7b-cec891c80a6c",
+    "intent": "music_player_control.play"
+  },
+  {
+    "text": "play",
+    "tokens": [
+      "play"
+    ],
+    "pos_tags": [
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "a715356b-dedb-402b-898f-e1d3375c21ac",
+    "intent": "music_player_control.play"
+  },
+  {
+    "text": "could you play it for me",
+    "tokens": [
+      "could",
+      "you",
+      "play",
+      "it",
+      "for",
+      "me"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADP",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "63c454d2-9bd6-4bd8-a7c8-f06996b25d5a",
+    "intent": "music_player_control.play"
+  },
+  {
+    "text": "play this",
+    "tokens": [
+      "play",
+      "this"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "DET"
+    ],
+    "entities": [],
+    "id": "4d67eda0-5d9a-4158-b762-1b7fb43cfa3e",
+    "intent": "music_player_control.play"
+  },
+  {
+    "text": "now start playing",
+    "tokens": [
+      "now",
+      "start",
+      "playing"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "6e49818a-43b8-4610-bd20-77c44d82e829",
+    "intent": "music_player_control.play"
+  },
+  {
+    "text": "start playing it",
+    "tokens": [
+      "start",
+      "playing",
+      "it"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "fa02f224-1415-49fe-841e-022f9047c496",
+    "intent": "music_player_control.play"
+  },
+  {
+    "text": "now play",
+    "tokens": [
+      "now",
+      "play"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "c96e0091-971f-4694-8e9e-9e89afc30a2c",
+    "intent": "music_player_control.play"
+  },
+  {
+    "text": "and play it",
+    "tokens": [
+      "and",
+      "play",
+      "it"
+    ],
+    "pos_tags": [
+      "CONJ",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "63acebb5-d43c-49a4-a3d0-43baa0726c3c",
+    "intent": "music_player_control.play"
+  },
+  {
+    "text": "could you play this one",
+    "tokens": [
+      "could",
+      "you",
+      "play",
+      "this",
+      "one"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NUM"
+    ],
+    "entities": [],
+    "id": "cb2b47bf-4015-421f-ba65-639b5ff330a0",
+    "intent": "music_player_control.play"
+  },
+  {
+    "text": "can you play it",
+    "tokens": [
+      "can",
+      "you",
+      "play",
+      "it"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "41ce748f-c847-4e3d-870b-5796392b8667",
+    "intent": "music_player_control.play"
+  },
+  {
+    "text": "play it",
+    "tokens": [
+      "play",
+      "it"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "8bf3ca25-976a-4ad4-b8b2-6a4a13c6e2cc",
+    "intent": "music_player_control.play"
+  }
+]

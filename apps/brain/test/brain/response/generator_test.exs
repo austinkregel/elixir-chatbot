@@ -40,7 +40,7 @@ defmodule Brain.Response.GeneratorTest do
     end
 
     test "generates music response with artist entity" do
-      entities = [%{entity_type: "music-artist", value: "Taylor Swift"}]
+      entities = [%{entity_type: "music_artist", value: "Taylor Swift"}]
 
       {:ok, response, type} = Generator.generate("music.play", entities, nil)
 

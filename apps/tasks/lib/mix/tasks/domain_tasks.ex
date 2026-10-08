@@ -413,6 +413,11 @@ defmodule Mix.Tasks.DomainTasks.Transform do
               value: entity.value,
               inferred_type: entity.inferred_type,
               confidence: entity.confidence,
+              # A bulk import has no observed sentence, so the context states the
+              # provenance instead. EntityPromoter shows this to whoever reviews
+              # the suggestion; "imported from X" is the truthful and useful
+              # thing to tell them, and inventing a sentence would not be.
+              context: "imported by mix domain_tasks from #{inspect(entity.source)}",
               source: :domain_tasks,
               metadata: %{original_source: entity.source},
               discovered_at: DateTime.utc_now()

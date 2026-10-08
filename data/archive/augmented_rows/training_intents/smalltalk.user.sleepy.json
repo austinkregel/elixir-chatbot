@@ -1,0 +1,108 @@
+[
+  {
+    "text": "hey i'm falling asleep",
+    "tokens": [
+      "hey",
+      "i",
+      "'m",
+      "falling",
+      "asleep"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "VERB",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-a6fc0bd3",
+    "intent": "smalltalk.user.sleepy"
+  },
+  {
+    "text": "I 'm falling asleep on my feet",
+    "tokens": [
+      "I",
+      "'m",
+      "falling",
+      "asleep",
+      "on",
+      "my",
+      "feet"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-4ad28f19",
+    "intent": "smalltalk.user.sleepy"
+  },
+  {
+    "text": "want I to sleep",
+    "tokens": [
+      "want",
+      "I",
+      "to",
+      "sleep"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-175b8971",
+    "intent": "smalltalk.user.sleepy"
+  },
+  {
+    "text": "I want to i'm sleeping",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "i",
+      "'m",
+      "sleeping"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-dcf7bb37",
+    "intent": "smalltalk.user.sleepy"
+  },
+  {
+    "text": "can you i'm falling asleep",
+    "tokens": [
+      "can",
+      "you",
+      "i",
+      "'m",
+      "falling",
+      "asleep"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-ce03bb98",
+    "intent": "smalltalk.user.sleepy"
+  }
+]

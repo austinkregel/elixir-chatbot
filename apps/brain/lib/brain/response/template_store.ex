@@ -7,8 +7,7 @@ defmodule Brain.Response.TemplateStore do
   alias Brain.Memory.Embedder
   alias Brain.Response.ConditionEvaluator
 
-  @intents_path "data/intents"
-  @custom_smalltalk_path "data/customSmalltalkResponses_en.json"
+  @custom_smalltalk_file "customSmalltalkResponses_en.json"
   @smalltalk_domain_path "priv/knowledge/domains/smalltalk.json"
   defmodule Template do
     @moduledoc false
@@ -80,7 +79,7 @@ defmodule Brain.Response.TemplateStore do
     end
   end
 
-  @doc "Get the best template for an intent using conditions and semantic ranking.\n\nThis is the main entry point for context-aware template selection:\n1. Filter templates by conditions that match the context\n2. Rank matching templates by semantic similarity to the query\n3. Fall back to cross-intent semantic search if no conditions match\n\n## Parameters\n- `intent` - The classified intent name\n- `query_text` - The original user query (for semantic ranking)\n- `context` - Map with entities, filled_slots, missing_slots, confidence, speech_act\n\n## Returns\n- `{:ok, template_text}` - Best matching template\n- `{:ok, template_text, :fallback}` - Template found via cross-intent fallback\n- `{:error, :no_template}` - No suitable template found\n"
+  @doc "Get the best template for an intent using conditions and semantic ranking.\n\nThis is the main entry point for context-aware template selection:\n1. Filter this intent's templates by conditions that match the context\n2. Rank matching templates by semantic similarity to the query\n\nOnly ever returns a template belonging to `intent` or its one-level parent\nprefix. There is deliberately no cross-intent fallback; see the note where\n`fallback_semantic_search/2` was removed.\n\n## Parameters\n- `intent` - The classified intent name\n- `query_text` - The original user query (for semantic ranking)\n- `context` - Map with entities, filled_slots, missing_slots, confidence, speech_act\n\n## Returns\n- `{:ok, template_text}` - Best matching template\n- `{:error, :no_template}` - This intent has no template matching the context\n"
   def get_best_template(intent, query_text, context) do
     GenServer.call(__MODULE__, {:get_best_template, intent, query_text, context}, 5000)
   end
@@ -498,7 +497,7 @@ defmodule Brain.Response.TemplateStore do
 
     case matching do
       [] ->
-        fallback_semantic_search(query_text, state)
+        {:error, :no_template}
 
       [single] ->
         {:ok, single.text}
@@ -519,35 +518,19 @@ defmodule Brain.Response.TemplateStore do
     end
   end
 
-  defp fallback_semantic_search(nil, _state), do: {:ok, nil}
-  defp fallback_semantic_search("", _state), do: {:ok, nil}
-
-  defp fallback_semantic_search(query_text, state) do
-    case Embedder.embed(query_text) do
-      {:ok, query_embedding} ->
-        best =
-          state.all_template_structs
-          |> Enum.filter(& &1.embedding)
-          |> Enum.map(fn template ->
-            similarity = cosine_similarity(query_embedding, template.embedding)
-            {template, similarity}
-          end)
-          |> Enum.filter(fn {_, sim} -> sim > 0.1 end)
-          |> Enum.sort_by(fn {_, sim} -> -sim end)
-          |> List.first()
-
-        case best do
-          {template, _similarity} ->
-            {:ok, template.text, :fallback}
-
-          nil ->
-            {:error, :no_template}
-        end
-
-      _ ->
-        {:error, :embedder_not_ready}
-    end
-  end
+  # fallback_semantic_search/2 was removed here.
+  #
+  # When an intent had no template it searched `all_template_structs` -- every
+  # template of every intent -- and returned whichever cleared cosine similarity
+  # 0.1, tagged `:fallback`. So a request for one intent was answered with a
+  # different intent's text, and `Generator.try_conditional_template/4` surfaced
+  # it to the user.
+  #
+  # Measured 2026-09-27: all 23 corpus intents with no template reached it, and
+  # the one-level parent retry above rescued none of them (0 of 23 parents have
+  # a template entry either). A miss now returns `{:error, :no_template}` and the
+  # caller falls through to `Brain.Response.Synthesizer`, which is what
+  # `priv/response/system_config.json` configures these domains for.
 
   @impl true
   def handle_info(:periodic_sync, state) do
@@ -562,15 +545,15 @@ defmodule Brain.Response.TemplateStore do
 
   @impl true
   def handle_info(:load_templates, state) do
-    Logger.info("Loading response templates from intent files...")
-    {templates, structured_templates} = load_consolidated_templates()
+    Logger.info("Loading response templates from templates.json...")
 
-    {templates, parameters, structured_templates} =
-      if map_size(templates) == 0 do
-        load_all_intent_files_with_conditions()
-      else
-        {templates, %{}, structured_templates}
-      end
+    # load_consolidated_templates/0 raises rather than returning an empty map, so
+    # there is no "no templates configured" state to fall back from. This used to
+    # reroute to load_all_intent_files_with_conditions/0 on an empty result, which
+    # globbed a CWD-relative data/intents path and so produced a different
+    # template set depending on where the app was started from.
+    {templates, structured_templates} = load_consolidated_templates()
+    parameters = %{}
 
     Logger.info("Loaded templates for #{map_size(templates)} intents")
     custom_smalltalk = load_custom_smalltalk_responses()
@@ -627,32 +610,51 @@ defmodule Brain.Response.TemplateStore do
               Logger.info("Loaded #{map_size(templates)} intents from templates.json")
               {templates, structured}
 
-            _ ->
-              {%{}, %{}}
+            {:ok, other} ->
+              raise "Invalid #{path}: expected a JSON object, got #{inspect(other) |> String.slice(0, 80)}"
+
+            {:error, reason} ->
+              raise "Invalid #{path}: #{inspect(reason)}"
           end
 
-        {:error, _} ->
-          {%{}, %{}}
+        {:error, reason} ->
+          raise "Cannot read #{path}: #{inspect(reason)}"
       end
     else
-      {%{}, %{}}
+      raise """
+      No response templates at #{path}.
+
+      Returning an empty map here used to look like "no templates configured",
+      which then rerouted the whole load to a CWD-relative data/intents glob and
+      produced a different template set depending on the working directory.
+      do_sync_to_file/1 already refuses to run under these same three conditions.
+      """
     end
   end
 
   defp do_sync_to_file(state) do
     path = templates_file_path()
 
+    # An existing templates.json that cannot be read or parsed must never
+    # degrade to %{}: this map is the merge base for the file we are about to
+    # rewrite, so an empty default would silently drop every stored template.
     existing =
       if File.exists?(path) do
         case File.read(path) do
           {:ok, content} ->
             case Jason.decode(content) do
-              {:ok, data} -> data
-              _ -> %{}
+              {:ok, data} when is_map(data) ->
+                data
+
+              {:ok, _} ->
+                raise "Invalid #{path}: expected a JSON object; refusing to overwrite it"
+
+              {:error, reason} ->
+                raise "Invalid #{path}: #{inspect(reason)}; refusing to overwrite it"
             end
 
-          _ ->
-            %{}
+          {:error, reason} ->
+            raise "TemplateStore: cannot read #{path}: #{inspect(reason)}; refusing to overwrite it"
         end
       else
         %{}
@@ -691,133 +693,6 @@ defmodule Brain.Response.TemplateStore do
         Logger.warning("Failed to sync templates: #{inspect(reason)}")
         {:error, reason}
     end
-  end
-
-  defp load_all_intent_files_with_conditions do
-    if File.dir?(@intents_path) do
-      intent_files =
-        Path.join(@intents_path, "*.json")
-        |> Path.wildcard()
-        |> Enum.reject(&String.contains?(&1, "usersays"))
-
-      Enum.reduce(intent_files, {%{}, %{}, %{}}, fn file_path,
-                                                    {templates_acc, params_acc, structured_acc} ->
-        case load_intent_file_with_conditions(file_path) do
-          {:ok, intent_name, speech_templates, parameters, structured_templates} ->
-            templates_acc = Map.put(templates_acc, intent_name, speech_templates)
-            params_acc = Map.put(params_acc, intent_name, parameters)
-            structured_acc = Map.put(structured_acc, intent_name, structured_templates)
-            {templates_acc, params_acc, structured_acc}
-
-          {:error, _reason} ->
-            {templates_acc, params_acc, structured_acc}
-        end
-      end)
-    else
-      {%{}, %{}, %{}}
-    end
-  end
-
-  defp load_intent_file_with_conditions(file_path) do
-    with {:ok, content} <- File.read(file_path),
-         {:ok, data} <- Jason.decode(content) do
-      intent_name = Map.get(data, "name", Path.basename(file_path, ".json"))
-
-      {speech_templates, structured_templates} =
-        extract_templates_with_conditions(data, intent_name)
-
-      conditional_structured = extract_conditional_responses(data, intent_name)
-
-      all_structured = structured_templates ++ conditional_structured
-
-      parameters =
-        data
-        |> Map.get("responses", [])
-        |> Enum.flat_map(fn response ->
-          Map.get(response, "parameters", [])
-        end)
-        |> Enum.map(fn param ->
-          %{
-            name: Map.get(param, "name"),
-            data_type: Map.get(param, "dataType"),
-            required: Map.get(param, "required", false),
-            value: Map.get(param, "value"),
-            default: Map.get(param, "defaultValue", "")
-          }
-        end)
-
-      {:ok, intent_name, speech_templates, parameters, all_structured}
-    else
-      {:error, reason} ->
-        Logger.debug("Failed to load intent file #{file_path}: #{inspect(reason)}")
-        {:error, reason}
-    end
-  end
-
-  defp extract_templates_with_conditions(data, intent_name) do
-    responses = Map.get(data, "responses", [])
-
-    {texts, structs} =
-      Enum.reduce(responses, {[], []}, fn response, {texts_acc, structs_acc} ->
-        messages = Map.get(response, "messages", [])
-
-        Enum.reduce(messages, {texts_acc, structs_acc}, fn msg, {t_acc, s_acc} ->
-          speech_list = Map.get(msg, "speech", [])
-          condition = Map.get(msg, "condition", "")
-
-          new_structs =
-            speech_list
-            |> Enum.filter(&(is_binary(&1) and String.length(&1) > 0))
-            |> Enum.map(fn text ->
-              %Template{
-                text: text,
-                condition:
-                  if(condition == "") do
-                    nil
-                  else
-                    condition
-                  end,
-                embedding: nil,
-                intent: intent_name
-              }
-            end)
-
-          new_texts = Enum.map(new_structs, & &1.text)
-
-          {t_acc ++ new_texts, s_acc ++ new_structs}
-        end)
-      end)
-
-    {texts, structs}
-  end
-
-  defp extract_conditional_responses(data, intent_name) do
-    data
-    |> Map.get("conditionalResponses", [])
-    |> Enum.flat_map(fn cond_response ->
-      condition = Map.get(cond_response, "condition", "")
-      messages = Map.get(cond_response, "messages", [])
-
-      Enum.flat_map(messages, fn msg ->
-        speech_list = Map.get(msg, "speech", [])
-
-        speech_list
-        |> Enum.filter(&(is_binary(&1) and String.length(&1) > 0))
-        |> Enum.map(fn text ->
-          %Template{
-            text: text,
-            condition:
-              if(condition == "") do
-                nil
-              else
-                condition
-              end,
-            embedding: nil,
-            intent: intent_name
-          }
-        end)
-      end)
-    end)
   end
 
   defp build_per_template_embeddings(structured_templates) do
@@ -977,7 +852,10 @@ defmodule Brain.Response.TemplateStore do
   end
 
   defp load_custom_smalltalk_responses do
-    case File.read(@custom_smalltalk_path) do
+    # Brain.data_path/1, not a CWD-relative literal: an umbrella run has two
+    # working directories, so "data/..." names a different file depending on
+    # whether Mix started from the root or from apps/brain.
+    case File.read(Brain.data_path(@custom_smalltalk_file)) do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, data} when is_list(data) ->

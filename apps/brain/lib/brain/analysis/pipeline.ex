@@ -27,6 +27,7 @@ defmodule Brain.Analysis.Pipeline do
 
   alias Brain.Lattice
   alias Brain.Lattice.Candidate, as: LatticeCandidate
+  alias Brain.Lexicon.IntentDomains
   alias Brain.ML.{EntityExtractor, MicroClassifiers, POSTagger, Tokenizer}
 
   alias Brain.Memory.Embedder
@@ -37,11 +38,41 @@ defmodule Brain.Analysis.Pipeline do
   alias Brain.Telemetry
   require Logger
 
-  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n\nReturns an InternalModel struct with complete analysis.\n"
+  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n\nReturns an InternalModel struct with complete analysis.\n"
   def process(text, opts \\ []) when is_binary(text) do
+    side_effects?(opts)
+    refuse_stale_classifiers!()
+
     Telemetry.span(:pipeline_process, %{text_length: String.length(text)}, fn ->
       do_process(text, opts)
     end)
+  end
+
+  # `process/2` produces an intent, and a rejected classifier cannot produce one.
+  # Continuing would return an analysis whose intent is absent for a reason the
+  # caller cannot see, which is how six classifiers served predictions built on
+  # inverted features.
+  #
+  # Only rejection raises, not `ready?/0` being false: a model still loading is
+  # transient, while a model whose provenance does not match is permanent until an
+  # operator retrains it.
+  #
+  # `analyze_chunk/2` deliberately does not check. It is the analysis primitive
+  # `mix gen_micro_data` uses to build training vectors, and the feature vector
+  # does not depend on any classifier, so regenerating a corpus must work while
+  # the models trained from the previous one are still on disk.
+  defp refuse_stale_classifiers! do
+    case MicroClassifiers.stale() do
+      empty when empty == %{} ->
+        :ok
+
+      rejected ->
+        raise """
+        Pipeline.process/2 cannot run: #{map_size(rejected)} classifier(s) were rejected at load.
+
+        #{Enum.map_join(rejected, "\n\n", fn {name, message} -> "#{name}:\n#{message}" end)}
+        """
+    end
   end
 
   defp do_process(text, opts) do
@@ -109,17 +140,21 @@ defmodule Brain.Analysis.Pipeline do
       elapsed_ms: elapsed
     })
 
-    record_pipeline_result(model)
+    if side_effects?(opts) do
+      record_pipeline_result(model)
+      Brain.Graph.Writer.write_analysis(model)
+    end
 
-    Brain.Graph.Writer.write_analysis(model)
+    Brain.Graph.ContextCache.purge_process_entries()
 
     Progress.report(opts, :pipeline_complete, %{elapsed_ms: elapsed})
 
     model
   end
 
-  @doc "Processes a single chunk through the analysis pipeline.\n\nUseful for testing or when you already have chunks. Internally runs the\nfull two-pass analysis (pass 1 + cross-chunk aggregation + pass 2) on a\nlist of one chunk so the public contract is identical to the multi-chunk\npath.\n"
+  @doc "Processes a single chunk through the analysis pipeline.\n\nUseful for testing or when you already have chunks. Internally runs the\nfull two-pass analysis (pass 1 + cross-chunk aggregation + pass 2) on a\nlist of one chunk so the public contract is identical to the multi-chunk\npath.\n\nTakes the same `:side_effects` option as `process/2`: it defaults to\n`true`, and with `false` the run writes nothing.\n"
   def analyze_chunk(chunk_text, opts \\ []) when is_binary(chunk_text) do
+    side_effects?(opts)
     chunk = Chunk.new(chunk_text, 0, 0, String.length(chunk_text) - 1)
     [analysis] = analyze_chunks([chunk], opts)
     analysis
@@ -183,6 +218,8 @@ defmodule Brain.Analysis.Pipeline do
     participants = Keyword.get(opts, :participants, [:user, :bot])
     bot_names = Keyword.get(opts, :bot_names, [])
     history = Keyword.get(opts, :conversation_history, [])
+    t0 = System.monotonic_time(:millisecond)
+    debug_pass1? = Keyword.get(opts, :debug_timing, false) or Application.get_env(:brain, :debug_pipeline_timing, false)
 
     Progress.report(opts, :chunk_start, %{
       chunk_index: chunk.index,
@@ -203,6 +240,8 @@ defmodule Brain.Analysis.Pipeline do
       catch
         :exit, _ -> []
       end
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 entities=#{System.monotonic_time(:millisecond) - t0}ms")
 
     speech_act_task =
       Task.async(fn ->
@@ -229,6 +268,8 @@ defmodule Brain.Analysis.Pipeline do
           DiscourseAnalyzer.analyze("")
       end
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 discourse=#{System.monotonic_time(:millisecond) - t0}ms")
+
     speech_act_result =
       try do
         Task.await(speech_act_task, 3000)
@@ -237,6 +278,8 @@ defmodule Brain.Analysis.Pipeline do
           Task.shutdown(speech_act_task, :brutal_kill)
           SpeechActClassifier.classify("")
       end
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 speech_act=#{System.monotonic_time(:millisecond) - t0}ms")
 
     sentiment_result =
       try do
@@ -248,6 +291,8 @@ defmodule Brain.Analysis.Pipeline do
           Logger.warning("Sentiment classification timed out. Using neutral fallback.")
           %{label: :neutral, score: 0.5}
       end
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 sentiment=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :discourse_complete, %{
       chunk_index: chunk.index,
@@ -272,6 +317,8 @@ defmodule Brain.Analysis.Pipeline do
     {resolved_text, anaphora_entities} =
       resolve_anaphora(chunk.text, history, chunk.index, opts)
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 anaphora=#{System.monotonic_time(:millisecond) - t0}ms")
+
     speech_act_intent = extract_intent_from_speech_act(speech_act_result)
     speech_act_domain = extract_domain_from_intent(speech_act_intent)
 
@@ -287,6 +334,8 @@ defmodule Brain.Analysis.Pipeline do
     entities = extract_entities(resolved_text, entity_opts)
     entities = merge_anaphora_entities(entities, anaphora_entities)
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 extract_entities=#{System.monotonic_time(:millisecond) - t0}ms")
+
     Progress.report(opts, :entities_extracted, %{
       chunk_index: chunk.index,
       entity_count: length(entities),
@@ -295,6 +344,8 @@ defmodule Brain.Analysis.Pipeline do
 
     entities = EntityGraphEnricher.enrich(entities)
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 graph_enrich=#{System.monotonic_time(:millisecond) - t0}ms")
+
     Progress.report(opts, :entities_graph_enriched, %{
       chunk_index: chunk.index,
       graph_known_count: Enum.count(entities, &Map.get(&1, :graph_known, false)),
@@ -302,6 +353,8 @@ defmodule Brain.Analysis.Pipeline do
     })
 
     pos_result = get_pos_tags(resolved_text)
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 pos_tags=#{System.monotonic_time(:millisecond) - t0}ms")
 
     events = extract_events(pos_result, entities, opts)
 
@@ -320,6 +373,8 @@ defmodule Brain.Analysis.Pipeline do
 
     srl_frames = run_srl(pos_result, entities, opts)
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 srl=#{System.monotonic_time(:millisecond) - t0}ms")
+
     Progress.report(opts, :srl_complete, %{
       chunk_index: chunk.index,
       srl_frame_count: length(srl_frames)
@@ -336,7 +391,11 @@ defmodule Brain.Analysis.Pipeline do
       |> Map.put(:srl_frames, srl_frames)
       |> Map.put(:pos_tags, pos_result_to_tags(pos_result))
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 domain_classify_start=#{System.monotonic_time(:millisecond) - t0}ms")
+
     pass1_domain = classify_intent_domain_lightweight(pass1_analysis)
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 domain_classify_end=#{System.monotonic_time(:millisecond) - t0}ms")
 
     {prelim_intent, intent_method, prelim_intent_conf, prelim_intent_details} =
       determine_intent(
@@ -348,11 +407,15 @@ defmodule Brain.Analysis.Pipeline do
         nil
       )
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 determine_intent=#{System.monotonic_time(:millisecond) - t0}ms")
+
     Progress.report(opts, :intent_determined, %{
       chunk_index: chunk.index,
       intent: prelim_intent,
       intent_method: intent_method,
       intent_confidence: prelim_intent_conf,
+      original_intent: Map.get(prelim_intent_details, :original_intent),
+      original_score: Map.get(prelim_intent_details, :original_score),
       margin: Map.get(prelim_intent_details, :margin, 0.0),
       pass: 1,
       domain: pass1_domain
@@ -373,19 +436,29 @@ defmodule Brain.Analysis.Pipeline do
     )
   end
 
+  # Returns the domain, or nil when the classifier had no answer for this input.
+  #
+  # Does not rescue. A crash in feature extraction or in the classifier is a
+  # defect in this pipeline, and returning nil for it made three different
+  # outcomes -- classifier unavailable, no confident label, and an exception --
+  # indistinguishable at the call site.
+  #
+  # Unavailability is reported once per call rather than swallowed;
+  # `MicroClassifiers.stale/0` names any model that was rejected at load.
   defp classify_intent_domain_lightweight(analysis) do
     if MicroClassifiers.ready?() do
-      try do
-        {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+      {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
 
-        case MicroClassifiers.classify_vector(:intent_domain, feature_vector) do
-          {:ok, domain, _confidence} -> to_string(domain)
-          _ -> nil
-        end
-      rescue
-        _ -> nil
+      case MicroClassifiers.classify_vector(:intent_domain, feature_vector) do
+        {:ok, domain, _confidence} ->
+          to_string(domain)
+
+        {:error, reason} ->
+          Logger.warning("intent_domain unavailable (#{inspect(reason)}); domain left unset")
+          nil
       end
     else
+      Logger.warning("MicroClassifiers not ready — intent_domain classification skipped")
       nil
     end
   end
@@ -497,11 +570,15 @@ defmodule Brain.Analysis.Pipeline do
   defp refine_chunk_pass2(%ChunkAnalysis{} = pass1, cross_context, opts) do
     history = Keyword.get(opts, :conversation_history, [])
     profile = Keyword.get(opts, :user_profile, %{})
+    debug_pass2? = Application.get_env(:brain, :debug_pipeline_timing, false)
+    t0 = if debug_pass2?, do: System.monotonic_time(:millisecond)
 
     pass1_with_context = Map.put(pass1, :accumulated_context, cross_context.accumulator)
 
     {refined_speech_act, intent, intent_method, intent_confidence, intent_details, chunk_profile} =
       classify_intent_full_and_refine(pass1_with_context, opts)
+
+    if debug_pass2?, do: Logger.info("  pass2:classify_intent_full=#{System.monotonic_time(:millisecond) - t0}ms")
 
     intent_details =
       if chunk_profile,
@@ -513,26 +590,39 @@ defmodule Brain.Analysis.Pipeline do
       intent: intent,
       intent_method: intent_method,
       intent_confidence: intent_confidence,
+      # The label and score determine_intent/6 overrode, when it overrode one.
+      # :speech_act_fallback is returned by three different branches of that
+      # function, and these two are what tell them apart.
+      original_intent: Map.get(intent_details, :original_intent),
+      original_score: Map.get(intent_details, :original_score),
       margin: Map.get(intent_details, :margin, 0.0),
       top_k: Map.get(intent_details, :top_k, []),
       lattice: Map.get(intent_details, :lattice) && Brain.Lattice.to_map(Map.get(intent_details, :lattice)),
       pass: 2
     })
 
+    # Now that the intent is known, weigh each entity's candidate readings
+    # against the entity types its slot schema expects.
+    rescored_entities = Brain.Analysis.EntityTypeScorer.rescore(pass1.entities, intent)
+
     {entities_after_inference, intent, intent_details} =
       Brain.Analysis.ContextualEntityInferrer.infer(
         pass1.text,
-        pass1.entities,
+        rescored_entities,
         intent,
         intent_details,
         world_id: Keyword.get(opts, :world_id, "default")
       )
+
+    if debug_pass2?, do: Logger.info("  pass2:entity_inference=#{System.monotonic_time(:millisecond) - t0}ms")
 
     relevant_entities =
       entities_after_inference
       |> filter_entities_by_intent(intent)
       |> maybe_retype_pos_music_artists(pass1.text)
       |> Brain.ML.EntityExtractor.refine_entity_types(to_string(intent))
+
+    if debug_pass2?, do: Logger.info("  pass2:entity_filter+refine=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :entities_filtered, %{
       chunk_index: pass1.chunk_index,
@@ -545,6 +635,8 @@ defmodule Brain.Analysis.Pipeline do
     })
 
     fact_result = verify_facts_in_chunk(pass1.text, relevant_entities, refined_speech_act, opts)
+
+    if debug_pass2?, do: Logger.info("  pass2:fact_verify=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :fact_verification, %{
       chunk_index: pass1.chunk_index,
@@ -565,7 +657,9 @@ defmodule Brain.Analysis.Pipeline do
         end)
     })
 
-    slot_result = SlotDetector.detect(intent, relevant_entities)
+    slot_result = SlotDetector.detect(intent, relevant_entities, side_effects: side_effects?(opts))
+
+    if debug_pass2?, do: Logger.info("  pass2:slot_detect=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :slots_detected, %{
       chunk_index: pass1.chunk_index,
@@ -582,6 +676,8 @@ defmodule Brain.Analysis.Pipeline do
         user_profile: profile,
         user_id: user_id
       )
+
+    if debug_pass2?, do: Logger.info("  pass2:context_resolve=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :context_resolved, %{
       chunk_index: pass1.chunk_index,
@@ -620,6 +716,8 @@ defmodule Brain.Analysis.Pipeline do
       |> ChunkAnalysis.determine_response_strategy()
 
     maybe_extract_beliefs_from_events(pass1.events, opts)
+
+    if debug_pass2?, do: Logger.info("  pass2:total=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :chunk_complete, %{
       chunk_index: pass1.chunk_index,
@@ -775,35 +873,51 @@ defmodule Brain.Analysis.Pipeline do
     if Keyword.get(opts, :skip_event_extraction, false) do
       []
     else
-      case pos_result do
-        {:ok, pos_tags, tokens} ->
-          analysis_input = %{
-            pos_tags: pos_tags,
-            entities: entities,
-            tokens: tokens
-          }
+      {:ok, pos_tags, tokens} = pos_result
 
-          case EventExtractor.extract(analysis_input, opts) do
-            {:ok, events} -> events
-            {:error, _reason} -> []
-          end
+      analysis_input = %{
+        pos_tags: pos_tags,
+        entities: entities,
+        tokens: tokens
+      }
 
-        {:error, _reason} ->
-          []
+      case EventExtractor.extract(analysis_input, opts) do
+        {:ok, events} -> events
+        {:error, _reason} -> []
       end
     end
   end
 
+  # The tagger is required, not optional. `pos_tags` feeds WordFeatures, and
+  # WordFeatures feeds every WordNet group (supersenses, lexical domains,
+  # selectional preferences, subcategorization, meaning depth), ConceptNet
+  # edges and pos_distribution -- 169 of the 337 feature dimensions.
+  #
+  # This used to return `{:error, reason}` and the callers turned that into
+  # `[]`, so an unloadable model produced a *constant* feature vector instead
+  # of a wrong one: `mix gen_micro_data` wrote 4,869 half-empty training rows
+  # and `mix train_micro` trained on them, both reporting success. Measured
+  # 2026-09-23. A missing tagger now stops the analysis.
   defp get_pos_tags(text) do
     tokens = Tokenizer.tokenize_words(text)
 
     case POSTagger.get_model() do
       {:ok, model} ->
-        pos_tags = POSTagger.predict(tokens, model)
-        {:ok, pos_tags, tokens}
+        {:ok, POSTagger.predict(tokens, model), tokens}
 
       {:error, reason} ->
-        {:error, reason}
+        raise """
+        POSTagger: no usable model at #{POSTagger.model_path()}
+
+        #{reason}
+
+        Analysis cannot continue without part-of-speech tags: they feed 169 of
+        the 337 feature dimensions, so proceeding would yield a constant
+        feature vector rather than a wrong one.
+
+        Train one with `mix pos.train`, or install an existing run with
+        `Brain.Training.POSRuns.promote!(run_id, "best", :production)`.
+        """
     end
   end
 
@@ -833,20 +947,16 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp link_events(events, entities, pos_result, _opts) do
-    case pos_result do
-      {:ok, pos_tags_tuples, tokens} ->
-        tag_strings = extract_tag_strings(pos_tags_tuples)
+    {:ok, pos_tags_tuples, tokens} = pos_result
+    tag_strings = extract_tag_strings(pos_tags_tuples)
 
-        token_maps = Enum.map(tokens, fn t ->
-          %{text: t, normalized: String.downcase(t)}
-        end)
+    token_maps =
+      Enum.map(tokens, fn t ->
+        %{text: t, normalized: String.downcase(t)}
+      end)
 
-        frames = EventLinker.link(events, entities, token_maps, tag_strings)
-        {frames, tag_strings}
-
-      {:error, _} ->
-        {[], []}
-    end
+    frames = EventLinker.link(events, entities, token_maps, tag_strings)
+    {frames, tag_strings}
   rescue
     e ->
       Logger.warning("EventLinker failed: #{Exception.message(e)}")
@@ -854,15 +964,10 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp run_srl(pos_result, entities, _opts) do
-    case pos_result do
-      {:ok, pos_tags_tuples, tokens} ->
-        tag_strings = extract_tag_strings(pos_tags_tuples)
-        bio_tags = generate_srl_bio_tags(tokens, tag_strings, entities)
-        SemanticRoleLabeler.label(tokens, bio_tags, entities)
-
-      {:error, _} ->
-        []
-    end
+    {:ok, pos_tags_tuples, tokens} = pos_result
+    tag_strings = extract_tag_strings(pos_tags_tuples)
+    bio_tags = generate_srl_bio_tags(tokens, tag_strings, entities)
+    SemanticRoleLabeler.label(tokens, bio_tags, entities: entities)
   rescue
     e ->
       Logger.warning("SemanticRoleLabeler failed: #{Exception.message(e)}")
@@ -870,7 +975,6 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp pos_result_to_tags({:ok, pos_tags, _tokens}), do: pos_tags
-  defp pos_result_to_tags(_), do: []
 
   defp extract_tag_strings(pos_tags) do
     Enum.map(pos_tags, fn
@@ -880,32 +984,76 @@ defmodule Brain.Analysis.Pipeline do
     end)
   end
 
+  # Predicates are content verbs only. In UD a copula or auxiliary is `AUX`
+  # ("is going" -> AUX + VERB), and treating those as predicates would invent a
+  # frame per auxiliary. `VERB` alone is the predicate.
+  @srl_predicate_tags ~w(VERB)
+  @srl_arg0_tags ~w(NOUN PROPN PRON)
+  @srl_nominal_tags ~w(NOUN PROPN)
+
+  # These tags come from `POSTagger.predict/2`, which emits Universal
+  # Dependencies (`POSTagger.valid_tags/0`). This used to test Penn Treebank
+  # tags -- "VB", "VBD", "NN", "NNP" -- none of which a UD tagger can produce.
+  # So "B-V" was never emitted, `extract_spans/1` found no predicate, and every
+  # chunk got zero SRL frames: 10 feature dimensions constant across all 4,869
+  # training rows, with no exception and no log line. Measured 2026-09-23.
   defp generate_srl_bio_tags(tokens, pos_tags, entities) do
     entity_spans = build_entity_spans(tokens, entities)
 
     tokens
     |> Enum.with_index()
-    |> Enum.map(fn {_token, idx} ->
-      pos = Enum.at(pos_tags, idx, "NN")
+    |> Enum.map(fn {token, idx} ->
+      pos = srl_pos_at!(pos_tags, idx, token)
       entity_role = Map.get(entity_spans, idx)
 
       cond do
-        pos in ["VB", "VBD", "VBG", "VBN", "VBP", "VBZ"] ->
+        pos in @srl_predicate_tags ->
           "B-V"
 
         entity_role != nil ->
           entity_role
 
-        idx == 0 and pos in ["NN", "NNP", "NNS", "NNPS", "PRP"] ->
+        idx == 0 and pos in @srl_arg0_tags ->
           "B-ARG0"
 
-        pos in ["NN", "NNP", "NNS", "NNPS"] ->
+        pos in @srl_nominal_tags ->
           "B-ARG1"
 
+        # A known tag that carries no semantic role -- DET, ADP, PUNCT and the
+        # rest. This is the one branch that may legitimately produce nothing.
         true ->
           "O"
       end
     end)
+  end
+
+  # A tag outside the tagger's own vocabulary means the two sides have drifted
+  # apart again, which is exactly the failure this function shipped with. It is
+  # not a token we can label, so it stops here rather than becoming an "O".
+  defp srl_pos_at!(pos_tags, idx, token) do
+    case Enum.at(pos_tags, idx) do
+      nil ->
+        raise """
+        SRL: no POS tag for token #{inspect(token)} at index #{idx} \
+        (#{length(pos_tags)} tags for a longer token list).
+        Tags and tokens must line up one to one.
+        """
+
+      tag ->
+        if tag in POSTagger.valid_tags() do
+          tag
+        else
+          raise """
+          SRL: #{inspect(tag)} is not a tag POSTagger emits, so it cannot be \
+          mapped to a semantic role.
+
+          POSTagger.valid_tags/0: #{Enum.join(POSTagger.valid_tags(), " ")}
+
+          A tag from another scheme here means the tagger and this function have \
+          drifted apart.
+          """
+        end
+    end
   end
 
   defp build_entity_spans(tokens, entities) do
@@ -950,7 +1098,10 @@ defmodule Brain.Analysis.Pipeline do
   defp entity_type_to_srl_role(type) do
     downcased = String.downcase(type)
     cond do
-      downcased in ["person", "user", "agent"] -> "ARG0"
+      # `given_name` / `last_name` come from EntityExtractor's person splitting
+      # (entity_extractor.ex:196-202). Without them a person entity lands in the
+      # catch-all below and is labelled ARG1 -- a patient rather than an agent.
+      downcased in ["person", "user", "agent", "given_name", "last_name"] -> "ARG0"
       downcased in ["location", "place", "city", "country", "geo"] -> "ARGM-LOC"
       downcased in ["temporal", "date", "time", "datetime"] -> "ARGM-TMP"
       true -> "ARG1"
@@ -959,6 +1110,14 @@ defmodule Brain.Analysis.Pipeline do
 
   @disambiguation_threshold 0.5
   @low_confidence_floor 0.3
+
+  @doc "The classifier confidence at or above which `determine_intent/6` trusts the label outright."
+  @spec disambiguation_threshold() :: float()
+  def disambiguation_threshold, do: @disambiguation_threshold
+
+  @doc "The classifier confidence below which a no-opinion from Atlas falls through to the speech act."
+  @spec low_confidence_floor() :: float()
+  def low_confidence_floor, do: @low_confidence_floor
 
   @external_resource Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
   @speech_act_intent_map Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
@@ -1092,13 +1251,18 @@ defmodule Brain.Analysis.Pipeline do
         false
 
       profile_domain ->
-        classifier_domain =
-          case Map.get(@intent_metadata, classifier_intent) do
-            %{domain: d} when is_binary(d) and d != "" -> d
-            _ -> intent_domain_prefix(classifier_intent)
-          end
-
-        classifier_domain != "" and classifier_domain != profile_domain
+        # Both sides are consolidated first, because the profile's domain comes
+        # from the :intent_domain classifier and that model is trained on the
+        # consolidated vocabulary (Brain.Lexicon.IntentDomains).
+        #
+        # This used to take the registry's `domain` field, falling back to the
+        # raw label prefix. Neither is a value the classifier can emit: an
+        # `alarm.*` intent compared "alarm" against "reminder", and
+        # `smalltalk.user.introduction` compared the registry's "introduction"
+        # against "smalltalk". Both mismatch on every single request, so 22
+        # intents covering 390 gold examples (8% of the corpus) had every
+        # correct prediction discarded unconditionally. Measured 2026-09-23.
+        IntentDomains.consolidate(classifier_intent) != IntentDomains.consolidate(profile_domain)
     end
   end
 
@@ -1326,12 +1490,7 @@ defmodule Brain.Analysis.Pipeline do
 
   @entity_scoring_weights_path Path.join(:code.priv_dir(:brain), "analysis/entity_scoring_weights.json")
   @external_resource @entity_scoring_weights_path
-  @entity_scoring_weights (
-    case File.read(@entity_scoring_weights_path) do
-      {:ok, json} -> Jason.decode!(json)
-      _ -> %{}
-    end
-  )
+  @entity_scoring_weights @entity_scoring_weights_path |> File.read!() |> Jason.decode!()
 
   defp best_intent_by_signals(speech_act, profile, lattice, entities) do
     profile_domain = profile_domain_string(profile)
@@ -1366,6 +1525,8 @@ defmodule Brain.Analysis.Pipeline do
           true -> a_intent <= b_intent
         end
       end)
+
+    flush_entity_layer_telemetry()
 
     case ranked do
       [{intent, _} | _] -> {:ok, intent}
@@ -1440,7 +1601,7 @@ defmodule Brain.Analysis.Pipeline do
           |> Enum.reject(&is_nil/1)
           |> Enum.uniq()
 
-        if parents != [] and Process.whereis(Brain.ML.Lexicon) != nil do
+        if parents != [] do
           max_sim =
             for p <- parents, anchor <- domain_anchors, reduce: 0.0 do
               acc -> max(acc, Brain.Lexicon.word_similarity(p, anchor) || 0.0)
@@ -1516,19 +1677,16 @@ defmodule Brain.Analysis.Pipeline do
     alias Brain.ML.KnowledgeGraph.EntityVectorCache
 
     if Code.ensure_loaded?(EntityVectorCache) and
-         function_exported?(EntityVectorCache, :get_or_compute_type, 1) do
-      case EntityVectorCache.get_or_compute_type(etype) do
+         function_exported?(EntityVectorCache, :get_cached_type, 1) do
+      case EntityVectorCache.get_cached_type(etype) do
         {:ok, etype_vec} ->
           threshold = Map.get(w, "vector_similarity_threshold", 0.6)
+          etype_flat = Nx.to_flat_list(etype_vec)
 
           Enum.any?(expected_types, fn expected ->
-            case EntityVectorCache.get_or_compute_type(expected) do
+            case EntityVectorCache.get_cached_type(expected) do
               {:ok, exp_vec} ->
-                sim = FourthWall.Math.cosine_similarity(
-                  Nx.to_flat_list(etype_vec),
-                  Nx.to_flat_list(exp_vec)
-                )
-                sim > threshold
+                FourthWall.Math.cosine_similarity(etype_flat, Nx.to_flat_list(exp_vec)) > threshold
               _ -> false
             end
           end)
@@ -1542,12 +1700,26 @@ defmodule Brain.Analysis.Pipeline do
     _ -> false
   end
 
-  defp emit_entity_layer_telemetry(intent, etype, layer, available) do
-    :telemetry.execute(
-      [:brain, :intent_scoring, :entity_layer],
-      %{score: 1},
-      %{intent: intent, entity_type: etype, layer: layer, layer_available: available}
-    )
+  defp emit_entity_layer_telemetry(_intent, _etype, layer, available) do
+    key = {:entity_layer_counts, layer, available}
+    Process.put(key, (Process.get(key) || 0) + 1)
+  end
+
+  defp flush_entity_layer_telemetry do
+    counts =
+      Process.get()
+      |> Enum.filter(fn {k, _} -> match?({:entity_layer_counts, _, _}, k) end)
+
+    if counts != [] do
+      measurements =
+        Enum.reduce(counts, %{}, fn {{:entity_layer_counts, layer, available}, count}, acc ->
+          Process.delete({:entity_layer_counts, layer, available})
+          suffix = if available, do: layer, else: :"#{layer}_unavailable"
+          Map.put(acc, suffix, count)
+        end)
+
+      :telemetry.execute([:brain, :intent_scoring, :entity_layers_batch], measurements, %{})
+    end
   end
 
   defp entity_scoring_weights do
@@ -1624,39 +1796,43 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
+  # The events of every analyzed text read as things the user said, so a caller
+  # analyzing a corpus passes `side_effects: false`; otherwise each utterance
+  # would be stored as a belief about the user.
+  #
+  # Nothing here is rescued. A failure in the synchronous mode reaches the
+  # caller, and one in the supervised child is reported by its supervisor.
   defp maybe_extract_beliefs_from_events([], _opts), do: :ok
 
   defp maybe_extract_beliefs_from_events(events, opts) do
-    user_id = Keyword.get(opts, :user_id) || "anonymous"
+    if side_effects?(opts) and Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
+      user_id = Keyword.get(opts, :user_id) || "anonymous"
 
-    if Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
       if Application.get_env(:brain, :pipeline_belief_extraction_sync, false) do
-        try do
-          Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
-        rescue
-          e ->
-            require Logger
-            Logger.debug("Belief extraction from events failed: #{Exception.message(e)}")
-        end
+        Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
       else
         Task.Supervisor.start_child(
           Brain.Knowledge.AgentSupervisor,
-          fn ->
-            try do
-              Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
-            rescue
-              e ->
-                require Logger
-                Logger.debug("Belief extraction from events failed: #{Exception.message(e)}")
-            end
-          end
+          fn -> Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id) end
         )
       end
     end
 
     :ok
-  rescue
-    _ -> :ok
+  end
+
+  # Whether this run may write what it learned. On unless the caller passed
+  # `side_effects: false`, as evaluation, training-data generation and
+  # measurement callers do.
+  defp side_effects?(opts) do
+    case Keyword.get(opts, :side_effects, true) do
+      value when is_boolean(value) ->
+        value
+
+      other ->
+        raise ArgumentError,
+              "Pipeline option :side_effects must be true or false, got: #{inspect(other)}"
+    end
   end
 
   defp calculate_confidence(analysis) do
@@ -1698,10 +1874,14 @@ defmodule Brain.Analysis.Pipeline do
 
     entity_fam = EntityGraphEnricher.familiarity_score(analysis.entities)
 
+    # nil, not 0.5: an intent whose confidence is unknown is a different state
+    # from one measured at the middle, and a consumer calibrating against this
+    # number cannot tell them apart once they are the same value. Measured over
+    # the held-out split when it held 1000 rows, this was absent on 1 of them.
     intent_conf =
       case analysis.speech_act do
         %{intent_confidence: c} when is_number(c) and c > 0 -> c
-        _ -> 0.5
+        _ -> nil
       end
 
     acc =
@@ -1711,7 +1891,7 @@ defmodule Brain.Analysis.Pipeline do
       |> ContextAccumulator.add_signal(:slot_fill, Map.get(analysis.slots || %{}, :all_required_filled, false), slot_conf)
       |> ContextAccumulator.add_signal(:sentiment, Map.get(analysis.sentiment || %{}, :label, :neutral), sentiment_conf)
       |> ContextAccumulator.add_signal(:entity_familiarity, entity_fam > 0.5, entity_fam)
-      |> ContextAccumulator.add_signal(:intent, analysis.intent, intent_conf)
+      |> add_intent_signal(analysis.intent, intent_conf)
       |> ContextAccumulator.accumulate()
 
     confidence = ContextAccumulator.effective_confidence(acc) |> Float.round(3)
@@ -1720,6 +1900,11 @@ defmodule Brain.Analysis.Pipeline do
     |> Map.put(:confidence, confidence)
     |> Map.put(:accumulated_context, acc)
   end
+
+  defp add_intent_signal(acc, _intent, nil), do: acc
+
+  defp add_intent_signal(acc, intent, confidence),
+    do: ContextAccumulator.add_signal(acc, :intent, intent, confidence)
 
   defp record_pipeline_result(%InternalModel{} = model) do
     feedback_type =
@@ -1874,9 +2059,8 @@ defmodule Brain.Analysis.Pipeline do
          opts
        ) do
     enabled = Application.get_env(:brain, :intent_promotion_enabled, false)
-    side_effects = Keyword.get(opts, :side_effects, true)
 
-    if enabled and side_effects do
+    if enabled and side_effects?(opts) do
       best_score = confidence || 0.0
       margin = Map.get(details, :margin, 0.0)
 

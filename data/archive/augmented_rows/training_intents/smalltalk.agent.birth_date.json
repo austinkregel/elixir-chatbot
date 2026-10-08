@@ -1,0 +1,58 @@
+[
+  {
+    "text": "birth your date",
+    "tokens": [
+      "birth",
+      "your",
+      "date"
+    ],
+    "pos_tags": [
+      "ADP",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-efcb34c6",
+    "intent": "smalltalk.agent.birth_date"
+  },
+  {
+    "text": "can you when were you born",
+    "tokens": [
+      "can",
+      "you",
+      "when",
+      "were",
+      "you",
+      "born"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-d3bbb675",
+    "intent": "smalltalk.agent.birth_date"
+  },
+  {
+    "text": "date of birthday your",
+    "tokens": [
+      "date",
+      "of",
+      "birthday",
+      "your"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-d4f0fec9",
+    "intent": "smalltalk.agent.birth_date"
+  }
+]

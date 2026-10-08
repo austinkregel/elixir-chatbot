@@ -21,7 +21,7 @@ defmodule ChatWeb.TrainingStudioLive do
       Phoenix.PubSub.subscribe(Brain.PubSub, "training:progress")
     end
 
-    {:ok, socket}
+    {:ok, assign(socket, :page_size, @page_size)}
   end
 
   @impl true
@@ -39,6 +39,8 @@ defmodule ChatWeb.TrainingStudioLive do
       |> assign(:filter, filter)
       |> assign(:show_add_form, false)
       |> assign(:editing_index, nil)
+      |> assign(:open_confirm, nil)
+      |> assign(:confirm_error, nil)
       |> assign(:sources_by_category, Catalog.list_sources_by_category())
       |> assign(:summary_stats, Diagnostics.summary_stats())
       |> load_tab_data(active_tab, source_id, page, filter)
@@ -138,28 +140,39 @@ defmodule ChatWeb.TrainingStudioLive do
     end
   end
 
+  def handle_event("open_confirm", %{"id" => id}, socket) do
+    {:noreply, socket |> assign(:open_confirm, id) |> assign(:confirm_error, nil)}
+  end
+
+  def handle_event("close_confirm", _params, socket) do
+    {:noreply, close_confirm(socket)}
+  end
+
+  # Reached only from the delete confirmation. A failure stays in that panel,
+  # which remains open, rather than closing it and leaving only a flash.
   def handle_event("delete_record", %{"index" => index_str}, socket) do
     source_id = socket.assigns.selected_source
-    index = parse_int(index_str, -1)
+    index = parse_index(index_str)
 
-    if source_id && index >= 0 do
+    if source_id do
       case Catalog.delete_record(source_id, index) do
         :ok ->
           {:noreply,
            socket
+           |> close_confirm()
            |> put_flash(:info, "Record deleted")
            |> push_patch(to: current_path(socket))}
 
         {:error, reason} ->
-          {:noreply, put_flash(socket, :error, "Failed to delete: #{inspect(reason)}")}
+          {:noreply, assign(socket, :confirm_error, "Failed to delete record #{index + 1}: #{inspect(reason)}")}
       end
     else
-      {:noreply, socket}
+      {:noreply, assign(socket, :confirm_error, "No source is selected.")}
     end
   end
 
   def handle_event("edit_record", %{"index" => index_str}, socket) do
-    index = parse_int(index_str, -1)
+    index = parse_index(index_str)
     {:noreply, assign(socket, :editing_index, index)}
   end
 
@@ -169,9 +182,9 @@ defmodule ChatWeb.TrainingStudioLive do
 
   def handle_event("save_edit", %{"index" => index_str, "record" => record_params}, socket) do
     source_id = socket.assigns.selected_source
-    index = parse_int(index_str, -1)
+    index = parse_index(index_str)
 
-    if source_id && index >= 0 do
+    if source_id do
       record = build_record_from_params(record_params, socket.assigns.source_desc)
 
       case Catalog.update_record(source_id, index, record) do
@@ -287,23 +300,23 @@ defmodule ChatWeb.TrainingStudioLive do
   # ── Tab data loading ─────────────────────────────────────────────────
 
   defp load_tab_data(socket, "browse", source_id, page, filter) when not is_nil(source_id) do
-    offset = (page - 1) * @page_size
     desc = SourceDescriptors.get(source_id)
 
-    case Catalog.read_source_page(source_id, offset, @page_size, filter: filter) do
-      {:ok, records, total} ->
-        total_pages = max(1, ceil(total / @page_size))
-
+    case read_browse_page(source_id, page, filter) do
+      {:ok, %{rows: rows, total: total, matching: matching}, page} ->
         socket
-        |> assign(:records, records)
+        |> assign(:page, page)
+        |> assign(:records, rows)
         |> assign(:total_records, total)
-        |> assign(:total_pages, total_pages)
+        |> assign(:matching_records, if(filter == "", do: nil, else: matching))
+        |> assign(:total_pages, last_page(matching))
         |> assign(:source_desc, desc)
 
       {:error, reason} ->
         socket
         |> assign(:records, [])
         |> assign(:total_records, 0)
+        |> assign(:matching_records, nil)
         |> assign(:total_pages, 1)
         |> assign(:source_desc, desc)
         |> put_flash(:error, "Failed to load source: #{inspect(reason)}")
@@ -314,6 +327,7 @@ defmodule ChatWeb.TrainingStudioLive do
     socket
     |> assign(:records, [])
     |> assign(:total_records, 0)
+    |> assign(:matching_records, nil)
     |> assign(:total_pages, 1)
     |> assign(:source_desc, nil)
   end
@@ -387,6 +401,7 @@ defmodule ChatWeb.TrainingStudioLive do
     socket
     |> assign_new(:records, fn -> [] end)
     |> assign_new(:total_records, fn -> 0 end)
+    |> assign_new(:matching_records, fn -> nil end)
     |> assign_new(:total_pages, fn -> 1 end)
     |> assign_new(:source_desc, fn -> nil end)
     |> assign_new(:skew_rows, fn -> [] end)
@@ -420,10 +435,47 @@ defmodule ChatWeb.TrainingStudioLive do
   defp parse_int(n, _default) when is_integer(n) and n > 0, do: n
   defp parse_int(_, default), do: default
 
-  defp visible_pages(current, total) do
-    range_start = max(1, current - 2)
-    range_end = min(total, current + 2)
-    Enum.to_list(range_start..range_end)
+  # A record's position in its source file, counted from 0. Positions come
+  # from this page's own row buttons (as a string) and from the delete
+  # confirmation (as an integer), so anything else is a bug and raises.
+  defp parse_index(n) when is_integer(n) and n >= 0, do: n
+
+  defp parse_index(str) when is_binary(str) do
+    case Integer.parse(str) do
+      {n, ""} when n >= 0 -> n
+      _ -> invalid_index!(str)
+    end
+  end
+
+  defp parse_index(other), do: invalid_index!(other)
+
+  defp invalid_index!(value) do
+    raise ArgumentError,
+          "Training Studio: a record position must be a whole number from 0 up, got: #{inspect(value)}"
+  end
+
+  # Pages divide the records matching the filter. A page past the last one (a
+  # stale `?page=`, or the last match on the last page deleted) reads the last
+  # page instead, so `page_bar/1` is never handed a page outside its range.
+  # Each row is `{index, record}`, `index` being the record's position in the
+  # unfiltered source: the index Edit and Delete act on.
+  defp read_browse_page(source_id, page, filter) do
+    case Catalog.read_source_page(source_id, (page - 1) * @page_size, @page_size, filter: filter) do
+      {:ok, %{matching: matching}} when page > 1 and (page - 1) * @page_size >= matching ->
+        read_browse_page(source_id, last_page(matching), filter)
+
+      {:ok, result} ->
+        {:ok, result, page}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp last_page(count), do: max(1, div(count + @page_size - 1, @page_size))
+
+  defp close_confirm(socket) do
+    socket |> assign(:open_confirm, nil) |> assign(:confirm_error, nil)
   end
 
   defp current_path(socket) do

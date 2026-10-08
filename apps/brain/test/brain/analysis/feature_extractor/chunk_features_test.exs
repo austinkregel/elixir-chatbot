@@ -10,17 +10,18 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     2. The rescue clause inside `extract_tokens/1` re-attempts the same
        broken bracket read, so it cannot recover.
 
-    3. `memory_context_features/1` reads `:novelty_score`,
-       `:similar_episode_count`, `:graph_known`, `:repetition_score`,
-       `:conversation_centroid_distance`, and `:context_length` from a
-       `%Brain.Analysis.ContextAccumulator{}` struct, but none of those
-       fields exist on that struct.
+    3. Reading `:novelty_score`, `:similar_episode_count`, `:graph_known`,
+       `:repetition_score`, `:conversation_centroid_distance` and
+       `:context_length` off a `%Brain.Analysis.ContextAccumulator{}`, none
+       of which are fields on that struct. `entity_features/1` is the one
+       place the accumulator still reaches the vector, through
+       `:entity_familiarity`.
 
   These tests pass plain structs (no maps/keyword lists) into the public
   API, exactly the way `Brain.materialize_profiles/1` does in production,
   and assert that the resulting feature vector is the right shape and
-  that the memory + slot dimensions reflect the input data instead of
-  collapsing to zero.
+  that the slot dimensions reflect the input data instead of collapsing
+  to zero.
 
   The tests intentionally pre-supply an empty `word_features` list so
   the ETS-backed `Brain.Lexicon` is never queried — these cases exercise
@@ -33,26 +34,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
   alias Brain.Analysis.FeatureExtractor.ChunkFeatures
   alias Brain.Analysis.FeatureExtractor.EnrichmentFeatures
 
-  @memory_dims 6
   @slot_dims 6
-
-  # Total dims appended *after* slot_completeness by the
-  # EnrichmentFeatures groups (Tier 1: 15-19; Tier 2: 20-22). Slice
-  # helpers below subtract this tail so they keep pointing at the
-  # memory/slot windows even as new enrichment dims land at the end
-  # of the vector.
-  defp enrichment_tail_dims do
-    EnrichmentFeatures.wh_dimension() +
-      EnrichmentFeatures.time_typology_dimension() +
-      EnrichmentFeatures.verb_supersense_dimension() +
-      EnrichmentFeatures.noun_supersense_dimension() +
-      EnrichmentFeatures.adj_adv_supersense_dimension() +
-      EnrichmentFeatures.conceptnet_edge_dimension() +
-      EnrichmentFeatures.selectional_preferences_dimension() +
-      EnrichmentFeatures.subcategorization_frame_dimension() +
-      EnrichmentFeatures.discourse_markers_dimension() +
-      EnrichmentFeatures.speech_act_wh_interaction_dimension()
-  end
 
   describe "extract/2 with a real %ChunkAnalysis{} struct" do
     test "does not raise when reading struct fields (Bug 1: bracket access on struct)" do
@@ -95,7 +77,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     end
   end
 
-  describe "memory_context_features/1 with a real %ContextAccumulator{}" do
+  describe "a real %ContextAccumulator{} in the analysis" do
     test "does not raise on bracket access against the struct (Bug 1)" do
       acc = %ContextAccumulator{}
 
@@ -109,7 +91,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
       assert is_list(ChunkFeatures.extract(analysis, []))
     end
 
-    test "reflects real ContextAccumulator fields, not the nonexistent ones (Bug 3)" do
+    test "a populated accumulator extracts to a full-width vector" do
       acc = %ContextAccumulator{
         signals: [
           {:speech_act, :directive, 0.9},
@@ -131,41 +113,18 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
       }
 
       vector = ChunkFeatures.extract(analysis, [])
-      memory_features = memory_slice(vector)
 
-      refute Enum.all?(memory_features, &(&1 == 0.0)),
-             "memory_context_features collapsed to all-zeros despite a populated ContextAccumulator " <>
-               "(real fields: combined_confidence=0.85, entity_familiarity=0.95, " <>
-               "relevant_episodes=5, relevant_semantics=2, conversation_topics=2, signals=2). " <>
-               "Got: #{inspect(memory_features)}"
+      assert length(vector) == ChunkFeatures.vector_dimension()
+      assert Enum.all?(vector, &is_float/1)
     end
 
-    test "an empty ContextAccumulator yields different memory features than a populated one" do
-      empty_acc = %ContextAccumulator{}
+    test "no dimension is derived from accumulated memory state" do
+      groups = ChunkFeatures.dimension_manifest() |> Enum.map(&elem(&1, 0)) |> Enum.uniq()
 
-      full_acc = %ContextAccumulator{
-        signals: [{:a, 1, 0.9}, {:b, 2, 0.9}],
-        combined_confidence: 0.95,
-        entity_familiarity: 0.99,
-        relevant_episodes: List.duplicate(%{}, 8),
-        conversation_topics: [:x, :y, :z]
-      }
-
-      empty_vec =
-        ChunkFeatures.extract(
-          %ChunkAnalysis{chunk_index: 0, text: "hi", pos_tags: [], accumulated_context: empty_acc},
-          []
-        )
-
-      full_vec =
-        ChunkFeatures.extract(
-          %ChunkAnalysis{chunk_index: 0, text: "hi", pos_tags: [], accumulated_context: full_acc},
-          []
-        )
-
-      assert memory_slice(empty_vec) != memory_slice(full_vec),
-             "memory features were identical for empty vs populated ContextAccumulator — " <>
-               "the extractor is not actually reading any real fields"
+      refute :memory_context in groups,
+             "a dimension computed from the memory stores makes the training corpus " <>
+               "differ between two generation runs over the same input, because " <>
+               "generation writes to the stores it reads features from."
     end
   end
 
@@ -213,13 +172,124 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     end
   end
 
-  defp memory_slice(vector) do
-    offset = ChunkFeatures.vector_dimension() - enrichment_tail_dims() - @slot_dims - @memory_dims
-    Enum.slice(vector, offset, @memory_dims)
+  describe "dimension_manifest/0 — the vector's declared shape" do
+    test "names exactly as many dimensions as vector_dimension/0 declares" do
+      manifest = ChunkFeatures.dimension_manifest()
+
+      assert length(manifest) == ChunkFeatures.vector_dimension(),
+             "dimension_manifest/0 names #{length(manifest)} dimensions but " <>
+               "vector_dimension/0 declares #{ChunkFeatures.vector_dimension()}. " <>
+               "These cannot disagree — the width is derived from the manifest, " <>
+               "so a mismatch means one of them stopped being derived."
+    end
+
+    test "every dimension name is unique across the whole vector" do
+      names = Enum.map(ChunkFeatures.dimension_manifest(), fn {_g, n} -> n end)
+      dupes = names -- Enum.uniq(names)
+
+      assert dupes == [],
+             "duplicate dimension names: #{inspect(Enum.uniq(dupes), limit: :infinity)}. " <>
+               "A name that labels two slots makes the vector unattributable — the " <>
+               "whole point of the manifest — so a new group must not reuse a prefix."
+    end
+
+    test "group_widths/0 accounts for every dimension, with no empty group" do
+      widths = ChunkFeatures.group_widths()
+
+      assert Enum.sum(Enum.map(widths, &elem(&1, 1))) == ChunkFeatures.vector_dimension()
+
+      empty = Enum.filter(widths, fn {_g, w} -> w == 0 end)
+
+      assert empty == [],
+             "these groups contribute no dimensions: #{inspect(empty)}. " <>
+               "A zero-width group is either dead code or a data file that " <>
+               "failed to load — both should be loud, not a silent gap."
+    end
+
+    test "each group appears as one contiguous run, matching emission order" do
+      groups = ChunkFeatures.dimension_manifest() |> Enum.map(&elem(&1, 0))
+      runs = groups |> Enum.chunk_by(& &1) |> Enum.map(&hd/1)
+
+      assert runs == Enum.uniq(runs),
+             "a group's dimensions are split across the vector: #{inspect(runs)}. " <>
+               "Slice helpers locate a group by its first index and width, so a " <>
+               "non-contiguous group would silently read another group's values."
+    end
+
+    test "the emitted vector is exactly as long as the manifest" do
+      analysis = %ChunkAnalysis{chunk_index: 0, text: "turn on the kitchen lights", pos_tags: []}
+      vector = ChunkFeatures.extract(analysis, [])
+
+      assert length(vector) == length(ChunkFeatures.dimension_manifest()),
+             "extract/2 emitted #{length(vector)} values for " <>
+               "#{length(ChunkFeatures.dimension_manifest())} named dimensions " <>
+               "(difference #{length(vector) - length(ChunkFeatures.dimension_manifest())}). " <>
+               "Compare ChunkFeatures.group_widths/0 against the groups in extract/2 " <>
+               "to find which one moved."
+    end
+
+    test "schema_fingerprint/0 is deterministic and covers order, not just names" do
+      assert ChunkFeatures.schema_fingerprint() == ChunkFeatures.schema_fingerprint()
+      assert ChunkFeatures.schema_fingerprint() =~ ~r/^[0-9a-f]{16}$/
+
+      # A reordering with identical names and widths must still change the
+      # digest, otherwise a snapshot taken before a reorder would compare as
+      # equal to one taken after it.
+      manifest = ChunkFeatures.dimension_manifest()
+
+      digest = fn m ->
+        m
+        |> Enum.map_join("\n", fn {g, n} -> "#{g}/#{n}" end)
+        |> then(&:crypto.hash(:sha256, &1))
+        |> Base.encode16(case: :lower)
+        |> binary_part(0, 16)
+      end
+
+      assert digest.(manifest) == ChunkFeatures.schema_fingerprint()
+      refute digest.(Enum.reverse(manifest)) == ChunkFeatures.schema_fingerprint()
+    end
+
+    test "group 10 and group 17 agree on the lexical-domain vocabulary" do
+      runtime = length(Brain.Lexicon.domain_atoms())
+      compiled = EnrichmentFeatures.lexicon_domain_count()
+
+      assert runtime == compiled,
+             "group 10 reads #{runtime} lexical domains from Lexicon.domain_atoms/0 at " <>
+               "runtime, but EnrichmentFeatures froze #{compiled} at compile time for the " <>
+               "group 17 supersenses. The vector would be built from two different " <>
+               "vocabularies. Recompile brain, or reconcile the WordNet data."
+    end
+
+    test "the supersense partitions cover every lexical domain" do
+      partitioned =
+        EnrichmentFeatures.verb_supersense_dimension() +
+          EnrichmentFeatures.noun_supersense_dimension() +
+          EnrichmentFeatures.adj_adv_supersense_dimension()
+
+      assert partitioned == EnrichmentFeatures.lexicon_domain_count(),
+             "the verb_/noun_/adj_/adv_ partitions cover #{partitioned} of " <>
+               "#{EnrichmentFeatures.lexicon_domain_count()} lexical domains. The " <>
+               "#{EnrichmentFeatures.lexicon_domain_count() - partitioned} unmatched domain(s) " <>
+               "are counted by group 10 but absent from group 17 entirely."
+    end
+  end
+
+  # By name, not by arithmetic on the vector's tail: a width computed from a
+  # hand-maintained sum of the other groups moves onto the wrong values as soon as
+  # a group is added anywhere but the end.
+  defp group_slice(vector, group) do
+    manifest = ChunkFeatures.dimension_manifest()
+    offset = Enum.find_index(manifest, fn {g, _n} -> g == group end)
+    width = Enum.count(manifest, fn {g, _n} -> g == group end)
+
+    refute is_nil(offset), "no group #{inspect(group)} in the dimension manifest"
+
+    Enum.slice(vector, offset, width)
   end
 
   defp slot_slice(vector) do
-    offset = ChunkFeatures.vector_dimension() - enrichment_tail_dims() - @slot_dims
-    Enum.slice(vector, offset, @slot_dims)
+    slice = group_slice(vector, :slot_completeness)
+    assert length(slice) == @slot_dims
+    slice
   end
 end

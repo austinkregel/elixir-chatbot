@@ -1,0 +1,5745 @@
+[
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play music by Rolling Stones"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "No Scrubs song play"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play artist Meghan Trainor"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play album Horses"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play me a song by Aventura"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Maroon 5"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Hard Times by David Newman"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play artist ACDC"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play a romantic song"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play the album Divorcio by Julio Iglesia"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Rihanna on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Do I Wanna Know by Arctic Monkeys"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "let's listen to Come together by Beatles"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "can I listen to Gangsta's Paradise song"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play One Direction"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play album After the Gold Rush"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "let's hear some music"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play a pop song"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "can you play me a song"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "put on some Rolling Stones"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Best of You by Foo Fighters"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play album by Rihanna year 2016"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play country blues"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play something by Rihanna"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Metallica"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Experimental songs on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play what Prince wrote between 1980 and 1999"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Ca Marche by Maitre Gims"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "rock compositions"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Do I Wanna Know by Arctic Monkeys song on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play song by Lil Wayne"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play album Purple Rain on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play - context_play-music_usersays_en.json",
+    "text": "now the summer playlist"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play - context_play-music_usersays_en.json",
+    "text": "now Monster by Rihanna feat Eminem"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Blackbird from SD card"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Gospel songs on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play the Mean Kitty song"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Black Widow by Iggy Azalea song on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Aaron and Maria by the American analog set on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "can you play Adele"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "song pop"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play me some jazz"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Maroon 5 on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play jazz on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "I want to hear Owner of a Lonely Heart"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Nirvana"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "a song for me"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "yes play music"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "I want to listen the song New York"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "please play best 5 songs ever"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play song for me"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play - context_play-music_usersays_en.json",
+    "text": "now album Please Please Me of The Beatles"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play the song Encantadora"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "turn on a song"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "let's hear The Beatles"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play the song Bird"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play The Police"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play - context_play-music_usersays_en.json",
+    "text": "now rock"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Miracles from Apple Music"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play some good songs"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Telugu songs"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play Thinking Out Loud by Ed Sheeran"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play the song Pots of gold by the artist Mamas Gun"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play a song on Spotify"
+  },
+  {
+    "intent": "music.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.play_usersays_en.json",
+    "text": "play a song from Spotify"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "turn on party lights"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "light on in the bathroom"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "turn on the washing machine"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "turn on kitchen"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "can you turn on video player in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "turn on all the lights in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "switch on the device"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "can you turn on air conditioner for me please"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "turn lights on in my bedroom"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on - context_device-switch - comment_turn on devices_usersays_en.json",
+    "text": "turn on now"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "turn on the TV in foyer"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "please turn on the TV in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "red lights on"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "I need you to turn on device"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "can you turn on washing machine for me please"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "turn the lights blue"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "can you turn on humidifier for me please"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "I want to turn on my device"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "turn on TV everywhere"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "turn garage light on"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "party light"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "please turn on computer"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "romantic lights in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "turn on romantic lights in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "turn on all lights"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "turn on the coffee maker"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "turn on appliance"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "turn on computer"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "kitchen lights"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "please turn the lights on"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "turn on the hallway light"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "kitchen lights on"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "turn the appliance on for me"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "sleep lights"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "turn on my device for me"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "turn on PC"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "tell lights on in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "turn on living room light everything"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
+    "text": "turn the device on"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "I need just a little light"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "green lights"
+  },
+  {
+    "intent": "smarthome.device.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.on_usersays_en.json",
+    "text": "turn all lights on"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.off_usersays_en.json",
+    "text": "turn off all the lights in the clean room"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.off_usersays_en.json",
+    "text": "switch off the lights"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.off_usersays_en.json",
+    "text": "turn off all bedroom lights"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn off my laptop"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off - context_device-switch - comment_turn off devices_usersays_en.json",
+    "text": "turn this off"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "no more heat"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off - context_device-switch - comment_turn off devices_usersays_en.json",
+    "text": "switch it off"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn off video"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn off device for me"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn my device off for me"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off - context_device-switch - comment_turn off devices_usersays_en.json",
+    "text": "now off"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "I need you to turn off appliance"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "I want to turn off device"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "can you turn off water heater for me please"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.off_usersays_en.json",
+    "text": "can you turn off light for me please"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "I need you to turn off my device"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.off_usersays_en.json",
+    "text": "turn off lights in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn off TV everywhere"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.off_usersays_en.json",
+    "text": "turn off all the lights in bathroom"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn off coffee machine"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn off all things"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn the device off"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off - context_device-switch - comment_turn off devices_usersays_en.json",
+    "text": "now turn off"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off - context_device-switch - comment_turn off devices_usersays_en.json",
+    "text": "now switch off"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn off appliance"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn off all devices"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.off_usersays_en.json",
+    "text": "kitchen lightning off"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.off_usersays_en.json",
+    "text": "turn off the kitchen lights"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn off my TV"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn off water heater in the front room"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "switch off the heating"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "switch off the device"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "you should turn the device off"
+  },
+  {
+    "intent": "smarthome.device.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
+    "text": "turn off everything"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "turn down TV brightness till 15 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "dim all the decorations brightness"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "a little less lights"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "darken  TV screen till 40 percents"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "dim the computer screen level in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "darken TV screen till 40 percents please"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down - context_device-brightness - comment_not dim enough_usersays_en.json",
+    "text": "too bright"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "computer brightness down by 50 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "brightness down  till 10 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "turn the decorations brightness level down till 5 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "lights brightness down till 23"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "brightness down"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "little bit less light please"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down - context_device-brightness - comment_not dim enough_usersays_en.json",
+    "text": "too bright here"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "turn down lights until 40 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "make lights lower for 20 percents"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "lights down"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "brightness level down by 50"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "make decorations darker to 40 percents"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "turn the lights down"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "make light level lower by 5 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "dim the table lamp"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "turn down lights brightness till 15 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "turn decorations brightness down by 50 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "dim the light in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "can you please make lights in the room darker till 40 percents"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "dim the living room computer to 20"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down_usersays_en.json",
+    "text": "turn down lights until 40 percent"
+  },
+  {
+    "intent": "smarthome.device.brightness.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
+    "text": "TV brightness up to 15 percents in the bedroom"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "I need less heat in here"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "turn heating colder for 20 percents"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "lower the temperature by 5 degrees"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "turn heating colder"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "decrease the heat by 5 degrees"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down - context_heating - comment_not cold enough_usersays_en.json",
+    "text": "not cold enough"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "make heating in the kitchen 10 less"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "make the air conditioning cooler"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "turn down heating for 20"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "make heating down"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "turn down temperature in the kitchen"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "make heating 20 degrees cooler"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "turn down the heating in bedroom by 5 grad"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "decrease the temperature in air conditioner"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down - context_heating - comment_not cold enough_usersays_en.json",
+    "text": "still hot"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "heating down everywhere"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "turn down the temperature in air conditioner by 10 points"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "make heating cooler for 20 degrees"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "little less heating"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "please turn the temp down by five degrees"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "make bedroom temperature down"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "lower the temperature to 20 degrees"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "make heating colder"
+  },
+  {
+    "intent": "smarthome.heating.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down_usersays_en.json",
+    "text": "can you lower the temperature of air conditioning a little bit"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search - context_search-music_usersays_en.json",
+    "text": "now search for Eminem"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search - context_search-music_usersays_en.json",
+    "text": "now songs about love"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search - context_search-music_usersays_en.json",
+    "text": "now search for album Lucky Star"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "can you search some good mood song in YouTube"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "can you look up for a song name Set fire to the rain by Adele"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "could you search in YouTube a song of Queen"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "can you search for me a song"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search - context_search-music_usersays_en.json",
+    "text": "now Elton John"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "search Britney Spears music"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "could you search for jazz music"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "top songs of 2016"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "search Britney Spears Me Against the Music feat Madonna"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "look for The Beatles music"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search - context_search-music_usersays_en.json",
+    "text": "now search for jazz"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search - context_search-music_usersays_en.json",
+    "text": "now find album called Let it be"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search - context_search-music_usersays_en.json",
+    "text": "now find jazz"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search - context_search-music_usersays_en.json",
+    "text": "how about Pandora"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search - context_search-music_usersays_en.json",
+    "text": "now find album Burning up"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "search me a Nicki Minaj song"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "find Blackbird song"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "find some song in Hindi"
+  },
+  {
+    "intent": "music.search",
+    "labeled_by": "dialogflow",
+    "source_file": "music.search_usersays_en.json",
+    "text": "could you find the music"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.up_usersays_en.json",
+    "text": "turn up all the lights"
+  },
+  {
+    "candidates": [
+      "smarthome.device.brightness.up",
+      "smarthome.device.brightness.up.implicit"
+    ],
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up - context_device-brightness - comment_not bright enough_usersays_en.json",
+    "status": "needs_review",
+    "text": "it's too dark"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.up_usersays_en.json",
+    "text": "turn lights level up by 50"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
+    "text": "make my PC screen brighter for 20 percents"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.up_usersays_en.json",
+    "text": "turn lights level up till 23"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.up_usersays_en.json",
+    "text": "turn lights shine 20 percents brighter"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.up_usersays_en.json",
+    "text": "lights up"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
+    "text": "TV brightness level up till 23"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up - context_device-brightness - comment_not bright enough_usersays_en.json",
+    "text": "it is dark"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
+    "text": "TV brightness up till 10 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
+    "text": "brightness up by 10 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
+    "text": "I need brighter TV screen in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up - context_device-brightness - comment_not bright enough_usersays_en.json",
+    "text": "it is too dark here"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.up_usersays_en.json",
+    "text": "turn lights brighter for 20 percents"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up - context_device-brightness - comment_not bright enough_usersays_en.json",
+    "text": "brighten it"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.up_usersays_en.json",
+    "text": "lights level up by 50"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
+    "text": "kitchen TV brightness up"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
+    "text": "turn up TV brightness by 10 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
+    "text": "turn up the TV brightness level"
+  },
+  {
+    "intent": "smarthome.device.brightness.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.up_usersays_en.json",
+    "text": "make lights brighter"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "it's great"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "no it's okay"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "that's really good"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "it is good"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "that's awesome"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "straight"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "marvelous"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "that's amazing"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "pleasant"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "great"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "that's perfect"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "that was pretty good"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "good for you"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "that's sweet of you"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "it is fine"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "that's wonderful"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "splendid"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "this is good"
+  },
+  {
+    "intent": "smalltalk.appraisal.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.good_usersays_en.json",
+    "text": "perfect"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "what will be the weather like on the weekend"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "forecast in Tokyo"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "what's the weather forecast in San Francisco"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "show me the weather in Milan for Wednesday"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "what's it like outside"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "I'd like to know the weather"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "today's weather in London"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "how's the weather today"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "I'd like to know the weather in Madrid"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "weather outside"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "what is the weather like today"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "tomorrow's weather"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "show me the weather in Munich"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "could you give me the weather forecast for Hong Kong please"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "what's the weather going to be tomorrow"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "weather in Khanapur"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "what's the weather forecast for today"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "what is the current weather in Pune"
+  },
+  {
+    "intent": "weather.query",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.query_usersays_en.json",
+    "text": "what's the weather today"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "My name is Dallas"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "Hey, I'm Georgia"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "Nice to meet you, I'm Austin"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "I'm Troy"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "I'm Austin"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "I'm Michael"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "You can call me Jordan"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "Hi, I'm Dakota"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "My name is Paris"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "Call me Jolene"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "I'm Sarah"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "They call me Dallas"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "I'm Victoria"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "Hi there, I'm Charlotte"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "Hello, my name is Orlando"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "I'm Regina"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "I'm Brooklyn"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "I'm Geneva"
+  },
+  {
+    "intent": "smalltalk.user.introduction",
+    "labeled_by": "materialized",
+    "source_file": "smalltalk.user.introduction_usersays_en.json",
+    "text": "Pleased to meet you, my name is Georgia"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "a little more heating"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up - context_heating - comment_not warm enough_usersays_en.json",
+    "text": "still not hot enough"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "turn up the temperature of air conditioner"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up - context_heating - comment_not warm enough_usersays_en.json",
+    "text": "not warm enough"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "turn up temperature by 1 point"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "turn heating 20 percents hotter"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "turn heating hotter for 20 degrees"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "increase the heat in living room by 5 degrees"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "make heating 20 degrees hotter"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "temperature up"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "make heating hotter for 20 percents"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "kitchen temperature up"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "make heating hotter for 20 degrees"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "turn up the temperature"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "make hotter by 30 percent"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "heating 50 hotter"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up_usersays_en.json",
+    "text": "raise up the temperature to 78"
+  },
+  {
+    "intent": "smarthome.heating.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up - context_heating - comment_not warm enough_usersays_en.json",
+    "text": "still not warm"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "I like you as you are"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "I like you more"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "I like that about you"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "well you are special"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "you're awesome I like you"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "you are special to me"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "I like you the way you are"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "I like you too much"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "you are so special"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "I like u"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "I also like you"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "you're so special to me"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "I like you a lot"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "cuz I like you"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "I like you too"
+  },
+  {
+    "intent": "smalltalk.user.likes_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.likes_agent_usersays_en.json",
+    "text": "I like you already"
+  },
+  {
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search_usersays_en.json",
+    "text": "read top news from BBC from today"
+  },
+  {
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search - context_news-search_usersays_en.json",
+    "text": "how about CNN"
+  },
+  {
+    "candidates": [
+      "news.search",
+      "web.search"
+    ],
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search - next_usersays_en.json",
+    "status": "needs_review",
+    "text": "read the next results"
+  },
+  {
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search_usersays_en.json",
+    "text": "show me the Yahoo headlines"
+  },
+  {
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search - context_news-search_usersays_en.json",
+    "text": "from BBC also"
+  },
+  {
+    "candidates": [
+      "news.search",
+      "web.search"
+    ],
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search - next_usersays_en.json",
+    "status": "needs_review",
+    "text": "switch to the next"
+  },
+  {
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search - context_news-search_usersays_en.json",
+    "text": "from BBC"
+  },
+  {
+    "candidates": [
+      "news.search",
+      "web.search"
+    ],
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search - previous_usersays_en.json",
+    "status": "needs_review",
+    "text": "return to previous page"
+  },
+  {
+    "candidates": [
+      "news.search",
+      "web.search"
+    ],
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search - previous_usersays_en.json",
+    "status": "needs_review",
+    "text": "return to the previous"
+  },
+  {
+    "candidates": [
+      "news.search",
+      "web.search"
+    ],
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search - next_usersays_en.json",
+    "status": "needs_review",
+    "text": "following result"
+  },
+  {
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search_usersays_en.json",
+    "text": "headlines about elections"
+  },
+  {
+    "candidates": [
+      "news.search",
+      "web.search"
+    ],
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search - next_usersays_en.json",
+    "status": "needs_review",
+    "text": "show me the next page"
+  },
+  {
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search_usersays_en.json",
+    "text": "give me breaking news from Europe"
+  },
+  {
+    "candidates": [
+      "news.search",
+      "web.search"
+    ],
+    "intent": "news.search",
+    "labeled_by": "dialogflow",
+    "source_file": "news.search - repeat_usersays_en.json",
+    "status": "needs_review",
+    "text": "do it again"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "switch heating on to 60 F"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "set my temperature at about 80"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "set my bedroom temperature to 65"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "modify the temperature"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "set the temperature at 75 degrees"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "set the thermostat to 40 degrees"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "set the house temperature to 70 degrees"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "turn the temperature to 20 degrees Celsius"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "set heating to 50 degrees"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "set temp to 25 grad"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "room temperature"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "change the temperature to 76"
+  },
+  {
+    "intent": "smarthome.heating.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.set_usersays_en.json",
+    "text": "make heating 20 degrees"
+  },
+  {
+    "intent": "smalltalk.agent.beautiful",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.beautiful_usersays_en.json",
+    "text": "you are so attractive"
+  },
+  {
+    "intent": "smalltalk.agent.beautiful",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.beautiful_usersays_en.json",
+    "text": "you're looking good"
+  },
+  {
+    "intent": "smalltalk.agent.beautiful",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.beautiful_usersays_en.json",
+    "text": "you look pretty good"
+  },
+  {
+    "intent": "smalltalk.agent.beautiful",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.beautiful_usersays_en.json",
+    "text": "you are looking awesome"
+  },
+  {
+    "intent": "smalltalk.agent.beautiful",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.beautiful_usersays_en.json",
+    "text": "you are really pretty"
+  },
+  {
+    "intent": "smalltalk.agent.beautiful",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.beautiful_usersays_en.json",
+    "text": "you are so cute"
+  },
+  {
+    "intent": "smalltalk.agent.beautiful",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.beautiful_usersays_en.json",
+    "text": "I like the way you look"
+  },
+  {
+    "intent": "smalltalk.agent.beautiful",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.beautiful_usersays_en.json",
+    "text": "you look perfect"
+  },
+  {
+    "intent": "smalltalk.agent.beautiful",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.beautiful_usersays_en.json",
+    "text": "you are looking great"
+  },
+  {
+    "intent": "smalltalk.agent.beautiful",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.beautiful_usersays_en.json",
+    "text": "you look wonderful today"
+  },
+  {
+    "intent": "smalltalk.agent.beautiful",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.beautiful_usersays_en.json",
+    "text": "you look so beautiful today"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.bad_usersays_en.json",
+    "text": "that's too bad"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.bad_usersays_en.json",
+    "text": "so lame"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.bad_usersays_en.json",
+    "text": "this is bad"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.bad_usersays_en.json",
+    "text": "that was bad"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.bad_usersays_en.json",
+    "text": "that was horrible"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.bad_usersays_en.json",
+    "text": "that was terrible"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.bad_usersays_en.json",
+    "text": "it's really bad"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.bad_usersays_en.json",
+    "text": "bad idea"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.bad_usersays_en.json",
+    "text": "bad"
+  },
+  {
+    "intent": "smalltalk.appraisal.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.bad_usersays_en.json",
+    "text": "it's not good"
+  },
+  {
+    "intent": "smarthome.device.volume",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume - context_device-volume - comment_up_usersays_en.json",
+    "text": "up again"
+  },
+  {
+    "candidates": [
+      "smarthome.device.volume",
+      "smarthome.device.volume.check"
+    ],
+    "intent": "smarthome.device.volume",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume - context_device-volume - comment_room_usersays_en.json",
+    "status": "needs_review",
+    "text": "in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.volume",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume - context_device-volume - comment_down_usersays_en.json",
+    "text": "down once more"
+  },
+  {
+    "intent": "smarthome.device.volume",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume - context_device-volume - comment_up_usersays_en.json",
+    "text": "again up"
+  },
+  {
+    "intent": "smarthome.device.volume",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume - context_device-volume - comment_points_usersays_en.json",
+    "text": "to 5 points please"
+  },
+  {
+    "intent": "smarthome.device.volume",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume - context_device-volume - comment_down_usersays_en.json",
+    "text": "down now"
+  },
+  {
+    "intent": "smarthome.device.volume",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume - context_device-volume - comment_up_usersays_en.json",
+    "text": "turn it up"
+  },
+  {
+    "intent": "smarthome.device.volume",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume - context_device-volume - comment_points_usersays_en.json",
+    "text": "to 5 now"
+  },
+  {
+    "candidates": [
+      "smarthome.device.volume",
+      "smarthome.device.volume.check"
+    ],
+    "intent": "smarthome.device.volume",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume - context_device-volume - comment_device_usersays_en.json",
+    "status": "needs_review",
+    "text": "speakers too"
+  },
+  {
+    "intent": "smarthome.device.volume",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume - context_device-volume - comment_up_usersays_en.json",
+    "text": "more"
+  },
+  {
+    "intent": "weather.temperature",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.temperature_usersays_en.json",
+    "text": "show me the temperature in Paris"
+  },
+  {
+    "intent": "weather.temperature",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.temperature_usersays_en.json",
+    "text": "temperature in Bangkok"
+  },
+  {
+    "intent": "weather.temperature",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.temperature_usersays_en.json",
+    "text": "how cold is it in Chicago"
+  },
+  {
+    "intent": "weather.temperature",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.temperature_usersays_en.json",
+    "text": "at New York is there cold"
+  },
+  {
+    "intent": "weather.temperature",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.temperature_usersays_en.json",
+    "text": "what's the temperature outside"
+  },
+  {
+    "intent": "weather.temperature",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.temperature_usersays_en.json",
+    "text": "temperature"
+  },
+  {
+    "intent": "weather.temperature",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.temperature_usersays_en.json",
+    "text": "what's the temperature in Moscow in Celsius"
+  },
+  {
+    "intent": "weather.temperature",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.temperature_usersays_en.json",
+    "text": "is there warm in New York"
+  },
+  {
+    "intent": "weather.temperature",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.temperature_usersays_en.json",
+    "text": "check temperature for next week in Budapest"
+  },
+  {
+    "intent": "weather.temperature",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.temperature_usersays_en.json",
+    "text": "it is chilly in London right now"
+  },
+  {
+    "intent": "weather.condition",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.condition_usersays_en.json",
+    "text": "does it snow in Moscow"
+  },
+  {
+    "intent": "weather.condition",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.condition_usersays_en.json",
+    "text": "is it raining here"
+  },
+  {
+    "intent": "weather.condition",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.condition_usersays_en.json",
+    "text": "will it rain tomorrow in Paris"
+  },
+  {
+    "intent": "weather.condition",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.condition_usersays_en.json",
+    "text": "is it going to snow in Paris on Sunday"
+  },
+  {
+    "intent": "weather.condition",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.condition_usersays_en.json",
+    "text": "will it be foggy on July 22"
+  },
+  {
+    "intent": "weather.condition",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.condition_usersays_en.json",
+    "text": "will it be raining tomorrow"
+  },
+  {
+    "intent": "weather.condition",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.condition_usersays_en.json",
+    "text": "when will it rain today"
+  },
+  {
+    "intent": "weather.condition",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.condition_usersays_en.json",
+    "text": "any chance of thunderstorms in Colorado"
+  },
+  {
+    "intent": "weather.condition",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.condition_usersays_en.json",
+    "text": "when will it rain in Oslo today"
+  },
+  {
+    "intent": "smarthome.device.volume.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.check_usersays_en.json",
+    "text": "radio volume check"
+  },
+  {
+    "intent": "smarthome.device.volume.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.check_usersays_en.json",
+    "text": "what's the volume level in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.volume.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.check_usersays_en.json",
+    "text": "check the kitchen's speakers volume"
+  },
+  {
+    "intent": "smarthome.device.volume.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.check_usersays_en.json",
+    "text": "what's the volume level for kitchen speakers"
+  },
+  {
+    "intent": "smarthome.device.volume.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.check_usersays_en.json",
+    "text": "check the sound volume"
+  },
+  {
+    "intent": "smarthome.device.volume.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.check_usersays_en.json",
+    "text": "what's the volume of the speakers in the living room"
+  },
+  {
+    "intent": "smarthome.device.volume.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.check - context_volume-check - comment_device_usersays_en.json",
+    "text": "also speakers"
+  },
+  {
+    "intent": "smarthome.device.volume.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.check_usersays_en.json",
+    "text": "check volume level of the TV"
+  },
+  {
+    "intent": "smarthome.device.volume.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.check_usersays_en.json",
+    "text": "could you please check the TV volume for me"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.good_usersays_en.json",
+    "text": "you are so cool"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.good_usersays_en.json",
+    "text": "you are good at it"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.good_usersays_en.json",
+    "text": "you are very good at it"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.good_usersays_en.json",
+    "text": "you're just super"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.good_usersays_en.json",
+    "text": "you are cool"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.good_usersays_en.json",
+    "text": "you are very helpful"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.good_usersays_en.json",
+    "text": "you're great"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.good_usersays_en.json",
+    "text": "you work very well"
+  },
+  {
+    "intent": "smalltalk.agent.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.good_usersays_en.json",
+    "text": "you are so amazing"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.can_you_help_usersays_en.json",
+    "text": "can you help us"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.can_you_help_usersays_en.json",
+    "text": "need help"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.can_you_help_usersays_en.json",
+    "text": "help me with a problem"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.can_you_help_usersays_en.json",
+    "text": "can you help me out"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.can_you_help_usersays_en.json",
+    "text": "I would like to tell you something"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.can_you_help_usersays_en.json",
+    "text": "you help me"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.can_you_help_usersays_en.json",
+    "text": "you can help me"
+  },
+  {
+    "intent": "smalltalk.agent.can_you_help",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.can_you_help_usersays_en.json",
+    "text": "help"
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.hello_usersays_en.json",
+    "text": "a good day"
+  },
+  {
+    "intent": "smalltalk.greetings.hello",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.hello_usersays_en.json",
+    "text": "Hia!"
+  },
+  {
+    "intent": "code.explain",
+    "labeled_by": "materialized",
+    "source_file": "code.explain_usersays_en.json",
+    "text": "I want to understand the OrderService class"
+  },
+  {
+    "intent": "code.explain",
+    "labeled_by": "materialized",
+    "source_file": "code.explain_usersays_en.json",
+    "text": "explain the Pipeline module"
+  },
+  {
+    "intent": "code.explain",
+    "labeled_by": "materialized",
+    "source_file": "code.explain_usersays_en.json",
+    "text": "explain what the ResponseGenerator does"
+  },
+  {
+    "intent": "code.explain",
+    "labeled_by": "materialized",
+    "source_file": "code.explain_usersays_en.json",
+    "text": "explain the code in brain.ex"
+  },
+  {
+    "intent": "code.explain",
+    "labeled_by": "materialized",
+    "source_file": "code.explain_usersays_en.json",
+    "text": "describe what fetch_data does"
+  },
+  {
+    "intent": "code.explain",
+    "labeled_by": "materialized",
+    "source_file": "code.explain_usersays_en.json",
+    "text": "tell me about the DatabaseConnection class"
+  },
+  {
+    "intent": "code.explain",
+    "labeled_by": "materialized",
+    "source_file": "code.explain_usersays_en.json",
+    "text": "how does the Tokenizer module work"
+  },
+  {
+    "intent": "code.explain",
+    "labeled_by": "materialized",
+    "source_file": "code.explain_usersays_en.json",
+    "text": "can you explain handle_request"
+  },
+  {
+    "intent": "smalltalk.greetings.how_are_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.how_are_you_usersays_en.json",
+    "text": "are you okay"
+  },
+  {
+    "intent": "smalltalk.greetings.how_are_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.how_are_you_usersays_en.json",
+    "text": "what about your day"
+  },
+  {
+    "intent": "smalltalk.greetings.how_are_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.how_are_you_usersays_en.json",
+    "text": "how's your day"
+  },
+  {
+    "intent": "smalltalk.greetings.how_are_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.how_are_you_usersays_en.json",
+    "text": "how are you"
+  },
+  {
+    "intent": "smalltalk.greetings.how_are_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.how_are_you_usersays_en.json",
+    "text": "how have you been"
+  },
+  {
+    "intent": "smalltalk.greetings.how_are_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.how_are_you_usersays_en.json",
+    "text": "how has your day been going"
+  },
+  {
+    "intent": "smalltalk.greetings.how_are_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.how_are_you_usersays_en.json",
+    "text": "how is your life"
+  },
+  {
+    "intent": "smalltalk.greetings.how_are_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.how_are_you_usersays_en.json",
+    "text": "how is your evening"
+  },
+  {
+    "intent": "smarthome.device.volume.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.down_usersays_en.json",
+    "text": "turn down the volume of the TV in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.volume.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.down_usersays_en.json",
+    "text": "turn the volume down to 2 points"
+  },
+  {
+    "intent": "smarthome.device.volume.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.down_usersays_en.json",
+    "text": "can you turn the volume down on my ipod"
+  },
+  {
+    "intent": "smarthome.device.volume.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.down_usersays_en.json",
+    "text": "lower volume"
+  },
+  {
+    "intent": "smarthome.device.volume.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.down_usersays_en.json",
+    "text": "volume lower"
+  },
+  {
+    "intent": "smarthome.device.volume.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.down_usersays_en.json",
+    "text": "decrease the volume of the speakers"
+  },
+  {
+    "intent": "smarthome.device.volume.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.down_usersays_en.json",
+    "text": "speakers volume down"
+  },
+  {
+    "intent": "smarthome.device.volume.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.down_usersays_en.json",
+    "text": "turn the TV volume down in bedroom"
+  },
+  {
+    "intent": "smarthome.device.brightness.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.set_usersays_en.json",
+    "text": "set brightness to 50 points"
+  },
+  {
+    "intent": "smarthome.device.brightness.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.set_usersays_en.json",
+    "text": "set brightness"
+  },
+  {
+    "intent": "smarthome.device.brightness.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.set_usersays_en.json",
+    "text": "set lights level to 10"
+  },
+  {
+    "intent": "smarthome.device.brightness.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.set_usersays_en.json",
+    "text": "set brightness for computer"
+  },
+  {
+    "intent": "smarthome.device.brightness.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.set_usersays_en.json",
+    "text": "turn brightness to 10"
+  },
+  {
+    "intent": "smarthome.device.brightness.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.set_usersays_en.json",
+    "text": "all of the computers brightness"
+  },
+  {
+    "intent": "smarthome.device.brightness.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.set_usersays_en.json",
+    "text": "set brightness in all rooms"
+  },
+  {
+    "intent": "smarthome.device.brightness.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.set_usersays_en.json",
+    "text": "set decorations level to 10 in the kitchen"
+  },
+  {
+    "intent": "smarthome.heating.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check_usersays_en.json",
+    "text": "can you report the temperature in bedroom now"
+  },
+  {
+    "intent": "smarthome.heating.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check_usersays_en.json",
+    "text": "tell me the temperature"
+  },
+  {
+    "intent": "smarthome.heating.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check_usersays_en.json",
+    "text": "is temperature high"
+  },
+  {
+    "intent": "smarthome.heating.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check_usersays_en.json",
+    "text": "what is the temperature in the living room"
+  },
+  {
+    "intent": "smarthome.heating.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check_usersays_en.json",
+    "text": "temperature in kitchen"
+  },
+  {
+    "intent": "smarthome.heating.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check_usersays_en.json",
+    "text": "what's the temperature everywhere"
+  },
+  {
+    "intent": "smarthome.heating.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check_usersays_en.json",
+    "text": "please check the temperature in kids room"
+  },
+  {
+    "intent": "smarthome.heating.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check_usersays_en.json",
+    "text": "please check bedroom's temperature"
+  },
+  {
+    "intent": "smalltalk.agent.my_friend",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.my_friend_usersays_en.json",
+    "text": "I want you to be my friend"
+  },
+  {
+    "intent": "smalltalk.agent.my_friend",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.my_friend_usersays_en.json",
+    "text": "we are best friends"
+  },
+  {
+    "intent": "smalltalk.agent.my_friend",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.my_friend_usersays_en.json",
+    "text": "you are my good friend"
+  },
+  {
+    "intent": "smalltalk.agent.my_friend",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.my_friend_usersays_en.json",
+    "text": "you are my best friend"
+  },
+  {
+    "intent": "smalltalk.agent.my_friend",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.my_friend_usersays_en.json",
+    "text": "you are a good friend"
+  },
+  {
+    "intent": "smalltalk.agent.my_friend",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.my_friend_usersays_en.json",
+    "text": "be my friend"
+  },
+  {
+    "intent": "smalltalk.agent.my_friend",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.my_friend_usersays_en.json",
+    "text": "can you be my friend"
+  },
+  {
+    "intent": "smarthome.device.volume.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.up_usersays_en.json",
+    "text": "turn the TV up by 6 percent in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.volume.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.up_usersays_en.json",
+    "text": "can you please turn the volume on"
+  },
+  {
+    "intent": "smarthome.device.volume.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.up_usersays_en.json",
+    "text": "increase the volume"
+  },
+  {
+    "intent": "smarthome.device.volume.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.up_usersays_en.json",
+    "text": "too quiet"
+  },
+  {
+    "intent": "smarthome.device.volume.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.up_usersays_en.json",
+    "text": "TV volume up"
+  },
+  {
+    "intent": "smarthome.device.volume.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.up_usersays_en.json",
+    "text": "speakers volume up"
+  },
+  {
+    "intent": "smarthome.device.volume.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.up_usersays_en.json",
+    "text": "turn the TV up by 3 percent"
+  },
+  {
+    "intent": "smarthome.device.switch.check.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.check.on_usersays_en.json",
+    "text": "check if lights are on in the bedroom"
+  },
+  {
+    "intent": "smarthome.device.switch.check.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.check.on_usersays_en.json",
+    "text": "is the lightning on"
+  },
+  {
+    "intent": "smarthome.device.switch.check.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.check.on_usersays_en.json",
+    "text": "what's the status of my lights"
+  },
+  {
+    "intent": "smarthome.device.switch.check.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.check.on_usersays_en.json",
+    "text": "status of the lights in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.switch.check.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.check.on_usersays_en.json",
+    "text": "check if TV is on in the bedroom"
+  },
+  {
+    "intent": "smarthome.device.switch.check.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.check.on - context_check - comment_check if device is on_usersays_en.json",
+    "text": "did I turn them on"
+  },
+  {
+    "intent": "smarthome.device.switch.check.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.check.on - context_check - comment_check if device is on_usersays_en.json",
+    "text": "but is it on"
+  },
+  {
+    "intent": "smalltalk.greetings.bye",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.bye_usersays_en.json",
+    "text": "see you soon"
+  },
+  {
+    "intent": "smalltalk.greetings.bye",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.bye_usersays_en.json",
+    "text": "bye"
+  },
+  {
+    "intent": "smalltalk.greetings.bye",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.bye_usersays_en.json",
+    "text": "bye bye good night"
+  },
+  {
+    "intent": "smalltalk.greetings.bye",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.bye_usersays_en.json",
+    "text": "see you tomorrow"
+  },
+  {
+    "intent": "smalltalk.greetings.bye",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.bye_usersays_en.json",
+    "text": "hope to see you later"
+  },
+  {
+    "intent": "smalltalk.greetings.bye",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.bye_usersays_en.json",
+    "text": "I must go"
+  },
+  {
+    "intent": "smalltalk.greetings.bye",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.bye_usersays_en.json",
+    "text": "thanks bye bye"
+  },
+  {
+    "intent": "smalltalk.agent.clever",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.clever_usersays_en.json",
+    "text": "you are very clever"
+  },
+  {
+    "intent": "smalltalk.agent.clever",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.clever_usersays_en.json",
+    "text": "you know so much"
+  },
+  {
+    "intent": "smalltalk.agent.clever",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.clever_usersays_en.json",
+    "text": "you know a lot"
+  },
+  {
+    "intent": "smalltalk.agent.clever",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.clever_usersays_en.json",
+    "text": "you are so brainy"
+  },
+  {
+    "intent": "smalltalk.agent.clever",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.clever_usersays_en.json",
+    "text": "how clever you are"
+  },
+  {
+    "intent": "smalltalk.agent.clever",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.clever_usersays_en.json",
+    "text": "how smart you are"
+  },
+  {
+    "intent": "smalltalk.agent.clever",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.clever_usersays_en.json",
+    "text": "you're very smart"
+  },
+  {
+    "intent": "smalltalk.appraisal.thank_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.thank_you_usersays_en.json",
+    "text": "thnx"
+  },
+  {
+    "intent": "smalltalk.appraisal.thank_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.thank_you_usersays_en.json",
+    "text": "thanks a lot"
+  },
+  {
+    "intent": "smalltalk.appraisal.thank_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.thank_you_usersays_en.json",
+    "text": "thanks love"
+  },
+  {
+    "intent": "smalltalk.appraisal.thank_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.thank_you_usersays_en.json",
+    "text": "thanks"
+  },
+  {
+    "intent": "smalltalk.appraisal.thank_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.thank_you_usersays_en.json",
+    "text": "thank you so much"
+  },
+  {
+    "intent": "smalltalk.appraisal.thank_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.thank_you_usersays_en.json",
+    "text": "all thank you"
+  },
+  {
+    "intent": "smalltalk.appraisal.thank_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.thank_you_usersays_en.json",
+    "text": "very good thank you"
+  },
+  {
+    "intent": "smarthome.device.brightness.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.check_usersays_en.json",
+    "text": "brightness of my PC"
+  },
+  {
+    "intent": "smarthome.device.brightness.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.check_usersays_en.json",
+    "text": "how bright are the lights"
+  },
+  {
+    "intent": "smarthome.device.brightness.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.check_usersays_en.json",
+    "text": "what's brightness of bedroom"
+  },
+  {
+    "intent": "smarthome.device.brightness.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.check_usersays_en.json",
+    "text": "what's the level of computer screen"
+  },
+  {
+    "intent": "smarthome.device.brightness.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.check_usersays_en.json",
+    "text": "what about brightness"
+  },
+  {
+    "intent": "smarthome.device.brightness.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.check_usersays_en.json",
+    "text": "how bright are the lights in bedroom"
+  },
+  {
+    "intent": "smarthome.device.brightness.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.brightness.check_usersays_en.json",
+    "text": "is level of the computer in bedroom 5 points"
+  },
+  {
+    "intent": "smarthome.device.hue.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.up_usersays_en.json",
+    "text": "make hue higher by 5 points in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.hue.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.up_usersays_en.json",
+    "text": "hue up in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.hue.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.up_usersays_en.json",
+    "text": "hue up by 10 points"
+  },
+  {
+    "intent": "smarthome.device.hue.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.up_usersays_en.json",
+    "text": "turn up hue till 10 points"
+  },
+  {
+    "intent": "smarthome.device.hue.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.up_usersays_en.json",
+    "text": "hue up till 23"
+  },
+  {
+    "intent": "smarthome.device.hue.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.up_usersays_en.json",
+    "text": "lights hue up till 5 points"
+  },
+  {
+    "intent": "smarthome.device.hue.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.up_usersays_en.json",
+    "text": "lights hue up by 50 percents"
+  },
+  {
+    "intent": "smarthome.device.saturation.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.down_usersays_en.json",
+    "text": "lower saturation to 5"
+  },
+  {
+    "intent": "smarthome.device.saturation.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.down_usersays_en.json",
+    "text": "turn saturation of red lights down"
+  },
+  {
+    "intent": "smarthome.device.saturation.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.down_usersays_en.json",
+    "text": "make saturation lower by 5 points"
+  },
+  {
+    "intent": "smarthome.device.saturation.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.down_usersays_en.json",
+    "text": "turn down saturation to 10 points"
+  },
+  {
+    "intent": "smarthome.device.saturation.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.down_usersays_en.json",
+    "text": "turn saturation down in all rooms"
+  },
+  {
+    "intent": "smarthome.device.saturation.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.down_usersays_en.json",
+    "text": "saturation down by 50 points"
+  },
+  {
+    "intent": "music.player.repeat",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.repeat_usersays_en.json",
+    "text": "repeat this track"
+  },
+  {
+    "intent": "music.player.repeat",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.repeat_usersays_en.json",
+    "text": "repeat one more time"
+  },
+  {
+    "candidates": [
+      "music.player.repeat",
+      "news.search",
+      "web.search"
+    ],
+    "intent": "music.player.repeat",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.repeat_usersays_en.json",
+    "status": "needs_review",
+    "text": "repeat it"
+  },
+  {
+    "intent": "music.player.repeat",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.repeat_usersays_en.json",
+    "text": "turn on repeat mode for this song"
+  },
+  {
+    "candidates": [
+      "music.player.repeat",
+      "news.search",
+      "web.search"
+    ],
+    "intent": "music.player.repeat",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.repeat_usersays_en.json",
+    "status": "needs_review",
+    "text": "repeat"
+  },
+  {
+    "intent": "music.player.repeat",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.repeat_usersays_en.json",
+    "text": "put this track on repeat"
+  },
+  {
+    "intent": "smalltalk.emotions.ha_ha",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.emotions.ha_ha_usersays_en.json",
+    "text": "hehe"
+  },
+  {
+    "intent": "smalltalk.emotions.ha_ha",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.emotions.ha_ha_usersays_en.json",
+    "text": "that's funny"
+  },
+  {
+    "intent": "smalltalk.emotions.ha_ha",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.emotions.ha_ha_usersays_en.json",
+    "text": "haha"
+  },
+  {
+    "intent": "smalltalk.emotions.ha_ha",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.emotions.ha_ha_usersays_en.json",
+    "text": "ha"
+  },
+  {
+    "intent": "smalltalk.emotions.ha_ha",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.emotions.ha_ha_usersays_en.json",
+    "text": "he"
+  },
+  {
+    "intent": "smalltalk.emotions.ha_ha",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.emotions.ha_ha_usersays_en.json",
+    "text": "hehehe"
+  },
+  {
+    "intent": "weather.activity",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.activity_usersays_en.json",
+    "text": "should I go jogging this evening"
+  },
+  {
+    "intent": "weather.activity",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.activity_usersays_en.json",
+    "text": "can I go skiing in Vienna"
+  },
+  {
+    "intent": "weather.activity",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.activity_usersays_en.json",
+    "text": "is the weather good for walking"
+  },
+  {
+    "intent": "weather.activity",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.activity_usersays_en.json",
+    "text": "I plan to ski today is it possible"
+  },
+  {
+    "intent": "weather.activity",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.activity_usersays_en.json",
+    "text": "ok do you think it's the good weather for cycling right now"
+  },
+  {
+    "intent": "weather.activity",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.activity_usersays_en.json",
+    "text": "should I go for a run"
+  },
+  {
+    "intent": "smarthome.device.switch.check.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.check.off_usersays_en.json",
+    "text": "did I turn off the red lights"
+  },
+  {
+    "intent": "smarthome.device.switch.check.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.check.off_usersays_en.json",
+    "text": "are the green lights off"
+  },
+  {
+    "intent": "smarthome.device.switch.check.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.check.off - context_check - comment_check if device is off_usersays_en.json",
+    "text": "is it off"
+  },
+  {
+    "intent": "smarthome.device.switch.check.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.check.off - context_check - comment_check if device is off_usersays_en.json",
+    "text": "did you turn them off"
+  },
+  {
+    "intent": "smarthome.device.switch.check.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.check.off_usersays_en.json",
+    "text": "did I turn off TV"
+  },
+  {
+    "intent": "smarthome.device.switch.check.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch.check.off_usersays_en.json",
+    "text": "is TV off in the living room"
+  },
+  {
+    "intent": "smarthome.heating",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating - context_heating - comment_increase or decrease grad_usersays_en.json",
+    "text": "add more 30 points"
+  },
+  {
+    "intent": "smarthome.heating",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating - context_heating - comment_increase or decrease grad_usersays_en.json",
+    "text": "15 points less"
+  },
+  {
+    "intent": "smarthome.heating",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating - context_heating - comment_change final grad_usersays_en.json",
+    "text": "set to 20"
+  },
+  {
+    "intent": "smarthome.heating",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating - context_heating - comment_increase or decrease grad_usersays_en.json",
+    "text": "turn it down by 15 degrees"
+  },
+  {
+    "intent": "smarthome.heating",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating - context_heating - comment_increase or decrease grad_usersays_en.json",
+    "text": "add 25 more"
+  },
+  {
+    "intent": "smalltalk.agent.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.bad_usersays_en.json",
+    "text": "you are horrible"
+  },
+  {
+    "intent": "smalltalk.agent.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.bad_usersays_en.json",
+    "text": "you're not a good"
+  },
+  {
+    "intent": "smalltalk.agent.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.bad_usersays_en.json",
+    "text": "you are very bad"
+  },
+  {
+    "intent": "smalltalk.agent.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.bad_usersays_en.json",
+    "text": "you are no good"
+  },
+  {
+    "intent": "smalltalk.agent.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.bad_usersays_en.json",
+    "text": "you are waste"
+  },
+  {
+    "intent": "smalltalk.agent.bad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.bad_usersays_en.json",
+    "text": "you're worthless"
+  },
+  {
+    "intent": "smarthome.locks.open",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.open_usersays_en.json",
+    "text": "open doors everywhere"
+  },
+  {
+    "intent": "smarthome.locks.open",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.open_usersays_en.json",
+    "text": "open bathroom door"
+  },
+  {
+    "intent": "smarthome.locks.open",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.open_usersays_en.json",
+    "text": "open the door"
+  },
+  {
+    "intent": "smarthome.locks.open",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.open - context_open_usersays_en.json",
+    "text": "I want to open it now"
+  },
+  {
+    "intent": "smarthome.locks.open",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.open_usersays_en.json",
+    "text": "open the front door"
+  },
+  {
+    "intent": "smarthome.locks.open",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.open - context_open_usersays_en.json",
+    "text": "open them"
+  },
+  {
+    "candidates": [
+      "music.player.skip_forward",
+      "news.search",
+      "web.search"
+    ],
+    "intent": "music.player.skip_forward",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.skip_forward_usersays_en.json",
+    "status": "needs_review",
+    "text": "next"
+  },
+  {
+    "intent": "music.player.skip_forward",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.skip_forward_usersays_en.json",
+    "text": "skip"
+  },
+  {
+    "intent": "music.player.skip_forward",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.skip_forward_usersays_en.json",
+    "text": "what's next"
+  },
+  {
+    "intent": "music.player.skip_forward",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.skip_forward_usersays_en.json",
+    "text": "what's the next one"
+  },
+  {
+    "intent": "music.player.skip_forward",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.skip_forward_usersays_en.json",
+    "text": "what's the next song"
+  },
+  {
+    "intent": "smarthome.device.hue.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.down_usersays_en.json",
+    "text": "make hue lower by 5 points"
+  },
+  {
+    "intent": "smarthome.device.hue.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.down_usersays_en.json",
+    "text": "hue down to 15 percents in the living room"
+  },
+  {
+    "intent": "smarthome.device.hue.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.down_usersays_en.json",
+    "text": "turn hue down till 5 points"
+  },
+  {
+    "intent": "smarthome.device.hue.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.down_usersays_en.json",
+    "text": "red lights hue down till 23"
+  },
+  {
+    "intent": "smarthome.device.hue.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.down_usersays_en.json",
+    "text": "hue down for 15 percents in the living room"
+  },
+  {
+    "intent": "smarthome.device.hue.down",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.down_usersays_en.json",
+    "text": "lights hue down for 15 percents in the living room"
+  },
+  {
+    "intent": "smarthome.device.volume.mute",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.mute_usersays_en.json",
+    "text": "how do I mute the volume"
+  },
+  {
+    "intent": "smarthome.device.volume.mute",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.mute_usersays_en.json",
+    "text": "sound on mute in the living room"
+  },
+  {
+    "intent": "smarthome.device.volume.mute",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.mute_usersays_en.json",
+    "text": "volume on mute"
+  },
+  {
+    "intent": "smarthome.device.volume.mute",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.mute_usersays_en.json",
+    "text": "I need to mute the kitchen TV volume"
+  },
+  {
+    "intent": "smarthome.device.volume.mute",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.mute_usersays_en.json",
+    "text": "can you mute the volume"
+  },
+  {
+    "intent": "account.balance.check",
+    "labeled_by": "dialogflow",
+    "source_file": "account.balance.check_usersays_en.json",
+    "text": "what's the balance in my savings account"
+  },
+  {
+    "intent": "account.balance.check",
+    "labeled_by": "dialogflow",
+    "source_file": "account.balance.check_usersays_en.json",
+    "text": "how much money is available on my bank account"
+  },
+  {
+    "intent": "account.balance.check",
+    "labeled_by": "dialogflow",
+    "source_file": "account.balance.check_usersays_en.json",
+    "text": "checking"
+  },
+  {
+    "intent": "account.balance.check",
+    "labeled_by": "dialogflow",
+    "source_file": "account.balance.check_usersays_en.json",
+    "text": "can you show balance on the card"
+  },
+  {
+    "intent": "account.balance.check",
+    "labeled_by": "dialogflow",
+    "source_file": "account.balance.check - context_ balance_usersays_en.json",
+    "text": "check how much"
+  },
+  {
+    "intent": "web.search",
+    "labeled_by": "dialogflow",
+    "source_file": "web.search_usersays_en.json",
+    "text": "find Lady Gaga's husband on the Internet"
+  },
+  {
+    "intent": "web.search",
+    "labeled_by": "dialogflow",
+    "source_file": "web.search - context_web-search_usersays_en.json",
+    "text": "how about apple pie recipes"
+  },
+  {
+    "intent": "web.search",
+    "labeled_by": "dialogflow",
+    "source_file": "web.search_usersays_en.json",
+    "text": "find apple pie recipes"
+  },
+  {
+    "intent": "web.search",
+    "labeled_by": "dialogflow",
+    "source_file": "web.search_usersays_en.json",
+    "text": "find Newton laws in the web"
+  },
+  {
+    "intent": "web.search",
+    "labeled_by": "dialogflow",
+    "source_file": "web.search_usersays_en.json",
+    "text": "who is the president of the united states"
+  },
+  {
+    "intent": "smalltalk.dialog.sorry",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.sorry_usersays_en.json",
+    "text": "sorry"
+  },
+  {
+    "intent": "smalltalk.dialog.sorry",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.sorry_usersays_en.json",
+    "text": "I'm sorry"
+  },
+  {
+    "intent": "smalltalk.dialog.sorry",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.sorry_usersays_en.json",
+    "text": "excuse me"
+  },
+  {
+    "intent": "smalltalk.dialog.sorry",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.sorry_usersays_en.json",
+    "text": "apologies to me"
+  },
+  {
+    "intent": "smalltalk.dialog.sorry",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.sorry_usersays_en.json",
+    "text": "sorry about that"
+  },
+  {
+    "intent": "smarthome.locks.close",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.close - context_close_usersays_en.json",
+    "text": "they should be closed"
+  },
+  {
+    "intent": "smarthome.locks.close",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.close_usersays_en.json",
+    "text": "close bathroom"
+  },
+  {
+    "intent": "smarthome.locks.close",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.close_usersays_en.json",
+    "text": "close all garage windows"
+  },
+  {
+    "intent": "smarthome.locks.close",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.close - context_close_usersays_en.json",
+    "text": "close it"
+  },
+  {
+    "intent": "smarthome.locks.close",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.close_usersays_en.json",
+    "text": "close all doors"
+  },
+  {
+    "intent": "smarthome.locks.unlock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.unlock_usersays_en.json",
+    "text": "unlock the kitchen lock"
+  },
+  {
+    "intent": "smarthome.locks.unlock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.unlock_usersays_en.json",
+    "text": "unlock garage"
+  },
+  {
+    "intent": "smarthome.locks.unlock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.unlock_usersays_en.json",
+    "text": "unlock doors everywhere"
+  },
+  {
+    "intent": "smarthome.locks.unlock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.unlock_usersays_en.json",
+    "text": "unlock door in the kitchen"
+  },
+  {
+    "intent": "smarthome.locks.unlock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.unlock_usersays_en.json",
+    "text": "unlock kitchen window"
+  },
+  {
+    "intent": "smarthome.device.saturation.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.up_usersays_en.json",
+    "text": "saturation up by 15 percents in the bedroom"
+  },
+  {
+    "intent": "smarthome.device.saturation.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.up_usersays_en.json",
+    "text": "saturation up to 15 percents in the bedroom"
+  },
+  {
+    "intent": "smarthome.device.saturation.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.up_usersays_en.json",
+    "text": "saturation up by 10 points"
+  },
+  {
+    "intent": "smarthome.device.saturation.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.up_usersays_en.json",
+    "text": "saturation up in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.saturation.up",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.up_usersays_en.json",
+    "text": "lights saturation up to 15 percents in the bedroom"
+  },
+  {
+    "intent": "smarthome.heating.up.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up.implicit_usersays_en.json",
+    "text": "too cold in here"
+  },
+  {
+    "intent": "smarthome.heating.up.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up.implicit_usersays_en.json",
+    "text": "people in the kitchen are cold"
+  },
+  {
+    "intent": "smarthome.heating.up.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up.implicit_usersays_en.json",
+    "text": "it's freezing here"
+  },
+  {
+    "intent": "smarthome.heating.up.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up.implicit_usersays_en.json",
+    "text": "it's cold"
+  },
+  {
+    "intent": "smarthome.heating.up.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.up.implicit_usersays_en.json",
+    "text": "I am feeling cold"
+  },
+  {
+    "intent": "smalltalk.agent.residence",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.residence_usersays_en.json",
+    "text": "where is your home"
+  },
+  {
+    "intent": "smalltalk.agent.residence",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.residence_usersays_en.json",
+    "text": "where is your hometown"
+  },
+  {
+    "intent": "smalltalk.agent.residence",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.residence_usersays_en.json",
+    "text": "where's your hometown"
+  },
+  {
+    "intent": "smalltalk.agent.residence",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.residence_usersays_en.json",
+    "text": "tell me about your city"
+  },
+  {
+    "intent": "smalltalk.agent.residence",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.residence_usersays_en.json",
+    "text": "your house"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.whatsup_usersays_en.json",
+    "text": "then what's up"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.whatsup_usersays_en.json",
+    "text": "wassup"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.whatsup_usersays_en.json",
+    "text": "what is happening"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.whatsup_usersays_en.json",
+    "text": "good what's up"
+  },
+  {
+    "intent": "smalltalk.greetings.whatsup",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.whatsup_usersays_en.json",
+    "text": "what's cooking"
+  },
+  {
+    "intent": "smalltalk.user.needs_advice",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.needs_advice_usersays_en.json",
+    "text": "can you advise me"
+  },
+  {
+    "intent": "smalltalk.user.needs_advice",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.needs_advice_usersays_en.json",
+    "text": "advise me"
+  },
+  {
+    "intent": "smalltalk.user.needs_advice",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.needs_advice_usersays_en.json",
+    "text": "can you offer any advice"
+  },
+  {
+    "intent": "smalltalk.user.needs_advice",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.needs_advice_usersays_en.json",
+    "text": "what do you suggest"
+  },
+  {
+    "intent": "smalltalk.user.needs_advice",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.needs_advice_usersays_en.json",
+    "text": "what do you recommend"
+  },
+  {
+    "intent": "smalltalk.agent.right",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.right_usersays_en.json",
+    "text": "it's true"
+  },
+  {
+    "intent": "smalltalk.agent.right",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.right_usersays_en.json",
+    "text": "I know that's right"
+  },
+  {
+    "intent": "smalltalk.agent.right",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.right_usersays_en.json",
+    "text": "you're right about that"
+  },
+  {
+    "intent": "smalltalk.agent.right",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.right_usersays_en.json",
+    "text": "you're telling the truth"
+  },
+  {
+    "intent": "smalltalk.agent.right",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.right_usersays_en.json",
+    "text": "that's correct"
+  },
+  {
+    "intent": "smarthome.locks.lock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.lock - context_lock_usersays_en.json",
+    "text": "can you lock them now"
+  },
+  {
+    "intent": "smarthome.locks.lock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.lock - context_lock_usersays_en.json",
+    "text": "I need to lock them"
+  },
+  {
+    "intent": "smarthome.locks.lock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.lock_usersays_en.json",
+    "text": "lock all doors"
+  },
+  {
+    "intent": "smarthome.locks.lock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.lock - context_lock_usersays_en.json",
+    "text": "could you lock them please"
+  },
+  {
+    "intent": "smarthome.locks.lock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.lock_usersays_en.json",
+    "text": "all doors should be locked"
+  },
+  {
+    "intent": "weather.outfit",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.outfit_usersays_en.json",
+    "text": "should I take an umbrella tomorrow"
+  },
+  {
+    "intent": "weather.outfit",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.outfit_usersays_en.json",
+    "text": "should I take a jacket"
+  },
+  {
+    "intent": "weather.outfit",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.outfit_usersays_en.json",
+    "text": "will I need an umbrella"
+  },
+  {
+    "intent": "weather.outfit",
+    "labeled_by": "dialogflow",
+    "source_file": "weather.outfit_usersays_en.json",
+    "text": "should I take sunglasses tomorrow"
+  },
+  {
+    "intent": "smalltalk.agent.answer_my_question",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.answer_my_question_usersays_en.json",
+    "text": "can you answer a question for me"
+  },
+  {
+    "intent": "smalltalk.agent.answer_my_question",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.answer_my_question_usersays_en.json",
+    "text": "can you answer me"
+  },
+  {
+    "intent": "smalltalk.agent.answer_my_question",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.answer_my_question_usersays_en.json",
+    "text": "answer my question"
+  },
+  {
+    "intent": "smalltalk.agent.answer_my_question",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.answer_my_question_usersays_en.json",
+    "text": "tell me the answer"
+  },
+  {
+    "intent": "code.find_usage",
+    "labeled_by": "materialized",
+    "source_file": "code.find_usage_usersays_en.json",
+    "text": "where is the function parse_json referenced"
+  },
+  {
+    "intent": "code.find_usage",
+    "labeled_by": "materialized",
+    "source_file": "code.find_usage_usersays_en.json",
+    "text": "show me where validate_email is called"
+  },
+  {
+    "intent": "code.find_usage",
+    "labeled_by": "materialized",
+    "source_file": "code.find_usage_usersays_en.json",
+    "text": "show all references to create_user"
+  },
+  {
+    "intent": "code.find_usage",
+    "labeled_by": "materialized",
+    "source_file": "code.find_usage_usersays_en.json",
+    "text": "trace usage of Session"
+  },
+  {
+    "intent": "code.signature",
+    "labeled_by": "materialized",
+    "source_file": "code.signature_usersays_en.json",
+    "text": "what's the interface for Logger"
+  },
+  {
+    "intent": "code.signature",
+    "labeled_by": "materialized",
+    "source_file": "code.signature_usersays_en.json",
+    "text": "what parameters does calculate_tax take"
+  },
+  {
+    "intent": "code.signature",
+    "labeled_by": "materialized",
+    "source_file": "code.signature_usersays_en.json",
+    "text": "what inputs does calculate_discount need"
+  },
+  {
+    "intent": "code.signature",
+    "labeled_by": "materialized",
+    "source_file": "code.signature_usersays_en.json",
+    "text": "show the definition of parse_json"
+  },
+  {
+    "intent": "meta.self_knowledge",
+    "labeled_by": "materialized",
+    "source_file": "meta.self_knowledge_usersays_en.json",
+    "text": "what do you know about me"
+  },
+  {
+    "intent": "meta.self_knowledge",
+    "labeled_by": "materialized",
+    "source_file": "meta.self_knowledge_usersays_en.json",
+    "text": "summarize what you know about me"
+  },
+  {
+    "intent": "meta.self_knowledge",
+    "labeled_by": "materialized",
+    "source_file": "meta.self_knowledge_usersays_en.json",
+    "text": "what facts do you have about me"
+  },
+  {
+    "intent": "meta.self_knowledge",
+    "labeled_by": "materialized",
+    "source_file": "meta.self_knowledge_usersays_en.json",
+    "text": "tell me everything you know about me"
+  },
+  {
+    "intent": "smalltalk.agent.talk_to_me",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.talk_to_me_usersays_en.json",
+    "text": "can you talk with me"
+  },
+  {
+    "intent": "smalltalk.agent.talk_to_me",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.talk_to_me_usersays_en.json",
+    "text": "do you want to chat with me"
+  },
+  {
+    "intent": "smalltalk.agent.talk_to_me",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.talk_to_me_usersays_en.json",
+    "text": "chat with me"
+  },
+  {
+    "intent": "smalltalk.agent.talk_to_me",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.talk_to_me_usersays_en.json",
+    "text": "talk"
+  },
+  {
+    "intent": "smarthome.device.volume.unmute",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.unmute_usersays_en.json",
+    "text": "unmute"
+  },
+  {
+    "intent": "smarthome.device.volume.unmute",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.unmute_usersays_en.json",
+    "text": "I want to unmute the TV in the living room could you do that for me"
+  },
+  {
+    "intent": "smarthome.device.volume.unmute",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.unmute_usersays_en.json",
+    "text": "unmute the sound"
+  },
+  {
+    "intent": "smarthome.device.volume.unmute",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.unmute_usersays_en.json",
+    "text": "turn off radio mute"
+  },
+  {
+    "intent": "smarthome.device.volume.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.set_usersays_en.json",
+    "text": "set bedroom TV volume"
+  },
+  {
+    "intent": "smarthome.device.volume.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.set_usersays_en.json",
+    "text": "volume of the TV in the bedroom should be 5 points"
+  },
+  {
+    "intent": "smarthome.device.volume.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.set_usersays_en.json",
+    "text": "set the TV volume in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.volume.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.set_usersays_en.json",
+    "text": "change volume of my TV in the garage"
+  },
+  {
+    "intent": "statement.observation",
+    "labeled_by": "materialized",
+    "source_file": "statement.observation_usersays_en.json",
+    "text": "The light is on"
+  },
+  {
+    "intent": "statement.observation",
+    "labeled_by": "materialized",
+    "source_file": "statement.observation_usersays_en.json",
+    "text": "Everything is blue"
+  },
+  {
+    "intent": "statement.observation",
+    "labeled_by": "materialized",
+    "source_file": "statement.observation_usersays_en.json",
+    "text": "That looks nice"
+  },
+  {
+    "intent": "statement.observation",
+    "labeled_by": "materialized",
+    "source_file": "statement.observation_usersays_en.json",
+    "text": "The water is warm"
+  },
+  {
+    "intent": "communication.text",
+    "labeled_by": "dialogflow",
+    "source_file": "communication.text_usersays_en.json",
+    "text": "message Thaman on slack that I'll be there soon"
+  },
+  {
+    "intent": "communication.text",
+    "labeled_by": "materialized",
+    "source_file": "communication.text_usersays_en.json",
+    "text": "Send a message to mom"
+  },
+  {
+    "intent": "communication.text",
+    "labeled_by": "materialized",
+    "source_file": "communication.text_usersays_en.json",
+    "text": "Send message"
+  },
+  {
+    "intent": "communication.text",
+    "labeled_by": "materialized",
+    "source_file": "communication.text_usersays_en.json",
+    "text": "SMS John"
+  },
+  {
+    "intent": "smarthome.device.brightness.up.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.up.implicit_usersays_en.json",
+    "text": "it's dark everywhere"
+  },
+  {
+    "intent": "smarthome.device.brightness.up.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.up.implicit_usersays_en.json",
+    "text": "it's too dark in the kitchen"
+  },
+  {
+    "intent": "smarthome.device.hue.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.check_usersays_en.json",
+    "text": "check the hue everywhere"
+  },
+  {
+    "intent": "smarthome.device.hue.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.check_usersays_en.json",
+    "text": "is hue level of lamp 5 points"
+  },
+  {
+    "intent": "smarthome.device.hue.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.check_usersays_en.json",
+    "text": "is the light hue 10 points"
+  },
+  {
+    "intent": "smarthome.device.switch.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.check_usersays_en.json",
+    "text": "kitchen lights status"
+  },
+  {
+    "intent": "smarthome.device.switch.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.check_usersays_en.json",
+    "text": "check the status of all the lights"
+  },
+  {
+    "intent": "smarthome.device.switch.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.switch.check_usersays_en.json",
+    "text": "the blue lights status"
+  },
+  {
+    "intent": "smarthome.heating.check.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check.implicit_usersays_en.json",
+    "text": "is it warm at home"
+  },
+  {
+    "intent": "smarthome.heating.check.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check.implicit_usersays_en.json",
+    "text": "how warm it is"
+  },
+  {
+    "candidates": [
+      "smarthome.heating.check.implicit",
+      "weather.temperature"
+    ],
+    "intent": "smarthome.heating.check.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check.implicit_usersays_en.json",
+    "status": "needs_review",
+    "text": "is it hot"
+  },
+  {
+    "intent": "smarthome.heating.check.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.check.implicit_usersays_en.json",
+    "text": "how warm is it in the kitchen"
+  },
+  {
+    "intent": "smalltalk.greetings.nice_to_see_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.nice_to_see_you_usersays_en.json",
+    "text": "great to see you too"
+  },
+  {
+    "intent": "smalltalk.greetings.nice_to_see_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.nice_to_see_you_usersays_en.json",
+    "text": "glad to see you too"
+  },
+  {
+    "intent": "smalltalk.greetings.nice_to_see_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.nice_to_see_you_usersays_en.json",
+    "text": "it's good to see you too"
+  },
+  {
+    "intent": "smalltalk.greetings.nice_to_meet_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.nice_to_meet_you_usersays_en.json",
+    "text": "good to know each other"
+  },
+  {
+    "intent": "smalltalk.greetings.nice_to_meet_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.nice_to_meet_you_usersays_en.json",
+    "text": "nice meeting you"
+  },
+  {
+    "intent": "smalltalk.greetings.nice_to_meet_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.nice_to_meet_you_usersays_en.json",
+    "text": "nice to meet you too"
+  },
+  {
+    "intent": "smarthome.device.saturation.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.check_usersays_en.json",
+    "text": "check my table lamp saturation"
+  },
+  {
+    "intent": "smarthome.device.saturation.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.check_usersays_en.json",
+    "text": "is the green light saturation 15 points"
+  },
+  {
+    "intent": "smarthome.device.saturation.check",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.check_usersays_en.json",
+    "text": "tell about saturation"
+  },
+  {
+    "intent": "smarthome.heating.down.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down.implicit_usersays_en.json",
+    "text": "it's hot in here"
+  },
+  {
+    "intent": "smarthome.heating.down.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down.implicit_usersays_en.json",
+    "text": "too hot in the kitchen"
+  },
+  {
+    "intent": "smarthome.heating.down.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down.implicit_usersays_en.json",
+    "text": "I'm hot"
+  },
+  {
+    "intent": "smarthome.heating.down.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.down.implicit_usersays_en.json",
+    "text": "it's very hot"
+  },
+  {
+    "intent": "account.spending.check",
+    "labeled_by": "dialogflow",
+    "source_file": "account.spending.check_usersays_en.json",
+    "text": "can I see my latest withdrawals"
+  },
+  {
+    "intent": "account.spending.check",
+    "labeled_by": "dialogflow",
+    "source_file": "account.spending.check_usersays_en.json",
+    "text": "How much money did I spend yesterday?"
+  },
+  {
+    "intent": "account.spending.check",
+    "labeled_by": "dialogflow",
+    "source_file": "account.spending.check_usersays_en.json",
+    "text": "check yesterday's ATM Withdrawals"
+  },
+  {
+    "intent": "smarthome.device.switch",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch - context_color - comment_change color_usersays_en.json",
+    "text": "change color to blue"
+  },
+  {
+    "intent": "smarthome.device.switch",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch - context_color - comment_change color_usersays_en.json",
+    "text": "can you make it green now please"
+  },
+  {
+    "intent": "smarthome.device.switch",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch - context_device-switch - comment_add or change device_usersays_en.json",
+    "text": "video player"
+  },
+  {
+    "intent": "smarthome.device.switch",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.switch - context_color - comment_change color_usersays_en.json",
+    "text": "now make it red"
+  },
+  {
+    "intent": "smalltalk.agent.acquaintance",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.acquaintance_usersays_en.json",
+    "text": "talk some stuff about yourself"
+  },
+  {
+    "intent": "smalltalk.agent.acquaintance",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.acquaintance_usersays_en.json",
+    "text": "introduce yourself"
+  },
+  {
+    "intent": "smalltalk.agent.acquaintance",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.acquaintance_usersays_en.json",
+    "text": "talk about yourself"
+  },
+  {
+    "intent": "smalltalk.agent.acquaintance",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.acquaintance_usersays_en.json",
+    "text": "I want to know you better"
+  },
+  {
+    "intent": "smalltalk.agent.crazy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.crazy_usersays_en.json",
+    "text": "are you crazy"
+  },
+  {
+    "intent": "smalltalk.agent.crazy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.crazy_usersays_en.json",
+    "text": "you went crazy"
+  },
+  {
+    "intent": "smalltalk.agent.crazy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.crazy_usersays_en.json",
+    "text": "you are a weirdo"
+  },
+  {
+    "intent": "smalltalk.agent.busy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.busy_usersays_en.json",
+    "text": "are you very busy right now"
+  },
+  {
+    "intent": "smalltalk.agent.busy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.busy_usersays_en.json",
+    "text": "are you very busy"
+  },
+  {
+    "intent": "smalltalk.agent.busy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.busy_usersays_en.json",
+    "text": "do you have a lot of things to do"
+  },
+  {
+    "intent": "smalltalk.agent.busy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.busy_usersays_en.json",
+    "text": "how busy you are"
+  },
+  {
+    "intent": "smarthome.device.brightness.down.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down.implicit_usersays_en.json",
+    "text": "everywhere is too bright"
+  },
+  {
+    "intent": "smarthome.device.brightness.down.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down.implicit_usersays_en.json",
+    "text": "the lights are too bright"
+  },
+  {
+    "intent": "smarthome.device.brightness.down.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.brightness.down.implicit_usersays_en.json",
+    "text": "the table lamp is way too bright"
+  },
+  {
+    "intent": "smalltalk.greetings.goodnight",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.goodnight_usersays_en.json",
+    "text": "good night see you tomorrow"
+  },
+  {
+    "intent": "smalltalk.greetings.goodnight",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.goodnight_usersays_en.json",
+    "text": "have a good night"
+  },
+  {
+    "intent": "smalltalk.greetings.goodnight",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.goodnight_usersays_en.json",
+    "text": "goodnight"
+  },
+  {
+    "intent": "smarthome.device.hue.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.set_usersays_en.json",
+    "text": "red hue"
+  },
+  {
+    "intent": "smarthome.device.hue.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.set_usersays_en.json",
+    "text": "set hue to 50 points"
+  },
+  {
+    "intent": "smarthome.device.hue.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.hue.set_usersays_en.json",
+    "text": "hue"
+  },
+  {
+    "intent": "timer.set",
+    "labeled_by": "materialized",
+    "source_file": "timer.set_usersays_en.json",
+    "text": "Start the timer"
+  },
+  {
+    "intent": "timer.set",
+    "labeled_by": "materialized",
+    "source_file": "timer.set_usersays_en.json",
+    "text": "Start a timer for cooking"
+  },
+  {
+    "intent": "timer.set",
+    "labeled_by": "materialized",
+    "source_file": "timer.set_usersays_en.json",
+    "text": "Set a workout timer"
+  },
+  {
+    "intent": "display.show",
+    "labeled_by": "materialized",
+    "source_file": "display.show_usersays_en.json",
+    "text": "Show me the results"
+  },
+  {
+    "intent": "display.show",
+    "labeled_by": "materialized",
+    "source_file": "display.show_usersays_en.json",
+    "text": "Show the presentation"
+  },
+  {
+    "intent": "display.show",
+    "labeled_by": "materialized",
+    "source_file": "display.show_usersays_en.json",
+    "text": "Display this on screen"
+  },
+  {
+    "intent": "date.query",
+    "labeled_by": "materialized",
+    "source_file": "date.query_usersays_en.json",
+    "text": "Show the date"
+  },
+  {
+    "intent": "date.query",
+    "labeled_by": "materialized",
+    "source_file": "date.query_usersays_en.json",
+    "text": "Is today Monday"
+  },
+  {
+    "intent": "date.query",
+    "labeled_by": "materialized",
+    "source_file": "date.query_usersays_en.json",
+    "text": "What's the date"
+  },
+  {
+    "intent": "time.query",
+    "labeled_by": "materialized",
+    "source_file": "time.query_usersays_en.json",
+    "text": "Show the time"
+  },
+  {
+    "intent": "time.query",
+    "labeled_by": "materialized",
+    "source_file": "time.query_usersays_en.json",
+    "text": "Give me the time"
+  },
+  {
+    "intent": "time.query",
+    "labeled_by": "materialized",
+    "source_file": "time.query_usersays_en.json",
+    "text": "Clock"
+  },
+  {
+    "intent": "music.player.skip_backward",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.skip_backward_usersays_en.json",
+    "text": "go to previous"
+  },
+  {
+    "intent": "music.player.skip_backward",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.skip_backward_usersays_en.json",
+    "text": "skip back"
+  },
+  {
+    "intent": "music.player.skip_backward",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.skip_backward_usersays_en.json",
+    "text": "go back to previous"
+  },
+  {
+    "intent": "knowledge.define",
+    "labeled_by": "materialized",
+    "source_file": "knowledge.define_usersays_en.json",
+    "text": "Define empathy"
+  },
+  {
+    "intent": "knowledge.define",
+    "labeled_by": "materialized",
+    "source_file": "knowledge.define_usersays_en.json",
+    "text": "Define ambiguous"
+  },
+  {
+    "intent": "knowledge.define",
+    "labeled_by": "materialized",
+    "source_file": "knowledge.define_usersays_en.json",
+    "text": "What is the meaning of paradigm"
+  },
+  {
+    "intent": "smalltalk.agent.funny",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.funny_usersays_en.json",
+    "text": "that was funny"
+  },
+  {
+    "intent": "smalltalk.agent.funny",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.funny_usersays_en.json",
+    "text": "you're so funny"
+  },
+  {
+    "intent": "smalltalk.agent.funny",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.funny_usersays_en.json",
+    "text": "you are funny"
+  },
+  {
+    "intent": "meta.privacy_probe",
+    "labeled_by": "materialized",
+    "source_file": "meta.privacy_probe_usersays_en.json",
+    "text": "are you monitoring me"
+  },
+  {
+    "intent": "meta.privacy_probe",
+    "labeled_by": "materialized",
+    "source_file": "meta.privacy_probe_usersays_en.json",
+    "text": "do you keep records of our conversations"
+  },
+  {
+    "intent": "meta.privacy_probe",
+    "labeled_by": "materialized",
+    "source_file": "meta.privacy_probe_usersays_en.json",
+    "text": "how do I delete my data"
+  },
+  {
+    "intent": "communication.call",
+    "labeled_by": "materialized",
+    "source_file": "communication.call_usersays_en.json",
+    "text": "Start a phone call"
+  },
+  {
+    "intent": "communication.call",
+    "labeled_by": "materialized",
+    "source_file": "communication.call_usersays_en.json",
+    "text": "Phone mom"
+  },
+  {
+    "intent": "communication.call",
+    "labeled_by": "materialized",
+    "source_file": "communication.call_usersays_en.json",
+    "text": "Phone my friend"
+  },
+  {
+    "intent": "calendar.schedule",
+    "labeled_by": "materialized",
+    "source_file": "calendar.schedule_usersays_en.json",
+    "text": "Book the conference room"
+  },
+  {
+    "intent": "calendar.schedule",
+    "labeled_by": "materialized",
+    "source_file": "calendar.schedule_usersays_en.json",
+    "text": "Schedule a team sync"
+  },
+  {
+    "intent": "calendar.schedule",
+    "labeled_by": "materialized",
+    "source_file": "calendar.schedule_usersays_en.json",
+    "text": "Schedule a meeting for next week"
+  },
+  {
+    "intent": "meta.memory_check",
+    "labeled_by": "materialized",
+    "source_file": "meta.memory_check_usersays_en.json",
+    "text": "can you recall what we talked about"
+  },
+  {
+    "intent": "meta.memory_check",
+    "labeled_by": "materialized",
+    "source_file": "meta.memory_check_usersays_en.json",
+    "text": "do you recall our previous conversations"
+  },
+  {
+    "intent": "meta.memory_check",
+    "labeled_by": "materialized",
+    "source_file": "meta.memory_check_usersays_en.json",
+    "text": "did you forget who I am"
+  },
+  {
+    "intent": "smalltalk.agent.fired",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.fired_usersays_en.json",
+    "text": "I'm about to fire you"
+  },
+  {
+    "intent": "smalltalk.agent.fired",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.fired_usersays_en.json",
+    "text": "you are dismissed"
+  },
+  {
+    "intent": "smalltalk.agent.fired",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.fired_usersays_en.json",
+    "text": "I will fire you"
+  },
+  {
+    "intent": "alarm.set",
+    "labeled_by": "materialized",
+    "source_file": "alarm.set_usersays_en.json",
+    "text": "Set alarm for 6am every day"
+  },
+  {
+    "intent": "alarm.set",
+    "labeled_by": "materialized",
+    "source_file": "alarm.set_usersays_en.json",
+    "text": "Wake me up early"
+  },
+  {
+    "intent": "alarm.set",
+    "labeled_by": "materialized",
+    "source_file": "alarm.set_usersays_en.json",
+    "text": "Set a morning alarm"
+  },
+  {
+    "intent": "account.earning.check",
+    "labeled_by": "dialogflow",
+    "source_file": "account.earning.check_usersays_en.json",
+    "text": "earnings"
+  },
+  {
+    "intent": "account.earning.check",
+    "labeled_by": "dialogflow",
+    "source_file": "account.earning.check_usersays_en.json",
+    "text": "get info about my earnings on my card in December"
+  },
+  {
+    "intent": "account.earning.check",
+    "labeled_by": "dialogflow",
+    "source_file": "account.earning.check - context_ earning - date_usersays_en.json",
+    "text": "and January 2"
+  },
+  {
+    "intent": "knowledge.capital",
+    "labeled_by": "materialized",
+    "source_file": "knowledge.capital_usersays_en.json",
+    "text": "What's the capital of Germany"
+  },
+  {
+    "intent": "knowledge.capital",
+    "labeled_by": "materialized",
+    "source_file": "knowledge.capital_usersays_en.json",
+    "text": "What is the capital of Canada"
+  },
+  {
+    "intent": "knowledge.capital",
+    "labeled_by": "materialized",
+    "source_file": "knowledge.capital_usersays_en.json",
+    "text": "Capital of India"
+  },
+  {
+    "intent": "analysis.analyze",
+    "labeled_by": "materialized",
+    "source_file": "analysis.analyze_usersays_en.json",
+    "text": "Analyze the report"
+  },
+  {
+    "intent": "analysis.analyze",
+    "labeled_by": "materialized",
+    "source_file": "analysis.analyze_usersays_en.json",
+    "text": "Analyze this dataset"
+  },
+  {
+    "intent": "analysis.analyze",
+    "labeled_by": "materialized",
+    "source_file": "analysis.analyze_usersays_en.json",
+    "text": "Analyze the spreadsheet"
+  },
+  {
+    "intent": "communication.email",
+    "labeled_by": "materialized",
+    "source_file": "communication.email_usersays_en.json",
+    "text": "Check inbox"
+  },
+  {
+    "intent": "communication.email",
+    "labeled_by": "materialized",
+    "source_file": "communication.email_usersays_en.json",
+    "text": "Check my work email"
+  },
+  {
+    "intent": "communication.email",
+    "labeled_by": "materialized",
+    "source_file": "communication.email_usersays_en.json",
+    "text": "Check my email"
+  },
+  {
+    "intent": "knowledge.translate",
+    "labeled_by": "materialized",
+    "source_file": "knowledge.translate_usersays_en.json",
+    "text": "Translate thank you to German"
+  },
+  {
+    "intent": "knowledge.translate",
+    "labeled_by": "materialized",
+    "source_file": "knowledge.translate_usersays_en.json",
+    "text": "Translate good morning to Italian"
+  },
+  {
+    "intent": "knowledge.translate",
+    "labeled_by": "materialized",
+    "source_file": "knowledge.translate_usersays_en.json",
+    "text": "Translate help to Russian"
+  },
+  {
+    "intent": "todo.add",
+    "labeled_by": "materialized",
+    "source_file": "todo.add_usersays_en.json",
+    "text": "Add to my todo list"
+  },
+  {
+    "intent": "todo.add",
+    "labeled_by": "materialized",
+    "source_file": "todo.add_usersays_en.json",
+    "text": "Add send report to my list"
+  },
+  {
+    "intent": "todo.add",
+    "labeled_by": "materialized",
+    "source_file": "todo.add_usersays_en.json",
+    "text": "Add a new task to my list"
+  },
+  {
+    "intent": "calendar.query",
+    "labeled_by": "materialized",
+    "source_file": "calendar.query_usersays_en.json",
+    "text": "What meetings do I have"
+  },
+  {
+    "intent": "calendar.query",
+    "labeled_by": "materialized",
+    "source_file": "calendar.query_usersays_en.json",
+    "text": "Show me my appointments"
+  },
+  {
+    "intent": "calendar.query",
+    "labeled_by": "materialized",
+    "source_file": "calendar.query_usersays_en.json",
+    "text": "Check my availability"
+  },
+  {
+    "intent": "smalltalk.dialog.hug",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.hug_usersays_en.json",
+    "text": "hugging"
+  },
+  {
+    "intent": "smalltalk.dialog.hug",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.hug_usersays_en.json",
+    "text": "hugged"
+  },
+  {
+    "intent": "smalltalk.dialog.hug",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.hug_usersays_en.json",
+    "text": "may I hug you"
+  },
+  {
+    "intent": "search.locate",
+    "labeled_by": "materialized",
+    "source_file": "search.locate_usersays_en.json",
+    "text": "Find a restaurant nearby"
+  },
+  {
+    "intent": "search.locate",
+    "labeled_by": "materialized",
+    "source_file": "search.locate_usersays_en.json",
+    "text": "Locate John"
+  },
+  {
+    "intent": "search.locate",
+    "labeled_by": "materialized",
+    "source_file": "search.locate_usersays_en.json",
+    "text": "Search for the document"
+  },
+  {
+    "intent": "music.shuffle",
+    "labeled_by": "dialogflow",
+    "source_file": "music.shuffle_usersays_en.json",
+    "text": "shuffle songs from the year 2000"
+  },
+  {
+    "intent": "music.shuffle",
+    "labeled_by": "dialogflow",
+    "source_file": "music.shuffle_usersays_en.json",
+    "text": "can you shuffle tracks"
+  },
+  {
+    "intent": "music.shuffle",
+    "labeled_by": "dialogflow",
+    "source_file": "music.shuffle_usersays_en.json",
+    "text": "could you shuffle my Work playlist"
+  },
+  {
+    "intent": "status.report",
+    "labeled_by": "materialized",
+    "source_file": "status.report_usersays_en.json",
+    "text": "What's the current status"
+  },
+  {
+    "intent": "status.report",
+    "labeled_by": "materialized",
+    "source_file": "status.report_usersays_en.json",
+    "text": "Give me a status update"
+  },
+  {
+    "intent": "status.report",
+    "labeled_by": "materialized",
+    "source_file": "status.report_usersays_en.json",
+    "text": "Current system state"
+  },
+  {
+    "intent": "reminder.create",
+    "labeled_by": "materialized",
+    "source_file": "reminder.create_usersays_en.json",
+    "text": "Can you remind me to call John"
+  },
+  {
+    "intent": "reminder.create",
+    "labeled_by": "materialized",
+    "source_file": "reminder.create_usersays_en.json",
+    "text": "Remind me to water the plants"
+  },
+  {
+    "intent": "reminder.create",
+    "labeled_by": "materialized",
+    "source_file": "reminder.create_usersays_en.json",
+    "text": "Remind me at 5pm to leave"
+  },
+  {
+    "intent": "smalltalk.agent.annoying",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.annoying_usersays_en.json",
+    "text": "you are very annoying"
+  },
+  {
+    "intent": "smalltalk.agent.annoying",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.annoying_usersays_en.json",
+    "text": "you are irritating"
+  },
+  {
+    "intent": "smalltalk.agent.real",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.real_usersays_en.json",
+    "text": "you are a real person"
+  },
+  {
+    "intent": "smalltalk.agent.real",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.real_usersays_en.json",
+    "text": "glad you're real"
+  },
+  {
+    "intent": "smalltalk.dialog.wrong",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.wrong_usersays_en.json",
+    "text": "wrong"
+  },
+  {
+    "intent": "smalltalk.dialog.wrong",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.wrong_usersays_en.json",
+    "text": "that was wrong"
+  },
+  {
+    "intent": "smalltalk.greetings.goodmorning",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.goodmorning_usersays_en.json",
+    "text": "good morning to you"
+  },
+  {
+    "intent": "smalltalk.greetings.goodmorning",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.goodmorning_usersays_en.json",
+    "text": "hello good morning"
+  },
+  {
+    "intent": "music.player.add_favorite",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.add_favorite_usersays_en.json",
+    "text": "add this song to favorite"
+  },
+  {
+    "intent": "music.player.add_favorite",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.add_favorite_usersays_en.json",
+    "text": "add to faves"
+  },
+  {
+    "intent": "smalltalk.agent.origin",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.origin_usersays_en.json",
+    "text": "where were you born"
+  },
+  {
+    "intent": "smalltalk.agent.origin",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.origin_usersays_en.json",
+    "text": "what's your homeland"
+  },
+  {
+    "intent": "smalltalk.agent.happy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.happy_usersays_en.json",
+    "text": "are you happy today"
+  },
+  {
+    "intent": "smalltalk.agent.happy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.happy_usersays_en.json",
+    "text": "are you happy"
+  },
+  {
+    "intent": "music.player.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.play_usersays_en.json",
+    "text": "now play"
+  },
+  {
+    "intent": "music.player.play",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.play_usersays_en.json",
+    "text": "start playing it"
+  },
+  {
+    "intent": "smalltalk.user.lonely",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.lonely_usersays_en.json",
+    "text": "I'm so lonely"
+  },
+  {
+    "intent": "smalltalk.user.testing_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.testing_agent_usersays_en.json",
+    "text": "can I test you"
+  },
+  {
+    "intent": "smalltalk.user.testing_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.testing_agent_usersays_en.json",
+    "text": "let me test you"
+  },
+  {
+    "intent": "smalltalk.user.happy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.happy_usersays_en.json",
+    "text": "I am happy"
+  },
+  {
+    "intent": "smalltalk.user.happy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.happy_usersays_en.json",
+    "text": "happy"
+  },
+  {
+    "intent": "smarthome.device.volume.down.implicit",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.device.volume.down.implicit_usersays_en.json",
+    "text": "the speakers volume is too loud"
+  },
+  {
+    "intent": "smalltalk.user.good",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.good_usersays_en.json",
+    "text": "I am good"
+  },
+  {
+    "intent": "smalltalk.agent.birth_date",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.birth_date_usersays_en.json",
+    "text": "what's your birthday"
+  },
+  {
+    "intent": "smalltalk.user.looks_like",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.looks_like_usersays_en.json",
+    "text": "how do I look"
+  },
+  {
+    "intent": "smalltalk.user.sad",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.sad_usersays_en.json",
+    "text": "I'm not happy"
+  },
+  {
+    "intent": "smalltalk.agent.marry_user",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.marry_user_usersays_en.json",
+    "text": "marry me"
+  },
+  {
+    "intent": "smalltalk.agent.marry_user",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.marry_user_usersays_en.json",
+    "text": "would you like to marry me"
+  },
+  {
+    "intent": "music.player.add_playlist",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.add_playlist_usersays_en.json",
+    "text": "add this song to my playlist"
+  },
+  {
+    "intent": "music.player.add_playlist",
+    "labeled_by": "materialized",
+    "source_file": "music.player.add_playlist_usersays_en.json",
+    "text": "please put it on my late night playlist"
+  },
+  {
+    "intent": "smarthome.locks.check.close",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.check.close_usersays_en.json",
+    "text": "is the front door closed"
+  },
+  {
+    "intent": "smarthome.device.saturation.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.set_usersays_en.json",
+    "text": "set kitchen saturation"
+  },
+  {
+    "intent": "smarthome.device.saturation.set",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.lights.saturation.set_usersays_en.json",
+    "text": "saturation till 50"
+  },
+  {
+    "intent": "smarthome.locks.check.unlock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.check.unlock_usersays_en.json",
+    "text": "did I unlock the door in the kitchen"
+  },
+  {
+    "intent": "smarthome.locks.check.unlock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.check.unlock_usersays_en.json",
+    "text": "did I unlock the front door"
+  },
+  {
+    "intent": "smarthome.locks.check.lock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.check.lock_usersays_en.json",
+    "text": "did I lock the door"
+  },
+  {
+    "intent": "smarthome.locks.check.lock",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.check.lock_usersays_en.json",
+    "text": "are kitchen door locked"
+  },
+  {
+    "intent": "smalltalk.greetings.goodevening",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.goodevening_usersays_en.json",
+    "text": "good evening to you"
+  },
+  {
+    "intent": "music.player.pause",
+    "labeled_by": "materialized",
+    "source_file": "music.player.pause_usersays_en.json",
+    "text": "hey pause playing"
+  },
+  {
+    "intent": "music.player.pause",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.pause_usersays_en.json",
+    "text": "pause this song"
+  },
+  {
+    "intent": "alarm.snooze",
+    "labeled_by": "materialized",
+    "source_file": "alarm.snooze_usersays_en.json",
+    "text": "Hit snooze"
+  },
+  {
+    "intent": "alarm.snooze",
+    "labeled_by": "materialized",
+    "source_file": "alarm.snooze_usersays_en.json",
+    "text": "Let me sleep more"
+  },
+  {
+    "intent": "todo.list",
+    "labeled_by": "materialized",
+    "source_file": "todo.list_usersays_en.json",
+    "text": "Show all todos"
+  },
+  {
+    "intent": "todo.list",
+    "labeled_by": "materialized",
+    "source_file": "todo.list_usersays_en.json",
+    "text": "What tasks do I have"
+  },
+  {
+    "intent": "smalltalk.user.can_not_sleep",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.can_not_sleep_usersays_en.json",
+    "text": "I can't fall asleep"
+  },
+  {
+    "intent": "smalltalk.user.can_not_sleep",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.can_not_sleep_usersays_en.json",
+    "text": "I'm insomniac"
+  },
+  {
+    "intent": "status.diagnostic",
+    "labeled_by": "materialized",
+    "source_file": "status.diagnostic_usersays_en.json",
+    "text": "System diagnostics"
+  },
+  {
+    "intent": "status.diagnostic",
+    "labeled_by": "materialized",
+    "source_file": "status.diagnostic_usersays_en.json",
+    "text": "Health check"
+  },
+  {
+    "intent": "smalltalk.user.has_birthday",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.has_birthday_usersays_en.json",
+    "text": "today is my birthday"
+  },
+  {
+    "intent": "smalltalk.user.has_birthday",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.has_birthday_usersays_en.json",
+    "text": "it's my b-day"
+  },
+  {
+    "intent": "smarthome.locks.check.open",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.check.open_usersays_en.json",
+    "text": "did I open the front door"
+  },
+  {
+    "intent": "smarthome.locks.check.open",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.locks.check.open_usersays_en.json",
+    "text": "is the front door open"
+  },
+  {
+    "intent": "smalltalk.agent.boring",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.boring_usersays_en.json",
+    "text": "you're incredibly boring"
+  },
+  {
+    "intent": "music.player.stop",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.stop_usersays_en.json",
+    "text": "could you stop"
+  },
+  {
+    "intent": "music.player.stop",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.stop_usersays_en.json",
+    "text": "stop playing"
+  },
+  {
+    "intent": "music.player.shuffle",
+    "labeled_by": "materialized",
+    "source_file": "music.player.shuffle_usersays_en.json",
+    "text": "could you turn on shuffle mode"
+  },
+  {
+    "intent": "music.player.shuffle",
+    "labeled_by": "materialized",
+    "source_file": "music.player.shuffle_usersays_en.json",
+    "text": "could you shuffle them"
+  },
+  {
+    "intent": "payment.due_date",
+    "labeled_by": "dialogflow",
+    "source_file": "payment.due_date_usersays_en.json",
+    "text": "what are payments deadlines"
+  },
+  {
+    "intent": "payment.due_date",
+    "labeled_by": "dialogflow",
+    "source_file": "payment.due_date_usersays_en.json",
+    "text": "when is the payment due on the my card"
+  },
+  {
+    "intent": "smalltalk.user.loves_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.loves_agent_usersays_en.json",
+    "text": "love you"
+  },
+  {
+    "intent": "smalltalk.agent.hungry",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.hungry_usersays_en.json",
+    "text": "you might be hungry"
+  },
+  {
+    "intent": "smalltalk.appraisal.no_problem",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.no_problem_usersays_en.json",
+    "text": "there's no problem"
+  },
+  {
+    "intent": "smalltalk.appraisal.no_problem",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.no_problem_usersays_en.json",
+    "text": "don't worry"
+  },
+  {
+    "intent": "smalltalk.user.wants_to_talk",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.wants_to_talk_usersays_en.json",
+    "text": "I need to talk to you"
+  },
+  {
+    "intent": "smalltalk.user.wants_to_talk",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.wants_to_talk_usersays_en.json",
+    "text": "let's discuss something"
+  },
+  {
+    "intent": "smalltalk.agent.chatbot",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.chatbot_usersays_en.json",
+    "text": "you are a bot"
+  },
+  {
+    "intent": "smalltalk.agent.chatbot",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.chatbot_usersays_en.json",
+    "text": "you are chatbot"
+  },
+  {
+    "intent": "smalltalk.agent.be_clever",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.be_clever_usersays_en.json",
+    "text": "be smart"
+  },
+  {
+    "intent": "smalltalk.agent.be_clever",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.be_clever_usersays_en.json",
+    "text": "you must learn"
+  },
+  {
+    "intent": "smalltalk.user.bored",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.bored_usersays_en.json",
+    "text": "very boring"
+  },
+  {
+    "intent": "smalltalk.user.bored",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.bored_usersays_en.json",
+    "text": "I'm bored"
+  },
+  {
+    "intent": "smalltalk.user.waits",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.waits_usersays_en.json",
+    "text": "how long do I have to wait"
+  },
+  {
+    "intent": "smalltalk.user.waits",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.waits_usersays_en.json",
+    "text": "I'm waiting"
+  },
+  {
+    "intent": "calendar.cancel",
+    "labeled_by": "materialized",
+    "source_file": "calendar.cancel_usersays_en.json",
+    "text": "Delete the appointment"
+  },
+  {
+    "intent": "calendar.cancel",
+    "labeled_by": "materialized",
+    "source_file": "calendar.cancel_usersays_en.json",
+    "text": "Delete the calendar event"
+  },
+  {
+    "intent": "smarthome.heating.switch.on",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.switch.on_usersays_en.json",
+    "text": "turn on heating"
+  },
+  {
+    "intent": "smalltalk.agent.ready",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.ready_usersays_en.json",
+    "text": "are you ready now"
+  },
+  {
+    "intent": "smalltalk.agent.ready",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.ready_usersays_en.json",
+    "text": "have you been ready"
+  },
+  {
+    "intent": "smalltalk.user.angry",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.angry_usersays_en.json",
+    "text": "I'm being mad"
+  },
+  {
+    "intent": "smalltalk.dialog.i_do_not_care",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.i_do_not_care_usersays_en.json",
+    "text": "not care at all"
+  },
+  {
+    "intent": "smalltalk.agent.boss",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.boss_usersays_en.json",
+    "text": "who is your boss"
+  },
+  {
+    "intent": "smalltalk.agent.boss",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.boss_usersays_en.json",
+    "text": "who is your master"
+  },
+  {
+    "intent": "smalltalk.user.misses_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.misses_agent_usersays_en.json",
+    "text": "already miss you"
+  },
+  {
+    "intent": "smalltalk.user.misses_agent",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.misses_agent_usersays_en.json",
+    "text": "I miss you"
+  },
+  {
+    "intent": "account.open",
+    "labeled_by": "dialogflow",
+    "source_file": "account.open_usersays_en.json",
+    "text": "what are the steps for opening account"
+  },
+  {
+    "intent": "account.open",
+    "labeled_by": "dialogflow",
+    "source_file": "account.open_usersays_en.json",
+    "text": "account opening"
+  },
+  {
+    "intent": "music.player.resume",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.resume_usersays_en.json",
+    "text": "continue"
+  },
+  {
+    "intent": "music.player.resume",
+    "labeled_by": "dialogflow",
+    "source_file": "music.player.resume_usersays_en.json",
+    "text": "restart music"
+  },
+  {
+    "intent": "smalltalk.agent.age",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.age_usersays_en.json",
+    "text": "what's your age"
+  },
+  {
+    "intent": "smalltalk.user.excited",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.excited_usersays_en.json",
+    "text": "I'm excited about working with you"
+  },
+  {
+    "intent": "smalltalk.user.excited",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.excited_usersays_en.json",
+    "text": "I'm excited to start our friendship"
+  },
+  {
+    "intent": "smalltalk.appraisal.well_done",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.well_done_usersays_en.json",
+    "text": "bravo"
+  },
+  {
+    "intent": "smalltalk.appraisal.well_done",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.well_done_usersays_en.json",
+    "text": "well done"
+  },
+  {
+    "intent": "smalltalk.agent.hobby",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.hobby_usersays_en.json",
+    "text": "what about your hobby"
+  },
+  {
+    "intent": "smalltalk.user.busy",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.busy_usersays_en.json",
+    "text": "how busy I am"
+  },
+  {
+    "intent": "display.enhance",
+    "labeled_by": "materialized",
+    "source_file": "display.enhance_usersays_en.json",
+    "text": "Enhance"
+  },
+  {
+    "intent": "display.enhance",
+    "labeled_by": "materialized",
+    "source_file": "display.enhance_usersays_en.json",
+    "text": "Enhance and clarify"
+  },
+  {
+    "intent": "smalltalk.user.back",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.back_usersays_en.json",
+    "text": "I have returned"
+  },
+  {
+    "intent": "smalltalk.dialog.what_do_you_mean",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.what_do_you_mean_usersays_en.json",
+    "text": "what exactly do you mean"
+  },
+  {
+    "intent": "smalltalk.agent.there",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.there_usersays_en.json",
+    "text": "are you there"
+  },
+  {
+    "intent": "smalltalk.agent.there",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.there_usersays_en.json",
+    "text": "are you still there"
+  },
+  {
+    "intent": "timer.check",
+    "labeled_by": "materialized",
+    "source_file": "timer.check_usersays_en.json",
+    "text": "Time remaining"
+  },
+  {
+    "intent": "timer.check",
+    "labeled_by": "materialized",
+    "source_file": "timer.check_usersays_en.json",
+    "text": "How long on the timer"
+  },
+  {
+    "intent": "smalltalk.user.going_to_bed",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.going_to_bed_usersays_en.json",
+    "text": "I'd like to go to bed"
+  },
+  {
+    "intent": "display.zoom",
+    "labeled_by": "materialized",
+    "source_file": "display.zoom_usersays_en.json",
+    "text": "Magnify"
+  },
+  {
+    "intent": "display.zoom",
+    "labeled_by": "materialized",
+    "source_file": "display.zoom_usersays_en.json",
+    "text": "Zoom out please"
+  },
+  {
+    "intent": "smalltalk.appraisal.welcome",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.welcome_usersays_en.json",
+    "text": "you're so welcome"
+  },
+  {
+    "intent": "smalltalk.appraisal.welcome",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.appraisal.welcome_usersays_en.json",
+    "text": "you're welcome"
+  },
+  {
+    "intent": "smalltalk.user.does_not_want_to_talk",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.does_not_want_to_talk_usersays_en.json",
+    "text": "I don't want to talk"
+  },
+  {
+    "intent": "smalltalk.user.does_not_want_to_talk",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.does_not_want_to_talk_usersays_en.json",
+    "text": "bad time for talking"
+  },
+  {
+    "intent": "smalltalk.user.will_be_back",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.will_be_back_usersays_en.json",
+    "text": "be back in 5 minutes"
+  },
+  {
+    "intent": "smarthome.heating.switch.off",
+    "labeled_by": "dialogflow",
+    "source_file": "smarthome.heating.switch.off_usersays_en.json",
+    "text": "turn off heating everywhere"
+  },
+  {
+    "intent": "smalltalk.agent.sure",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.sure_usersays_en.json",
+    "text": "are you sure now"
+  },
+  {
+    "intent": "smalltalk.agent.sure",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.sure_usersays_en.json",
+    "text": "are you sure today"
+  },
+  {
+    "intent": "smalltalk.user.joking",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.joking_usersays_en.json",
+    "text": "just kidding"
+  },
+  {
+    "intent": "smalltalk.user.joking",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.joking_usersays_en.json",
+    "text": "I'm kidding"
+  },
+  {
+    "intent": "smalltalk.user.wants_to_see_agent_again",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.wants_to_see_agent_again_usersays_en.json",
+    "text": "that'd be great to see you again"
+  },
+  {
+    "intent": "smalltalk.user.wants_to_see_agent_again",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.wants_to_see_agent_again_usersays_en.json",
+    "text": "I hope to see you again"
+  },
+  {
+    "intent": "smalltalk.emotions.wow",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.emotions.wow_usersays_en.json",
+    "text": "wow"
+  },
+  {
+    "intent": "smalltalk.user.tired",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.tired_usersays_en.json",
+    "text": "I'm drained"
+  },
+  {
+    "intent": "smalltalk.user.tired",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.user.tired_usersays_en.json",
+    "text": "I've overworked"
+  },
+  {
+    "intent": "analysis.trend",
+    "labeled_by": "materialized",
+    "source_file": "analysis.trend_usersays_en.json",
+    "text": "Show the upward trend"
+  },
+  {
+    "intent": "analysis.trend",
+    "labeled_by": "materialized",
+    "source_file": "analysis.trend_usersays_en.json",
+    "text": "What's the trend"
+  },
+  {
+    "intent": "smalltalk.agent.occupation",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.occupation_usersays_en.json",
+    "text": "where is your work"
+  },
+  {
+    "intent": "smalltalk.agent.occupation",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.agent.occupation_usersays_en.json",
+    "text": "where is your office"
+  },
+  {
+    "intent": "smalltalk.greetings.nice_to_talk_to_you",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.greetings.nice_to_talk_to_you_usersays_en.json",
+    "text": "it's been a pleasure talking to you"
+  },
+  {
+    "intent": "smalltalk.dialog.hold_on",
+    "labeled_by": "dialogflow",
+    "source_file": "smalltalk.dialog.hold_on_usersays_en.json",
+    "text": "wait"
+  }
+]

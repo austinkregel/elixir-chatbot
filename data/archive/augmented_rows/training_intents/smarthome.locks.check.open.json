@@ -1,0 +1,22 @@
+[
+  {
+    "text": "is the front opened door",
+    "tokens": [
+      "is",
+      "the",
+      "front",
+      "opened",
+      "door"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-3c8343e3",
+    "intent": "smarthome.locks.check.open"
+  }
+]

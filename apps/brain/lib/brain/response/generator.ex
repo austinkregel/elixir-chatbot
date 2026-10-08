@@ -12,19 +12,23 @@ defmodule Brain.Response.Generator do
   alias Memory.Store
   alias Brain.Code.QueryHandler
 
-  @doc "Generate a response for the given intent and entities.\n\nUses a generative pipeline:\n1. Retrieve similar episodes from memory\n2. Synthesize response from domain knowledge and primitives\n3. Fall back to templates if synthesis doesn't produce a result\n4. Run the (now no-op) refinement hook and the quality improver\n\nReturns:\n- {:ok, response, :synthesized} for generated responses\n- {:ok, response, :memory_adapted} for memory-adapted responses\n- {:ok, response, :template} for template-based responses\n- {:ok, response, :fallback} for fallback responses\n"
-  def generate(intent, entities, query_text \\ nil) do
-    generate_with_events(intent, entities, query_text, [])
+  @doc "Generate a response for the given intent and entities.\n\n`opts` may carry `:side_effects`; with `false`, a service call that would change state (a device action) is refused during enrichment.\n\nUses a generative pipeline:\n1. Retrieve similar episodes from memory\n2. Synthesize response from domain knowledge and primitives\n3. Fall back to templates if synthesis doesn't produce a result\n4. Run the (now no-op) refinement hook and the quality improver\n\nReturns:\n- {:ok, response, :synthesized} for generated responses\n- {:ok, response, :memory_adapted} for memory-adapted responses\n- {:ok, response, :template} for template-based responses\n- {:ok, response, :fallback} for fallback responses\n"
+  def generate(intent, entities, query_text \\ nil, opts \\ []) do
+    generate_with_events(intent, entities, query_text, [], opts)
   end
 
   @doc "Generate a response with event context for better slot filling.\n\nWhen events are provided, they are used to:\n- Provide action/actor/object slots for template filling\n- Enhance context retrieval from memory\n- Improve response relevance based on user intent structure\n\n## Examples\n\n    events = [%Event{action: %{lemma: \"play\"}, object: %{text: \"jazz\"}}]\n    generate_with_events(\"music.play\", entities, \"Play some jazz\", events)\n"
-  def generate_with_events(intent, entities, query_text, events) when is_list(events) do
+  def generate_with_events(intent, entities, query_text, events, opts \\ []) when is_list(events) do
     Brain.Telemetry.span(:response_generate, %{intent: intent}, fn ->
-      context = build_generation_context_with_events(intent, entities, query_text, events)
+      context =
+        intent
+        |> build_generation_context_with_events(entities, query_text, events)
+        |> Map.put(:side_effects, Keyword.get(opts, :side_effects, true))
 
       # Build slot map for enrichment from entity list
       slots = build_slot_map_for_enrichment(entities)
-      filled_slots = slots |> Map.keys() |> Enum.map(&to_string/1)
+      slots = if query_text, do: Map.put(slots, :_query_text, query_text), else: slots
+      filled_slots = slots |> Map.keys() |> Enum.reject(fn k -> k in [:_query_text, :_ha_entity_id] end) |> Enum.map(&to_string/1)
       context = Map.put(context, :filled_slots, filled_slots)
 
       # Prepare context with enrichment data (before pipeline, for template conditions)
@@ -37,15 +41,22 @@ defmodule Brain.Response.Generator do
   end
 
   defp build_slot_map_for_enrichment(entities) when is_list(entities) do
-    # Convert entity list to slot map for service dispatching
     Enum.reduce(entities, %{}, fn entity, acc ->
       type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type")
       value = Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :text)
 
       if type && value do
-        # Use lowercase atom for slot name
         slot_name = safe_slot_atom(type)
-        Map.put(acc, slot_name, value)
+        metadata = Map.get(entity, :metadata) || Map.get(entity, "metadata")
+        ha_entity_id = get_ha_entity_id(entity, metadata)
+
+        acc = Map.put(acc, slot_name, value)
+
+        if ha_entity_id do
+          Map.put(acc, :_ha_entity_id, ha_entity_id)
+        else
+          acc
+        end
       else
         acc
       end
@@ -53,6 +64,13 @@ defmodule Brain.Response.Generator do
   end
 
   defp build_slot_map_for_enrichment(_), do: %{}
+
+  defp get_ha_entity_id(entity, metadata) do
+    Map.get(entity, :ha_entity_id) ||
+      Map.get(entity, "ha_entity_id") ||
+      (is_map(metadata) && Map.get(metadata, :ha_entity_id)) ||
+      nil
+  end
 
   defp safe_slot_atom(type) when is_atom(type), do: type
   defp safe_slot_atom(type) when is_binary(type) do
@@ -486,7 +504,7 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  @doc "Generate a response using context-aware template selection.\n\nThis uses conditional template matching and semantic ranking:\n1. Filter templates by conditions that match the context\n2. Rank matching templates by similarity to the query\n3. Fall back to cross-intent semantic search if needed\n\n## Parameters\n- `intent` - The classified intent name\n- `entities` - List of extracted entities\n- `query_text` - The original user query\n- `context` - Additional context (filled_slots, missing_slots, confidence, speech_act)\n\n## Returns\n- {:ok, response, :conditional_template} for condition-matched templates\n- {:ok, response, :semantic_fallback} for cross-intent semantic match\n- Falls back to regular generate/3 if conditional selection fails\n"
+  @doc "Generate a response using context-aware template selection.\n\nThis uses conditional template matching and semantic ranking:\n1. Filter this intent's templates by conditions that match the context\n2. Rank matching templates by similarity to the query\n\n## Parameters\n- `intent` - The classified intent name\n- `entities` - List of extracted entities\n- `query_text` - The original user query\n- `context` - Additional context (filled_slots, missing_slots, confidence, speech_act)\n\n## Returns\n- {:ok, response, :conditional_template} for condition-matched templates\n- Falls back to regular generate/3 if conditional selection fails\n"
   def generate_with_context(intent, entities, query_text, context \\ %{}) do
     full_context = build_template_context(entities, context)
     confidence = Map.get(context, :confidence, 0.7)
@@ -709,7 +727,10 @@ defmodule Brain.Response.Generator do
         if is_map(context) and Map.has_key?(context, :query_text) do
           case TemplateStore.get_best_template(intent, context.query_text, context) do
             {:ok, t} -> t
-            _ -> TemplateStore.get_random_template(intent)
+            # This intent has no template that matches the context. Asking for a
+            # random one cannot help -- get_random_template/1 reads the same
+            # per-intent list -- so fall through to the caller's next strategy.
+            {:error, _reason} -> nil
           end
         else
           TemplateStore.get_random_template(intent)
@@ -734,10 +755,6 @@ defmodule Brain.Response.Generator do
         {:ok, template} ->
           response = TemplateStore.substitute_slots(template, entities)
           {:ok, response, :conditional_template}
-
-        {:ok, template, :fallback} ->
-          response = TemplateStore.substitute_slots(template, entities)
-          {:ok, response, :semantic_fallback}
 
         {:error, _reason} ->
           :not_handled

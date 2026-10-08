@@ -1,0 +1,80 @@
+[
+  {
+    "text": "can you let's not talk",
+    "tokens": [
+      "can",
+      "you",
+      "let",
+      "'s",
+      "not",
+      "talk"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-61b34ec4",
+    "intent": "smalltalk.user.does_not_want_to_talk"
+  },
+  {
+    "text": "I want to i'm not in the mood for chatting",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "i",
+      "'m",
+      "not",
+      "in",
+      "the",
+      "mood",
+      "for",
+      "chatting"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "ADV",
+      "ADP",
+      "DET",
+      "NOUN",
+      "ADP",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-cb5de2b1",
+    "intent": "smalltalk.user.does_not_want_to_talk"
+  },
+  {
+    "text": "hey i don't want to talk",
+    "tokens": [
+      "hey",
+      "i",
+      "do",
+      "n't",
+      "want",
+      "to",
+      "talk"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-03ecee6d",
+    "intent": "smalltalk.user.does_not_want_to_talk"
+  }
+]

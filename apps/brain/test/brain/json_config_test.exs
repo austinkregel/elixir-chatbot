@@ -5,7 +5,6 @@ defmodule Brain.JsonConfigTest do
   use ExUnit.Case, async: false
 
   @config_files [
-    {"analysis/context_preferences.json", :brain},
     {"analysis/related_slot_mappings.json", :brain},
     {"analysis/speech_act_intent_map.json", :brain},
     {"knowledge/entity_slot_mappings.json", :brain},
@@ -22,16 +21,6 @@ defmodule Brain.JsonConfigTest do
         assert {:ok, data} = Jason.decode(content)
         assert is_map(data), "Expected #{unquote(file)} to decode to a map"
       end
-    end
-  end
-
-  describe "context_preferences.json" do
-    test "contains expected context keys" do
-      path = Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
-      {:ok, data} = path |> File.read!() |> Jason.decode()
-
-      assert Map.has_key?(data, "default"), "Expected 'default' key in context_preferences"
-      assert is_map(data["default"]), "Expected 'default' to be a map"
     end
   end
 

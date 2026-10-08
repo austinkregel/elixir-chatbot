@@ -1,0 +1,49 @@
+{
+  "rows": 822,
+  "variable": "speech_act.intent_confidence",
+  "bands": [
+    {
+      "upper": 0.4,
+      "lower": 0.3,
+      "n": 113,
+      "p_correct": 0.17699115044247787
+    },
+    {
+      "upper": 0.5,
+      "lower": 0.4,
+      "n": 312,
+      "p_correct": 0.21153846153846154
+    },
+    {
+      "upper": 0.7,
+      "lower": 0.5,
+      "n": 256,
+      "p_correct": 0.29296875
+    },
+    {
+      "upper": 0.8,
+      "lower": 0.7,
+      "n": 68,
+      "p_correct": 0.4117647058823529
+    },
+    {
+      "upper": 0.9,
+      "lower": 0.8,
+      "n": 54,
+      "p_correct": 0.6111111111111112
+    },
+    {
+      "upper": 1.0,
+      "lower": 0.9,
+      "n": 19,
+      "p_correct": 0.6842105263157895
+    }
+  ],
+  "excluded": {
+    "augmented": 0,
+    "materialized": 123
+  },
+  "fitted_at": "2026-09-30T18:51:51.766865Z",
+  "fitted_on": "dialogflow",
+  "outcome": "pipeline"
+}

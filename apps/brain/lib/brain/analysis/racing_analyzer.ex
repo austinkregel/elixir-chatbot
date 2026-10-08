@@ -163,7 +163,7 @@ defmodule Brain.Analysis.RacingAnalyzer do
 
   defp check_memory_similarity(text) do
     if Process.whereis(MemoryStore) do
-      case MemoryStore.query_similar(text, 3) do
+      case MemoryStore.query_similar(text, 3, rerank: false) do
         {:ok, [{episode, similarity} | _]} when similarity >= @fast_path_threshold ->
           intent = extract_intent_from_tags(episode.tags)
           {:ok, intent, similarity}
@@ -464,7 +464,7 @@ defmodule Brain.Analysis.RacingAnalyzer do
 
   defp analyze_memory(text, opts) do
     if Process.whereis(MemoryStore) do
-      case MemoryStore.query_similar(text, 5) do
+      case MemoryStore.query_similar(text, 5, rerank: false) do
         {:ok, [_ | _] = results} ->
           {best_episode, best_similarity} = hd(results)
           intent = extract_intent_from_tags(best_episode.tags)

@@ -1,0 +1,40 @@
+[
+  {
+    "text": "I'd like to be smarter",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "be",
+      "smarter"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-412922b5",
+    "intent": "smalltalk.agent.be_clever"
+  },
+  {
+    "text": "could you study",
+    "tokens": [
+      "could",
+      "you",
+      "study"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-cdb02fd5",
+    "intent": "smalltalk.agent.be_clever"
+  }
+]

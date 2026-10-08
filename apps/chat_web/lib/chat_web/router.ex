@@ -34,7 +34,16 @@ defmodule ChatWeb.Router do
       live "/sessions/:session_id", SessionsLive
       live "/knowledge-review", Admin.KnowledgeReviewLive
       live "/accuracy", AccuracyLive
+      live "/lexicon", LexiconLive
       live "/training-studio", TrainingStudioLive
+      live "/training/pos", POSTrainingLive
+
+      # The verification harness index. The per-subsystem pages register their
+      # own routes here as they land.
+      live "/verify", VerifyLive
+
+      # Every design token and shared component state, in light and dark.
+      live "/design", DesignLive
     end
 
     # Legacy route redirects

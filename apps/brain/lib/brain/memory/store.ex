@@ -51,12 +51,13 @@ defmodule Brain.Memory.Store do
     GenServer.call(__MODULE__, {:add_episode_direct, episode, world_id})
   end
 
-  @doc "Query for episodes similar to the given text.\nReturns top k episodes with similarity scores.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
+  @doc "Query for episodes similar to the given text.\nReturns top k episodes with similarity scores.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n  - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)\n"
   def query_similar(text, k \\ 5, opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
+    rerank = Keyword.get(opts, :rerank, :auto)
 
     Telemetry.span(:memory_query, %{k: k, world_id: world_id}, fn ->
-      GenServer.call(__MODULE__, {:query_similar, text, k, world_id})
+      do_query_similar(tables!(), text, k, world_id, rerank)
     end)
   end
 
@@ -170,10 +171,38 @@ defmodule Brain.Memory.Store do
     GenServer.call(__MODULE__, {:add_semantic, semantic, world_id})
   end
 
-  @doc "Query for semantic facts similar to the given text.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
+  @doc """
+  Query for semantic facts similar to the given text.
+
+  ## Options
+    - world_id: The world to query (default: "default")
+    - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)
+
+  ## Why this does not run in the GenServer
+
+  This is a read. It needs the semantic index and the record cache, both of which
+  are `:public` ETS tables with `read_concurrency: true`, and nothing else from the
+  server's state -- so it runs in the calling process and several callers proceed
+  at once.
+
+  It used to be a `handle_call`, which serialised every caller behind one process
+  while that process embedded the query, searched the index, fetched each candidate
+  from Atlas, and ran entity-vector reranking. Concurrent callers queued past the
+  5s call timeout and lost work: `mix gen_micro_data` at
+  `System.schedulers_online()` concurrency dropped 23 of 3868 rows, and
+  `mix axes.experiment` caps itself at 4 for the same reason. Caching the records
+  removed the round-trips and recovered 8 of those rows; the rest was the
+  serialisation itself, which only moving the work out can fix.
+
+  The single cheap `:tables` call replaces it because `VectorIndex.new/1` creates
+  its table without `:named_table`, so the identifiers live in the server's state
+  and have to be asked for.
+  """
   def query_semantic(text, k \\ 5, opts \\ []) do
     world_id = Keyword.get(opts, :world_id, @default_world_id)
-    GenServer.call(__MODULE__, {:query_semantic, text, k, world_id})
+    rerank = Keyword.get(opts, :rerank, :auto)
+
+    do_query_semantic(tables!(), text, k, world_id, rerank)
   end
 
   @doc "Get a specific semantic fact by ID.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
@@ -229,7 +258,8 @@ defmodule Brain.Memory.Store do
 
     state = %{
       episode_index: episode_index,
-      semantic_index: semantic_index
+      semantic_index: semantic_index,
+      semantic_records: semantic_records_table()
     }
 
     warm_vector_index(state)
@@ -281,7 +311,9 @@ defmodule Brain.Memory.Store do
         {:error, _} -> []
       end
 
-    episode = Episode.new(text, action, outcome, tags, embedding)
+    episode =
+      Episode.new(text, action, outcome, tags, embedding)
+      |> Map.put(:entity_names, extract_entity_names_for_ingest(text))
 
     # Write to Atlas first (primary store)
     case Brain.AtlasIntegration.persist_episode_sync(episode, world_id) do
@@ -293,19 +325,21 @@ defmodule Brain.Memory.Store do
 
         {:reply, {:ok, episode.id}, state}
 
-      {:error, _reason} ->
-        # Atlas unavailable -- write-through to VectorIndex only
-        if embedding != [] do
-          VectorIndex.insert(state.episode_index, {world_id, episode.id}, embedding)
-        end
-
-        Brain.AtlasIntegration.persist_episode(episode, world_id)
-        {:reply, {:ok, episode.id}, state}
+      # The episode was not written. Saying `{:ok, id}` here told the caller
+      # its memory was stored when nothing holds it, and indexing it anyway
+      # left the vector index claiming episodes the database does not have —
+      # which is what makes `get_episode/1` miss on an id the index just
+      # returned. Neither the index nor the caller is told a write happened.
+      {:error, reason} ->
+        Logger.error("Memory.Store: episode #{episode.id} was not persisted: #{inspect(reason)}")
+        {:reply, {:error, reason}, state}
     end
   end
 
   @impl true
   def handle_call({:add_episode_direct, episode, world_id}, _from, state) do
+    episode = ensure_entity_names(episode)
+
     case Brain.AtlasIntegration.persist_episode_sync(episode, world_id) do
       {:ok, _id} ->
         if is_list(episode.embedding) and episode.embedding != [] do
@@ -314,13 +348,10 @@ defmodule Brain.Memory.Store do
 
         {:reply, {:ok, episode.id}, state}
 
-      {:error, _reason} ->
-        if is_list(episode.embedding) and episode.embedding != [] do
-          VectorIndex.insert(state.episode_index, {world_id, episode.id}, episode.embedding)
-        end
-
-        Brain.AtlasIntegration.persist_episode(episode, world_id)
-        {:reply, {:ok, episode.id}, state}
+      # Not written: report the failure rather than an id nothing holds.
+      {:error, reason} ->
+        Logger.error("Memory.Store: episode #{episode.id} was not persisted: #{inspect(reason)}")
+        {:reply, {:error, reason}, state}
     end
   end
 
@@ -330,17 +361,15 @@ defmodule Brain.Memory.Store do
       {:ok, _id} ->
         if is_list(semantic.embedding) and semantic.embedding != [] do
           VectorIndex.insert(state.semantic_index, {world_id, semantic.id}, semantic.embedding)
+          put_semantic_record(state, world_id, semantic)
         end
 
         {:reply, {:ok, semantic.id}, state}
 
-      {:error, _reason} ->
-        if is_list(semantic.embedding) and semantic.embedding != [] do
-          VectorIndex.insert(state.semantic_index, {world_id, semantic.id}, semantic.embedding)
-        end
-
-        Brain.AtlasIntegration.persist_semantic(semantic, world_id)
-        {:reply, {:ok, semantic.id}, state}
+      # Not written: report the failure rather than an id nothing holds.
+      {:error, reason} ->
+        Logger.error("Memory.Store: semantic fact #{semantic.id} was not persisted: #{inspect(reason)}")
+        {:reply, {:error, reason}, state}
     end
   end
 
@@ -365,37 +394,6 @@ defmodule Brain.Memory.Store do
   # ============================================================================
 
   @impl true
-  def handle_call({:query_similar, text, k, world_id}, _from, state) do
-    case get_embedding(world_id, text) do
-      {:ok, query_embedding} ->
-        pool_size = if memory_rerank_enabled?(), do: k * 4, else: k * 2
-
-        candidates =
-          VectorIndex.search_all(state.episode_index, query_embedding, pool_size)
-          |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
-          |> Enum.map(fn {{_wid, id}, similarity} ->
-            case Brain.AtlasIntegration.get_episode(id, world_id) do
-              {:ok, episode} -> {episode, similarity}
-              {:error, _} -> nil
-            end
-          end)
-          |> Enum.reject(&is_nil/1)
-
-        results =
-          if memory_rerank_enabled?() do
-            kg_rerank(text, candidates, k)
-          else
-            Enum.take(candidates, k)
-          end
-
-        {:reply, {:ok, results}, state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
-  end
-
-  @impl true
   def handle_call({:query_by_tags, tags, limit, world_id}, _from, state) do
     case Brain.AtlasIntegration.query_episodes_by_tags(world_id, tags, limit) do
       {:ok, episodes} ->
@@ -415,34 +413,8 @@ defmodule Brain.Memory.Store do
   end
 
   @impl true
-  def handle_call({:query_semantic, text, k, world_id}, _from, state) do
-    case get_embedding(world_id, text) do
-      {:ok, query_embedding} ->
-        pool_size = if memory_rerank_enabled?(), do: k * 4, else: k * 2
-
-        candidates =
-          VectorIndex.search_all(state.semantic_index, query_embedding, pool_size)
-          |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
-          |> Enum.map(fn {{_wid, id}, similarity} ->
-            case Brain.AtlasIntegration.get_semantic(id, world_id) do
-              {:ok, semantic} -> {semantic, similarity}
-              {:error, _} -> nil
-            end
-          end)
-          |> Enum.reject(&is_nil/1)
-
-        results =
-          if memory_rerank_enabled?() do
-            kg_rerank(text, candidates, k)
-          else
-            Enum.take(candidates, k)
-          end
-
-        {:reply, {:ok, results}, state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+  def handle_call(:tables, _from, state) do
+    {:reply, Map.take(state, [:semantic_index, :semantic_records, :episode_index]), state}
   end
 
   @impl true
@@ -523,6 +495,7 @@ defmodule Brain.Memory.Store do
   def handle_call({:clear, nil}, _from, state) do
     VectorIndex.clear(state.episode_index)
     VectorIndex.clear(state.semantic_index)
+    :ets.delete_all_objects(state.semantic_records)
     Brain.AtlasIntegration.clear_memory()
     {:reply, :ok, state}
   end
@@ -548,9 +521,124 @@ defmodule Brain.Memory.Store do
     end
   end
 
+  # The record a semantic-search hit resolves to, held beside the index that found
+  # it. `warm_vector_index/1` already loads every semantic in full and kept only
+  # the embedding, so resolving a hit went back to Atlas one row at a time --
+  # `query_semantic` made up to `k * 4` round-trips inside this GenServer, which
+  # serialises them, and enough concurrent callers pushed the 5s call timeout.
+  #
+  # Written only where the index is written, so a key is in both tables or in
+  # neither: an index hit with no record is an invariant violation, not a cache
+  # miss to be papered over with a read.
+  defp semantic_records_table do
+    :ets.new(:memory_semantic_records, [:set, :public, :named_table, read_concurrency: true])
+  rescue
+    ArgumentError -> :memory_semantic_records
+  end
+
+  # The table identifiers, fetched once per query. Cheap: a map lookup in the
+  # server, no work of its own.
+  defp tables! do
+    case Process.whereis(__MODULE__) do
+      nil ->
+        raise "Brain.Memory.Store is not running, so the semantic index cannot be read."
+
+      _pid ->
+        GenServer.call(__MODULE__, :tables, 5_000)
+    end
+  end
+
+  # Runs in the caller, like `do_query_semantic/5` and for the same reason: the
+  # episode fetch is one Atlas round-trip per candidate, up to `k * 4` of them,
+  # and inside the GenServer they serialise every other caller behind them. Under
+  # `mix gen_micro_data`'s 28-way concurrency that overran the 5-second call
+  # timeout often enough to lose rows, and to time out the trivial `:tables`
+  # lookup sitting behind it in the mailbox.
+  defp do_query_similar(tables, text, k, world_id, rerank) do
+    do_rerank = rerank != false and memory_rerank_enabled?()
+
+    case get_embedding(world_id, text) do
+      {:ok, query_embedding} ->
+        pool_size = if do_rerank, do: k * 4, else: k * 2
+
+        candidates =
+          VectorIndex.search_all(tables.episode_index, query_embedding, pool_size)
+          |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
+          |> Enum.map(fn {{_wid, id}, similarity} ->
+            case Brain.AtlasIntegration.get_episode(id, world_id) do
+              {:ok, episode} -> {episode, similarity}
+              {:error, _} -> nil
+            end
+          end)
+          |> Enum.reject(&is_nil/1)
+
+        results =
+          if do_rerank do
+            kg_rerank(text, candidates, k)
+          else
+            Enum.take(candidates, k)
+          end
+
+        {:ok, results}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp do_query_semantic(tables, text, k, world_id, rerank) do
+    do_rerank = rerank != false and memory_rerank_enabled?()
+
+    case get_embedding(world_id, text) do
+      {:ok, query_embedding} ->
+        pool_size = if do_rerank, do: k * 4, else: k * 2
+
+        candidates =
+          VectorIndex.search_all(tables.semantic_index, query_embedding, pool_size)
+          |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
+          |> Enum.map(fn {{_wid, id}, similarity} ->
+            {fetch_semantic_record!(tables.semantic_records, world_id, id), similarity}
+          end)
+
+        results =
+          if do_rerank do
+            kg_rerank(text, candidates, k)
+          else
+            Enum.take(candidates, k)
+          end
+
+        {:ok, results}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp put_semantic_record(state, world_id, semantic) do
+    :ets.insert(state.semantic_records, {{world_id, semantic.id}, semantic})
+  end
+
+  defp fetch_semantic_record!(table, world_id, id) do
+    case :ets.lookup(table, {world_id, id}) do
+      [{_key, semantic}] ->
+        semantic
+
+      [] ->
+        raise """
+        Memory.Store: the semantic index holds #{inspect({world_id, id})} but no record
+        for it is cached.
+
+        The two are written together, so this means one was updated without the
+        other. Reading the row from Atlas here would hide that.
+        """
+    end
+  end
+
   defp warm_vector_index(state) do
     case Brain.AtlasIntegration.load_episodes(@default_world_id) do
       {:ok, episodes} when episodes != %{} ->
+        episodes = backfill_entity_names(episodes, @default_world_id)
+
         Enum.each(episodes, fn {id, ep} ->
           if is_list(ep.embedding) and ep.embedding != [] do
             VectorIndex.insert(state.episode_index, {@default_world_id, id}, ep.embedding)
@@ -564,6 +652,7 @@ defmodule Brain.Memory.Store do
             Enum.each(semantics, fn {id, sem} ->
               if is_list(sem.embedding) and sem.embedding != [] do
                 VectorIndex.insert(state.semantic_index, {@default_world_id, id}, sem.embedding)
+                put_semantic_record(state, @default_world_id, sem)
               end
             end)
 
@@ -584,6 +673,39 @@ defmodule Brain.Memory.Store do
   rescue
     e ->
       Logger.warning("Failed to warm VectorIndex from Atlas: #{inspect(e)}")
+  end
+
+  defp backfill_entity_names(episodes, world_id) do
+    needs_backfill =
+      Enum.filter(episodes, fn {_id, ep} ->
+        ep.entity_names == nil or ep.entity_names == []
+      end)
+
+    if needs_backfill == [] do
+      episodes
+    else
+      Logger.info("Backfilling entity_names",
+        count: length(needs_backfill),
+        world_id: world_id
+      )
+
+      updated =
+        Enum.map(needs_backfill, fn {id, ep} ->
+          text = ep.state || ep.action || ""
+          names = extract_entity_names_for_ingest(text)
+          updated_ep = %{ep | entity_names: names}
+          Brain.AtlasIntegration.persist_episode_sync(updated_ep, world_id)
+          {id, updated_ep}
+        end)
+        |> Map.new()
+
+      Logger.info("Backfill complete",
+        backfilled: map_size(updated),
+        world_id: world_id
+      )
+
+      Map.merge(episodes, updated)
+    end
   end
 
   defp get_embedding(world_id, text) do
@@ -611,9 +733,7 @@ defmodule Brain.Memory.Store do
   # ============================================================================
 
   defp kg_rerank(query_text, candidates, k) do
-    alias Brain.ML.KnowledgeGraph.EntityVectorCache
-
-    query_entities = extract_entity_names(query_text)
+    query_entities = extract_entity_names_from_text(query_text)
 
     if query_entities == [] do
       Enum.take(candidates, k)
@@ -625,8 +745,7 @@ defmodule Brain.Memory.Store do
       else
         reranked =
           Enum.map(candidates, fn {item, tfidf_score} ->
-            item_text = item_text(item)
-            item_entities = extract_entity_names(item_text)
+            item_entities = read_item_entity_names(item)
             item_vecs = entity_vectors(item_entities)
 
             kg_score =
@@ -649,8 +768,15 @@ defmodule Brain.Memory.Store do
     _ -> Enum.take(candidates, k)
   end
 
-  defp extract_entity_names(text) when is_binary(text) do
-    case Brain.ML.EntityExtractor.extract_entities(text) do
+  defp read_item_entity_names(item) do
+    case Map.get(item, :entity_names) do
+      names when is_list(names) -> names
+      nil -> []
+    end
+  end
+
+  defp extract_entity_names_from_text(text) when is_binary(text) do
+    case Brain.ML.EntityExtractor.extract_entities(text, skip_disambiguation: true) do
       entities when is_list(entities) ->
         Enum.map(entities, fn e ->
           Map.get(e, :value) || Map.get(e, :text, "")
@@ -664,7 +790,34 @@ defmodule Brain.Memory.Store do
     _ -> []
   end
 
-  defp extract_entity_names(_), do: []
+  defp extract_entity_names_from_text(_), do: []
+
+  defp extract_entity_names_for_ingest(text) when is_binary(text) do
+    case Brain.ML.EntityExtractor.extract_entities(text, skip_disambiguation: true) do
+      entities when is_list(entities) ->
+        Enum.map(entities, fn e ->
+          Map.get(e, :value) || Map.get(e, :text, "")
+        end)
+        |> Enum.reject(&(&1 == ""))
+
+      _ ->
+        []
+    end
+  rescue
+    _ -> []
+  end
+
+  defp extract_entity_names_for_ingest(_), do: []
+
+  defp ensure_entity_names(%Episode{entity_names: names} = episode)
+       when is_list(names) and names != [] do
+    episode
+  end
+
+  defp ensure_entity_names(%Episode{} = episode) do
+    text = episode.state || episode.action || ""
+    Map.put(episode, :entity_names, extract_entity_names_for_ingest(text))
+  end
 
   defp entity_vectors(entity_names) do
     alias Brain.ML.KnowledgeGraph.EntityVectorCache
@@ -693,15 +846,6 @@ defmodule Brain.Memory.Store do
     end
   rescue
     _ -> 0.0
-  end
-
-  defp item_text(item) do
-    cond do
-      is_binary(Map.get(item, :state)) -> item.state
-      is_binary(Map.get(item, :representation)) -> item.representation
-      is_binary(Map.get(item, :action)) -> item.action
-      true -> ""
-    end
   end
 
   defp memory_rerank_enabled? do

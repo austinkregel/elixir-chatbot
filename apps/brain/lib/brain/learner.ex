@@ -88,7 +88,7 @@ defmodule Brain.Learner do
         Enum.map(entities, fn entity ->
           %{
             "name" => get_entity_field(entity, [:value, "value"]),
-            "type" => get_entity_field(entity, [:entity, "entity", :type, "type"]),
+            "type" => entity_type!(entity),
             "properties" => %{},
             "confidence" => get_entity_field(entity, [:confidence, "confidence"]) || 0.9
           }
@@ -117,15 +117,7 @@ defmodule Brain.Learner do
       Enum.map(entities, fn entity ->
         %{
           "name" => get_entity_field(entity, [:value, "value"]),
-          "type" =>
-            get_entity_field(entity, [
-              :entity,
-              "entity",
-              :entity_type,
-              "entity_type",
-              :type,
-              "type"
-            ]),
+          "type" => entity_type!(entity),
           "properties" => %{},
           "confidence" => get_entity_field(entity, [:confidence, "confidence"]) || 0.9
         }
@@ -171,15 +163,7 @@ defmodule Brain.Learner do
       if primary_entity do
         entity_value = get_entity_field(primary_entity, [:value, "value"]) || ""
 
-        entity_type =
-          get_entity_field(primary_entity, [
-            :entity,
-            "entity",
-            :entity_type,
-            "entity_type",
-            :type,
-            "type"
-          ]) || "unknown"
+        entity_type = entity_type!(primary_entity) || "unknown"
 
         fact_text = String.trim(input)
         entity_confidence = get_entity_field(primary_entity, [:confidence, "confidence"]) || 0.5
@@ -233,6 +217,11 @@ defmodule Brain.Learner do
       true -> false
     end
   end
+
+  # Entities reach the Learner in the analysis shape, whose type is under
+  # :entity_type (EntityExtractor and Brain's chunk-entity normalization both
+  # build that key). An entity without it is a caller bug and raises.
+  defp entity_type!(entity), do: Map.fetch!(entity, :entity_type)
 
   defp get_entity_field(entity, keys) when is_list(keys) do
     Enum.find_value(keys, fn key ->

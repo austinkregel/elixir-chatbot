@@ -36,6 +36,8 @@ defmodule Brain.Response.RefinementLoop do
   Options:
     - `:unified_context` - rich context map from ContextBuilder
     - `:max_iterations` - override default iteration limit
+    - `:side_effects` - `false` keeps realization and evaluation from writing
+      (Ouro decompressor training data, the analysis of the response)
   """
   def generate(%InternalModel{} = model, opts \\ []) do
     analyses = model.analyses || []
@@ -93,11 +95,11 @@ defmodule Brain.Response.RefinementLoop do
     primary = select_primary_analysis(analyses)
     primitives = DiscoursePlanner.plan(model, opts)
     specified = ContentSpecifier.specify(primitives, primary, opts)
-    realize_opts = Keyword.merge(opts, [analysis: primary])
+    realize_opts = realize_opts_for_analysis(opts, primary)
 
     case SurfaceRealizer.realize(specified, realize_opts) do
       {:ok, rendered, response} ->
-        score = ResponseEvaluator.evaluate(rendered, response, primary)
+        score = ResponseEvaluator.evaluate(rendered, response, primary, opts)
         {:ok, response, %{score: score, primitives: rendered, iterations: 1}}
 
       {:error, reason} ->
@@ -107,14 +109,14 @@ defmodule Brain.Response.RefinementLoop do
 
   defp iterate(plan, analysis, opts, iteration, max_iter, best_so_far) do
     specified = ContentSpecifier.specify(plan, analysis, opts)
-    realize_opts = Keyword.merge(opts, [analysis: analysis])
+    realize_opts = realize_opts_for_analysis(opts, analysis)
 
     case SurfaceRealizer.realize(specified, realize_opts) do
       {:ok, rendered, {:ouro_dry_run, _messages} = response} ->
         {:ok, response, rendered, nil, iteration}
 
       {:ok, rendered, response} ->
-        score = ResponseEvaluator.evaluate(rendered, response, analysis)
+        score = ResponseEvaluator.evaluate(rendered, response, analysis, opts)
 
         current = %{response: response, primitives: rendered, score: score, iteration: iteration}
         best = pick_best(best_so_far, current)
@@ -314,4 +316,23 @@ defmodule Brain.Response.RefinementLoop do
   defp get_missing_slots(nil), do: []
   defp get_missing_slots(%{missing_required: m}) when is_list(m), do: m
   defp get_missing_slots(_), do: []
+
+  defp realize_opts_for_analysis(opts, analysis) do
+    opts
+    |> Keyword.merge(analysis: analysis)
+    |> maybe_put_feature_vector(analysis)
+    |> maybe_put_intent(analysis)
+  end
+
+  defp maybe_put_feature_vector(opts, %{feature_vector: fv}) when is_list(fv) and fv != [] do
+    Keyword.put_new(opts, :feature_vector, fv)
+  end
+
+  defp maybe_put_feature_vector(opts, _), do: opts
+
+  defp maybe_put_intent(opts, %{intent: intent}) when is_binary(intent) and intent != "" do
+    Keyword.put_new(opts, :intent, intent)
+  end
+
+  defp maybe_put_intent(opts, _), do: opts
 end

@@ -1,0 +1,95 @@
+{
+  "apostrophes": [
+    "'",
+    "’",
+    "`",
+    "´"
+  ],
+  "clitics": {
+    "'d": {
+      "count": 53,
+      "lemmas": {
+        "have": 11,
+        "would": 42
+      },
+      "upos": {
+        "AUX": 53
+      }
+    },
+    "'ll": {
+      "count": 149,
+      "lemmas": {
+        "will": 149
+      },
+      "upos": {
+        "AUX": 149
+      }
+    },
+    "'m": {
+      "count": 198,
+      "lemmas": {
+        "be": 198
+      },
+      "upos": {
+        "AUX": 198
+      }
+    },
+    "'re": {
+      "count": 101,
+      "lemmas": {
+        "be": 101
+      },
+      "upos": {
+        "AUX": 101
+      }
+    },
+    "'s": {
+      "count": 954,
+      "lemmas": {
+        "'s": 577,
+        "be": 347,
+        "have": 16,
+        "we": 14
+      },
+      "upos": {
+        "AUX": 334,
+        "PART": 577,
+        "PRON": 14,
+        "VERB": 29
+      }
+    },
+    "'ve": {
+      "count": 125,
+      "lemmas": {
+        "have": 125
+      },
+      "upos": {
+        "AUX": 125
+      }
+    },
+    "n't": {
+      "count": 659,
+      "lemmas": {
+        "not": 659
+      },
+      "upos": {
+        "PART": 659
+      }
+    }
+  },
+  "description": "English clitics: words the UD English Web Treebank fuses onto the word before them, with an apostrophe, and the lemmas it gives them. Written by `mix pos.clitics`.",
+  "format_version": 1,
+  "license": "cc-by-sa-4.0",
+  "produced_at": "2026-09-19T17:00:52Z",
+  "producer": {
+    "inputs": [
+      {
+        "name": "ud_ewt/en_ewt-ud-train.conllu",
+        "sha256": "d68e06122a702464c613076523d56740f047e5bbe89dd90ec32737e04d952143",
+        "version": "r2.18"
+      }
+    ],
+    "name": "Mix.Tasks.Pos.Clitics",
+    "version": "1"
+  }
+}

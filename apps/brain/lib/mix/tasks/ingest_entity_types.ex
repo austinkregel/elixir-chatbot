@@ -24,7 +24,7 @@ defmodule Mix.Tasks.IngestEntityTypes do
 
   alias Atlas.Graph.EdgeLabels
 
-  @non_entity_files ["anaphora", "slot_mappings", "all"]
+  @non_entity_files ["anaphora", "slot_mappings"]
 
   @impl true
   def run(args) do

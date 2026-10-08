@@ -409,7 +409,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
         {:error, :embedder_not_ready}
 
       true ->
-        task = Task.async(fn -> Store.query_similar(text, 5) end)
+        task = Task.async(fn -> Store.query_similar(text, 5, rerank: false) end)
 
         case Task.yield(task, 500) || Task.shutdown(task, :brutal_kill) do
           {:ok, result} -> result
@@ -848,17 +848,42 @@ defmodule Brain.Analysis.SpeechActClassifier do
     help explain describe calculate remember
   )
 
+  @imperative_verbs_cache :speech_act_imperative_verbs
+
+  # The seeds plus the synonyms sharing each seed's dominant verb sense.
+  #
+  # The criterion is the sense, not a count. `Brain.Lexicon.synonyms/3` flattens
+  # every sense of a polysemous verb together, so expanding through it reaches
+  # `check` -> `curb`, `chit`, `tick off` as readily as `verify`. Measured against
+  # the speech act corpus's directive labels, taking every synonym of every sense
+  # costs 9.6 points of precision (68.9% -> 59.3%) to gain 2.7 of recall.
+  #
+  # Memoised: the seeds are a compile-time constant and WordNet does not change
+  # between `mix atlas.seed` runs, but this is read once per utterance.
   defp expanded_imperative_verbs do
-    if Process.whereis(Brain.ML.Lexicon) do
-      @seed_imperative_verbs
-      |> Enum.flat_map(fn verb ->
-        syns = Brain.ML.Lexicon.synonyms(verb, :verb)
-        [verb | Enum.take(syns, 3)]
-      end)
-      |> MapSet.new()
-    else
-      MapSet.new(@seed_imperative_verbs)
+    table = imperative_verbs_table()
+
+    case :ets.lookup(table, :set) do
+      [{:set, set}] ->
+        set
+
+      [] ->
+        set =
+          @seed_imperative_verbs
+          |> Enum.flat_map(fn verb ->
+            [verb | Brain.Lexicon.dominant_sense_synonyms(verb, :verb)]
+          end)
+          |> MapSet.new()
+
+        :ets.insert(table, {:set, set})
+        set
     end
+  end
+
+  defp imperative_verbs_table do
+    :ets.new(@imperative_verbs_cache, [:set, :public, :named_table, read_concurrency: true])
+  rescue
+    ArgumentError -> @imperative_verbs_cache
   end
 
   defp has_continuation_structure?(text, _normalized) do
@@ -878,7 +903,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
     cond do
       domain in ~w(greeting farewell thanks apology compliment) -> {:expressive, String.to_atom(domain)}
       domain in ~w(question request query search) -> {:directive, :request_information}
-      domain in ~w(command action set turn) -> {:directive, :command}
+      domain in ~w(command action set turn smarthome device music alarm timer reminder) -> {:directive, :command}
       domain in ~w(promise offer) -> {:commissive, :offer}
       true -> {:assertive, :statement}
     end

@@ -1,0 +1,24 @@
+{
+  "description": "Maps Universal Dependencies v2 part-of-speech tags onto ud_v1, the tagset Brain.ML.POSTagger uses. UD v2 split v1's CONJ into CCONJ (coordinating: and, or) and SCONJ (subordinating: if, because); every other tag is the same in both. A v2 tag with no entry here fails the import rather than being coerced.",
+  "from": "ud_v2",
+  "to": "ud_v1",
+  "map": {
+    "ADJ": "ADJ",
+    "ADP": "ADP",
+    "ADV": "ADV",
+    "AUX": "AUX",
+    "CCONJ": "CONJ",
+    "DET": "DET",
+    "INTJ": "INTJ",
+    "NOUN": "NOUN",
+    "NUM": "NUM",
+    "PART": "PART",
+    "PRON": "PRON",
+    "PROPN": "PROPN",
+    "PUNCT": "PUNCT",
+    "SCONJ": "CONJ",
+    "SYM": "SYM",
+    "VERB": "VERB",
+    "X": "X"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "description": "Maps an intent label's leading segment to the consolidated domain the :intent_domain micro-classifier is trained to emit. Several prefixes share a domain on purpose: an alarm and a timer are both reminders, a to-do is a calendar entry, a bare statement is smalltalk. Every value is also a key, so consolidating twice is the same as consolidating once.",
+  "consolidation": {
+    "account": "account",
+    "alarm": "reminder",
+    "analysis": "knowledge",
+    "calendar": "calendar",
+    "code": "code",
+    "communication": "communication",
+    "date": "time",
+    "device": "smarthome",
+    "dialog": "smalltalk",
+    "display": "smarthome",
+    "knowledge": "knowledge",
+    "meta": "meta",
+    "music": "music",
+    "navigation": "navigation",
+    "news": "knowledge",
+    "payment": "account",
+    "reminder": "reminder",
+    "search": "knowledge",
+    "smalltalk": "smalltalk",
+    "smarthome": "smarthome",
+    "statement": "smalltalk",
+    "status": "meta",
+    "time": "time",
+    "timer": "reminder",
+    "todo": "calendar",
+    "weather": "weather",
+    "web": "knowledge"
+  }
+}

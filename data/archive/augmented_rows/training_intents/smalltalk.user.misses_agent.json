@@ -1,0 +1,50 @@
+[
+  {
+    "text": "miss already you",
+    "tokens": [
+      "miss",
+      "already",
+      "you"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-f482df34",
+    "intent": "smalltalk.user.misses_agent"
+  },
+  {
+    "text": "please missing you",
+    "tokens": [
+      "please",
+      "missing",
+      "you"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-e107e99e",
+    "intent": "smalltalk.user.misses_agent"
+  },
+  {
+    "text": "I you miss",
+    "tokens": [
+      "I",
+      "you",
+      "miss"
+    ],
+    "pos_tags": [
+      "PRON",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-e86c9e4a",
+    "intent": "smalltalk.user.misses_agent"
+  }
+]

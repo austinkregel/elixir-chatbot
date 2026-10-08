@@ -1,0 +1,328 @@
+[
+  {
+    "text": "hey is it dark in the living room",
+    "tokens": [
+      "hey",
+      "is",
+      "it",
+      "dark",
+      "in",
+      "the",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-c0bca4a6",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "is it bright enough",
+    "tokens": [
+      "is",
+      "it",
+      "bright",
+      "enough"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-c25aa54c",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "I'd like to is it bright enough everywhere",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "is",
+      "it",
+      "bright",
+      "enough",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-dfd8ef79",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "please is it dark in the living room",
+    "tokens": [
+      "please",
+      "is",
+      "it",
+      "dark",
+      "in",
+      "the",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-04ea68d1",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "is bright it enough everywhere",
+    "tokens": [
+      "is",
+      "bright",
+      "it",
+      "enough",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "PRON",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-ded41751",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "please is it bright enough everywhere",
+    "tokens": [
+      "please",
+      "is",
+      "it",
+      "bright",
+      "enough",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-b213fa8e",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "I'd like to is it dark",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "is",
+      "it",
+      "dark"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-2d367716",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "can you are the decorations bright enough everywhere",
+    "tokens": [
+      "can",
+      "you",
+      "are",
+      "the",
+      "decorations",
+      "bright",
+      "enough",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-8ed164af",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "is the TV dark in living room",
+    "tokens": [
+      "is",
+      "the",
+      "TV",
+      "dark",
+      "in",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-73ad765b",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "I want to are the decorations bright enough everywhere",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "are",
+      "the",
+      "decorations",
+      "bright",
+      "enough",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-a66cd895",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "I'd like to is my computer screen too dark",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "is",
+      "my",
+      "computer",
+      "screen",
+      "too",
+      "dark"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-e2b09252",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "could you is my computer screen too dark",
+    "tokens": [
+      "could",
+      "you",
+      "is",
+      "my",
+      "computer",
+      "screen",
+      "too",
+      "dark"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-856ecbd4",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  },
+  {
+    "text": "hey is the tv dark in the living room",
+    "tokens": [
+      "hey",
+      "is",
+      "the",
+      "tv",
+      "dark",
+      "in",
+      "the",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-afd0a352",
+    "intent": "smarthome.lights.brightness.check.implicit"
+  }
+]

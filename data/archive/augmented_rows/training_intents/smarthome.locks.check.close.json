@@ -1,0 +1,64 @@
+[
+  {
+    "text": "can you is kitchen door closed",
+    "tokens": [
+      "can",
+      "you",
+      "is",
+      "kitchen",
+      "door",
+      "closed"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-1da6d2b3",
+    "intent": "smarthome.locks.check.close"
+  },
+  {
+    "text": "did I close everywhere door",
+    "tokens": [
+      "did",
+      "I",
+      "close",
+      "everywhere",
+      "door"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADV",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-b0bcd765",
+    "intent": "smarthome.locks.check.close"
+  },
+  {
+    "text": "hey is kitchen door closed",
+    "tokens": [
+      "hey",
+      "is",
+      "kitchen",
+      "door",
+      "closed"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-5e75116d",
+    "intent": "smarthome.locks.check.close"
+  }
+]

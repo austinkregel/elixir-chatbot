@@ -1,0 +1,40 @@
+{
+  "domain": "code",
+  "description": "Code analysis and explanation",
+  "response_frames": {
+    "explain_symbol": [
+      "Let me explain $symbol for you.",
+      "Here's what $symbol does.",
+      "About $symbol:"
+    ],
+    "find_usage": [
+      "Here are the usages of $symbol.",
+      "I found these references to $symbol.",
+      "$symbol is used in the following places."
+    ],
+    "show_signature": [
+      "Here's the signature for $symbol.",
+      "The signature of $symbol is:",
+      "$symbol is defined as:"
+    ],
+    "missing_symbol": [
+      "What code or symbol would you like me to explain?",
+      "Which function or class should I look up?",
+      "What would you like to know about?"
+    ]
+  },
+  "entity_verbalizations": {
+    "symbol": ["$value", "the $value function", "the $value class"],
+    "file": ["in $value", "from $value"],
+    "language": ["in $value", "written in $value"]
+  },
+  "acknowledgment_prefixes": [
+    "Sure,",
+    "Let me look that up,",
+    "Looking into that,"
+  ],
+  "slot_requirements": {
+    "required": [],
+    "optional": ["symbol", "file", "language"]
+  }
+}

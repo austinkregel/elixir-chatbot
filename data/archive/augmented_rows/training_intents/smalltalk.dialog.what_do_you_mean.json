@@ -1,0 +1,120 @@
+[
+  {
+    "text": "could you but what do you mean",
+    "tokens": [
+      "could",
+      "you",
+      "but",
+      "what",
+      "do",
+      "you",
+      "mean"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "CONJ",
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-ee781da6",
+    "intent": "smalltalk.dialog.what_do_you_mean"
+  },
+  {
+    "text": "could you what exactly do you mean",
+    "tokens": [
+      "could",
+      "you",
+      "what",
+      "exactly",
+      "do",
+      "you",
+      "mean"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "PRON",
+      "ADV",
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-495badd1",
+    "intent": "smalltalk.dialog.what_do_you_mean"
+  },
+  {
+    "text": "I want to is that what you mean",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "is",
+      "that",
+      "what",
+      "you",
+      "mean"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "PRON",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-89216d47",
+    "intent": "smalltalk.dialog.what_do_you_mean"
+  },
+  {
+    "text": "is that what mean you",
+    "tokens": [
+      "is",
+      "that",
+      "what",
+      "mean",
+      "you"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADP",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-1c13aded",
+    "intent": "smalltalk.dialog.what_do_you_mean"
+  },
+  {
+    "text": "I want to what do you mean",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "what",
+      "do",
+      "you",
+      "mean"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-00e310d8",
+    "intent": "smalltalk.dialog.what_do_you_mean"
+  }
+]

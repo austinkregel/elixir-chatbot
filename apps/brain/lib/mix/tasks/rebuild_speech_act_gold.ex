@@ -1,20 +1,31 @@
 defmodule Mix.Tasks.Rebuild.SpeechActGold do
   @shortdoc "Rebuild speech act gold standard with structural anchoring and confidence gating"
   @moduledoc """
-  Rebuilds the speech act gold standard using a two-layer labeling strategy:
+  Rebuilds the speech act gold standard from structural anchoring only.
 
-  1. **Structural anchoring** — high-confidence relabeling based on punctuation,
-     imperative verbs, and commissive markers
-  2. **Confidence-gated classifier** — for unanchored texts, use the speech act
-     classifier when confidence >= 0.7, otherwise mark `"needs_review"`
+      mix rebuild.speech_act_gold           # dry run, prints the summary
+      mix rebuild.speech_act_gold --save    # write it
 
-  Examples with `"needs_review"` status are excluded from the output file and
-  written separately to `needs_review.json`.
+  ## The two layers, and why only one of them writes
 
-  ## Usage
+  1. **Structural anchoring** — punctuation, imperative verbs and commissive
+     markers. Deterministic rules over the text, inspectable in this file. This
+     layer may set a label, and every label it sets is stamped
+     `labeled_by: "structural_anchor"`.
 
-      mix rebuild.speech_act_gold              # Rebuild
-      mix rebuild.speech_act_gold --dry-run    # Report changes without writing
+  2. **The speech act classifier** — consulted for texts no anchor matches. Its
+     disagreements are written to `classifier_suggestions.json` as proposals, with
+     the label the corpus currently holds and the confidence behind the proposal.
+     **It never writes a label into the gold standard.**
+
+  A model prediction written into a gold standard is indistinguishable from ground
+  truth the moment it lands, and the model then scores partial credit for agreeing
+  with itself. Dropping the rows a model is unsure about does the same damage by
+  subtraction: it leaves an evaluation set the model already agrees with.
+
+  So every input row appears in the output, with a label and a `labeled_by`. Rows
+  whose origin was never recorded say `"unrecorded"` rather than claiming one, and
+  the run aborts if fewer rows come out than went in.
   """
 
   use Mix.Task
@@ -31,7 +42,7 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
   def run(args) do
     Mix.Task.run("app.start")
 
-    dry_run? = "--dry-run" in args
+    save? = "--save" in args
 
     IO.puts("\nAwaiting MicroClassifiers readiness...")
     MicroClassifiers.await_ready(:infinity)
@@ -51,23 +62,26 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
 
     before_dist = label_distribution(gold, "speech_act")
 
-    {rebuilt, stats} = rebuild(gold)
+    {rebuilt, suggestions, stats} = rebuild(gold)
 
-    {accepted, needs_review} =
-      Enum.split_with(rebuilt, fn entry -> entry["_status"] != "needs_review" end)
+    # The corpus may not shrink. Dropping the rows a model is unsure about is how
+    # an evaluation set quietly stops covering the cases the model is worst at.
+    unless length(rebuilt) == length(gold) do
+      Mix.raise(
+        "rebuild.speech_act_gold: #{length(gold)} rows in, #{length(rebuilt)} out. " <>
+          "Nothing was written."
+      )
+    end
 
-    clean_accepted = Enum.map(accepted, &Map.delete(&1, "_status"))
-    clean_review = Enum.map(needs_review, &Map.delete(&1, "_status"))
+    after_dist = label_distribution(rebuilt, "speech_act")
 
-    after_dist = label_distribution(clean_accepted, "speech_act")
+    print_summary(stats, length(gold), before_dist, after_dist, suggestions)
 
-    print_summary(stats, length(gold), before_dist, after_dist)
-
-    unless dry_run? do
-      write_output(clean_accepted, gold_path())
-      write_output(clean_review, review_path())
+    if save? do
+      write_output(rebuilt, gold_path())
+      write_output(suggestions, suggestions_path())
     else
-      IO.puts("  Dry-run mode. Omit --dry-run to write files.\n")
+      IO.puts("  Dry run. Pass --save to write.\n")
     end
   end
 
@@ -75,57 +89,73 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
   # Rebuild logic
   # ---------------------------------------------------------------------------
 
+  @empty_stats %{anchored: 0, corrected: 0, confirmed: 0, suggested: 0}
+
   defp rebuild(gold) do
     total = length(gold)
 
-    gold
-    |> Enum.with_index(1)
-    |> Enum.map_reduce(
-      %{anchored: 0, corrected: 0, confirmed: 0, reclassified: 0, needs_review: 0},
-      fn {example, idx}, stats ->
+    {pairs, stats} =
+      gold
+      |> Enum.with_index(1)
+      |> Enum.map_reduce(@empty_stats, fn {example, idx}, stats ->
         if rem(idx, 1000) == 0, do: IO.write("\r  Progress: #{idx}/#{total}")
 
-        text = example["text"]
-        gold_label = example["speech_act"]
-        anchor = structural_anchor(text)
-        {entry, stats} = decide(text, gold_label, anchor, stats)
+        {entry, suggestion, stats} =
+          decide(
+            example["text"],
+            example["speech_act"],
+            structural_anchor(example["text"]),
+            Map.get(example, "labeled_by", "unrecorded"),
+            stats
+          )
 
-        {{entry, stats}, stats}
-      end
-    )
-    |> then(fn {indexed, final_stats} ->
-      if total >= 1000, do: IO.write("\r  Progress: #{total}/#{total}\n")
-      {Enum.map(indexed, fn {entry, _} -> entry end), final_stats}
-    end)
+        {{entry, suggestion}, stats}
+      end)
+
+    if total >= 1000, do: IO.write("\r  Progress: #{total}/#{total}\n")
+
+    {
+      Enum.map(pairs, &elem(&1, 0)),
+      pairs |> Enum.map(&elem(&1, 1)) |> Enum.reject(&is_nil/1),
+      stats
+    }
   end
 
-  defp decide(text, gold_label, {:anchor, anchor_label}, stats) do
+  # Layer 1. Deterministic rules over the text, so this layer is allowed to set a
+  # label -- and says so on every row it sets.
+  defp decide(text, gold_label, {:anchor, anchor_label}, provenance, stats) do
     if anchor_label == gold_label do
-      entry = %{"text" => text, "speech_act" => gold_label, "_status" => "anchored"}
-      {entry, Map.update!(stats, :anchored, &(&1 + 1))}
+      {row(text, gold_label, provenance), nil, bump(stats, :anchored)}
     else
-      entry = %{"text" => text, "speech_act" => anchor_label, "_status" => "corrected"}
-      {entry, Map.update!(stats, :corrected, &(&1 + 1))}
+      {row(text, anchor_label, "structural_anchor"), nil, bump(stats, :corrected)}
     end
   end
 
-  defp decide(text, gold_label, :no_anchor, stats) do
+  # Layer 2. The classifier is consulted and its disagreement is recorded, but the
+  # corpus keeps the label it already had. A proposal is not evidence.
+  defp decide(text, gold_label, :no_anchor, provenance, stats) do
     result = classify(text)
     classifier_label = to_string(result.category)
 
     if classifier_label == gold_label do
-      entry = %{"text" => text, "speech_act" => gold_label, "_status" => "confirmed"}
-      {entry, Map.update!(stats, :confirmed, &(&1 + 1))}
+      {row(text, gold_label, provenance), nil, bump(stats, :confirmed)}
     else
-      if result.confidence > 0.7 do
-        entry = %{"text" => text, "speech_act" => classifier_label, "_status" => "reclassified"}
-        {entry, Map.update!(stats, :reclassified, &(&1 + 1))}
-      else
-        entry = %{"text" => text, "speech_act" => gold_label, "_status" => "needs_review"}
-        {entry, Map.update!(stats, :needs_review, &(&1 + 1))}
-      end
+      suggestion = %{
+        "text" => text,
+        "current" => gold_label,
+        "proposed" => classifier_label,
+        "confidence" => result.confidence
+      }
+
+      {row(text, gold_label, provenance), suggestion, bump(stats, :suggested)}
     end
   end
+
+  defp row(text, label, provenance) do
+    %{"text" => text, "speech_act" => label, "labeled_by" => provenance}
+  end
+
+  defp bump(stats, key), do: Map.update!(stats, key, &(&1 + 1))
 
   # ---------------------------------------------------------------------------
   # Structural anchoring
@@ -206,14 +236,29 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
   # Output
   # ---------------------------------------------------------------------------
 
-  defp print_summary(stats, total, before_dist, after_dist) do
+  # Splitting the suggestions by confidence tells a reviewer which end to start
+  # from: a confident disagreement is a likely mislabel, an unconfident one is more
+  # often the classifier being weak on that text.
+  @review_threshold 0.7
+
+  defp print_summary(stats, total, before_dist, after_dist, suggestions) do
+    {confident, unsure} =
+      Enum.split_with(suggestions, &(&1["confidence"] > @review_threshold))
+
     IO.puts("\n--- Rebuild Summary ---\n")
-    IO.puts("  Total examples:              #{total}")
-    IO.puts("  Anchored (kept):             #{stats.anchored}")
-    IO.puts("  Corrected (by anchor):       #{stats.corrected}")
-    IO.puts("  Confirmed (by classifier):   #{stats.confirmed}")
-    IO.puts("  Reclassified (by classifier): #{stats.reclassified}")
-    IO.puts("  Needs review (excluded):     #{stats.needs_review}")
+    IO.puts("  Total examples:                #{total}")
+    IO.puts("  Anchored (label unchanged):    #{stats.anchored}")
+    IO.puts("  Corrected by anchor (written): #{stats.corrected}")
+    IO.puts("  Confirmed by classifier:       #{stats.confirmed}")
+    IO.puts("  Classifier disagreed:          #{stats.suggested}")
+    IO.puts("")
+    IO.puts("  Rows written to gold:          #{total}  (never fewer than went in)")
+    IO.puts("  Rows the classifier wrote:     0")
+    IO.puts("  Suggestions for review:        #{length(suggestions)}")
+    IO.puts("")
+    IO.puts("  Suggestions by confidence:")
+    IO.puts("    above #{@review_threshold}:  #{length(confident)}")
+    IO.puts("    at or below:  #{length(unsure)}")
 
     IO.puts("\n  Label distribution BEFORE:")
     print_distribution(before_dist)
@@ -258,10 +303,10 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
     end
   end
 
-  defp review_path do
+  defp suggestions_path do
     case :code.priv_dir(:brain) do
-      {:error, _} -> "apps/brain/priv/evaluation/speech_act/needs_review.json"
-      priv -> Path.join(priv, "evaluation/speech_act/needs_review.json")
+      {:error, _} -> "apps/brain/priv/evaluation/speech_act/classifier_suggestions.json"
+      priv -> Path.join(priv, "evaluation/speech_act/classifier_suggestions.json")
     end
   end
 
