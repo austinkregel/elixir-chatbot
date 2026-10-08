@@ -425,7 +425,7 @@ defmodule Brain.FeatureTest do
       # 2. Merge consecutive PROPNs into a single entity "Korvo Mitski"
       # 3. Classify intent as music.play
       # 4. Narrow entity type from "person" to "artist" via TypeHierarchy
-      # 5. Fill the music-artist slot
+      # 5. Fill the music_artist slot
       {:ok, response, context} = evaluate_with_context(conv_id, "Play some Korvo Mitski")
 
       assert_is_command(context)
@@ -443,7 +443,7 @@ defmodule Brain.FeatureTest do
 
       entity_type = artist_entity[:entity_type] || artist_entity["entity_type"]
       assert entity_type in ["artist", "music_artist", "person"],
-        "Expected entity type to be artist, music-artist, or person, got: #{entity_type}"
+        "Expected entity type to be artist, music_artist, or person, got: #{entity_type}"
 
       assert_has_response(response)
     end
