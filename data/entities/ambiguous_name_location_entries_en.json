@@ -5,14 +5,12 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Paris", "my name is Paris", "call me Paris", "I am Paris"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
-        "country": "France",
-        "disambiguation_hints": ["from Paris", "in Paris", "to Paris", "at Paris"]
+        "country": "France"
       }
     ]
   },
@@ -22,15 +20,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Austin", "my name is Austin", "call me Austin", "I am Austin"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Texas",
-        "country": "USA",
-        "disambiguation_hints": ["from Austin", "in Austin", "to Austin", "at Austin"]
+        "country": "USA"
       }
     ]
   },
@@ -40,19 +36,16 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Georgia", "my name is Georgia", "call me Georgia", "I am Georgia"]
+        "confidence": 0.5
       },
       {
         "entity_type": "state",
         "confidence": 0.4,
-        "country": "USA",
-        "disambiguation_hints": ["from Georgia", "in Georgia", "to Georgia", "at Georgia"]
+        "country": "USA"
       },
       {
         "entity_type": "country",
-        "confidence": 0.3,
-        "disambiguation_hints": ["country of Georgia", "Republic of Georgia"]
+        "confidence": 0.3
       }
     ]
   },
@@ -62,15 +55,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Charlotte", "my name is Charlotte", "call me Charlotte", "I am Charlotte"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "North Carolina",
-        "country": "USA",
-        "disambiguation_hints": ["from Charlotte", "in Charlotte", "to Charlotte", "at Charlotte"]
+        "country": "USA"
       }
     ]
   },
@@ -80,15 +71,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Dallas", "my name is Dallas", "call me Dallas", "I am Dallas"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Texas",
-        "country": "USA",
-        "disambiguation_hints": ["from Dallas", "in Dallas", "to Dallas", "at Dallas"]
+        "country": "USA"
       }
     ]
   },
@@ -98,15 +87,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Brooklyn", "my name is Brooklyn", "call me Brooklyn", "I am Brooklyn"]
+        "confidence": 0.5
       },
       {
         "entity_type": "borough",
         "confidence": 0.5,
         "city": "New York City",
-        "country": "USA",
-        "disambiguation_hints": ["from Brooklyn", "in Brooklyn", "to Brooklyn", "at Brooklyn"]
+        "country": "USA"
       }
     ]
   },
@@ -116,15 +103,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Madison", "my name is Madison", "call me Madison", "I am Madison"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Wisconsin",
-        "country": "USA",
-        "disambiguation_hints": ["from Madison", "in Madison", "to Madison", "at Madison"]
+        "country": "USA"
       }
     ]
   },
@@ -134,14 +119,12 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Sydney", "my name is Sydney", "call me Sydney", "I am Sydney"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
-        "country": "Australia",
-        "disambiguation_hints": ["from Sydney", "in Sydney", "to Sydney", "at Sydney"]
+        "country": "Australia"
       }
     ]
   },
@@ -151,13 +134,11 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Jordan", "my name is Jordan", "call me Jordan", "I am Jordan"]
+        "confidence": 0.5
       },
       {
         "entity_type": "country",
-        "confidence": 0.5,
-        "disambiguation_hints": ["from Jordan", "in Jordan", "to Jordan", "at Jordan"]
+        "confidence": 0.5
       }
     ]
   },
@@ -167,15 +148,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Orlando", "my name is Orlando", "call me Orlando", "I am Orlando"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Florida",
-        "country": "USA",
-        "disambiguation_hints": ["from Orlando", "in Orlando", "to Orlando", "at Orlando"]
+        "country": "USA"
       }
     ]
   },
@@ -185,20 +164,17 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Victoria", "my name is Victoria", "call me Victoria", "I am Victoria"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.4,
-        "country": "Canada",
-        "disambiguation_hints": ["from Victoria", "in Victoria", "to Victoria"]
+        "country": "Canada"
       },
       {
         "entity_type": "state",
         "confidence": 0.3,
-        "country": "Australia",
-        "disambiguation_hints": ["Victoria Australia", "state of Victoria"]
+        "country": "Australia"
       }
     ]
   },
@@ -208,15 +184,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Regina", "my name is Regina", "call me Regina", "I am Regina"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "province": "Saskatchewan",
-        "country": "Canada",
-        "disambiguation_hints": ["from Regina", "in Regina", "to Regina", "at Regina"]
+        "country": "Canada"
       }
     ]
   },
@@ -226,14 +200,12 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Florence", "my name is Florence", "call me Florence", "I am Florence"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
-        "country": "Italy",
-        "disambiguation_hints": ["from Florence", "in Florence", "to Florence", "at Florence"]
+        "country": "Italy"
       }
     ]
   },
@@ -243,15 +215,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Savannah", "my name is Savannah", "call me Savannah", "I am Savannah"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Georgia",
-        "country": "USA",
-        "disambiguation_hints": ["from Savannah", "in Savannah", "to Savannah", "at Savannah"]
+        "country": "USA"
       }
     ]
   },
@@ -261,15 +231,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Phoenix", "my name is Phoenix", "call me Phoenix", "I am Phoenix"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Arizona",
-        "country": "USA",
-        "disambiguation_hints": ["from Phoenix", "in Phoenix", "to Phoenix", "at Phoenix"]
+        "country": "USA"
       }
     ]
   },
@@ -279,14 +247,12 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Chelsea", "my name is Chelsea", "call me Chelsea", "I am Chelsea"]
+        "confidence": 0.5
       },
       {
         "entity_type": "neighborhood",
         "confidence": 0.5,
-        "city": "London or New York City",
-        "disambiguation_hints": ["from Chelsea", "in Chelsea", "to Chelsea", "at Chelsea"]
+        "city": "London or New York City"
       }
     ]
   },
@@ -296,20 +262,17 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Hudson", "my name is Hudson", "call me Hudson", "I am Hudson"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.4,
         "state": "New York",
-        "country": "USA",
-        "disambiguation_hints": ["from Hudson", "in Hudson", "to Hudson"]
+        "country": "USA"
       },
       {
         "entity_type": "river",
-        "confidence": 0.4,
-        "disambiguation_hints": ["Hudson River", "near Hudson", "along Hudson"]
+        "confidence": 0.4
       }
     ]
   },
@@ -319,15 +282,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Lincoln", "my name is Lincoln", "call me Lincoln", "I am Lincoln"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Nebraska",
-        "country": "USA",
-        "disambiguation_hints": ["from Lincoln", "in Lincoln", "to Lincoln", "at Lincoln"]
+        "country": "USA"
       }
     ]
   },
@@ -337,15 +298,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Mason", "my name is Mason", "call me Mason", "I am Mason"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Ohio",
-        "country": "USA",
-        "disambiguation_hints": ["from Mason", "in Mason", "to Mason", "at Mason"]
+        "country": "USA"
       }
     ]
   },
@@ -355,15 +314,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Troy", "my name is Troy", "call me Troy", "I am Troy"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Michigan or New York",
-        "country": "USA",
-        "disambiguation_hints": ["from Troy", "in Troy", "to Troy", "at Troy"]
+        "country": "USA"
       }
     ]
   },
@@ -373,15 +330,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Eugene", "my name is Eugene", "call me Eugene", "I am Eugene"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Oregon",
-        "country": "USA",
-        "disambiguation_hints": ["from Eugene", "in Eugene", "to Eugene", "at Eugene"]
+        "country": "USA"
       }
     ]
   },
@@ -391,15 +346,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Helena", "my name is Helena", "call me Helena", "I am Helena"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Montana",
-        "country": "USA",
-        "disambiguation_hints": ["from Helena", "in Helena", "to Helena", "at Helena"]
+        "country": "USA"
       }
     ]
   },
@@ -409,14 +362,12 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Geneva", "my name is Geneva", "call me Geneva", "I am Geneva"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
-        "country": "Switzerland",
-        "disambiguation_hints": ["from Geneva", "in Geneva", "to Geneva", "at Geneva"]
+        "country": "Switzerland"
       }
     ]
   },
@@ -426,14 +377,12 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Virginia", "my name is Virginia", "call me Virginia", "I am Virginia"]
+        "confidence": 0.5
       },
       {
         "entity_type": "state",
         "confidence": 0.5,
-        "country": "USA",
-        "disambiguation_hints": ["from Virginia", "in Virginia", "to Virginia", "at Virginia"]
+        "country": "USA"
       }
     ]
   },
@@ -443,15 +392,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Carolina", "my name is Carolina", "call me Carolina", "I am Carolina"]
+        "confidence": 0.5
       },
       {
         "entity_type": "state",
         "confidence": 0.5,
         "country": "USA",
-        "note": "Refers to North or South Carolina",
-        "disambiguation_hints": ["from Carolina", "in Carolina", "to Carolina", "North Carolina", "South Carolina"]
+        "note": "Refers to North or South Carolina"
       }
     ]
   },
@@ -461,15 +408,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Dakota", "my name is Dakota", "call me Dakota", "I am Dakota"]
+        "confidence": 0.5
       },
       {
         "entity_type": "state",
         "confidence": 0.5,
         "country": "USA",
-        "note": "Refers to North or South Dakota",
-        "disambiguation_hints": ["from Dakota", "in Dakota", "to Dakota", "North Dakota", "South Dakota"]
+        "note": "Refers to North or South Dakota"
       }
     ]
   },
@@ -479,15 +424,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Denver", "my name is Denver", "call me Denver", "I am Denver"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Colorado",
-        "country": "USA",
-        "disambiguation_hints": ["from Denver", "in Denver", "to Denver", "at Denver"]
+        "country": "USA"
       }
     ]
   },
@@ -497,15 +440,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Memphis", "my name is Memphis", "call me Memphis", "I am Memphis"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Tennessee",
-        "country": "USA",
-        "disambiguation_hints": ["from Memphis", "in Memphis", "to Memphis", "at Memphis"]
+        "country": "USA"
       }
     ]
   },
@@ -515,14 +456,12 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm London", "my name is London", "call me London", "I am London"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
-        "country": "UK",
-        "disambiguation_hints": ["from London", "in London", "to London", "at London"]
+        "country": "UK"
       }
     ]
   },
@@ -532,13 +471,11 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm India", "my name is India", "call me India", "I am India"]
+        "confidence": 0.5
       },
       {
         "entity_type": "country",
-        "confidence": 0.5,
-        "disambiguation_hints": ["from India", "in India", "to India", "at India"]
+        "confidence": 0.5
       }
     ]
   },
@@ -548,13 +485,11 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Asia", "my name is Asia", "call me Asia", "I am Asia"]
+        "confidence": 0.5
       },
       {
         "entity_type": "continent",
-        "confidence": 0.5,
-        "disambiguation_hints": ["from Asia", "in Asia", "to Asia", "across Asia"]
+        "confidence": 0.5
       }
     ]
   },
@@ -564,15 +499,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Cheyenne", "my name is Cheyenne", "call me Cheyenne", "I am Cheyenne"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Wyoming",
-        "country": "USA",
-        "disambiguation_hints": ["from Cheyenne", "in Cheyenne", "to Cheyenne", "at Cheyenne"]
+        "country": "USA"
       }
     ]
   },
@@ -582,13 +515,11 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Sierra", "my name is Sierra", "call me Sierra", "I am Sierra"]
+        "confidence": 0.5
       },
       {
         "entity_type": "mountain_range",
-        "confidence": 0.5,
-        "disambiguation_hints": ["from Sierra", "in Sierra", "Sierra Nevada", "Sierra Madre"]
+        "confidence": 0.5
       }
     ]
   },
@@ -598,15 +529,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Jackson", "my name is Jackson", "call me Jackson", "I am Jackson"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Mississippi",
-        "country": "USA",
-        "disambiguation_hints": ["from Jackson", "in Jackson", "to Jackson", "at Jackson"]
+        "country": "USA"
       }
     ]
   },
@@ -616,15 +545,13 @@
     "types": [
       {
         "entity_type": "person",
-        "confidence": 0.5,
-        "disambiguation_hints": ["I'm Montgomery", "my name is Montgomery", "call me Montgomery", "I am Montgomery"]
+        "confidence": 0.5
       },
       {
         "entity_type": "city",
         "confidence": 0.5,
         "state": "Alabama",
-        "country": "USA",
-        "disambiguation_hints": ["from Montgomery", "in Montgomery", "to Montgomery", "at Montgomery"]
+        "country": "USA"
       }
     ]
   }
