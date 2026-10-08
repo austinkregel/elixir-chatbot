@@ -30,7 +30,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
 
   use ExUnit.Case, async: false
 
-  alias Brain.Analysis.{ChunkAnalysis, ContextAccumulator, SlotResult}
+  alias Brain.Analysis.{ChunkAnalysis, ContextAccumulator, LexicalEvidence, SlotResult}
   alias Brain.Analysis.FeatureExtractor.ChunkFeatures
   alias Brain.Analysis.FeatureExtractor.EnrichmentFeatures
 
@@ -40,6 +40,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     test "does not raise when reading struct fields (Bug 1: bracket access on struct)" do
       analysis = %ChunkAnalysis{
         chunk_index: 0,
+        language: "en",
         text: "what time is it",
         pos_tags: []
       }
@@ -63,6 +64,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     test "extract_tokens reads the struct's :text field (Bug 2: dead rescue clause)" do
       analysis = %ChunkAnalysis{
         chunk_index: 0,
+        language: "en",
         text: "hello world from elixir today",
         pos_tags: []
       }
@@ -83,6 +85,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
 
       analysis = %ChunkAnalysis{
         chunk_index: 0,
+        language: "en",
         text: "hi",
         pos_tags: [],
         accumulated_context: acc
@@ -107,6 +110,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
 
       analysis = %ChunkAnalysis{
         chunk_index: 0,
+        language: "en",
         text: "hi",
         pos_tags: [],
         accumulated_context: acc
@@ -137,6 +141,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
 
       analysis = %ChunkAnalysis{
         chunk_index: 0,
+        language: "en",
         text: "hi",
         pos_tags: [],
         slots: slots
@@ -156,13 +161,13 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
 
       empty_vec =
         ChunkFeatures.extract(
-          %ChunkAnalysis{chunk_index: 0, text: "hi", pos_tags: [], slots: empty},
+          %ChunkAnalysis{chunk_index: 0, language: "en", text: "hi", pos_tags: [], slots: empty},
           []
         )
 
       filled_vec =
         ChunkFeatures.extract(
-          %ChunkAnalysis{chunk_index: 0, text: "hi", pos_tags: [], slots: filled},
+          %ChunkAnalysis{chunk_index: 0, language: "en", text: "hi", pos_tags: [], slots: filled},
           []
         )
 
@@ -217,7 +222,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     end
 
     test "the emitted vector is exactly as long as the manifest" do
-      analysis = %ChunkAnalysis{chunk_index: 0, text: "turn on the kitchen lights", pos_tags: []}
+      analysis = %ChunkAnalysis{chunk_index: 0, language: "en", text: "turn on the kitchen lights", pos_tags: []}
       vector = ChunkFeatures.extract(analysis, [])
 
       assert length(vector) == length(ChunkFeatures.dimension_manifest()),
@@ -271,6 +276,32 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
                "#{EnrichmentFeatures.lexicon_domain_count()} lexical domains. The " <>
                "#{EnrichmentFeatures.lexicon_domain_count() - partitioned} unmatched domain(s) " <>
                "are counted by group 10 but absent from group 17 entirely."
+    end
+  end
+
+  describe "the lexical evidence group" do
+    test "is the loaded model's evidence for the chunk's text" do
+      analysis = %ChunkAnalysis{chunk_index: 0, language: "en", text: "good morning to you", pos_tags: []}
+      vector = ChunkFeatures.extract(analysis, [])
+
+      assert group_slice(vector, :lexical_evidence) ==
+               LexicalEvidence.features(LexicalEvidence.loaded!("en"), "good morning to you")
+    end
+
+    test "uses a model passed as :lexical_evidence in place of the loaded one" do
+      loaded = LexicalEvidence.loaded!("en")
+      zeroed = %{loaded | scores: %{}}
+      analysis = %ChunkAnalysis{chunk_index: 0, language: "en", text: "good morning to you", pos_tags: []}
+
+      vector = ChunkFeatures.extract(analysis, [], lexical_evidence: zeroed)
+
+      assert group_slice(vector, :lexical_evidence) == List.duplicate(0.0, length(loaded.intents))
+    end
+
+    test "an analysis with no language raises" do
+      assert_raise ArgumentError, ~r/the analysis has no language/, fn ->
+        ChunkFeatures.extract(%ChunkAnalysis{chunk_index: 0, text: "hi", pos_tags: []}, [])
+      end
     end
   end
 
