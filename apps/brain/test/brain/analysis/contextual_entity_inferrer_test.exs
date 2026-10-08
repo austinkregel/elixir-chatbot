@@ -79,9 +79,9 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       narrowed = Enum.find(updated_entities, &(&1[:value] == "Taylor Swift"))
       assert narrowed != nil
 
-      # The entity type should be narrowed from person to artist or music-artist
+      # The entity type should be narrowed from person to artist or music_artist
       assert narrowed[:entity_type] in ["artist", "music_artist"],
-        "Expected type narrowing to artist or music-artist, got: #{narrowed[:entity_type]}"
+        "Expected type narrowing to artist or music_artist, got: #{narrowed[:entity_type]}"
 
       assert narrowed[:source] == :type_narrowing
       assert narrowed[:original_type] == "person"
@@ -297,7 +297,7 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
       # allows person entities through (even if POS tagger didn't extract Taylor Swift)
       if String.contains?(analysis.intent, "music") do
         # The hierarchy-aware filter should accept person entities for music intents
-        # because music-artist IS-A person. If entities were extracted, they should
+        # because music_artist IS-A person. If entities were extracted, they should
         # not have been filtered out.
         if analysis.entities != [] do
           taylor = Enum.find(analysis.entities, fn e ->
@@ -307,7 +307,7 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
           if taylor != nil do
             # If Taylor was extracted and narrowed, check the type
             assert taylor[:entity_type] in ["person", "artist", "music_artist"],
-              "Expected person, artist, or music-artist type, got: #{taylor[:entity_type]}"
+              "Expected person, artist, or music_artist type, got: #{taylor[:entity_type]}"
           end
         end
       end
@@ -319,7 +319,7 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
         %{entity_type: "person", value: "Taylor Swift", confidence: 0.65, source: :pos_tagger_propn}
       ]
 
-      # After narrowing, the entity should have been narrowed to music-artist
+      # After narrowing, the entity should have been narrowed to music_artist
       intent = "music.play"
       intent_details = %{top_k: [{"music.play", 0.8}]}
 
