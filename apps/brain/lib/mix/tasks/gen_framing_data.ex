@@ -58,6 +58,10 @@ defmodule Mix.Tasks.GenFramingData do
 
   NimbleCSV.define(GVFCParser, separator: ",", escape: "\"")
 
+  # Both corpora are English news articles. The batch analyzer builds analyses
+  # without the pipeline, so it states their language for feature extraction.
+  @corpus_language "en"
+
   @gvfc_default_path "data/framing/GVFC_extension_multimodal.csv"
   @output_path "data/classifiers/framing_class.json"
 
@@ -504,6 +508,7 @@ defmodule Mix.Tasks.GenFramingData do
 
     %{
       text: text,
+      language: @corpus_language,
       pos_tags: pos_tags,
       speech_act: speech_act,
       discourse: discourse,
