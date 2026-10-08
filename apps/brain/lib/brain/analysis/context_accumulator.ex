@@ -66,6 +66,19 @@ defmodule Brain.Analysis.ContextAccumulator do
   end
 
   @doc """
+  Sets the signal from `source`, replacing any signal already recorded from it.
+
+  Used to refine a turn-level accumulator with one chunk's own measurements:
+  each source then contributes once, where adding a second signal from the same
+  source would count it twice in `log_odds_combine/1`.
+  """
+  def put_signal(%__MODULE__{} = acc, source, value, confidence) when is_atom(source) do
+    acc
+    |> Map.update!(:signals, fn signals -> Enum.reject(signals, &(elem(&1, 0) == source)) end)
+    |> add_signal(source, value, confidence)
+  end
+
+  @doc """
   Computes the accumulated context by fusing all signals.
 
   Uses log-odds evidence accumulation for combining confidences,
