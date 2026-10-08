@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.NormalizeGoldStandard do
-  @moduledoc "Normalizes the intent gold standard by:\n1. Removing context variant suffixes (e.g., \"music.play - context_play-music\" -> \"music.play\")\n2. Removing entries with empty text\n3. Deduplicating entries (keeping unique text-intent pairs)\n\n## Usage\n\n    # Preview changes (dry run)\n    mix normalize_gold_standard --dry-run\n\n    # Apply normalization\n    mix normalize_gold_standard\n\n    # Show detailed stats\n    mix normalize_gold_standard --stats\n"
+  @moduledoc "Normalizes the intent gold standard by:\n1. Removing context variant suffixes (e.g., \"music.play - context_play_music\" -> \"music.play\")\n2. Removing entries with empty text\n3. Deduplicating entries (keeping unique text-intent pairs)\n\n## Usage\n\n    # Preview changes (dry run)\n    mix normalize_gold_standard --dry-run\n\n    # Apply normalization\n    mix normalize_gold_standard\n\n    # Show detailed stats\n    mix normalize_gold_standard --stats\n"
 
   use Mix.Task
   require Logger
