@@ -49,8 +49,12 @@ defmodule ChatWeb.BrainChannel do
       input: String.slice(input, 0, 100)
     })
 
+    # A channel socket is not given the browser's Accept-Language header, so the
+    # client sends it as "accept_language". No value names no language, which is
+    # English; an unsupported one raises.
     eval_opts = [
       user_id: user_id,
+      language: Brain.Language.resolve!(Map.get(payload, "accept_language")),
       progress: %{conversation_id: conversation_id, message_id: message_id}
     ]
 
