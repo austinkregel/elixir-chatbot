@@ -54,6 +54,26 @@ defmodule Brain.Analysis.SlotDetector do
     end
   end
 
+  @doc """
+  The entity types that can fill a slot of any registry intent in `domain`, a
+  consolidated domain as `:intent_domain` and `ChunkProfile.domain` give it
+  (`:music`, `:reminder`, ...).
+
+  Intents belong to a domain through `Brain.Lexicon.IntentDomains.consolidate/1`,
+  so `alarm.*` and `timer.*` both count toward `:reminder`. Only the registry is
+  read, not the service schemas merged into it, because a service's bare-domain
+  entries (Home Assistant declares `"music"`) are not intents of that domain.
+  """
+  def entity_types_for_domain(domain) when is_atom(domain) do
+    domain_name = Atom.to_string(domain)
+
+    load_registry()
+    |> Enum.filter(fn {intent, _schema} -> Brain.Lexicon.IntentDomains.consolidate(intent) == domain_name end)
+    |> Enum.flat_map(fn {_intent, schema} -> schema |> Map.get("entity_mappings", %{}) |> Map.values() end)
+    |> List.flatten()
+    |> MapSet.new()
+  end
+
   @doc "Lists all available slot schemas.\n"
   def list_schemas do
     load_schemas()
@@ -164,22 +184,21 @@ defmodule Brain.Analysis.SlotDetector do
   # directory, and is required: without it every intent would get only the
   # service schemas, which is how music.play lost its artist slot whenever the
   # app ran from the umbrella root.
-  defp load_schemas do
+  defp load_schemas, do: merge_service_schemas(load_registry())
+
+  defp load_registry do
     path = Brain.priv_path(@schemas_path)
 
-    base =
-      case File.read(path) do
-        {:ok, content} ->
-          case Jason.decode(content) do
-            {:ok, schemas} -> schemas
-            {:error, reason} -> raise "SlotDetector: cannot parse #{path}: #{inspect(reason)}"
-          end
+    case File.read(path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, schemas} -> schemas
+          {:error, reason} -> raise "SlotDetector: cannot parse #{path}: #{inspect(reason)}"
+        end
 
-        {:error, reason} ->
-          raise "SlotDetector: cannot read intent registry at #{path}: #{inspect(reason)}"
-      end
-
-    merge_service_schemas(base)
+      {:error, reason} ->
+        raise "SlotDetector: cannot read intent registry at #{path}: #{inspect(reason)}"
+    end
   end
 
   defp merge_service_schemas(base) do
@@ -301,7 +320,12 @@ defmodule Brain.Analysis.SlotDetector do
 
           value = entity[:value] || entity["value"]
           confidence = entity[:confidence] || entity["confidence"] || 1.0
-          SlotResult.fill_slot(acc, slot_name, value, :explicit, confidence)
+
+          # A fill through type compatibility (a "person" in a music_artist
+          # slot) is recorded as such, so a narrowing step can still refine
+          # the entity's type to what the slot asks for.
+          source = if via_compatibility, do: :type_compatible, else: :explicit
+          SlotResult.fill_slot(acc, slot_name, value, source, confidence)
       end
     end)
   end
