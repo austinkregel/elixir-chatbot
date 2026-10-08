@@ -70,12 +70,42 @@ defmodule Brain.Services.HomeAssistant do
     }
   end
 
-  # An intent whose action maps to Home Assistant services is a device
-  # action (the call that `enrich/3` makes in `handle_action/7`); any other
-  # intent only reads state.
+  # Only an action calls a Home Assistant service (`handle_action/7`); a
+  # query reads state and an unsupported intent makes no call.
   @impl true
-  def writes?(intent) do
-    intent |> extract_action_suffix() |> resolve_ha_services() != nil
+  def writes?(intent), do: match?({:action, _verb, _services}, classify(intent))
+
+  @doc """
+  Reads an intent against `priv/services/ha_action_verbs.json`.
+
+  Each name segment after the domain, and each adjacent pair of segments
+  (`player.pause`), is looked up in the verb map:
+
+  - a verb mapped to `null` makes the intent a `:query` that reads state. It
+    wins over an action verb elsewhere in the name, so
+    `smarthome.device.switch.check.on` is a check, not a switch;
+  - otherwise the most specific action verb (a pair before a single segment,
+    rightmost first) gives `{:action, verb, services}`;
+  - an intent with no verb in the map is `:unsupported`: Home Assistant does
+    not handle it, and `enrich/3` says so rather than querying state.
+  """
+  def classify(intent) do
+    verbs = load_action_verbs()
+
+    segments =
+      case intent |> to_string() |> String.split(".") do
+        [_domain | rest] -> rest
+        [] -> []
+      end
+
+    pairs = segments |> Enum.chunk_every(2, 1, :discard) |> Enum.map(&Enum.join(&1, "."))
+    matched = Enum.filter(Enum.reverse(pairs) ++ Enum.reverse(segments), &Map.has_key?(verbs, &1))
+
+    cond do
+      Enum.any?(matched, &is_nil(Map.fetch!(verbs, &1))) -> :query
+      matched != [] -> {:action, hd(matched), Map.fetch!(verbs, hd(matched))}
+      true -> :unsupported
+    end
   end
 
   @impl true
@@ -97,54 +127,24 @@ defmodule Brain.Services.HomeAssistant do
     Logger.info("HomeAssistant.enrich called: intent=#{inspect(intent)} slots=#{inspect(slots)} url=#{is_binary(url) and url != ""} token=#{is_binary(token) and token != ""}")
 
     entity_id = EntityMapper.resolve_entity_id(slots)
-    action_suffix = extract_action_suffix(intent)
-    ha_services = resolve_ha_services(action_suffix)
+    classification = classify(intent)
 
-    Logger.info("HomeAssistant.enrich resolved: entity_id=#{inspect(entity_id)} action_suffix=#{inspect(action_suffix)} ha_services=#{inspect(ha_services)}")
+    Logger.info("HomeAssistant.enrich resolved: entity_id=#{inspect(entity_id)} classification=#{inspect(classification)}")
 
-    result = if ha_services do
-      handle_action(entity_id, ha_services, slots, url, token, intent, action_suffix)
-    else
-      handle_query(entity_id, url, token, intent)
-    end
+    result =
+      case classification do
+        {:action, verb, ha_services} ->
+          handle_action(entity_id, ha_services, slots, url, token, intent, verb)
+
+        :query ->
+          handle_query(entity_id, url, token, intent)
+
+        :unsupported ->
+          {:error, {:unsupported_intent, intent}}
+      end
 
     Logger.info("HomeAssistant.enrich result: #{inspect(result)}")
     result
-  end
-
-  defp extract_action_suffix(intent) do
-    intent_str = to_string(intent)
-    action_verbs = load_action_verbs()
-
-    parts = String.split(intent_str, ".", parts: 2)
-    suffix = case parts do
-      [_domain, rest] -> rest
-      _ -> intent_str
-    end
-
-    cond do
-      Map.has_key?(action_verbs, suffix) ->
-        suffix
-
-      Map.has_key?(action_verbs, last_segment(suffix)) ->
-        last_segment(suffix)
-
-      true ->
-        suffix
-    end
-  end
-
-  defp last_segment(s) do
-    s |> String.split(".") |> List.last()
-  end
-
-  defp resolve_ha_services(action_suffix) do
-    action_verbs = load_action_verbs()
-
-    case Map.get(action_verbs, action_suffix) do
-      nil -> nil
-      services when is_list(services) -> services
-    end
   end
 
   defp handle_action(entity_id, ha_services, slots, url, token, intent, action_suffix) do
@@ -293,24 +293,32 @@ defmodule Brain.Services.HomeAssistant do
     end
   end
 
+  # The verb map is required: without it no intent can be told apart as an
+  # action, a query or unsupported, so a missing, unparseable or malformed
+  # file raises naming the file.
   defp load_action_verbs do
-    path = brain_priv("priv/services/ha_action_verbs.json")
+    path = Brain.priv_path("services/ha_action_verbs.json")
 
-    case File.read(path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, map} -> map
-          _ -> %{}
-        end
-      {:error, _} -> %{}
-    end
-  end
+    verbs =
+      case File.read(path) do
+        {:ok, content} ->
+          case Jason.decode(content) do
+            {:ok, map} when is_map(map) -> map
+            {:ok, other} -> raise "HomeAssistant: #{path} must be a JSON object, got: #{inspect(other)}"
+            {:error, reason} -> raise "HomeAssistant: cannot parse #{path}: #{inspect(reason)}"
+          end
 
-  defp brain_priv(relative) do
-    case :code.priv_dir(:brain) do
-      {:error, _} -> Path.join("apps/brain", relative)
-      priv_dir -> Path.join(priv_dir, Path.relative_to(relative, "priv"))
-    end
+        {:error, reason} ->
+          raise "HomeAssistant: cannot read the action verb map at #{path}: #{inspect(reason)}"
+      end
+
+    Enum.each(verbs, fn
+      {_verb, nil} -> :ok
+      {_verb, services} when is_list(services) and services != [] -> :ok
+      {verb, other} -> raise "HomeAssistant: #{path} maps #{inspect(verb)} to #{inspect(other)}; expected null or a non-empty list of services"
+    end)
+
+    verbs
   end
 
   defp http_get(url, token) do
