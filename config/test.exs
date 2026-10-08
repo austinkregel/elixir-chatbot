@@ -116,7 +116,13 @@ config :brain,
   http_client: Brain.Test.MockHTTP,
   # Use test-specific directories
   knowledge_dir: "test/knowledge",
-  memory_dir: "test/memory",
+  # Persona memory goes to a fresh, absolute directory for each run, which the
+  # app test helpers delete when the suite finishes. It was the relative
+  # "test/memory": that resolved against each app's working directory and was
+  # never reset, so every run appended the turns it made to the same files
+  # (apps/brain/test/memory/Echo.json had grown to 3.4 MB).
+  memory_dir:
+    Path.join(System.tmp_dir!(), "brain-test-memory-#{System.unique_integer([:positive])}-#{System.os_time()}"),
   # Isolated learned data path, absolute so one file is both read and written.
   # It was the relative "test/data/learned_params.json", which resolves against
   # the current working directory — and there are two of those in a run: Mix
