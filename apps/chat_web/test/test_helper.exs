@@ -53,3 +53,7 @@ ExUnit.configure(
 )
 
 ExUnit.start()
+
+# Persona memory for this run lives in its own directory (config/test.exs);
+# remove it so nothing a run appends survives into the next.
+ExUnit.after_suite(fn _results -> File.rm_rf!(Application.fetch_env!(:brain, :memory_dir)) end)
