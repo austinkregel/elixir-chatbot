@@ -72,6 +72,21 @@ defmodule Brain.Response.GenerativeResponseTest do
       end
     end
 
+    test "a device and a room reach the domain's own device,room frame, each in its own place" do
+      # The room comes first: smarthome aliases "room" to $device, and filling
+      # aliases before exact types used to put the room in both places.
+      entities = [
+        %{entity_type: "room", value: "kitchen"},
+        %{entity_type: "device", value: "lights"}
+      ]
+
+      assert {:ok, response} = Synthesizer.synthesize("smarthome.device.switch", entities, confidence: 0.5)
+      assert response =~ "lights"
+      assert response =~ "kitchen"
+      refute response =~ "kitchen in the kitchen"
+      refute response =~ "$"
+    end
+
     test "generates different responses for different entity values" do
       entities1 = [%{entity_type: "location", value: "Paris"}]
       entities2 = [%{entity_type: "location", value: "Tokyo"}]
