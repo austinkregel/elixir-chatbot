@@ -3,9 +3,9 @@
   "description": "Music playback and control",
   "response_frames": {
     "play_artist": [
-      "Playing music by $artist for you now.",
-      "Starting $artist's music.",
-      "Here's some $artist for you."
+      "Playing music by $music_artist for you now.",
+      "Starting $music_artist's music.",
+      "Here's some $music_artist for you."
     ],
     "play_song": [
       "Playing $song for you.",
@@ -13,8 +13,8 @@
       "Here's $song."
     ],
     "play_artist_song": [
-      "Playing $song by $artist.",
-      "Here's $song by $artist for you."
+      "Playing $song by $music_artist.",
+      "Here's $song by $music_artist for you."
     ],
     "missing_content": [
       "What would you like me to play?",
