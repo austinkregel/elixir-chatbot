@@ -116,14 +116,12 @@ defmodule Brain.ML.EntityExtractor do
           {:ok, %{"system_to_canonical" => mappings}} when is_map(mappings) ->
             mappings
 
-          _ ->
-            Logger.warning("Invalid type_mappings.json format, using empty mappings")
-            %{}
+          other ->
+            raise "EntityExtractor: #{path} has no \"system_to_canonical\" object: #{inspect(other, limit: 5)}"
         end
 
-      {:error, _} ->
-        Logger.debug("No type_mappings.json found at #{path}, using empty mappings")
-        %{}
+      {:error, reason} ->
+        raise "EntityExtractor: cannot read #{path}: #{inspect(reason)}"
     end
   end
 
@@ -131,8 +129,8 @@ defmodule Brain.ML.EntityExtractor do
   Refines entity types based on intent context and slot schemas.
 
   After intent classification, numeric entities can be refined to specific
-  slot types (final-value, change-value, etc.) based on what the intent's
-  slot schema expects. Person entities can be split into given-name/last-name.
+  slot types (final_value, change_value, etc.) based on what the intent's
+  slot schema expects. Person entities can be split into given_name/last_name.
 
   ## Options
     - `:intent` - The classified intent string (e.g., "smarthome.heating.set")
