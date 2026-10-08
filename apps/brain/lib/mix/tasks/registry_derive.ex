@@ -34,6 +34,12 @@ defmodule Mix.Tasks.Registry.Derive do
   | `input_contexts` | `contexts` |
   | `output_contexts` | `responses[0].affectedContexts` |
 
+  Slot names, entity types and context names are written with underscores in
+  the export and the registry alike (`final_value`, `sys.date_time`,
+  `device_volume`). A hyphenated name raises rather than being copied, since a
+  slot name becomes an entity type at runtime and `analysis/entity_types.json`
+  does not accept hyphens.
+
   `category`, `speech_act` and `description` are **not** derivable. `category` is
   one of three values and `speech_act` one of fourteen, and neither follows from
   the domain -- smalltalk alone uses ten distinct pairs in the existing registry.
@@ -182,8 +188,8 @@ defmodule Mix.Tasks.Registry.Derive do
 
     base = %{
       "domain" => intent |> String.split(".") |> List.first(),
-      "required" => Enum.map(required, & &1["name"]),
-      "optional" => Enum.map(optional, & &1["name"]),
+      "required" => Enum.map(required, &canonical(&1["name"])),
+      "optional" => Enum.map(optional, &canonical(&1["name"])),
       "entity_mappings" => entity_mappings(params),
       "clarification_templates" => clarification_templates(params),
       "input_contexts" => input_contexts(definition),
@@ -199,7 +205,7 @@ defmodule Mix.Tasks.Registry.Derive do
     params
     |> Enum.flat_map(fn p ->
       case p["dataType"] do
-        "@" <> type when type != "" -> [{p["name"], [type]}]
+        "@" <> type when type != "" -> [{canonical(p["name"]), [canonical(type)]}]
         _ -> []
       end
     end)
@@ -210,7 +216,7 @@ defmodule Mix.Tasks.Registry.Derive do
     params
     |> Enum.flat_map(fn p ->
       case p |> Map.get("prompts", []) |> List.first() do
-        %{"value" => v} when is_binary(v) and v != "" -> [{p["name"], v}]
+        %{"value" => v} when is_binary(v) and v != "" -> [{canonical(p["name"]), v}]
         _ -> []
       end
     end)
@@ -221,11 +227,21 @@ defmodule Mix.Tasks.Registry.Derive do
     params
     |> Enum.flat_map(fn p ->
       case p["defaultValue"] do
-        v when is_binary(v) and v != "" -> [{p["name"], v}]
+        v when is_binary(v) and v != "" -> [{canonical(p["name"]), v}]
         _ -> []
       end
     end)
     |> Map.new()
+  end
+
+  # Names in the export are written with underscores; a hyphenated one is data
+  # that was not migrated, and copying it would bring a second spelling back.
+  defp canonical(name) when is_binary(name) do
+    if String.contains?(name, "-") do
+      Mix.raise("registry.derive: #{inspect(name)} contains a hyphen; names in data/intents use underscores")
+    end
+
+    name
   end
 
   # Dialogflow input contexts carry no lifespan; the registry's existing entries
