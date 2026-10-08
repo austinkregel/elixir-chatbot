@@ -37,7 +37,7 @@ defmodule Brain.Response.RefinementLoop do
     - `:unified_context` - rich context map from ContextBuilder
     - `:max_iterations` - override default iteration limit
     - `:side_effects` - `false` keeps realization and evaluation from writing
-      (Ouro debug and training data, the analysis of the response)
+      (Ouro decompressor training data, the analysis of the response)
   """
   def generate(%InternalModel{} = model, opts \\ []) do
     analyses = model.analyses || []
