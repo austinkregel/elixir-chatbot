@@ -32,7 +32,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "9 am"
       }
     ],
@@ -41,7 +41,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -54,7 +54,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -107,7 +107,7 @@
         "value": "top"
       },
       {
-        "type": "start-year",
+        "type": "start_year",
         "value": "2016"
       }
     ],
@@ -142,7 +142,7 @@
         "value": "jacket"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -203,7 +203,7 @@
         "value": "door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "from 10 pm till 8 am"
       }
     ],
@@ -247,7 +247,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -260,7 +260,7 @@
         "value": "garage"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -269,7 +269,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       }
     ],
@@ -323,11 +323,11 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -363,7 +363,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -398,7 +398,7 @@
         "value": "thermostat"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "73"
       }
     ],
@@ -433,7 +433,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -455,11 +455,11 @@
         "value": "message"
       },
       {
-        "type": "given-name",
+        "type": "given_name",
         "value": "John"
       },
       {
-        "type": "last-name",
+        "type": "last_name",
         "value": "Smith"
       },
       {
@@ -494,7 +494,7 @@
         "value": "green"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -503,7 +503,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -538,7 +538,7 @@
         "value": "red"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -622,7 +622,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -639,7 +639,7 @@
         "value": "Tokyo"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next weekend"
       }
     ],
@@ -657,7 +657,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -753,7 +753,7 @@
         "value": "front door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -775,7 +775,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -793,7 +793,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -824,7 +824,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -859,7 +859,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -872,7 +872,7 @@
         "value": "fog"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       },
       {
@@ -885,7 +885,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -920,7 +920,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "78"
       }
     ],
@@ -999,7 +999,7 @@
         "value": "red"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -1021,7 +1021,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -1078,7 +1078,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -1105,7 +1105,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -1145,7 +1145,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -1158,7 +1158,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -1202,7 +1202,7 @@
         "value": "computer"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -1241,7 +1241,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -1281,7 +1281,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "80"
       }
     ],
@@ -1298,7 +1298,7 @@
         "value": "room"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -1320,7 +1320,7 @@
         "value": "PC"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -1333,7 +1333,7 @@
         "value": "front door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -1386,7 +1386,7 @@
         "value": "heating temperature"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "7"
       }
     ],
@@ -1417,7 +1417,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -1479,7 +1479,7 @@
         "value": "window"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -1500,7 +1500,7 @@
         "value": "bedroom"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -1522,7 +1522,7 @@
         "value": "computer"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -1535,7 +1535,7 @@
         "value": "tornadoes"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "weekend"
       }
     ],
@@ -1557,7 +1557,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       }
     ],
@@ -1579,7 +1579,7 @@
         "value": "hiking"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "right now"
       }
     ],
@@ -1601,7 +1601,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -1623,7 +1623,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -1650,7 +1650,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -1702,7 +1702,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -1724,7 +1724,7 @@
         "value": "decorations"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -1778,7 +1778,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -1805,7 +1805,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "30"
       }
     ],
@@ -1818,7 +1818,7 @@
         "value": "air conditioner"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "26"
       }
     ],
@@ -1840,7 +1840,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next Friday"
       }
     ],
@@ -1849,7 +1849,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -1876,7 +1876,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -1919,7 +1919,7 @@
         "value": "TV screen"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -1946,7 +1946,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "March 2nd"
       }
     ],
@@ -1995,7 +1995,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "68"
       }
     ],
@@ -2008,7 +2008,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -2021,7 +2021,7 @@
         "value": "snow"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next Monday"
       }
     ],
@@ -2030,7 +2030,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -2171,7 +2171,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -2188,7 +2188,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -2214,7 +2214,7 @@
         "value": "all"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow at 5 am"
       }
     ],
@@ -2342,7 +2342,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -2355,7 +2355,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "30"
       }
     ],
@@ -2373,7 +2373,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "28"
       }
     ],
@@ -2430,7 +2430,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -2465,7 +2465,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -2482,7 +2482,7 @@
         "value": "Norfolk"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -2491,7 +2491,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "from 10 pm till 8 am"
       }
     ],
@@ -2561,7 +2561,7 @@
         "value": "best"
       },
       {
-        "type": "start-year",
+        "type": "start_year",
         "value": "2016"
       }
     ],
@@ -2574,7 +2574,7 @@
         "value": "thermostat"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -2596,7 +2596,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -2657,7 +2657,7 @@
   {
     "expected": [
       {
-        "type": "device-volume",
+        "type": "device_volume",
         "value": "TV"
       },
       {
@@ -2683,7 +2683,7 @@
         "value": "London"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "in 5 days"
       }
     ],
@@ -2753,7 +2753,7 @@
         "value": "rain"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this Friday"
       }
     ],
@@ -2762,7 +2762,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "from 10 pm till 8 am"
       },
       {
@@ -2810,7 +2810,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -2823,7 +2823,7 @@
         "value": "front door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -2849,7 +2849,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -2858,7 +2858,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -2876,7 +2876,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "74"
       },
       {
@@ -2884,7 +2884,7 @@
         "value": "bathroom"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 7 am"
       }
     ],
@@ -2927,7 +2927,7 @@
         "value": "Ibiza"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next weekend"
       }
     ],
@@ -2936,7 +2936,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -2981,7 +2981,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       },
       {
@@ -3025,7 +3025,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "from 10 pm till 8 am"
       },
       {
@@ -3138,7 +3138,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -3221,7 +3221,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -3234,7 +3234,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -3265,7 +3265,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -3318,7 +3318,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -3335,7 +3335,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "70"
       },
       {
@@ -3348,7 +3348,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       },
       {
@@ -3391,7 +3391,7 @@
         "value": "door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 10 pm"
       }
     ],
@@ -3400,7 +3400,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "yesterday"
       }
     ],
@@ -3413,7 +3413,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -3478,7 +3478,7 @@
         "value": "sunglasses"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       },
       {
@@ -3508,7 +3508,7 @@
         "value": "computer"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -3583,7 +3583,7 @@
         "value": "doors"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -3596,7 +3596,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -3609,7 +3609,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -3636,7 +3636,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "25"
       }
     ],
@@ -3662,7 +3662,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -3675,7 +3675,7 @@
         "value": "taxes"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "December"
       },
       {
@@ -3697,7 +3697,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -3706,7 +3706,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -3777,7 +3777,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -3786,7 +3786,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "68"
       }
     ],
@@ -3807,7 +3807,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 8 pm"
       }
     ],
@@ -3834,7 +3834,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -3847,7 +3847,7 @@
         "value": "computer"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -3865,7 +3865,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -3873,7 +3873,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -3886,7 +3886,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -3895,7 +3895,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -3903,7 +3903,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -3973,11 +3973,11 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -3990,7 +3990,7 @@
         "value": "jogging"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this evening"
       }
     ],
@@ -4021,7 +4021,7 @@
         "value": "top"
       },
       {
-        "type": "start-year",
+        "type": "start_year",
         "value": "2016"
       }
     ],
@@ -4034,7 +4034,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -4052,7 +4052,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       },
       {
@@ -4109,7 +4109,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -4118,7 +4118,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "December"
       }
     ],
@@ -4135,7 +4135,7 @@
         "value": "doors"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -4169,7 +4169,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -4191,7 +4191,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -4212,7 +4212,7 @@
         "value": "doors"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -4312,7 +4312,7 @@
         "value": "window"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -4330,7 +4330,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -4339,7 +4339,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -4348,7 +4348,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -4397,7 +4397,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -4458,7 +4458,7 @@
         "value": "decorations"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 11 pm"
       }
     ],
@@ -4506,7 +4506,7 @@
         "value": "New York"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -4594,7 +4594,7 @@
         "value": "windows"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -4603,7 +4603,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -4655,7 +4655,7 @@
         "value": "Sicilia"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this month"
       }
     ],
@@ -4673,7 +4673,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -4686,7 +4686,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -4712,7 +4712,7 @@
         "value": "cycling"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "right now"
       }
     ],
@@ -4739,7 +4739,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 6 am"
       }
     ],
@@ -4796,7 +4796,7 @@
         "value": "garage"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -4832,7 +4832,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "to 70 degrees"
       }
     ],
@@ -4881,7 +4881,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "3"
       }
     ],
@@ -4899,7 +4899,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       },
       {
@@ -4912,7 +4912,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -4934,7 +4934,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -5009,7 +5009,7 @@
         "value": "red"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "after 3 hours"
       }
     ],
@@ -5031,7 +5031,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -5058,7 +5058,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -5071,7 +5071,7 @@
         "value": "table lamp"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -5080,7 +5080,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -5089,7 +5089,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "68"
       }
     ],
@@ -5185,7 +5185,7 @@
         "value": "umbrella"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -5207,7 +5207,7 @@
         "value": "computer"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -5220,7 +5220,7 @@
         "value": "speakers"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -5233,7 +5233,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "30"
       }
     ],
@@ -5264,7 +5264,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -5317,7 +5317,7 @@
         "value": "kitchen"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -5326,7 +5326,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "last month"
       },
       {
@@ -5348,7 +5348,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -5370,7 +5370,7 @@
         "value": "kitchen"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -5405,7 +5405,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -5431,7 +5431,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "60"
       }
     ],
@@ -5475,7 +5475,7 @@
         "value": "front door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -5488,7 +5488,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "75"
       }
     ],
@@ -5501,7 +5501,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "5pm"
       }
     ],
@@ -5562,11 +5562,11 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -5588,7 +5588,7 @@
         "value": "garage"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -5628,7 +5628,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -5658,7 +5658,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "30"
       }
     ],
@@ -5667,7 +5667,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -5685,7 +5685,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -5742,7 +5742,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -5817,7 +5817,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -5835,7 +5835,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -5857,7 +5857,7 @@
         "value": "cooling point"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -5891,7 +5891,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "6"
       },
       {
@@ -5944,7 +5944,7 @@
         "value": "window"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 10 am"
       }
     ],
@@ -6024,7 +6024,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -6054,7 +6054,7 @@
         "value": "windows"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -6080,7 +6080,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -6123,7 +6123,7 @@
         "value": "sunglasses"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -6154,7 +6154,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -6176,7 +6176,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "30"
       }
     ],
@@ -6198,7 +6198,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -6224,7 +6224,7 @@
         "value": "decorations"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -6237,7 +6237,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -6259,7 +6259,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -6290,7 +6290,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "January 2"
       }
     ],
@@ -6308,7 +6308,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -6316,7 +6316,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -6343,7 +6343,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -6361,7 +6361,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -6383,7 +6383,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "7"
       }
     ],
@@ -6466,7 +6466,7 @@
         "value": "bedroom"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -6484,7 +6484,7 @@
   {
     "expected": [
       {
-        "type": "device-volume",
+        "type": "device_volume",
         "value": "TV"
       }
     ],
@@ -6520,7 +6520,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -6546,7 +6546,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "45"
       }
     ],
@@ -6626,7 +6626,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow morning"
       }
     ],
@@ -6653,7 +6653,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -6697,7 +6697,7 @@
         "value": "radio"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "6"
       }
     ],
@@ -6745,7 +6745,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -6772,7 +6772,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tonight"
       }
     ],
@@ -6785,7 +6785,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -6851,7 +6851,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       },
       {
@@ -6899,7 +6899,7 @@
         "value": "snowball fighting"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "Friday"
       }
     ],
@@ -6969,7 +6969,7 @@
         "value": "bathroom"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 11 pm"
       }
     ],
@@ -6978,7 +6978,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -6995,7 +6995,7 @@
         "value": "Chicago"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "weekend"
       }
     ],
@@ -7021,7 +7021,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -7030,7 +7030,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -7039,7 +7039,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -7057,7 +7057,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -7079,7 +7079,7 @@
         "value": "all"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -7101,7 +7101,7 @@
         "value": "bathroom"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "in 2 min"
       }
     ],
@@ -7118,7 +7118,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -7144,7 +7144,7 @@
         "value": "kitchen"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -7166,7 +7166,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       },
       {
@@ -7192,7 +7192,7 @@
         "value": "door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "from 10 pm till 8 am"
       }
     ],
@@ -7210,7 +7210,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "9"
       }
     ],
@@ -7254,7 +7254,7 @@
         "value": "umbrella"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this weekend"
       }
     ],
@@ -7263,7 +7263,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -7325,7 +7325,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "weekend"
       }
     ],
@@ -7342,7 +7342,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -7359,7 +7359,7 @@
         "value": "window"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -7385,7 +7385,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -7407,7 +7407,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "10 pm"
       },
       {
@@ -7420,7 +7420,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -7446,7 +7446,7 @@
         "value": "door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "10 pm"
       }
     ],
@@ -7472,7 +7472,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -7516,7 +7516,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -7525,7 +7525,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -7556,7 +7556,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "July 22"
       },
       {
@@ -7590,7 +7590,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -7612,7 +7612,7 @@
         "value": "door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "from 10 pm till 8 am"
       }
     ],
@@ -7679,7 +7679,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -7692,7 +7692,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "January 3, 2017"
       }
     ],
@@ -7710,7 +7710,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow's"
       }
     ],
@@ -7736,7 +7736,7 @@
         "value": "decorations"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -7792,7 +7792,7 @@
         "value": "kitchen"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -7801,7 +7801,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -7809,7 +7809,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -7822,7 +7822,7 @@
         "value": "thermostat"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -7839,7 +7839,7 @@
         "value": "kitchen"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -7870,7 +7870,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -7905,7 +7905,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -7914,7 +7914,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "24"
       }
     ],
@@ -7923,7 +7923,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -7949,7 +7949,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -8020,7 +8020,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -8156,7 +8156,7 @@
         "value": "Travel"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "January"
       }
     ],
@@ -8178,7 +8178,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -8187,7 +8187,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -8231,7 +8231,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -8244,7 +8244,7 @@
         "value": "foggy"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "July 22"
       }
     ],
@@ -8279,7 +8279,7 @@
         "value": "green"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -8292,7 +8292,7 @@
         "value": "table lamp"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "11 pm"
       }
     ],
@@ -8305,7 +8305,7 @@
         "value": "all"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -8314,7 +8314,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -8358,7 +8358,7 @@
         "value": "bathroom"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -8371,7 +8371,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 6 am"
       }
     ],
@@ -8436,7 +8436,7 @@
         "value": "laptop"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -8467,11 +8467,11 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -8542,7 +8542,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -8555,7 +8555,7 @@
         "value": "garage"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -8572,7 +8572,7 @@
         "value": "window"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -8581,7 +8581,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this weekend"
       }
     ],
@@ -8594,7 +8594,7 @@
         "value": "speakers"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -8616,7 +8616,7 @@
         "value": "cold"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this week"
       }
     ],
@@ -8629,7 +8629,7 @@
         "value": "speakers"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -8673,7 +8673,7 @@
         "value": "kitchen"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -8699,7 +8699,7 @@
         "value": "thermostat"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "68"
       }
     ],
@@ -8712,7 +8712,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -8752,7 +8752,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       },
       {
@@ -8774,7 +8774,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -8832,7 +8832,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -8841,7 +8841,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -8890,7 +8890,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -8899,7 +8899,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -8938,7 +8938,7 @@
         "value": "Milan"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "Wednesday"
       }
     ],
@@ -8964,7 +8964,7 @@
         "value": "living room"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -9044,7 +9044,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "5 pm"
       },
       {
@@ -9066,7 +9066,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "74"
       }
     ],
@@ -9083,7 +9083,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -9127,7 +9127,7 @@
         "value": "TV screen"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -9162,7 +9162,7 @@
         "value": "TV"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "10 pm"
       }
     ],
@@ -9171,7 +9171,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -9189,7 +9189,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -9211,7 +9211,7 @@
         "value": "TV"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "in 2 hours"
       }
     ],
@@ -9229,7 +9229,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "Monday"
       }
     ],
@@ -9242,7 +9242,7 @@
         "value": "decorations"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -9304,7 +9304,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "December"
       }
     ],
@@ -9317,7 +9317,7 @@
         "value": "ski"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -9326,7 +9326,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -9357,7 +9357,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -9366,7 +9366,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -9392,7 +9392,7 @@
         "value": "thermostat"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "75"
       }
     ],
@@ -9454,7 +9454,7 @@
         "value": "red"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "45"
       }
     ],
@@ -9489,7 +9489,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -9515,7 +9515,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -9537,7 +9537,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -9576,7 +9576,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "2"
       }
     ],
@@ -9594,11 +9594,11 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -9634,7 +9634,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -9660,7 +9660,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 6 am"
       }
     ],
@@ -9721,7 +9721,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -9738,7 +9738,7 @@
         "value": "window"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -9778,7 +9778,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       },
       {
@@ -9817,7 +9817,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       }
     ],
@@ -9843,7 +9843,7 @@
         "value": "table lamp"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 11 pm"
       }
     ],
@@ -9856,7 +9856,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -9869,7 +9869,7 @@
         "value": "door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 10 pm"
       }
     ],
@@ -9900,7 +9900,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -9913,7 +9913,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "July 22"
       }
     ],
@@ -9965,7 +9965,7 @@
         "value": "sightseeing"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -9982,7 +9982,7 @@
         "value": "doors"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -10021,7 +10021,7 @@
         "value": "warm"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -10030,7 +10030,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       }
     ],
@@ -10065,7 +10065,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -10096,7 +10096,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -10109,7 +10109,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -10122,7 +10122,7 @@
         "value": "coffee pot"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -10135,7 +10135,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "69"
       }
     ],
@@ -10165,7 +10165,7 @@
         "value": "door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 7 am"
       }
     ],
@@ -10191,7 +10191,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -10218,7 +10218,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -10231,7 +10231,7 @@
         "value": "decorations"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "midnight"
       },
       {
@@ -10244,7 +10244,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -10252,7 +10252,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -10261,7 +10261,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -10270,7 +10270,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       },
       {
@@ -10300,7 +10300,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -10344,7 +10344,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -10435,7 +10435,7 @@
         "value": "door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "10 pm"
       }
     ],
@@ -10492,7 +10492,7 @@
         "value": "heating"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 6 am"
       }
     ],
@@ -10536,7 +10536,7 @@
         "value": "decorations"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -10545,7 +10545,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -10563,7 +10563,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -10602,7 +10602,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -10611,7 +10611,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -10628,7 +10628,7 @@
         "value": "kitchen"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -10658,7 +10658,7 @@
         "value": "PC"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -10675,7 +10675,7 @@
         "value": "living room"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -10684,7 +10684,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -10715,7 +10715,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -10741,7 +10741,7 @@
         "value": "Paris"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "Sunday"
       }
     ],
@@ -10781,7 +10781,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -10816,7 +10816,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "5 pm"
       }
     ],
@@ -10847,7 +10847,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -10869,7 +10869,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -10882,7 +10882,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -10895,7 +10895,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -10908,7 +10908,7 @@
         "value": "heating point"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -10995,7 +10995,7 @@
         "value": "bedroom"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -11013,7 +11013,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "74"
       }
     ],
@@ -11035,7 +11035,7 @@
         "value": "coat"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorow"
       }
     ],
@@ -11044,7 +11044,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "30"
       }
     ],
@@ -11091,7 +11091,7 @@
         "value": "heat"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -11118,7 +11118,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -11153,7 +11153,7 @@
         "value": "message"
       },
       {
-        "type": "given-name",
+        "type": "given_name",
         "value": "andrew"
       },
       {
@@ -11253,7 +11253,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -11287,7 +11287,7 @@
         "value": "windows"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -11304,7 +11304,7 @@
         "value": "radio"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -11313,7 +11313,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       },
       {
@@ -11348,7 +11348,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -11441,7 +11441,7 @@
         "value": "Oslo"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -11515,7 +11515,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -11528,7 +11528,7 @@
         "value": "heat"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -11537,7 +11537,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "30"
       }
     ],
@@ -11555,7 +11555,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "76"
       }
     ],
@@ -11644,7 +11644,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -11661,7 +11661,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "30"
       }
     ],
@@ -11674,7 +11674,7 @@
         "value": "TV"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "in 2 hours"
       }
     ],
@@ -11687,7 +11687,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -11736,7 +11736,7 @@
         "value": "garage"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -11761,7 +11761,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -11770,7 +11770,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -11783,7 +11783,7 @@
         "value": "Munich"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "Monday"
       }
     ],
@@ -11801,7 +11801,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "22"
       }
     ],
@@ -11810,7 +11810,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       }
     ],
@@ -11859,7 +11859,7 @@
         "value": "all"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow at 5 am"
       }
     ],
@@ -11876,7 +11876,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 8 pm"
       }
     ],
@@ -11937,7 +11937,7 @@
         "value": "Rihanna"
       },
       {
-        "type": "start-year",
+        "type": "start_year",
         "value": "2016"
       }
     ],
@@ -11946,7 +11946,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -11977,7 +11977,7 @@
         "value": "text"
       },
       {
-        "type": "given-name",
+        "type": "given_name",
         "value": "Mike"
       },
       {
@@ -11990,7 +11990,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -12016,7 +12016,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -12029,7 +12029,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -12095,7 +12095,7 @@
         "value": "kitchen"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -12131,11 +12131,11 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -12178,7 +12178,7 @@
         "value": "brewing coffee"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 6 AM"
       },
       {
@@ -12252,7 +12252,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -12270,7 +12270,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "30"
       }
     ],
@@ -12301,7 +12301,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -12328,7 +12328,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "25"
       }
     ],
@@ -12346,7 +12346,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -12390,7 +12390,7 @@
         "value": "snow"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -12403,7 +12403,7 @@
         "value": "jacket"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -12412,7 +12412,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "69"
       }
     ],
@@ -12439,7 +12439,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -12456,7 +12456,7 @@
         "value": "bedroom"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -12465,7 +12465,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -12483,7 +12483,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "10 pm"
       }
     ],
@@ -12536,7 +12536,7 @@
         "value": "Oakland"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next week"
       }
     ],
@@ -12545,7 +12545,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -12567,11 +12567,11 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -12611,7 +12611,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -12629,7 +12629,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "10 pm"
       }
     ],
@@ -12642,7 +12642,7 @@
         "value": "raining"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -12660,11 +12660,11 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -12677,7 +12677,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -12734,7 +12734,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -12751,7 +12751,7 @@
         "value": "thermostat"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "72"
       }
     ],
@@ -12800,7 +12800,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -12853,7 +12853,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "April 3"
       }
     ],
@@ -12866,7 +12866,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -12875,7 +12875,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -12932,7 +12932,7 @@
         "value": "storm"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this month"
       }
     ],
@@ -12976,7 +12976,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -13070,7 +13070,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -13079,7 +13079,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this week"
       }
     ],
@@ -13092,7 +13092,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -13114,7 +13114,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       },
       {
@@ -13127,7 +13127,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -13158,7 +13158,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -13202,7 +13202,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -13280,7 +13280,7 @@
         "value": "mushroom hunting"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "Friday"
       },
       {
@@ -13337,7 +13337,7 @@
         "value": "cold"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       },
       {
@@ -13350,7 +13350,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "June 14"
       }
     ],
@@ -13363,7 +13363,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "30"
       }
     ],
@@ -13403,7 +13403,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       },
       {
@@ -13495,7 +13495,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -13561,7 +13561,7 @@
         "value": "all"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 11 pm"
       },
       {
@@ -13627,7 +13627,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -13675,7 +13675,7 @@
         "value": "Moscow"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -13684,7 +13684,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -13759,7 +13759,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -13776,7 +13776,7 @@
         "value": "back door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 1 pm"
       }
     ],
@@ -13785,7 +13785,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       },
       {
@@ -13798,7 +13798,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -13816,7 +13816,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -13883,7 +13883,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -13901,7 +13901,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "2"
       }
     ],
@@ -13941,7 +13941,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -13958,7 +13958,7 @@
         "value": "PC"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 11 pm"
       }
     ],
@@ -13971,7 +13971,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -13993,7 +13993,7 @@
         "value": "computer"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -14006,7 +14006,7 @@
         "value": "air conditioner"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -14063,7 +14063,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5pm"
       }
     ],
@@ -14072,7 +14072,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "4"
       }
     ],
@@ -14103,7 +14103,7 @@
         "value": "TV"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 10 pm"
       }
     ],
@@ -14116,7 +14116,7 @@
         "value": "decorations"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -14169,7 +14169,7 @@
         "value": "computer"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -14178,7 +14178,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "72"
       }
     ],
@@ -14187,7 +14187,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -14196,7 +14196,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -14257,7 +14257,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -14274,7 +14274,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -14309,7 +14309,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -14375,7 +14375,7 @@
         "value": "TV"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "from 10 pm till 8 am"
       }
     ],
@@ -14419,7 +14419,7 @@
         "value": "all"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 11 pm"
       }
     ],
@@ -14432,7 +14432,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -14521,7 +14521,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       },
       {
@@ -14551,7 +14551,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -14586,7 +14586,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -14599,7 +14599,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -14612,7 +14612,7 @@
         "value": "Marriott"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this week"
       }
     ],
@@ -14716,7 +14716,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -14733,7 +14733,7 @@
         "value": "10"
       },
       {
-        "type": "start-year",
+        "type": "start_year",
         "value": "2014"
       }
     ],
@@ -14746,7 +14746,7 @@
         "value": "rain"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "in the evening"
       }
     ],
@@ -14815,7 +14815,7 @@
         "value": "windows"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -14854,7 +14854,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -14867,7 +14867,7 @@
         "value": "speakers"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "90"
       }
     ],
@@ -14942,7 +14942,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -14960,7 +14960,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -14969,7 +14969,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this weekend"
       },
       {
@@ -14986,7 +14986,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -15034,7 +15034,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -15061,7 +15061,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "80"
       }
     ],
@@ -15083,7 +15083,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       }
     ],
@@ -15092,7 +15092,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this evening"
       }
     ],
@@ -15105,7 +15105,7 @@
         "value": "elephant safari"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tonight"
       }
     ],
@@ -15123,7 +15123,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -15132,7 +15132,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "Monday"
       }
     ],
@@ -15150,7 +15150,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -15189,7 +15189,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -15202,7 +15202,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       }
     ],
@@ -15241,7 +15241,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -15254,7 +15254,7 @@
         "value": "thermostat"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "68"
       }
     ],
@@ -15276,7 +15276,7 @@
         "value": "laptot"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -15311,7 +15311,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -15368,7 +15368,7 @@
         "value": "iPod"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "8"
       }
     ],
@@ -15422,7 +15422,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -15439,7 +15439,7 @@
         "value": "shopping"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "December"
       }
     ],
@@ -15500,7 +15500,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -15513,7 +15513,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -15548,7 +15548,7 @@
         "value": "cold"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tonight"
       },
       {
@@ -15609,7 +15609,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -15626,7 +15626,7 @@
         "value": "all"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow at 5 am"
       }
     ],
@@ -15653,7 +15653,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -15662,7 +15662,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "1"
       }
     ],
@@ -15675,7 +15675,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -15701,7 +15701,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -15723,7 +15723,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -15754,7 +15754,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -15785,7 +15785,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -15803,7 +15803,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -15857,7 +15857,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "10 pm"
       },
       {
@@ -15887,7 +15887,7 @@
         "value": "Cleveland"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "November 12"
       }
     ],
@@ -15945,7 +15945,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next week"
       },
       {
@@ -15980,7 +15980,7 @@
         "value": "air conditioner"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "18"
       }
     ],
@@ -16002,7 +16002,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -16023,7 +16023,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -16032,7 +16032,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -16058,7 +16058,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today's"
       }
     ],
@@ -16067,7 +16067,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -16102,7 +16102,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -16119,7 +16119,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 8 pm"
       }
     ],
@@ -16168,7 +16168,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -16190,7 +16190,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "32"
       }
     ],
@@ -16230,7 +16230,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "on Tuesday"
       },
       {
@@ -16243,7 +16243,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "74"
       }
     ],
@@ -16265,7 +16265,7 @@
         "value": "San Diego"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next Wednesday"
       }
     ],
@@ -16300,7 +16300,7 @@
         "value": "radio"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "9"
       }
     ],
@@ -16309,7 +16309,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "78"
       }
     ],
@@ -16322,7 +16322,7 @@
         "value": "decorations"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       },
       {
@@ -16343,7 +16343,7 @@
         "value": "doors"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -16361,7 +16361,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "Today"
       }
     ],
@@ -16370,7 +16370,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -16445,7 +16445,7 @@
         "value": "front door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -16514,7 +16514,7 @@
         "value": "window"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -16531,7 +16531,7 @@
         "value": "snow showers"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       },
       {
@@ -16561,7 +16561,7 @@
         "value": "bathroom"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -16583,7 +16583,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       }
     ],
@@ -16641,7 +16641,7 @@
         "value": "bedroom"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "65"
       }
     ],
@@ -16672,7 +16672,7 @@
         "value": "PC"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -16711,7 +16711,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -16790,7 +16790,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -16798,7 +16798,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -16820,7 +16820,7 @@
         "value": "door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "10 pm"
       }
     ],
@@ -16851,7 +16851,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -16864,7 +16864,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -16886,7 +16886,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -16916,7 +16916,7 @@
         "value": "window"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -16933,7 +16933,7 @@
         "value": "everything"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -17078,11 +17078,11 @@
         "value": "Prince"
       },
       {
-        "type": "start-year",
+        "type": "start_year",
         "value": "1980"
       },
       {
-        "type": "end-year",
+        "type": "end_year",
         "value": "1999"
       }
     ],
@@ -17130,7 +17130,7 @@
         "value": "freezing"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "Tuesday"
       }
     ],
@@ -17143,7 +17143,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at midnight"
       }
     ],
@@ -17182,7 +17182,7 @@
         "value": "TV"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at midnight"
       }
     ],
@@ -17231,7 +17231,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -17253,7 +17253,7 @@
         "value": "front door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -17266,7 +17266,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "3"
       }
     ],
@@ -17288,7 +17288,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "45"
       }
     ],
@@ -17323,7 +17323,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -17336,7 +17336,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -17349,7 +17349,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at midnight"
       }
     ],
@@ -17367,7 +17367,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -17479,7 +17479,7 @@
         "value": "every morning"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "6:30"
       }
     ],
@@ -17558,7 +17558,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "6"
       },
       {
@@ -17575,7 +17575,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -17610,7 +17610,7 @@
         "value": "coffee pot"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -17645,7 +17645,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next week"
       }
     ],
@@ -17705,7 +17705,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "7"
       }
     ],
@@ -17740,7 +17740,7 @@
         "value": "green"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -17811,7 +17811,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -17819,7 +17819,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -17863,7 +17863,7 @@
         "value": "New York"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this morning"
       }
     ],
@@ -17881,7 +17881,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "80"
       }
     ],
@@ -17947,7 +17947,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -17960,7 +17960,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -17969,7 +17969,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "9"
       }
     ],
@@ -17978,7 +17978,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -17987,7 +17987,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -18004,7 +18004,7 @@
         "value": "living room"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -18013,7 +18013,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "75"
       }
     ],
@@ -18052,7 +18052,7 @@
         "value": "doors"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -18074,7 +18074,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -18083,7 +18083,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -18100,7 +18100,7 @@
         "value": "rain"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -18179,7 +18179,7 @@
         "value": "garage"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -18218,16 +18218,16 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
-    "text": "turn on the lightsevery day at 5 pm"
+    "text": "turn on the lights every day at 5 pm"
   },
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -18252,7 +18252,7 @@
         "value": "windows"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -18265,7 +18265,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -18287,7 +18287,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -18336,7 +18336,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -18367,7 +18367,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -18376,7 +18376,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "75"
       }
     ],
@@ -18393,7 +18393,7 @@
         "value": "window"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -18402,7 +18402,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "76"
       }
     ],
@@ -18454,7 +18454,7 @@
         "value": "red"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "after 3 hours"
       }
     ],
@@ -18480,7 +18480,7 @@
         "value": "kitchen"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -18550,7 +18550,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "five"
       }
     ],
@@ -18576,7 +18576,7 @@
         "value": "Miami"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this evening"
       }
     ],
@@ -18589,7 +18589,7 @@
         "value": "all"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 11 pm"
       }
     ],
@@ -18651,7 +18651,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "Tuesday"
       }
     ],
@@ -18686,7 +18686,7 @@
         "value": "bedroom"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -18725,7 +18725,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -18738,7 +18738,7 @@
         "value": "room"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -18751,7 +18751,7 @@
         "value": "snowboarding"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "weekend"
       }
     ],
@@ -18791,7 +18791,7 @@
         "value": "TV"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "in 2 minutes"
       }
     ],
@@ -18871,7 +18871,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -18906,7 +18906,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "60"
       }
     ],
@@ -18937,7 +18937,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow's"
       },
       {
@@ -18963,7 +18963,7 @@
         "value": "best"
       },
       {
-        "type": "start-year",
+        "type": "start_year",
         "value": "2016"
       }
     ],
@@ -18972,7 +18972,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -18999,7 +18999,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "45"
       }
     ],
@@ -19012,7 +19012,7 @@
         "value": "green"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -19029,7 +19029,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 8 pm"
       }
     ],
@@ -19038,7 +19038,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -19047,7 +19047,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "28"
       }
     ],
@@ -19118,7 +19118,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       },
       {
@@ -19157,7 +19157,7 @@
         "value": "decorations"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -19170,7 +19170,7 @@
         "value": "Bowie"
       },
       {
-        "type": "end-year",
+        "type": "end_year",
         "value": "1970"
       }
     ],
@@ -19200,7 +19200,7 @@
         "value": "umbrella"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next Friday"
       },
       {
@@ -19257,7 +19257,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -19310,7 +19310,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -19332,7 +19332,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "November 13"
       },
       {
@@ -19345,7 +19345,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       },
       {
@@ -19362,7 +19362,7 @@
         "value": "door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "10 pm"
       }
     ],
@@ -19392,7 +19392,7 @@
         "value": "every morning"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "6:30"
       }
     ],
@@ -19401,7 +19401,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -19475,7 +19475,7 @@
         "value": "Bansko"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tonight"
       }
     ],
@@ -19484,7 +19484,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "15"
       },
       {
@@ -19510,7 +19510,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -19598,7 +19598,7 @@
         "value": "living room"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -19624,7 +19624,7 @@
         "value": "New York"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this morning"
       }
     ],
@@ -19668,7 +19668,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -19677,7 +19677,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "75"
       }
     ],
@@ -19712,7 +19712,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -19730,7 +19730,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -19743,7 +19743,7 @@
         "value": "computer"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -19769,7 +19769,7 @@
         "value": "Vienna"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this weekend"
       }
     ],
@@ -19795,7 +19795,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -19812,7 +19812,7 @@
         "value": "Prague"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "June 20"
       }
     ],
@@ -19821,7 +19821,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today's"
       },
       {
@@ -19887,7 +19887,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "22"
       }
     ],
@@ -19936,7 +19936,7 @@
         "value": "speakers"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "7"
       }
     ],
@@ -19980,7 +19980,7 @@
         "value": "Valencia"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -19989,7 +19989,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -20002,7 +20002,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -20015,7 +20015,7 @@
         "value": "everything"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -20024,7 +20024,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -20045,7 +20045,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -20124,7 +20124,7 @@
         "value": "bathroom"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -20146,7 +20146,7 @@
         "value": "table lamp"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "9 pm"
       }
     ],
@@ -20164,11 +20164,11 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -20194,7 +20194,7 @@
         "value": "snow"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -20282,7 +20282,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -20340,7 +20340,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -20362,7 +20362,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -20375,7 +20375,7 @@
         "value": "heating"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -20384,7 +20384,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -20393,7 +20393,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -20402,7 +20402,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -20411,7 +20411,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -20486,7 +20486,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "15"
       },
       {
@@ -20512,7 +20512,7 @@
         "value": "front door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -20529,7 +20529,7 @@
         "value": "umbrella"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -20568,7 +20568,7 @@
         "value": "10"
       },
       {
-        "type": "start-year",
+        "type": "start_year",
         "value": "2014"
       }
     ],
@@ -20581,7 +20581,7 @@
         "value": "rain"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       },
       {
@@ -20616,7 +20616,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "yesterday's"
       }
     ],
@@ -20633,7 +20633,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -20642,7 +20642,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -20650,7 +20650,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -20686,7 +20686,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -20720,7 +20720,7 @@
         "value": "windows"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -20742,7 +20742,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       },
       {
@@ -20759,7 +20759,7 @@
         "value": "computer"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -20812,7 +20812,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -20821,7 +20821,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -20852,7 +20852,7 @@
         "value": "foggy"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next Saturday"
       },
       {
@@ -20865,11 +20865,11 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -20909,7 +20909,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -20944,7 +20944,7 @@
         "value": "bathroom"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "in 2 min"
       }
     ],
@@ -20957,7 +20957,7 @@
         "value": "garage"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -21040,7 +21040,7 @@
         "value": "bathroom"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "in 2 min"
       }
     ],
@@ -21049,7 +21049,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -21084,7 +21084,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -21115,7 +21115,7 @@
         "value": "laptop"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -21132,7 +21132,7 @@
         "value": "doors"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -21181,7 +21181,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today's"
       }
     ],
@@ -21229,7 +21229,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "5 pm"
       }
     ],
@@ -21251,7 +21251,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next Friday"
       },
       {
@@ -21273,7 +21273,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -21286,7 +21286,7 @@
         "value": "cold"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this Sunday"
       },
       {
@@ -21299,7 +21299,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -21312,7 +21312,7 @@
         "value": "speakers"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -21471,7 +21471,7 @@
         "value": "kitchen"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -21484,7 +21484,7 @@
         "value": "thermostat"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "69"
       }
     ],
@@ -21571,7 +21571,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -21589,7 +21589,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -21641,7 +21641,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -21658,7 +21658,7 @@
         "value": "kitchen"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -21684,7 +21684,7 @@
         "value": "chilly"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -21706,7 +21706,7 @@
         "value": "message"
       },
       {
-        "type": "given-name",
+        "type": "given_name",
         "value": "Thaman"
       },
       {
@@ -21825,7 +21825,7 @@
         "value": "restaurants"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this weekend"
       }
     ],
@@ -21834,7 +21834,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -21869,7 +21869,7 @@
         "value": "speakers"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -21908,7 +21908,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "2"
       }
     ],
@@ -22014,7 +22014,7 @@
         "value": "bathroom"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -22027,7 +22027,7 @@
         "value": "computer"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -22040,7 +22040,7 @@
         "value": "hurricanes"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next week"
       }
     ],
@@ -22049,7 +22049,7 @@
   {
     "expected": [
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -22075,11 +22075,11 @@
         "value": "Prince"
       },
       {
-        "type": "start-year",
+        "type": "start_year",
         "value": "1980"
       },
       {
-        "type": "end-year",
+        "type": "end_year",
         "value": "1999"
       }
     ],
@@ -22185,7 +22185,7 @@
         "value": "snow"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "Friday"
       }
     ],
@@ -22202,7 +22202,7 @@
         "value": "everyday"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -22264,7 +22264,7 @@
         "value": "TV"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -22286,7 +22286,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -22339,7 +22339,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "23"
       }
     ],
@@ -22352,7 +22352,7 @@
         "value": "TV"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -22365,7 +22365,7 @@
         "value": "thermostat"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -22378,7 +22378,7 @@
         "value": "computer"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       },
       {
@@ -22417,7 +22417,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 8 pm"
       }
     ],
@@ -22457,7 +22457,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -22491,7 +22491,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "50"
       }
     ],
@@ -22508,7 +22508,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "30"
       }
     ],
@@ -22517,7 +22517,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "20"
       }
     ],
@@ -22609,7 +22609,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -22618,7 +22618,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -22675,7 +22675,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -22688,7 +22688,7 @@
         "value": "garage"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -22714,7 +22714,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "5"
       }
     ],
@@ -22775,7 +22775,7 @@
         "value": "Madrid"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "next weekend"
       }
     ],
@@ -22788,7 +22788,7 @@
         "value": "heat"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "five"
       }
     ],
@@ -22805,7 +22805,7 @@
         "value": "doors"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -22880,7 +22880,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -22898,7 +22898,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "10"
       }
     ],
@@ -22911,7 +22911,7 @@
         "value": "air condition"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "8"
       }
     ],
@@ -22960,7 +22960,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -22978,7 +22978,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "75"
       }
     ],
@@ -23009,7 +23009,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "20"
       }
     ],
@@ -23109,7 +23109,7 @@
         "value": "every day"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -23152,7 +23152,7 @@
         "value": "bedroom"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -23174,7 +23174,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       },
       {
@@ -23222,7 +23222,7 @@
         "value": "air conditioner"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "25"
       }
     ],
@@ -23337,7 +23337,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -23385,7 +23385,7 @@
         "value": "freezing"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -23411,7 +23411,7 @@
         "value": "Paris"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "this weekend"
       }
     ],
@@ -23442,7 +23442,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -23481,7 +23481,7 @@
         "value": "BBC"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "today"
       }
     ],
@@ -23524,7 +23524,7 @@
         "value": "heating"
       },
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "40"
       }
     ],
@@ -23571,7 +23571,7 @@
         "value": "windows"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -23642,7 +23642,7 @@
         "value": "San Diego"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "tomorrow"
       }
     ],
@@ -23704,7 +23704,7 @@
         "value": "front door"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       }
     ],
@@ -23735,7 +23735,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -23810,7 +23810,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "10"
       }
     ],
@@ -23828,7 +23828,7 @@
   {
     "expected": [
       {
-        "type": "final-value",
+        "type": "final_value",
         "value": "5"
       }
     ],
@@ -23958,7 +23958,7 @@
         "value": "windows"
       },
       {
-        "type": "date-time",
+        "type": "date_time",
         "value": "at 5 pm"
       },
       {
@@ -23980,7 +23980,7 @@
   {
     "expected": [
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
@@ -24011,7 +24011,7 @@
         "value": "decorations"
       },
       {
-        "type": "change-value",
+        "type": "change_value",
         "value": "50"
       }
     ],
