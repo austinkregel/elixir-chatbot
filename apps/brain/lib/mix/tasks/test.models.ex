@@ -14,8 +14,8 @@ defmodule Mix.Tasks.Test.Models do
   ## Why the test suite wants the real ones
 
   These models are *upstream* of the feature vector — the pipeline runs them to
-  produce the analysis that `Brain.Analysis.FeatureExtractor` turns into 337
-  dimensions. A model fitted to vectors built against one set of them is not
+  produce the analysis that `Brain.Analysis.FeatureExtractor` turns into a
+  feature vector. A model fitted to vectors built against one set of them is not
   comparable to a runtime using another, and `data/classifiers/*.json` is generated
   in dev.
 
@@ -42,6 +42,13 @@ defmodule Mix.Tasks.Test.Models do
   are promoted too. `mix train_micro` and `mix train_framing` train them with
   GA-tuned per-dimension weights, and the suite exercises production behavior, so
   it runs against those models rather than unweighted substitutes.
+
+  ## Lexical evidence and the speech-act table
+
+  Each supported language's `lexical_evidence.<language>.term` and
+  `speech_act_table.<language>.term`, written by `mix gen_micro_data`. Boot loads
+  them, and the micro-classifiers above were trained on vectors that include the
+  evidence, so the suite needs the same ones.
 
   The text micro-classifiers in the same directory are not promoted: the factory
   trains them from test fixtures and writes them there, which is why the test
@@ -101,12 +108,21 @@ defmodule Mix.Tasks.Test.Models do
 
     File.mkdir_p!(dest)
 
-    results = Enum.map(@models, fn name -> promote!(source, dest, name) end)
+    results = Enum.map(models(), fn name -> promote!(source, dest, name) end)
 
     Mix.shell().info("")
     Mix.shell().info("  copied    #{Enum.count(results, &(&1 == :copied))}")
     Mix.shell().info("  unchanged #{Enum.count(results, &(&1 == :unchanged))}")
     Mix.shell().info("")
+  end
+
+  # Each supported language's lexical evidence model and speech-act table, which
+  # `mix gen_micro_data` trains and boot requires.
+  defp models do
+    @models ++
+      Enum.flat_map(Brain.Language.supported(), fn code ->
+        ["lexical_evidence.#{code}.term", "speech_act_table.#{code}.term"]
+      end)
   end
 
   defp promote!(source, dest, name) do
