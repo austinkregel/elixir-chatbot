@@ -204,10 +204,6 @@ defmodule Brain.Analysis.LexicalEvidence do
     File.write!(path(language), Brain.ML.ModelStore.serialize(model))
   end
 
-  @doc "The fold model for each row, in row order, from `fold_models/2`'s result."
-  @spec row_models({[non_neg_integer()], %{non_neg_integer() => t()}}) :: [t()]
-  def row_models({folds, models}), do: Enum.map(folds, &Map.fetch!(models, &1))
-
   @doc "Reads the stored model for `language`. Raises when it is missing or is not a model."
   @spec read!(String.t()) :: t()
   def read!(language) do
@@ -225,7 +221,7 @@ defmodule Brain.Analysis.LexicalEvidence do
     end
   end
 
-  @doc "The model loaded at boot for `language` (see `Brain.Analysis.LexicalEvidence.Loader`)."
+  @doc "The model `Brain.Analysis.LexicalEvidence.Loader` loaded at boot for `language`."
   @spec loaded!(String.t()) :: t()
   def loaded!(language) do
     case :persistent_term.get({__MODULE__, language}, nil) do
