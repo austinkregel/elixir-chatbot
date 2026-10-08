@@ -8,8 +8,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
   alias Brain.Analysis
   require Logger
 
-  alias Analysis.{ChunkProfile, EntityTypeScorer, TypeHierarchy}
-  alias Brain.Analysis.Pipeline
+  alias Analysis.{ChunkProfile, EntityTypeScorer, SlotDetector, TypeHierarchy}
   alias World.TypeInferrer
 
   @external_resource Path.join(:code.priv_dir(:brain), "analysis/entity_types.json")
@@ -129,15 +128,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
   defp expand_with_domain_candidates(entity, current_type, context) do
     profile = Map.get(context, :profile)
 
-    expected_types =
-      case profile do
-        %ChunkProfile{domain: domain} when domain != :unknown ->
-          Pipeline.expected_entity_types_from_domain(domain)
-
-        _ ->
-          intent = Map.get(context, :intent, "")
-          Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
-      end
+    expected_types = registry_expected_types(profile, Map.get(context, :intent))
 
     if expected_types != [] and current_type not in expected_types do
       entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
@@ -231,14 +222,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
     world_id = Map.get(context, :world_id) || "default"
     profile = Map.get(context, :profile)
 
-    expected_types =
-      case profile do
-        %ChunkProfile{domain: domain} when domain != :unknown ->
-          Pipeline.expected_entity_types_from_domain(domain)
-
-        _ ->
-          Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
-      end
+    expected_types = registry_expected_types(profile, intent)
 
     {context_tokens, context_tags} =
       case pos_tagged do
@@ -448,12 +432,11 @@ defmodule Brain.Analysis.EntityDisambiguator do
     entity
   end
 
-  defp domain_from_intent(nil), do: nil
-  defp domain_from_intent(intent) when is_binary(intent) do
-    case String.split(intent, ".", parts: 2) do
-      [d, _] -> String.to_atom(d)
-      _ -> nil
-    end
+  # The entity types the intent registry's slot schemas expect: every intent in
+  # the profile's domain when a profile is known, or else the intent's own.
+  defp registry_expected_types(%ChunkProfile{domain: domain}, _intent) when domain != :unknown do
+    domain |> SlotDetector.entity_types_for_domain() |> MapSet.to_list()
   end
-  defp domain_from_intent(_), do: nil
+
+  defp registry_expected_types(_profile, intent), do: EntityTypeScorer.expected_types(intent) || []
 end
