@@ -31,9 +31,10 @@ defmodule Mix.Tasks.GenMicroData do
       %{"text" => string, "label" => string}
 
   Feature-vector generation requires booting the Brain app and running
-  `Brain.Analysis.Pipeline.process/1` on every gold_standard entry to
-  compute the dense feature vector. This is slow but is a one-time cost
-  per regen.
+  `Brain.Analysis.Pipeline.analyze_chunk/2` on every gold_standard entry. Each
+  record's vector is the one the pipeline classified the intent from, so every
+  classifier trains on what it is shown at runtime. This is slow but is a
+  one-time cost per regen.
 
   ## Usage
 
@@ -48,7 +49,6 @@ defmodule Mix.Tasks.GenMicroData do
   use Mix.Task
   require Logger
 
-  alias Brain.Analysis.FeatureExtractor
   alias Brain.Analysis.Pipeline
   alias Brain.Lexicon.IntentDomains
 
@@ -196,10 +196,22 @@ defmodule Mix.Tasks.GenMicroData do
   # Each gold-standard entry already corresponds to a single chunk.
   # `side_effects: false` keeps the corpus out of the belief store, the graph
   # and the feedback statistics.
+  #
+  # The training vector is the one the pipeline classified the intent from
+  # (`analysis.feature_vector`), which the profile's axes are computed from too.
+  # Re-extracting from the finished analysis gave a different vector: by then
+  # the speech act had been refined by the previous model's intent, slots and
+  # entities filtered by it, and the confidence accumulator replaced, so the
+  # models trained on vectors they never saw at runtime.
   defp enrich_entry(%{"text" => text} = entry) when is_binary(text) do
     try do
       analysis = Pipeline.analyze_chunk(text, side_effects: false)
-      {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+
+      feature_vector =
+        case analysis.feature_vector do
+          [_ | _] = vector -> vector
+          other -> raise "the pipeline kept no classified feature vector (#{inspect(other)})"
+        end
 
       tokens = extract_tokens(analysis)
       pos_tags = Map.get(analysis, :pos_tags, [])
