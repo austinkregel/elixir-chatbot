@@ -38,6 +38,9 @@ defmodule Brain.Analysis.SlotDetector do
     Map.get(schemas, intent) || Map.get(schemas, get_parent_intent(intent))
   end
 
+  @doc "The intent registry as stored, without the service schemas `detect/3` merges in. Raises when it cannot be read.\n"
+  def registry, do: load_registry()
+
   @doc "Returns the set of entity types that can fill slots for a given intent.\n\nThis is useful for filtering entities to only those relevant to the intent.\n"
   def get_entity_types_for_intent(intent) do
     case get_schema(intent) do
