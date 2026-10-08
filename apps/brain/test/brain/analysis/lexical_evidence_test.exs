@@ -52,12 +52,32 @@ defmodule Brain.Analysis.LexicalEvidenceTest do
     assert Enum.all?(Map.values(accuracies), &(&1 >= 0.0 and &1 <= 1.0))
   end
 
-  test "a row's fold model was fitted without that row" do
-    {folds, models} = LexicalEvidence.fold_models(@rows, language: "en", prior_strength: 10)
+  test "a row's fold model was fitted without that row", %{model: model} do
+    {folds, models} = LexicalEvidence.fold_models(@rows, model)
 
     for {{text, _intent}, fold} <- Enum.zip(@rows, folds) do
       assert models[fold].fitted_rows < length(@rows)
       refute Enum.any?(fold_rows(@rows, folds, fold), &(&1 == text))
+    end
+  end
+
+  test "every fold model scores the full model's intents, in its order" do
+    # One row of its own: whichever fold holds it out fits without the intent.
+    rows = [{"good morning", "smalltalk.greetings.goodmorning"} | @rows]
+    model = LexicalEvidence.fit(rows, language: "en", prior_strength: 10)
+    {_folds, models} = fold_models = LexicalEvidence.fold_models(rows, model)
+
+    for {_k, fold_model} <- models do
+      assert fold_model.intents == model.intents
+      assert length(LexicalEvidence.features(fold_model, "good morning")) == length(model.intents)
+    end
+
+    assert length(LexicalEvidence.row_models(fold_models)) == length(rows)
+  end
+
+  test "fold models must be built from the rows the model was fitted on", %{model: model} do
+    assert_raise ArgumentError, ~r/fold models must use the same rows/, fn ->
+      LexicalEvidence.fold_models(tl(@rows), model)
     end
   end
 
