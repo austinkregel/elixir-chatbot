@@ -122,6 +122,10 @@ defmodule Brain do
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
     - `:timeout` - Call timeout in ms (default: 90_000)
+    - `:language` - the language code to analyze in, as `Brain.Language.resolve!/1`
+      gives it from the browser's `Accept-Language`. A caller with no browser
+      language names none, which means English (`Brain.Language`). An
+      unsupported code raises.
 
   Whether the turn writes is the conversation's `:side_effects`, set by
   `create_conversation/1`; passing `:side_effects` here raises.
@@ -134,7 +138,14 @@ defmodule Brain do
 
     server = Keyword.get(opts, :server, __MODULE__)
     timeout = Keyword.get(opts, :timeout, 90_000)
-    opts = opts |> Keyword.delete(:server) |> Keyword.delete(:timeout)
+    # Checked in the caller's process, so an unsupported language raises there.
+    language = opts |> Keyword.get(:language) |> Brain.Language.resolve!()
+
+    opts =
+      opts
+      |> Keyword.delete(:server)
+      |> Keyword.delete(:timeout)
+      |> Keyword.put(:language, language)
 
     Telemetry.span(:brain_evaluate, %{conversation_id: conversation_id}, fn ->
       GenServer.call(server, {:evaluate, conversation_id, input, opts}, timeout)
@@ -1078,7 +1089,11 @@ defmodule Brain do
     side_effects = Keyword.fetch!(opts, :side_effects)
 
     analysis_model =
-      run_analysis_pipeline(input, [], side_effects: side_effects) |> materialize_profiles()
+      run_analysis_pipeline(input, [],
+        side_effects: side_effects,
+        language: Keyword.fetch!(opts, :language)
+      )
+      |> materialize_profiles()
 
     best_analysis =
       analysis_model.analyses
