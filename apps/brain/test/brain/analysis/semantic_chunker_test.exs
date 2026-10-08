@@ -70,6 +70,32 @@ defmodule Brain.Analysis.SemanticChunkerTest do
     end
   end
 
+  describe "word counts" do
+    test "a clitic the tokenizer splits off counts as a word" do
+      chunks = SemanticChunker.chunk("I love Paris. It's amazing!")
+
+      assert Enum.map(chunks, & &1.text) == ["I love Paris.", "It's amazing!"]
+    end
+
+    test "a sentence under the minimum is merged into the previous one" do
+      chunks = SemanticChunker.chunk("I love Paris. So great!")
+
+      assert Enum.map(chunks, & &1.text) == ["I love Paris. So great!"]
+    end
+
+    test "a sentence over the maximum is cut into parts that keep all of its text" do
+      text = Enum.map_join(1..120, " ", &"word#{&1}") <> "."
+      chunks = SemanticChunker.chunk(text)
+
+      assert length(chunks) == 3
+      assert Enum.map_join(chunks, " ", & &1.text) == text
+
+      for chunk <- chunks do
+        assert length(Brain.ML.Tokenizer.tokenize_normalized(chunk.text)) <= 50
+      end
+    end
+  end
+
   describe "analyze/1" do
     test "returns chunk statistics" do
       result = SemanticChunker.analyze("Hello there. How are you?")
