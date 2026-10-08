@@ -429,7 +429,7 @@ defmodule Mix.Tasks.Intent.Attribute do
   end
 
   # This task scores the deployed model on the vector directly. The pipeline does
-  # not use that label as-is: `SpeechActClassifier.refine_with_intent/2` and
+  # not use that label as-is: `SpeechActClassifier.refine_with_intent/3` and
   # `apply_profile_rerank/2` both run on the lattice before `determine_intent/6`
   # reads a label off it. Where the method is :classifier, `determined` *is* the
   # label the pipeline classified with, so the two disagreeing on those rows
