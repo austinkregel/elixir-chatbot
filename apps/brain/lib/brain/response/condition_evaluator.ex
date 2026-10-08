@@ -20,7 +20,7 @@ defmodule Brain.Response.ConditionEvaluator do
 
   Compound expressions with AND / OR / NOT:
   - `has_entity:person AND confidence:high`
-  - `slot_missing:address OR slot_missing:date-time`
+  - `slot_missing:address OR slot_missing:date_time`
   - `slot_filled:location AND enriched:temperature`
   - `slot_filled:location AND NOT service_available:weather`
 
