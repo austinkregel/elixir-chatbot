@@ -7,7 +7,10 @@ defmodule Brain.Test.ModelFactory do
   `Brain.ML.ModelPreflight` and boot-time loaders see a consistent tree.
 
   Intent fine-grained classification is the `:intent_full` feature-vector
-  micro-classifier (trained here from `data/classifiers/intent_full.json`).
+  micro-classifier. It and the other feature-vector classifiers are not trained
+  here: the suite exercises production behavior, so it runs against the
+  GA-weighted models `mix train_micro` and `mix train_framing` produce, promoted
+  by `MIX_ENV=test mix test.models`.
 
   Failure policy: every step is required. If any model fails to train
   or load, `train_and_load_test_models/0` raises. There is no
@@ -29,7 +32,6 @@ defmodule Brain.Test.ModelFactory do
 
   require Logger
 
-  alias Brain.ML.FeatureVectorClassifier
   alias Brain.ML.SimpleClassifier
 
   @fixtures_dir "test/fixtures/training"
@@ -50,14 +52,10 @@ defmodule Brain.Test.ModelFactory do
     coarse_semantic_class
   )a
 
-  # Feature-vector micro-classifiers trained from `data/classifiers/<name>.json`
-  # (umbrella-root data dir, produced by `mix gen_micro_data`). Each record
-  # is `%{"feature_vector" => [float], "label" => string}` and the model is
-  # built via `Brain.ML.FeatureVectorClassifier.train/1`.
-  #
-  # `framing_class` is feature-vector but is handled separately because it
-  # also produces the companion `framing_neutral_centroid.term` artifact
-  # consumed by `Brain.Analysis.FramingDetector`.
+  # Feature-vector micro-classifiers the suite requires as promoted models
+  # (`micro/<name>.term`), trained by `mix train_micro` / `mix train_framing`
+  # with GA-tuned per-dimension weights. `framing_neutral_centroid.term` is the
+  # companion artifact `Brain.Analysis.FramingDetector` loads.
   @feature_vector_micro_classifier_names ~w(
     intent_full
     intent_domain
@@ -65,6 +63,7 @@ defmodule Brain.Test.ModelFactory do
     aspect_class
     urgency
     certainty_level
+    framing_class
   )a
 
   @doc """
@@ -86,8 +85,10 @@ defmodule Brain.Test.ModelFactory do
         speech_act: run_step!("speech act classifier (promoted, not trained)", &require_speech_act_classifier/0),
         micro: run_step!("text micro classifiers", &train_micro_classifiers/0),
         feature_vector_micro:
-          run_step!("feature-vector micro classifiers", &train_feature_vector_micro_classifiers/0),
-        framing: run_step!("framing classifier", &train_framing_classifier/0),
+          run_step!(
+            "feature-vector micro classifiers (promoted, not trained)",
+            &require_feature_vector_micro_classifiers/0
+          ),
         pos: run_step!("POS tagger (promoted, not trained)", &require_pos_tagger/0),
         poincare: run_step!("Poincare embeddings", &train_poincare_embeddings/0),
         triple_scorer: run_step!("KG triple scorer", &train_triple_scorer/0),
@@ -247,88 +248,37 @@ defmodule Brain.Test.ModelFactory do
   end
 
   @doc """
-  Trains all feature-vector axis micro-classifiers (intent_full,
-  intent_domain, tense_class, aspect_class, urgency, certainty_level)
-  from `data/classifiers/<name>.json` and loads them into the
-  MicroClassifiers GenServer.
+  Requires the promoted feature-vector micro-classifiers (intent_full,
+  intent_domain, tense_class, aspect_class, urgency, certainty_level,
+  framing_class) and `framing_neutral_centroid.term`.
 
-  Each record in those files must have shape
-  `%{"feature_vector" => [float], "label" => string}` (produced by
-  `mix gen_micro_data`). Records missing either field are silently
-  dropped, but every classifier in the list MUST yield at least one
-  valid pair, otherwise this step raises.
+  The suite exercises production behavior, so it runs against the models
+  `mix train_micro` and `mix train_framing` produce, which carry GA-tuned
+  per-dimension weights. A model without weights was trained some other way and
+  is not what production runs, so it raises. `MicroClassifiers.reload/0` loads
+  them from disk once every step has run.
   """
-  def train_feature_vector_micro_classifiers do
-    {models, missing} =
-      Enum.reduce(@feature_vector_micro_classifier_names, {%{}, []}, fn name, {acc, miss} ->
-        case load_feature_vector_data(name) do
-          [] ->
-            {acc, [name | miss]}
+  def require_feature_vector_micro_classifiers do
+    Enum.each(@feature_vector_micro_classifier_names, fn name ->
+      path = model_file!("micro/#{name}.term")
+      model = path |> File.read!() |> :erlang.binary_to_term()
 
-          pairs ->
-            model = FeatureVectorClassifier.train(pairs)
-            {Map.put(acc, name, model), miss}
-        end
-      end)
+      unless is_list(Map.get(model, :weights)) do
+        raise """
+        ModelFactory: #{path} has no tuned weights.
 
-    if missing != [] do
-      raise """
-      ModelFactory: no feature-vector training data for #{inspect(Enum.reverse(missing))}.
-      Expected files at #{data_classifiers_path("<name>.json")} with records of shape
-      %{"feature_vector" => [float], "label" => string}.
+        The suite runs against the GA-weighted models `mix train_micro` and
+        `mix train_framing` write to priv/ml_models/micro. Train them there, then
+        promote them with:
 
-      Run `mix gen_micro_data` to (re)generate them from gold_standard.json.
-      """
-    end
-
-    if Process.whereis(Brain.ML.MicroClassifiers) == nil do
-      raise "ModelFactory: Brain.ML.MicroClassifiers is not started; the supervision tree is not up"
-    end
-
-    persist_micro_models!(models)
-
-    :ok = GenServer.call(Brain.ML.MicroClassifiers, {:load_trained_models, models}, 5_000)
-    {:ok, map_size(models)}
-  end
-
-  @doc """
-  Trains the `:framing_class` feature-vector classifier and writes the
-  companion `framing_neutral_centroid.term` artifact that
-  `Brain.Analysis.FramingDetector` loads at boot. Skips with `{:ok, 0}`
-  if `data/classifiers/framing_class.json` is absent (the framing corpus
-  is optional in CI).
-  """
-  def train_framing_classifier do
-    pairs =
-      case load_feature_vector_data(:framing_class) do
-        [] ->
-          raise """
-          ModelFactory: no framing_class training data at #{data_classifiers_path("framing_class.json")}.
-
-          This used to fall back to a four-example synthetic corpus, which meant
-          the framing classifier trained on placeholder data whenever the real
-          corpus was absent -- and every framing assertion in the suite then
-          measured the placeholder. Run `mix gen_micro_data` to produce it.
-          """
-
-        p ->
-          p
+            MIX_ENV=test mix test.models
+        """
       end
+    end)
 
-    model = FeatureVectorClassifier.train(pairs)
-    persist_micro_models!(%{framing_class: model})
+    model_file!("micro/framing_neutral_centroid.term")
 
-    neutral = compute_neutral_centroid(model, pairs)
-    persist_neutral_centroid!(neutral)
-
-    :ok =
-      GenServer.call(
-        Brain.ML.MicroClassifiers,
-        {:load_trained_models, %{framing_class: model}},
-        5_000
-      )
-
-    {:ok, length(pairs)}
+    {:ok, length(@feature_vector_micro_classifier_names)}
   end
 
   @doc """
@@ -627,31 +577,6 @@ defmodule Brain.Test.ModelFactory do
     end
   end
 
-  defp load_feature_vector_data(name) do
-    path = data_classifiers_path("#{name}.json")
-
-    case File.read(path) do
-      {:ok, json} ->
-        case Jason.decode(json) do
-          {:ok, entries} when is_list(entries) ->
-            Enum.flat_map(entries, fn
-              %{"feature_vector" => vec, "label" => label}
-              when is_list(vec) and is_binary(label) and length(vec) > 0 ->
-                [{vec, label}]
-
-              _ ->
-                []
-            end)
-
-          _ ->
-            []
-        end
-
-      _ ->
-        []
-    end
-  end
-
   # `data/classifiers/` lives at the umbrella root, not inside the brain priv
   # tree. This used to try two cwd-relative candidates and pick whichever
   # existed, on the stated assumption that "Mix tests always run from the
@@ -681,19 +606,6 @@ defmodule Brain.Test.ModelFactory do
     end
   end
 
-  defp persist_neutral_centroid!(centroid) do
-    case Application.get_env(:brain, :ml, [])[:models_path] do
-      nil ->
-        :ok
-
-      base ->
-        dir = Path.join(base, "micro")
-        File.mkdir_p!(dir)
-        path = Path.join(dir, "framing_neutral_centroid.term")
-        File.write!(path, Brain.ML.ModelStore.serialize(centroid))
-    end
-  end
-
   defp persist_root_model!(filename, model) do
     case Application.get_env(:brain, :ml, [])[:models_path] do
       nil ->
@@ -704,49 +616,6 @@ defmodule Brain.Test.ModelFactory do
         path = Path.join(base, filename)
         File.write!(path, Brain.ML.ModelStore.serialize(model))
     end
-  end
-
-  # Pick the centroid of the class whose name is most "neutral" (matches
-  # the heuristic in mix train_framing) or fall back to the grand mean
-  # of all class centroids.
-  defp compute_neutral_centroid(%{label_centroids: centroids}, _pairs)
-       when map_size(centroids) == 0 do
-    []
-  end
-
-  defp compute_neutral_centroid(%{label_centroids: centroids}, _pairs) do
-    # `label_centroids` is `%{label => list(list(float))}` — each value is the
-    # set of k-means prototypes for that class, *not* a single centroid. We
-    # always reduce to a single flat float vector here so the persisted
-    # `framing_neutral_centroid.term` passes `ModelPreflight` (which requires
-    # `Enum.all?(data, &is_float/1)`).
-    case Map.get(centroids, "neutral") || Map.get(centroids, "other") do
-      nil ->
-        # Grand mean: collapse each class's protos to one centroid, then
-        # mean those so every class contributes equally regardless of k.
-        centroids
-        |> Map.values()
-        |> Enum.map(&mean_vectors/1)
-        |> mean_vectors()
-
-      protos when is_list(protos) ->
-        mean_vectors(protos)
-    end
-  end
-
-  defp mean_vectors([]), do: []
-  defp mean_vectors([single]) when is_list(single), do: single
-
-  defp mean_vectors([first | _] = vecs) when is_list(first) do
-    dim = length(first)
-    n = length(vecs)
-    zero = List.duplicate(0.0, dim)
-
-    vecs
-    |> Enum.reduce(zero, fn vec, acc ->
-      Enum.zip_with(acc, vec, &(&1 + &2))
-    end)
-    |> Enum.map(&(&1 / n))
   end
 
   defp fixtures_path(relative) do
