@@ -31,8 +31,7 @@ defmodule Brain do
     ResponseGate,
     SlotDetector,
     ChunkPriority,
-    ChunkProfile,
-    FeatureExtractor
+    ChunkProfile
   }
 
   alias Brain.Analysis.OutcomeLearner
@@ -2469,24 +2468,20 @@ defmodule Brain do
     end
   end
 
+  # The pipeline gives every chunk its profile, built from the vector its intent
+  # was classified from. A chunk without one is a pipeline defect, so it raises
+  # rather than re-extracting a different vector here.
   defp materialize_profiles(analysis_model) do
     updated_analyses =
-      Enum.map(analysis_model.analyses, fn analysis ->
-        if analysis.profile != nil do
+      Enum.map(analysis_model.analyses, fn
+        %{profile: %ChunkProfile{}} = analysis ->
           reconcile_intent_with_profile(analysis)
-        else
-          {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
-          profile = ChunkProfile.materialize(analysis, feature_vector)
-          analysis = %{analysis | profile: profile, feature_vector: feature_vector}
-          reconcile_intent_with_profile(analysis)
-        end
+
+        analysis ->
+          raise "Brain: chunk #{inspect(analysis.chunk_index)} reached response generation without a profile"
       end)
 
     %{analysis_model | analyses: updated_analyses}
-  rescue
-    e ->
-      Logger.warning("Profile materialization failed: #{Exception.message(e)}")
-      analysis_model
   end
 
   defp reconcile_intent_with_profile(analysis) do
