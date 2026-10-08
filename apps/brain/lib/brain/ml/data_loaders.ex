@@ -353,7 +353,6 @@ defmodule Brain.ML.DataLoaders do
   @type_entry_keys %{
     "entity_type" => :entity_type,
     "confidence" => :confidence,
-    "disambiguation_hints" => :disambiguation_hints,
     "source" => :source,
     "country" => :country,
     "state" => :state,
@@ -724,8 +723,8 @@ defmodule Brain.ML.DataLoaders do
   # This used to keep only value/synonyms plus an `entity_type` derived from the
   # *filename*, so every such entry collapsed into one junk type -- all 35
   # ambiguous names loaded as "ambiguous_name_location" rather than as person +
-  # city, and the per-type confidence and disambiguation_hints were dropped
-  # here, before anything downstream could read them.
+  # city, and the per-type confidence was dropped here, before anything
+  # downstream could read it.
   #
   # `build_entries_from_data/3` has always had a `types` branch ready for this;
   # it was simply never reached, because this function stripped its input.
