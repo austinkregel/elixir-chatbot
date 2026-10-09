@@ -61,9 +61,11 @@ defmodule Brain.Memory.Store do
   stores each one's new embedding and re-indexes it; the episodes written
   while the vocabulary was being rebuilt, stored without an embedding, are
   embedded and indexed the same way. Then each of the world's semantic facts
-  gets the mean of its evidence episodes' new embeddings, stored and
-  re-indexed. `World.Embedder` calls it when a rebuild leaves the world's
-  vocabulary ready.
+  is re-embedded the way it was embedded when it was added: a fact with
+  evidence episodes gets the mean of their new embeddings, its center; a fact
+  with none gets its own text embedded with the rebuilt vocabulary. Each is
+  stored and re-indexed. `World.Embedder` calls it when a rebuild leaves the
+  world's vocabulary ready.
 
   An embedding made with the old vocabulary has the old vector length, and is
   never similar to a query embedded with the new one, so anything not
@@ -76,8 +78,8 @@ defmodule Brain.Memory.Store do
   `{:episode_not_updated, episode_id, reason}` or
   `{:semantic_fact_not_updated, semantic_id, reason}` when an embedding could
   not be stored, and `{:semantic_evidence_missing, semantic_id, missing_ids}`
-  when a fact's evidence episodes are not all in the world, so its embedding
-  cannot be recomputed. What comes after the failure keeps its old
+  when a fact names evidence episodes that are not all in the world, so its
+  center cannot be recomputed. What comes after the failure keeps its old
   embedding. Raises when the world cannot embed.
   """
   @spec vocabulary_rebuilt(String.t()) ::
@@ -223,7 +225,21 @@ defmodule Brain.Memory.Store do
     GenServer.call(__MODULE__, {:get_episode, id, world_id})
   end
 
-  @doc "Add a semantic fact to the store.\n\n## Options\n  - world_id: The world to add the semantic to (required)\n"
+  @doc """
+  Add a semantic fact to the store.
+
+  A fact with evidence episodes is stored with the embedding it carries, the
+  center of those episodes (`Brain.Memory.Consolidation` computes it). A fact
+  with no evidence episodes is found by its own text: its representation is
+  embedded here with the world's embedder, and that embedding is the one stored
+  and indexed, whatever embedding the fact carried. While the world's
+  vocabulary is being rebuilt such a fact is stored without an embedding, and
+  embedded and indexed when the rebuild finishes (`vocabulary_rebuilt/1`), as
+  `add_episode/5` does. Any other embedding failure raises.
+
+  ## Options
+    - world_id: The world to add the semantic to (required)
+  """
   def add_semantic(semantic, opts) when is_struct(semantic, SemanticFact) do
     world_id = world_id!(opts, :add_semantic)
     GenServer.call(__MODULE__, {:add_semantic, semantic, world_id})
@@ -271,6 +287,37 @@ defmodule Brain.Memory.Store do
   def get_semantic(id, opts) do
     world_id = world_id!(opts, :get_semantic)
     GenServer.call(__MODULE__, {:get_semantic, id, world_id})
+  end
+
+  @doc """
+  The evidence episodes of a semantic fact, in the order the fact lists them.
+
+  Returns `{:ok, episodes}` (`[]` for a fact with no evidence), or
+  `{:error, {:semantic_evidence_missing, semantic_id, missing_ids}}` when the
+  fact names episodes the world does not hold. Like `query_similar/3` it reads
+  in the calling process, one Atlas read per episode.
+
+  ## Options
+    - world_id: The world the fact and its episodes belong to (required)
+  """
+  def evidence_episodes(%SemanticFact{} = semantic, opts) do
+    world_id = world_id!(opts, :evidence_episodes)
+
+    found =
+      Enum.map(semantic.evidence_ids, fn id ->
+        case Brain.AtlasIntegration.get_episode(id, world_id) do
+          {:ok, episode} -> {id, {:ok, episode}}
+          {:error, :not_found} -> {id, :missing}
+          {:error, reason} ->
+            raise "Brain.Memory.Store: episode #{id} of semantic fact #{semantic.id} could not be " <>
+                    "read in world #{inspect(world_id)}: #{inspect(reason)}"
+        end
+      end)
+
+    case for({id, :missing} <- found, do: id) do
+      [] -> {:ok, for({_id, {:ok, episode}} <- found, do: episode)}
+      missing -> {:error, {:semantic_evidence_missing, semantic.id, missing}}
+    end
   end
 
   @doc "Update an episode's semantic_id after consolidation.\n\n## Options\n  - world_id: The world containing the episode (required)\n"
@@ -448,6 +495,8 @@ defmodule Brain.Memory.Store do
 
   @impl true
   def handle_call({:add_semantic, semantic, world_id}, _from, state) do
+    semantic = embed_semantic_text(semantic, world_id)
+
     case Brain.AtlasIntegration.persist_semantic_sync(semantic, world_id) do
       {:ok, _id} ->
         if is_list(semantic.embedding) and semantic.embedding != [] do
@@ -616,8 +665,9 @@ defmodule Brain.Memory.Store do
   # vocabulary has the old vector length, and a vector of another length is
   # never similar to a query (`FourthWall.Math.cosine_similarity/2` is 0.0),
   # so the episode could no longer be found. Then each semantic fact's
-  # embedding is recomputed from its evidence episodes, as consolidation built
-  # it (`Brain.Memory.Consolidation.create_semantic_from_cluster/2`).
+  # embedding is recomputed as it was made: from its evidence episodes, as
+  # consolidation built it (`Brain.Memory.Consolidation.create_semantic_from_cluster/2`),
+  # or from its own text when it has none (`add_semantic/2`).
   defp reembed_world(state, world_id) do
     with {:ok, episodes} <- list_world(:episodes, world_id),
          {:ok, embedded} <- reembed_episodes(state, world_id, episodes),
@@ -671,25 +721,73 @@ defmodule Brain.Memory.Store do
   defp reembed_semantics(state, world_id, semantics, embedded_episodes) do
     semantics
     |> Enum.reduce_while({:ok, 0}, fn semantic, {:ok, count} ->
-      evidence = Enum.map(semantic.evidence_ids, &Map.get(embedded_episodes, &1))
+      case rebuilt_semantic_embedding(semantic, world_id, embedded_episodes) do
+        {:ok, embedding} ->
+          semantic = %{semantic | embedding: embedding}
 
-      if semantic.evidence_ids == [] or Enum.any?(evidence, &is_nil/1) do
-        missing = Enum.reject(semantic.evidence_ids, &Map.has_key?(embedded_episodes, &1))
-        {:halt, {:error, {:semantic_evidence_missing, semantic.id, missing}}}
-      else
-        semantic = %{semantic | embedding: VectorIndex.mean_vector(Enum.map(evidence, & &1.embedding))}
+          case Brain.AtlasIntegration.persist_semantic_sync(semantic, world_id) do
+            {:ok, _id} ->
+              VectorIndex.insert(state.semantic_index, {world_id, semantic.id}, semantic.embedding)
+              put_semantic_record(state, world_id, semantic)
+              {:cont, {:ok, count + 1}}
 
-        case Brain.AtlasIntegration.persist_semantic_sync(semantic, world_id) do
-          {:ok, _id} ->
-            VectorIndex.insert(state.semantic_index, {world_id, semantic.id}, semantic.embedding)
-            put_semantic_record(state, world_id, semantic)
-            {:cont, {:ok, count + 1}}
+            {:error, reason} ->
+              {:halt, {:error, {:semantic_fact_not_updated, semantic.id, reason}}}
+          end
 
-          {:error, reason} ->
-            {:halt, {:error, {:semantic_fact_not_updated, semantic.id, reason}}}
-        end
+        {:error, reason} ->
+          {:halt, {:error, reason}}
       end
     end)
+  end
+
+  # A fact with no evidence episodes is embedded from its own text, as
+  # `add_semantic/2` embedded it. A fact with evidence gets the center of its
+  # re-embedded episodes; one that names an episode the world does not hold is
+  # an error, never a fact with less evidence.
+  defp rebuilt_semantic_embedding(%SemanticFact{evidence_ids: []} = semantic, world_id, _embedded_episodes) do
+    case get_embedding(world_id, semantic.representation) do
+      {:ok, embedding} ->
+        {:ok, embedding}
+
+      {:error, reason} ->
+        raise "Brain.Memory.Store: world #{inspect(world_id)}'s vocabulary was rebuilt but " <>
+                "semantic fact #{semantic.id} could not be embedded: #{inspect(reason)}"
+    end
+  end
+
+  defp rebuilt_semantic_embedding(%SemanticFact{} = semantic, _world_id, embedded_episodes) do
+    case Enum.reject(semantic.evidence_ids, &Map.has_key?(embedded_episodes, &1)) do
+      [] ->
+        evidence = Enum.map(semantic.evidence_ids, &Map.fetch!(embedded_episodes, &1))
+        {:ok, VectorIndex.mean_vector(Enum.map(evidence, & &1.embedding))}
+
+      missing ->
+        {:error, {:semantic_evidence_missing, semantic.id, missing}}
+    end
+  end
+
+  # A fact with evidence episodes keeps the center it was given. A fact with
+  # none is found by its own text, so its text is what is embedded.
+  defp embed_semantic_text(%SemanticFact{evidence_ids: [_ | _]} = semantic, _world_id), do: semantic
+
+  defp embed_semantic_text(%SemanticFact{evidence_ids: []} = semantic, world_id) do
+    case get_embedding(world_id, semantic.representation) do
+      {:ok, embedding} ->
+        %{semantic | embedding: embedding}
+
+      {:error, :vocabulary_building} ->
+        Logger.info(
+          "Memory.Store: world #{world_id}'s vocabulary is being rebuilt; the semantic fact is " <>
+            "stored now and indexed when the rebuild finishes"
+        )
+
+        %{semantic | embedding: []}
+
+      {:error, reason} ->
+        raise "Brain.Memory.Store: semantic fact #{semantic.id} could not be embedded in world " <>
+                "#{inspect(world_id)}: #{inspect(reason)}"
+    end
   end
 
   defp list_worlds_from_atlas do
