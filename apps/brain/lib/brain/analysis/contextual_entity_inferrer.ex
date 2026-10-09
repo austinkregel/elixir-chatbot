@@ -43,7 +43,8 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
 
   ## Options
 
-  - `:world_id` -- World scope for TypeInferrer (default: "default")
+  - `:world_id` -- required: world scope for TypeInferrer and the entity
+    candidates narrowings report. Absent raises.
   - `:intent_confidence` -- required: the current intent's confidence, or `nil`
     when the intent was decided without one. Another intent's hypothesis
     replaces the current intent only when it scores higher than this; with
@@ -53,7 +54,12 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
     and become `World.Manager` entity candidates only when `true`; an
     evaluation or measurement run passes `false` and writes nothing.
   """
-  def infer(text, entities, intent, intent_details, opts \\ []) do
+  def infer(text, entities, intent, intent_details, opts) do
+    unless is_binary(opts[:world_id]) and opts[:world_id] != "" do
+      raise ArgumentError,
+            "ContextualEntityInferrer.infer needs :world_id, the world types are inferred in, got: #{inspect(opts[:world_id])}"
+    end
+
     intent_confidence = Keyword.fetch!(opts, :intent_confidence)
     narrowable = find_narrowable_entities(entities, intent, intent_details)
 
@@ -249,7 +255,7 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
 
   # Signal 1: TypeInferrer learned patterns
   defp type_inferrer_signal(entity, narrowed_type, text, pos_tags, opts) do
-    world_id = Keyword.get(opts, :world_id, "default")
+    world_id = Keyword.fetch!(opts, :world_id)
     entity_value = entity[:value] || entity[:match] || ""
 
     tokens = Tokenizer.tokenize_words(text)
@@ -487,7 +493,7 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
       )
 
       if Keyword.fetch!(opts, :side_effects) do
-        report_narrowings_for_learning(hypothesis.narrowings, text, Keyword.get(opts, :world_id, "default"))
+        report_narrowings_for_learning(hypothesis.narrowings, text, Keyword.fetch!(opts, :world_id))
       end
     end
 
