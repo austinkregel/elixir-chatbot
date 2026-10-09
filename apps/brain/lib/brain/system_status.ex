@@ -856,11 +856,9 @@ defmodule Brain.SystemStatus do
           end
 
         embedder = models[:embedder]
-        entity_model = models[:entity_model]
         pos_model = models[:pos_model]
         embedder_vocab_size = extract_vocab_size(embedder, :vocabulary)
         pos_model_tags = extract_vocab_size(pos_model, :tag_vocabulary)
-        entity_model_tags = extract_vocab_size(entity_model, :tag_vocabulary)
         has_embedder = embedder != nil and is_map(embedder) and map_size(embedder) > 0
 
         %{
@@ -877,11 +875,11 @@ defmodule Brain.SystemStatus do
           is_loaded: has_models,
           has_classifier: has_embedder,
           has_embedder: has_embedder,
-          has_entity_model: entity_model != nil and map_size(entity_model) > 0,
+          # Whether the world holds its own copy (Brain.ML.EntityModel).
+          has_entity_model: File.regular?(Brain.ML.EntityModel.path(world_id)),
           has_pos_model: pos_model != nil and map_size(pos_model) > 0,
           classifier_vocab_size: embedder_vocab_size,
           embedder_vocab_size: embedder_vocab_size,
-          entity_model_size: entity_model_tags,
           pos_model_size: pos_model_tags,
           checked_at: DateTime.utc_now()
         }
@@ -908,7 +906,6 @@ defmodule Brain.SystemStatus do
       has_pos_model: false,
       classifier_vocab_size: 0,
       embedder_vocab_size: 0,
-      entity_model_size: 0,
       pos_model_size: 0,
       checked_at: DateTime.utc_now()
     }
