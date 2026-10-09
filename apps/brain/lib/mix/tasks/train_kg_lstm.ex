@@ -11,7 +11,7 @@ defmodule Mix.Tasks.TrainKgLstm do
 
   ## Options
 
-    * `--world` - World ID (default: "default")
+    * `--world` - required: the world ID
     * `--epochs` - Number of training epochs (default: 50)
     * `--neg-ratio` - Negative samples per positive (default: 5)
     * `--verbose` - Print detailed progress
@@ -59,7 +59,9 @@ defmodule Mix.Tasks.TrainKgLstm do
 
     Mix.Task.run("app.start")
 
-    world_id = Keyword.get(opts, :world, "default")
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix train_kg_lstm needs --world <id>, the world the triple scorer is trained for")
     epochs = Keyword.get(opts, :epochs, 50)
     neg_ratio = Keyword.get(opts, :neg_ratio, 5)
     verbose = Keyword.get(opts, :verbose, false)
