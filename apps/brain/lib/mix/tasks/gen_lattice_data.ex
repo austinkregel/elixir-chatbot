@@ -7,10 +7,11 @@ defmodule Mix.Tasks.GenLatticeData do
 
   ## Usage
 
-      mix gen_lattice_data [options]
+      mix gen_lattice_data --world <id> [options]
 
   ## Options
 
+      --world ID          Required. The world fragments are analyzed in.
       --verbose           Show detailed progress
       --skip-vectorize    Skip prototype vectorization (fast template regen)
       --vectorize-from    Re-vectorize fragments in an existing phrase_inventory.json
@@ -42,16 +43,20 @@ defmodule Mix.Tasks.GenLatticeData do
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
-        strict: [verbose: :boolean, skip_vectorize: :boolean, vectorize_from: :string]
+        strict: [verbose: :boolean, skip_vectorize: :boolean, vectorize_from: :string, world: :string]
       )
 
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix gen_lattice_data needs --world <id>, the world fragments are analyzed in")
+
     case opts[:vectorize_from] do
-      nil -> run_full_build(opts)
-      path -> run_vectorize_from(path, opts)
+      nil -> run_full_build(opts, world_id)
+      path -> run_vectorize_from(path, opts, world_id)
     end
   end
 
-  defp run_full_build(opts) do
+  defp run_full_build(opts, world_id) do
     verbose = opts[:verbose] || false
     skip_vectorize? = opts[:skip_vectorize] || false
 
@@ -78,13 +83,13 @@ defmodule Mix.Tasks.GenLatticeData do
         Mix.shell().info("  Skipping vectorization (--skip-vectorize)")
         all_fragments
       else
-        vectorize_fragments!(all_fragments, verbose)
+        vectorize_fragments!(all_fragments, verbose, world_id)
       end
 
     write_inventory_and_transitions(all_fragments, verbose)
   end
 
-  defp run_vectorize_from(path, opts) do
+  defp run_vectorize_from(path, opts, world_id) do
     verbose = opts[:verbose] || false
 
     Mix.shell().info("Re-vectorizing lattice inventory from #{path}...")
@@ -106,7 +111,7 @@ defmodule Mix.Tasks.GenLatticeData do
 
               Mix.Task.run("app.start")
 
-              case FragmentVectorizer.vectorize_fragments(needs, verbose: verbose) do
+              case FragmentVectorizer.vectorize_fragments(needs, verbose: verbose, world_id: world_id) do
                 {:ok, vectorized} ->
                   updated = merge_vectorized_fragments(flat, vectorized)
                   by_chunk = Enum.group_by(updated, & &1["chunk_type"])
@@ -183,10 +188,10 @@ defmodule Mix.Tasks.GenLatticeData do
     end)
   end
 
-  defp vectorize_fragments!(fragments, verbose) do
+  defp vectorize_fragments!(fragments, verbose, world_id) do
     ensure_app_started_for_dimension!()
 
-    case FragmentVectorizer.vectorize_fragments(fragments, verbose: verbose) do
+    case FragmentVectorizer.vectorize_fragments(fragments, verbose: verbose, world_id: world_id) do
       {:ok, vectorized} -> vectorized
       {:error, reason} ->
         Mix.shell().error("  Fragment vectorization failed: #{reason}")
