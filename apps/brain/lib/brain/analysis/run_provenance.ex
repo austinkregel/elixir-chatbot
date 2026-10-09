@@ -328,7 +328,7 @@ defmodule Brain.Analysis.RunProvenance do
 
     unless File.dir?(path) do
       raise "RunProvenance: no classifier training data at #{path}. " <>
-              "Run `mix gen_micro_data` first, or run this from the umbrella root."
+              "Run `mix gen_micro_data --world <id>` first, or run this from the umbrella root."
     end
 
     case Path.wildcard(Path.join(path, "*.json")) |> Enum.sort() do
