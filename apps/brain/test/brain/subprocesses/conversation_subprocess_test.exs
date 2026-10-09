@@ -39,6 +39,13 @@ defmodule Brain.Subprocesses.ConversationSubprocessTest do
     assert state.is_interrupted == false
   end
 
+  test "its conversation is one Brain created, in the subprocess's world", %{subprocess_id: subprocess_id} do
+    state = ConversationSubprocess.get_conversation_state(subprocess_id)
+
+    assert {:ok, %{id: id, world_id: "default"}} = Brain.get_conversation(state.conversation_id)
+    assert id == state.conversation_id
+  end
+
   test "evaluates input and maintains conversation memory", %{subprocess_id: subprocess_id} do
     # First input
     {:ok, response1} = ConversationSubprocess.evaluate_input(subprocess_id, "Hello there!")
