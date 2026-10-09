@@ -1,5 +1,10 @@
 defmodule World.ContextTest do
-  use ExUnit.Case, async: false
+  # These tests write episodes through `Brain.Memory.Store`, which needs a
+  # checked-out sandbox connection to reach Atlas (`World.AtlasCase`). Without
+  # one the write fails; it used to be invisible because the store replied
+  # `{:ok, id}` for a write it knew had failed, so "writes to world-scoped
+  # store" passed while writing nothing.
+  use World.AtlasCase, async: false
 
   alias Brain.ML.Gazetteer
   import Brain.TestHelpers
@@ -8,15 +13,7 @@ defmodule World.ContextTest do
   alias World.Context, as: WorldContext
   alias World.Manager, as: WorldManager
 
-  setup tags do
-    # These tests write episodes through `Brain.Memory.Store`, which needs a
-    # checked-out sandbox connection to reach Atlas. Without one the write
-    # fails; it used to be invisible because the store replied `{:ok, id}` for
-    # a write it knew had failed, so "writes to world-scoped store" passed
-    # while writing nothing.
-    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
-    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
-
+  setup do
     # Ensure PubSub is started first
     ensure_pubsub_started()
 
