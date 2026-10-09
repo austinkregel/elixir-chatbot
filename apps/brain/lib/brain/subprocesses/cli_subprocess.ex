@@ -5,8 +5,10 @@ defmodule Brain.Subprocesses.CliSubprocess do
 
   A CLI session has one Brain conversation, created in the subprocess's world
   when the session starts. Every `chat` command uses it, and it is ended
-  (`Brain.end_conversation/2`) when the session exits. `quit` or `exit` ends
-  the session: the subprocess stops and is not restarted.
+  (`Brain.end_conversation/2`) when the session exits. A session restarted
+  after a crash goes on with the conversation it had, while the Brain server
+  that lists it still has it. `quit` or `exit` ends the session: the
+  subprocess stops and is not restarted.
   """
 
   # Transient: a session that ends with `quit` or `exit` stops normally and is
@@ -16,13 +18,22 @@ defmodule Brain.Subprocesses.CliSubprocess do
 
   # Client API
 
-  @doc "Starts the subprocess. `opts` must carry `:world_id`, the world its conversations run in; absent raises."
+  @doc """
+  Starts the subprocess. `opts` must carry `:world_id`, the world its
+  conversations run in; absent raises.
+
+  `:brain` is the Brain server that lists the session
+  (`Brain.start_cli_subprocess/1` passes itself). Each time the session
+  starts, its first start and every restart after a crash, it tells that
+  server its pid, so the server stops it by the pid that is running.
+  """
   def start_link(opts) do
     world_id = world_id!(opts)
     subprocess_id = Keyword.get(opts, :subprocess_id, generate_id())
     memory_snapshot = Keyword.get(opts, :memory_snapshot, %{})
+    brain = Keyword.get(opts, :brain)
 
-    GenServer.start_link(__MODULE__, {subprocess_id, memory_snapshot, world_id},
+    GenServer.start_link(__MODULE__, {subprocess_id, memory_snapshot, world_id, brain},
       name: via_tuple(subprocess_id)
     )
   end
@@ -68,17 +79,22 @@ defmodule Brain.Subprocesses.CliSubprocess do
   # Server Callbacks
 
   @impl true
-  def init({subprocess_id, memory_snapshot, world_id}) do
+  def init({subprocess_id, memory_snapshot, world_id, brain}) do
     user_id = "cli_#{subprocess_id}"
 
     # Exits are trapped so `terminate/2` runs when the session is stopped, and
     # ends the session's conversation.
     Process.flag(:trap_exit, true)
 
+    # A cast: the Brain server may be starting this session from inside its
+    # own call, and could not answer one until the start has finished.
+    if brain, do: GenServer.cast(brain, {:cli_subprocess_started, subprocess_id, self()})
+
     # Initialize state
     state = %{
       subprocess_id: subprocess_id,
       world_id: world_id,
+      brain: brain,
       user_id: user_id,
       conversation_id: nil,
       memory_snapshot: memory_snapshot,
@@ -104,8 +120,34 @@ defmodule Brain.Subprocesses.CliSubprocess do
   # Created after `init/1` returns: the subprocess may be started from inside
   # the Brain server (`Brain.start_cli_subprocess/1`), which cannot answer this
   # call until the start has finished.
+  #
+  # A session the Brain server lists goes on with the conversation it had
+  # before a crash, while that server still has it: the session's turns stay
+  # one conversation, and the old one is not left behind. Otherwise the
+  # session creates its conversation and tells that server.
   @impl true
   def handle_continue(:start_conversation, state) do
+    case previous_conversation(state) do
+      {:ok, conversation_id} ->
+        Logger.info("CLI session conversation resumed after a restart", %{
+          subprocess_id: state.subprocess_id,
+          conversation_id: conversation_id
+        })
+
+        {:noreply, %{state | conversation_id: conversation_id}}
+
+      :none ->
+        {:noreply, %{state | conversation_id: create_session_conversation!(state)}}
+    end
+  end
+
+  defp previous_conversation(%{brain: nil}), do: :none
+
+  defp previous_conversation(%{brain: brain, subprocess_id: subprocess_id}) do
+    GenServer.call(brain, {:cli_session_conversation, subprocess_id})
+  end
+
+  defp create_session_conversation!(state) do
     case Brain.create_conversation(world_id: state.world_id) do
       {:ok, conversation_id} ->
         Logger.info("CLI session conversation started", %{
@@ -113,7 +155,11 @@ defmodule Brain.Subprocesses.CliSubprocess do
           conversation_id: conversation_id
         })
 
-        {:noreply, %{state | conversation_id: conversation_id}}
+        if state.brain do
+          GenServer.cast(state.brain, {:cli_session_conversation, state.subprocess_id, conversation_id})
+        end
+
+        conversation_id
 
       {:error, reason} ->
         raise "CLI subprocess #{state.subprocess_id}: the session's conversation in world " <>
