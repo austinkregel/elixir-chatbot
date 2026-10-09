@@ -242,7 +242,7 @@ defmodule Brain.Analysis.Pipeline do
 
     speech_act_task =
       Task.async(fn ->
-        SpeechActClassifier.classify(chunk.text, entities: basic_entities)
+        SpeechActClassifier.classify(chunk.text, entities: basic_entities, world_id: world_id!(opts))
       end)
 
     sentiment_task =
@@ -273,7 +273,7 @@ defmodule Brain.Analysis.Pipeline do
       catch
         :exit, {:timeout, _} ->
           Task.shutdown(speech_act_task, :brutal_kill)
-          SpeechActClassifier.classify("")
+          SpeechActClassifier.classify("", world_id: world_id!(opts))
       end
 
     if debug_pass1?, do: Logger.info("pipeline:pass1 speech_act=#{System.monotonic_time(:millisecond) - t0}ms")
@@ -339,7 +339,7 @@ defmodule Brain.Analysis.Pipeline do
       entities: entities |> Enum.take(25) |> Enum.map(&entity_to_dev_map/1)
     })
 
-    entities = EntityGraphEnricher.enrich(entities)
+    entities = EntityGraphEnricher.enrich(entities, world_id!(opts))
 
     if debug_pass1?, do: Logger.info("pipeline:pass1 graph_enrich=#{System.monotonic_time(:millisecond) - t0}ms")
 
@@ -1279,7 +1279,7 @@ defmodule Brain.Analysis.Pipeline do
     conversation_id = Keyword.get(opts, :conversation_id)
 
     recent_topics = graph_recent_topics(conversation_id)
-    entity_neighborhoods = graph_entity_neighborhoods(entities)
+    entity_neighborhoods = graph_entity_neighborhoods(entities, world_id!(opts))
 
     reranked =
       Lattice.rerank(lattice, fn %LatticeCandidate{label: intent} ->
@@ -1309,13 +1309,15 @@ defmodule Brain.Analysis.Pipeline do
     _ -> []
   end
 
-  defp graph_entity_neighborhoods(entities) when is_list(entities) do
-    Brain.Graph.Reader.entity_context(entities, depth: 1)
+  # The world is resolved by the caller, outside this rescue, so a missing
+  # world raises rather than reading as an empty neighborhood.
+  defp graph_entity_neighborhoods(entities, world_id) when is_list(entities) do
+    Brain.Graph.Reader.entity_context(entities, depth: 1, world_id: world_id)
   rescue
     _ -> []
   end
 
-  defp graph_entity_neighborhoods(_), do: []
+  defp graph_entity_neighborhoods(_, _world_id), do: []
 
   @doc false
   defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile) do
