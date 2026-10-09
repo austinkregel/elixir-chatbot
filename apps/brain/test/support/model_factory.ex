@@ -69,10 +69,11 @@ defmodule Brain.Test.ModelFactory do
   @doc """
   Trains and loads all test models into their respective GenServers.
 
-  Trains sentiment, speech act, micro-classifiers, Poincare, triple scorer,
-  embedder, and persists artifacts under `models_path` where applicable. The
-  POS tagger is not trained here: the suite requires the model promoted from
-  the POS training page (`require_pos_tagger/0`).
+  Trains the text micro-classifiers and persists them under `models_path`, and
+  requires the promoted models: sentiment, speech act, the feature-vector
+  micro-classifiers, embedder, Poincare embeddings and triple scorer. The POS
+  tagger is not trained here: the suite requires the model promoted from the POS
+  training page (`require_pos_tagger/0`).
   """
   def train_and_load_test_models do
     if already_trained?() do
@@ -90,22 +91,13 @@ defmodule Brain.Test.ModelFactory do
             &require_feature_vector_micro_classifiers/0
           ),
         pos: run_step!("POS tagger (promoted, not trained)", &require_pos_tagger/0),
-        poincare: run_step!("Poincare embeddings", &train_poincare_embeddings/0),
-        triple_scorer: run_step!("KG triple scorer", &train_triple_scorer/0),
+        poincare:
+          run_step!("Poincare embeddings (promoted, not trained)", &require_poincare_embeddings/0),
+        triple_scorer: run_step!("KG triple scorer (promoted, not trained)", &require_triple_scorer/0),
         embedder: run_step!("embedder (promoted, not trained)", &require_embedder/0)
       }
 
       :ok = Brain.ML.MicroClassifiers.reload()
-
-      case Brain.ML.Poincare.Embeddings.reload() do
-        :ok -> :ok
-        {:error, r} -> raise "ModelFactory: Poincare.Embeddings.reload/0 failed: #{inspect(r)}"
-      end
-
-      case Brain.ML.KnowledgeGraph.TripleScorer.reload() do
-        :ok -> :ok
-        {:error, r} -> raise "ModelFactory: TripleScorer.reload/0 failed: #{inspect(r)}"
-      end
 
       Logger.info("[ModelFactory] All test models trained successfully: #{inspect(results)}")
       :persistent_term.put({__MODULE__, :trained}, true)
@@ -282,15 +274,6 @@ defmodule Brain.Test.ModelFactory do
   end
 
   @doc """
-  Requires the test POS model: the model promoted to the test suite from a
-  recorded run on the POS training page (`Brain.Training.POSRuns.promote!/3`).
-  The suite never trains it.
-
-  Raises when the model is missing, is not where `POSTagger.load_model/0`
-  looks in tests, was trained on other fixtures than the current ones, or
-  carries no evaluation beating its lookup baseline.
-  """
-  @doc """
   Requires the promoted sentiment classifier rather than training a substitute.
 
   See `require_promoted!/2` for why.
@@ -307,6 +290,45 @@ defmodule Brain.Test.ModelFactory do
   @doc "Requires the promoted embedder (the trained, world-less vocabulary). See `require_promoted!/2`."
   def require_embedder do
     require_promoted!("embedder.term", Brain.Memory.Embedder)
+  end
+
+  @doc """
+  Requires the promoted Poincare embeddings and the test world's copy of them.
+  See `require_world_model!/2`.
+  """
+  def require_poincare_embeddings do
+    require_world_model!("poincare_embeddings.term", Brain.ML.Poincare.Embeddings)
+  end
+
+  @doc """
+  Requires the promoted triple scorer and the test world's copy of it.
+  See `require_world_model!/2`.
+  """
+  def require_triple_scorer do
+    require_world_model!("triple_scorer.term", Brain.ML.KnowledgeGraph.TripleScorer)
+  end
+
+  # A world-scoped model: the trained copy `mix test.models` promotes, and the
+  # copy it seeds into the test world "default", which is the one the suite
+  # reads. The world's copy is the trained one, byte for byte, or the test world
+  # holds a model the promoted file does not describe.
+  defp require_world_model!(filename, module) do
+    trained = model_file!(filename)
+    world_copy = module.path("default")
+
+    unless File.regular?(world_copy) and
+             Brain.Analysis.RunProvenance.sha256_file!(world_copy) ==
+               Brain.Analysis.RunProvenance.sha256_file!(trained) do
+      raise """
+      ModelFactory: the test world "default" does not hold the promoted #{filename}
+      (#{world_copy}). Promote and seed it with:
+
+          MIX_ENV=test mix test.models
+      """
+    end
+
+    module.loaded!("default")
+    {:ok, %{sha256: Brain.Analysis.RunProvenance.sha256_file!(trained)}}
   end
 
   # These models are *upstream* of the feature vector: the pipeline runs them to
@@ -354,6 +376,15 @@ defmodule Brain.Test.ModelFactory do
     path
   end
 
+  @doc """
+  Requires the test POS model: the model promoted to the test suite from a
+  recorded run on the POS training page (`Brain.Training.POSRuns.promote!/3`).
+  The suite never trains it.
+
+  Raises when the model is missing, is not where `POSTagger.load_model/0`
+  looks in tests, was trained on other fixtures than the current ones, or
+  carries no evaluation beating its lookup baseline.
+  """
   def require_pos_tagger do
     path = Application.fetch_env!(:brain, :ml) |> Keyword.fetch!(:pos_test_model_path)
 
@@ -374,60 +405,6 @@ defmodule Brain.Test.ModelFactory do
 
     :ok = Brain.Training.POS.check_current!(model, path)
     {:ok, %{accuracy: model.evaluation.accuracy, lookup_baseline: model.evaluation.lookup_baseline}}
-  end
-
-  @doc """
-  Trains Poincare embeddings from entity type hierarchy and saves them
-  so the Poincare.Embeddings GenServer can load them.
-  """
-  def train_poincare_embeddings do
-    alias Brain.ML.Poincare.Embeddings
-
-    pairs = load_hierarchy_pairs()
-
-    if pairs == [] do
-      raise "ModelFactory: no Poincare hierarchy data found at #{entity_types_path()}"
-    end
-
-    seed = Brain.ML.TrainingSeed.get!()
-
-    {:ok, embeddings, entity_to_idx, idx_to_entity} =
-      Embeddings.train(pairs, dim: 5, epochs: 20, learning_rate: 0.01, seed: seed)
-
-    models_path = Application.get_env(:brain, :ml)[:models_path]
-
-    if models_path do
-      path = Path.join([models_path, "default", "poincare", "embeddings.term"])
-      Embeddings.save(embeddings, entity_to_idx, idx_to_entity, 5, path, training_seed: seed)
-    end
-
-    {:ok, length(pairs)}
-  end
-
-  @doc """
-  Trains a small KG triple scorer from entity type hierarchy triples
-  and saves it so the TripleScorer GenServer can load it.
-  """
-  def train_triple_scorer do
-    alias Brain.ML.KnowledgeGraph.TripleScorer
-
-    triples = load_hierarchy_triples()
-
-    if length(triples) < 3 do
-      raise "ModelFactory: insufficient triple data (#{length(triples)}) at #{entity_types_path()}; need at least 3"
-    end
-
-    {:ok, _model, params, vocab, config} =
-      TripleScorer.train(triples, epochs: 10, neg_ratio: 3)
-
-    models_path = Application.get_env(:brain, :ml)[:models_path]
-
-    if models_path do
-      path = Path.join([models_path, "default", "kg_lstm", "triple_scorer.term"])
-      TripleScorer.save_model(params, vocab, config, path)
-    end
-
-    {:ok, length(triples)}
   end
 
   @doc """
@@ -607,54 +584,6 @@ defmodule Brain.Test.ModelFactory do
       Path.join([brain_root, @fixtures_dir, relative])
     else
       Path.join([@fixtures_dir, relative])
-    end
-  end
-
-  defp load_hierarchy_pairs do
-    path = entity_types_path()
-
-    case File.read(path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, %{"type_hierarchy" => hierarchy}} ->
-            Enum.flat_map(hierarchy, fn {parent, children} when is_list(children) ->
-              Enum.map(children, fn child -> {child, parent} end)
-            end)
-
-          _ -> []
-        end
-
-      _ -> []
-    end
-  end
-
-  defp load_hierarchy_triples do
-    path = entity_types_path()
-
-    case File.read(path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, %{"type_hierarchy" => hierarchy}} ->
-            Enum.flat_map(hierarchy, fn {parent, children} when is_list(children) ->
-              Enum.flat_map(children, fn child ->
-                [{child, "is_a", parent}, {parent, "has_subtype", child}]
-              end)
-            end)
-
-          _ -> []
-        end
-
-      _ -> []
-    end
-  end
-
-  defp entity_types_path do
-    case :code.priv_dir(:brain) do
-      {:error, _} ->
-        Path.join(["apps", "brain", "priv", "analysis", "entity_types.json"])
-
-      priv_dir ->
-        Path.join(priv_dir, Path.join("analysis", "entity_types.json"))
     end
   end
 
