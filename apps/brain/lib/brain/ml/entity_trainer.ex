@@ -1,17 +1,48 @@
 defmodule Brain.ML.EntityTrainer do
-  @moduledoc "Entity recognition training using BIO tagging.\n\nConverts Dialogflow-format annotated data to BIO (Begin-Inside-Outside) format\nand trains a sequence model for entity boundary detection.\n\nBIO Tagging:\n- B-{type}: Beginning of an entity\n- I-{type}: Inside (continuation) of an entity\n- O: Outside any entity\n\nExample:\n  \"weather in New York today\"\n  [\"O\", \"O\", \"B-location\", \"I-location\", \"B-date\"]\n"
+  @moduledoc """
+  Entity recognition by BIO tagging.
 
-  alias Brain.ML
+  Trained on the NER gold standard's training split
+  (`EvaluationStore.load_gold_standard("ner", :train)`), each row turned into a
+  token-aligned BIO sequence by `Brain.ML.NerGold`; the held-out split is left
+  for `mix evaluate.ner`.
+
+  BIO tagging:
+  - B-{type}: beginning of an entity
+  - I-{type}: inside (continuation) of an entity
+  - O: outside any entity
+
+  Example:
+    "turn down heating until 40 percent"
+    ["O", "O", "B-device", "O", "B-final_value", "O"]
+
+  `tag/2` decodes the best tag sequence (Viterbi) and gives each tag its posterior
+  probability under the model (forward-backward), and an extracted entity's
+  confidence is the mean of its tokens' posteriors.
+
+  ## Emission
+
+  A token's features (its form, affixes, shape, neighbours) are combined as a
+  naive Bayes product: `log P(tag) + Σ_f [log P(tag | f) - log P(tag)]`. A
+  feature as common under every tag (`not_first`) adds nothing, and a decisive
+  one (`token:kitchen`) dominates. `P(tag | f)` is smoothed toward the tag prior
+  with a Dirichlet of strength `smoothing`, chosen by 5-fold cross-validation
+  on the training rows. (An earlier version averaged
+  `P(tag | f)` over the features, which let the shape features outvote every
+  word, so it tagged every token `O`.)
+  """
+
+  # On the NER training split (1,688 rows, 2026-10-08) cross-validation preferred
+  # ever less smoothing, with held-out exact-span F1 0.831 at 1e-3 and 0.843 at
+  # 1e-6: an unseen (feature, tag) pair becomes close to a veto. Zero is not a
+  # candidate, since it makes such a pair impossible.
+  @smoothing_candidates [1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0]
+  @folds 5
+
+  alias Brain.ML.{EvaluationStore, NerGold}
   require Logger
 
-  alias ML.{DataLoaders, Tokenizer}
   @type bio_tag :: String.t()
-
-  @type training_sequence :: %{
-          tokens: [String.t()],
-          tags: [bio_tag()],
-          intent: String.t()
-        }
 
   @type entity_model :: %{
           tag_vocabulary: %{bio_tag() => integer()},
@@ -20,11 +51,15 @@ defmodule Brain.ML.EntityTrainer do
           tag_priors: %{bio_tag() => float()}
         }
 
-  @doc "Train entity recognition model from intent data.\nReturns {:ok, model} or {:error, reason}.\nEmits telemetry events for training metrics.\n"
-  def train do
-    start_time = System.monotonic_time(:millisecond)
+  @doc """
+  Trains the entity model. `rows` are NER gold rows (`%{"text", "expected"}`);
+  they default to the gold standard's training split. Returns `{:ok, model}`, or
+  raises when a row cannot be placed or there are no rows.
+  """
+  def train(rows \\ EvaluationStore.load_gold_standard("ner", :train))
 
-    Logger.info("Starting entity model training...")
+  def train([_ | _] = rows) do
+    start_time = System.monotonic_time(:millisecond)
 
     :telemetry.execute(
       [:chat_bot, :ml, :train, :start],
@@ -32,53 +67,31 @@ defmodule Brain.ML.EntityTrainer do
       %{model: :entity_trainer, started_at: DateTime.utc_now()}
     )
 
-    {:ok, examples} = DataLoaders.load_all_intents()
+    sequences = Enum.map(rows, &NerGold.sequence!/1)
+    smoothing = select_smoothing(rows, sequences)
+    model = train_sequence_model(sequences, smoothing)
 
-    Logger.info("Converting examples to BIO format", %{count: length(examples)})
-    sequences = convert_to_bio_sequences(examples)
-    Logger.info("Generated BIO sequences", %{count: length(sequences)})
+    Logger.info("Entity model trained", %{
+      sequence_count: length(sequences),
+      tag_count: map_size(model.tag_vocabulary),
+      feature_count: map_size(model.feature_weights)
+    })
 
-    result =
-      if sequences != [] do
-        model = train_sequence_model(sequences)
+    :telemetry.execute(
+      [:chat_bot, :ml, :train, :stop],
+      %{
+        duration_ms: System.monotonic_time(:millisecond) - start_time,
+        sequence_count: length(sequences),
+        tag_count: map_size(model.tag_vocabulary),
+        feature_count: map_size(model.feature_weights)
+      },
+      %{model: :entity_trainer, success: true}
+    )
 
-        Logger.info("Entity model trained", %{
-          tag_count: map_size(model.tag_vocabulary),
-          feature_count: map_size(model.feature_weights)
-        })
-
-        {:ok, model, length(sequences)}
-      else
-        {:error, "No valid training sequences generated"}
-      end
-
-    duration_ms = System.monotonic_time(:millisecond) - start_time
-
-    case result do
-      {:ok, model, sequence_count} ->
-        :telemetry.execute(
-          [:chat_bot, :ml, :train, :stop],
-          %{
-            duration_ms: duration_ms,
-            sequence_count: sequence_count,
-            tag_count: map_size(model.tag_vocabulary),
-            feature_count: map_size(model.feature_weights)
-          },
-          %{model: :entity_trainer, success: true}
-        )
-
-        {:ok, model}
-
-      {:error, reason} ->
-        :telemetry.execute(
-          [:chat_bot, :ml, :train, :exception],
-          %{duration_ms: duration_ms, sequence_count: 0},
-          %{model: :entity_trainer, success: false, reason: reason}
-        )
-
-        {:error, reason}
-    end
+    {:ok, model}
   end
+
+  def train([]), do: raise(ArgumentError, "EntityTrainer: no NER rows to train on")
 
   @doc "Train entity recognition model and save to disk.\n\n## Options\n  - models_path: Override the default models output path\n"
   def train_and_save(opts \\ []) do
@@ -87,13 +100,8 @@ defmodule Brain.ML.EntityTrainer do
         Application.get_env(:brain, :ml)[:models_path] ||
         Brain.priv_path("ml_models")
 
-    case train() do
-      {:ok, model} ->
-        save_model(model, models_path)
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    {:ok, model} = train()
+    save_model(model, models_path)
   end
 
   @doc "Load a trained entity model from disk.\n"
@@ -121,19 +129,121 @@ defmodule Brain.ML.EntityTrainer do
     Enum.zip(tokens, predictions)
   end
 
-  @doc "Extract entities from predicted BIO tags.\nReturns list of entity maps.\n"
-  def extract_entities_from_bio(token_tag_pairs) do
-    extract_entities_from_bio_impl(token_tag_pairs, [], nil)
+  @doc """
+  The best tag sequence for `tokens`, each tag with its posterior probability
+  under the model: `[{token, tag, probability}]`.
+  """
+  @spec tag([String.t()], entity_model()) :: [{String.t(), bio_tag(), float()}]
+  def tag([], _model), do: []
+
+  def tag(tokens, model) when is_list(tokens) do
+    tags = viterbi_decode(tokens, model)
+    marginals = posterior_marginals(tokens, model)
+
+    tokens
+    |> Enum.zip(tags)
+    |> Enum.zip(marginals)
+    |> Enum.map(fn {{token, tag}, posterior} -> {token, tag, Map.fetch!(posterior, tag)} end)
   end
 
-  @doc "Convert Dialogflow-format examples to BIO-tagged sequences.\n"
-  def convert_to_bio_sequences(examples) when is_list(examples) do
-    examples
-    |> Enum.map(&convert_example_to_bio/1)
-    |> Enum.filter(fn seq -> seq.tokens != [] end)
+  @doc """
+  Entities from tagged tokens (`tag/2`'s output). Each is
+  `%{entity_type, value, tokens, confidence, start_index, end_index}`, where the
+  indexes are the first and last token positions in the input and `confidence`
+  is the mean posterior of its tokens.
+  """
+  def extract_entities_from_bio(tagged) when is_list(tagged) do
+    tagged
+    |> Enum.with_index()
+    |> Enum.reduce({[], nil}, fn {{token, tag, probability}, index}, {done, current} ->
+      case {tag, current} do
+        {"B-" <> type, nil} ->
+          {done, open(type, token, probability, index)}
+
+        {"B-" <> type, open} ->
+          {[close(open) | done], open(type, token, probability, index)}
+
+        {"I-" <> type, %{type: type} = open} ->
+          {done, extend(open, token, probability, index)}
+
+        {"I-" <> type, nil} ->
+          {done, open(type, token, probability, index)}
+
+        {"I-" <> type, open} ->
+          {[close(open) | done], open(type, token, probability, index)}
+
+        {"O", nil} ->
+          {done, nil}
+
+        {"O", open} ->
+          {[close(open) | done], nil}
+      end
+    end)
+    |> then(fn
+      {done, nil} -> Enum.reverse(done)
+      {done, open} -> Enum.reverse([close(open) | done])
+    end)
   end
 
-  defp train_sequence_model(sequences) do
+  defp open(type, token, probability, index),
+    do: %{type: type, tokens: [token], probabilities: [probability], start_index: index, end_index: index}
+
+  defp extend(open, token, probability, index),
+    do: %{open | tokens: open.tokens ++ [token], probabilities: open.probabilities ++ [probability], end_index: index}
+
+  defp close(open) do
+    %{
+      entity_type: open.type,
+      value: Enum.join(open.tokens, " "),
+      tokens: open.tokens,
+      confidence: Enum.sum(open.probabilities) / length(open.probabilities),
+      start_index: open.start_index,
+      end_index: open.end_index
+    }
+  end
+
+  # The smoothing strength with the best exact span-and-type F1 across the
+  # folds of the training rows; ties go to the smaller strength.
+  defp select_smoothing(rows, sequences) do
+    folds = Enum.map(rows, &:erlang.phash2(&1, @folds))
+    indexed = Enum.zip([rows, sequences, folds])
+
+    @smoothing_candidates
+    |> Enum.map(fn smoothing ->
+      counts =
+        Enum.reduce(0..(@folds - 1), {0, 0, 0}, fn k, acc ->
+          {held, train} = Enum.split_with(indexed, fn {_r, _s, fold} -> fold == k end)
+          model = train_sequence_model(Enum.map(train, &elem(&1, 1)), smoothing)
+
+          Enum.reduce(held, acc, fn {_row, seq, _fold}, {tp, fp, fn_} ->
+            gold = spans_of(Enum.zip(seq.tokens, seq.tags))
+            predicted = seq.tokens |> predict(model) |> spans_of()
+            hit = MapSet.size(MapSet.intersection(gold, predicted))
+            {tp + hit, fp + MapSet.size(predicted) - hit, fn_ + MapSet.size(gold) - hit}
+          end)
+        end)
+
+      {smoothing, f1(counts)}
+    end)
+    |> Enum.max_by(fn {smoothing, f1} -> {f1, -smoothing} end)
+    |> elem(0)
+  end
+
+  defp f1({tp, fp, fn_}) do
+    precision = tp / max(tp + fp, 1)
+    recall = tp / max(tp + fn_, 1)
+    if precision + recall == 0, do: 0.0, else: 2 * precision * recall / (precision + recall)
+  end
+
+  # Entity spans as `{type, first token index, last token index}`.
+  defp spans_of(token_tags) do
+    token_tags
+    |> Enum.map(fn {token, tag} -> {token, tag, 1.0} end)
+    |> extract_entities_from_bio()
+    |> MapSet.new(&{&1.entity_type, &1.start_index, &1.end_index})
+  end
+
+  defp train_sequence_model(sequences, smoothing) do
     all_tags =
       sequences
       |> Enum.flat_map(& &1.tags)
@@ -159,11 +269,13 @@ defmodule Brain.ML.EntityTrainer do
 
     transition_counts = calculate_transition_counts(sequences)
     transition_weights = normalize_transition_counts(transition_counts, all_tags)
-    feature_weights = calculate_feature_weights(sequences)
+    {feature_weights, feature_totals} = calculate_feature_weights(sequences, tag_priors, smoothing)
 
     %{
       tag_vocabulary: tag_vocabulary,
       feature_weights: feature_weights,
+      feature_totals: feature_totals,
+      smoothing: smoothing,
       transition_weights: transition_weights,
       tag_priors: tag_priors
     }
@@ -205,7 +317,10 @@ defmodule Brain.ML.EntityTrainer do
     end)
   end
 
-  defp calculate_feature_weights(sequences) do
+  # P(tag | feature), smoothed toward the tag prior: (n(f, tag) + s * P(tag)) /
+  # (n(f) + s). Only observed (feature, tag) pairs are stored; the rest follow
+  # from `feature_totals` at decode time.
+  defp calculate_feature_weights(sequences, tag_priors, smoothing) do
     feature_tag_counts =
       Enum.reduce(sequences, %{}, fn seq, acc ->
         seq.tokens
@@ -222,16 +337,19 @@ defmodule Brain.ML.EntityTrainer do
         end)
       end)
 
-    Enum.into(feature_tag_counts, %{}, fn {feature, tag_counts} ->
-      total = Enum.sum(Map.values(tag_counts))
+    totals = Map.new(feature_tag_counts, fn {feature, tag_counts} -> {feature, Enum.sum(Map.values(tag_counts))} end)
 
-      probs =
-        Enum.into(tag_counts, %{}, fn {tag, count} ->
-          {tag, count / total}
-        end)
+    weights =
+      Map.new(feature_tag_counts, fn {feature, tag_counts} ->
+        total = Map.fetch!(totals, feature)
 
-      {feature, probs}
-    end)
+        {feature,
+         Map.new(tag_counts, fn {tag, count} ->
+           {tag, (count + smoothing * Map.fetch!(tag_priors, tag)) / (total + smoothing)}
+         end)}
+      end)
+
+    {weights, totals}
   end
 
   defp extract_token_features(token, all_tokens, idx) do
@@ -314,11 +432,13 @@ defmodule Brain.ML.EntityTrainer do
       end)
   end
 
+  defp model_tags(model), do: model.tag_vocabulary |> Map.keys() |> Enum.reject(&(&1 in ["<START>", "<END>"]))
+
   defp viterbi_decode(tokens, model) do
     if tokens == [] do
       []
     else
-      tags = Map.keys(model.tag_vocabulary) |> Enum.filter(&(&1 != "<START>" and &1 != "<END>"))
+      tags = model_tags(model)
 
       {initial_viterbi, initial_backpointer} =
         initialize_viterbi(Enum.at(tokens, 0), tokens, 0, tags, model)
@@ -333,7 +453,8 @@ defmodule Brain.ML.EntityTrainer do
           {new_viterbi, [new_bp | bps]}
         end)
 
-      backtrack(final_viterbi, Enum.reverse(backpointers), tags)
+      # Newest first: the walk starts from the last token's backpointers.
+      backtrack(final_viterbi, backpointers, tags)
     end
   end
 
@@ -342,9 +463,8 @@ defmodule Brain.ML.EntityTrainer do
 
     viterbi =
       Enum.into(tags, %{}, fn tag ->
-        emission = calculate_emission_prob(features, tag, model)
         transition = get_transition_prob("<START>", tag, model)
-        score = :math.log(max(emission, 1.0e-10)) + :math.log(max(transition, 1.0e-10))
+        score = emission_log(features, tag, model) + :math.log(max(transition, 1.0e-10))
         {tag, score}
       end)
 
@@ -358,15 +478,14 @@ defmodule Brain.ML.EntityTrainer do
 
     {viterbi, backpointer} =
       Enum.reduce(tags, {%{}, %{}}, fn curr_tag, {vit_acc, bp_acc} ->
-        emission = calculate_emission_prob(features, curr_tag, model)
+        emission = emission_log(features, curr_tag, model)
 
         {best_score, best_prev_tag} =
           Enum.reduce(tags, {nil, nil}, fn prev_tag, {best, best_tag} ->
             prev_score = Map.get(prev_viterbi, prev_tag, -1000)
             transition = get_transition_prob(prev_tag, curr_tag, model)
 
-            score =
-              prev_score + :math.log(max(transition, 1.0e-10)) + :math.log(max(emission, 1.0e-10))
+            score = prev_score + :math.log(max(transition, 1.0e-10)) + emission
 
             if best == nil or score > best do
               {score, prev_tag}
@@ -381,20 +500,77 @@ defmodule Brain.ML.EntityTrainer do
     {viterbi, backpointer}
   end
 
-  defp calculate_emission_prob(features, tag, model) do
-    probs =
-      Enum.map(features, fn feature ->
-        case Map.get(model.feature_weights, feature) do
-          nil -> Map.get(model.tag_priors, tag, 0.01)
-          tag_probs -> Map.get(tag_probs, tag, 0.01)
-        end
+  # Forward-backward over the same emission and transition scores Viterbi uses:
+  # for each token, the probability of each tag given the whole sequence.
+  defp posterior_marginals(tokens, model) do
+    tags = model_tags(model)
+
+    emissions =
+      tokens
+      |> Enum.with_index()
+      |> Enum.map(fn {token, idx} ->
+        features = extract_token_features(token, tokens, idx)
+        Map.new(tags, fn tag -> {tag, emission_log(features, tag, model)} end)
       end)
 
-    if probs != [] do
-      Enum.sum(probs) / length(probs)
-    else
-      Map.get(model.tag_priors, tag, 0.01)
-    end
+    log_t = fn prev, curr -> :math.log(max(get_transition_prob(prev, curr, model), 1.0e-10)) end
+
+    [first | rest] = emissions
+    alpha0 = Map.new(tags, fn tag -> {tag, log_t.("<START>", tag) + first[tag]} end)
+
+    alphas =
+      Enum.scan(rest, alpha0, fn emission, prev ->
+        Map.new(tags, fn curr ->
+          {curr, log_sum_exp(Enum.map(tags, fn p -> prev[p] + log_t.(p, curr) end)) + emission[curr]}
+        end)
+      end)
+      |> then(&[alpha0 | &1])
+
+    last_beta = Map.new(tags, &{&1, 0.0})
+
+    betas =
+      rest
+      |> Enum.reverse()
+      |> Enum.scan(last_beta, fn emission, next ->
+        Map.new(tags, fn prev ->
+          {prev, log_sum_exp(Enum.map(tags, fn c -> log_t.(prev, c) + emission[c] + next[c] end))}
+        end)
+      end)
+      |> Enum.reverse()
+      |> Kernel.++([last_beta])
+
+    log_z = alphas |> List.last() |> Map.values() |> log_sum_exp()
+
+    Enum.zip_with(alphas, betas, fn alpha, beta ->
+      Map.new(tags, fn tag -> {tag, :math.exp(alpha[tag] + beta[tag] - log_z)} end)
+    end)
+  end
+
+  defp log_sum_exp(values) do
+    max = Enum.max(values)
+    max + :math.log(Enum.sum(Enum.map(values, &:math.exp(&1 - max))))
+  end
+
+  # The log emission score of `tag`: naive Bayes over the token's features. A
+  # feature never seen in training says nothing and contributes 0.
+  defp emission_log(features, tag, model) do
+    prior = Map.fetch!(model.tag_priors, tag)
+    log_prior = :math.log(prior)
+
+    Enum.reduce(features, log_prior, fn feature, acc ->
+      case Map.get(model.feature_weights, feature) do
+        nil ->
+          acc
+
+        tag_probs ->
+          p =
+            Map.get_lazy(tag_probs, tag, fn ->
+              model.smoothing * prior / (Map.fetch!(model.feature_totals, feature) + model.smoothing)
+            end)
+
+          acc + :math.log(p) - log_prior
+      end
+    end)
   end
 
   defp get_transition_prob(prev_tag, curr_tag, model) do
@@ -431,133 +607,6 @@ defmodule Brain.ML.EntityTrainer do
     else
       backtrack_impl(rest, current_tag, path)
     end
-  end
-
-  defp convert_example_to_bio(example) do
-    text = example.text
-    entities = example.entities || []
-    intent = example.intent
-    tokens = Tokenizer.tokenize(text)
-    tags = assign_bio_tags(tokens, entities)
-
-    %{
-      tokens: Enum.map(tokens, & &1.text),
-      tags: tags,
-      intent: intent
-    }
-  end
-
-  defp assign_bio_tags(tokens, entities) do
-    entity_positions = build_entity_position_map(entities)
-
-    Enum.map(tokens, fn token ->
-      find_bio_tag_for_token(token, entity_positions)
-    end)
-  end
-
-  defp build_entity_position_map(entities) do
-    Enum.reduce(entities, %{}, fn entity, acc ->
-      start_pos = entity.start_pos || 0
-      end_pos = entity.end_pos || start_pos + String.length(entity.text) - 1
-      entity_type = entity.type || entity.alias || "unknown"
-
-      Enum.reduce(start_pos..end_pos, acc, fn pos, inner_acc ->
-        is_start = pos == start_pos
-        Map.put(inner_acc, pos, {entity_type, is_start})
-      end)
-    end)
-  end
-
-  defp find_bio_tag_for_token(token, entity_positions) do
-    token_start = token.start_pos
-    _token_end = token.end_pos
-
-    case Map.get(entity_positions, token_start) do
-      nil ->
-        "O"
-
-      {entity_type, true} ->
-        "B-#{entity_type}"
-
-      {entity_type, false} ->
-        "I-#{entity_type}"
-    end
-  end
-
-  defp extract_entities_from_bio_impl([], acc, current_entity) do
-    case current_entity do
-      nil -> Enum.reverse(acc)
-      entity -> Enum.reverse([finalize_entity(entity) | acc])
-    end
-  end
-
-  defp extract_entities_from_bio_impl([{token, tag} | rest], acc, current_entity) do
-    cond do
-      String.starts_with?(tag, "B-") ->
-        entity_type = String.replace_prefix(tag, "B-", "")
-
-        new_entity = %{
-          type: entity_type,
-          tokens: [token],
-          text: token
-        }
-
-        case current_entity do
-          nil ->
-            extract_entities_from_bio_impl(rest, acc, new_entity)
-
-          prev ->
-            extract_entities_from_bio_impl(rest, [finalize_entity(prev) | acc], new_entity)
-        end
-
-      String.starts_with?(tag, "I-") and current_entity != nil ->
-        entity_type = String.replace_prefix(tag, "I-", "")
-
-        if entity_type == current_entity.type do
-          updated = %{
-            current_entity
-            | tokens: current_entity.tokens ++ [token],
-              text: current_entity.text <> " " <> token
-          }
-
-          extract_entities_from_bio_impl(rest, acc, updated)
-        else
-          new_entity = %{type: entity_type, tokens: [token], text: token}
-
-          extract_entities_from_bio_impl(
-            rest,
-            [finalize_entity(current_entity) | acc],
-            new_entity
-          )
-        end
-
-      tag == "O" ->
-        case current_entity do
-          nil ->
-            extract_entities_from_bio_impl(rest, acc, nil)
-
-          entity ->
-            extract_entities_from_bio_impl(rest, [finalize_entity(entity) | acc], nil)
-        end
-
-      true ->
-        case current_entity do
-          nil ->
-            extract_entities_from_bio_impl(rest, acc, nil)
-
-          entity ->
-            extract_entities_from_bio_impl(rest, [finalize_entity(entity) | acc], nil)
-        end
-    end
-  end
-
-  defp finalize_entity(entity) do
-    %{
-      entity_type: entity.type,
-      value: entity.text,
-      tokens: entity.tokens,
-      confidence: 0.8
-    }
   end
 
   defp save_model(model, models_path) do
