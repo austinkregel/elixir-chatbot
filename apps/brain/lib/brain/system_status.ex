@@ -52,9 +52,7 @@ defmodule Brain.SystemStatus do
       {Brain.ML.SpeechActClassifierSimple, "Speech Act Classifier", :has_ready},
       {Brain.ML.TrainingExampleBuffer, "Training Example Buffer", :has_ready_and_stats},
       {Brain.ML.TrainingServer, "Training Server", :has_status},
-      {Brain.ML.KnowledgeGraph.TripleScorer, "Triple Scorer", :has_ready},
       {Brain.ML.KnowledgeGraph.EntityVectorCache, "Entity Vector Cache", :has_stats},
-      {Brain.ML.Poincare.Embeddings, "Poincare Embeddings", :has_ready},
       {Brain.ML.Lexicon, "Lexicon", :has_stats},
       {Brain.Lexicon.UserDefined, "Owned Lexicon", :basic},
       {Brain.ML.WeightOptimizer.Tracker, "Weight Optimizer Tracker", :basic}
@@ -139,15 +137,10 @@ defmodule Brain.SystemStatus do
         function_exported?(Brain.Analysis.TypeHierarchy, :ready?, 0) and
         Brain.Analysis.TypeHierarchy.ready?()
 
-    poincare_ready =
-      Code.ensure_loaded?(Brain.ML.Poincare.Embeddings) and
-        function_exported?(Brain.ML.Poincare.Embeddings, :ready?, 0) and
-        Brain.ML.Poincare.Embeddings.ready?()
-
-    triple_scorer_ready =
-      Code.ensure_loaded?(Brain.ML.KnowledgeGraph.TripleScorer) and
-        function_exported?(Brain.ML.KnowledgeGraph.TripleScorer, :ready?, 0) and
-        Brain.ML.KnowledgeGraph.TripleScorer.ready?()
+    # Each world holds its own copies of these, seeded from the trained ones;
+    # without the trained ones no world can be seeded.
+    poincare_ready = File.regular?(Brain.ML.Poincare.Embeddings.trained_path())
+    triple_scorer_ready = File.regular?(Brain.ML.KnowledgeGraph.TripleScorer.trained_path())
 
     atlas_reachable =
       case Brain.AtlasIntegration.ping() do
