@@ -275,7 +275,7 @@ defmodule ChatWeb.SettingsLive do
   end
 
   defp load_services_data(socket) do
-    world = socket.assigns[:current_world_id] || "default"
+    world = socket.assigns.current_world_id
 
     services =
       try do
@@ -328,14 +328,6 @@ defmodule ChatWeb.SettingsLive do
   end
 
   @impl true
-  def handle_event("switch_world", %{"world_id" => _world_id}, socket) do
-    {:noreply, load_section_data(socket)}
-  end
-
-  def handle_event("refresh_worlds", _params, socket) do
-    {:noreply, socket}
-  end
-
   def handle_event("open_confirm", %{"id" => id}, socket) do
     {:noreply, socket |> assign(:open_confirm, id) |> assign(:confirm_error, nil)}
   end
@@ -514,7 +506,10 @@ defmodule ChatWeb.SettingsLive do
     capability = socket.assigns.selected_capability
     socket = assign(socket, :starting_training, true)
 
-    case LearningCenter.start_task_training(capability, max_tasks: 5) do
+    case LearningCenter.start_task_training(capability,
+           world_id: socket.assigns.current_world_id,
+           max_tasks: 5
+         ) do
       {:ok, session} ->
         socket =
           socket
@@ -785,7 +780,7 @@ defmodule ChatWeb.SettingsLive do
   # ============================================================================
 
   def handle_event("save_credential", %{"service" => service_name, "key" => key, "value" => value}, socket) do
-    world = socket.assigns[:current_world_id] || "default"
+    world = socket.assigns.current_world_id
     service_atom = String.to_existing_atom(service_name)
     key_atom = String.to_existing_atom(key)
 
@@ -806,7 +801,7 @@ defmodule ChatWeb.SettingsLive do
   end
 
   def handle_event("delete_credential", %{"service" => service_name, "key" => key}, socket) do
-    world = socket.assigns[:current_world_id] || "default"
+    world = socket.assigns.current_world_id
     service_atom = String.to_existing_atom(service_name)
     key_atom = String.to_existing_atom(key)
 
@@ -823,7 +818,7 @@ defmodule ChatWeb.SettingsLive do
   end
 
   def handle_event("check_service_health", %{"service" => service_name}, socket) do
-    world = socket.assigns[:current_world_id] || "default"
+    world = socket.assigns.current_world_id
     service_atom = String.to_existing_atom(service_name)
 
     # Mark as checking
@@ -1179,6 +1174,7 @@ defmodule ChatWeb.SettingsLive do
               domains={@response_domains}
               lattice_stats={@lattice_stats}
               generating={@response_generating}
+              current_world_id={@current_world_id}
             />
         <% end %>
       </div>
@@ -2636,7 +2632,7 @@ defmodule ChatWeb.SettingsLive do
           <div class="text-body text-ink-muted p-space-lg text-center">
             <.icon name="hero-exclamation-circle" class="size-8 mx-auto mb-space-sm text-ink-muted" />
             <p>No phrase inventory loaded</p>
-            <p class="mt-space-xs">Run "Regenerate" or <code class="text-term">mix gen_lattice_data</code> to build the inventory</p>
+            <p class="mt-space-xs">Run "Regenerate" or <code class="text-term">mix gen_lattice_data --world {@current_world_id}</code> to build the inventory</p>
           </div>
         <% end %>
       </.card>
