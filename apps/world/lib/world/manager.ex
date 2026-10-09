@@ -1,7 +1,10 @@
 defmodule World.Manager do
   @moduledoc "Manages training world lifecycle - creation, destruction, checkpointing.\n\nThis GenServer maintains the registry of active training worlds and\ncoordinates their data isolation while sharing computational processes.\n"
 
+  alias Brain.EmbeddingCaches
   alias Brain.ML.{EntityModel, Gazetteer}
+  alias Brain.ML.KnowledgeGraph.TripleScorer
+  alias Brain.ML.Poincare.Embeddings, as: PoincareEmbeddings
   alias Brain.Memory.Store, as: MemoryStore
   use GenServer
   require Logger
@@ -249,6 +252,7 @@ defmodule World.Manager do
           [] ->
             case WorldPersistence.load(world_id) do
               {:ok, data} ->
+                Atlas.Graph.ensure_world_graphs!(world_id)
                 :ets.insert(@ets_worlds, {world_id, data.world})
                 :ets.insert(@ets_worlds, {{:metrics, world_id}, data.metrics})
                 :ets.insert(@ets_candidates, {world_id, data.candidates})
@@ -289,6 +293,8 @@ defmodule World.Manager do
   def handle_call({:create_world, name, opts}, _from, state) do
     world = TrainingWorld.new(name, opts)
     metrics = WorldMetrics.new()
+    # Each world has its own graphs of every per-world kind (`Atlas.Graph`).
+    Atlas.Graph.ensure_world_graphs!(world.id)
     :ets.insert(@ets_worlds, {world.id, world})
     :ets.insert(@ets_worlds, {{:metrics, world.id}, metrics})
     :ets.insert(@ets_candidates, {world.id, []})
@@ -332,9 +338,13 @@ defmodule World.Manager do
     if world.mode == :persistent do
       EntityModel.seed!(world.id)
       WorldEmbedder.seed!(world.id)
+      PoincareEmbeddings.seed!(world.id)
+      TripleScorer.seed!(world.id)
     else
       EntityModel.seed_in_memory!(world.id)
       WorldEmbedder.seed_in_memory!(world.id)
+      PoincareEmbeddings.seed_in_memory!(world.id)
+      TripleScorer.seed_in_memory!(world.id)
     end
 
     Logger.info("Created training world", %{id: world.id, name: name, mode: world.mode})
@@ -460,6 +470,7 @@ defmodule World.Manager do
   def handle_call({:load_world, world_id}, _from, state) do
     case WorldPersistence.load(world_id) do
       {:ok, data} ->
+        Atlas.Graph.ensure_world_graphs!(world_id)
         :ets.insert(@ets_worlds, {world_id, data.world})
         :ets.insert(@ets_worlds, {{:metrics, world_id}, data.metrics})
         :ets.insert(@ets_candidates, {world_id, data.candidates})
@@ -747,5 +758,8 @@ defmodule World.Manager do
     Gazetteer.destroy_world_overlay(world_id)
     EntityModel.drop(world_id)
     WorldEmbedder.clear(world_id)
+    :ok = EmbeddingCaches.forget_world(world_id)
+    PoincareEmbeddings.drop(world_id)
+    TripleScorer.drop(world_id)
   end
 end
