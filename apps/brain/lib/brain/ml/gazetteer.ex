@@ -138,48 +138,71 @@ defmodule Brain.ML.Gazetteer do
   end
 
   @doc """
-  Look up multiple potential entity spans from a list of tokens.
+  Look up multiple potential entity spans from a list of tokens, in a world.
   Returns a list of {start_index, end_index, entity_info} tuples.
   Prioritizes longer matches (multi-word entities).
 
+  Each phrase is looked up in the base gazetteer and in the world's overlay,
+  as `lookup_all_types/2` does: an entity the world's overlay holds is found
+  in that world only, and the overlay's reading of a name comes before the
+  base gazetteer's.
+
   ## Options
+    - `:world_id` (required) - the world whose overlay is consulted; a missing
+      or malformed world raises `ArgumentError`
     - `:domain` - Domain atom (e.g. `:weather`, `:music`) to rank multi-type results
     - `:intent` - Intent string (e.g. `"weather.query"`) for Poincare/domain scoring
-    - `:world_id` - World ID for overlay lookups
-  """
-  def lookup_spans(tokens, opts \\ [])
 
+  The gazetteer's tables must exist: a lookup before they are created raises
+  rather than reading as "no entities".
+  """
   def lookup_spans(tokens, opts) when is_list(tokens) do
+    world_id = spans_world_id!(opts, "lookup_spans")
+
     Telemetry.span(:gazetteer_lookup, %{token_count: length(tokens)}, fn ->
-      do_lookup_spans(tokens, opts)
+      do_lookup_spans(tokens, world_id, opts)
     end)
   end
 
   @doc """
-  Look up all span hypotheses including overlapping candidates with scores.
+  Look up all span hypotheses including overlapping candidates with scores,
+  in a world.
   Returns a list of {start_index, end_index, entity_infos, score} tuples.
   Overlapping spans are retained for the caller to resolve.
 
   ## Options
-    Same as `lookup_spans/2`.
+    Same as `lookup_spans/2`; `:world_id` is required.
   """
-  def lookup_spans_lattice(tokens, opts \\ []) when is_list(tokens) do
-      Telemetry.span(:gazetteer_lookup, %{token_count: length(tokens)}, fn ->
+  def lookup_spans_lattice(tokens, opts) when is_list(tokens) do
+    world_id = spans_world_id!(opts, "lookup_spans_lattice")
+
+    Telemetry.span(:gazetteer_lookup, %{token_count: length(tokens)}, fn ->
       token_count = length(tokens)
       domain = Keyword.get(opts, :domain)
       intent = Keyword.get(opts, :intent)
 
-      find_all_spans_raw(tokens, 0, token_count, [])
+      find_all_spans_raw(tokens, world_id, 0, token_count, [])
       |> Enum.map(fn {start_idx, end_idx, entity_infos} ->
         span_len = end_idx - start_idx + 1
-        ranked = rank_types_with_context(entity_infos, domain: domain, intent: intent)
-        score = compute_span_score(ranked, span_len, domain, intent)
+        ranked = rank_types_with_context(entity_infos, domain: domain, intent: intent, world_id: world_id)
+        score = compute_span_score(ranked, span_len, domain, intent, world_id)
         {start_idx, end_idx, ranked, score}
       end)
       |> Enum.sort_by(fn {start, _end, _infos, score} -> {-score, start} end)
     end)
-  rescue
-    ArgumentError -> []
+  end
+
+  defp spans_world_id!(opts, function) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "Gazetteer.#{function} option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "Gazetteer.#{function} needs :world_id, the world whose overlay is consulted"
+    end
   end
 
   @doc """
@@ -218,17 +241,17 @@ defmodule Brain.ML.Gazetteer do
     _ -> :error
   end
 
-  defp do_lookup_spans(tokens, opts) do
+  defp do_lookup_spans(tokens, world_id, opts) do
     token_count = length(tokens)
     domain = Keyword.get(opts, :domain)
     intent = Keyword.get(opts, :intent)
 
-    spans = find_all_spans_raw(tokens, 0, token_count, [])
+    spans = find_all_spans_raw(tokens, world_id, 0, token_count, [])
 
     ranked_spans =
       if domain != nil or intent != nil do
         Enum.map(spans, fn {start_idx, end_idx, entity_infos} ->
-          ranked = rank_types_with_context(entity_infos, domain: domain, intent: intent)
+          ranked = rank_types_with_context(entity_infos, domain: domain, intent: intent, world_id: world_id)
           {start_idx, end_idx, ranked}
         end)
       else
@@ -238,8 +261,6 @@ defmodule Brain.ML.Gazetteer do
     ranked_spans
     |> Enum.sort_by(fn {start, end_idx, _info} -> {-(end_idx - start), start} end)
     |> remove_overlapping_spans([])
-  rescue
-    ArgumentError -> []
   end
 
   @doc """
@@ -1130,18 +1151,18 @@ defmodule Brain.ML.Gazetteer do
     length(prefixes)
   end
 
-  defp find_all_spans_raw(_tokens, start_idx, token_count, acc) when start_idx >= token_count do
+  defp find_all_spans_raw(_tokens, _world_id, start_idx, token_count, acc) when start_idx >= token_count do
     acc
   end
 
-  defp find_all_spans_raw(tokens, start_idx, token_count, acc) do
+  defp find_all_spans_raw(tokens, world_id, start_idx, token_count, acc) do
     max_span = min(5, token_count - start_idx)
 
-    new_acc = find_all_matches_at(tokens, start_idx, max_span, acc)
-    find_all_spans_raw(tokens, start_idx + 1, token_count, new_acc)
+    new_acc = find_all_matches_at(tokens, world_id, start_idx, max_span, acc)
+    find_all_spans_raw(tokens, world_id, start_idx + 1, token_count, new_acc)
   end
 
-  defp find_all_matches_at(tokens, start_idx, max_span, acc) do
+  defp find_all_matches_at(tokens, world_id, start_idx, max_span, acc) do
     if max_span < 1 do
       acc
     else
@@ -1151,20 +1172,38 @@ defmodule Brain.ML.Gazetteer do
         phrase = Enum.join(span_tokens, " ")
         normalized = normalize(phrase)
 
-        case :ets.lookup(@table_name, normalized) do
-          [{^normalized, entity_infos}] when is_list(entity_infos) ->
-            end_idx = start_idx + span_len - 1
-            [{start_idx, end_idx, entity_infos} | inner_acc]
-
-          [{^normalized, entity_info}] when is_map(entity_info) ->
-            end_idx = start_idx + span_len - 1
-            [{start_idx, end_idx, [entity_info]} | inner_acc]
-
+        case span_infos(normalized, world_id) do
           [] ->
             inner_acc
+
+          entity_infos ->
+            end_idx = start_idx + span_len - 1
+            [{start_idx, end_idx, entity_infos} | inner_acc]
         end
       end)
     end
+  end
+
+  # A phrase's readings in a world: the world's overlay first, then the base
+  # gazetteer's readings of other types (`merge_entity_types/2`, as
+  # `lookup_all_types/2`). Neither table lookup is rescued: a missing table is
+  # an error, not an absence.
+  defp span_infos(normalized, world_id) do
+    overlay_infos =
+      case :ets.lookup(@world_overlay_table, {world_id, normalized}) do
+        [{_key, infos}] when is_list(infos) -> infos
+        [{_key, info}] when is_map(info) -> [info]
+        [] -> []
+      end
+
+    base_infos =
+      case :ets.lookup(@table_name, normalized) do
+        [{^normalized, infos}] when is_list(infos) -> infos
+        [{^normalized, info}] when is_map(info) -> [info]
+        [] -> []
+      end
+
+    merge_entity_types(overlay_infos, base_infos)
   end
 
   defp remove_overlapping_spans([], resolved), do: Enum.reverse(resolved)
@@ -1191,6 +1230,12 @@ defmodule Brain.ML.Gazetteer do
   @doc """
   Rank a list of entity type infos using contextual signals.
   Returns the same list reordered so the best match for the context is first.
+
+  ## Options
+    - `:domain` - domain atom to rank by
+    - `:intent` - intent string; ranking by it reads the Poincare embeddings of
+      a world, so it needs `:world_id` too and raises without one
+    - `:world_id` - the world whose Poincare embeddings rank by intent
   """
   def rank_types_with_context(infos, opts \\ [])
 
@@ -1199,6 +1244,7 @@ defmodule Brain.ML.Gazetteer do
   def rank_types_with_context(infos, opts) when is_list(infos) do
     domain = Keyword.get(opts, :domain)
     intent = Keyword.get(opts, :intent)
+    world_id = Keyword.get(opts, :world_id)
 
     if domain == nil and intent == nil do
       infos
@@ -1211,7 +1257,7 @@ defmodule Brain.ML.Gazetteer do
         source = Map.get(info, :source, :unknown) |> to_string()
 
         domain_score = domain_alignment_score(entity_type, domain)
-        poincare_score = poincare_proximity_score(entity_type, intent)
+        poincare_score = poincare_proximity_score(entity_type, intent, world_id)
         conceptnet_score = conceptnet_isa_score(entity_type, domain)
         learned_score = learned_preference_score(info, domain)
 
@@ -1241,24 +1287,16 @@ defmodule Brain.ML.Gazetteer do
     if matching_group, do: 1.0, else: 0.0
   end
 
-  defp poincare_proximity_score(_entity_type, nil), do: 0.0
+  # The proximity of the entity type to the intent in the world's Poincare
+  # embeddings. No intent, no score. A world without its copy of the
+  # embeddings raises (`Brain.ML.Poincare.Embeddings`), as does ranking by
+  # intent with no world.
+  defp poincare_proximity_score(_entity_type, nil, _world_id), do: 0.0
 
-  defp poincare_proximity_score(entity_type, intent) do
-    if Code.ensure_loaded?(Brain.ML.Poincare.Embeddings) and
-         function_exported?(Brain.ML.Poincare.Embeddings, :entity_distance, 2) do
-      try do
-        case Brain.ML.Poincare.Embeddings.entity_distance(entity_type, intent) do
-          {:ok, distance} when is_number(distance) ->
-            1.0 / (1.0 + distance)
-
-          _ ->
-            0.0
-        end
-      catch
-        _, _ -> 0.0
-      end
-    else
-      0.0
+  defp poincare_proximity_score(entity_type, intent, world_id) do
+    case Brain.ML.Poincare.Embeddings.entity_distance(world_id, entity_type, intent) do
+      {:ok, distance} -> 1.0 / (1.0 + distance)
+      {:error, :not_found} -> 0.0
     end
   end
 
@@ -1294,7 +1332,7 @@ defmodule Brain.ML.Gazetteer do
     min(count * 0.5, 2.0)
   end
 
-  defp compute_span_score(ranked_infos, span_len, domain, intent) do
+  defp compute_span_score(ranked_infos, span_len, domain, intent, world_id) do
     length_bonus = span_len * 0.5
 
     type_score =
@@ -1302,7 +1340,7 @@ defmodule Brain.ML.Gazetteer do
         [best | _] ->
           entity_type = Map.get(best, :entity_type) || Map.get(best, :type) || "unknown"
           domain_alignment_score(entity_type, domain) +
-            poincare_proximity_score(entity_type, intent) * 0.5
+            poincare_proximity_score(entity_type, intent, world_id) * 0.5
         [] -> 0.0
       end
 
