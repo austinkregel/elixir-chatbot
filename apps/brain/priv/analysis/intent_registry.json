@@ -279,7 +279,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "check"
+      }
+    ],
     "optional": [
       "device",
       "room",
@@ -497,7 +502,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "device_brightness"
+      }
+    ],
     "optional": [
       "device",
       "change_value",
@@ -540,7 +550,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "device_brightness"
+      }
+    ],
     "optional": [
       "device",
       "change_value",
@@ -1008,7 +1023,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "open"
+      }
+    ],
     "optional": [
       "lock",
       "room",
@@ -1786,7 +1806,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "heating"
+      }
+    ],
     "optional": [
       "device",
       "room",
@@ -1947,7 +1972,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "check"
+      }
+    ],
     "optional": [
       "device",
       "room",
@@ -2173,7 +2203,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "volume_check"
+      }
+    ],
     "optional": [
       "device",
       "room"
@@ -2312,7 +2347,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "device_switch"
+      }
+    ],
     "optional": [
       "device",
       "room",
@@ -2564,7 +2604,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "heating"
+      }
+    ],
     "optional": [
       "device",
       "room",
@@ -2860,7 +2905,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "lock"
+      }
+    ],
     "optional": [
       "lock",
       "room",
@@ -3219,7 +3269,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "device_switch"
+      }
+    ],
     "optional": [
       "device",
       "room",
@@ -3470,7 +3525,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "unlock"
+      }
+    ],
     "optional": [
       "lock",
       "room",
@@ -3810,7 +3870,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "close"
+      }
+    ],
     "optional": [
       "lock",
       "room",
