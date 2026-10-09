@@ -21,8 +21,9 @@ defmodule Brain.ML.ModelActivationTest do
   end
 
   describe "Poincare Embeddings wiring" do
-    test "Poincare module exposes ready?/0" do
-      assert is_boolean(Brain.ML.Poincare.Embeddings.ready?())
+    test "the test world holds its own Poincare embeddings" do
+      assert %{embeddings: %Nx.Tensor{}, dim: dim} = Brain.ML.Poincare.Embeddings.loaded!(@world_id)
+      assert is_integer(dim) and dim > 0
     end
 
     test "Poincare is referenced in EntityExtractor disambiguation" do
@@ -32,8 +33,9 @@ defmodule Brain.ML.ModelActivationTest do
   end
 
   describe "KG-LSTM TripleScorer wiring" do
-    test "TripleScorer module exposes ready?/0" do
-      assert is_boolean(Brain.ML.KnowledgeGraph.TripleScorer.ready?())
+    test "the test world holds its own triple scorer" do
+      assert %{model: %Axon{}, vocab: vocab} = Brain.ML.KnowledgeGraph.TripleScorer.loaded!(@world_id)
+      assert map_size(vocab) > 0
     end
 
     test "Corroborator module exists and is callable" do
@@ -84,12 +86,12 @@ defmodule Brain.ML.ModelActivationTest do
   describe "Graph.Writer enrichment" do
     test "Writer exposes SRL triple writing" do
       fns = Brain.Graph.Writer.__info__(:functions)
-      assert {:write_srl_triples, 1} in fns
+      assert {:write_srl_triples, 2} in fns
     end
 
     test "Writer exposes event frame writing" do
       fns = Brain.Graph.Writer.__info__(:functions)
-      assert {:write_event_frames, 1} in fns
+      assert {:write_event_frames, 2} in fns
     end
 
     test "Writer.write_analysis handles enriched model" do
@@ -105,7 +107,7 @@ defmodule Brain.ML.ModelActivationTest do
         ]
       }
 
-      assert Brain.Graph.Writer.write_analysis(model) == :ok
+      assert Brain.Graph.Writer.write_analysis(model, @world_id) == :ok
     end
   end
 
