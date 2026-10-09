@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.CleanupWorlds do
-  @moduledoc "Cleans up orphaned training world directories from disk.\n\nAn orphaned directory is one that:\n- Has no valid config.json file, OR\n- Is older than the specified age\n\n## Usage\n\n    # Dry run (default) - shows what would be deleted\n    mix cleanup_worlds\n\n    # Actually delete orphaned directories\n    mix cleanup_worlds --delete\n\n    # Delete directories older than 12 hours\n    mix cleanup_worlds --delete --max-age 12\n\n    # Exclude specific world IDs from cleanup\n    mix cleanup_worlds --delete --exclude my_world --exclude another_world\n\n## Options\n\n  * `--delete` - Actually delete the directories (default is dry run)\n  * `--max-age` - Maximum age in hours before a directory is considered orphaned (default: 24)\n  * `--exclude` - World IDs to exclude from cleanup (can be specified multiple times)\n\n"
+  @moduledoc "Cleans up orphaned test world directories from disk.\n\nOnly a test world's directory -- its id starts with `test_`\n(`World.Manager.test_world_id?/1`) -- is ever deleted. Every other directory\nis a real world and is never deleted, whatever its age or contents.\n\nA test world's directory is orphaned when it:\n- Has no valid config.json file, OR\n- Is older than the specified age\n\nWorlds are read from `World.Persistence.base_path/0`.\n\n## Usage\n\n    # Dry run (default) - shows what would be deleted\n    mix cleanup_worlds\n\n    # Actually delete orphaned directories\n    mix cleanup_worlds --delete\n\n    # Delete directories older than 12 hours\n    mix cleanup_worlds --delete --max-age 12\n\n    # Exclude specific world IDs from cleanup\n    mix cleanup_worlds --delete --exclude my_world --exclude another_world\n\n## Options\n\n  * `--delete` - Actually delete the directories (default is dry run)\n  * `--max-age` - Maximum age in hours before a directory is considered orphaned (default: 24)\n  * `--exclude` - World IDs to exclude from cleanup (can be specified multiple times)\n\n"
   use Mix.Task
 
   require Logger
@@ -32,8 +32,7 @@ defmodule Mix.Tasks.CleanupWorlds do
     Mix.shell().info("Excluded: #{inspect(exclude)}")
     Mix.shell().info("")
 
-    base_path =
-      Application.get_env(:world, :training_worlds_path, "apps/world/priv/training_worlds")
+    base_path = World.Persistence.base_path()
 
     unless File.exists?(base_path) do
       Mix.shell().info("No training worlds directory found at: #{base_path}")
@@ -52,39 +51,44 @@ defmodule Mix.Tasks.CleanupWorlds do
 
         {orphaned, valid} =
           Enum.reduce(all_dirs, {[], []}, fn world_id, {orphaned_acc, valid_acc} ->
-            if world_id in exclude do
-              {orphaned_acc, [{world_id, :excluded} | valid_acc]}
-            else
-              dir_path = Path.join(base_path, world_id)
-              config_path = Path.join(dir_path, "config.json")
-              has_config = File.exists?(config_path)
+            cond do
+              not World.Manager.test_world_id?(world_id) ->
+                {orphaned_acc, [{world_id, :real_world} | valid_acc]}
 
-              case File.stat(dir_path) do
-                {:ok, %{mtime: mtime}} ->
-                  case NaiveDateTime.from_erl(mtime) do
-                    {:ok, naive} ->
-                      dir_time = DateTime.from_naive!(naive, "Etc/UTC")
-                      is_old = DateTime.compare(dir_time, cutoff) == :lt
-                      age_str = format_age(dir_time)
+              world_id in exclude ->
+                {orphaned_acc, [{world_id, :excluded} | valid_acc]}
 
-                      cond do
-                        not has_config ->
-                          {[{world_id, :no_config, age_str} | orphaned_acc], valid_acc}
+              true ->
+                dir_path = Path.join(base_path, world_id)
+                config_path = Path.join(dir_path, "config.json")
+                has_config = File.exists?(config_path)
 
-                        is_old ->
-                          {[{world_id, :old, age_str} | orphaned_acc], valid_acc}
+                case File.stat(dir_path) do
+                  {:ok, %{mtime: mtime}} ->
+                    case NaiveDateTime.from_erl(mtime) do
+                      {:ok, naive} ->
+                        dir_time = DateTime.from_naive!(naive, "Etc/UTC")
+                        is_old = DateTime.compare(dir_time, cutoff) == :lt
+                        age_str = format_age(dir_time)
 
-                        true ->
-                          {orphaned_acc, [{world_id, :valid, age_str} | valid_acc]}
-                      end
+                        cond do
+                          not has_config ->
+                            {[{world_id, :no_config, age_str} | orphaned_acc], valid_acc}
 
-                    _ ->
-                      {orphaned_acc, [{world_id, :unknown} | valid_acc]}
-                  end
+                          is_old ->
+                            {[{world_id, :old, age_str} | orphaned_acc], valid_acc}
 
-                _ ->
-                  {orphaned_acc, [{world_id, :unknown} | valid_acc]}
-              end
+                          true ->
+                            {orphaned_acc, [{world_id, :valid, age_str} | valid_acc]}
+                        end
+
+                      _ ->
+                        {orphaned_acc, [{world_id, :unknown} | valid_acc]}
+                    end
+
+                  _ ->
+                    {orphaned_acc, [{world_id, :unknown} | valid_acc]}
+                end
             end
           end)
 
@@ -99,6 +103,9 @@ defmodule Mix.Tasks.CleanupWorlds do
         |> Enum.each(fn
           {id, :excluded} ->
             Mix.shell().info("  #{id} (excluded)")
+
+          {id, :real_world} ->
+            Mix.shell().info("  #{id} (real world, never deleted)")
 
           {id, :valid, age} ->
             Mix.shell().info("  #{id} (#{age})")
