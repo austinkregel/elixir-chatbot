@@ -58,8 +58,8 @@ defmodule Brain.Analysis.ContextAccumulator do
     %__MODULE__{
       relevant_episodes: query_episodes(text, memory_k, world_id),
       relevant_semantics: query_semantics(text, memory_k, world_id),
-      conversation_topics: fetch_conversation_topics(conversation_id),
-      interlocutor_adaptations: fetch_interlocutor_adaptations(user_id)
+      conversation_topics: fetch_conversation_topics(conversation_id, world_id),
+      interlocutor_adaptations: fetch_interlocutor_adaptations(user_id, world_id)
     }
   end
 
@@ -272,19 +272,20 @@ defmodule Brain.Analysis.ContextAccumulator do
     _ -> []
   end
 
-  defp fetch_conversation_topics(nil), do: []
+  # The world was checked in `new/2`, before this rescue.
+  defp fetch_conversation_topics(nil, _world_id), do: []
 
-  defp fetch_conversation_topics(conversation_id) do
-    Reader.conversation_topics(to_string(conversation_id))
+  defp fetch_conversation_topics(conversation_id, world_id) do
+    Reader.conversation_topics(to_string(conversation_id), world_id: world_id)
   rescue
     _ -> []
   end
 
-  defp fetch_interlocutor_adaptations(nil), do: %{}
+  defp fetch_interlocutor_adaptations(nil, _world_id), do: %{}
 
-  defp fetch_interlocutor_adaptations(user_id) do
+  defp fetch_interlocutor_adaptations(user_id, world_id) do
     user_id
-    |> Reader.user_preferences()
+    |> Reader.user_preferences(world_id: world_id)
     |> Enum.reduce(%{}, fn pref, acc ->
       case pref do
         %{rel_type: "WANTS", topic: topic, properties: props} ->
