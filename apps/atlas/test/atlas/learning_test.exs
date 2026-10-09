@@ -3,38 +3,51 @@ defmodule Atlas.LearningTest do
 
   alias Atlas.Learning
 
+  # Every session researches for one world. Rows are rolled back with the
+  # test's transaction; no world directory is created.
+  @world_id "test_atlas_learning"
+
   describe "sessions" do
     test "creates a session with valid attributes" do
-      attrs = %{topic: "Elixir concurrency", source_type: "web"}
+      attrs = %{world_id: @world_id, topic: "Elixir concurrency", source_type: "web"}
       assert {:ok, session} = Learning.create_session(attrs)
+      assert session.world_id == @world_id
       assert session.topic == "Elixir concurrency"
       assert session.status == "active"
       assert session.source_type == "web"
     end
 
     test "creates a session with minimal attributes" do
-      assert {:ok, session} = Learning.create_session(%{})
+      assert {:ok, session} = Learning.create_session(%{world_id: @world_id})
+      assert session.world_id == @world_id
       assert session.status == "active"
     end
 
+    test "rejects a session without a world" do
+      assert {:error, changeset} = Learning.create_session(%{topic: "No world"})
+      assert "can't be blank" in errors_on(changeset)[:world_id]
+    end
+
     test "rejects invalid status" do
-      assert {:error, changeset} = Learning.create_session(%{status: "invalid"})
+      assert {:error, changeset} = Learning.create_session(%{world_id: @world_id, status: "invalid"})
       assert errors_on(changeset)[:status]
     end
 
     test "rejects invalid source_type" do
-      assert {:error, changeset} = Learning.create_session(%{source_type: "invalid"})
+      assert {:error, changeset} =
+               Learning.create_session(%{world_id: @world_id, source_type: "invalid"})
+
       assert errors_on(changeset)[:source_type]
     end
 
     test "updates a session by struct" do
-      {:ok, session} = Learning.create_session(%{topic: "Original"})
+      {:ok, session} = Learning.create_session(%{world_id: @world_id, topic: "Original"})
       assert {:ok, updated} = Learning.update_session(session, %{topic: "Updated"})
       assert updated.topic == "Updated"
     end
 
     test "updates a session by ID" do
-      {:ok, session} = Learning.create_session(%{topic: "By ID"})
+      {:ok, session} = Learning.create_session(%{world_id: @world_id, topic: "By ID"})
       assert {:ok, updated} = Learning.update_session(session.id, %{status: "completed"})
       assert updated.status == "completed"
     end
@@ -45,7 +58,7 @@ defmodule Atlas.LearningTest do
     end
 
     test "gets a session by ID" do
-      {:ok, session} = Learning.create_session(%{topic: "Lookup"})
+      {:ok, session} = Learning.create_session(%{world_id: @world_id, topic: "Lookup"})
       found = Learning.get_session(session.id)
       assert found.id == session.id
     end
@@ -55,8 +68,8 @@ defmodule Atlas.LearningTest do
     end
 
     test "lists sessions with filters" do
-      {:ok, _} = Learning.create_session(%{topic: "A", status: "active"})
-      {:ok, _} = Learning.create_session(%{topic: "B", status: "completed"})
+      {:ok, _} = Learning.create_session(%{world_id: @world_id, topic: "A", status: "active"})
+      {:ok, _} = Learning.create_session(%{world_id: @world_id, topic: "B", status: "completed"})
 
       all = Learning.list_sessions()
       assert length(all) >= 2
@@ -69,7 +82,7 @@ defmodule Atlas.LearningTest do
     end
 
     test "lists sessions with limit and offset" do
-      for i <- 1..5, do: Learning.create_session(%{topic: "Session #{i}"})
+      for i <- 1..5, do: {:ok, _} = Learning.create_session(%{world_id: @world_id, topic: "Session #{i}"})
 
       limited = Learning.list_sessions(limit: 2)
       assert length(limited) == 2
@@ -79,7 +92,7 @@ defmodule Atlas.LearningTest do
     end
 
     test "session_with_details returns session with associations" do
-      {:ok, session} = Learning.create_session(%{topic: "Detailed"})
+      {:ok, session} = Learning.create_session(%{world_id: @world_id, topic: "Detailed"})
       assert {:ok, detailed} = Learning.session_with_details(session.id)
       assert detailed.id == session.id
       assert is_list(detailed.goals)
@@ -93,7 +106,7 @@ defmodule Atlas.LearningTest do
 
   describe "goals" do
     setup do
-      {:ok, session} = Learning.create_session(%{topic: "Goals test"})
+      {:ok, session} = Learning.create_session(%{world_id: @world_id, topic: "Goals test"})
       {:ok, session: session}
     end
 
@@ -132,7 +145,7 @@ defmodule Atlas.LearningTest do
 
   describe "investigations" do
     setup do
-      {:ok, session} = Learning.create_session(%{topic: "Investigations test"})
+      {:ok, session} = Learning.create_session(%{world_id: @world_id, topic: "Investigations test"})
       {:ok, session: session}
     end
 
@@ -168,7 +181,7 @@ defmodule Atlas.LearningTest do
 
   describe "hypotheses" do
     setup do
-      {:ok, session} = Learning.create_session(%{topic: "Hypotheses test"})
+      {:ok, session} = Learning.create_session(%{world_id: @world_id, topic: "Hypotheses test"})
       {:ok, inv} = Learning.create_investigation(%{session_id: session.id, topic: "Test"})
       {:ok, investigation: inv}
     end
@@ -222,7 +235,7 @@ defmodule Atlas.LearningTest do
 
   describe "evidence" do
     setup do
-      {:ok, session} = Learning.create_session(%{topic: "Evidence test"})
+      {:ok, session} = Learning.create_session(%{world_id: @world_id, topic: "Evidence test"})
       {:ok, inv} = Learning.create_investigation(%{session_id: session.id, topic: "Test"})
       {:ok, session: session, investigation: inv}
     end
