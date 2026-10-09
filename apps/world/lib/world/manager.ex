@@ -1,7 +1,7 @@
 defmodule World.Manager do
   @moduledoc "Manages training world lifecycle - creation, destruction, checkpointing.\n\nThis GenServer maintains the registry of active training worlds and\ncoordinates their data isolation while sharing computational processes.\n"
 
-  alias Brain.ML.Gazetteer
+  alias Brain.ML.{EntityModel, Gazetteer}
   alias Brain.Memory.Store, as: MemoryStore
   use GenServer
   require Logger
@@ -310,6 +310,14 @@ defmodule World.Manager do
         {:error, reason} ->
           Logger.warning("Failed to auto-save persistent world", %{id: world.id, reason: reason})
       end
+    end
+
+    # A world starts with its own copy of the trained entity model; an ephemeral
+    # world has no directory, so its copy is held in memory.
+    if world.mode == :persistent do
+      EntityModel.seed!(world.id)
+    else
+      EntityModel.seed_in_memory!(world.id)
     end
 
     Logger.info("Created training world", %{id: world.id, name: name, mode: world.mode})
@@ -719,5 +727,6 @@ defmodule World.Manager do
     :ets.delete(@ets_candidates, world_id)
     :ets.delete(@ets_events, world_id)
     Gazetteer.destroy_world_overlay(world_id)
+    EntityModel.drop(world_id)
   end
 end
