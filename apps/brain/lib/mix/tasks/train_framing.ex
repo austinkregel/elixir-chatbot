@@ -105,7 +105,7 @@ defmodule Mix.Tasks.TrainFraming do
       {:error, :enoent} ->
         Mix.raise("""
         Training data not found at #{data_path}.
-        Run `mix gen_framing_data --corpus gvfc` first.
+        Run `mix gen_framing_data --world <id> --corpus gvfc` first.
         """)
 
       {:error, stage, reason} ->
