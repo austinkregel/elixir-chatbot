@@ -38,8 +38,8 @@ defmodule Mix.Tasks.Train do
     --skip-lattice     Skip lattice phrase inventory generation
     --include-graph    Run graph-to-training integration after training
     --world ID         Required. The world the stages that analyze text or read
-                       world data run in (Poincare, KG triple scorer, micro data,
-                       framing data, lattice data, entity type ingestion). It
+                       world data run in (micro data, framing data, lattice
+                       data, entity type ingestion, type vector warm-up). It
                        names no output location: models are written to the
                        trained models directory, not into the world
     --publish          Publish trained models to S3/MinIO
@@ -50,17 +50,19 @@ defmodule Mix.Tasks.Train do
   The TF-IDF bundle is written to the trained models directory
   (`:brain, :ml, :models_path`, or priv/ml_models/), where
   `Brain.ML.EntityModel.trained_path/0` and `World.Embedder.trained_path/0`
-  read the files worlds are seeded from. Training does not seed: a world
-  receives the retrained entity model and embedder vocabulary through
-  `mix world.seed_model`, or from `World.Manager` when it creates the world.
+  read the files worlds are seeded from. The Poincare embeddings and the KG
+  triple scorer are written there too (`Brain.ML.Poincare.Embeddings.trained_path/0`,
+  `Brain.ML.KnowledgeGraph.TripleScorer.trained_path/0`). Training does not seed:
+  a world receives the retrained models through `mix world.seed_model`, or from
+  `World.Manager` when it creates the world.
 
   ## Training order (9 stages)
 
   1. **TF-IDF bundle** — `Trainer.train_and_save/1`: entity model, embedder
      vocabulary, plus speech-act TF-IDF (~1 minute).
   2. **POS tagger** — `pos_model.term` (~1 second).
-  3. **Poincare embeddings** — `poincare/embeddings.term` (~1 min).
-  4. **KG triple scorer** — `kg_lstm/triple_scorer.term` (~1 min GPU).
+  3. **Poincare embeddings** — `poincare_embeddings.term` (~1 min).
+  4. **KG triple scorer** — `triple_scorer.term` (~1 min GPU).
   5. **MicroClassifiers** — runs `mix train_micro`: trains every name in
      `Mix.Tasks.TrainMicro` (pragmatic classifiers + six axis models). Writes
      `priv/ml_models/micro/*.term`. Regenerate JSON with `mix gen_micro_data --world <id>`
@@ -73,7 +75,8 @@ defmodule Mix.Tasks.Train do
      Use `mix train --world <id> --skip-vectorize` to skip the slow vectorization step.
   8. **Entity Type Ingestion** — ingests entity types from Atlas into the
      training world.
-  9. **Type Vector Warm-up** — warms up entity type vectors in the KG cache.
+  9. **Type Vector Warm-up** — warms up the world's entity type vectors in the
+     KG cache, from the world's own triple scorer.
 
   ## Examples
 
@@ -123,14 +126,14 @@ defmodule Mix.Tasks.Train do
       description: "Hyperbolic embeddings for entity type hierarchy",
       task: :poincare,
       duration: "~1 minute",
-      outputs: ["poincare/embeddings.term"]
+      outputs: ["poincare_embeddings.term"]
     },
     %{
       name: "KG Triple Scorer",
       description: "Knowledge graph triple validity scoring via BiLSTM",
       task: :kg_lstm,
       duration: "~1 minute (GPU)",
-      outputs: ["kg_lstm/triple_scorer.term"]
+      outputs: ["triple_scorer.term"]
     },
     %{
       name: "MicroClassifiers",
@@ -414,7 +417,7 @@ defmodule Mix.Tasks.Train do
         [{:poincare, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_poincare_embeddings(opts)
+        result = train_poincare_embeddings()
         duration = System.monotonic_time(:second) - start
         [{:poincare, result, duration} | results]
       end
@@ -426,7 +429,7 @@ defmodule Mix.Tasks.Train do
         [{:kg_lstm, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_kg_triple_scorer(opts)
+        result = train_kg_triple_scorer()
         duration = System.monotonic_time(:second) - start
         [{:kg_lstm, result, duration} | results]
       end
@@ -480,7 +483,7 @@ defmodule Mix.Tasks.Train do
         [{:type_vectors, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = warm_up_type_vectors()
+        result = warm_up_type_vectors(opts)
         duration = System.monotonic_time(:second) - start
         [{:type_vectors, result, duration} | results]
       end
@@ -559,13 +562,14 @@ defmodule Mix.Tasks.Train do
     {:ok, %{pos_trained: true, accuracy: e.accuracy, lookup_baseline: e.lookup_baseline}}
   end
 
-  defp train_poincare_embeddings(opts) do
+  # Trained from shared hierarchy data, which no world owns.
+  defp train_poincare_embeddings do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 3/9: Poincare Embeddings  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    args = ["--world", opts[:world], "--verbose"]
+    args = ["--verbose"]
 
     try do
       Mix.Tasks.TrainPoincare.run(args)
@@ -577,13 +581,14 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_kg_triple_scorer(opts) do
+  # Trained from triple sources no world owns (`mix train_kg_lstm`).
+  defp train_kg_triple_scorer do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 4/9: KG Triple Scorer  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    args = ["--world", opts[:world], "--verbose"]
+    args = ["--verbose"]
 
     try do
       Mix.Tasks.TrainKgLstm.run(args)
@@ -693,20 +698,17 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp warm_up_type_vectors do
+  # Raises, reported as this stage's failure, when the world holds no copy of
+  # the triple scorer.
+  defp warm_up_type_vectors(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 9/9: Type Vector Warm-up  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     try do
-      if Brain.ML.KnowledgeGraph.TripleScorer.ready?() do
-        Brain.ML.KnowledgeGraph.EntityVectorCache.warm_up_entity_types()
-        {:ok, %{type_vectors_warmed: true}}
-      else
-        Mix.shell().info("  TripleScorer not loaded. Skipping type vector warm-up.")
-        {:error, "TripleScorer not ready"}
-      end
+      Brain.ML.KnowledgeGraph.EntityVectorCache.warm_up_entity_types(opts[:world])
+      {:ok, %{type_vectors_warmed: true}}
     rescue
       e -> {:error, Exception.message(e)}
     end
