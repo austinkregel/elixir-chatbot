@@ -11,6 +11,9 @@ defmodule Brain.Knowledge.TypesTest do
     SourceProfile
   }
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   describe "SourceInfo" do
     test "creates from URL with domain extraction" do
       source = SourceInfo.new("https://www.wikipedia.org/wiki/France")
@@ -145,15 +148,16 @@ defmodule Brain.Knowledge.TypesTest do
 
   describe "LearningSession" do
     test "creates with default values" do
-      session = LearningSession.new()
+      session = LearningSession.new(world_id: @world_id)
 
       assert is_binary(session.id)
+      assert session.world_id == @world_id
       assert session.status == :active
       assert session.findings_count == 0
     end
 
     test "adds goals and records findings" do
-      session = LearningSession.new(topic: "Test topic")
+      session = LearningSession.new(topic: "Test topic", world_id: @world_id)
       goal = ResearchGoal.new("Subtopic")
 
       session = LearningSession.add_goal(session, goal)
@@ -167,7 +171,7 @@ defmodule Brain.Knowledge.TypesTest do
     end
 
     test "completes session" do
-      session = LearningSession.new()
+      session = LearningSession.new(world_id: @world_id)
 
       before_completion = DateTime.utc_now()
       completed = LearningSession.complete(session)
