@@ -106,7 +106,19 @@ defmodule Brain.Learner do
   end
 
   @doc "Learn from a conversation turn with full analysis context.\n\nThis is the primary entry point for conversational learning. When a user makes\nan assertive statement (e.g., \"Paris is the capital of France\"), we extract\nthe claim as a learnable fact.\n\n## Parameters\n  - persona_name: The bot persona name\n  - input: The user's input text\n  - analysis: The full analysis result from the Pipeline\n  - opts: Options including :user_id for user-specific learning\n\n## Returns\n  - {:ok, %{entities: [...], facts: [...], learned: boolean}}\n"
-  def learn_from_conversation(persona_name, input, analysis, opts \\ []) do
+  def learn_from_conversation(persona_name, input, analysis, opts) do
+    # A learned fact is verified against, and recorded as a belief in, the
+    # world the conversation runs in.
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "Learner.learn_from_conversation needs :world_id, the world the conversation runs in, got: #{inspect(other)}"
+      end
+
     Logger.debug("Learner.learn_from_conversation called", %{
       persona_name: persona_name,
       input: input,
@@ -136,6 +148,7 @@ defmodule Brain.Learner do
     }
 
     process_extracted_data(persona_name, extracted_data, input)
+    process_facts(persona_name, extracted_facts, world_id)
 
     {:ok,
      %{
@@ -235,6 +248,8 @@ defmodule Brain.Learner do
     end)
   end
 
+  # Facts are not processed here: they are verified against a world's beliefs,
+  # and only `learn_from_conversation/4`, which has the world, extracts any.
   defp process_extracted_data(persona_name, data, original_input) do
     entities = Map.get(data, "entities", [])
     relationships = Map.get(data, "relationships", [])
@@ -246,7 +261,6 @@ defmodule Brain.Learner do
     end)
 
     process_relationships(persona_name, relationships)
-    process_facts(persona_name, facts)
     store_context_memory(persona_name, original_input, data)
 
     Logger.info("Processed NLP extraction", %{
@@ -528,7 +542,7 @@ defmodule Brain.Learner do
     end)
   end
 
-  defp process_facts(persona_name, facts) do
+  defp process_facts(persona_name, facts, world_id) do
     Enum.each(facts, fn fact ->
       normalized = normalize_fact(fact)
       confidence = Map.get(normalized, "confidence", 0.5)
@@ -539,11 +553,11 @@ defmodule Brain.Learner do
         KnowledgeStore.add_fact(persona_name, entity, fact_text, confidence)
 
         if is_general_knowledge_fact?(entity, fact_text) do
-          case Integration.verify_fact(entity, fact_text) do
+          case Integration.verify_fact(world_id, entity, fact_text) do
             {:verified, verified_confidence} ->
               final_confidence = max(confidence, verified_confidence)
 
-              case Integration.add_fact(entity, fact_text,
+              case Integration.add_fact(world_id, entity, fact_text,
                      category: "learned",
                      verification_source: "conversation_learning",
                      confidence: final_confidence,
