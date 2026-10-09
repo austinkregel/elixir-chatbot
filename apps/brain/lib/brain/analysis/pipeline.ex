@@ -32,7 +32,9 @@ defmodule Brain.Analysis.Pipeline do
   alias Brain.Lexicon.IntentDomains
   alias Brain.ML.{EntityExtractor, MicroClassifiers, POSTagger, Tokenizer}
 
-  alias Brain.Memory.Embedder
+  # World.Embedder is in a sibling umbrella app that depends on :brain.
+  @compile {:no_warn_undefined, World.Embedder}
+  alias World.Embedder, as: WorldEmbedder
 
   alias Brain.FactDatabase.Integration, as: FactIntegration
   alias Brain.Epistemic.BeliefStore
@@ -145,7 +147,7 @@ defmodule Brain.Analysis.Pipeline do
 
     if side_effects?(opts) do
       record_pipeline_result(model)
-      Brain.Graph.Writer.write_analysis(model)
+      Brain.Graph.Writer.write_analysis(model, world_id!(opts))
     end
 
     Brain.Graph.ContextCache.purge_process_entries()
@@ -1168,7 +1170,7 @@ defmodule Brain.Analysis.Pipeline do
       # domain. Route through the multi-signal scorer rather than blindly
       # trusting whichever model happened to fire louder.
       classifier_registered? and domain_conflict? ->
-        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
+        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
 
         {inferred, :speech_act_fallback, nil,
          Map.merge(base, %{
@@ -1189,7 +1191,7 @@ defmodule Brain.Analysis.Pipeline do
              })}
 
           :no_opinion when best_score < @low_confidence_floor ->
-            inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
+            inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
 
             {inferred, :speech_act_fallback, nil,
              Map.merge(base, %{
@@ -1206,7 +1208,7 @@ defmodule Brain.Analysis.Pipeline do
       # classifier output as just one more signal and let the registry-aware
       # scorer pick a real intent that matches the full signal stack.
       classifier_intent != nil ->
-        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
+        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
 
         {inferred, :speech_act_fallback, nil,
          Map.merge(base, %{
@@ -1215,11 +1217,11 @@ defmodule Brain.Analysis.Pipeline do
          })}
 
       speech_act.category == :expressive ->
-        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
+        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
         {inferred, :speech_act, nil, base}
 
       true ->
-        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
+        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
         {inferred, :speech_act, nil, base}
     end
   end
@@ -1278,12 +1280,13 @@ defmodule Brain.Analysis.Pipeline do
   defp disambiguate_with_atlas(classifier_intent, %Lattice{} = lattice, entities, _text, opts, profile) do
     conversation_id = Keyword.get(opts, :conversation_id)
 
-    recent_topics = graph_recent_topics(conversation_id)
-    entity_neighborhoods = graph_entity_neighborhoods(entities, world_id!(opts))
+    world_id = world_id!(opts)
+    recent_topics = graph_recent_topics(conversation_id, world_id)
+    entity_neighborhoods = graph_entity_neighborhoods(entities, world_id)
 
     reranked =
       Lattice.rerank(lattice, fn %LatticeCandidate{label: intent} ->
-        score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile)
+        score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile, world_id)
       end)
 
     case Lattice.best(reranked) do
@@ -1301,10 +1304,12 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp graph_recent_topics(nil), do: []
+  defp graph_recent_topics(nil, _world_id), do: []
 
-  defp graph_recent_topics(conversation_id) do
-    Brain.Graph.Reader.conversation_topics(conversation_id)
+  # The world is resolved by the caller, outside this rescue, so a missing
+  # world raises rather than reading as no recent topics.
+  defp graph_recent_topics(conversation_id, world_id) do
+    Brain.Graph.Reader.conversation_topics(conversation_id, world_id: world_id)
   rescue
     _ -> []
   end
@@ -1320,7 +1325,7 @@ defmodule Brain.Analysis.Pipeline do
   defp graph_entity_neighborhoods(_, _world_id), do: []
 
   @doc false
-  defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile) do
+  defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile, world_id) do
     # The entity types the intent registry's slot schemas expect: every intent
     # in the profile's domain, or else the intent's own.
     expected_types =
@@ -1376,7 +1381,7 @@ defmodule Brain.Analysis.Pipeline do
           end
 
         if intent_domain != "" do
-          topic_similarity = compute_topic_similarity(intent_domain, recent_topics)
+          topic_similarity = compute_topic_similarity(intent_domain, recent_topics, world_id)
           topic_similarity * 0.15
         else
           0.0
@@ -1388,25 +1393,39 @@ defmodule Brain.Analysis.Pipeline do
     min(entity_type_overlap + topic_overlap, 0.3)
   end
 
-  defp compute_topic_similarity(domain, topics) do
-    if Embedder.ready?() do
-      domain_vec = Embedder.embed(domain)
+  # The closest of the recent topics to the intent's domain, in the world's
+  # embedder.
+  defp compute_topic_similarity(domain, topics, world_id) do
+    domain_vec = world_embedding!(world_id, domain)
 
-      similarities =
-        Enum.map(topics, fn topic ->
-          topic_vec = Embedder.embed(topic)
-          FourthWall.Math.cosine_similarity(domain_vec, topic_vec)
-        end)
+    similarities =
+      Enum.map(topics, fn topic ->
+        FourthWall.Math.cosine_similarity(domain_vec, world_embedding!(world_id, topic))
+      end)
 
-      case similarities do
-        [] -> 0.0
-        sims -> Enum.max(sims)
-      end
-    else
-      0.0
+    case similarities do
+      [] -> 0.0
+      sims -> Enum.max(sims)
     end
-  rescue
-    _ -> 0.0
+  end
+
+  # A world's embedding comes from the world's embedder and nowhere else. While
+  # the world's vocabulary is being rebuilt this waits for the rebuild to finish
+  # (`World.Embedder.await_ready/2`, which raises naming the world when it does
+  # not) and embeds then. A world whose embedder has no copy, no vocabulary, or
+  # no table raises.
+  defp world_embedding!(world_id, text) do
+    case WorldEmbedder.embed(world_id, text) do
+      {:ok, embedding} ->
+        embedding
+
+      {:error, :vocabulary_building} ->
+        :ok = WorldEmbedder.await_ready(world_id)
+        world_embedding!(world_id, text)
+
+      {:error, reason} ->
+        raise "Pipeline: world #{inspect(world_id)}'s embedder cannot embed: #{inspect(reason)}"
+    end
   end
 
   defp extract_classifier_intent(speech_act) do
@@ -1438,7 +1457,7 @@ defmodule Brain.Analysis.Pipeline do
   # The registry contributes structural metadata (domain/category/speech_act/
   # entity_mappings) — not training signal — so each registered intent can be
   # scored against the union of trained outputs without any text-string rules.
-  defp infer_intent_from_speech_act(speech_act, _text, profile, lattice, entities) do
+  defp infer_intent_from_speech_act(speech_act, _text, profile, lattice, entities, world_id) do
     profile_label = profile_derived_label(profile)
 
     cond do
@@ -1446,7 +1465,7 @@ defmodule Brain.Analysis.Pipeline do
         profile_label
 
       true ->
-        case best_intent_by_signals(speech_act, profile, lattice, entities) do
+        case best_intent_by_signals(speech_act, profile, lattice, entities, world_id) do
           {:ok, intent} -> intent
           :no_match -> speech_act_map_fallback(speech_act)
         end
@@ -1481,7 +1500,7 @@ defmodule Brain.Analysis.Pipeline do
   @external_resource @entity_scoring_weights_path
   @entity_scoring_weights @entity_scoring_weights_path |> File.read!() |> Jason.decode!()
 
-  defp best_intent_by_signals(speech_act, profile, lattice, entities) do
+  defp best_intent_by_signals(speech_act, profile, lattice, entities, world_id) do
     profile_domain = profile_domain_string(profile)
     speech_act_subtype = to_string(Map.get(speech_act, :sub_type, ""))
     speech_act_category = to_string(Map.get(speech_act, :category, ""))
@@ -1500,7 +1519,8 @@ defmodule Brain.Analysis.Pipeline do
       target: target,
       lattice_scores: lattice_scores,
       bare_domain: bare_domain_signal,
-      entity_types: entity_types
+      entity_types: entity_types,
+      world_id: world_id
     }
 
     ranked =
@@ -1569,7 +1589,7 @@ defmodule Brain.Analysis.Pipeline do
           sig.entity_types
           |> MapSet.to_list()
           |> Enum.map(fn etype ->
-            best_entity_type_match(etype, meta.entity_types, intent, w)
+            best_entity_type_match(etype, meta.entity_types, intent, w, sig.world_id)
           end)
 
         min(Enum.sum(per_etype_scores), Map.get(w, "entity_cap", @score_entity_cap))
@@ -1621,7 +1641,7 @@ defmodule Brain.Analysis.Pipeline do
       modality_score + target_score + total_entity_signal + lattice_score
   end
 
-  defp best_entity_type_match(etype, expected_types, intent, w) do
+  defp best_entity_type_match(etype, expected_types, intent, w, world_id) do
     cond do
       MapSet.member?(expected_types, etype) ->
         emit_entity_layer_telemetry(intent, etype, :exact, true)
@@ -1632,11 +1652,11 @@ defmodule Brain.Analysis.Pipeline do
         emit_entity_layer_telemetry(intent, etype, :hierarchy, true)
         Map.get(w, "entity_hierarchy_match", 0.07)
 
-      poincare_close?(etype, intent, w) ->
+      poincare_close?(etype, intent, w, world_id) ->
         emit_entity_layer_telemetry(intent, etype, :poincare, true)
         Map.get(w, "entity_poincare_proximity", 0.05)
 
-      vector_similar?(etype, expected_types, w) ->
+      vector_similar?(etype, expected_types, w, world_id) ->
         emit_entity_layer_telemetry(intent, etype, :vector, true)
         Map.get(w, "entity_vector_similarity", 0.04)
 
@@ -1646,46 +1666,39 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp poincare_close?(etype, intent, w) do
-    if Code.ensure_loaded?(Brain.ML.Poincare.Embeddings) and
-         function_exported?(Brain.ML.Poincare.Embeddings, :entity_distance, 2) do
-      case Brain.ML.Poincare.Embeddings.entity_distance(etype, intent) do
-        distance when is_number(distance) ->
-          distance < Map.get(w, "poincare_distance_threshold", 2.0)
-        _ -> false
-      end
-    else
-      false
+  # The distance between the entity type and the intent in the world's Poincare
+  # embeddings. Either one having no embedding is not close; a world with no
+  # copy of the embeddings raises.
+  defp poincare_close?(etype, intent, w, world_id) do
+    case Brain.ML.Poincare.Embeddings.entity_distance(world_id, etype, intent) do
+      {:ok, distance} -> distance < Map.get(w, "poincare_distance_threshold", 2.0)
+      {:error, :not_found} -> false
     end
-  rescue
-    _ -> false
   end
 
-  defp vector_similar?(etype, expected_types, w) do
+  # Cosine similarity of the world's cached type vectors; a type whose vector
+  # the world has not computed is not similar.
+  defp vector_similar?(etype, expected_types, w, world_id) do
     alias Brain.ML.KnowledgeGraph.EntityVectorCache
 
-    if Code.ensure_loaded?(EntityVectorCache) and
-         function_exported?(EntityVectorCache, :get_cached_type, 1) do
-      case EntityVectorCache.get_cached_type(etype) do
-        {:ok, etype_vec} ->
-          threshold = Map.get(w, "vector_similarity_threshold", 0.6)
-          etype_flat = Nx.to_flat_list(etype_vec)
+    case EntityVectorCache.get_cached_type(world_id, etype) do
+      {:ok, etype_vec} ->
+        threshold = Map.get(w, "vector_similarity_threshold", 0.6)
+        etype_flat = Nx.to_flat_list(etype_vec)
 
-          Enum.any?(expected_types, fn expected ->
-            case EntityVectorCache.get_cached_type(expected) do
-              {:ok, exp_vec} ->
-                FourthWall.Math.cosine_similarity(etype_flat, Nx.to_flat_list(exp_vec)) > threshold
-              _ -> false
-            end
-          end)
+        Enum.any?(expected_types, fn expected ->
+          case EntityVectorCache.get_cached_type(world_id, expected) do
+            {:ok, exp_vec} ->
+              FourthWall.Math.cosine_similarity(etype_flat, Nx.to_flat_list(exp_vec)) > threshold
 
-        _ -> false
-      end
-    else
-      false
+            :miss ->
+              false
+          end
+        end)
+
+      :miss ->
+        false
     end
-  rescue
-    _ -> false
   end
 
   defp emit_entity_layer_telemetry(_intent, _etype, layer, available) do
@@ -1795,13 +1808,14 @@ defmodule Brain.Analysis.Pipeline do
   defp maybe_extract_beliefs_from_events(events, opts) do
     if side_effects?(opts) and Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
       user_id = Keyword.get(opts, :user_id) || "anonymous"
+      world_id = world_id!(opts)
 
       if Application.get_env(:brain, :pipeline_belief_extraction_sync, false) do
-        Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
+        Brain.Epistemic.BeliefStore.extract_beliefs_from_events(world_id, events, user_id)
       else
         Task.Supervisor.start_child(
           Brain.Knowledge.AgentSupervisor,
-          fn -> Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id) end
+          fn -> Brain.Epistemic.BeliefStore.extract_beliefs_from_events(world_id, events, user_id) end
         )
       end
     end
@@ -2204,8 +2218,9 @@ defmodule Brain.Analysis.Pipeline do
   # Only runs for assertive statements (observations, claims). Returns
   # epistemic context that can influence response generation.
   # Returns: %{verification: result, beliefs: list, status: atom}
-  defp verify_facts_in_chunk(text, entities, speech_act, _opts) do
+  defp verify_facts_in_chunk(text, entities, speech_act, opts) do
     if speech_act.category == :assertive do
+      world_id = world_id!(opts)
       subject = extract_subject_from_entities(entities, text)
 
       case subject do
@@ -2216,8 +2231,8 @@ defmodule Brain.Analysis.Pipeline do
         subject_text ->
           start_time = System.monotonic_time(:millisecond)
 
-          beliefs = query_related_beliefs(subject_text)
-          verification = safe_verify_fact(subject_text, text)
+          beliefs = query_related_beliefs(world_id, subject_text)
+          verification = safe_verify_fact(world_id, subject_text, text)
 
           status =
             case verification do
@@ -2297,10 +2312,11 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp query_related_beliefs(subject_text) do
+  # The world is resolved by the caller, outside this rescue.
+  defp query_related_beliefs(world_id, subject_text) do
     predicate = normalize_predicate(subject_text)
 
-    case BeliefStore.query_beliefs(subject: :world, predicate: predicate, min_confidence: 0.5) do
+    case BeliefStore.query_beliefs(world_id, subject: :world, predicate: predicate, min_confidence: 0.5) do
       {:ok, beliefs} -> beliefs
       _ -> []
     end
@@ -2317,8 +2333,8 @@ defmodule Brain.Analysis.Pipeline do
 
   defp normalize_predicate(_), do: :unknown
 
-  defp safe_verify_fact(subject, text) do
-    FactIntegration.verify_fact(subject, text)
+  defp safe_verify_fact(world_id, subject, text) do
+    FactIntegration.verify_fact(world_id, subject, text)
   rescue
     error ->
       Logger.warning("Fact verification failed", error: inspect(error))
