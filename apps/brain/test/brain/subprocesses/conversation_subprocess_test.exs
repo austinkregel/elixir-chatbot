@@ -13,10 +13,12 @@ defmodule Brain.Subprocesses.ConversationSubprocessTest do
     memory_snapshot = %{knowledge: %{}, global_memory: []}
 
     # Don't pass a conversation_id so the subprocess creates a real one
-    # via Brain.create_conversation(), which registers it with Brain
+    # via Brain.create_conversation/1, which registers it with Brain, in the
+    # world the test suite runs in
     {:ok, pid} =
       ConversationSubprocess.start_link(
         subprocess_id: subprocess_id,
+        world_id: "default",
         memory_snapshot: memory_snapshot
       )
 
