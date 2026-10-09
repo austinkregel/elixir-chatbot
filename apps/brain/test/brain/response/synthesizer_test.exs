@@ -20,6 +20,76 @@ defmodule Brain.Response.SynthesizerTest do
     end
   end
 
+  describe "synthesize/3 adapting from memory" do
+    alias Brain.Memory.RecurringPattern
+    alias Brain.Memory.Types.{Episode, SemanticFact}
+
+    # An intent with no domain knowledge: whatever is synthesized comes from
+    # memory.
+    @intent "completely_unknown.intent"
+    @entities [%{entity_type: "location", value: "Lyon"}]
+
+    setup do
+      test_pid = self()
+      handler = "synthesizer-test-#{System.unique_integer([:positive])}"
+
+      :ok =
+        :telemetry.attach(
+          handler,
+          [:chat_bot, :memory, :semantic_fact, :used],
+          fn _event, _measurements, metadata, _config -> send(test_pid, {:used, metadata}) end,
+          nil
+        )
+
+      on_exit(fn -> :telemetry.detach(handler) end)
+
+      fact = SemanticFact.new("is it sunny in paris | is it sunny in london", [], ["ep1", "ep2", "ep3"], [])
+
+      pattern = %RecurringPattern{
+        world_id: "test_synthesizer",
+        fact: fact,
+        similarity: 0.75,
+        reply: "It's usually sunny in $location.",
+        reply_count: 2,
+        evidence_count: 3
+      }
+
+      # One episode, more similar to the turn than the pattern is.
+      episode = Episode.new("is it sunny in lyon", "conversation", "Bring a coat to $location.", [], [])
+
+      {:ok, pattern: pattern, episode: {episode, 0.95}}
+    end
+
+    test "adapts the recurring pattern's reply ahead of a more similar single episode, and reports it",
+         %{pattern: pattern, episode: episode} do
+      assert {:ok, "It's usually sunny in Lyon."} =
+               Synthesizer.synthesize(@intent, @entities,
+                 recurring_pattern: pattern,
+                 similar_episodes: [episode]
+               )
+
+      fact_id = pattern.fact.id
+      assert_receive {:used, %{semantic_fact_id: ^fact_id, used_by: :synthesizer, world_id: "test_synthesizer"}}
+    end
+
+    test "adapts the most similar single episode when the turn has no recurring pattern", %{episode: episode} do
+      assert {:ok, "Bring a coat to Lyon."} =
+               Synthesizer.synthesize(@intent, @entities, recurring_pattern: nil, similar_episodes: [episode])
+
+      refute_receive {:used, _}, 50
+    end
+
+    test "answers a contradiction before it draws on the pattern", %{pattern: pattern} do
+      context = %{epistemic_context: %{status: :contradicted, beliefs: [%{object: "rainy"}]}}
+
+      assert {:ok, response} =
+               Synthesizer.synthesize(@intent, @entities, recurring_pattern: pattern, context: context)
+
+      refute response == "It's usually sunny in Lyon."
+      refute_receive {:used, _}, 50
+    end
+  end
+
   describe "synthesize_from_domain/5 with enrichment" do
     test "uses enriched templates when enrichment data is available" do
       entities = [%{entity_type: "location", value: "NYC"}]
