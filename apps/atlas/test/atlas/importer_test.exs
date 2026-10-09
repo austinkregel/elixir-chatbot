@@ -193,7 +193,13 @@ defmodule Atlas.ImporterTest do
 
     test "skips store when table has data and force is false" do
       %KnowledgeEntry{}
-      |> KnowledgeEntry.changeset(%{persona_name: "pre", category: "people", key: "pre", data: %{}})
+      |> KnowledgeEntry.changeset(%{
+        world_id: "test_atlas_importer",
+        persona_name: "pre",
+        category: "people",
+        key: "pre",
+        data: %{}
+      })
       |> Repo.insert!()
 
       assert {:ok, summary} = Importer.import_all(only: ["knowledge"])
@@ -203,7 +209,13 @@ defmodule Atlas.ImporterTest do
 
     test "force overrides table-has-data skip" do
       %KnowledgeEntry{}
-      |> KnowledgeEntry.changeset(%{persona_name: "pre", category: "people", key: "pre", data: %{}})
+      |> KnowledgeEntry.changeset(%{
+        world_id: "test_atlas_importer",
+        persona_name: "pre",
+        category: "people",
+        key: "pre",
+        data: %{}
+      })
       |> Repo.insert!()
 
       assert {:ok, summary} = Importer.import_all(only: ["knowledge"], force: true)
