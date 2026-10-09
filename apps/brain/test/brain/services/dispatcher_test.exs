@@ -38,7 +38,7 @@ defmodule Brain.Services.DispatcherTest do
 
   describe "list_services/1" do
     test "returns list of service info maps" do
-      services = Dispatcher.list_services()
+      services = Dispatcher.list_services(world: "default")
 
       assert is_list(services)
       assert length(services) >= 1
@@ -51,17 +51,47 @@ defmodule Brain.Services.DispatcherTest do
     end
 
     test "includes configuration status" do
-      services = Dispatcher.list_services()
+      services = Dispatcher.list_services(world: "default")
       weather = Enum.find(services, &(&1.name == :weather))
 
       assert Map.has_key?(weather, :configured)
       assert is_boolean(weather.configured)
     end
+
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/Dispatcher.list_services needs :world/, fn ->
+        Dispatcher.list_services([])
+      end
+    end
   end
 
   describe "dispatch/3" do
     test "returns :no_handler for unknown intent" do
-      assert Dispatcher.dispatch("unknown.intent", %{}, %{}) == :no_handler
+      assert Dispatcher.dispatch("unknown.intent", %{}, %{world_id: "default"}) == :no_handler
+    end
+
+    test "raises when the context names no world" do
+      assert_raise ArgumentError, ~r/Dispatcher.dispatch context needs :world_id/, fn ->
+        Dispatcher.dispatch("weather.query", %{location: "NYC"}, %{})
+      end
+    end
+
+    test "raises before routing, even for an intent no service handles" do
+      assert_raise ArgumentError, ~r/Dispatcher.dispatch context needs :world_id/, fn ->
+        Dispatcher.dispatch("unknown.intent", %{}, %{})
+      end
+    end
+
+    test "raises when the context world is not a world id" do
+      assert_raise ArgumentError, ~r/Dispatcher.dispatch context :world_id must be a world id/, fn ->
+        Dispatcher.dispatch("weather.query", %{location: "NYC"}, %{world_id: ""})
+      end
+    end
+
+    test "accepts the world as :world in the context" do
+      result = Dispatcher.dispatch("weather.query", %{location: "NYC"}, %{world: "default"})
+
+      assert result == {:error, :missing_credentials}
     end
 
     test "returns error when service has missing credentials" do
@@ -75,11 +105,17 @@ defmodule Brain.Services.DispatcherTest do
   describe "service_available?/2" do
     test "returns false when credentials not configured" do
       # By default, weather won't have credentials
-      refute Dispatcher.service_available?(:weather)
+      refute Dispatcher.service_available?(:weather, world: "default")
     end
 
     test "returns false for unknown service" do
-      refute Dispatcher.service_available?(:unknown_service)
+      refute Dispatcher.service_available?(:unknown_service, world: "default")
+    end
+
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/Dispatcher.service_available\? needs :world/, fn ->
+        Dispatcher.service_available?(:weather, [])
+      end
     end
   end
 
@@ -192,12 +228,18 @@ defmodule Brain.Services.DispatcherTest do
 
   describe "health_check/2" do
     test "returns error for unknown service" do
-      assert {:error, :service_not_found} = Dispatcher.health_check(:unknown_service)
+      assert {:error, :service_not_found} = Dispatcher.health_check(:unknown_service, world: "default")
     end
 
     test "returns missing_credentials when not configured" do
-      result = Dispatcher.health_check(:weather)
+      result = Dispatcher.health_check(:weather, world: "default")
       assert result == {:error, :missing_credentials}
+    end
+
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/Dispatcher.health_check needs :world/, fn ->
+        Dispatcher.health_check(:weather, [])
+      end
     end
   end
 end
