@@ -1,5 +1,5 @@
 defmodule Brain.Knowledge.ResearchAgent do
-  @moduledoc "Stateless worker module for fetching and analyzing web content.\n\nResearch agents:\n- Accept a research goal (topic/questions)\n- Fetch content from web sources\n- Extract factual claims using the Analysis Pipeline\n- Return structured findings with source metadata\n\nAgents are designed to be run as supervised Tasks through the\nLearning Center's AgentSupervisor.\n\n## Example\n\n    goal = ResearchGoal.new(\"France\", questions: [\"What is the capital?\"])\n    {:ok, findings} = ResearchAgent.research(goal)\n"
+  @moduledoc "Stateless worker module for fetching and analyzing web content.\n\nResearch agents:\n- Accept a research goal (topic/questions)\n- Fetch content from web sources\n- Extract factual claims using the Analysis Pipeline\n- Return structured findings with source metadata\n\nAgents are designed to be run as supervised Tasks through the\nLearning Center's AgentSupervisor.\n\n## Example\n\n    goal = ResearchGoal.new(\"France\", questions: [\"What is the capital?\"])\n    {:ok, findings} = ResearchAgent.research(goal, world_id: world_id)\n"
 
   # Tasks.Source is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
@@ -21,9 +21,11 @@ defmodule Brain.Knowledge.ResearchAgent do
 
   @type fetch_result :: {:ok, [Finding.t()]} | {:error, term()}
 
-  @doc "Fetches and analyzes content for a research goal.\n\nReturns extracted findings with source metadata.\n\n## Options\n  - :sources - List of source types to use (default: [:web])\n  - :max_pages - Maximum pages to fetch per source (default: 5)\n  - :timeout - Request timeout in ms (default: 10_000)\n  - :mock - If true, uses mock data for testing\n"
+  @doc "Fetches and analyzes content for a research goal.\n\nReturns extracted findings with source metadata.\n\n## Options\n  - :world_id - required: the world fetched content is analyzed in. Absent raises.\n  - :sources - List of source types to use (default: [:web])\n  - :max_pages - Maximum pages to fetch per source (default: 5)\n  - :timeout - Request timeout in ms (default: 10_000)\n  - :mock - If true, uses mock data for testing\n"
   @spec research(ResearchGoal.t(), keyword()) :: fetch_result()
-  def research(%ResearchGoal{} = goal, opts \\ []) do
+  def research(%ResearchGoal{} = goal, opts) do
+    world_id!(opts)
+
     Telemetry.span(
       :knowledge_research,
       %{topic: goal.topic, questions: length(goal.questions)},
@@ -33,7 +35,23 @@ defmodule Brain.Knowledge.ResearchAgent do
     )
   end
 
+  # Checked before the research's own rescue, so a missing world raises
+  # rather than coming back as a failed research result.
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "ResearchAgent option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "ResearchAgent.research needs :world_id, the world fetched content is analyzed in"
+    end
+  end
+
   defp do_research(%ResearchGoal{} = goal, opts) do
+    world_id = world_id!(opts)
     sources = Keyword.get(opts, :sources, [:web])
     max_pages = Keyword.get(opts, :max_pages, 5)
     mock? = Keyword.get(opts, :mock, false)
@@ -58,7 +76,7 @@ defmodule Brain.Knowledge.ResearchAgent do
 
       findings =
         raw_results
-        |> Enum.flat_map(&extract_findings/1)
+        |> Enum.flat_map(&extract_findings(&1, world_id))
         |> Enum.map(&enrich_with_source_reliability/1)
 
       Logger.info("Research completed", topic: goal.topic, findings: length(findings))
@@ -184,8 +202,9 @@ Answer: #{finding.claim}",
     end
   end
 
-  defp fetch_from_source(:academic, queries, max_pages, _opts) do
+  defp fetch_from_source(:academic, queries, max_pages, opts) do
     alias Academic.{SemanticScholar, Arxiv, OpenAlex, PaperModelBuilder}
+    world_id = Keyword.fetch!(opts, :world_id)
 
     queries
     |> Enum.take(max_pages)
@@ -206,7 +225,7 @@ Answer: #{finding.claim}",
 
       Logger.debug("Fetched academic papers", query: query, paper_count: length(papers))
 
-      {:ok, _node_ids} = PaperModelBuilder.ingest_papers(papers)
+      {:ok, _node_ids} = PaperModelBuilder.ingest_papers(papers, world_id)
       Logger.debug("Ingested papers into epistemic model", count: length(papers))
 
       Enum.map(papers, &paper_to_raw_result/1)
@@ -330,11 +349,11 @@ Citations: #{paper.citation_count}"
     end
   end
 
-  defp extract_findings(%{finding: finding}) when is_map(finding) do
+  defp extract_findings(%{finding: finding}, _world_id) when is_map(finding) do
     [finding]
   end
 
-  defp extract_findings(%{paper: paper, source: _source}) when is_struct(paper) do
+  defp extract_findings(%{paper: paper, source: _source}, _world_id) when is_struct(paper) do
     alias Brain.Knowledge.Academic.Paper
 
     case Paper.to_finding(paper) do
@@ -343,14 +362,14 @@ Citations: #{paper.citation_count}"
     end
   end
 
-  defp extract_findings(%{content: content, source: source}) when is_binary(content) do
+  defp extract_findings(%{content: content, source: source}, world_id) when is_binary(content) do
     clean_content = clean_content(content)
 
     if String.length(clean_content) < 50 do
       Logger.debug("Content too short after cleaning", url: source.url)
       []
     else
-      case Pipeline.process(clean_content, skip_entity_extraction: false) do
+      case Pipeline.process(clean_content, world_id: world_id, skip_entity_extraction: false) do
         %{analyses: analyses} ->
           # Comprehension gate: assess whether we understand this text
           {profile, analyses} = assess_comprehension(analyses)
@@ -391,7 +410,7 @@ Citations: #{paper.citation_count}"
       []
   end
 
-  defp extract_findings(_) do
+  defp extract_findings(_, _world_id) do
     []
   end
 
