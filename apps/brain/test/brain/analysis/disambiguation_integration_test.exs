@@ -368,7 +368,8 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
 
       context = %{
         discourse: %{indicators: ["self_referential", "primarily_first_person"]},
-        speech_act: %{category: :expressive, sub_type: :greeting}
+        speech_act: %{category: :expressive, sub_type: :greeting},
+        world_id: @world_id
       }
 
       result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
@@ -401,7 +402,8 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       context = %{
         discourse: %{indicators: []},
         speech_act: %{category: :directive, sub_type: :question},
-        intent: "weather.query"
+        intent: "weather.query",
+        world_id: @world_id
       }
 
       result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
@@ -426,7 +428,8 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
 
       context = %{
         discourse: %{indicators: ["self_referential", "primarily_first_person"]},
-        speech_act: %{category: :expressive, sub_type: :greeting}
+        speech_act: %{category: :expressive, sub_type: :greeting},
+        world_id: @world_id
       }
 
       result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
