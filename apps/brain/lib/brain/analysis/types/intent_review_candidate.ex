@@ -27,7 +27,7 @@ defmodule Brain.Analysis.Types.IntentReviewCandidate do
     text: String.t(),
     timestamp: DateTime.t(),
     conversation_id: String.t() | nil,
-    world_id: String.t() | nil,
+    world_id: String.t(),
     predicted_intent: String.t(),
     best_score: float(),
     second_score: float(),
@@ -67,14 +67,17 @@ defmodule Brain.Analysis.Types.IntentReviewCandidate do
 
   @doc """
   Creates a new IntentReviewCandidate from analysis results.
+
+  `opts` must carry `:world_id`, the world the text was analyzed in; absent or
+  not a world id raises `ArgumentError`.
   """
-  def new(text, predicted_intent, best_score, opts \\ []) do
+  def new(text, predicted_intent, best_score, opts) do
     %__MODULE__{
       id: generate_id(),
       text: text,
       timestamp: Keyword.get(opts, :timestamp, DateTime.utc_now()),
       conversation_id: Keyword.get(opts, :conversation_id),
-      world_id: Keyword.get(opts, :world_id),
+      world_id: world_id!(opts),
       predicted_intent: predicted_intent,
       best_score: best_score,
       second_score: Keyword.get(opts, :second_score, 0.0),
@@ -139,6 +142,19 @@ defmodule Brain.Analysis.Types.IntentReviewCandidate do
       reviewed_at: DateTime.utc_now(),
       reviewer_notes: notes
     }
+  end
+
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "IntentReviewCandidate option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "IntentReviewCandidate.new needs :world_id, the world the text was analyzed in"
+    end
   end
 
   defp generate_id do
