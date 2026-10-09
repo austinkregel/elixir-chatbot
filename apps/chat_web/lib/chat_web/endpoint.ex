@@ -8,7 +8,10 @@ defmodule ChatWeb.Endpoint do
     store: :cookie,
     key: "_chat_web_key",
     signing_salt: "zb93sBSt",
-    same_site: "Lax"
+    same_site: "Lax",
+    # The session carries the browser's web user id (ChatWeb.Plugs.CurrentUser),
+    # so it outlives the browser session: ten years.
+    max_age: 10 * 365 * 24 * 60 * 60
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
@@ -16,7 +19,7 @@ defmodule ChatWeb.Endpoint do
     longpoll: [connect_info: [session: @session_options]]
 
   socket "/socket", ChatWeb.UserSocket,
-    websocket: true,
+    websocket: [connect_info: [session: @session_options]],
     longpoll: false
 
   # Serve at "/" the static files from "priv/static" directory.
