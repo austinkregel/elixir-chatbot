@@ -83,7 +83,7 @@ MIX_ENV=prod mix atlas.setup 2>&1 && ok "Atlas database created & migrated" || {
 # ---------------------------------------------------------------------------
 step "Seed baseline data (facts, beliefs, worlds)"
 # ---------------------------------------------------------------------------
-MIX_ENV=prod mix atlas.seed 2>&1 && ok "Seeds applied" || warn "Seeding had issues (non-fatal)"
+MIX_ENV=prod mix atlas.seed --world default 2>&1 && ok "Seeds applied" || warn "Seeding had issues (non-fatal)"
 
 # ---------------------------------------------------------------------------
 step "Download training corpora"
@@ -138,7 +138,7 @@ fi
 # ---------------------------------------------------------------------------
 step "Re-sync facts to beliefs (post-training)"
 # ---------------------------------------------------------------------------
-MIX_ENV=prod mix fact_database sync 2>&1 && ok "Facts synced to beliefs" || warn "Fact sync had issues (non-fatal)"
+MIX_ENV=prod mix fact_database sync --world default 2>&1 && ok "Facts synced to beliefs" || warn "Fact sync had issues (non-fatal)"
 
 # ---------------------------------------------------------------------------
 step "Compile assets for production"
