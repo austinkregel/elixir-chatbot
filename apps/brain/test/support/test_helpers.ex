@@ -92,7 +92,7 @@ this is typically a no-op, but some tests call it directly as a safety check.
     start_test_services()
   end
 
-  @doc "Sets up the test world sandbox for the current test.\n\nThis is a convenience wrapper around `Brain.TestWorldSandbox.setup_world_sandbox/0`.\nCall this in your test's `setup` block to enable automatic world cleanup.\n\n## Example\n\n    setup do\n      setup_world_sandbox()\n    end\n"
+  @doc "Sets up the test world sandbox for the current test.\n\nThis is a convenience wrapper around `Brain.TestWorldSandbox.setup_world_sandbox/0`.\nCall this in your test's `setup` block; it raises unless test worlds are written\nto the test world directory.\n\n## Example\n\n    setup do\n      setup_world_sandbox()\n    end\n"
   def setup_world_sandbox do
     TestWorldSandbox.setup_world_sandbox()
   end
