@@ -177,16 +177,30 @@ defmodule Brain.Response.SurfaceRealizer do
     end
   end
 
+  @doc """
+  The options the synthesizer fallback is called with: the analysis's
+  confidence, the unified context, and the turn's recurring pattern and similar
+  episodes, which ContextBuilder retrieved into the context's memory. A context
+  built without memory has neither.
+  """
+  @spec synthesizer_opts(map() | nil, keyword()) :: keyword()
+  def synthesizer_opts(analysis, opts) do
+    unified_context = Keyword.get(opts, :unified_context, %{})
+
+    [
+      confidence: (analysis && Map.get(analysis, :confidence)) || 0.5,
+      context: unified_context,
+      recurring_pattern: get_in(unified_context, [:memory, :recurring_pattern]),
+      similar_episodes: get_in(unified_context, [:memory, :similar_episodes]) || [],
+      progress: Keyword.get(opts, :progress)
+    ]
+  end
+
   defp try_synthesizer_fallback(primitives, analysis, opts) do
     intent = if analysis, do: Map.get(analysis, :intent), else: nil
     entities = if analysis, do: Map.get(analysis, :entities, []), else: []
 
-    synth_opts = [
-      confidence: (analysis && Map.get(analysis, :confidence)) || 0.5,
-      context: Keyword.get(opts, :unified_context, %{})
-    ]
-
-    case Brain.Response.Synthesizer.synthesize(intent, entities, synth_opts) do
+    case Brain.Response.Synthesizer.synthesize(intent, entities, synthesizer_opts(analysis, opts)) do
       {:ok, text} when is_binary(text) and text != "" ->
         Logger.info("SurfaceRealizer: template fallback via Synthesizer for #{inspect(intent)}")
 
