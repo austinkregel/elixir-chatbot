@@ -49,8 +49,8 @@ defmodule Brain.Response.ContentSpecifier do
     |> Map.put(:confidence, if(facts != [], do: 0.8, else: 0.3))
   end
 
-  defp specify_primitive(%Primitive{type: :content, variant: :narrative} = p, analysis, _opts) do
-    beliefs = retrieve_beliefs(analysis)
+  defp specify_primitive(%Primitive{type: :content, variant: :narrative} = p, analysis, opts) do
+    beliefs = retrieve_beliefs(analysis, Keyword.fetch!(opts, :world_id))
     filtered = apply_disclosure_filter(beliefs)
 
     p
@@ -397,13 +397,12 @@ defmodule Brain.Response.ContentSpecifier do
     :exit, _ -> []
   end
 
-  defp retrieve_beliefs(analysis) do
+  # The beliefs held in the world the response is realized in.
+  defp retrieve_beliefs(analysis, world_id) do
     try do
       if belief_store_available?() do
-        case Brain.Epistemic.BeliefStore.query_beliefs(limit: 20) do
-          beliefs when is_list(beliefs) -> beliefs
-          _ -> []
-        end
+        {:ok, beliefs} = Brain.Epistemic.BeliefStore.query_beliefs(world_id, limit: 20)
+        beliefs
       else
         analysis.related_beliefs || []
       end
