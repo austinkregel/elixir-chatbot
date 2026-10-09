@@ -92,14 +92,31 @@ defmodule Brain.Memory.Store do
     GenServer.call(__MODULE__, {:add_episode_direct, episode, world_id})
   end
 
-  @doc "Query for episodes similar to the given text.\nReturns top k episodes with similarity scores.\n\n## Options\n  - world_id: The world to query (required)\n  - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)\n"
+  @doc "Query for episodes similar to the given text.\nReturns top k episodes with similarity scores.\n\nWhile the world's vocabulary is being rebuilt the query waits for the rebuild\nto finish (`World.Embedder.await_ready/2`), and raises when it fails or does\nnot finish in time.\n\n## Options\n  - world_id: The world to query (required)\n  - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)\n"
   def query_similar(text, k \\ 5, opts) do
     world_id = world_id!(opts, :query_similar)
     rerank = Keyword.get(opts, :rerank, :auto)
 
     Telemetry.span(:memory_query, %{k: k, world_id: world_id}, fn ->
-      do_query_similar(tables!(), text, k, world_id, rerank)
+      awaiting_rebuild(world_id, fn -> do_query_similar(tables!(), text, k, world_id, rerank) end)
     end)
+  end
+
+  # A query embeds its text with the world's vocabulary, so while that
+  # vocabulary is being rebuilt it waits for the rebuild to finish
+  # (`World.Embedder.await_ready/2`) and then runs. It waits before it starts,
+  # because the rebuild re-embeds the world's memory in this server
+  # (`vocabulary_rebuilt/1`) and the query asks the server for its tables, and
+  # again whenever the embedder answers `{:error, :vocabulary_building}`: a
+  # rebuild started after the first wait. The wait is in the caller's process,
+  # never in this server's callbacks, which the rebuild itself calls.
+  defp awaiting_rebuild(world_id, query) do
+    :ok = WorldEmbedder.await_ready(world_id)
+
+    case query.() do
+      {:error, :vocabulary_building} -> awaiting_rebuild(world_id, query)
+      result -> result
+    end
   end
 
   @doc "Query for episodes with specific tags.\n\n## Options\n  - world_id: The world to query (required)\n"
@@ -215,6 +232,10 @@ defmodule Brain.Memory.Store do
   @doc """
   Query for semantic facts similar to the given text.
 
+  While the world's vocabulary is being rebuilt the query waits for the rebuild
+  to finish (`World.Embedder.await_ready/2`), and raises when it fails or does
+  not finish in time.
+
   ## Options
     - world_id: The world to query (required)
     - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)
@@ -243,7 +264,7 @@ defmodule Brain.Memory.Store do
     world_id = world_id!(opts, :query_semantic)
     rerank = Keyword.get(opts, :rerank, :auto)
 
-    do_query_semantic(tables!(), text, k, world_id, rerank)
+    awaiting_rebuild(world_id, fn -> do_query_semantic(tables!(), text, k, world_id, rerank) end)
   end
 
   @doc "Get a specific semantic fact by ID.\n\n## Options\n  - world_id: The world to query (required)\n"
