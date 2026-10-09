@@ -99,7 +99,7 @@ defmodule ChatWeb.AccuracyLive do
   def handle_event("run_evaluation", _params, socket) do
     task = socket.assigns.active_tab
 
-    case Brain.ML.TrainingServer.start_training(:evaluate, task: task) do
+    case Brain.ML.TrainingServer.start_training(:evaluate, task: task, world_id: socket.assigns.current_world_id) do
       {:ok, _} ->
         {:noreply,
          socket
@@ -156,7 +156,7 @@ defmodule ChatWeb.AccuracyLive do
            |> put_flash(:info, "Started GA run #{run_id} for #{classifier}")}
 
         {:error, reason} ->
-          {:noreply, assign(socket, :confirm_error, format_optimizer_error(reason))}
+          {:noreply, assign(socket, :confirm_error, format_optimizer_error(reason, socket.assigns.current_world_id))}
       end
     else
       {:error, reason} ->
@@ -172,14 +172,6 @@ defmodule ChatWeb.AccuracyLive do
       {:error, :not_found} ->
         {:noreply, assign(socket, :confirm_error, "Run #{run_id} is no longer active.")}
     end
-  end
-
-  def handle_event("switch_world", %{"world_id" => _world_id}, socket) do
-    {:noreply, socket}
-  end
-
-  def handle_event("refresh_worlds", _params, socket) do
-    {:noreply, socket}
   end
 
   @impl true
@@ -328,6 +320,7 @@ defmodule ChatWeb.AccuracyLive do
           <% true -> %>
             <.task_panel
               task={@active_tab}
+              world_id={@current_world_id}
               evaluation={@evaluations[@active_tab]}
               trend={@trends[@active_tab]}
               sort_field={@sort_field}
@@ -340,6 +333,7 @@ defmodule ChatWeb.AccuracyLive do
   end
 
   attr(:task, :string, required: true)
+  attr(:world_id, :string, required: true, doc: "the world the evaluation command runs in")
   attr(:evaluation, :any,
     default: nil,
     doc: "the latest result, nil when none is saved, or {:could_not_ask, detail}"
@@ -357,7 +351,7 @@ defmodule ChatWeb.AccuracyLive do
         <.empty_panel kind={:could_not_ask}>{detail}</.empty_panel>
       <% nil -> %>
         <.card>
-          <.empty_message icon="hero-chart-bar" title="No evaluations yet" command={"mix evaluate.#{@task} --save"}>
+          <.empty_message icon="hero-chart-bar" title="No evaluations yet" command={"mix evaluate.#{@task} --world #{@world_id} --save"}>
             Run an evaluation to see accuracy metrics for {@task_label}.
           </.empty_message>
         </.card>
@@ -1239,19 +1233,19 @@ defmodule ChatWeb.AccuracyLive do
     end
   end
 
-  defp format_optimizer_error({:unknown_classifier, name}),
+  defp format_optimizer_error({:unknown_classifier, name}, _world_id),
     do: "Unknown classifier: #{name}"
 
-  defp format_optimizer_error({:io_error, reason, path}),
+  defp format_optimizer_error({:io_error, reason, path}, _world_id),
     do: "Could not read training data (#{reason}) at #{path}"
 
-  defp format_optimizer_error({:invalid_json, msg}),
+  defp format_optimizer_error({:invalid_json, msg}, _world_id),
     do: "Training data isn't valid JSON: #{msg}"
 
-  defp format_optimizer_error(:no_feature_vector_records),
-    do: "Training file has no feature_vector records. Run `mix gen_micro_data`."
+  defp format_optimizer_error(:no_feature_vector_records, world_id),
+    do: "Training file has no feature_vector records. Run `mix gen_micro_data --world #{world_id}`."
 
-  defp format_optimizer_error(other), do: inspect(other)
+  defp format_optimizer_error(other, _world_id), do: inspect(other)
 
   # A store that raised could not be asked, which is not the same finding as a
   # store that holds no evaluation: the first shows as the "could not be
