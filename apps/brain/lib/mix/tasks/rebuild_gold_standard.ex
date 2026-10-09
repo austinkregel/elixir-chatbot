@@ -20,12 +20,19 @@ defmodule Mix.Tasks.RebuildGoldStandard do
   file's `"name"` field is not read, because a usersays file can exist without
   one.
 
-  Two transformations are applied to the stem:
+  One transformation is applied to the stem: `smarthome.lights.X` becomes
+  `smarthome.device.X`, lights being a kind of device. A stem containing `" - "`
+  is a contextual variant that was not collapsed into its intent, and raises
+  (`Brain.Corpus.Label.canonical/1`).
 
-    * a ` - context:...` suffix is stripped, since a hyphenated name denotes a
-      context of the unhyphenated intent rather than a separate one
-    * `smarthome.lights.X` becomes `smarthome.device.X`, lights being a kind of
-      device
+  ## Follow-ups
+
+  A usersays row that came from a contextual variant carries `followupContext`
+  (the context it continues from) and `followupVariant` (the variant it came
+  from). They are written to the entry as `followup_context` and
+  `followup_variant`, so an utterance that needs a preceding turn is never mixed
+  with one that stands alone. When the same text occurs both ways, the follow-up
+  occurrence is kept.
 
   Dialogflow intents marked `fallbackIntent: true` are excluded: that flag means
   "nothing matched", so the phrases are not examples of an intent. The `events`
@@ -138,7 +145,8 @@ defmodule Mix.Tasks.RebuildGoldStandard do
             norm: Export.normalise(phrase.text),
             label: label,
             source_file: source,
-            provenance: phrase.provenance
+            provenance: phrase.provenance,
+            followup: phrase.followup
           }
         end)
       end)
@@ -228,9 +236,32 @@ defmodule Mix.Tasks.RebuildGoldStandard do
         |> Map.get("data", [])
         |> Enum.map_join(fn segment -> Map.get(segment, "text", "") end)
 
-      %{text: text, provenance: Provenance.of_entry!(entry, path)}
+      %{text: text, provenance: Provenance.of_entry!(entry, path), followup: followup!(entry, path)}
     end)
     |> Enum.reject(&(String.trim(&1.text) == ""))
+  end
+
+  # A follow-up row carries both keys; one without the other is a broken merge.
+  defp followup!(entry, path) do
+    case {Map.get(entry, "followupContext"), Map.get(entry, "followupVariant")} do
+      {nil, nil} ->
+        nil
+
+      {context, variant} when is_binary(context) and is_binary(variant) ->
+        %{"followup_context" => context, "followup_variant" => variant}
+
+      other ->
+        Mix.raise("rebuild_gold_standard: #{path} row #{inspect(entry["id"])} has an incomplete follow-up #{inspect(other)}")
+    end
+  end
+
+  # The follow-up occurrence of a text, if any; ties go to the first variant name.
+  defp followup_of(occurrences) do
+    occurrences
+    |> Enum.map(& &1.followup)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.sort_by(& &1["followup_variant"])
+    |> List.first(%{})
   end
 
   # -- building ---------------------------------------------------------------
@@ -254,12 +285,16 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
         case labels do
           [label] ->
-            entry = %{
-              "text" => first.text,
-              "intent" => label,
-              "labeled_by" => resolve_provenance(occurrences),
-              "source_file" => hd(sources)
-            }
+            entry =
+              Map.merge(
+                %{
+                  "text" => first.text,
+                  "intent" => label,
+                  "labeled_by" => resolve_provenance(occurrences),
+                  "source_file" => hd(sources)
+                },
+                followup_of(occurrences)
+              )
 
             {entry, conflicts}
 
@@ -269,14 +304,18 @@ defmodule Mix.Tasks.RebuildGoldStandard do
             # needs_review with every candidate kept, never resolved by guessing
             # -- resolving it by asking a model is precisely what produced the
             # corpus this task is repairing.
-            entry = %{
-              "text" => first.text,
-              "intent" => hd(labels),
-              "labeled_by" => resolve_provenance(occurrences),
-              "source_file" => hd(sources),
-              "status" => "needs_review",
-              "candidates" => labels
-            }
+            entry =
+              Map.merge(
+                %{
+                  "text" => first.text,
+                  "intent" => hd(labels),
+                  "labeled_by" => resolve_provenance(occurrences),
+                  "source_file" => hd(sources),
+                  "status" => "needs_review",
+                  "candidates" => labels
+                },
+                followup_of(occurrences)
+              )
 
             {entry, [%{text: first.text, candidates: labels, sources: sources} | conflicts]}
         end
