@@ -26,6 +26,7 @@ defmodule Brain.Application do
       Brain.ML.Lexicon,
       Brain.ML.POSTagger.LexicalFeatures,
       Brain.Analysis.LexicalEvidence.Loader,
+      Brain.Analysis.ActiveContexts,
       Brain.Lexicon.Loader,
       Brain.Lexicon.UserDefined,
       Brain.ML.InformalExpansions,
