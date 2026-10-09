@@ -45,10 +45,11 @@ defmodule Mix.Tasks.GenMicroData do
 
   ## Usage
 
-      mix gen_micro_data [options]
+      mix gen_micro_data --world <id> [options]
 
   ## Options
 
+      --world ID     Required. The world the gold standard is analyzed in.
       --only NAME    Generate a single classifier file (e.g. `intent_domain`)
       --stats        Print label histograms without writing files
   """
@@ -90,9 +91,13 @@ defmodule Mix.Tasks.GenMicroData do
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
-        switches: [only: :string, stats: :boolean],
+        strict: [only: :string, stats: :boolean, world: :string],
         aliases: [o: :only, s: :stats]
       )
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix gen_micro_data needs --world <id>, the world the gold standard is analyzed in")
 
     gold_standard = load_gold_standard()
     Mix.shell().info("Loaded #{length(gold_standard)} examples from gold_standard.json")
@@ -112,7 +117,7 @@ defmodule Mix.Tasks.GenMicroData do
         train_language_artifacts!(gold_standard)
       end
 
-    enriched = maybe_enrich_with_feature_vectors(gold_standard, names, fold_models)
+    enriched = maybe_enrich_with_feature_vectors(gold_standard, names, fold_models, world_id)
 
     Enum.each(names, fn name ->
       data = generate_data(name, enriched)
@@ -178,7 +183,7 @@ defmodule Mix.Tasks.GenMicroData do
   #
   # `fold_models` holds the entries' out-of-fold lexical evidence models, or is
   # nil when none were trained (`--stats`), which uses the loaded model.
-  defp maybe_enrich_with_feature_vectors(entries, names, fold_models) do
+  defp maybe_enrich_with_feature_vectors(entries, names, fold_models, world_id) do
     needs_vectors? = Enum.any?(names, &(&1 in @feature_vector_classifiers))
 
     if needs_vectors? do
@@ -206,7 +211,7 @@ defmodule Mix.Tasks.GenMicroData do
       enriched =
         jobs
         |> Task.async_stream(
-          &enrich_entry/1,
+          &enrich_entry(&1, world_id),
           max_concurrency: System.schedulers_online(),
           timeout: 60_000,
           on_timeout: :kill_task,
@@ -280,9 +285,9 @@ defmodule Mix.Tasks.GenMicroData do
   # :persistent_term; nil uses the model loaded at boot. A follow-up row is
   # analyzed with the context it continues from active, as it would be at
   # runtime after the turn that set it.
-  defp enrich_entry({%{"text" => text} = entry, fold_key}) when is_binary(text) do
+  defp enrich_entry({%{"text" => text} = entry, fold_key}, world_id) when is_binary(text) do
     try do
-      base_opts = [side_effects: false, active_contexts: ActiveContexts.for_row(entry)]
+      base_opts = [side_effects: false, world_id: world_id, active_contexts: ActiveContexts.for_row(entry)]
 
       pipeline_opts =
         case fold_key do
@@ -322,7 +327,7 @@ defmodule Mix.Tasks.GenMicroData do
     end
   end
 
-  defp enrich_entry({entry, _fold_key}) do
+  defp enrich_entry({entry, _fold_key}, _world_id) do
     entry
     |> Map.put("feature_vector", nil)
     |> Map.put("tokens", nil)
