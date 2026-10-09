@@ -38,10 +38,52 @@ defmodule Brain.Memory.Store do
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
-  @doc "Add a new episode to the store.\nThe episode is embedded and indexed for similarity search.\n\n## Options\n  - world_id: The world to add the episode to (required)\n"
+  @doc """
+  Add a new episode to the store.
+  The episode is embedded and indexed for similarity search.
+
+  While the world's vocabulary is being rebuilt (`World.Embedder.build_vocabulary/2`)
+  the world cannot embed: the episode is stored without an embedding, and is
+  embedded and indexed with the rest of the world's episodes when the rebuild
+  finishes (`vocabulary_rebuilt/1`).
+  Any other embedding failure raises.
+
+  ## Options
+    - world_id: The world to add the episode to (required)
+  """
   def add_episode(state, action, outcome, tags, opts) do
     world_id = world_id!(opts, :add_episode)
     GenServer.call(__MODULE__, {:add_episode, state, action, outcome, tags, world_id})
+  end
+
+  @doc """
+  Re-embeds every episode of `world_id` with the world's rebuilt vocabulary,
+  stores each one's new embedding and re-indexes it; the episodes written
+  while the vocabulary was being rebuilt, stored without an embedding, are
+  embedded and indexed the same way. Then each of the world's semantic facts
+  gets the mean of its evidence episodes' new embeddings, stored and
+  re-indexed. `World.Embedder` calls it when a rebuild leaves the world's
+  vocabulary ready.
+
+  An embedding made with the old vocabulary has the old vector length, and is
+  never similar to a query embedded with the new one, so anything not
+  re-embedded could no longer be found.
+
+  Returns `{:ok, %{episodes: count, semantic_facts: count}}`, or
+  `{:error, reason}` naming what was not updated:
+  `{:episodes_not_listed, reason}` or `{:semantic_facts_not_listed, reason}`
+  when the world's episodes or facts could not be read,
+  `{:episode_not_updated, episode_id, reason}` or
+  `{:semantic_fact_not_updated, semantic_id, reason}` when an embedding could
+  not be stored, and `{:semantic_evidence_missing, semantic_id, missing_ids}`
+  when a fact's evidence episodes are not all in the world, so its embedding
+  cannot be recomputed. What comes after the failure keeps its old
+  embedding. Raises when the world cannot embed.
+  """
+  @spec vocabulary_rebuilt(String.t()) ::
+          {:ok, %{episodes: non_neg_integer(), semantic_facts: non_neg_integer()}} | {:error, term()}
+  def vocabulary_rebuilt(world_id) when is_binary(world_id) and world_id != "" do
+    GenServer.call(__MODULE__, {:vocabulary_rebuilt, world_id}, 60_000)
   end
 
   @doc "Add a pre-built episode to the store.\n\n## Options\n  - world_id: The world to add the episode to (required)\n"
@@ -314,12 +356,24 @@ defmodule Brain.Memory.Store do
 
   @impl true
   def handle_call({:add_episode, text, action, outcome, tags, world_id}, _from, state) do
-    embedding_result = get_embedding(world_id, text)
-
+    # Stored without an embedding while the world's vocabulary is rebuilt:
+    # `vocabulary_rebuilt/1` embeds and indexes it when the rebuild finishes.
     embedding =
-      case embedding_result do
-        {:ok, emb} -> emb
-        {:error, _} -> []
+      case get_embedding(world_id, text) do
+        {:ok, emb} ->
+          emb
+
+        {:error, :vocabulary_building} ->
+          Logger.info(
+            "Memory.Store: world #{world_id}'s vocabulary is being rebuilt; the episode is " <>
+              "stored now and indexed when the rebuild finishes"
+          )
+
+          []
+
+        {:error, reason} ->
+          raise "Brain.Memory.Store: the episode could not be embedded in world " <>
+                  "#{inspect(world_id)}: #{inspect(reason)}"
       end
 
     episode =
@@ -364,6 +418,11 @@ defmodule Brain.Memory.Store do
         Logger.error("Memory.Store: episode #{episode.id} was not persisted: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
     end
+  end
+
+  @impl true
+  def handle_call({:vocabulary_rebuilt, world_id}, _from, state) do
+    {:reply, reembed_world(state, world_id), state}
   end
 
   @impl true
@@ -531,6 +590,87 @@ defmodule Brain.Memory.Store do
     {:reply, {:ok, worlds}, state}
   end
 
+  # Every episode of the world is embedded with its now-ready vocabulary, the
+  # embedding stored with each, and each indexed: one embedded with the old
+  # vocabulary has the old vector length, and a vector of another length is
+  # never similar to a query (`FourthWall.Math.cosine_similarity/2` is 0.0),
+  # so the episode could no longer be found. Then each semantic fact's
+  # embedding is recomputed from its evidence episodes, as consolidation built
+  # it (`Brain.Memory.Consolidation.create_semantic_from_cluster/2`).
+  defp reembed_world(state, world_id) do
+    with {:ok, episodes} <- list_world(:episodes, world_id),
+         {:ok, embedded} <- reembed_episodes(state, world_id, episodes),
+         {:ok, semantics} <- list_world(:semantic_facts, world_id),
+         {:ok, semantic_count} <- reembed_semantics(state, world_id, semantics, embedded) do
+      {:ok, %{episodes: map_size(embedded), semantic_facts: semantic_count}}
+    end
+  end
+
+  defp list_world(:episodes, world_id) do
+    case Brain.AtlasIntegration.list_episodes(world_id) do
+      {:ok, episodes} -> {:ok, episodes}
+      {:error, reason} -> {:error, {:episodes_not_listed, reason}}
+    end
+  end
+
+  defp list_world(:semantic_facts, world_id) do
+    case Brain.AtlasIntegration.list_semantics(world_id) do
+      {:ok, semantics} -> {:ok, semantics}
+      {:error, reason} -> {:error, {:semantic_facts_not_listed, reason}}
+    end
+  end
+
+  # Returns the re-embedded episodes by id.
+  defp reembed_episodes(state, world_id, episodes) do
+    episodes
+    |> Enum.reduce_while({:ok, %{}}, fn episode, {:ok, embedded} ->
+      embedding =
+        case get_embedding(world_id, episode.state) do
+          {:ok, emb} ->
+            emb
+
+          {:error, reason} ->
+            raise "Brain.Memory.Store: world #{inspect(world_id)}'s vocabulary was rebuilt but " <>
+                    "episode #{episode.id} could not be embedded: #{inspect(reason)}"
+        end
+
+      episode = %{episode | embedding: embedding}
+
+      case Brain.AtlasIntegration.persist_episode_sync(episode, world_id) do
+        {:ok, _id} ->
+          VectorIndex.insert(state.episode_index, {world_id, episode.id}, embedding)
+          {:cont, {:ok, Map.put(embedded, episode.id, episode)}}
+
+        {:error, reason} ->
+          {:halt, {:error, {:episode_not_updated, episode.id, reason}}}
+      end
+    end)
+  end
+
+  defp reembed_semantics(state, world_id, semantics, embedded_episodes) do
+    semantics
+    |> Enum.reduce_while({:ok, 0}, fn semantic, {:ok, count} ->
+      evidence = Enum.map(semantic.evidence_ids, &Map.get(embedded_episodes, &1))
+
+      if semantic.evidence_ids == [] or Enum.any?(evidence, &is_nil/1) do
+        missing = Enum.reject(semantic.evidence_ids, &Map.has_key?(embedded_episodes, &1))
+        {:halt, {:error, {:semantic_evidence_missing, semantic.id, missing}}}
+      else
+        semantic = %{semantic | embedding: VectorIndex.mean_vector(Enum.map(evidence, & &1.embedding))}
+
+        case Brain.AtlasIntegration.persist_semantic_sync(semantic, world_id) do
+          {:ok, _id} ->
+            VectorIndex.insert(state.semantic_index, {world_id, semantic.id}, semantic.embedding)
+            put_semantic_record(state, world_id, semantic)
+            {:cont, {:ok, count + 1}}
+
+          {:error, reason} ->
+            {:halt, {:error, {:semantic_fact_not_updated, semantic.id, reason}}}
+        end
+      end
+    end)
+  end
+
   defp list_worlds_from_atlas do
     case Brain.AtlasIntegration.list_memory_worlds() do
       {:ok, worlds} -> worlds
@@ -578,9 +718,10 @@ defmodule Brain.Memory.Store do
       {:ok, query_embedding} ->
         pool_size = if do_rerank, do: k * 4, else: k * 2
 
+        # Ranked among the world's own episodes: ranking the whole index and
+        # then keeping the world's let other worlds' episodes fill the pool.
         candidates =
-          VectorIndex.search_all(tables.episode_index, query_embedding, pool_size)
-          |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
+          VectorIndex.search_scope(tables.episode_index, world_id, query_embedding, pool_size)
           |> Enum.map(fn {{_wid, id}, similarity} ->
             case Brain.AtlasIntegration.get_episode(id, world_id) do
               {:ok, episode} -> {episode, similarity}
@@ -610,9 +751,9 @@ defmodule Brain.Memory.Store do
       {:ok, query_embedding} ->
         pool_size = if do_rerank, do: k * 4, else: k * 2
 
+        # Ranked among the world's own facts, as in `do_query_similar/5`.
         candidates =
-          VectorIndex.search_all(tables.semantic_index, query_embedding, pool_size)
-          |> Enum.filter(fn {{wid, _id}, _score} -> wid == world_id end)
+          VectorIndex.search_scope(tables.semantic_index, world_id, query_embedding, pool_size)
           |> Enum.map(fn {{_wid, id}, similarity} ->
             {fetch_semantic_record!(tables.semantic_records, world_id, id), similarity}
           end)
