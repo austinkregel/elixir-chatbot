@@ -28,7 +28,7 @@ defmodule Brain.FeatureTest do
 
   setup _context do
     start_brain_services()
-    {:ok, conversation_id} = Brain.create_conversation()
+    {:ok, conversation_id} = Brain.create_conversation(world_id: "default")
     %{conversation_id: conversation_id}
   end
 
