@@ -14,8 +14,8 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
       mix evaluate.memory_retrieval --world <id> --save       # Save results to file
       mix evaluate.memory_retrieval --world <id> --verbose    # Per-query detail
 
-  `--world <id>` is required: the world whose entities are extracted for the
-  KG re-rank.
+  `--world <id>` is required: the world whose episodes are retrieved and whose
+  entities and entity vectors are used for the KG re-rank.
 
   ## Ablation modes
 
@@ -126,7 +126,7 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
         :rerank -> 4
       end
 
-    case Brain.Memory.Store.query_similar(query, @k * pool_multiplier) do
+    case Brain.Memory.Store.query_similar(query, @k * pool_multiplier, world_id: world_id) do
       {:ok, episodes} when is_list(episodes) ->
         results =
           case mode do
@@ -159,7 +159,7 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
           if episode_entities == [] do
             0.0
           else
-            compute_max_entity_cosine(query_entities, episode_entities)
+            compute_max_entity_cosine(query_entities, episode_entities, world_id)
           end
 
         blended = tfidf_score * tfidf_weight + kg_score * kg_weight
@@ -189,13 +189,13 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
     Enum.uniq(tags ++ entity_names)
   end
 
-  defp compute_max_entity_cosine(query_entities, episode_entities) do
+  defp compute_max_entity_cosine(query_entities, episode_entities, world_id) do
     cache_mod = Brain.ML.KnowledgeGraph.EntityVectorCache
 
     if Code.ensure_loaded?(cache_mod) and function_exported?(cache_mod, :get_or_compute, 2) do
       query_vecs =
         Enum.flat_map(query_entities, fn name ->
-          case cache_mod.get_or_compute("default", name) do
+          case cache_mod.get_or_compute(world_id, name) do
             {:ok, vec} -> [vec]
             _ -> []
           end
@@ -203,7 +203,7 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
 
       episode_vecs =
         Enum.flat_map(episode_entities, fn name ->
-          case cache_mod.get_or_compute("default", name) do
+          case cache_mod.get_or_compute(world_id, name) do
             {:ok, vec} -> [vec]
             _ -> []
           end
