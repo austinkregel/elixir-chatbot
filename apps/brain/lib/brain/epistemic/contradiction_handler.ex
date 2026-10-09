@@ -12,14 +12,24 @@ defmodule Brain.Epistemic.ContradictionHandler do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc "Handles a contradiction notification from the JTMS.\n\nReturns a resolution decision or {:needs_user_input, options}.\n"
-  def handle_contradiction(node_id, supporting_assumptions) do
-    GenServer.call(__MODULE__, {:handle_contradiction, node_id, supporting_assumptions}, 5_000)
+  @doc "Handles a contradiction notification from the JTMS, in the world whose network holds it.\n\nReturns a resolution decision or {:needs_user_input, options}.\n"
+  def handle_contradiction(world_id, node_id, supporting_assumptions) do
+    world_id = world_id!(world_id, "handle_contradiction")
+    GenServer.call(__MODULE__, {:handle_contradiction, world_id, node_id, supporting_assumptions}, 5_000)
   end
 
-  @doc "Resolves a contradiction by retracting the specified assumption.\n"
-  def resolve_by_retraction(assumption_id) do
-    GenServer.call(__MODULE__, {:resolve_by_retraction, assumption_id}, 5_000)
+  @doc "Resolves a world's pending contradiction by retracting the specified assumption.\n"
+  def resolve_by_retraction(world_id, assumption_id) do
+    world_id = world_id!(world_id, "resolve_by_retraction")
+    GenServer.call(__MODULE__, {:resolve_by_retraction, world_id, assumption_id}, 5_000)
+  end
+
+  # JTMS networks are per world; checked in the caller's process.
+  defp world_id!(world_id, _function) when is_binary(world_id) and world_id != "", do: world_id
+
+  defp world_id!(other, function) do
+    raise ArgumentError,
+          "ContradictionHandler.#{function} needs the world whose JTMS network holds the contradiction, got: #{inspect(other)}"
   end
 
   @doc "Gets all pending contradictions awaiting user resolution.\n"
@@ -37,8 +47,8 @@ defmodule Brain.Epistemic.ContradictionHandler do
     GenServer.call(__MODULE__, {:set_strategy, strategy}, 5_000)
   end
 
-  @doc "Registers a domain-specific resolution rule.\n\nRules are functions that take (node_id, assumptions) and return\n{:resolve, assumption_to_retract} or :no_match.\n"
-  def register_rule(name, rule_fn) when is_function(rule_fn, 2) do
+  @doc "Registers a domain-specific resolution rule.\n\nRules are functions that take (world_id, node_id, assumptions) and return\n{:resolve, assumption_to_retract} or :no_match.\n"
+  def register_rule(name, rule_fn) when is_function(rule_fn, 3) do
     GenServer.call(__MODULE__, {:register_rule, name, rule_fn}, 5_000)
   end
 
@@ -83,8 +93,8 @@ defmodule Brain.Epistemic.ContradictionHandler do
   def handle_info(:register_builtin_rules, state) do
     new_rules =
       state.rules
-      |> Map.put(:knowledge_expansion, &handle_knowledge_expansion_conflict/2)
-      |> Map.put(:academic_papers, &handle_academic_paper_conflict/2)
+      |> Map.put(:knowledge_expansion, &handle_knowledge_expansion_conflict/3)
+      |> Map.put(:academic_papers, &handle_academic_paper_conflict/3)
 
     {:noreply, %{state | rules: new_rules}}
   end
@@ -102,31 +112,33 @@ defmodule Brain.Epistemic.ContradictionHandler do
   def handle_info(_msg, state), do: {:noreply, state}
 
   @impl true
-  def handle_call({:handle_contradiction, node_id, assumptions}, _from, state) do
-    Logger.info("Handling contradiction", node_id: node_id, assumptions: assumptions)
+  def handle_call({:handle_contradiction, world_id, node_id, assumptions}, _from, state) do
+    Logger.info("Handling contradiction", world_id: world_id, node_id: node_id, assumptions: assumptions)
 
-    case try_rules(state.rules, node_id, assumptions) do
+    case try_rules(state.rules, world_id, node_id, assumptions) do
       {:resolve, assumption_id} ->
-        result = do_resolution(assumption_id, node_id, :rule)
-        new_state = record_resolution(state, node_id, assumption_id, :rule)
+        result = do_resolution(world_id, assumption_id, node_id, :rule)
+        new_state = record_resolution(state, world_id, node_id, assumption_id, :rule)
         {:reply, {:resolved, result}, new_state}
 
       :no_match ->
         case apply_strategy(state.strategy, assumptions, state.assumption_metadata) do
           {:auto_resolve, assumption_id, reason} ->
-            result = do_resolution(assumption_id, node_id, reason)
-            new_state = record_resolution(state, node_id, assumption_id, reason)
+            result = do_resolution(world_id, assumption_id, node_id, reason)
+            new_state = record_resolution(state, world_id, node_id, assumption_id, reason)
             {:reply, {:resolved, result}, new_state}
 
           :needs_user_input ->
             pending_entry = %{
+              world_id: world_id,
               node_id: node_id,
               assumptions: assumptions,
               detected_at: DateTime.utc_now(),
-              options: build_resolution_options(assumptions, state.assumption_metadata)
+              options: build_resolution_options(world_id, assumptions, state.assumption_metadata)
             }
 
-            new_pending = Map.put(state.pending, node_id, pending_entry)
+            # Node ids are only unique within a world's network.
+            new_pending = Map.put(state.pending, {world_id, node_id}, pending_entry)
             new_state = %{state | pending: new_pending}
 
             {:reply, {:needs_user_input, pending_entry.options}, new_state}
@@ -135,16 +147,16 @@ defmodule Brain.Epistemic.ContradictionHandler do
   end
 
   @impl true
-  def handle_call({:resolve_by_retraction, assumption_id}, _from, state) do
+  def handle_call({:resolve_by_retraction, world_id, assumption_id}, _from, state) do
     {resolved_node, remaining} =
-      Enum.split_with(state.pending, fn {_node_id, entry} ->
-        assumption_id in entry.assumptions
+      Enum.split_with(state.pending, fn {{entry_world, _node_id}, entry} ->
+        entry_world == world_id and assumption_id in entry.assumptions
       end)
 
     case resolved_node do
-      [{node_id, _entry} | _] ->
-        result = do_resolution(assumption_id, node_id, :user_choice)
-        new_state = record_resolution(state, node_id, assumption_id, :user_choice)
+      [{{^world_id, node_id}, _entry} | _] ->
+        result = do_resolution(world_id, assumption_id, node_id, :user_choice)
+        new_state = record_resolution(state, world_id, node_id, assumption_id, :user_choice)
         new_state = %{new_state | pending: Map.new(remaining)}
         {:reply, {:ok, result}, new_state}
 
@@ -194,14 +206,14 @@ defmodule Brain.Epistemic.ContradictionHandler do
     {:reply, stats, state}
   end
 
-  defp handle_jtms_callback({:contradiction, node_id, assumptions}) do
+  defp handle_jtms_callback({:contradiction, world_id, node_id, assumptions}) do
     spawn(fn ->
-      handle_contradiction(node_id, assumptions)
+      handle_contradiction(world_id, node_id, assumptions)
     end)
   end
 
-  defp handle_knowledge_expansion_conflict(node_id, _assumptions) do
-    case get_conflict_context(node_id) do
+  defp handle_knowledge_expansion_conflict(world_id, node_id, _assumptions) do
+    case get_conflict_context(world_id, node_id) do
       {:knowledge_expansion, new_fact, existing_belief} ->
         if Process.whereis(Brain.Knowledge.ReviewQueue) do
           ReviewQueue.add_contradiction(new_fact, existing_belief)
@@ -219,8 +231,8 @@ defmodule Brain.Epistemic.ContradictionHandler do
     end
   end
 
-  defp get_conflict_context(node_id) do
-    case JTMS.get_node(node_id) do
+  defp get_conflict_context(world_id, node_id) do
+    case JTMS.get_node(world_id, node_id) do
       {:ok, node} ->
         metadata = node.metadata || %{}
 
@@ -237,11 +249,11 @@ defmodule Brain.Epistemic.ContradictionHandler do
     end
   end
 
-  defp handle_academic_paper_conflict(_node_id, assumptions) do
+  defp handle_academic_paper_conflict(world_id, _node_id, assumptions) do
     papers =
       assumptions
       |> Enum.map(fn id ->
-        case JTMS.get_node(id) do
+        case JTMS.get_node(world_id, id) do
           {:ok, node} ->
             metadata = node.metadata || %{}
 
@@ -297,10 +309,10 @@ defmodule Brain.Epistemic.ContradictionHandler do
     end
   end
 
-  defp try_rules(rules, node_id, assumptions) do
+  defp try_rules(rules, world_id, node_id, assumptions) do
     rules
     |> Enum.find_value(:no_match, fn {_name, rule_fn} ->
-      case rule_fn.(node_id, assumptions) do
+      case rule_fn.(world_id, node_id, assumptions) do
         {:resolve, assumption_id} -> {:resolve, assumption_id}
         _ -> nil
       end
@@ -361,20 +373,21 @@ defmodule Brain.Epistemic.ContradictionHandler do
     end
   end
 
-  defp do_resolution(assumption_id, _node_id, _reason) do
-    case JTMS.retract_assumption(assumption_id) do
+  defp do_resolution(world_id, assumption_id, _node_id, _reason) do
+    case JTMS.retract_assumption(world_id, assumption_id) do
       :ok ->
-        Logger.info("Contradiction resolved by retracting assumption", id: assumption_id)
+        Logger.info("Contradiction resolved by retracting assumption", world_id: world_id, id: assumption_id)
         :ok
 
       {:error, reason} ->
-        Logger.warning("Failed to retract assumption", id: assumption_id, reason: reason)
+        Logger.warning("Failed to retract assumption", world_id: world_id, id: assumption_id, reason: reason)
         {:error, reason}
     end
   end
 
-  defp record_resolution(state, node_id, assumption_id, reason) do
+  defp record_resolution(state, world_id, node_id, assumption_id, reason) do
     entry = %{
+      world_id: world_id,
       node_id: node_id,
       retracted_assumption: assumption_id,
       reason: reason,
@@ -385,7 +398,7 @@ defmodule Brain.Epistemic.ContradictionHandler do
     %{state | history: history}
   end
 
-  defp build_resolution_options(assumptions, metadata) do
+  defp build_resolution_options(world_id, assumptions, metadata) do
     Enum.map(assumptions, fn id ->
       meta = Map.get(metadata, id, %{})
 
@@ -394,18 +407,21 @@ defmodule Brain.Epistemic.ContradictionHandler do
         description: Map.get(meta, :description, "Unknown assumption"),
         confidence: Map.get(meta, :confidence, 0.5),
         created_at: Map.get(meta, :created_at),
-        impact: estimate_impact(id)
+        impact: estimate_impact(world_id, id)
       }
     end)
   end
 
-  defp estimate_impact(assumption_id) do
-    case JTMS.consequences_of(assumption_id) do
+  defp estimate_impact(world_id, assumption_id) do
+    case JTMS.consequences_of(world_id, assumption_id) do
       {:ok, consequences} -> length(consequences)
       _ -> 0
     end
   end
 
+  # A triple is scored by the triple scorer of the world the assumption's
+  # metadata names (`:world_id`). Metadata holding a triple but no world raises,
+  # as does a world with no copy of the scorer.
   defp kg_default_confidence(id, metadata) do
     config = Application.get_env(:brain, :kg_signals, [])
 
@@ -417,21 +433,20 @@ defmodule Brain.Epistemic.ContradictionHandler do
 
       if subject != nil and predicate != nil and object != nil and
            subject != :system and predicate != :consolidated_knowledge do
-        case Brain.ML.KnowledgeGraph.TripleScorer.score(
-               to_string(subject),
-               to_string(predicate),
-               to_string(object)
-             ) do
-          {:ok, score} when is_float(score) -> score
-          _ -> 0.5
-        end
+        {:ok, score} =
+          Brain.ML.KnowledgeGraph.TripleScorer.score(
+            Map.fetch!(meta, :world_id),
+            to_string(subject),
+            to_string(predicate),
+            to_string(object)
+          )
+
+        score
       else
         0.5
       end
     else
       0.5
     end
-  rescue
-    _ -> 0.5
   end
 end
