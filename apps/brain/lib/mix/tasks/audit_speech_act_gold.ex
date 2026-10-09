@@ -9,8 +9,10 @@ defmodule Mix.Tasks.Audit.SpeechActGold do
 
   ## Usage
 
-      mix audit.speech_act_gold              # Run audit
-      mix audit.speech_act_gold --export     # Export flagged examples for review
+      mix audit.speech_act_gold --world <id>              # Run audit
+      mix audit.speech_act_gold --world <id> --export     # Export flagged examples for review
+
+  `--world <id>` is required: the world whose memory the classifier's memory voter reads.
   """
 
   use Mix.Task
@@ -24,9 +26,15 @@ defmodule Mix.Tasks.Audit.SpeechActGold do
 
   @impl Mix.Task
   def run(args) do
+    {opts, _, _} = OptionParser.parse(args, strict: [export: :boolean, world: :string])
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix audit.speech_act_gold needs --world <id>, the world whose memory the classifier reads")
+
     Mix.Task.run("app.start")
 
-    export? = "--export" in args
+    export? = Keyword.get(opts, :export, false)
 
     gold = EvaluationStore.load_gold_standard("speech_act")
 
@@ -46,7 +54,7 @@ defmodule Mix.Tasks.Audit.SpeechActGold do
 
     print_label_distribution(gold)
 
-    classified = classify_all(gold)
+    classified = classify_all(gold, world_id)
     structural_flags = find_structural_mismatches(gold)
 
     print_structural_mismatches(structural_flags)
@@ -54,7 +62,7 @@ defmodule Mix.Tasks.Audit.SpeechActGold do
     print_low_confidence(classified)
 
     if export? do
-      export_flagged(structural_flags)
+      export_flagged(structural_flags, world_id)
     end
 
     IO.puts("")
@@ -73,7 +81,7 @@ defmodule Mix.Tasks.Audit.SpeechActGold do
     IO.puts("")
   end
 
-  defp classify_all(gold) do
+  defp classify_all(gold, world_id) do
     total = length(gold)
 
     gold
@@ -86,7 +94,7 @@ defmodule Mix.Tasks.Audit.SpeechActGold do
 
       predicted =
         try do
-          result = SpeechActClassifier.classify(text)
+          result = SpeechActClassifier.classify(text, world_id: world_id)
           to_string(result.category)
         rescue
           _ -> "unknown"
@@ -219,13 +227,13 @@ defmodule Mix.Tasks.Audit.SpeechActGold do
       (String.ends_with?(trimmed, "!") and example.gold_label == "expressive")
   end
 
-  defp export_flagged(flags) do
+  defp export_flagged(flags, world_id) do
     output =
       Enum.map(flags, fn flag ->
         %{
           text: flag.text,
           gold_label: flag.gold_label,
-          predicted_label: classify_single(flag.text),
+          predicted_label: classify_single(flag.text, world_id),
           reason: flag.reason
         }
       end)
@@ -238,9 +246,9 @@ defmodule Mix.Tasks.Audit.SpeechActGold do
     IO.puts("\nExported #{length(output)} flagged examples to: #{path}")
   end
 
-  defp classify_single(text) do
+  defp classify_single(text, world_id) do
     try do
-      result = SpeechActClassifier.classify(text)
+      result = SpeechActClassifier.classify(text, world_id: world_id)
       to_string(result.category)
     rescue
       _ -> "unknown"
