@@ -9,6 +9,9 @@ defmodule Brain.ML.ModelActivationTest do
   use ExUnit.Case, async: false
   @moduletag :integration
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   # This exercises the live pipeline, which reads the knowledge graph; without
   # a checked-out connection those lookups fail silently.
   setup tags do
@@ -47,7 +50,7 @@ defmodule Brain.ML.ModelActivationTest do
     end
 
     test "Pipeline produces event_frames in ChunkAnalysis" do
-      analysis = Brain.Analysis.Pipeline.analyze_chunk("The president visited Berlin yesterday")
+      analysis = Brain.Analysis.Pipeline.analyze_chunk("The president visited Berlin yesterday", world_id: @world_id)
       assert Map.has_key?(analysis, :event_frames)
       assert is_list(analysis.event_frames)
     end
@@ -60,7 +63,7 @@ defmodule Brain.ML.ModelActivationTest do
     end
 
     test "Pipeline produces srl_frames in ChunkAnalysis" do
-      analysis = Brain.Analysis.Pipeline.analyze_chunk("John gave the book to Mary")
+      analysis = Brain.Analysis.Pipeline.analyze_chunk("John gave the book to Mary", world_id: @world_id)
       assert Map.has_key?(analysis, :srl_frames)
       assert is_list(analysis.srl_frames)
     end
@@ -108,7 +111,7 @@ defmodule Brain.ML.ModelActivationTest do
 
   describe "Tier 3 context extraction" do
     test "Pipeline analysis includes Tier 3 fields" do
-      model = Brain.Analysis.Pipeline.process("Einstein discovered relativity in 1905")
+      model = Brain.Analysis.Pipeline.process("Einstein discovered relativity in 1905", world_id: @world_id)
 
       analyses = model.analyses
       assert length(analyses) >= 1
