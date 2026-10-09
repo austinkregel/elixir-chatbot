@@ -205,9 +205,47 @@ defmodule Brain.Knowledge.CorroboratorTest do
     end
   end
 
+  describe "hypotheses_to_candidates/2" do
+    test "each candidate's finding belongs to the world the investigation researched for" do
+      [candidate] =
+        Corroborator.hypotheses_to_candidates(supported_investigation(),
+          world_id: "research_world",
+          session_id: "session_1"
+        )
+
+      assert candidate.finding.world_id == "research_world"
+      assert candidate.session_id == "session_1"
+    end
+
+    test "raises without a :world_id" do
+      for opts <- [[], [world_id: nil], [world_id: ""]] do
+        assert_raise ArgumentError, ~r/hypotheses_to_candidates requires a :world_id option/, fn ->
+          Corroborator.hypotheses_to_candidates(supported_investigation(), opts)
+        end
+      end
+    end
+  end
+
+  # One supported hypothesis backed by two independent sources: promotable.
+  defp supported_investigation do
+    evidence = [
+      build_finding("Paris is the capital of France", "France", "source1.com"),
+      build_finding("France's capital city is Paris", "France", "source2.com")
+    ]
+
+    hypothesis = %{
+      Types.Hypothesis.new("Paris is the capital of France", entity: "France")
+      | status: :supported,
+        confidence: 0.8,
+        supporting_evidence: evidence
+    }
+
+    Types.Investigation.new("France", hypotheses: [hypothesis])
+  end
+
   defp build_finding(claim, entity, domain) do
     source = SourceInfo.new("https://#{domain}/article", reliability_score: 0.7)
 
-    Finding.new(claim, entity, source, entity_type: "location", confidence: 0.7)
+    Finding.new(claim, entity, source, entity_type: "location", confidence: 0.7, world_id: @world_id)
   end
 end
