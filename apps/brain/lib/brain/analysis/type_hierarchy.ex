@@ -2,10 +2,13 @@ defmodule Brain.Analysis.TypeHierarchy do
   @moduledoc """
   Entity type hierarchy with IS-A relationships.
 
-  Provides a unified view of entity type relationships from two sources:
+  The hierarchy is the static one in `priv/analysis/entity_types.json`,
+  loaded at startup and shared by every world.
 
-  1. **Static hierarchy** from `priv/analysis/entity_types.json` (loaded at startup)
-  2. **Learned hierarchy** from Atlas knowledge_graph IS_A edges (enriched at runtime)
+  It is not read back from Atlas. Knowledge graphs are per world, and this
+  hierarchy is not; the only IS_A edges between EntityType nodes in any
+  knowledge graph are the ones `sync_to_atlas/2` copies there from the same
+  static file, so reading them back would add nothing.
 
   This enables type narrowing: a "person" entity can be narrowed to "artist"
   when the intent context expects an artist, because artist IS-A person.
@@ -249,19 +252,22 @@ defmodule Brain.Analysis.TypeHierarchy do
     end
   end
 
-  @doc "Reload hierarchy from file and Atlas."
+  @doc "Reload the hierarchy from its file."
   def reload(name \\ __MODULE__) do
     GenServer.call(name, :reload, 5_000)
   end
 
   @doc """
-  Seed the Atlas knowledge_graph with IS_A edges for the static hierarchy.
+  Seed the world's Atlas knowledge_graph with IS_A edges for the static
+  hierarchy.
 
   Creates EntityType nodes and IS_A relationships so the hierarchy
-  is queryable via Cypher and can be extended with learned relationships.
+  is queryable via Cypher in that world's graph. Raises for a missing or
+  malformed world.
   """
-  def sync_to_atlas(name \\ __MODULE__) do
-    GenServer.cast(name, :sync_to_atlas)
+  def sync_to_atlas(world_id, name \\ __MODULE__) do
+    graph = Atlas.Graph.world_graph("knowledge_graph", world_id)
+    GenServer.cast(name, {:sync_to_atlas, graph})
   end
 
   # ============================================================================
@@ -287,8 +293,8 @@ defmodule Brain.Analysis.TypeHierarchy do
   end
 
   @impl true
-  def handle_cast(:sync_to_atlas, state) do
-    do_sync_to_atlas()
+  def handle_cast({:sync_to_atlas, graph}, state) do
+    do_sync_to_atlas(graph)
     {:noreply, state}
   end
 
@@ -303,10 +309,7 @@ defmodule Brain.Analysis.TypeHierarchy do
   end
 
   defp load_hierarchy do
-    {static, config} = load_static_hierarchy_and_config()
-    atlas = load_atlas_hierarchy()
-
-    merged = merge_hierarchies(static, atlas)
+    {merged, config} = load_static_hierarchy_and_config()
 
     parent_map = build_parent_map(merged)
 
@@ -341,36 +344,6 @@ defmodule Brain.Analysis.TypeHierarchy do
     end
   end
 
-  defp load_atlas_hierarchy do
-    if Brain.AtlasIntegration.available?() do
-      case Brain.AtlasIntegration.sync(fn ->
-        Atlas.Graph.cypher("knowledge_graph",
-          "MATCH (child:EntityType)-[:#{EdgeLabels.is_a()}]->(parent:EntityType) RETURN parent.name, child.name"
-        )
-      end) do
-        {:ok, {:ok, rows}} ->
-          Enum.reduce(rows, %{}, fn [parent_name, child_name], acc ->
-            parent = to_string(parent_name)
-            child = to_string(child_name)
-            Map.update(acc, parent, [child], fn children ->
-              if child in children, do: children, else: [child | children]
-            end)
-          end)
-
-        _ ->
-          %{}
-      end
-    else
-      %{}
-    end
-  end
-
-  defp merge_hierarchies(static, atlas) do
-    Map.merge(static, atlas, fn _parent, static_children, atlas_children ->
-      Enum.uniq(static_children ++ atlas_children)
-    end)
-  end
-
   # child => every parent it is listed under, sorted.
   defp build_parent_map(hierarchy) do
     hierarchy
@@ -382,27 +355,27 @@ defmodule Brain.Analysis.TypeHierarchy do
     |> Map.new(fn {child, parents} -> {child, parents |> Enum.uniq() |> Enum.sort()} end)
   end
 
-  defp do_sync_to_atlas do
+  defp do_sync_to_atlas(graph) do
     if Brain.AtlasIntegration.available?() do
       {static, _config} = load_static_hierarchy_and_config()
 
       Enum.each(static, fn {parent, children} ->
         Brain.AtlasIntegration.sync(fn ->
           {:ok, parent_node} =
-            Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityType", %{name: parent})
+            Brain.AtlasIntegration.ensure_node(graph, "EntityType", %{name: parent})
 
-          Brain.AtlasIntegration.enrich_existing_node("knowledge_graph", parent_node.id, parent)
+          Brain.AtlasIntegration.enrich_existing_node(graph, parent_node.id, parent)
 
           Enum.each(children, fn child ->
             {:ok, child_node} =
-              Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityType", %{name: child})
+              Brain.AtlasIntegration.ensure_node(graph, "EntityType", %{name: child})
 
-            Brain.AtlasIntegration.enrich_existing_node("knowledge_graph", child_node.id, child)
+            Brain.AtlasIntegration.enrich_existing_node(graph, child_node.id, child)
 
             parent_id = parent_node.id
             child_id = child_node.id
 
-            Atlas.Graph.cypher("knowledge_graph",
+            Atlas.Graph.cypher(graph,
               "MATCH (c:EntityType), (p:EntityType) WHERE id(c) = #{child_id} AND id(p) = #{parent_id} " <>
               "MERGE (c)-[:#{EdgeLabels.is_a()}]->(p) RETURN c, p"
             )
@@ -410,7 +383,7 @@ defmodule Brain.Analysis.TypeHierarchy do
         end)
       end)
 
-      Logger.info("TypeHierarchy: synced #{map_size(static)} parent types to Atlas knowledge_graph")
+      Logger.info("TypeHierarchy: synced #{map_size(static)} parent types to Atlas #{graph}")
     end
   rescue
     e ->
