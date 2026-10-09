@@ -106,36 +106,6 @@ defmodule Brain.ML.NLPPipeline do
     end
   end
 
-  @doc "Process text with enhanced entity extraction using the BIO model.\nUse this for more thorough entity detection at the cost of speed.\n"
-  def process_enhanced(text) do
-    Logger.debug("Processing text with enhanced NLP", %{text: text})
-
-    try do
-      tokens = Tokenizer.tokenize(text)
-      entities = EntityExtractor.extract_entities_with_model(text)
-      Logger.debug("Enhanced entity extraction", %{count: length(entities)})
-
-      case classify_intent(text) do
-        {:ok, intent, confidence} ->
-          result = build_result(text, intent, confidence, entities, tokens)
-          {:ok, result}
-
-        {:error, _reason} ->
-          {:ok,
-           %{
-             confidence: 0.0,
-             intent: "unknown",
-             entities: entities,
-             fallback: true
-           }}
-      end
-    rescue
-      error ->
-        Logger.error("Enhanced NLP pipeline failed", %{error: inspect(error)})
-        {:error, "Pipeline processing failed: #{inspect(error)}"}
-    end
-  end
-
   @doc "Extract features from text (entities + intent) for learning.\n\nOptions:\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification result for entity disambiguation\n"
   def extract_features(text, opts \\ []) do
     tokens = Tokenizer.tokenize(text)
