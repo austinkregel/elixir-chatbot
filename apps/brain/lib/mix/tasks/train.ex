@@ -12,7 +12,7 @@ defmodule Mix.Tasks.Train do
 
   ## Usage
 
-      mix train [options]
+      mix train --world <id> [options]
 
   ## Micro-classifier data (axis models)
 
@@ -21,7 +21,7 @@ defmodule Mix.Tasks.Train do
   (after you change gold data or heuristics), run **before** `mix train` or
   `mix train_micro`:
 
-      mix gen_micro_data
+      mix gen_micro_data --world <id>
 
   Then train micro models (or let stage 5 of `mix train` run `mix train_micro`).
 
@@ -37,7 +37,8 @@ defmodule Mix.Tasks.Train do
     --skip-framing     Skip framing classifier (GVFC corpus)
     --skip-lattice     Skip lattice phrase inventory generation
     --include-graph    Run graph-to-training integration after training
-    --world ID         Train world-specific models
+    --world ID         Required. The world the models are trained for; passed to
+                       every stage that analyzes text or reads world data
     --publish          Publish trained models to S3/MinIO
     --list             List all available training tasks
 
@@ -50,26 +51,28 @@ defmodule Mix.Tasks.Train do
   4. **KG triple scorer** — `kg_lstm/triple_scorer.term` (~1 min GPU).
   5. **MicroClassifiers** — runs `mix train_micro`: trains every name in
      `Mix.Tasks.TrainMicro` (pragmatic classifiers + six axis models). Writes
-     `priv/ml_models/micro/*.term`. Regenerate JSON with `mix gen_micro_data` when needed.
-  6. **Framing Classifier** — runs `mix gen_framing_data` (if JSON missing) then
-     `mix train_framing`. Requires GVFC corpus at `data/framing/`. Run
+     `priv/ml_models/micro/*.term`. Regenerate JSON with `mix gen_micro_data --world <id>`
+     when needed.
+  6. **Framing Classifier** — runs `mix gen_framing_data --world <id>` (if JSON missing)
+     then `mix train_framing`. Requires GVFC corpus at `data/framing/`. Run
      `mix ingest_framing_corpus` if the CSV is not yet extracted.
-  7. **Lattice Phrase Inventory** — runs `mix gen_lattice_data` to generate
+  7. **Lattice Phrase Inventory** — runs `mix gen_lattice_data --world <id>` to generate
      phrase inventory fragments with prototype vectors for the lattice realizer.
-     Use `mix train --skip-vectorize` to skip the slow vectorization step.
+     Use `mix train --world <id> --skip-vectorize` to skip the slow vectorization step.
   8. **Entity Type Ingestion** — ingests entity types from Atlas into the
      training world.
   9. **Type Vector Warm-up** — warms up entity type vectors in the KG cache.
 
   ## Examples
 
-      mix train                    # Full pipeline
-      mix gen_micro_data && mix train   # Refresh axis micro data, then full train
-      mix train --quick            # Skip slow models
-      mix train --skip-tfidf       # Skip TF-IDF bundle stage
-      mix train --skip-micro       # Skip micro-classifiers only
-      mix train --world star_trek  # Train for a specific world
-      mix train --list             # List stages
+      mix train --world <id>                # Full pipeline
+      mix gen_micro_data --world <id> && mix train --world <id>
+                                            # Refresh axis micro data, then full train
+      mix train --world <id> --quick        # Skip slow models
+      mix train --world <id> --skip-tfidf   # Skip TF-IDF bundle stage
+      mix train --world <id> --skip-micro   # Skip micro-classifiers only
+      mix train --world star_trek           # Train for a specific world
+      mix train --list                      # List stages
   """
 
   # World.Persistence is in a sibling umbrella app that depends on :brain.
@@ -121,7 +124,7 @@ defmodule Mix.Tasks.Train do
     %{
       name: "MicroClassifiers",
       description:
-        "Micro-classifiers (pragmatic + ChunkProfile axes: intent_domain, tense_class, etc.); run `mix gen_micro_data` to refresh JSON",
+        "Micro-classifiers (pragmatic + ChunkProfile axes: intent_domain, tense_class, etc.); run `mix gen_micro_data --world <id>` to refresh JSON",
       task: :micro,
       duration: "~30-90 seconds (depends on JSON size)",
       outputs: ["micro/*.term"]
@@ -129,7 +132,7 @@ defmodule Mix.Tasks.Train do
     %{
       name: "Framing Classifier",
       description:
-        "Document-level framing classifier (GVFC corpus); run `mix ingest_framing_corpus` then `mix gen_framing_data` to prepare data",
+        "Document-level framing classifier (GVFC corpus); run `mix ingest_framing_corpus` then `mix gen_framing_data --world <id>` to prepare data",
       task: :framing,
       duration: "~2-5 minutes",
       outputs: ["micro/framing_class.term", "micro/framing_neutral_centroid.term"]
@@ -137,7 +140,7 @@ defmodule Mix.Tasks.Train do
     %{
       name: "Lattice Phrase Inventory",
       description:
-        "Generates phrase inventory + prototype vectors for lattice realizer (`mix gen_lattice_data`)",
+        "Generates phrase inventory + prototype vectors for lattice realizer (`mix gen_lattice_data --world <id>`)",
       task: :lattice,
       duration: "~2-10 minutes (vectorization)",
       outputs: [
@@ -175,6 +178,9 @@ defmodule Mix.Tasks.Train do
       display_training_tasks()
       return_ok()
     else
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix train needs --world <id>, the world the models are trained for")
+
       run_training(opts)
     end
   end
@@ -433,7 +439,7 @@ defmodule Mix.Tasks.Train do
         [{:framing, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_framing_classifier()
+        result = train_framing_classifier(opts)
         duration = System.monotonic_time(:second) - start
         [{:framing, result, duration} | results]
       end
@@ -547,8 +553,7 @@ defmodule Mix.Tasks.Train do
     Mix.shell().info("  Stage 3/9: Poincare Embeddings  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    world = if opts[:world], do: ["--world", opts[:world]], else: []
-    args = world ++ ["--verbose"]
+    args = ["--world", opts[:world], "--verbose"]
 
     try do
       Mix.Tasks.TrainPoincare.run(args)
@@ -566,8 +571,7 @@ defmodule Mix.Tasks.Train do
     Mix.shell().info("  Stage 4/9: KG Triple Scorer  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    world = if opts[:world], do: ["--world", opts[:world]], else: []
-    args = world ++ ["--verbose"]
+    args = ["--world", opts[:world], "--verbose"]
 
     try do
       Mix.Tasks.TrainKgLstm.run(args)
@@ -595,7 +599,7 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_framing_classifier do
+  defp train_framing_classifier(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 6/9: Framing Classifier  [#{stage_timestamp()}]")
@@ -610,7 +614,7 @@ defmodule Mix.Tasks.Train do
         Mix.shell().info("  Generating framing training data from GVFC corpus...")
 
         try do
-          Mix.Tasks.GenFramingData.run(["--corpus", "gvfc"])
+          Mix.Tasks.GenFramingData.run(["--world", opts[:world], "--corpus", "gvfc"])
           :ok
         rescue
           e -> {:error, Exception.message(e)}
@@ -642,9 +646,9 @@ defmodule Mix.Tasks.Train do
     lattice_args =
       if opts[:skip_vectorize] do
         Mix.shell().info("  --skip-vectorize: fragment templates only (no prototype vectors)")
-        ["--skip-vectorize"]
+        ["--world", opts[:world], "--skip-vectorize"]
       else
-        []
+        ["--world", opts[:world]]
       end
 
     try do
@@ -669,8 +673,7 @@ defmodule Mix.Tasks.Train do
       {:error, "Atlas not available"}
     else
       try do
-        args = if opts[:world], do: ["--world", opts[:world]], else: []
-        Mix.Tasks.IngestEntityTypes.run(args)
+        Mix.Tasks.IngestEntityTypes.run(["--world", opts[:world]])
         {:ok, %{entity_types_ingested: true}}
       rescue
         e -> {:error, Exception.message(e)}
