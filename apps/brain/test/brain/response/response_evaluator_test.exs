@@ -17,6 +17,9 @@ defmodule Brain.Response.ResponseEvaluatorTest do
   alias Brain.Epistemic.BeliefStore
   alias Brain.Epistemic.Types.Belief
 
+  # "default" is the world the test suite runs in, seeded by `mix test.models`.
+  @opts [world_id: "default"]
+
   defp build_analysis(text, opts \\ []) do
     speech_act = Keyword.get(opts, :speech_act, SpeechActResult.new(:expressive, :greeting, 0.9))
     entities = Keyword.get(opts, :entities, [])
@@ -34,12 +37,12 @@ defmodule Brain.Response.ResponseEvaluatorTest do
     }
   end
 
-  describe "evaluate/3 score struct" do
+  describe "evaluate/4 score struct" do
     test "returns a Score with all expected dimensions" do
       analysis = build_analysis("Hello!")
       primitives = [Primitive.new(:acknowledgment, :social, %{})]
 
-      score = ResponseEvaluator.evaluate(primitives, "Hi there, how are you?", analysis)
+      score = ResponseEvaluator.evaluate(primitives, "Hi there, how are you?", analysis, @opts)
 
       assert %Score{} = score
       assert is_float(score.speech_act_alignment)
@@ -59,7 +62,7 @@ defmodule Brain.Response.ResponseEvaluatorTest do
     end
 
     test "fallback evaluate returns converged score for non-matching inputs" do
-      score = ResponseEvaluator.evaluate(nil, nil, nil)
+      score = ResponseEvaluator.evaluate(nil, nil, nil, @opts)
       assert %Score{converged: true, overall: 0.5} = score
     end
   end
@@ -87,7 +90,7 @@ defmodule Brain.Response.ResponseEvaluatorTest do
       analysis = build_analysis("Hello!")
       primitives = [Primitive.new(:acknowledgment, :social, %{})]
 
-      score = ResponseEvaluator.evaluate(primitives, "Hi there!", analysis)
+      score = ResponseEvaluator.evaluate(primitives, "Hi there!", analysis, @opts)
 
       assert score.belief_grounding >= 0.5
     end
@@ -109,7 +112,8 @@ defmodule Brain.Response.ResponseEvaluatorTest do
       score = ResponseEvaluator.evaluate(
         primitives,
         "Paris is the capital of France, a beautiful city in Europe.",
-        analysis
+        analysis,
+        @opts
       )
 
       assert score.belief_grounding >= 0.5
@@ -125,7 +129,8 @@ defmodule Brain.Response.ResponseEvaluatorTest do
       score = ResponseEvaluator.evaluate(
         primitives,
         "Quantum mechanics describes the behavior of particles at atomic scales.",
-        analysis
+        analysis,
+        @opts
       )
 
       assert score.belief_grounding >= 0.5
@@ -137,7 +142,7 @@ defmodule Brain.Response.ResponseEvaluatorTest do
       analysis = build_analysis("Hello!")
       primitives = [Primitive.new(:acknowledgment, :social, %{})]
 
-      score = ResponseEvaluator.evaluate(primitives, "Hi there, friend!", analysis)
+      score = ResponseEvaluator.evaluate(primitives, "Hi there, friend!", analysis, @opts)
 
       assert score.epistemic_consistency >= 0.5
     end
@@ -154,7 +159,8 @@ defmodule Brain.Response.ResponseEvaluatorTest do
       score = ResponseEvaluator.evaluate(
         primitives,
         "Paris is a wonderful city with great architecture.",
-        analysis
+        analysis,
+        @opts
       )
 
       assert score.content_coverage >= 0.5
@@ -175,7 +181,8 @@ defmodule Brain.Response.ResponseEvaluatorTest do
       score = ResponseEvaluator.evaluate(
         primitives,
         "Hello! Nice to meet you.",
-        analysis
+        analysis,
+        @opts
       )
 
       assert score.overall > 0.0
