@@ -195,7 +195,7 @@ defmodule Brain.Epistemic.StanceTracker do
       Map.update(conv, canonical_topic, [observation], &(&1 ++ [observation]))
     end)
 
-    persist_stance_to_belief_store(conversation_id, topic, clamped_position, source)
+    persist_stance_to_belief_store(world_id, conversation_id, topic, clamped_position, source)
 
     new_stats = %{state.stats |
       total_observations: state.stats.total_observations + 1,
@@ -239,11 +239,14 @@ defmodule Brain.Epistemic.StanceTracker do
     end
   end
 
-  defp persist_stance_to_belief_store(conversation_id, topic, position, source) do
+  # The stance is a belief held in the world it was recorded in; the world was
+  # checked in `record_stance/5`.
+  defp persist_stance_to_belief_store(world_id, conversation_id, topic, position, source) do
     if BeliefStore.ready?() do
       subject = if source == :system, do: :self, else: :user
 
       BeliefStore.add_belief(
+        world_id,
         subject,
         :stance_on,
         topic,
