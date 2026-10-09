@@ -11,10 +11,18 @@ defmodule Brain.Test.GraphCase do
 
       use Brain.Test.GraphCase, async: false
 
+  ## The test's world
+
+  Graphs other than the shared `pos_graph` belong to a world. Each test gets a
+  world of its own, `test_graph_<n>`, whose graphs are created inside the
+  test's sandbox transaction and roll back with it; the context carries its
+  id as `:graph_world_id`. Seeds and assertions on a per-world kind name it
+  with `Atlas.Graph.world_graph(kind, world_id)`.
+
   ## Tags
 
-  - `@tag seed_graphs: true` -- seeds all 6 graphs with baseline data
-  - `@tag seed_knowledge: true` -- seeds only knowledge_graph
+  - `@tag seed_graphs: true` -- seeds the test world's graphs and pos_graph with baseline data
+  - `@tag seed_knowledge: true` -- seeds only the test world's knowledge_graph
   - `@tag seed_pos: true` -- seeds only pos_graph
   """
   use ExUnit.CaseTemplate
@@ -38,13 +46,16 @@ defmodule Brain.Test.GraphCase do
 
     on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(pid) end)
 
+    world_id = "test_graph_#{System.unique_integer([:positive])}"
+    Atlas.Graph.ensure_world_graphs!(world_id)
+
     seed_data =
       cond do
         tags[:seed_graphs] ->
-          Brain.Test.GraphSeeds.seed_all()
+          Brain.Test.GraphSeeds.seed_all(world_id)
 
         tags[:seed_knowledge] ->
-          %{knowledge: Brain.Test.GraphSeeds.seed_knowledge_graph()}
+          %{knowledge: Brain.Test.GraphSeeds.seed_knowledge_graph(world_id)}
 
         tags[:seed_pos] ->
           %{pos: Brain.Test.GraphSeeds.seed_pos_graph()}
@@ -53,7 +64,7 @@ defmodule Brain.Test.GraphCase do
           %{}
       end
 
-    {:ok, Map.put(seed_data, :sandbox_pid, pid)}
+    {:ok, seed_data |> Map.put(:sandbox_pid, pid) |> Map.put(:graph_world_id, world_id)}
   end
 end
 
