@@ -5,6 +5,9 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
   alias Analysis.{RacingAnalyzer, Interpretation, AnalyzerResult}
   import Brain.TestHelpers
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup _context do
     start_test_services()
     :ok
@@ -12,7 +15,7 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
 
   describe "race/2 basic functionality" do
     test "returns Interpretation struct" do
-      result = RacingAnalyzer.race("Hello there!")
+      result = RacingAnalyzer.race("Hello there!", world_id: @world_id)
 
       assert %Interpretation{} = result
       assert is_binary(result.intent) or is_nil(result.intent)
@@ -21,14 +24,14 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
     end
 
     test "handles empty string input" do
-      result = RacingAnalyzer.race("")
+      result = RacingAnalyzer.race("", world_id: @world_id)
 
       assert %Interpretation{} = result
       assert result.text == ""
     end
 
     test "populates alternatives list" do
-      result = RacingAnalyzer.race("What's the weather in New York?")
+      result = RacingAnalyzer.race("What's the weather in New York?", world_id: @world_id)
 
       assert %Interpretation{} = result
       assert is_list(result.alternatives)
@@ -41,13 +44,13 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
     end
 
     test "respects skip_heuristics option" do
-      result = RacingAnalyzer.race("Hello", skip_heuristics: true)
+      result = RacingAnalyzer.race("Hello", world_id: @world_id, skip_heuristics: true)
 
       assert %Interpretation{} = result
     end
 
     test "respects skip_memory option" do
-      result = RacingAnalyzer.race("Hello", skip_memory: true)
+      result = RacingAnalyzer.race("Hello", world_id: @world_id, skip_memory: true)
 
       assert %Interpretation{} = result
     end
@@ -55,13 +58,13 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
 
   describe "check_fast_path/4" do
     test "returns :no_match when no heuristic fires" do
-      result = RacingAnalyzer.check_fast_path("xyzabc123randomtext", "default", nil, nil)
+      result = RacingAnalyzer.check_fast_path("xyzabc123randomtext", @world_id, nil, nil)
 
       assert result == :no_match
     end
 
     test "returns tuple structure when fast path fires" do
-      result = RacingAnalyzer.check_fast_path("Hello", "default", nil, nil)
+      result = RacingAnalyzer.check_fast_path("Hello", @world_id, nil, nil)
 
       case result do
         {:fast_path, interpretation} ->
@@ -77,7 +80,8 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
 
   describe "analyzer orchestration" do
     test "structural analyzer detects questions with question marks" do
-      result = RacingAnalyzer.race("What is your name?", skip_heuristics: true, skip_memory: true)
+      result =
+        RacingAnalyzer.race("What is your name?", world_id: @world_id, skip_heuristics: true, skip_memory: true)
 
       assert %Interpretation{} = result
       assert is_list(result.analyzer_results)
@@ -95,7 +99,7 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
 
     test "structural analyzer detects WH-words" do
       result =
-        RacingAnalyzer.race("Where are you from?", skip_heuristics: true, skip_memory: true)
+        RacingAnalyzer.race("Where are you from?", world_id: @world_id, skip_heuristics: true, skip_memory: true)
 
       assert %Interpretation{} = result
 
@@ -112,7 +116,7 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
 
     test "model analyzer returns AnalyzerResult from classifier" do
       result =
-        RacingAnalyzer.race("Play some music", skip_heuristics: true, skip_memory: true)
+        RacingAnalyzer.race("Play some music", world_id: @world_id, skip_heuristics: true, skip_memory: true)
 
       assert %Interpretation{} = result
       assert is_list(result.analyzer_results)
@@ -130,7 +134,8 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
     end
 
     test "returns multiple analyzer results" do
-      result = RacingAnalyzer.race("Turn on the lights", skip_heuristics: true, skip_memory: true)
+      result =
+        RacingAnalyzer.race("Turn on the lights", world_id: @world_id, skip_heuristics: true, skip_memory: true)
 
       assert %Interpretation{} = result
       assert result.analyzer_results != []
@@ -141,7 +146,7 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
 
   describe "calibration and normalization" do
     test "activation is normalized between 0 and 1" do
-      result = RacingAnalyzer.race("What's the weather in Paris?")
+      result = RacingAnalyzer.race("What's the weather in Paris?", world_id: @world_id)
 
       assert %Interpretation{} = result
       assert result.activation >= 0.0
@@ -154,7 +159,7 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
     end
 
     test "total activation across all interpretations does not exceed 1.0" do
-      result = RacingAnalyzer.race("Hello, what's the weather?")
+      result = RacingAnalyzer.race("Hello, what's the weather?", world_id: @world_id)
 
       total_activation =
         result.activation + Enum.sum(Enum.map(result.alternatives, & &1.activation))
@@ -167,7 +172,7 @@ defmodule Brain.Analysis.RacingAnalyzerTest do
     test "completes within reasonable time" do
       start_time = System.monotonic_time(:millisecond)
 
-      _result = RacingAnalyzer.race("What's the weather in New York?")
+      _result = RacingAnalyzer.race("What's the weather in New York?", world_id: @world_id)
 
       elapsed = System.monotonic_time(:millisecond) - start_time
       assert elapsed < 3000
