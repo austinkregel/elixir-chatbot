@@ -129,7 +129,7 @@ defmodule Brain.Response.TransitionModel do
       {:error, reason} ->
         raise """
         TransitionModel: cannot read #{path}: #{inspect(reason)}
-        Rebuild the lattice artifacts with `mix gen_lattice_data`.
+        Rebuild the lattice artifacts with `mix gen_lattice_data --world <id>`.
         """
     end
   end
