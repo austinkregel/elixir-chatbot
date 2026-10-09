@@ -96,21 +96,21 @@ defmodule Brain.Analysis.PipelineSideEffectsTest do
   # makes has landed by the time it returns. The feedback statistic is a cast;
   # the `get_stats/0` call behind it is served only after the cast is handled.
   defp assert_writes_nothing(run) do
-    beliefs_before = BeliefStore.stats().total_beliefs
+    beliefs_before = BeliefStore.stats(@world_id).total_beliefs
     atlas_before = Atlas.Repo.aggregate(Atlas.Schemas.Belief, :count)
     stats_before = LearningStore.get_stats()
-    {:ok, graph_before} = count_nodes("knowledge_graph")
+    {:ok, graph_before} = count_nodes(Atlas.Graph.world_graph("knowledge_graph", @world_id))
 
     run.()
 
-    assert BeliefStore.stats().total_beliefs == beliefs_before
+    assert BeliefStore.stats(@world_id).total_beliefs == beliefs_before
     assert Atlas.Repo.aggregate(Atlas.Schemas.Belief, :count) == atlas_before
     assert LearningStore.get_stats() == stats_before
-    assert {:ok, ^graph_before} = count_nodes("knowledge_graph")
+    assert {:ok, ^graph_before} = count_nodes(Atlas.Graph.world_graph("knowledge_graph", @world_id))
   end
 
   defp beliefs_for(user_id) do
-    {:ok, beliefs} = BeliefStore.query_beliefs(user_id: user_id)
+    {:ok, beliefs} = BeliefStore.query_beliefs(@world_id, user_id: user_id)
     beliefs
   end
 
