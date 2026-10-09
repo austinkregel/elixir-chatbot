@@ -21,14 +21,9 @@ defmodule Mix.Tasks.Evaluate.Ner do
     save? = "--save" in args
     verbose? = "--verbose" in args
 
-    gold = EvaluationStore.load_gold_standard("ner")
-
-    if gold == [] do
-      IO.puts("\nNo gold standard data for NER.")
-      IO.puts("Add examples to: priv/evaluation/ner/gold_standard.json")
-      IO.puts("")
-      exit(:normal)
-    end
+    # The held-out split only: the entity model trains on the rest. Raises when no
+    # split has been carved (`mix split.held_out ner`).
+    gold = EvaluationStore.load_gold_standard("ner", :held_out)
 
     IO.puts("\n" <> String.duplicate("=", 60))
     IO.puts("NER EVALUATION (#{length(gold)} examples)")
