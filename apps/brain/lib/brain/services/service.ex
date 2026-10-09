@@ -30,7 +30,7 @@ defmodule Brain.Services.Service do
         def provides_fields, do: [:temperature, :conditions, :humidity, :forecast]
 
         @impl true
-        def enrich(intent, slots, credentials) do
+        def enrich(intent, slots, credentials, world_id) do
           # Fetch weather data and return enriched fields
           {:ok, %{temperature: "72°F", conditions: "sunny"}}
         end
@@ -135,13 +135,15 @@ defmodule Brain.Services.Service do
   ## Parameters
     - intent: The classified intent name
     - slots: Map of slot names to values (e.g., %{location: "NYC"})
-    - credentials: Map of credential keys to values
+    - credentials: Map of credential keys to values, read from the world
+    - world_id: The world the request runs in; the credentials belong to it
+      and any world-scoped data the service reads is that world's
 
   ## Returns
     - {:ok, enrichment_data} on success
     - {:error, reason} on failure
   """
-  @callback enrich(intent :: String.t(), slots(), credentials()) ::
+  @callback enrich(intent :: String.t(), slots(), credentials(), world_id :: String.t()) ::
               {:ok, enrichment_data()} | {:error, error_reason()}
 
   @doc """
