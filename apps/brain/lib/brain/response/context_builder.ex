@@ -33,8 +33,22 @@ defmodule Brain.Response.ContextBuilder do
   - Enrichment data from external services
   - Memory signals (similar episodes, entity familiarity)
   - ContextAccumulator signals (combined confidence, conflict, hedging)
+
+  `opts` must carry `:world_id`, the world whose memory and service credentials
+  are read; absent raises.
   """
-  def build(%InternalModel{} = model, opts \\ []) do
+  def build(%InternalModel{} = model, opts) do
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "ContextBuilder.build requires a :world_id option, the world whose memory and " <>
+                  "service credentials are read; got #{inspect(other)}"
+      end
+
     analyses = model.analyses || []
     primary = select_primary_analysis(analyses)
     question_chunk = ChunkPriority.question_chunk(analyses)
@@ -43,8 +57,8 @@ defmodule Brain.Response.ContextBuilder do
 
     analysis_context = extract_analysis_context(primary, analyses, model)
     graph_context = extract_graph_context(analyses, user_id, conversation_id)
-    enrichment_context = extract_enrichment_context(primary, opts)
-    memory_context = extract_memory_context(primary, analyses)
+    enrichment_context = extract_enrichment_context(primary, opts, world_id)
+    memory_context = extract_memory_context(primary, analyses, world_id)
     accumulator_context = extract_accumulator_context(primary)
     all_analyses_summary = build_all_analyses(analyses)
     per_chunk_facts = build_per_chunk_facts(analyses, question_chunk, opts)
@@ -281,7 +295,7 @@ defmodule Brain.Response.ContextBuilder do
     end
   end
 
-  defp extract_enrichment_context(primary, opts) do
+  defp extract_enrichment_context(primary, opts, world_id) do
     entities = primary.entities || []
     intent = primary.intent
     slots = extract_slot_values(primary.slots)
@@ -289,7 +303,8 @@ defmodule Brain.Response.ContextBuilder do
     base_context = %{
       entities: entities,
       intent: intent,
-      side_effects: Keyword.get(opts, :side_effects, true)
+      side_effects: Keyword.get(opts, :side_effects, true),
+      world_id: world_id
     }
 
     enriched = Enricher.prepare_context(intent, slots, base_context)
@@ -328,7 +343,7 @@ defmodule Brain.Response.ContextBuilder do
 
   defp extract_slot_values(_), do: %{}
 
-  defp extract_memory_context(primary, analyses) do
+  defp extract_memory_context(primary, analyses, world_id) do
     accumulated_contexts =
       analyses
       |> Enum.map(&Map.get(&1, :accumulated_context))
@@ -357,7 +372,7 @@ defmodule Brain.Response.ContextBuilder do
       if episodes == [] and query != "" do
         safe_call(fn ->
           if Process.whereis(Brain.Memory.Store) do
-            case Brain.Memory.Store.query_similar(query, 5) do
+            case Brain.Memory.Store.query_similar(query, 5, world_id: world_id) do
               {:ok, results} -> results
               _ -> []
             end
