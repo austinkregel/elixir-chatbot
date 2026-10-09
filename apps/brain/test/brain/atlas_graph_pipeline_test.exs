@@ -179,7 +179,7 @@ defmodule Brain.AtlasGraphPipelineTest do
       {:ok, kg_after} = count_nodes("knowledge_graph")
       assert kg_after > kg_before
 
-      context = Reader.entity_context([%{entity_type: "Location", value: "Barcelona"}])
+      context = Reader.entity_context([%{entity_type: "Location", value: "Barcelona"}], world_id: "default")
       assert [%{node: node}] = context
       assert node != nil
     end
