@@ -147,15 +147,26 @@ defmodule Brain.Knowledge.Corroborator do
     end
   end
 
-  @doc "Converts supported hypotheses from an investigation into ReviewCandidates.\n\nOnly hypotheses that are:\n1. Supported (not falsified)\n2. High confidence (>= 0.7)\n3. Have 2+ independent sources\n\nare converted to candidates for admin review.\n"
+  @doc "Converts supported hypotheses from an investigation into ReviewCandidates.\n\nOnly hypotheses that are:\n1. Supported (not falsified)\n2. High confidence (>= 0.7)\n3. Have 2+ independent sources\n\nare converted to candidates for admin review.\n\n## Options\n  - :world_id - Required. The world the investigation researched for; each\n    candidate's finding belongs to it. Absent raises.\n  - :session_id - The learning session the candidates came from\n"
   @spec hypotheses_to_candidates(Investigation.t(), keyword()) :: [ReviewCandidate.t()]
-  def hypotheses_to_candidates(%Investigation{} = investigation, opts \\ []) do
+  def hypotheses_to_candidates(%Investigation{} = investigation, opts) do
     session_id = Keyword.get(opts, :session_id)
+
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "Corroborator.hypotheses_to_candidates requires a :world_id option, the world the " <>
+                  "investigation researched for, got: #{inspect(other)}"
+      end
 
     investigation
     |> Investigation.promotable_hypotheses()
     |> Enum.map(fn hypothesis ->
-      primary_finding = build_finding_from_hypothesis(hypothesis)
+      primary_finding = build_finding_from_hypothesis(hypothesis, world_id)
 
       corroborating_sources =
         hypothesis.supporting_evidence
@@ -182,7 +193,7 @@ defmodule Brain.Knowledge.Corroborator do
     end)
   end
 
-  defp build_finding_from_hypothesis(%Hypothesis{} = hypothesis) do
+  defp build_finding_from_hypothesis(%Hypothesis{} = hypothesis, world_id) do
     best_source =
       hypothesis.supporting_evidence
       |> Enum.max_by(fn f -> f.source.reliability_score end, fn -> nil end)
@@ -199,7 +210,8 @@ defmodule Brain.Knowledge.Corroborator do
       hypothesis.entity || "unknown",
       source,
       confidence: hypothesis.confidence,
-      raw_context: hypothesis.derived_from || ""
+      raw_context: hypothesis.derived_from || "",
+      world_id: world_id
     )
   end
 
