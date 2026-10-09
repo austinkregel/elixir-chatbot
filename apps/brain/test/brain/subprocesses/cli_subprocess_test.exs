@@ -15,6 +15,7 @@ defmodule Brain.Subprocesses.CliSubprocessTest do
     {:ok, pid} =
       CliSubprocess.start_link(
         subprocess_id: subprocess_id,
+        world_id: "default",
         memory_snapshot: memory_snapshot
       )
 
