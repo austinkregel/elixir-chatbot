@@ -394,21 +394,21 @@ Small `SimpleClassifier` models used for lightweight decisions and for projectin
 data lives under `data/classifiers/*.json`; axis JSON is generated from the intent
 gold standard.
 
-- **`mix gen_micro_data`**: (re)build the six axis JSON files from `apps/brain/priv/evaluation/intent/gold_standard.json`
+- **`mix gen_micro_data --world default`**: (re)build the six axis JSON files from `apps/brain/priv/evaluation/intent/gold_standard.json`
 - **`mix train_micro`**: train every micro-classifier listed in `Mix.Tasks.TrainMicro` → `priv/ml_models/micro/<name>.term`
 - **`mix train_micro --only intent_domain`**: train a single model
 - **`mix train_micro --list`**: show which JSON/model files exist
 
 Stage **9** of **`mix train`** runs `mix train_micro` unless you pass **`--skip-micro`**.
-Run **`mix gen_micro_data`** when you change gold data or axis heuristics **before** retraining micros.
+Run **`mix gen_micro_data --world default`** when you change gold data or axis heuristics **before** retraining micros.
 
 ### Evaluate models
 
-- **`mix evaluate`**: evaluate all tasks
-- **`mix evaluate.intent [--save] [--verbose]`**: intent classification evaluation
+- **`mix evaluate --world default`**: evaluate all tasks
+- **`mix evaluate.intent --world default [--save] [--verbose]`**: intent classification evaluation
 - **`mix evaluate.sentiment [--verbose]`**: sentiment analysis evaluation
 - **`mix evaluate.speech_act`**: speech act classification evaluation
-- **`mix evaluate.ner`**: named entity recognition evaluation
+- **`mix evaluate.ner --world default`**: named entity recognition evaluation
 
 ### Utility tasks
 
@@ -566,7 +566,7 @@ mix clear_knowledge
 ### I want to evaluate model accuracy
 
 ```bash
-mix evaluate --save --compare
+mix evaluate --world default --save --compare
 mix test --only benchmark
 ```
 
