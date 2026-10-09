@@ -98,7 +98,7 @@ defmodule Brain.Response.ResponseEvaluatorTest do
     test "response aligning with an IN belief scores high on grounding" do
       belief = Belief.new(:world, :capital, "Paris is the capital of France",
         source: :explicit, confidence: 0.95)
-      {:ok, _} = BeliefStore.add_belief(belief)
+      {:ok, _} = BeliefStore.add_belief(Keyword.fetch!(@opts, :world_id), belief)
 
       analysis = build_analysis("What is the capital of France?",
         speech_act: SpeechActResult.new(:directive, :question, 0.8, is_question: true),
