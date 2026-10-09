@@ -79,6 +79,28 @@ defmodule Brain.Analysis.PipelineSideEffectsTest do
     end
   end
 
+  describe "a run with no user" do
+    # Every belief an event yields is about the user who said it; with no
+    # user there is no one to hold it about, and none is made up.
+    test "extracts no belief" do
+      beliefs_before = BeliefStore.stats(@world_id).total_beliefs
+      atlas_before = Atlas.Repo.aggregate(Atlas.Schemas.Belief, :count)
+
+      Pipeline.process(@directive, world_id: @world_id, side_effects: true)
+      Pipeline.process(@directive, world_id: @world_id, user_id: nil, side_effects: true)
+
+      assert BeliefStore.stats(@world_id).total_beliefs == beliefs_before
+      assert Atlas.Repo.aggregate(Atlas.Schemas.Belief, :count) == atlas_before
+      assert beliefs_for("anonymous") == []
+    end
+
+    test "an empty user id raises" do
+      assert_raise ArgumentError, ~r/:user_id must be a user id or nil/, fn ->
+        Pipeline.process(@directive, world_id: @world_id, user_id: "", side_effects: true)
+      end
+    end
+  end
+
   describe "the option is validated" do
     test "a value other than true or false raises" do
       assert_raise ArgumentError, ~r/:side_effects must be true or false/, fn ->
