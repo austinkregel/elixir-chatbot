@@ -17,25 +17,18 @@ defmodule Brain.ML.EntityModel do
   no fallback to the trained model or to another world.
   """
 
-  alias Brain.Analysis.RunProvenance
-
-  @compile {:no_warn_undefined, World.Persistence}
+  alias Brain.ML.WorldModelFile
 
   @file_name "entity_model.term"
   @model_keys [:tag_vocabulary, :feature_weights, :feature_totals, :smoothing, :transition_weights, :tag_priors]
 
   @doc "Where a world keeps its copy of the entity model."
   @spec path(String.t()) :: Path.t()
-  def path(world_id) when is_binary(world_id) do
-    Path.join([World.Persistence.world_path(world_id), "models", @file_name])
-  end
+  def path(world_id) when is_binary(world_id), do: WorldModelFile.path(world_id, @file_name)
 
   @doc "Where training writes the entity model that worlds are seeded from."
   @spec trained_path() :: Path.t()
-  def trained_path do
-    models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
-    Path.join(models_path, @file_name)
-  end
+  def trained_path, do: WorldModelFile.trained_path(@file_name)
 
   @doc "The world's entity model, read from its copy the first time it is asked for."
   @spec loaded!(String.t()) :: map()
@@ -58,17 +51,8 @@ defmodule Brain.ML.EntityModel do
   """
   @spec seed!(String.t()) :: :ok
   def seed!(world_id) when is_binary(world_id) do
-    from = trained_path()
-    model = read!(from, :trained)
-    to = path(world_id)
-
-    File.mkdir_p!(Path.dirname(to))
-    File.cp!(from, to)
-
-    unless RunProvenance.sha256_file!(to) == RunProvenance.sha256_file!(from) do
-      raise "EntityModel: the copy at #{to} does not match #{from} after seeding world #{inspect(world_id)}"
-    end
-
+    model = read!(trained_path(), :trained)
+    :ok = WorldModelFile.copy!(world_id, @file_name)
     :persistent_term.put(key(world_id), model)
     :ok
   end
