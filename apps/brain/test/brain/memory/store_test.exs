@@ -25,6 +25,13 @@ defmodule Brain.Memory.StoreTest do
 
     Store.clear()
 
+    # The database rows roll back with the test, but the store's index and
+    # record cache outlive it: a fact left there names evidence episodes no
+    # world holds, and recalling it for a later turn raises
+    # (`Brain.Memory.RecurringPattern.find/2`). Runs before the sandbox owner
+    # stops, so the store can still reach Atlas.
+    on_exit(fn -> Store.clear() end)
+
     :ok
   end
 
