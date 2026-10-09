@@ -38,9 +38,10 @@ defmodule Atlas.Schemas.LearningSession do
   @valid_statuses ~w(active completed cancelled)
   @valid_source_types ~w(web academic task auto_trigger)
 
-  # A session researches for one world; the caller names it.
+  # A session researches for one world; the caller names it. The id is cast so
+  # a session created with the id the brain gave it is updated by that id.
   @required_fields ~w(world_id)a
-  @optional_fields ~w(topic status started_at completed_at findings_count approved_count
+  @optional_fields ~w(id topic status started_at completed_at findings_count approved_count
     rejected_count hypotheses_tested hypotheses_supported hypotheses_falsified
     source_type metadata)a
 
