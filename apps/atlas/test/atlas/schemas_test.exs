@@ -168,6 +168,72 @@ defmodule Atlas.SchemasTest do
       refute changeset.valid?
       assert "can't be blank" in errors_on(changeset)[:world_id]
     end
+
+    test "stores the action beside the fact's text" do
+      attrs = %{
+        world_id: @world_id,
+        content: "is it raining | will it rain today",
+        action: "weather.query",
+        category: "consolidated",
+        confidence: 0.5
+      }
+
+      {:ok, fact} = %SemanticFact{} |> SemanticFact.changeset(attrs) |> Repo.insert()
+
+      assert %SemanticFact{content: "is it raining | will it rain today", action: "weather.query"} =
+               Repo.get!(SemanticFact, fact.id)
+    end
+  end
+
+  describe "a semantic fact stored in the single consolidated string" do
+    @migration Atlas.Repo.Migrations.AddActionToSemanticFacts
+
+    setup do
+      unless Code.ensure_loaded?(@migration) do
+        Code.require_file(
+          Application.app_dir(:atlas, "priv/repo/migrations/20261009180000_add_action_to_semantic_facts.exs")
+        )
+      end
+
+      :ok
+    end
+
+    # Rows as they were before the `action` column: the action inside the
+    # content, or a fact's own text with no action.
+    @rows [
+      {"Action: weather.query | Examples: is it raining | will it rain today", "weather.query",
+       "is it raining | will it rain today"},
+      {"Action: conversation | Examples: hello there", "conversation", "hello there"},
+      {"Action:  | Examples: hi", "", "hi"},
+      {"Action: | Examples: no space before the bar", nil, "Action: | Examples: no space before the bar"},
+      {"Action: greeting with no examples part", nil, "Action: greeting with no examples part"},
+      {"Weather queries are common in the afternoon", nil, "Weather queries are common in the afternoon"}
+    ]
+
+    test "is split by the migration into its action and its text, and every row is kept" do
+      ids =
+        for {content, _action, _text} <- @rows do
+          {:ok, fact} =
+            %SemanticFact{}
+            |> SemanticFact.changeset(%{world_id: @world_id, content: content, category: "consolidated", confidence: 0.5})
+            |> Repo.insert()
+
+          fact.id
+        end
+
+      Repo.query!(@migration.split_legacy_content_sql())
+
+      converted = Enum.map(ids, fn id -> Repo.get!(SemanticFact, id) end)
+
+      assert Enum.map(converted, &{&1.action, &1.content}) ==
+               Enum.map(@rows, fn {_content, action, text} -> {action, text} end)
+    end
+
+    test "is split the same way when read from a file written before the column" do
+      for {content, action, text} <- @rows do
+        assert SemanticFact.split_legacy_content(content) == {action, text}
+      end
+    end
   end
 
   describe "ReviewCandidate" do
