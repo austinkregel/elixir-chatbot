@@ -253,6 +253,110 @@ defmodule World.EmbedderTest do
     end
   end
 
+  describe "await_ready/2" do
+    test "returns at once for a world whose embedder is ready" do
+      {:ok, world} = create_test_world("embedder_await_ready")
+      assert {:ok, _embedding} = Embedder.embed(world.id, "hello")
+
+      assert :ok = Embedder.await_ready(world.id, 0)
+    end
+
+    test "a caller waiting for a rebuild proceeds when the rebuild finishes" do
+      {:ok, world} = create_test_world("embedder_await_rebuild")
+      assert {:ok, embedding} = Embedder.embed(world.id, "hello there")
+
+      resume = hold_rebuild!(world.id)
+      assert {:error, :vocabulary_building} = Embedder.embed(world.id, "hello there")
+
+      waiter = Task.async(fn -> Embedder.await_ready(world.id, 5_000) end)
+      assert Task.yield(waiter, 200) == nil
+
+      rebuild = resume.()
+
+      assert {:ok, :kept} = Task.await(rebuild)
+      assert :ok = Task.await(waiter)
+      assert Embedder.embed(world.id, "hello there") == {:ok, embedding}
+    end
+
+    test "raises naming the world and the timeout when the rebuild does not finish in time" do
+      {:ok, world} = create_test_world("embedder_await_timeout")
+      assert {:ok, _embedding} = Embedder.embed(world.id, "hello")
+
+      resume = hold_rebuild!(world.id)
+
+      error = assert_raise RuntimeError, fn -> Embedder.await_ready(world.id, 50) end
+      assert error.message =~ "world #{inspect(world.id)}'s vocabulary rebuild did not finish within 50 ms"
+      assert error.message =~ "Loading episodes"
+
+      assert {:ok, :kept} = Task.await(resume.())
+    end
+
+    test "raises with the failure when the rebuild it waits for fails" do
+      {:ok, world} = create_test_world("embedder_await_failed")
+
+      for text <- ["the weather in paris is sunny", "is the weather in paris sunny"] do
+        {:ok, _id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
+      end
+
+      {:ok, embedding} = Embedder.embed(world.id, "the weather in paris")
+      missing_id = Ecto.UUID.generate()
+      fact = SemanticFact.new("the weather in paris", embedding, [missing_id], [])
+      {:ok, _fact_id} = Store.add_semantic(fact, world_id: world.id)
+
+      resume = hold_rebuild!(world.id, fn -> catch_error(Embedder.build_vocabulary(world.id, force: true)) end)
+      waiter = Task.async(fn -> catch_error(Embedder.await_ready(world.id, 5_000)) end)
+      assert Task.yield(waiter, 200) == nil
+
+      assert %RuntimeError{} = Task.await(resume.())
+      assert %RuntimeError{message: message} = Task.await(waiter)
+      assert message =~ "world #{inspect(world.id)}'s vocabulary rebuild failed"
+      assert message =~ "semantic_evidence_missing"
+
+      assert Embedder.get_status(world.id).phase == :rebuild_failed
+      assert Embedder.embed(world.id, "the weather in paris") == {:error, :rebuild_failed}
+      assert_raise RuntimeError, ~r/last vocabulary rebuild failed/, fn -> Embedder.await_ready(world.id, 0) end
+    end
+  end
+
+  describe "Brain.Knowledge.Corroborator during a rebuild" do
+    test "waits for the rebuild and compares in the rebuilt vocabulary, never by token overlap" do
+      {:ok, world} = create_test_world("embedder_corroborator_waits")
+
+      # The world's vocabulary knows only "paris", so both claims embed as the
+      # same vector (similarity 1.0); their token overlap ({paris, capital}
+      # against {paris, city}) would be 1/3.
+      :ok = Embedder.load_model(world.id, %{vocabulary: %{"paris" => 0}, idf_weights: %{"paris" => 1.0}})
+
+      resume = hold_rebuild!(world.id)
+
+      compare = Task.async(fn -> Brain.Knowledge.Corroborator.compare_claims(world.id, "Paris capital", "Paris city") end)
+      assert Task.yield(compare, 200) == nil
+
+      assert {:ok, :kept} = Task.await(resume.())
+      assert {:ok, 1.0} = Task.await(compare)
+    end
+  end
+
+  # Starts a rebuild of the world's vocabulary and holds it while it reads the
+  # world's episodes, with the store suspended. Returns a function that lets
+  # the rebuild go on and returns its task.
+  defp hold_rebuild!(world_id, rebuild \\ nil) do
+    rebuild = rebuild || fn -> Embedder.build_vocabulary(world_id, force: true) end
+    store = Process.whereis(Store)
+    :ok = :sys.suspend(store)
+    task = Task.async(rebuild)
+
+    eventually(
+      fn -> Embedder.get_status(world_id).phase end,
+      fn phase -> phase == :loading_episodes end
+    )
+
+    fn ->
+      :ok = :sys.resume(store)
+      task
+    end
+  end
+
   describe "cosine_similarity/2" do
     test "is 1.0 for a vector with itself" do
       assert_in_delta Embedder.cosine_similarity([0.6, 0.8], [0.6, 0.8]), 1.0, 1.0e-9
