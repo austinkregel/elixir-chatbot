@@ -18,11 +18,12 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
           source: :semantic_scholar
         )
 
-      finding = Paper.to_finding(paper)
+      finding = Paper.to_finding(paper, "papers_world")
 
       assert finding != nil
       assert finding.claim =~ "Transformer"
       assert finding.confidence >= 0.9
+      assert finding.world_id == "papers_world"
     end
 
     test "returns nil for paper without abstract" do
@@ -34,7 +35,7 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
           source: :semantic_scholar
         )
 
-      assert Paper.to_finding(paper) == nil
+      assert Paper.to_finding(paper, "papers_world") == nil
     end
 
     test "returns nil for paper with short abstract" do
@@ -46,7 +47,7 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
           source: :semantic_scholar
         )
 
-      assert Paper.to_finding(paper) == nil
+      assert Paper.to_finding(paper, "papers_world") == nil
     end
 
     test "formats author string correctly for single author" do
