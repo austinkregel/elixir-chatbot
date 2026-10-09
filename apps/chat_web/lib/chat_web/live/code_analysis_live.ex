@@ -77,20 +77,6 @@ defmodule ChatWeb.CodeAnalysisLive do
     {:noreply, assign(socket, :active_tab, String.to_existing_atom(tab))}
   end
 
-  def handle_event("switch_world", %{"world_id" => world_id}, socket) do
-    socket =
-      socket
-      |> assign(:world_id, world_id)
-      |> assign(:code_status, load_code_status())
-      |> load_world_symbols()
-
-    {:noreply, socket}
-  end
-
-  def handle_event("refresh_worlds", _params, socket) do
-    {:noreply, socket}
-  end
-
   def handle_event("search_symbols", %{"query" => query}, socket) do
     socket =
       socket
