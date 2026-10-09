@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Evaluate.Intent do
   alias Brain.Analysis.Pipeline
   alias Brain.ML
   @shortdoc "Evaluate intent classification accuracy"
-  @moduledoc "Evaluate intent classification against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy.\n\n## Usage\n\n    mix evaluate.intent              # Run evaluation\n    mix evaluate.intent --save       # Save results\n    mix evaluate.intent --compare    # Compare with previous\n    mix evaluate.intent --verbose    # Show confusion matrix\n"
+  @moduledoc "Evaluate intent classification against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy.\n\n## Usage\n\n    mix evaluate.intent --world <id>              # Run evaluation\n    mix evaluate.intent --world <id> --save       # Save results\n    mix evaluate.intent --world <id> --compare    # Compare with previous\n    mix evaluate.intent --world <id> --verbose    # Show confusion matrix\n\n## Options\n\n    --world <id>   Required. The world the held-out rows are analyzed in.\n    --save         Save results\n    --compare      Compare with previous\n    --verbose      Show confusion matrix\n"
 
   use Mix.Task
 
@@ -10,11 +10,18 @@ defmodule Mix.Tasks.Evaluate.Intent do
 
   @impl Mix.Task
   def run(args) do
+    {opts, _, _} =
+      OptionParser.parse(args, strict: [save: :boolean, compare: :boolean, verbose: :boolean, world: :string])
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix evaluate.intent needs --world <id>, the world the held-out rows are analyzed in")
+
     Mix.Task.run("app.start")
 
-    save? = "--save" in args
-    compare? = "--compare" in args
-    verbose? = "--verbose" in args
+    save? = Keyword.get(opts, :save, false)
+    compare? = Keyword.get(opts, :compare, false)
+    verbose? = Keyword.get(opts, :verbose, false)
 
     IO.puts("\nAwaiting MicroClassifiers readiness...")
     ML.MicroClassifiers.await_ready(:infinity)
@@ -42,7 +49,7 @@ defmodule Mix.Tasks.Evaluate.Intent do
     IO.puts(String.duplicate("=", 60) <> "\n")
 
     start_time = System.monotonic_time(:millisecond)
-    {predictions, actuals} = evaluate_all(gold)
+    {predictions, actuals} = evaluate_all(gold, world_id)
     duration_ms = System.monotonic_time(:millisecond) - start_time
 
     cm = Evaluation.confusion_matrix(predictions, actuals)
@@ -106,7 +113,7 @@ defmodule Mix.Tasks.Evaluate.Intent do
     IO.puts("")
   end
 
-  defp evaluate_all(gold) do
+  defp evaluate_all(gold, world_id) do
     total = length(gold)
     IO.puts("Starting evaluation of #{total} examples...")
 
@@ -130,6 +137,7 @@ defmodule Mix.Tasks.Evaluate.Intent do
             analysis =
               Pipeline.analyze_chunk(text,
                 side_effects: false,
+                world_id: world_id,
                 active_contexts: Brain.Analysis.ActiveContexts.for_row(example)
               )
 
