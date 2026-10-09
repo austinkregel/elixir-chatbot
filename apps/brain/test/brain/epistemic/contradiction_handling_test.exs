@@ -9,10 +9,15 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
   alias Brain
   import Brain.TestHelpers
 
+  # The world the test suite runs in, seeded by `mix test.models`. The
+  # conversations below run in it, so the beliefs and JTMS nodes they produce
+  # are held in it, and every belief and node this file makes directly is too.
+  @world_id "default"
+
   setup do
     start_brain_services()
     ensure_epistemic_stores_started()
-    {:ok, conversation_id} = Brain.create_conversation(world_id: "default")
+    {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
     user_id = "test_user_#{:rand.uniform(100_000)}"
 
     %{conversation_id: conversation_id, user_id: user_id}
@@ -22,6 +27,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     test "detects contradiction when fact contradicts existing belief" do
       {:ok, belief_id1} =
         BeliefStore.add_belief(
+          @world_id,
           :world,
           :france,
           "The capital is Paris",
@@ -29,7 +35,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
           source: :explicit
         )
 
-      result = Integration.verify_fact("france", "The capital is not Paris")
+      result = Integration.verify_fact(@world_id, "france", "The capital is not Paris")
 
       assert {:contradicted, conflicting_beliefs} = result
       assert length(conflicting_beliefs) == 1
@@ -37,9 +43,28 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       assert hd(conflicting_beliefs).object == "The capital is Paris"
     end
 
+    test "verifies only against the beliefs of its world" do
+      {:ok, _} =
+        BeliefStore.add_belief(@world_id, :world, :france, "The capital is Paris",
+          confidence: 0.9,
+          source: :explicit
+        )
+
+      other = "test_contradiction_other_#{System.unique_integer([:positive])}"
+      Brain.Test.Singletons.reset_epistemic_stores!([:beliefs, :jtms], world_id: other)
+
+      assert {:uncertain, :no_existing_beliefs} =
+               Integration.verify_fact(other, "france", "The capital is not Paris")
+
+      assert {:contradiction, [_]} = Integration.check_contradiction(@world_id, "france", "The capital is not Paris")
+      assert :consistent = Integration.check_contradiction(other, "france", "The capital is not Paris")
+      assert {:ok, []} = BeliefStore.query_beliefs(other, subject: :world, predicate: :france)
+    end
+
     test "detects contradiction with negation" do
       {:ok, _belief_id} =
         BeliefStore.add_belief(
+          @world_id,
           :world,
           :water,
           "Water boils at 100C",
@@ -47,7 +72,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
           source: :explicit
         )
 
-      result = Integration.verify_fact("water", "Water does not boil at 100C")
+      result = Integration.verify_fact(@world_id, "water", "Water does not boil at 100C")
 
       assert {:contradicted, conflicting_beliefs} = result
       assert length(conflicting_beliefs) == 1
@@ -56,6 +81,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     test "returns verified when fact is consistent" do
       {:ok, _belief_id} =
         BeliefStore.add_belief(
+          @world_id,
           :world,
           :france,
           "The capital is Paris",
@@ -63,14 +89,14 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
           source: :explicit
         )
 
-      result = Integration.verify_fact("france", "The capital is Paris")
+      result = Integration.verify_fact(@world_id, "france", "The capital is Paris")
 
       assert {:verified, confidence} = result
       assert confidence >= 0.9
     end
 
     test "returns uncertain when no existing beliefs" do
-      result = Integration.verify_fact("unknown_entity", "Some fact")
+      result = Integration.verify_fact(@world_id, "unknown_entity", "Some fact")
 
       assert {:uncertain, :no_existing_beliefs} = result
     end
@@ -78,6 +104,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     test "detects contradiction with opposite meaning" do
       {:ok, _belief_id} =
         BeliefStore.add_belief(
+          @world_id,
           :world,
           :temperature,
           "It is hot",
@@ -85,7 +112,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
           source: :explicit
         )
 
-      result = Integration.verify_fact("temperature", "It is cold")
+      result = Integration.verify_fact(@world_id, "temperature", "It is cold")
 
       assert match?({:contradicted, _}, result) or
                match?({:uncertain, _}, result) or
@@ -97,6 +124,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     test "checks for contradictions against existing beliefs" do
       {:ok, _belief_id} =
         BeliefStore.add_belief(
+          @world_id,
           :world,
           :france,
           "The capital is Paris",
@@ -104,7 +132,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
           source: :explicit
         )
 
-      result = Integration.check_contradiction("france", "The capital is not Paris")
+      result = Integration.check_contradiction(@world_id, "france", "The capital is not Paris")
 
       assert {:contradiction, conflicting_beliefs} = result
       assert length(conflicting_beliefs) == 1
@@ -113,6 +141,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     test "returns consistent when no contradiction" do
       {:ok, _belief_id} =
         BeliefStore.add_belief(
+          @world_id,
           :world,
           :france,
           "The capital is Paris",
@@ -120,13 +149,13 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
           source: :explicit
         )
 
-      result = Integration.check_contradiction("france", "The capital is Paris")
+      result = Integration.check_contradiction(@world_id, "france", "The capital is Paris")
 
       assert :consistent = result
     end
 
     test "returns no_data when no existing beliefs" do
-      result = Integration.check_contradiction("unknown_entity", "Some fact")
+      result = Integration.check_contradiction(@world_id, "unknown_entity", "Some fact")
       assert result in [:no_data, :consistent]
     end
   end
@@ -135,6 +164,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     test "detects when user contradicts their own previous statement", %{user_id: user_id} do
       {:ok, _belief_id1} =
         BeliefStore.add_belief(
+          @world_id,
           :user,
           "location",
           "New York",
@@ -144,10 +174,10 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
         )
 
       result =
-        Integration.verify_fact("location", "Chicago")
+        Integration.verify_fact(@world_id, "location", "Chicago")
         |> case do
           {:uncertain, _} ->
-            case BeliefStore.query_beliefs(
+            case BeliefStore.query_beliefs(@world_id,
                    subject: :user,
                    predicate: "location",
                    user_id: user_id
@@ -173,7 +203,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
         end
 
       assert result == :consistent or match?({:contradicted, _}, result)
-      beliefs = BeliefStore.query_beliefs(subject: :user, predicate: "location", user_id: user_id)
+      beliefs = BeliefStore.query_beliefs(@world_id, subject: :user, predicate: "location", user_id: user_id)
       assert {:ok, user_beliefs} = beliefs
       assert user_beliefs != []
     end
@@ -181,6 +211,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     test "handles multiple contradictory beliefs about same entity", %{user_id: user_id} do
       {:ok, _belief_id1} =
         BeliefStore.add_belief(
+          @world_id,
           :user,
           :location,
           "New York",
@@ -191,6 +222,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
 
       {:ok, _belief_id2} =
         BeliefStore.add_belief(
+          @world_id,
           :user,
           :location,
           "Chicago",
@@ -200,13 +232,13 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
         )
 
       {:ok, beliefs} =
-        BeliefStore.query_beliefs(subject: :user, predicate: :location, user_id: user_id)
+        BeliefStore.query_beliefs(@world_id, subject: :user, predicate: :location, user_id: user_id)
 
       assert length(beliefs) == 2
       locations = Enum.map(beliefs, &String.downcase(&1.object))
       assert "new york" in locations
       assert "chicago" in locations
-      result = Integration.check_contradiction("location", "Los Angeles")
+      result = Integration.check_contradiction(@world_id, "location", "Los Angeles")
 
       assert result == :no_data or
                result == :consistent or
@@ -218,6 +250,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     test "detects contradiction when learned fact contradicts existing belief" do
       {:ok, _belief_id} =
         BeliefStore.add_belief(
+          @world_id,
           :world,
           :france,
           "The capital is Paris",
@@ -226,13 +259,13 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
         )
 
       # verify_fact detects the contradiction and returns it
-      result = Integration.verify_fact("france", "The capital is not Paris")
+      result = Integration.verify_fact(@world_id, "france", "The capital is not Paris")
       assert {:contradicted, conflicting_beliefs} = result
 
       assert length(conflicting_beliefs) == 1,
              "Expected 1 conflicting belief, got: #{inspect(conflicting_beliefs)}"
 
-      {:ok, beliefs} = BeliefStore.query_beliefs(subject: :world, predicate: :france)
+      {:ok, beliefs} = BeliefStore.query_beliefs(@world_id, subject: :world, predicate: :france)
       paris_beliefs = Enum.filter(beliefs, &(&1.object == "The capital is Paris"))
       not_paris_beliefs = Enum.filter(beliefs, &(&1.object == "The capital is not Paris"))
 
@@ -246,6 +279,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     test "allows adding fact when no contradiction exists" do
       {:ok, _belief_id} =
         BeliefStore.add_belief(
+          @world_id,
           :world,
           :france,
           "The capital is Paris",
@@ -253,12 +287,13 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
           source: :explicit
         )
 
-      result = Integration.verify_fact("france", "The capital is Paris")
+      result = Integration.verify_fact(@world_id, "france", "The capital is Paris")
 
       assert {:verified, _confidence} = result
 
       {:ok, _fact_id, _fact} =
         Integration.add_fact(
+          @world_id,
           "france",
           "The capital is Paris",
           category: "learned",
@@ -279,7 +314,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       assert String.length(response1) > 0
 
       {:ok, beliefs1} =
-        BeliefStore.query_beliefs(
+        BeliefStore.query_beliefs(@world_id,
           subject: :user,
           predicate: :location,
           user_id: user_id
@@ -298,7 +333,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       assert String.length(response2) > 0
 
       {:ok, beliefs2} =
-        BeliefStore.query_beliefs(
+        BeliefStore.query_beliefs(@world_id,
           subject: :user,
           predicate: :location,
           user_id: user_id
@@ -327,7 +362,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       assert String.length(response2) > 0
 
       {:ok, beliefs} =
-        BeliefStore.query_beliefs(
+        BeliefStore.query_beliefs(@world_id,
           subject: :user,
           predicate: :preference,
           user_id: user_id
@@ -342,23 +377,23 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
       import ExUnit.CaptureLog
 
       {:ok, node1} =
-        JTMS.create_assumption("User is from New York", true)
+        JTMS.create_assumption(@world_id, "User is from New York", true)
 
       {:ok, node2} =
-        JTMS.create_assumption("User is from Chicago", true)
+        JTMS.create_assumption(@world_id, "User is from Chicago", true)
 
       # register_contradiction triggers the handler immediately if both nodes are IN
       # Capture the log to avoid leaking to test output
       log =
         capture_log([level: :warning], fn ->
-          {:ok, _} = JTMS.register_contradiction([node1, node2])
+          {:ok, _} = JTMS.register_contradiction(@world_id, [node1, node2])
         end)
 
       # The contradiction was detected during registration
       assert log =~ "Contradiction detected"
 
-      {:error, {:contradiction, contra_id}} = JTMS.check_consistency()
-      contradictions = JTMS.get_contradictions()
+      {:error, {:contradiction, contra_id}} = JTMS.check_consistency(@world_id)
+      contradictions = JTMS.get_contradictions(@world_id)
       assert length(contradictions) == 1
       contradiction_node = hd(contradictions)
       assert contradiction_node.id == contra_id
@@ -367,21 +402,21 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     test "contradiction handler receives notification" do
       import ExUnit.CaptureLog
 
-      {:ok, node1} = JTMS.create_assumption("Fact A is true", true)
-      {:ok, node2} = JTMS.create_assumption("Fact A is not true", true)
+      {:ok, node1} = JTMS.create_assumption(@world_id, "Fact A is true", true)
+      {:ok, node2} = JTMS.create_assumption(@world_id, "Fact A is not true", true)
 
       # register_contradiction triggers the handler immediately if both nodes are IN
       # Capture the log to avoid leaking to test output
       log =
         capture_log([level: :warning], fn ->
-          {:ok, _} = JTMS.register_contradiction([node1, node2])
+          {:ok, _} = JTMS.register_contradiction(@world_id, [node1, node2])
         end)
 
       # The contradiction was detected during registration
       assert log =~ "Contradiction detected"
 
-      {:error, {:contradiction, contra_id}} = JTMS.check_consistency()
-      contradictions = JTMS.get_contradictions()
+      {:error, {:contradiction, contra_id}} = JTMS.check_consistency(@world_id)
+      contradictions = JTMS.get_contradictions(@world_id)
       assert length(contradictions) == 1
       contradiction_node = hd(contradictions)
       assert contradiction_node.label == :in
@@ -393,6 +428,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     test "higher confidence belief takes precedence in contradiction detection" do
       {:ok, high_conf_belief_id} =
         BeliefStore.add_belief(
+          @world_id,
           :world,
           :france,
           "The capital is Paris",
@@ -402,6 +438,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
 
       {:ok, _low_conf_belief_id} =
         BeliefStore.add_belief(
+          @world_id,
           :world,
           :france,
           "The capital is not Paris",
@@ -409,9 +446,9 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
           source: :inferred
         )
 
-      result = Integration.check_contradiction("france", "The capital is Paris")
+      result = Integration.check_contradiction(@world_id, "france", "The capital is Paris")
       assert match?({:contradiction, _}, result)
-      {:ok, beliefs} = BeliefStore.query_beliefs(subject: :world, predicate: :france)
+      {:ok, beliefs} = BeliefStore.query_beliefs(@world_id, subject: :world, predicate: :france)
       assert length(beliefs) == 2
       high_conf = Enum.find(beliefs, &(&1.id == high_conf_belief_id))
       assert high_conf.confidence == 0.95
@@ -430,6 +467,6 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     # this file's beliefs, nodes and models would otherwise stay visible for
     # the rest of the run. Empty is the boot state for all three (0 rows in
     # atlas_beliefs and atlas_user_models; JTMS loads nothing at all).
-    Brain.Test.Singletons.reset_epistemic_stores!([:beliefs, :jtms, :user_models])
+    Brain.Test.Singletons.reset_epistemic_stores!([:beliefs, :jtms, :user_models], world_id: @world_id)
   end
 end
