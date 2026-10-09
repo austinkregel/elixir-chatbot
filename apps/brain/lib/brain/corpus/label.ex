@@ -2,14 +2,14 @@ defmodule Brain.Corpus.Label do
   @moduledoc """
   How the corpus names an intent.
 
-  One export file's utterances are filed under one label, and two transformations
-  stand between the filename and that label:
+  One export file's utterances are filed under one label, the file's stem, with
+  one transformation: `smarthome.lights.*` is a retired namespace that folds onto
+  `smarthome.device.*`.
 
-    * everything from the first `" - "` onward is a *context* on the intent, not a
-      separate intent — `account.balance.check - context_ account` is
-      `account.balance.check` asked as a follow-up;
-    * `smarthome.lights.*` is a retired namespace that folds onto
-      `smarthome.device.*`.
+  Contextual variants (Dialogflow's `intent - context_x - comment_y` follow-up
+  files) are collapsed into the intent their action names, and each moved
+  utterance carries `followupContext` and `followupVariant`. A stem that still
+  contains `" - "` is a variant that was not collapsed, and naming it raises.
 
   Anything that compares itself to the corpus — an accuracy figure, a coverage
   report, a registry — has to name intents this way, or it is comparing two
@@ -33,17 +33,6 @@ defmodule Brain.Corpus.Label do
   @separator " - "
 
   @doc """
-  The intent an export label belongs to, with its context suffix dropped.
-
-      iex> Brain.Corpus.Label.root("account.balance.check - context_ account")
-      "account.balance.check"
-  """
-  @spec root(String.t()) :: String.t()
-  def root(name) when is_binary(name) do
-    name |> String.split(@separator) |> List.first() |> String.trim()
-  end
-
-  @doc """
   Folds the retired `smarthome.lights.` namespace onto `smarthome.device.`.
   """
   @spec fold_lights(String.t()) :: String.t()
@@ -55,10 +44,17 @@ defmodule Brain.Corpus.Label do
 
   This is the vocabulary `Pipeline.registered_intent?/1` gates accuracy on, so
   anything comparing itself to the corpus has to name intents this way or it is
-  comparing two different vocabularies.
+  comparing two different vocabularies. Raises for a contextual-variant name.
   """
   @spec canonical(String.t()) :: String.t()
-  def canonical(name) when is_binary(name), do: name |> root() |> fold_lights()
+  def canonical(name) when is_binary(name) do
+    if String.contains?(name, @separator) do
+      raise ArgumentError,
+            "Corpus.Label: #{inspect(name)} is a contextual-variant name; collapse it into the intent its action names"
+    end
+
+    fold_lights(name)
+  end
 
   @doc """
   The stem `scripts/generate_pos_annotations.py` derives from an export stem.
