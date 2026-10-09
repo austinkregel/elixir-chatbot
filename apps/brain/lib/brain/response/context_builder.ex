@@ -56,7 +56,7 @@ defmodule Brain.Response.ContextBuilder do
     conversation_id = Keyword.get(opts, :conversation_id)
 
     analysis_context = extract_analysis_context(primary, analyses, model)
-    graph_context = extract_graph_context(analyses, user_id, conversation_id)
+    graph_context = extract_graph_context(analyses, user_id, conversation_id, world_id)
     enrichment_context = extract_enrichment_context(primary, opts, world_id)
     memory_context = extract_memory_context(primary, analyses, world_id)
     accumulator_context = extract_accumulator_context(primary)
@@ -236,22 +236,22 @@ defmodule Brain.Response.ContextBuilder do
   defp serialize_slots(s) when is_map(s), do: s
   defp serialize_slots(_), do: %{filled: %{}, missing_required: [], missing_optional: []}
 
-  defp extract_graph_context(analyses, user_id, conversation_id) do
+  defp extract_graph_context(analyses, user_id, conversation_id, world_id) do
     beliefs = analyses |> Enum.flat_map(&(Map.get(&1, :related_beliefs) || [])) |> Enum.uniq()
 
-    justification_chains = fetch_justification_chains(beliefs)
-    evidence_chains = fetch_evidence_chains(beliefs)
-    assumption_consequences = fetch_assumption_consequences(analyses, beliefs)
-    user_preferences = if user_id, do: Reader.user_preferences(user_id), else: []
+    justification_chains = fetch_justification_chains(beliefs, world_id)
+    evidence_chains = fetch_evidence_chains(beliefs, world_id)
+    assumption_consequences = fetch_assumption_consequences(analyses, beliefs, world_id)
+    user_preferences = if user_id, do: Reader.user_preferences(user_id, world_id: world_id), else: []
 
     conversation_topics =
       if conversation_id,
-        do: safe_call(fn -> Reader.conversation_topics(to_string(conversation_id)) end),
+        do: safe_call(fn -> Reader.conversation_topics(to_string(conversation_id), world_id: world_id) end),
         else: []
 
     recent_context =
       if conversation_id,
-        do: safe_call(fn -> Reader.recent_context(to_string(conversation_id)) end),
+        do: safe_call(fn -> Reader.recent_context(to_string(conversation_id), world_id: world_id) end),
         else: []
 
     %{
@@ -264,23 +264,26 @@ defmodule Brain.Response.ContextBuilder do
     }
   end
 
-  defp fetch_justification_chains(beliefs) do
+  defp fetch_justification_chains(beliefs, world_id) do
     beliefs
     |> Enum.flat_map(fn belief ->
       node_id = Map.get(belief, :node_id) || Map.get(belief, "node_id")
-      if node_id, do: safe_call(fn -> Reader.belief_justification_chain(to_string(node_id)) end), else: []
+
+      if node_id,
+        do: safe_call(fn -> Reader.belief_justification_chain(to_string(node_id), world_id: world_id) end),
+        else: []
     end)
   end
 
-  defp fetch_evidence_chains(beliefs) do
+  defp fetch_evidence_chains(beliefs, world_id) do
     beliefs
     |> Enum.flat_map(fn belief ->
       subject = Map.get(belief, :subject) || Map.get(belief, "subject")
-      if subject, do: safe_call(fn -> Reader.evidence_chain(to_string(subject)) end), else: []
+      if subject, do: safe_call(fn -> Reader.evidence_chain(to_string(subject), world_id: world_id) end), else: []
     end)
   end
 
-  defp fetch_assumption_consequences(analyses, beliefs) do
+  defp fetch_assumption_consequences(analyses, beliefs, world_id) do
     has_contradiction =
       Enum.any?(analyses, fn a -> Map.get(a, :epistemic_status) == :contradicted end)
 
@@ -288,7 +291,9 @@ defmodule Brain.Response.ContextBuilder do
       beliefs
       |> Enum.flat_map(fn belief ->
         node_id = Map.get(belief, :node_id) || Map.get(belief, "node_id")
-        if node_id, do: safe_call(fn -> Reader.assumption_consequences(to_string(node_id)) end), else: []
+        if node_id,
+          do: safe_call(fn -> Reader.assumption_consequences(to_string(node_id), world_id: world_id) end),
+          else: []
       end)
     else
       []
