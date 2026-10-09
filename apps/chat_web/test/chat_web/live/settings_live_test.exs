@@ -3,6 +3,9 @@ defmodule ChatWeb.SettingsLiveTest do
   import Phoenix.LiveViewTest
   import Brain.TestHelpers
 
+  alias Brain.Knowledge.LearningTriggers
+  alias World.Manager, as: WorldManager
+
   setup do
     ensure_pubsub_started()
 
@@ -87,6 +90,49 @@ defmodule ChatWeb.SettingsLiveTest do
   # is_overlay_entity/2 function that doesn't handle :_meta atoms properly.
   # The entities section functionality works in the browser but crashes in tests
   # due to how the world overlay is structured with metadata.
+
+  describe "auto-learning world card" do
+    setup do
+      # LearningTriggers is the node's one instance; whatever a test sets is
+      # set back when it ends. The configured world is loaded, so setting it
+      # back succeeds.
+      original = LearningTriggers.auto_learning_world()
+      on_exit(fn -> :ok = LearningTriggers.set_auto_learning_world(original) end)
+
+      # A world the card offers. The card lists `World.Manager.list_worlds/0`,
+      # which leaves out worlds marked as test worlds, so this one is created
+      # without that mark. Its id starts with `test_`, it is ephemeral, so
+      # nothing of it is on disk, and it is destroyed when the test ends.
+      other_id = "test_settings_auto_learning_#{System.unique_integer([:positive])}"
+      {:ok, other} = WorldManager.create(other_id, id: other_id, mode: :ephemeral)
+      on_exit(fn -> WorldManager.destroy(other.id) end)
+
+      %{original: original, other: other}
+    end
+
+    test "shows the auto-learning world selected", %{conn: conn, original: original, other: other} do
+      {:ok, view, _html} = live(conn, "/settings?section=training")
+
+      assert has_element?(view, "h3", "Auto-Learning World")
+      assert has_element?(view, ~s(#auto-learning-world option[value="#{original}"][selected]))
+      assert has_element?(view, ~s(#auto-learning-world option[value="#{other.id}"]))
+      refute has_element?(view, ~s(#auto-learning-world option[value="#{other.id}"][selected]))
+      refute render(view) =~ "is not loaded. An auto-triggered session will fail"
+    end
+
+    test "saving a loaded world sets it as the auto-learning world", %{conn: conn, other: other} do
+      {:ok, view, _html} = live(conn, "/settings?section=training")
+
+      html =
+        view
+        |> form("form[phx-submit=set_auto_learning_world]", %{world_id: other.id})
+        |> render_submit()
+
+      assert LearningTriggers.auto_learning_world() == other.id
+      assert html =~ "Auto-triggered learning sessions now start in world #{other.id}"
+      assert has_element?(view, ~s(#auto-learning-world option[value="#{other.id}"][selected]))
+    end
+  end
 
   describe "refresh" do
     test "refresh button works", %{conn: conn} do
