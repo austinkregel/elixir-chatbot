@@ -13,7 +13,7 @@ defmodule Brain.Response.SurfaceRealizerTest do
 
   describe "realize/2 with empty list" do
     test "returns error with :empty_primitive_list reason" do
-      assert {:error, :empty_primitive_list} = SurfaceRealizer.realize([])
+      assert {:error, :empty_primitive_list} = SurfaceRealizer.realize([], world_id: @world_id)
     end
   end
 
