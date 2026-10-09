@@ -133,7 +133,7 @@ defmodule Brain.Response.SurfaceRealizer do
         # with side effects off keeps them out of it.
         if Keyword.get(opts, :side_effects, true) do
           collect_plan(primitives, text, opts)
-          collect_pairs(primitives, text)
+          collect_pairs(primitives, Keyword.fetch!(opts, :world_id))
         end
 
         {:ok, rendered, text}
@@ -211,15 +211,15 @@ defmodule Brain.Response.SurfaceRealizer do
     end
   end
 
-  defp collect_pairs(primitives, _text) do
+  defp collect_pairs(primitives, world_id) do
     Enum.each(primitives, fn p ->
-      collect_pair(p, p.rendered || "")
+      collect_pair(p, p.rendered || "", world_id)
     end)
   end
 
-  defp collect_pair(p, text) do
-    if Code.ensure_loaded?(DecompressorCollector) and function_exported?(DecompressorCollector, :collect, 2) do
-      DecompressorCollector.collect(p, text)
+  defp collect_pair(p, text, world_id) do
+    if Code.ensure_loaded?(DecompressorCollector) and function_exported?(DecompressorCollector, :collect, 3) do
+      DecompressorCollector.collect(p, text, world_id)
     end
   rescue
     _ -> :ok
