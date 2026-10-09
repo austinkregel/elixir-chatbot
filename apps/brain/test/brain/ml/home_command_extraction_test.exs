@@ -11,7 +11,8 @@ defmodule Brain.ML.HomeCommandExtractionTest do
 
   alias Brain.ML.EntityExtractor
 
-  defp entities(text), do: EntityExtractor.extract_entities(text)
+  # "default" is the world the test suite runs in, seeded by `mix test.models`.
+  defp entities(text), do: EntityExtractor.extract_entities(text, world_id: "default")
 
   defp find(entities, match), do: Enum.find(entities, &(String.downcase(&1.match) == match))
 
