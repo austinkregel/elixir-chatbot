@@ -9,7 +9,7 @@ defmodule World.ManagerEntityModelTest do
   memory. Either way a destroyed world's loaded model is gone, so extraction in
   it raises rather than running on a model the world no longer holds.
   """
-  use ExUnit.Case, async: false
+  use World.AtlasCase, async: false
   import Brain.TestHelpers
 
   alias Brain.ML.EntityModel
