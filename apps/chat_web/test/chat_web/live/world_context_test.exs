@@ -284,6 +284,48 @@ defmodule ChatWeb.WorldContextTest do
     end
   end
 
+  describe "the selected world belongs to one web user" do
+    setup do
+      # `World.Manager.list_worlds/0` leaves out worlds marked as test worlds,
+      # and only listed worlds can be selected, so this one is created without
+      # that mark and destroyed when the test ends.
+      {:ok, other} = WorldManager.create("world_context_other_#{System.unique_integer([:positive])}")
+      on_exit(fn -> WorldManager.destroy(other.id) end)
+
+      %{other: other}
+    end
+
+    test "switching in one user's session leaves another user's world alone", %{other: other} do
+      alice = get(build_conn(), "/worlds")
+      bob = get(build_conn(), "/worlds")
+      bob_id = get_session(bob, "user_id")
+
+      {:ok, alice_view, _html} = live(alice)
+      {:ok, bob_view, _html} = live(bob)
+
+      initial = ChatWeb.Worlds.initial_world_id()
+      assert bob_view |> element("#web-user-world") |> render() =~ initial
+
+      alice_view |> element("#select-world-#{other.id}") |> render_click()
+
+      assert alice_view |> element("#web-user-world") |> render() =~ other.id
+      assert bob_view |> element("#web-user-world") |> render() =~ initial
+      refute bob_view |> element("#web-user-world") |> render() =~ other.id
+      assert Atlas.WebUsers.get!(bob_id).selected_world_id == initial
+    end
+
+    test "switching on one page moves the same user's other open pages", %{other: other} do
+      conn = get(build_conn(), "/worlds")
+
+      {:ok, first_page, _html} = live(conn)
+      {:ok, second_page, _html} = live(recycle(conn), "/worlds")
+
+      first_page |> element("#select-world-#{other.id}") |> render_click()
+
+      assert second_page |> element("#web-user-world") |> render() =~ other.id
+    end
+  end
+
   describe "flash messages" do
     setup %{conn: conn} do
       {:ok, _view, _html} = live(conn, "/dashboard")
