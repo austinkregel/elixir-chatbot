@@ -99,6 +99,41 @@ defmodule World.PersistenceTest do
     end
   end
 
+  describe "a world's semantic facts" do
+    alias Brain.Memory.Types.SemanticFact
+
+    defp persistent_world(id) do
+      %TrainingWorld{id: id, name: id, mode: :persistent, created_at: DateTime.utc_now(), config: %{}, metadata: %{}}
+    end
+
+    test "are saved and loaded with their action apart from their text" do
+      fact = SemanticFact.new("is it raining | will it rain today", [0.1], ["ep1"], [], action: "weather.query")
+      data = %{world: persistent_world("test_semantics"), metrics: nil, candidates: [], overlay: [], events: [], semantics: [fact]}
+
+      assert :ok = Persistence.save("test_semantics", data)
+      assert {:ok, %{semantics: [loaded]}} = Persistence.load("test_semantics")
+
+      assert loaded.representation == "is it raining | will it rain today"
+      assert loaded.action == "weather.query"
+    end
+
+    test "saved before facts had an action are split into the action and the text", %{sandbox_dir: sandbox_dir} do
+      data = %{world: persistent_world("test_legacy_semantics"), metrics: nil, candidates: [], overlay: [], events: []}
+      assert :ok = Persistence.save("test_legacy_semantics", data)
+
+      legacy = [
+        %{"id" => "a", "representation" => "Action: weather.query | Examples: is it raining", "evidence_ids" => ["ep1"]},
+        %{"id" => "b", "representation" => "a fact of its own", "evidence_ids" => []}
+      ]
+
+      File.write!(Path.join([sandbox_dir, "test_legacy_semantics", "semantics.json"]), Jason.encode!(legacy))
+
+      assert {:ok, %{semantics: [a, b]}} = Persistence.load("test_legacy_semantics")
+      assert {a.action, a.representation} == {"weather.query", "is it raining"}
+      assert {b.action, b.representation} == {nil, "a fact of its own"}
+    end
+  end
+
   describe "load/1" do
     test "returns error for nonexistent world" do
       assert {:error, :not_found} =
