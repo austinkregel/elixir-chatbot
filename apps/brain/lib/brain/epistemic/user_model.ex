@@ -63,14 +63,21 @@ defmodule Brain.Epistemic.UserModelStore do
     GenServer.call(__MODULE__, {:get_disclosure_history, user_id, limit})
   end
 
-  @doc "Extracts beliefs from the user model and syncs to BeliefStore.\n"
-  def sync_to_beliefs(user_id) do
-    GenServer.call(__MODULE__, {:sync_to_beliefs, user_id})
+  @doc "Extracts beliefs from the user model and syncs them to the world's BeliefStore.\n"
+  def sync_to_beliefs(world_id, user_id) do
+    GenServer.call(__MODULE__, {:sync_to_beliefs, belief_world_id!(world_id), user_id})
   end
 
-  @doc "Updates the user model from beliefs in the BeliefStore.\n"
-  def sync_from_beliefs(user_id) do
-    GenServer.call(__MODULE__, {:sync_from_beliefs, user_id})
+  @doc "Updates the user model from the beliefs held in the world's BeliefStore.\n"
+  def sync_from_beliefs(world_id, user_id) do
+    GenServer.call(__MODULE__, {:sync_from_beliefs, belief_world_id!(world_id), user_id})
+  end
+
+  # Beliefs are held per world; checked in the caller's process.
+  defp belief_world_id!(world_id) when is_binary(world_id) and world_id != "", do: world_id
+
+  defp belief_world_id!(other) do
+    raise ArgumentError, "UserModel needs the world whose beliefs it syncs with, got: #{inspect(other)}"
   end
 
   @doc "Gets store statistics.\n"
@@ -221,7 +228,7 @@ defmodule Brain.Epistemic.UserModelStore do
   end
 
   @impl true
-  def handle_call({:sync_to_beliefs, user_id}, _from, state) do
+  def handle_call({:sync_to_beliefs, world_id, user_id}, _from, state) do
     case Map.get(state.models, user_id) do
       nil ->
         {:reply, {:ok, 0}, state}
@@ -240,7 +247,7 @@ defmodule Brain.Epistemic.UserModelStore do
                 user_id: user_id
               )
 
-            BeliefStore.add_belief(belief)
+            BeliefStore.add_belief(world_id, belief)
             1
           end)
           |> Enum.sum()
@@ -250,10 +257,10 @@ defmodule Brain.Epistemic.UserModelStore do
   end
 
   @impl true
-  def handle_call({:sync_from_beliefs, user_id}, _from, state) do
+  def handle_call({:sync_from_beliefs, world_id, user_id}, _from, state) do
     model = Map.get(state.models, user_id) || UserModel.new(user_id)
 
-    case BeliefStore.get_beliefs_for_user(user_id) do
+    case BeliefStore.get_beliefs_for_user(world_id, user_id) do
       {:ok, beliefs} ->
         updated =
           Enum.reduce(beliefs, model, fn belief, acc ->
