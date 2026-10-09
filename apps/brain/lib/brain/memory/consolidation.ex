@@ -80,9 +80,15 @@ defmodule Brain.Memory.Consolidation do
     Enum.reverse(clusters)
   end
 
-  @doc "Create a semantic fact in `world_id` from a cluster of that world's episodes.\n"
+  @doc """
+  Create a semantic fact in `world_id` from a cluster of that world's episodes.
+
+  The fact's text is the first three of the episodes' states, joined by
+  `" | "`; its action is the action the episodes most often had; its
+  embedding is the center of the episodes, the mean of their embeddings; its
+  evidence is the episodes.
+  """
   def create_semantic_from_cluster(cluster, world_id) when is_list(cluster) and cluster != [] do
-    representation = aggregate_representation(cluster)
     embeddings = Enum.map(cluster, & &1.embedding)
     mean_embedding = VectorIndex.mean_vector(embeddings)
     evidence_ids = Enum.map(cluster, & &1.id)
@@ -92,7 +98,10 @@ defmodule Brain.Memory.Consolidation do
       |> Enum.flat_map(& &1.tags)
       |> Enum.uniq()
 
-    semantic = SemanticFact.new(representation, mean_embedding, evidence_ids, tags)
+    semantic =
+      SemanticFact.new(examples(cluster), mean_embedding, evidence_ids, tags,
+        action: most_common_action(cluster)
+      )
 
     case Store.add_semantic(semantic, world_id: world_id) do
       {:ok, semantic_id} ->
@@ -116,16 +125,16 @@ defmodule Brain.Memory.Consolidation do
     {:error, :empty_cluster}
   end
 
-  defp aggregate_representation(cluster) do
+  defp most_common_action(cluster) do
     actions = Enum.frequencies(Enum.map(cluster, & &1.action))
     {most_common_action, _count} = Enum.max_by(actions, fn {_action, count} -> count end)
+    most_common_action
+  end
 
-    states =
-      cluster
-      |> Enum.map(& &1.state)
-      |> Enum.take(3)
-      |> Enum.join(" | ")
-
-    "Action: #{most_common_action} | Examples: #{states}"
+  defp examples(cluster) do
+    cluster
+    |> Enum.map(& &1.state)
+    |> Enum.take(3)
+    |> Enum.join(" | ")
   end
 end
