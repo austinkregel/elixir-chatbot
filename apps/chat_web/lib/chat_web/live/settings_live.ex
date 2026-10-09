@@ -2557,7 +2557,7 @@ defmodule ChatWeb.SettingsLive do
                       reach={:shared}
                       verb="Remove credential"
                       target={cred_target}
-                      consequence={"Removes this credential from the vault for world #{@current_world_id}. Its row in Atlas is not deleted, so the credential loads again at the next start."}
+                      consequence={"Removes this credential from the vault and its row from Atlas for world #{@current_world_id}. It does not come back at the next start."}
                       on_confirm={JS.push("delete_credential", value: %{service: service.name, key: cred_key})}
                       on_cancel="close_confirm"
                       trigger_id={"delete-credential-#{cred_id}"}
