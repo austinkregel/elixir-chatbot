@@ -59,7 +59,7 @@ defmodule Brain.ML.GazetteerTest do
       other: other
     } do
       on_exit(fn -> Gazetteer.remove_entry(name) end)
-      {:ok, _} = Gazetteer.add_reviewed(name, "location")
+      {:ok, _} = Gazetteer.add_entry(name, "location")
       {:ok, _} = Gazetteer.add_to_world(world, name, "person")
 
       [{0, 0, infos}] = Gazetteer.lookup_spans([key], world_id: world)
@@ -67,6 +67,39 @@ defmodule Brain.ML.GazetteerTest do
 
       [{0, 0, other_infos}] = Gazetteer.lookup_spans([key], world_id: other)
       assert Enum.map(other_infos, & &1.entity_type) == ["location"]
+    end
+
+    test "an entity approved in a world is recognized in that world after a reload, and not in another",
+         %{name: name, key: key, world: world, other: other} do
+      %Atlas.Schemas.ReviewCandidate{}
+      |> Atlas.Schemas.ReviewCandidate.changeset(%{
+        id: "rc_#{System.unique_integer([:positive])}",
+        world_id: world,
+        status: "approved",
+        finding: %{"claim" => "#{name} is a person", "entity" => name, "entity_type" => "person"},
+        aggregate_confidence: 0.9
+      })
+      |> Atlas.Repo.insert!()
+
+      # Loading the gazetteer, as at boot, puts the approval in its world.
+      {:ok, _} = Gazetteer.load_all()
+
+      assert [{0, 0, [%{entity_type: "person", reviewed: true} | _]}] =
+               Gazetteer.lookup_spans([key], world_id: world)
+
+      assert Gazetteer.lookup_spans([key], world_id: other) == []
+      assert Gazetteer.lookup(name) == :not_found
+
+      # Restoring the world's saved overlay, which predates the approval,
+      # keeps it.
+      :ok = Gazetteer.destroy_world_overlay(world)
+      assert Gazetteer.lookup_spans([key], world_id: world) == []
+      :ok = Gazetteer.restore_world_overlay(world, [])
+
+      assert [{0, 0, [%{entity_type: "person", reviewed: true} | _]}] =
+               Gazetteer.lookup_spans([key], world_id: world)
+
+      assert Gazetteer.lookup_spans([key], world_id: other) == []
     end
 
     test "a multi-word overlay entity is found as one span", %{world: world, other: other} do
@@ -88,7 +121,7 @@ defmodule Brain.ML.GazetteerTest do
     test "lookup is case-insensitive" do
       name = "Zorblax#{System.unique_integer([:positive])}"
       on_exit(fn -> Gazetteer.remove_entry(name) end)
-      {:ok, _} = Gazetteer.add_reviewed(name, "location")
+      {:ok, _} = Gazetteer.add_entry(name, "location")
 
       found = Gazetteer.lookup(name)
 
