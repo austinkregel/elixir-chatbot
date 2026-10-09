@@ -3,8 +3,10 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
   @moduledoc """
   Rebuilds the speech act gold standard from structural anchoring only.
 
-      mix rebuild.speech_act_gold           # dry run, prints the summary
-      mix rebuild.speech_act_gold --save    # write it
+      mix rebuild.speech_act_gold --world <id>           # dry run, prints the summary
+      mix rebuild.speech_act_gold --world <id> --save    # write it
+
+  `--world <id>` is required: the world whose memory the classifier's memory voter reads.
 
   ## The two layers, and why only one of them writes
 
@@ -40,9 +42,15 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
 
   @impl Mix.Task
   def run(args) do
+    {opts, _, _} = OptionParser.parse(args, strict: [save: :boolean, world: :string])
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix rebuild.speech_act_gold needs --world <id>, the world whose memory the classifier reads")
+
     Mix.Task.run("app.start")
 
-    save? = "--save" in args
+    save? = Keyword.get(opts, :save, false)
 
     IO.puts("\nAwaiting MicroClassifiers readiness...")
     MicroClassifiers.await_ready(:infinity)
@@ -62,7 +70,7 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
 
     before_dist = label_distribution(gold, "speech_act")
 
-    {rebuilt, suggestions, stats} = rebuild(gold)
+    {rebuilt, suggestions, stats} = rebuild(gold, world_id)
 
     # The corpus may not shrink. Dropping the rows a model is unsure about is how
     # an evaluation set quietly stops covering the cases the model is worst at.
@@ -91,7 +99,7 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
 
   @empty_stats %{anchored: 0, corrected: 0, confirmed: 0, suggested: 0}
 
-  defp rebuild(gold) do
+  defp rebuild(gold, world_id) do
     total = length(gold)
 
     {pairs, stats} =
@@ -106,7 +114,8 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
             example["speech_act"],
             structural_anchor(example["text"]),
             Map.get(example, "labeled_by", "unrecorded"),
-            stats
+            stats,
+            world_id
           )
 
         {{entry, suggestion}, stats}
@@ -123,7 +132,7 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
 
   # Layer 1. Deterministic rules over the text, so this layer is allowed to set a
   # label -- and says so on every row it sets.
-  defp decide(text, gold_label, {:anchor, anchor_label}, provenance, stats) do
+  defp decide(text, gold_label, {:anchor, anchor_label}, provenance, stats, _world_id) do
     if anchor_label == gold_label do
       {row(text, gold_label, provenance), nil, bump(stats, :anchored)}
     else
@@ -133,8 +142,8 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
 
   # Layer 2. The classifier is consulted and its disagreement is recorded, but the
   # corpus keeps the label it already had. A proposal is not evidence.
-  defp decide(text, gold_label, :no_anchor, provenance, stats) do
-    result = classify(text)
+  defp decide(text, gold_label, :no_anchor, provenance, stats, world_id) do
+    result = classify(text, world_id)
     classifier_label = to_string(result.category)
 
     if classifier_label == gold_label do
@@ -214,8 +223,8 @@ defmodule Mix.Tasks.Rebuild.SpeechActGold do
   # Classification
   # ---------------------------------------------------------------------------
 
-  defp classify(text) do
-    SpeechActClassifier.classify(text)
+  defp classify(text, world_id) do
+    SpeechActClassifier.classify(text, world_id: world_id)
   rescue
     e ->
       Logger.warning(
