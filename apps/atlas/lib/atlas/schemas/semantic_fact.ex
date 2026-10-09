@@ -14,7 +14,7 @@ defmodule Atlas.Schemas.SemanticFact do
   @primary_key {:id, :binary_id, autogenerate: true}
 
   schema "atlas_semantic_facts" do
-    field :world_id, :string, default: "default"
+    field :world_id, :string
     field :content, :string
     field :category, :string
     field :confidence, :float
@@ -25,8 +25,10 @@ defmodule Atlas.Schemas.SemanticFact do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @required_fields ~w(content category confidence)a
-  @optional_fields ~w(world_id embedding source_episodes tags)a
+  # A semantic fact belongs to the world its episodes came from; the caller
+  # names it.
+  @required_fields ~w(world_id content category confidence)a
+  @optional_fields ~w(embedding source_episodes tags)a
 
   def changeset(semantic_fact, attrs) do
     semantic_fact
