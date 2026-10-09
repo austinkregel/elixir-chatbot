@@ -1011,76 +1011,60 @@ defmodule Brain.ML.EntityExtractor do
     disambiguated
   end
 
-  defp refine_with_poincare(result, candidate_types, context) when length(candidate_types) > 1 do
+  # Refines the type with the world's Poincare embeddings. A world with no copy
+  # of the embeddings raises.
+  defp refine_with_poincare(result, candidate_types, %{world_id: world_id} = context)
+       when length(candidate_types) > 1 do
     debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
 
-    if Brain.ML.Poincare.Embeddings.ready?() do
-      intent = context[:intent] || ""
-      current_type = to_string(result[:entity_type] || "")
-      pt0 = if debug?, do: System.monotonic_time(:millisecond)
+    intent = context[:intent] || ""
+    current_type = to_string(result[:entity_type] || "")
+    pt0 = if debug?, do: System.monotonic_time(:millisecond)
 
-      scored =
-        candidate_types
-        |> Enum.map(fn candidate ->
-          type_str = to_string(candidate[:entity_type] || candidate[:type] || "")
-          dist = poincare_distance(type_str, intent)
-          {type_str, dist, candidate}
-        end)
-        |> Enum.filter(fn {_t, d, _c} -> d != nil end)
-        |> Enum.sort_by(fn {_t, d, _c} -> d end)
+    scored =
+      candidate_types
+      |> Enum.map(fn candidate ->
+        type_str = to_string(candidate[:entity_type] || candidate[:type] || "")
+        dist = poincare_distance(world_id, type_str, intent)
+        {type_str, dist, candidate}
+      end)
+      |> Enum.filter(fn {_t, d, _c} -> d != nil end)
+      |> Enum.sort_by(fn {_t, d, _c} -> d end)
 
-      if debug?, do: Logger.info("        poincare:scored #{length(candidate_types)} candidates in #{System.monotonic_time(:millisecond) - pt0}ms")
+    if debug?, do: Logger.info("        poincare:scored #{length(candidate_types)} candidates in #{System.monotonic_time(:millisecond) - pt0}ms")
 
-      case scored do
-        [{best_type, best_dist, _best_candidate} | _] when best_type != current_type ->
-          current_dist = poincare_distance(current_type, intent)
+    case scored do
+      [{best_type, best_dist, _best_candidate} | _] when best_type != current_type ->
+        current_dist = poincare_distance(world_id, current_type, intent)
 
-          if current_dist != nil and best_dist < current_dist * 0.8 do
-            Logger.debug("Poincare refinement: #{current_type} -> #{best_type}",
-              current_dist: current_dist, best_dist: best_dist)
+        if current_dist != nil and best_dist < current_dist * 0.8 do
+          Logger.debug("Poincare refinement: #{current_type} -> #{best_type}",
+            current_dist: current_dist, best_dist: best_dist)
 
-            :telemetry.execute(
-              [:chat_bot, :analysis, :poincare_refinement],
-              %{distance_ratio: best_dist / max(current_dist, 1.0e-7)},
-              %{from_type: current_type, to_type: best_type}
-            )
+          :telemetry.execute(
+            [:chat_bot, :analysis, :poincare_refinement],
+            %{distance_ratio: best_dist / max(current_dist, 1.0e-7)},
+            %{from_type: current_type, to_type: best_type}
+          )
 
-            Map.put(result, :entity_type, best_type)
-          else
-            result
-          end
-
-        _ ->
+          Map.put(result, :entity_type, best_type)
+        else
           result
-      end
-    else
-      if debug?, do: Logger.info("        poincare:not_ready (skipping)")
+        end
 
-      log_once(:poincare_not_ready, "Poincare embeddings not ready; skipping type refinement")
-
-      :telemetry.execute(
-        [:chat_bot, :ml, :poincare, :unavailable],
-        %{count: 1},
-        %{stage: :entity_disambiguation}
-      )
-
-      result
+      _ ->
+        result
     end
-  rescue
-    e ->
-      Logger.warning("Poincare refinement failed: #{Exception.message(e)}")
-      result
   end
 
   defp refine_with_poincare(result, _types, _context), do: result
 
-  defp poincare_distance(type1, type2) do
-    case Brain.ML.Poincare.Embeddings.entity_distance(type1, type2) do
+  # nil when either type has no embedding in the world's copy.
+  defp poincare_distance(world_id, type1, type2) do
+    case Brain.ML.Poincare.Embeddings.entity_distance(world_id, type1, type2) do
       {:ok, dist} -> dist
-      _ -> nil
+      {:error, :not_found} -> nil
     end
-  rescue
-    _ -> nil
   end
 
   defp context_type(context) do
@@ -1174,14 +1158,6 @@ defmodule Brain.ML.EntityExtractor do
 
       true ->
         []
-    end
-  end
-
-  defp log_once(key, message) do
-    pt_key = {__MODULE__, :logged, key}
-    unless :persistent_term.get(pt_key, false) do
-      Logger.info(message)
-      :persistent_term.put(pt_key, true)
     end
   end
 end
