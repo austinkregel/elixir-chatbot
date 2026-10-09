@@ -121,7 +121,7 @@ defmodule Brain.ML.SentimentClassifierSimple do
       {:error, _disk_reason} ->
         Logger.error(
           "SentimentClassifier: no model on disk. " <>
-            "Run `mix train` to train the sentiment classifier."
+            "Run `mix train --world <id>` to train the sentiment classifier."
         )
 
         {:noreply, state}
