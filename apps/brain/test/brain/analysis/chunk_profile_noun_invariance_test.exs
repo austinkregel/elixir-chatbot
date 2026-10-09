@@ -62,7 +62,7 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
                  "drift between ChunkFeatures.vector_dimension/0 " <>
                    "(#{ChunkFeatures.vector_dimension()}) and the trained " <>
                    ":intent_domain model (#{dim}). Regenerate training data " <>
-                   "and retrain: `mix gen_micro_data && mix train_micro`."
+                   "and retrain: `mix gen_micro_data --world default && mix train_micro`."
 
         {:error, :not_loaded} ->
           flunk(
@@ -73,7 +73,7 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
         {:error, :not_trained} ->
           flunk(
             "No trained :intent_domain model found on disk. " <>
-              "Run `mix gen_micro_data && mix train_micro` before this test."
+              "Run `mix gen_micro_data --world default && mix train_micro` before this test."
           )
       end
     end
@@ -174,7 +174,7 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
   defp profiles_for_template(prefix, suffix, fillers) when is_list(fillers) do
     Enum.map(fillers, fn filler ->
       text = prefix <> filler <> suffix
-      model = Pipeline.process(text)
+      model = Pipeline.process(text, world_id: "default")
 
       [chunk | _] = model.analyses
       {feature_vector, _word_feats} = FeatureExtractor.extract(chunk)
