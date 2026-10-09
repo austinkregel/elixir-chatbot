@@ -64,6 +64,7 @@ defmodule Atlas.ImporterTest do
       assert {:ok, summary} = Importer.import_all(only: ["beliefs"])
       assert {:ok, 2} = summary["beliefs"]
       assert Repo.aggregate(Belief, :count) == 2
+      assert Repo.all(Belief) |> Enum.map(& &1.world_id) |> Enum.uniq() == ["default"]
     end
 
     test "skips retracted beliefs" do
