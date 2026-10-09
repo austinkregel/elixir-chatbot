@@ -14,9 +14,13 @@ defmodule ChatWeb.TestControllerTest do
     :ok
   end
 
+  # The world the test suite runs in; the request names the world its input is
+  # learned in.
+  @world_id "default"
+
   describe "POST /api/test-learning" do
     test "returns extracted data from input", %{conn: conn} do
-      conn = post(conn, "/api/test-learning", %{input: "My name is John"})
+      conn = post(conn, "/api/test-learning", %{input: "My name is John", world_id: @world_id})
 
       response = json_response(conn, 200)
       assert response["status"] == "success"
@@ -26,7 +30,7 @@ defmodule ChatWeb.TestControllerTest do
     end
 
     test "extracts entities from input", %{conn: conn} do
-      conn = post(conn, "/api/test-learning", %{input: "My name is John"})
+      conn = post(conn, "/api/test-learning", %{input: "My name is John", world_id: @world_id})
 
       response = json_response(conn, 200)
       extracted = response["extracted_data"]
@@ -34,7 +38,7 @@ defmodule ChatWeb.TestControllerTest do
     end
 
     test "handles location input", %{conn: conn} do
-      conn = post(conn, "/api/test-learning", %{input: "I live in New York"})
+      conn = post(conn, "/api/test-learning", %{input: "I live in New York", world_id: @world_id})
 
       response = json_response(conn, 200)
       assert response["status"] == "success"
