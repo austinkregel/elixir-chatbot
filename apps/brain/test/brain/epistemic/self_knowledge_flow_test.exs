@@ -21,7 +21,9 @@ defmodule Brain.Epistemic.SelfKnowledgeFlowTest do
     # atlas_beliefs).
     Brain.Test.Singletons.reset_epistemic_stores!([:user_models, :beliefs], world_id: "default")
 
-    :ok
+    # A user model is a web user's; this one exists only inside the test's
+    # sandbox transaction.
+    %{user: Atlas.WebUsers.create!("default").id}
   end
 
   describe "SelfKnowledgeAnalyzer.is_self_knowledge_query?/2" do
@@ -82,15 +84,15 @@ defmodule Brain.Epistemic.SelfKnowledgeFlowTest do
   end
 
   describe "SelfKnowledgeAnalyzer.build_self_knowledge_assessment/1" do
-    test "builds assessment from user model" do
-      UserModelStore.update_fact("user1", :name, "Alice", :explicit, 0.95)
-      UserModelStore.update_fact("user1", :location, "Seattle", :explicit, 0.85)
-      UserModelStore.update_fact("user1", :occupation, "Developer", :inferred, 0.6)
-      UserModelStore.update_fact("user1", :hobby, "Hiking", :assumed, 0.3)
+    test "builds assessment from user model", %{user: user} do
+      UserModelStore.update_fact(user, :name, "Alice", :explicit, 0.95)
+      UserModelStore.update_fact(user, :location, "Seattle", :explicit, 0.85)
+      UserModelStore.update_fact(user, :occupation, "Developer", :inferred, 0.6)
+      UserModelStore.update_fact(user, :hobby, "Hiking", :assumed, 0.3)
 
-      assessment = SelfKnowledgeAnalyzer.build_self_knowledge_assessment("user1")
+      assessment = SelfKnowledgeAnalyzer.build_self_knowledge_assessment(user)
 
-      assert assessment.user_id == "user1"
+      assert assessment.user_id == user
       assert assessment.discloseable != []
       assert assessment.total_facts == 4
     end
@@ -115,21 +117,21 @@ defmodule Brain.Epistemic.SelfKnowledgeFlowTest do
       assert response =~ ~r/don't|haven't|much|yet|getting to know/i
     end
 
-    test "generates response with knowledge" do
-      UserModelStore.update_fact("user1", :name, "Alice", :explicit, 0.95)
-      UserModelStore.update_fact("user1", :location, "Seattle", :explicit, 0.85)
+    test "generates response with knowledge", %{user: user} do
+      UserModelStore.update_fact(user, :name, "Alice", :explicit, 0.95)
+      UserModelStore.update_fact(user, :location, "Seattle", :explicit, 0.85)
 
-      assessment = SelfKnowledgeAnalyzer.build_self_knowledge_assessment("user1")
+      assessment = SelfKnowledgeAnalyzer.build_self_knowledge_assessment(user)
       response = Synthesizer.synthesize_self_knowledge_response(assessment)
 
       assert is_binary(response)
       assert String.length(response) > 0
     end
 
-    test "includes hedging for uncertain knowledge" do
-      UserModelStore.update_fact("user1", :occupation, "Developer", :inferred, 0.5)
+    test "includes hedging for uncertain knowledge", %{user: user} do
+      UserModelStore.update_fact(user, :occupation, "Developer", :inferred, 0.5)
 
-      assessment = SelfKnowledgeAnalyzer.build_self_knowledge_assessment("user1")
+      assessment = SelfKnowledgeAnalyzer.build_self_knowledge_assessment(user)
       response = Synthesizer.synthesize_self_knowledge_response(assessment)
 
       assert response =~
@@ -183,8 +185,7 @@ defmodule Brain.Epistemic.SelfKnowledgeFlowTest do
   end
 
   describe "end-to-end self-knowledge query flow" do
-    test "complete flow from query to response" do
-      user_id = "test_user_#{:rand.uniform(10000)}"
+    test "complete flow from query to response", %{user: user_id} do
       UserModelStore.update_fact(user_id, :name, "Bob", :explicit, 0.95)
       UserModelStore.update_fact(user_id, :location, "Portland", :explicit, 0.85)
       UserModelStore.update_fact(user_id, :interest, "AI", :inferred, 0.7)
