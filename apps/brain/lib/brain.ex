@@ -156,8 +156,9 @@ defmodule Brain do
 
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
-    - `:world_id` - required: the world the conversation runs in. Every turn is
-      analyzed in it. Absent raises.
+    - `:world_id` - required: the world the conversation runs in, one
+      `World.Manager` holds. Every turn is analyzed in it. Absent, or a world
+      that is not loaded (a purged one), raises.
     - `:side_effects` - whether the conversation and its turns write what they
       learn: graph nodes, beliefs, user-model facts, episodes, learner files,
       entity candidates, Gazetteer preferences, Ouro debug and training data,
@@ -173,11 +174,21 @@ defmodule Brain do
     GenServer.call(server, {:create_conversation, Keyword.put(opts, :side_effects, side_effects)})
   end
 
-  # Checked in the caller's process, so a missing world raises there.
+  # Checked in the caller's process, so a missing world raises there. The world
+  # must be one `World.Manager` holds: a purged world's id (one a web user still
+  # has selected, say) names no world to run in.
   defp conversation_world!(opts) do
     case Keyword.fetch(opts, :world_id) do
       {:ok, world_id} when is_binary(world_id) and world_id != "" ->
-        world_id
+        case WorldManager.get(world_id) do
+          {:ok, _world} ->
+            world_id
+
+          {:error, reason} ->
+            raise ArgumentError,
+                  "Brain.create_conversation: world #{inspect(world_id)} is not loaded (#{inspect(reason)}); " <>
+                    "a conversation runs in a world World.Manager holds"
+        end
 
       {:ok, other} ->
         raise ArgumentError, "Brain.create_conversation option :world_id must be a world id, got: #{inspect(other)}"
@@ -565,19 +576,24 @@ defmodule Brain do
       global_memory: state.global_memory
     }
 
+    # The session tells this server its pid each time it starts, a restart
+    # after a crash included (`{:cli_subprocess_started, id, pid}`).
     case Brain.Subprocesses.Supervisor.start_cli_subprocess(
-           Keyword.put(opts, :memory_snapshot, memory_snapshot)
+           Keyword.merge(opts, memory_snapshot: memory_snapshot, brain: self())
          ) do
       {:ok, pid, subprocess_id} ->
         # A session ended with `quit` or `exit` stops by itself; the monitor
         # tells this server, which stops listing it.
         Process.monitor(pid)
 
+        # `conversation_id`: the session's conversation, once the session has
+        # told this server (`{:cli_session_conversation, id, conversation_id}`).
         updated_subprocesses = %{
           state.subprocesses
           | cli:
               Map.put(state.subprocesses.cli, subprocess_id, %{
                 pid: pid,
+                conversation_id: nil,
                 started_at: System.system_time(:millisecond)
               })
         }
@@ -615,6 +631,19 @@ defmodule Brain do
 
       nil ->
         {:reply, {:error, "Subprocess not found"}, state}
+    end
+  end
+
+  # The conversation a listed CLI session had, while this server still has it:
+  # a session restarted after a crash goes on with it.
+  @impl true
+  def handle_call({:cli_session_conversation, subprocess_id}, _from, state) do
+    with {:ok, %{conversation_id: conversation_id}} when is_binary(conversation_id) <-
+           Map.fetch(state.subprocesses.cli, subprocess_id),
+         true <- Map.has_key?(state.active_conversations, conversation_id) do
+      {:reply, {:ok, conversation_id}, state}
+    else
+      _ -> {:reply, :none, state}
     end
   end
 
@@ -681,6 +710,37 @@ defmodule Brain do
     })
 
     {:noreply, updated_state}
+  end
+
+  # A CLI session this server listed started. On its first start it is the pid
+  # already listed. One the supervisor restarted after a crash has the same id
+  # and a new pid, which replaces the crashed one's, so `stop_subprocess/2`
+  # stops the session that is running, and is monitored as the first was.
+  def handle_cast({:cli_subprocess_started, subprocess_id, pid}, state) do
+    case Map.fetch(state.subprocesses.cli, subprocess_id) do
+      {:ok, %{pid: ^pid}} ->
+        {:noreply, state}
+
+      {:ok, info} ->
+        Process.monitor(pid)
+        Logger.info("CLI subprocess restarted", %{subprocess_id: subprocess_id, pid: pid, previous_pid: info.pid})
+        {:noreply, put_in(state, [:subprocesses, :cli, subprocess_id], %{info | pid: pid})}
+
+      :error ->
+        {:noreply, state}
+    end
+  end
+
+  # A listed CLI session created its conversation; kept so a restart after a
+  # crash can go on with it (`{:cli_session_conversation, id}`).
+  def handle_cast({:cli_session_conversation, subprocess_id, conversation_id}, state) do
+    case Map.fetch(state.subprocesses.cli, subprocess_id) do
+      {:ok, info} ->
+        {:noreply, put_in(state, [:subprocesses, :cli, subprocess_id], %{info | conversation_id: conversation_id})}
+
+      :error ->
+        {:noreply, state}
+    end
   end
 
   @impl true
@@ -2297,12 +2357,25 @@ defmodule Brain do
     {response, :epistemic_response, context}
   end
 
-  # The beliefs are held in the conversation's world. The world is checked
-  # here, before the rescue below, so a missing one raises.
+  # The beliefs are held in the conversation's world, and every one of them is
+  # about the turn's user, whose user model they also update. A turn with no
+  # user (`user_id` nil) stores none: there is no one to hold them about, and
+  # no stand-in user is made up. Any failure raises; a user id that is no web
+  # user's raises at the user-model write (`UserModelStore`).
   @doc false
   def extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id)
       when is_binary(world_id) and world_id != "" do
-    do_extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id)
+    case user_id do
+      nil ->
+        :ok
+
+      user_id when is_binary(user_id) and user_id != "" ->
+        do_extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id)
+
+      other ->
+        raise ArgumentError,
+              "Brain.extract_and_store_beliefs needs the turn's user id or nil, got: #{inspect(other)}"
+    end
   end
 
   def extract_and_store_beliefs(world_id, _input, _entities, _user_id, _conversation_id) do
@@ -2311,8 +2384,6 @@ defmodule Brain do
   end
 
   defp do_extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id) do
-    user_id = user_id || "anonymous"
-
     if Config.auto_extraction_enabled?() do
       Enum.each(entities, fn entity ->
         entity_type = entity[:entity_type]
@@ -2320,6 +2391,16 @@ defmodule Brain do
 
         if entity_type && entity_value do
           if is_user_fact?(entity_type) do
+            # The user model first: a user id that is no web user's raises
+            # there, before a belief is held about that user.
+            UserModelStore.update_fact(
+              user_id,
+              normalize_predicate(entity_type),
+              entity_value,
+              :explicit,
+              0.85
+            )
+
             belief =
               Belief.new(:user, normalize_predicate(entity_type), entity_value,
                 source: :explicit,
@@ -2333,14 +2414,6 @@ defmodule Brain do
 
             BeliefStore.add_belief(world_id, belief)
 
-            UserModelStore.update_fact(
-              user_id,
-              normalize_predicate(entity_type),
-              entity_value,
-              :explicit,
-              0.85
-            )
-
             Logger.debug("Extracted belief from conversation", %{
               predicate: entity_type,
               value: entity_value,
@@ -2352,9 +2425,8 @@ defmodule Brain do
 
       extract_self_referential_facts(world_id, input, user_id, conversation_id)
     end
-  rescue
-    e ->
-      Logger.warning("Failed to extract beliefs: #{inspect(e)}")
+
+    :ok
   end
 
   # `input` is the text the entities were extracted from, and becomes each
@@ -2540,6 +2612,10 @@ defmodule Brain do
       end
 
     if String.length(clean_value) > 0 and String.length(clean_value) < 50 do
+      # The user model first: a user id that is no web user's raises there,
+      # before a belief is held about that user.
+      UserModelStore.update_fact(user_id, predicate, clean_value, :explicit, 0.9)
+
       belief =
         Belief.new(:user, predicate, clean_value,
           source: :explicit,
@@ -2549,7 +2625,6 @@ defmodule Brain do
         )
 
       BeliefStore.add_belief(world_id, belief)
-      UserModelStore.update_fact(user_id, predicate, clean_value, :explicit, 0.9)
 
       Logger.debug("Extracted self-referential fact", %{
         predicate: predicate,
