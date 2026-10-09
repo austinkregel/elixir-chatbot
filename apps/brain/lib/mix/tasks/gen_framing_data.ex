@@ -25,13 +25,14 @@ defmodule Mix.Tasks.GenFramingData do
       # 1. Place GVFC_extension_multimodal.csv in data/framing/
       #    (or run `mix ingest_framing_corpus` if GVFC.zip is in project root)
       # 2. Generate training data
-      mix gen_framing_data --corpus gvfc
+      mix gen_framing_data --world <id> --corpus gvfc
 
       # 3. Train the classifier
       mix train_framing
 
   ## Options
 
+      --world ID           Required. The world the articles are analyzed in.
       --corpus NAME        Corpus to load: `gvfc` (default) or `mfc`
       --mfc-path PATH      Path to the MFC JSON file (only for `--corpus mfc`)
       --stats              Print label histograms without writing files
@@ -87,29 +88,34 @@ defmodule Mix.Tasks.GenFramingData do
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
-        switches: [
+        strict: [
           corpus: :string,
           mfc_path: :string,
           stats: :boolean,
           max: :integer,
-          full_pipeline: :boolean
+          full_pipeline: :boolean,
+          world: :string
         ]
       )
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix gen_framing_data needs --world <id>, the world the articles are analyzed in")
 
     corpus = opts[:corpus] || "gvfc"
 
     case corpus do
-      "gvfc" -> run_gvfc(opts)
-      "mfc" -> run_mfc(opts)
+      "gvfc" -> run_gvfc(opts, world_id)
+      "mfc" -> run_mfc(opts, world_id)
       other -> Mix.raise("Unknown corpus: #{other}. Use --corpus gvfc or --corpus mfc")
     end
   end
 
   # -- GVFC loader -------------------------------------------------------
 
-  defp run_gvfc(opts) do
+  defp run_gvfc(opts, world_id) do
     Mix.Task.run("app.start")
-    wait_for_pipeline_ready()
+    wait_for_pipeline_ready(world_id)
 
     path = @gvfc_default_path
 
@@ -137,7 +143,7 @@ defmodule Mix.Tasks.GenFramingData do
       Mix.shell().info("Using FULL pipeline (--full-pipeline). Slower but includes graph enrichment, fact verification, etc.")
     end
 
-    training_data = articles_to_training_data(articles, mode)
+    training_data = articles_to_training_data(articles, mode, world_id)
     Mix.shell().info("Generated #{length(training_data)} training records")
 
     if opts[:stats] do
@@ -196,7 +202,7 @@ defmodule Mix.Tasks.GenFramingData do
     "other" => "other"
   }
 
-  defp run_mfc(opts) do
+  defp run_mfc(opts, world_id) do
     Mix.Task.run("app.start")
 
     path =
@@ -208,7 +214,7 @@ defmodule Mix.Tasks.GenFramingData do
         To obtain it:
           1. Request access from the authors via https://aclanthology.org/P15-2072/
           2. Download the JSON-formatted corpus file
-          3. Run: mix gen_framing_data --corpus mfc --mfc-path /path/to/mfc.json
+          3. Run: mix gen_framing_data --world <id> --corpus mfc --mfc-path /path/to/mfc.json
 
         See data/classifiers/README_framing.md for license details.
         """)
@@ -220,7 +226,7 @@ defmodule Mix.Tasks.GenFramingData do
     articles = load_mfc_json(path, opts[:max])
     Mix.shell().info("Loaded #{length(articles)} MFC articles")
 
-    training_data = articles_to_training_data(articles)
+    training_data = articles_to_training_data(articles, :batch, world_id)
     Mix.shell().info("Generated #{length(training_data)} training records")
 
     if opts[:stats] do
@@ -274,12 +280,12 @@ defmodule Mix.Tasks.GenFramingData do
 
   # -- Feature vector pipeline -------------------------------------------
 
-  defp wait_for_pipeline_ready do
+  defp wait_for_pipeline_ready(world_id) do
     Mix.shell().info("Waiting for NLP pipeline to fully initialize...")
     deadline = System.monotonic_time(:millisecond) + 90_000
     wait_loop(deadline)
     Mix.shell().info("Running warmup through full pipeline (60s timeout)...")
-    warmup_pipeline()
+    warmup_pipeline(world_id)
   end
 
   defp wait_loop(deadline) do
@@ -322,15 +328,13 @@ defmodule Mix.Tasks.GenFramingData do
     end
   end
 
-  defp warmup_pipeline do
-    analysis = batch_analyze("The city council voted to fund new schools.", :batch)
+  defp warmup_pipeline(world_id) do
+    analysis = batch_analyze("The city council voted to fund new schools.", :batch, world_id)
     {fv, _} = FeatureExtractor.extract(analysis)
     Mix.shell().info("Warmup complete. Feature vector dim: #{length(fv)}")
-  rescue
-    e -> Mix.shell().info("Warmup raised: #{Exception.message(e)} (continuing)")
   end
 
-  defp articles_to_training_data(articles, mode \\ :batch) do
+  defp articles_to_training_data(articles, mode, world_id) do
     total = length(articles)
 
     concurrency =
@@ -364,7 +368,7 @@ defmodule Mix.Tasks.GenFramingData do
             Mix.shell().info("  Progress: #{idx}/#{total} (#{rate}ms/article)")
           end
 
-          process_article(article, mode)
+          process_article(article, mode, world_id)
         end,
         max_concurrency: concurrency,
         timeout: timeout,
@@ -392,12 +396,12 @@ defmodule Mix.Tasks.GenFramingData do
     results
   end
 
-  defp process_article(%{text: text, label: label}, mode) do
+  defp process_article(%{text: text, label: label}, mode, world_id) do
     chunks = chunk_text(text)
 
     profiles =
       Enum.map(chunks, fn chunk_text ->
-        analysis = batch_analyze(chunk_text, mode)
+        analysis = batch_analyze(chunk_text, mode, world_id)
         {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
         ChunkProfile.materialize(analysis, feature_vector)
       end)
@@ -423,14 +427,6 @@ defmodule Mix.Tasks.GenFramingData do
         }
       end
     end
-  rescue
-    e ->
-      Logger.warning("Failed to process article: #{Exception.message(e)}")
-      nil
-  catch
-    :exit, _ ->
-      Logger.warning("Article exited: #{String.slice(text, 0, 60)}")
-      nil
   end
 
   # Batch-safe analysis: includes all pure-computation subsystems from the
@@ -439,20 +435,24 @@ defmodule Mix.Tasks.GenFramingData do
   # concurrent load (EntityGraphEnricher, fact verification, belief
   # extraction, atlas-based intent disambiguation).
   #
-  # When `mode: :full` is passed, delegates to `Pipeline.analyze_chunk/1`
-  # with a per-chunk timeout to let you compare output quality.
-  defp batch_analyze(text, :full) do
-    task = Task.async(fn -> FullPipeline.analyze_chunk(text, side_effects: false) end)
+  # When `mode: :full` is passed, delegates to `Pipeline.analyze_chunk/2`
+  # with a per-chunk timeout to let you compare output quality. A chunk that
+  # does not finish in time raises.
+  defp batch_analyze(text, :full, world_id) do
+    task = Task.async(fn -> FullPipeline.analyze_chunk(text, side_effects: false, world_id: world_id) end)
 
     case Task.yield(task, 30_000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, analysis} -> analysis
-      _ ->
-        Logger.warning("Full pipeline timed out for chunk, falling back to batch_analyze")
-        batch_analyze(text, :batch)
+      {:ok, analysis} ->
+        analysis
+
+      other ->
+        Mix.raise(
+          "Full pipeline did not finish a chunk within 30s (#{inspect(other)}): #{inspect(String.slice(text, 0, 60))}"
+        )
     end
   end
 
-  defp batch_analyze(text, _mode) do
+  defp batch_analyze(text, _mode, world_id) do
     tokens = Tokenizer.tokenize_words(text)
 
     pos_tags =
@@ -461,7 +461,7 @@ defmodule Mix.Tasks.GenFramingData do
         _ -> Enum.map(tokens, &{&1, :X})
       end
 
-    entities = safe_call(fn -> EntityExtractor.extract_entities(text) end, [])
+    entities = EntityExtractor.extract_entities(text, world_id: world_id)
 
     discourse =
       safe_call(
