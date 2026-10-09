@@ -9,8 +9,17 @@ defmodule Tasks.SourceTest do
     test "fetches findings for a QA goal" do
       goal = ResearchGoal.new("France", questions: ["What is the capital?"])
 
-      {:ok, findings} = Source.fetch_for_goal(goal, max_tasks: 2, max_instances: 5)
+      {:ok, findings} = Source.fetch_for_goal(goal, max_tasks: 2, max_instances: 5, world_id: "tasks_world")
       assert is_list(findings)
+      assert Enum.all?(findings, &(&1.world_id == "tasks_world"))
+    end
+
+    test "raises without a world" do
+      goal = ResearchGoal.new("France", questions: ["What is the capital?"])
+
+      assert_raise ArgumentError, ~r/:world_id/, fn ->
+        Source.fetch_for_goal(goal, max_tasks: 1, max_instances: 1)
+      end
     end
   end
 
@@ -53,13 +62,13 @@ defmodule Tasks.SourceTest do
   describe "infer_goal_type/1 via fetch_for_goal" do
     test "handles factual goal type" do
       goal = ResearchGoal.new("France", questions: ["What is the capital of France?"])
-      {:ok, findings} = Source.fetch_for_goal(goal, max_tasks: 1, max_instances: 2)
+      {:ok, findings} = Source.fetch_for_goal(goal, max_tasks: 1, max_instances: 2, world_id: "tasks_world")
       assert is_list(findings)
     end
 
     test "handles reasoning goal type" do
       goal = ResearchGoal.new("Physics", questions: ["Why does ice float on water?"])
-      {:ok, findings} = Source.fetch_for_goal(goal, max_tasks: 1, max_instances: 2)
+      {:ok, findings} = Source.fetch_for_goal(goal, max_tasks: 1, max_instances: 2, world_id: "tasks_world")
       assert is_list(findings)
     end
   end
