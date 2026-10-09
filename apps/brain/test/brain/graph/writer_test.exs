@@ -122,12 +122,18 @@ defmodule Brain.Graph.WriterTest do
     end
   end
 
-  describe "write_semantic_cluster/2" do
+  describe "write_semantic_cluster/3" do
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/world/, fn ->
+        Writer.write_semantic_cluster(%{representation: "x"}, ["ep_1"], nil)
+      end
+    end
+
     test "creates semantic fact node with evidence edges" do
       semantic = %{representation: "Action: query | Examples: weather in London"}
       episode_ids = ["ep_1", "ep_2", "ep_3"]
 
-      :ok = Writer.write_semantic_cluster(semantic, episode_ids)
+      :ok = Writer.write_semantic_cluster(semantic, episode_ids, "default")
       Process.sleep(300)
 
       {:ok, fact_count} = count_nodes("semantic_graph", "SemanticFact")
