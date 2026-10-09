@@ -217,7 +217,7 @@ defmodule Brain.Analysis.LexicalEvidence do
         end
 
       {:error, reason} ->
-        raise "LexicalEvidence: cannot read #{file} (#{inspect(reason)}). Train it with `mix gen_micro_data`."
+        raise "LexicalEvidence: cannot read #{file} (#{inspect(reason)}). Train it with `mix gen_micro_data --world <id>`."
     end
   end
 
