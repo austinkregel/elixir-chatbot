@@ -33,9 +33,9 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
         Logger.debug("No claims extracted from paper", paper_id: paper.id)
         {:ok, []}
       else
-        node_ids = create_jtms_nodes(claims, paper)
-        store_beliefs(claims, paper)
-        check_contradictions(claims, node_ids, paper)
+        node_ids = create_jtms_nodes(claims, paper, world_id)
+        store_beliefs(claims, paper, world_id)
+        check_contradictions(claims, node_ids, paper, world_id)
 
         Logger.info("Paper ingested into epistemic model",
           paper_id: paper.id,
@@ -156,14 +156,16 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     :assumption
   end
 
-  defp create_jtms_nodes(claims, paper) do
+  # The claims' nodes, beliefs and contradictions are held in the world the
+  # abstract was analyzed in.
+  defp create_jtms_nodes(claims, paper, world_id) do
     node_type = determine_node_type(paper)
 
     claims
     |> Enum.map(fn claim ->
       metadata = build_node_metadata(paper, claim)
 
-      case JTMS.create_node(claim, node_type: node_type, metadata: metadata) do
+      case JTMS.create_node(world_id, claim, node_type: node_type, metadata: metadata) do
         {:ok, node_id} ->
           node_id
 
@@ -192,7 +194,7 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     }
   end
 
-  defp store_beliefs(claims, paper) do
+  defp store_beliefs(claims, paper, world_id) do
     confidence = citation_to_confidence(paper.citation_count)
 
     Enum.each(claims, fn claim ->
@@ -214,7 +216,7 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
           }
         )
 
-      case BeliefStore.add_belief(belief) do
+      case BeliefStore.add_belief(world_id, belief) do
         {:ok, _belief_id} ->
           :ok
 
@@ -227,11 +229,12 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     end)
   end
 
-  defp check_contradictions(claims, node_ids, paper) do
-    case BeliefStore.query_beliefs(predicate: :paper_claim, min_confidence: 0.5) do
+  # Claims are compared in the world the abstract was analyzed in.
+  defp check_contradictions(claims, node_ids, paper, world_id) do
+    case BeliefStore.query_beliefs(world_id, predicate: :paper_claim, min_confidence: 0.5) do
       {:ok, existing_beliefs} ->
         Enum.each(Enum.zip(claims, node_ids), fn {claim, node_id} ->
-          check_claim_contradictions(claim, node_id, existing_beliefs, paper)
+          check_claim_contradictions(claim, node_id, existing_beliefs, paper, world_id)
         end)
 
       {:error, _} ->
@@ -239,7 +242,7 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     end
   end
 
-  defp check_claim_contradictions(claim, node_id, existing_beliefs, paper) do
+  defp check_claim_contradictions(claim, node_id, existing_beliefs, paper, world_id) do
     other_beliefs =
       Enum.reject(existing_beliefs, fn belief ->
         get_in(belief.metadata, [:paper_id]) == paper.id
@@ -248,10 +251,10 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     Enum.each(other_beliefs, fn belief ->
       existing_claim = belief.object
 
-      case Corroborator.compare_claims(claim, existing_claim) do
+      case Corroborator.compare_claims(world_id, claim, existing_claim) do
         {:ok, similarity} when similarity > @contradiction_similarity_threshold ->
           if claims_contradict?(claim, existing_claim) do
-            register_contradiction(node_id, belief, paper)
+            register_contradiction(node_id, belief, paper, world_id)
           end
 
         _ ->
@@ -266,11 +269,11 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     LinguisticData.has_negation?(claim1) != LinguisticData.has_negation?(claim2)
   end
 
-  defp register_contradiction(new_node_id, existing_belief, new_paper) do
+  defp register_contradiction(new_node_id, existing_belief, new_paper, world_id) do
     existing_node_id = existing_belief.node_id
 
     if existing_node_id do
-      case JTMS.register_contradiction([new_node_id, existing_node_id], "academic_conflict") do
+      case JTMS.register_contradiction(world_id, [new_node_id, existing_node_id], "academic_conflict") do
         {:ok, _contra_id} ->
           Logger.info("Academic contradiction registered",
             new_paper: new_paper.id,
