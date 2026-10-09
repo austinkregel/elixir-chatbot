@@ -8,6 +8,9 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
   alias Brain.Knowledge.Corroborator
   alias Brain.Knowledge.Types.{Finding, SourceInfo}
 
+  # "default" is the world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   describe "corroborate/2 with KG-LSTM unavailable" do
     test "still produces candidates without KG scoring" do
       source1 = SourceInfo.new("http://source1.com", title: "Source 1")
@@ -18,12 +21,12 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
         Finding.new("The capital of France is Paris", "Paris", source2, confidence: 0.85)
       ]
 
-      {:ok, candidates} = Corroborator.corroborate(findings)
+      {:ok, candidates} = Corroborator.corroborate(findings, world_id: @world_id)
       assert is_list(candidates)
     end
 
     test "handles empty findings" do
-      {:ok, candidates} = Corroborator.corroborate([])
+      {:ok, candidates} = Corroborator.corroborate([], world_id: @world_id)
       assert candidates == []
     end
 
@@ -31,7 +34,7 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
       source = SourceInfo.new("http://source.com", title: "Source")
       findings = [Finding.new("Some fact", "entity", source, confidence: 0.9)]
 
-      {:ok, candidates} = Corroborator.corroborate(findings)
+      {:ok, candidates} = Corroborator.corroborate(findings, world_id: @world_id)
       assert candidates == []
     end
 
@@ -39,7 +42,8 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
       source = SourceInfo.new("http://source.com", title: "Source")
       findings = [Finding.new("Some fact", "entity", source, confidence: 0.9)]
 
-      {:ok, candidates} = Corroborator.corroborate(findings, include_uncorroborated: true)
+      {:ok, candidates} =
+        Corroborator.corroborate(findings, world_id: @world_id, include_uncorroborated: true)
       assert length(candidates) >= 1
     end
   end
