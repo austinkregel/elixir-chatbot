@@ -21,7 +21,7 @@ defmodule Brain.Response.GeneratorIntegrationTest do
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
-      {:ok, response, _type} = Generator.generate(intent, entities, "Hello!")
+      {:ok, response, _type} = Generator.generate(intent, entities, "Hello!", world_id: @world_id)
       assert is_binary(response)
       assert byte_size(response) > 0
       assert_response_intent(response, "smalltalk")
@@ -32,7 +32,7 @@ defmodule Brain.Response.GeneratorIntegrationTest do
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
-      {:ok, response, _type} = Generator.generate(intent, entities, "What's the weather like in Seattle?")
+      {:ok, response, _type} = Generator.generate(intent, entities, "What's the weather like in Seattle?", world_id: @world_id)
       assert is_binary(intent)
       assert String.starts_with?(intent, "weather")
       assert is_binary(response)
@@ -40,7 +40,7 @@ defmodule Brain.Response.GeneratorIntegrationTest do
     end
 
     test "unknown intent produces non-empty fallback response" do
-      {:ok, response, _type} = Generator.generate("unknown.intent.xyz", [], nil)
+      {:ok, response, _type} = Generator.generate("unknown.intent.xyz", [], nil, world_id: @world_id)
       assert is_binary(response)
       assert byte_size(response) > 0
     end
@@ -58,7 +58,7 @@ defmodule Brain.Response.GeneratorIntegrationTest do
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
-      {:ok, response, _type} = Generator.generate(intent, entities, "What is the capital of France?")
+      {:ok, response, _type} = Generator.generate(intent, entities, "What is the capital of France?", world_id: @world_id)
       assert is_binary(response)
       assert byte_size(response) > 0
     end
@@ -68,7 +68,7 @@ defmodule Brain.Response.GeneratorIntegrationTest do
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
-      {:ok, response, _type} = Generator.generate(intent, entities, "I'm really frustrated")
+      {:ok, response, _type} = Generator.generate(intent, entities, "I'm really frustrated", world_id: @world_id)
       assert is_binary(response)
       assert byte_size(response) > 0
     end
