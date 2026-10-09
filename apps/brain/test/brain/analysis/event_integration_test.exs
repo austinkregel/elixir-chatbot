@@ -24,7 +24,7 @@ defmodule Brain.Analysis.EventIntegrationTest do
 
   describe "Pipeline integration" do
     test "pipeline extracts events from input" do
-      result = Pipeline.process("I want to play some jazz music")
+      result = Pipeline.process("I want to play some jazz music", world_id: "default")
 
       assert %Brain.Analysis.InternalModel{} = result
       assert result.analyses != []
@@ -42,7 +42,7 @@ defmodule Brain.Analysis.EventIntegrationTest do
     end
 
     test "events contain expected structure" do
-      result = Pipeline.process("Play some music for me")
+      result = Pipeline.process("Play some music for me", world_id: "default")
 
       Enum.each(result.analyses, fn analysis ->
         Enum.each(analysis.events, fn event ->
