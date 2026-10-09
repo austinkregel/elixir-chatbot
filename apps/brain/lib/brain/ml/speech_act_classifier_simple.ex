@@ -119,7 +119,7 @@ defmodule Brain.ML.SpeechActClassifierSimple do
       {:error, _disk_reason} ->
         Logger.error(
           "SpeechActClassifierSimple: no model on disk. " <>
-            "Run `mix train` to train the speech act classifier."
+            "Run `mix train --world <id>` to train the speech act classifier."
         )
 
         {:noreply, state}
