@@ -6,6 +6,9 @@ defmodule Brain.ML.NLPIntegrationTest do
   alias Brain.ML.EntityExtractor
   alias Brain.ML.NLPPipeline
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup tags do
     # The pipeline reads the knowledge graph; without a checked-out connection
     # those lookups fail silently.
@@ -26,14 +29,14 @@ defmodule Brain.ML.NLPIntegrationTest do
 
   describe "Entity Extraction" do
     test "extracts room entities" do
-      entities = EntityExtractor.extract_entities("turn off the kitchen lights")
+      entities = EntityExtractor.extract_entities("turn off the kitchen lights", world_id: @world_id)
       assert is_list(entities)
       kitchen_entity = Enum.find(entities, fn e -> e.value == "kitchen" end)
       assert kitchen_entity != nil
     end
 
     test "extracts music artist entities" do
-      entities = EntityExtractor.extract_entities("play music by the beatles")
+      entities = EntityExtractor.extract_entities("play music by the beatles", world_id: @world_id)
       beatles = Enum.find(entities, fn e -> String.downcase(e.value) == "the beatles" end)
 
       if beatles do
@@ -46,7 +49,7 @@ defmodule Brain.ML.NLPIntegrationTest do
   describe "Migrated examples from legacy validation" do
     test "extracts kitchen room and lights device from home automation command" do
       text = "Turn off all the kitchen lights"
-      entities = EntityExtractor.extract_entities(text)
+      entities = EntityExtractor.extract_entities(text, world_id: @world_id)
 
       kitchen = Enum.find(entities, &(&1.value == "kitchen"))
       assert kitchen
@@ -57,21 +60,21 @@ defmodule Brain.ML.NLPIntegrationTest do
 
     test "extracts bedroom from description-like input" do
       text = "The master bedroom is a large room with a king-size bed."
-      entities = EntityExtractor.extract_entities(text)
+      entities = EntityExtractor.extract_entities(text, world_id: @world_id)
       has_bedroom = Enum.any?(entities, &String.contains?(String.downcase(&1.value), "bedroom"))
       assert has_bedroom
     end
 
     test "extracts brand-like device hints from product sentence (best-effort)" do
       text = "I just bought a new iPhone 15 Pro Max in titanium."
-      entities = EntityExtractor.extract_entities(text)
+      entities = EntityExtractor.extract_entities(text, world_id: @world_id)
       assert is_list(entities)
     end
   end
 
   describe "NLP Pipeline Integration" do
     test "processes input and returns structured result" do
-      result = NLPPipeline.process("play some music")
+      result = NLPPipeline.process("play some music", world_id: @world_id)
 
       assert {:ok, pipeline_result} = result
       assert Map.has_key?(pipeline_result, :intent)
@@ -80,25 +83,25 @@ defmodule Brain.ML.NLPIntegrationTest do
     end
 
     test "returns high confidence for clear intents" do
-      {:ok, %{confidence: confidence}} = NLPPipeline.process("play jazz")
+      {:ok, %{confidence: confidence}} = NLPPipeline.process("play jazz", world_id: @world_id)
       assert confidence > 0.0
     end
 
     test "extracts entities along with intent" do
-      {:ok, %{entities: entities}} = NLPPipeline.process("turn on the bedroom light")
+      {:ok, %{entities: entities}} = NLPPipeline.process("turn on the bedroom light", world_id: @world_id)
       assert is_list(entities)
     end
   end
 
   describe "Classical NLP Processing" do
     test "uses classical NLP for high-confidence intents" do
-      {:ok, result} = NLPPipeline.process("play some music")
+      {:ok, result} = NLPPipeline.process("play some music", world_id: @world_id)
       assert result.intent != nil
       assert result.confidence > 0.0
     end
 
     test "handles low confidence gracefully" do
-      result = NLPPipeline.process("xyzabc nonsense input")
+      result = NLPPipeline.process("xyzabc nonsense input", world_id: @world_id)
       assert {:ok, %{confidence: confidence}} = result
       assert is_float(confidence)
     end
