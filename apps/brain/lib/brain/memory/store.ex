@@ -313,7 +313,7 @@ defmodule Brain.Memory.Store do
 
     episode =
       Episode.new(text, action, outcome, tags, embedding)
-      |> Map.put(:entity_names, extract_entity_names_for_ingest(text))
+      |> Map.put(:entity_names, extract_entity_names_for_ingest(text, world_id))
 
     # Write to Atlas first (primary store)
     case Brain.AtlasIntegration.persist_episode_sync(episode, world_id) do
@@ -338,7 +338,7 @@ defmodule Brain.Memory.Store do
 
   @impl true
   def handle_call({:add_episode_direct, episode, world_id}, _from, state) do
-    episode = ensure_entity_names(episode)
+    episode = ensure_entity_names(episode, world_id)
 
     case Brain.AtlasIntegration.persist_episode_sync(episode, world_id) do
       {:ok, _id} ->
@@ -574,7 +574,7 @@ defmodule Brain.Memory.Store do
 
         results =
           if do_rerank do
-            kg_rerank(text, candidates, k)
+            kg_rerank(text, candidates, k, world_id)
           else
             Enum.take(candidates, k)
           end
@@ -602,7 +602,7 @@ defmodule Brain.Memory.Store do
 
         results =
           if do_rerank do
-            kg_rerank(text, candidates, k)
+            kg_rerank(text, candidates, k, world_id)
           else
             Enum.take(candidates, k)
           end
@@ -692,7 +692,7 @@ defmodule Brain.Memory.Store do
       updated =
         Enum.map(needs_backfill, fn {id, ep} ->
           text = ep.state || ep.action || ""
-          names = extract_entity_names_for_ingest(text)
+          names = extract_entity_names_for_ingest(text, world_id)
           updated_ep = %{ep | entity_names: names}
           Brain.AtlasIntegration.persist_episode_sync(updated_ep, world_id)
           {id, updated_ep}
@@ -732,8 +732,8 @@ defmodule Brain.Memory.Store do
   # KG Entity Re-rank (phase 4)
   # ============================================================================
 
-  defp kg_rerank(query_text, candidates, k) do
-    query_entities = extract_entity_names_from_text(query_text)
+  defp kg_rerank(query_text, candidates, k, world_id) do
+    query_entities = extract_entity_names_from_text(query_text, world_id)
 
     if query_entities == [] do
       Enum.take(candidates, k)
@@ -775,8 +775,8 @@ defmodule Brain.Memory.Store do
     end
   end
 
-  defp extract_entity_names_from_text(text) when is_binary(text) do
-    case Brain.ML.EntityExtractor.extract_entities(text, skip_disambiguation: true) do
+  defp extract_entity_names_from_text(text, world_id) when is_binary(text) do
+    case Brain.ML.EntityExtractor.extract_entities(text, world_id: world_id, skip_disambiguation: true) do
       entities when is_list(entities) ->
         Enum.map(entities, fn e ->
           Map.get(e, :value) || Map.get(e, :text, "")
@@ -790,10 +790,10 @@ defmodule Brain.Memory.Store do
     _ -> []
   end
 
-  defp extract_entity_names_from_text(_), do: []
+  defp extract_entity_names_from_text(_, _world_id), do: []
 
-  defp extract_entity_names_for_ingest(text) when is_binary(text) do
-    case Brain.ML.EntityExtractor.extract_entities(text, skip_disambiguation: true) do
+  defp extract_entity_names_for_ingest(text, world_id) when is_binary(text) do
+    case Brain.ML.EntityExtractor.extract_entities(text, world_id: world_id, skip_disambiguation: true) do
       entities when is_list(entities) ->
         Enum.map(entities, fn e ->
           Map.get(e, :value) || Map.get(e, :text, "")
@@ -807,16 +807,16 @@ defmodule Brain.Memory.Store do
     _ -> []
   end
 
-  defp extract_entity_names_for_ingest(_), do: []
+  defp extract_entity_names_for_ingest(_, _world_id), do: []
 
-  defp ensure_entity_names(%Episode{entity_names: names} = episode)
+  defp ensure_entity_names(%Episode{entity_names: names} = episode, _world_id)
        when is_list(names) and names != [] do
     episode
   end
 
-  defp ensure_entity_names(%Episode{} = episode) do
+  defp ensure_entity_names(%Episode{} = episode, world_id) do
     text = episode.state || episode.action || ""
-    Map.put(episode, :entity_names, extract_entity_names_for_ingest(text))
+    Map.put(episode, :entity_names, extract_entity_names_for_ingest(text, world_id))
   end
 
   defp entity_vectors(entity_names) do
