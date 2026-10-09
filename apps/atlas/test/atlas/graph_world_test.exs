@@ -122,6 +122,50 @@ defmodule Atlas.GraphWorldTest do
     end
   end
 
+  describe "drop_world_graphs!/1" do
+    test "drops every graph of the world with its data, and leaves another world's" do
+      world = test_world("drop")
+      other = test_world("drop_other")
+      Graph.ensure_world_graphs!(world)
+      Graph.ensure_world_graphs!(other)
+
+      {:ok, _} = Graph.add_node(Graph.world_graph("knowledge_graph", world), "Thing", %{name: "dropped"})
+      {:ok, _} = Graph.add_node(Graph.world_graph("knowledge_graph", other), "Thing", %{name: "kept"})
+
+      assert Graph.drop_world_graphs!(world) == Graph.world_graphs(world)
+
+      refute Enum.any?(Graph.world_graphs(world), &Graph.graph_exists?/1)
+      assert Enum.all?(Graph.world_graphs(other), &Graph.graph_exists?/1)
+      assert names(Graph.world_graph("knowledge_graph", other), "Thing") == ["kept"]
+    end
+
+    test "drops only the graphs the world has, and is idempotent" do
+      world = test_world("drop_partial")
+      Repo.query!("SELECT ag_catalog.create_graph($1)", [Graph.world_graph("user_graph", world)])
+
+      assert Graph.drop_world_graphs!(world) == [Graph.world_graph("user_graph", world)]
+      assert Graph.drop_world_graphs!(world) == []
+    end
+
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/needs the world/, fn -> Graph.drop_world_graphs!(nil) end
+    end
+  end
+
+  describe "refuse_unscoped_graphs!/0" do
+    test "is :ok while no unscoped graph exists" do
+      assert Graph.refuse_unscoped_graphs!() == :ok
+    end
+
+    test "raises naming the unscoped graphs and the task that moves them" do
+      Repo.query!("SELECT ag_catalog.create_graph('epistemic_graph')", [])
+
+      assert_raise ArgumentError, ~r/unscoped graphs \["epistemic_graph"\].*mix atlas.move_graphs_to_world/, fn ->
+        Graph.refuse_unscoped_graphs!()
+      end
+    end
+  end
+
   describe "move_unscoped_graphs_to_world!/1" do
     test "renames an unscoped graph to the world's graph of its kind, keeping its data" do
       world = test_world("move")
