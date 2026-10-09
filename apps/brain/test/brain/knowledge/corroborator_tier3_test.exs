@@ -11,8 +11,8 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
   # "default" is the world the test suite runs in, seeded by `mix test.models`.
   @world_id "default"
 
-  describe "corroborate/2 with KG-LSTM unavailable" do
-    test "still produces candidates without KG scoring" do
+  describe "corroborate/2 with the world's triple scorer" do
+    test "produces candidates" do
       source1 = SourceInfo.new("http://source1.com", title: "Source 1")
       source2 = SourceInfo.new("http://source2.com", title: "Source 2")
 
@@ -48,9 +48,10 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
     end
   end
 
-  describe "compare_claims/2" do
+  describe "compare_claims/3" do
     test "identical claims have high similarity" do
       {:ok, similarity} = Corroborator.compare_claims(
+        @world_id,
         "Paris is the capital of France",
         "Paris is the capital of France"
       )
@@ -60,6 +61,7 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
 
     test "different claims have lower similarity" do
       {:ok, similarity} = Corroborator.compare_claims(
+        @world_id,
         "Paris is the capital of France",
         "Tokyo is the capital of Japan"
       )
@@ -68,7 +70,7 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
     end
 
     test "empty strings" do
-      {:ok, similarity} = Corroborator.compare_claims("", "")
+      {:ok, similarity} = Corroborator.compare_claims(@world_id, "", "")
       assert is_number(similarity)
     end
   end
