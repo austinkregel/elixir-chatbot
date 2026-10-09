@@ -4,12 +4,11 @@ defmodule Brain.Code.QueryHandler do
   require Logger
 
   alias Brain.Code.CodeGazetteer
-  @default_world_id "default"
 
   @doc "Handles a code query based on intent and entities.\n\n## Parameters\n  - `intent` - The classified intent (e.g., \"code.explain\", \"code.find_usage\")\n  - `entities` - Extracted entities from the query\n  - `opts` - Options including `:world_id` and `:query_text`\n\n## Returns\n  `{:ok, response}` or `:not_handled`\n"
   @spec handle(String.t(), list(), keyword()) :: {:ok, String.t()} | :not_handled
-  def handle(intent, entities, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def handle(intent, entities, opts) do
+    world_id = world_id!(opts, "handle")
     query_text = Keyword.get(opts, :query_text)
 
     case intent do
@@ -38,8 +37,8 @@ defmodule Brain.Code.QueryHandler do
 
   @doc "Explains a code symbol (function, class, module, etc.).\n"
   @spec explain(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def explain(symbol_name, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def explain(symbol_name, opts) do
+    world_id = world_id!(opts, "explain")
 
     case find_symbol(world_id, symbol_name) do
       {:ok, symbol} ->
@@ -54,8 +53,8 @@ defmodule Brain.Code.QueryHandler do
 
   @doc "Finds all usages/callers of a symbol.\n"
   @spec find_usages(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def find_usages(symbol_name, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def find_usages(symbol_name, opts) do
+    world_id = world_id!(opts, "find_usages")
 
     case find_symbol(world_id, symbol_name) do
       {:ok, symbol} ->
@@ -75,8 +74,8 @@ defmodule Brain.Code.QueryHandler do
 
   @doc "Gets the signature/definition of a symbol.\n"
   @spec signature(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def signature(symbol_name, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def signature(symbol_name, opts) do
+    world_id = world_id!(opts, "signature")
 
     case find_symbol(world_id, symbol_name) do
       {:ok, symbol} ->
@@ -89,8 +88,8 @@ defmodule Brain.Code.QueryHandler do
 
   @doc "Lists symbols matching a pattern or in a module/namespace.\n"
   @spec list_symbols(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def list_symbols(pattern, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def list_symbols(pattern, opts) do
+    world_id = world_id!(opts, "list_symbols")
     limit = Keyword.get(opts, :limit, 20)
 
     symbols = CodeGazetteer.search(world_id, pattern, limit: limit)
@@ -104,8 +103,8 @@ defmodule Brain.Code.QueryHandler do
 
   @doc "Searches for symbols by name or description.\n"
   @spec search(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def search(query, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def search(query, opts) do
+    world_id = world_id!(opts, "search")
     limit = Keyword.get(opts, :limit, 10)
 
     symbols = CodeGazetteer.search(world_id, query, limit: limit)
@@ -119,8 +118,8 @@ defmodule Brain.Code.QueryHandler do
 
   @doc "Gets statistics about the analyzed codebase.\n"
   @spec stats(keyword()) :: {:ok, String.t()} | {:error, term()}
-  def stats(opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def stats(opts) do
+    world_id = world_id!(opts, "stats")
     stats = CodeGazetteer.stats(world_id)
 
     response = """
@@ -132,6 +131,21 @@ defmodule Brain.Code.QueryHandler do
     """
 
     {:ok, String.trim(response)}
+  end
+
+  # Code symbols are indexed per world, so the caller names the world; there is
+  # no default.
+  defp world_id!(opts, function) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "QueryHandler.#{function} option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "QueryHandler.#{function} needs :world_id, the world whose code is queried"
+    end
   end
 
   defp handle_explain(entities, world_id, query_text) do
