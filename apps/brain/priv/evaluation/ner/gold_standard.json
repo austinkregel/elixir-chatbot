@@ -902,7 +902,7 @@
         "value": "Diamonds"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -1219,7 +1219,7 @@
         "value": "Justin Bieber"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -3173,7 +3173,7 @@
         "value": "ZHU"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -4859,7 +4859,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "music_service",
         "value": "YouTube"
       }
     ],
@@ -5444,7 +5444,7 @@
         "value": "Miracles"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Apple Music"
       }
     ],
@@ -6423,7 +6423,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "search_engine",
         "value": "Google"
       },
       {
@@ -7666,7 +7666,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "music_service",
         "value": "iTunes"
       }
     ],
@@ -8419,7 +8419,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "music_service",
         "value": "YouTube"
       },
       {
@@ -8814,7 +8814,7 @@
         "value": "The Wall"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -9567,7 +9567,7 @@
         "value": "Iggy Azalea"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -9887,7 +9887,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "search_engine",
         "value": "google"
       },
       {
@@ -10043,7 +10043,7 @@
         "value": "Can't Feel My Face"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Google Music"
       }
     ],
@@ -11078,7 +11078,7 @@
         "value": "David Guetta"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -11379,7 +11379,7 @@
         "value": "Ramones"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -12430,7 +12430,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -12501,7 +12501,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "search_engine",
         "value": "google"
       },
       {
@@ -13420,7 +13420,7 @@
         "value": "Metropolitan Museum"
       },
       {
-        "type": "service",
+        "type": "search_engine",
         "value": "Wikipedia"
       }
     ],
@@ -13438,7 +13438,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -14406,7 +14406,7 @@
         "value": "popular wallpapers"
       },
       {
-        "type": "service",
+        "type": "search_engine",
         "value": "Yahoo"
       }
     ],
@@ -14629,7 +14629,7 @@
         "value": "Ed Sheeran"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -16049,7 +16049,7 @@
         "value": "Arctic Monkeys"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -16352,7 +16352,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -17165,7 +17165,7 @@
         "value": "jazz"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -17536,7 +17536,7 @@
         "value": "Wretch 32"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -18296,7 +18296,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "music_service",
         "value": "YouTube"
       }
     ],
@@ -18349,7 +18349,7 @@
         "value": "50 Great Beatles Songs"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Prime Music"
       }
     ],
@@ -18441,7 +18441,7 @@
         "value": "Bruce Springsteen"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -19100,7 +19100,7 @@
         "value": "Miracle"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Apple Music"
       }
     ],
@@ -19782,7 +19782,7 @@
         "value": "Pink's biography"
       },
       {
-        "type": "service",
+        "type": "search_engine",
         "value": "Wikipedia"
       }
     ],
@@ -19838,7 +19838,7 @@
         "value": "Taylor Swift"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "YouTube"
       }
     ],
@@ -20211,7 +20211,7 @@
         "value": "American analog set"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -20878,7 +20878,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -21216,7 +21216,7 @@
         "value": "Maroon 5"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -21242,7 +21242,7 @@
         "value": "Gospel"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -21334,7 +21334,7 @@
         "value": "Purple Rain"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -21882,7 +21882,7 @@
         "value": "Rihanna"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -21899,7 +21899,7 @@
         "value": "Adele"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -22539,7 +22539,7 @@
         "value": "Shape of My Heart"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Google music"
       }
     ],
@@ -22705,7 +22705,7 @@
         "value": "Experimental"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -22871,7 +22871,7 @@
         "value": "Depeche Mode"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -23498,7 +23498,7 @@
         "value": "Passenger"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -23911,7 +23911,7 @@
         "value": "Sia"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
