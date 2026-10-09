@@ -959,7 +959,6 @@ defmodule Brain do
   defp process_new_message(persona, input, memory, opts) do
     user_id = Keyword.get(opts, :user_id)
     world_id = Keyword.fetch!(opts, :world_id)
-    Process.put(:current_world_id, world_id)
 
     if Config.enabled?() and
          SelfKnowledgeAnalyzer.is_self_knowledge_query?(input,
@@ -1166,7 +1165,8 @@ defmodule Brain do
     })
 
     if merged_context.all_required_filled do
-      response = generate_intent_response(merged_context, persona, side_effects)
+      response =
+        generate_intent_response(merged_context, persona, side_effects, Keyword.fetch!(opts, :world_id))
 
       context = %{
         intent: merged_context.intent,
@@ -1300,10 +1300,12 @@ defmodule Brain do
     %{}
   end
 
-  defp generate_intent_response(context, _persona, side_effects) do
+  defp generate_intent_response(context, _persona, side_effects, world_id) do
     intent = context.intent
     entities = slots_to_entities(context.slots)
-    {:ok, response, _type} = Generator.generate(intent, entities, nil, side_effects: side_effects)
+
+    {:ok, response, _type} =
+      Generator.generate(intent, entities, nil, side_effects: side_effects, world_id: world_id)
     response
   end
 
@@ -1731,7 +1733,7 @@ defmodule Brain do
   defp track_stance(nil, _intent, _analysis, _opts), do: :ok
   defp track_stance(_conv_id, nil, _analysis, _opts), do: :ok
 
-  defp track_stance(conversation_id, intent, analysis, _opts) do
+  defp track_stance(conversation_id, intent, analysis, opts) do
     if Brain.Epistemic.StanceTracker.ready?() do
       sentiment = (analysis && analysis.sentiment) || %{}
       label = Map.get(sentiment, :label, :neutral)
@@ -1747,7 +1749,7 @@ defmodule Brain do
 
       if topic != nil do
         Brain.Epistemic.StanceTracker.record_stance(
-          conversation_id, topic, position, :user
+          conversation_id, topic, position, :user, world_id: Keyword.fetch!(opts, :world_id)
         )
       end
     end
