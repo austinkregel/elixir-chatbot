@@ -178,8 +178,8 @@ defmodule Brain.ML.TrainingData.Diagnostics do
   # ── Trace prediction ──────────────────────────────────────────────────
 
   @doc """
-  Run a full pipeline trace on an utterance and find the K nearest gold
-  examples by feature-vector cosine similarity.
+  Run a full pipeline trace on an utterance, analyzed in the world `world_id`,
+  and find the K nearest gold examples by feature-vector cosine similarity.
 
   Returns `{:ok, trace_result}` with:
   - `:intent` — chosen intent
@@ -192,9 +192,9 @@ defmodule Brain.ML.TrainingData.Diagnostics do
   - `:missing_context` — missing slots
   - `:neighbors` — top-K gold entries by cosine similarity
   """
-  @spec trace_prediction(String.t(), non_neg_integer()) :: {:ok, map()} | {:error, term()}
-  def trace_prediction(text, top_k \\ 5) when is_binary(text) and text != "" do
-    model = Brain.Analysis.Pipeline.process(text)
+  @spec trace_prediction(String.t(), String.t(), non_neg_integer()) :: {:ok, map()} | {:error, term()}
+  def trace_prediction(text, world_id, top_k \\ 5) when is_binary(text) and text != "" do
+    model = Brain.Analysis.Pipeline.process(text, world_id: world_id)
     [a | _] = model.analyses
 
     sa = a.speech_act
