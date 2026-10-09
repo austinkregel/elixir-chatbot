@@ -304,27 +304,9 @@ defmodule Brain.Test.ModelFactory do
     require_promoted!("speech_act_classifier.term", Brain.ML.SpeechActClassifierSimple)
   end
 
-  @doc """
-  Requires the promoted embedder.
-
-  Checked through `Brain.Memory.Embedder.ready?/0` rather than a GenServer
-  readiness call, because the embedder is per-world and `ready?/0` is the arity
-  that answers for the default one.
-  """
+  @doc "Requires the promoted embedder (the trained, world-less vocabulary). See `require_promoted!/2`."
   def require_embedder do
-    path = model_file!("embedder.term")
-
-    unless Brain.Memory.Embedder.ready?() do
-      raise """
-      ModelFactory: #{Path.basename(path)} is promoted but Brain.Memory.Embedder
-      reports it is not ready.
-
-      The embedder loads from #{path} at boot, so this means the file is present
-      and unusable rather than absent.
-      """
-    end
-
-    {:ok, %{sha256: Brain.Analysis.RunProvenance.sha256_file!(path)}}
+    require_promoted!("embedder.term", Brain.Memory.Embedder)
   end
 
   # These models are *upstream* of the feature vector: the pipeline runs them to
