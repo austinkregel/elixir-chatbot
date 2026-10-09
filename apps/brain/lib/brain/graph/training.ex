@@ -7,7 +7,7 @@ defmodule Brain.Graph.Training do
 
   ## Integration Points
 
-  - `conversation_graph` -> Intent Classifier: Topic transition priors
+  - a world's `conversation_graph` -> Intent Classifier: Topic transition priors
 
   The gazetteer is deliberately not fed from the graph: the graph holds the
   system's own unreviewed extractions, and the gazetteer learns only what a
@@ -32,21 +32,25 @@ defmodule Brain.Graph.Training do
   # ============================================================================
 
   @doc """
-  Extract intent transition priors from conversation_graph.
+  Extract intent transition priors from the world's conversation_graph.
 
   Builds a transition probability matrix from TOPIC_TRANSITION edges:
   `%{"weather.query" => %{"weather.followup" => 0.4, "greeting" => 0.1}, ...}`
 
   These can be used to boost intent classification confidence when the
-  previous intent is known.
+  previous intent is known. Raises for a missing or malformed world.
   """
-  def extract_intent_priors do
+  def extract_intent_priors(world_id) do
+    read_intent_priors(Graph.world_graph("conversation_graph", world_id))
+  end
+
+  defp read_intent_priors(graph) do
     query = """
     MATCH (a:Topic)-[r:#{EdgeLabels.topic_transition()}]->(b:Topic)
     RETURN a, b, r
     """
 
-    case Graph.cypher("conversation_graph", query) do
+    case Graph.cypher(graph, query) do
       {:ok, rows} when is_list(rows) ->
         parsed =
           Enum.map(rows, fn
@@ -74,7 +78,7 @@ defmodule Brain.Graph.Training do
 
   - `scores` -- list of `{intent, score}` tuples
   - `prev_intent` -- the previous intent in the conversation
-  - `priors` -- transition matrix from `extract_intent_priors/0`
+  - `priors` -- transition matrix from `extract_intent_priors/1`
   - `weight` -- how much to weight the prior (default: 0.15)
 
   Returns updated scores with prior-boosted values.
