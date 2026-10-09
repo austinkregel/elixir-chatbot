@@ -259,7 +259,17 @@ defmodule Brain.Response.ConditionEvaluator do
     else
       # Fall back to checking dispatcher
       alias Brain.Services.Dispatcher
-      world = Map.get(context, :world_id) || Map.get(context, :world, "default")
+      world =
+        case Map.get(context, :world_id) || Map.get(context, :world) do
+          world when is_binary(world) and world != "" ->
+            world
+
+          other ->
+            raise ArgumentError,
+                  "ConditionEvaluator: service_available:#{service_name} needs :world_id (or :world) " <>
+                    "in the context, the world whose service credentials are checked; got #{inspect(other)}"
+        end
+
       Dispatcher.service_available?(safe_atom(service_name), world: world)
     end
   end
