@@ -198,6 +198,19 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
     end
   end
 
+  describe "infer_type_with_type_inferrer/3" do
+    test "raises when the context carries no world" do
+      entity = %{entity_type: "person", value: "Austin"}
+      pos_tagged = [{"in", "ADP"}, {"Austin", "PROPN"}]
+
+      for context <- [%{intent: "weather.query"}, %{intent: "weather.query", world_id: nil}, %{intent: "weather.query", world_id: ""}] do
+        assert_raise ArgumentError, ~r/EntityDisambiguator.infer_type_with_type_inferrer needs :world_id/, fn ->
+          EntityDisambiguator.infer_type_with_type_inferrer(entity, pos_tagged, context)
+        end
+      end
+    end
+  end
+
   describe "introduction_confidence/3" do
     test "high confidence for PRON+VERB pattern with self-referential discourse", %{world_id: world_id} do
       pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"Austin", "PROPN"}]
