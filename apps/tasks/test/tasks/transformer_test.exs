@@ -141,13 +141,32 @@ defmodule Tasks.TransformerTest do
       sample = Enum.find(result.training_samples, &(&1.id == "test-qa-1"))
       assert sample.text == "Who wrote Romeo and Juliet?"
       assert sample.intent == "factual_question"
-      assert is_list(sample.tokens)
-      assert is_list(sample.pos_tags)
-      assert length(result.knowledge_facts) >= 2
+      assert sample.tokens != []
+      assert length(sample.pos_tags) == length(sample.tokens)
+      assert sample.entities == []
+
+      # One fact per answer: the positive example's and the two instances'.
+      assert length(result.knowledge_facts) == 3
 
       fact = Enum.find(result.knowledge_facts, &(&1.subject =~ "Romeo"))
       assert fact.predicate == "has_answer"
       assert fact.object =~ "Shakespeare"
+    end
+
+    test "a Question Answering task without a world raises, since its answers are always extracted" do
+      file_path = Path.join(@test_tasks_path, "task_test_qa.json")
+
+      assert_raise ArgumentError, ~r/needs :world_id/, fn ->
+        Transformer.transform_task(file_path, extract_entities: false)
+      end
+    end
+
+    test "extracting entities without a world raises" do
+      file_path = Path.join(@test_tasks_path, "task_test_sentiment.json")
+
+      assert_raise ArgumentError, ~r/needs :world_id/, fn ->
+        Transformer.transform_task(file_path)
+      end
     end
 
     test "transforms sentiment task into training samples" do
@@ -168,10 +187,10 @@ defmodule Tasks.TransformerTest do
       file_path = Path.join(@test_tasks_path, "task_test_paraphrase.json")
 
       {:ok, result} = Transformer.transform_task(file_path, extract_entities: false)
-      assert length(result.training_samples) >= 2
+
+      # The one instance's input and its one paraphrase.
       intents = Enum.map(result.training_samples, & &1.intent)
-      assert "paraphrase.original" in intents
-      assert "paraphrase.variant" in intents
+      assert intents == ["paraphrase.original", "paraphrase.variant"]
     end
 
     test "transforms commonsense task with explanations" do
@@ -180,9 +199,11 @@ defmodule Tasks.TransformerTest do
       {:ok, result} = Transformer.transform_task(file_path, extract_entities: false)
 
       assert length(result.training_samples) == 2
-      sample = List.first(result.training_samples)
-      assert sample.intent == "commonsense_query"
-      assert result.knowledge_facts != []
+      assert Enum.all?(result.training_samples, &(&1.intent == "commonsense_query"))
+
+      # The positive example carries an explanation and the instance does not.
+      predicates = result.knowledge_facts |> Enum.map(& &1.predicate) |> Enum.sort()
+      assert predicates == ["commonsense_answer", "implies"]
     end
 
     test "respects max_instances option" do
@@ -237,9 +258,34 @@ defmodule Tasks.TransformerTest do
     end
 
     test "extracting entities without a world raises, naming the option" do
-      assert_raise ArgumentError, ~r/:world_id/, fn ->
+      assert_raise ArgumentError, ~r/needs :world_id/, fn ->
         Transformer.text_to_training_sample("Hello world", "greeting", "test-id-3")
       end
+    end
+
+    test "extracting entities with a world id that is not a string raises" do
+      for world_id <- [nil, ""] do
+        assert_raise ArgumentError, ~r/:world_id must be a world id/, fn ->
+          Transformer.text_to_training_sample("Hello world", "greeting", "test-id-4", world_id: world_id)
+        end
+      end
+    end
+
+    test "extracts in the world it is given, which must hold an entity model" do
+      # No world with this id exists, so it has no entity model: extraction
+      # reads the named world's model and nothing else.
+      world_id = "test_no_entity_model_#{System.unique_integer([:positive])}"
+
+      assert_raise RuntimeError, ~r/world "#{world_id}" has no entity model/, fn ->
+        Transformer.text_to_training_sample("Hello world", "greeting", "test-id-5", world_id: world_id)
+      end
+    end
+
+    test "needs no world when entities are not extracted" do
+      sample =
+        Transformer.text_to_training_sample("Hello world", "greeting", "test-id-6", extract_entities: false)
+
+      assert sample.entities == []
     end
   end
 
@@ -253,7 +299,8 @@ defmodule Tasks.TransformerTest do
       {:ok, result} =
         Transformer.transform_tasks(files, extract_entities: false, world_id: @world_id)
 
-      assert length(result.training_samples) >= 5
+      # Three from the Question Answering task, two from the sentiment task.
+      assert length(result.training_samples) == 5
     end
 
     test "reports progress via callback" do
