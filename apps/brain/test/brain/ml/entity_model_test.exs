@@ -15,7 +15,7 @@ defmodule Brain.ML.EntityModelTest do
   alias Brain.ML.EntityModel
 
   setup do
-    world_id = "entity_model_test_#{System.unique_integer([:positive])}"
+    world_id = "test_entity_model_#{System.unique_integer([:positive])}"
 
     # `path/1` is <world>/models/entity_model.term.
     world_dir = world_id |> EntityModel.path() |> Path.dirname() |> Path.dirname()
