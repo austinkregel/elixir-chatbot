@@ -37,10 +37,22 @@ defmodule Mix.Tasks.Train do
     --skip-framing     Skip framing classifier (GVFC corpus)
     --skip-lattice     Skip lattice phrase inventory generation
     --include-graph    Run graph-to-training integration after training
-    --world ID         Required. The world the models are trained for; passed to
-                       every stage that analyzes text or reads world data
+    --world ID         Required. The world the stages that analyze text or read
+                       world data run in (Poincare, KG triple scorer, micro data,
+                       framing data, lattice data, entity type ingestion). It
+                       names no output location: models are written to the
+                       trained models directory, not into the world
     --publish          Publish trained models to S3/MinIO
     --list             List all available training tasks
+
+  ## Trained models and worlds
+
+  The TF-IDF bundle is written to the trained models directory
+  (`:brain, :ml, :models_path`, or priv/ml_models/), where
+  `Brain.ML.EntityModel.trained_path/0` and `World.Embedder.trained_path/0`
+  read the files worlds are seeded from. Training does not seed: a world
+  receives the retrained entity model and embedder vocabulary through
+  `mix world.seed_model`, or from `World.Manager` when it creates the world.
 
   ## Training order (9 stages)
 
@@ -71,15 +83,14 @@ defmodule Mix.Tasks.Train do
       mix train --world <id> --quick        # Skip slow models
       mix train --world <id> --skip-tfidf   # Skip TF-IDF bundle stage
       mix train --world <id> --skip-micro   # Skip micro-classifiers only
-      mix train --world star_trek           # Train for a specific world
+      mix train --world star_trek           # Run the world-reading stages in star_trek
       mix train --list                      # List stages
   """
 
-  # World.Persistence is in a sibling umbrella app that depends on :brain.
+  # World.Embedder is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Persistence}
+  @compile {:no_warn_undefined, World.Embedder}
 
-  alias World.Persistence
   alias Brain.ML.Trainer
   alias Brain.ML.ModelStore
   use Mix.Task
@@ -227,7 +238,7 @@ defmodule Mix.Tasks.Train do
     total_duration = System.monotonic_time(:second) - start_time
 
     if opts[:publish] || ModelStore.enabled?() do
-      publish_models(get_models_path(opts[:world]))
+      publish_models(trained_models_path())
     end
 
     display_summary(results, total_duration)
@@ -479,13 +490,13 @@ defmodule Mix.Tasks.Train do
 
   defp stage_timestamp, do: Calendar.strftime(DateTime.utc_now(), "%H:%M:%S")
 
-  defp train_tfidf_models(opts) do
+  defp train_tfidf_models(_opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 1/9: TF-IDF Models  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    models_path = get_models_path(opts[:world])
+    models_path = trained_models_path()
 
     case Trainer.train_and_save(models_path: models_path) do
       {:ok, stats} ->
@@ -524,7 +535,7 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_pos_model(opts) do
+  defp train_pos_model(_opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 2/9: POS Tagger  [#{stage_timestamp()}]")
@@ -532,8 +543,9 @@ defmodule Mix.Tasks.Train do
 
     # Trains on the committed EWT fixtures (Brain.Training.POS). An invalid
     # fixture or a model that cannot beat the lookup baseline raises: this
-    # stage never reports success without a model.
-    save_path = Path.join(get_models_path(opts[:world]), "pos_model.term")
+    # stage never reports success without a model. POS tagging is shared by
+    # every world, so the model goes to the shared tagger's path.
+    save_path = Brain.ML.POSTagger.model_path()
     Mix.shell().info("  Training the POS tagger on the EWT fixtures...")
 
     {path, model} = Brain.Training.POS.train_and_save!(out: save_path)
@@ -803,13 +815,21 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp get_models_path(nil) do
-    Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
-  end
+  # The directory training writes to: the one holding the trained entity model
+  # and embedder vocabulary that worlds are seeded from. Training writes into no
+  # world; seeding copies the trained files into one.
+  defp trained_models_path do
+    entity_dir = Path.dirname(Brain.ML.EntityModel.trained_path())
+    embedder_dir = Path.dirname(World.Embedder.trained_path())
 
-  defp get_models_path(world_id) do
-    world_path = Persistence.world_path(world_id)
-    Path.join(world_path, "models")
+    unless entity_dir == embedder_dir do
+      Mix.raise(
+        "mix train writes the TF-IDF bundle to one directory, but the trained entity model " <>
+          "is at #{entity_dir} and the trained embedder vocabulary at #{embedder_dir}"
+      )
+    end
+
+    entity_dir
   end
 
   defp format_duration(seconds) when seconds < 60 do
