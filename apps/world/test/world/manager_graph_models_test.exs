@@ -10,7 +10,7 @@ defmodule World.ManagerGraphModelsTest do
   in memory. Either way a destroyed world's loaded copies are gone, so using
   them raises rather than answering from models the world no longer holds.
   """
-  use ExUnit.Case, async: false
+  use World.AtlasCase, async: false
   import Brain.TestHelpers
 
   alias Brain.ML.KnowledgeGraph.TripleScorer
