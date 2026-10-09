@@ -35,13 +35,24 @@ defmodule Brain.Analysis.ContextAccumulator do
   ## Options
     - `:user_id` - interlocutor ID for practical adaptations
     - `:conversation_id` - conversation for topic continuity
-    - `:world_id` - world scope for memory queries (default: "default")
+    - `:world_id` - required: world scope for memory queries. Absent raises.
     - `:memory_k` - number of similar memories to retrieve (default: 5)
   """
-  def new(text, opts \\ []) when is_binary(text) do
+  def new(text, opts) when is_binary(text) do
     user_id = Keyword.get(opts, :user_id)
     conversation_id = Keyword.get(opts, :conversation_id)
-    world_id = Keyword.get(opts, :world_id, "default")
+
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "ContextAccumulator.new requires a :world_id option, the world whose memory is " <>
+                  "queried; got #{inspect(other)}"
+      end
+
     memory_k = Keyword.get(opts, :memory_k, 5)
 
     %__MODULE__{
