@@ -3,6 +3,16 @@ defmodule Brain.Analysis.ContextAccumulatorTest do
 
   alias Brain.Analysis.ContextAccumulator
 
+  describe "new/2" do
+    test "raises without a world, before any memory is queried" do
+      for opts <- [[], [world_id: nil], [world_id: ""], [user_id: "u1", conversation_id: "c1"]] do
+        assert_raise ArgumentError, ~r/ContextAccumulator.new requires a :world_id option/, fn ->
+          ContextAccumulator.new("What's the weather?", opts)
+        end
+      end
+    end
+  end
+
   describe "add_signal/4" do
     test "adds signals to the accumulator" do
       acc =
