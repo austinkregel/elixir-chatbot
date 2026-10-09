@@ -513,9 +513,15 @@ defmodule Brain.Memory.Store do
 
   @impl true
   def handle_call({:clear, world_id}, _from, state) do
-    # VectorIndex doesn't support world-scoped clear, but clearing all
-    # and re-warming would be too expensive. For now, just acknowledge.
-    _ = world_id
+    # Index entries are keyed {world_id, id}, so the world's own entries are
+    # removed and every other world's stay.
+    for index <- [state.episode_index, state.semantic_index],
+        {{^world_id, _id} = key, _embedding} <- VectorIndex.export(index) do
+      VectorIndex.delete(index, key)
+    end
+
+    :ets.match_delete(state.semantic_records, {{world_id, :_}, :_})
+    Brain.AtlasIntegration.clear_memory(world_id)
     {:reply, :ok, state}
   end
 
