@@ -3,26 +3,21 @@ defmodule Brain.Memory.StoreTest do
   use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
-  alias Memory.{Store, Embedder}
-  alias Brain.Memory.Types.SemanticFact
+  # World.Embedder is in a sibling umbrella app that depends on :brain.
+  # It's available at runtime but not at compile time.
+  @compile {:no_warn_undefined, World.Embedder}
+
+  alias Memory.Store
+  alias Brain.Memory.Types.{Episode, SemanticFact}
+  alias World.Embedder, as: WorldEmbedder
+
+  # The world the test suite runs in, seeded by `mix test.models`. The store
+  # embeds with this world's embedder, so embeddings a test builds by hand come
+  # from the same one.
+  @world_id "default"
 
   setup do
     ensure_pubsub_started()
-    ensure_started(Embedder)
-
-    # The vocabulary below replaces the global one; put the suite's back
-    # afterwards, or every later test embeds to a zero vector.
-    Brain.Test.Singletons.preserve_embedder!()
-
-    texts = [
-      "hello world",
-      "goodbye world",
-      "how are you",
-      "what is the weather",
-      "play some music"
-    ]
-
-    Embedder.build_vocabulary(texts)
 
     ensure_started(
       {Store, persistence_path: "/tmp/test_memory_store_#{:rand.uniform(100_000)}.term"}
@@ -35,16 +30,16 @@ defmodule Brain.Memory.StoreTest do
 
   describe "add_episode" do
     test "adds an episode and returns its id" do
-      {:ok, id} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", ["smalltalk.greetings.hello"])
+      {:ok, id} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", ["smalltalk.greetings.hello"], world_id: @world_id)
 
       assert is_binary(id)
       assert String.length(id) == 36
     end
 
     test "episode can be retrieved by id" do
-      {:ok, id} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", ["smalltalk.greetings.hello"])
+      {:ok, id} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", ["smalltalk.greetings.hello"], world_id: @world_id)
 
-      {:ok, episode} = Store.get_episode(id)
+      {:ok, episode} = Store.get_episode(id, world_id: @world_id)
 
       assert episode.state == "hello world"
       assert episode.action == "smalltalk.greetings.hello"
@@ -53,17 +48,17 @@ defmodule Brain.Memory.StoreTest do
     end
 
     test "returns error for non-existent id" do
-      assert {:error, :not_found} = Store.get_episode("nonexistent")
+      assert {:error, :not_found} = Store.get_episode("nonexistent", world_id: @world_id)
     end
   end
 
   describe "query_similar" do
     test "finds similar episodes" do
-      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
-      {:ok, _} = Store.add_episode("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
-      {:ok, _} = Store.add_episode("goodbye world", "farewell", "", ["farewell"])
+      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], world_id: @world_id)
+      {:ok, _} = Store.add_episode("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], world_id: @world_id)
+      {:ok, _} = Store.add_episode("goodbye world", "farewell", "", ["farewell"], world_id: @world_id)
 
-      {:ok, results} = Store.query_similar("hello friend", 3)
+      {:ok, results} = Store.query_similar("hello friend", 3, world_id: @world_id)
 
       assert length(results) == 3
       [{ep1, sim1} | _] = results
@@ -72,27 +67,27 @@ defmodule Brain.Memory.StoreTest do
     end
 
     test "returns empty list when no episodes exist" do
-      {:ok, results} = Store.query_similar("hello", 5)
+      {:ok, results} = Store.query_similar("hello", 5, world_id: @world_id)
       assert results == []
     end
   end
 
   describe "query_by_tags" do
     test "finds episodes with matching tags" do
-      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello", "casual"])
-      {:ok, _} = Store.add_episode("goodbye", "farewell", "", ["farewell"])
-      {:ok, _} = Store.add_episode("hi there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello", "formal"])
+      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello", "casual"], world_id: @world_id)
+      {:ok, _} = Store.add_episode("goodbye", "farewell", "", ["farewell"], world_id: @world_id)
+      {:ok, _} = Store.add_episode("hi there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello", "formal"], world_id: @world_id)
 
-      {:ok, results} = Store.query_by_tags(["smalltalk.greetings.hello"])
+      {:ok, results} = Store.query_by_tags(["smalltalk.greetings.hello"], world_id: @world_id)
 
       assert length(results) == 2
       assert Enum.all?(results, fn ep -> "smalltalk.greetings.hello" in ep.tags end)
     end
 
     test "returns empty list when no tags match" do
-      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], world_id: @world_id)
 
-      {:ok, results} = Store.query_by_tags(["nonexistent"])
+      {:ok, results} = Store.query_by_tags(["nonexistent"], world_id: @world_id)
       assert results == []
     end
   end
@@ -100,21 +95,21 @@ defmodule Brain.Memory.StoreTest do
   describe "semantic facts" do
     test "adds and retrieves semantic facts" do
       fact = SemanticFact.new("greeting pattern", [0.1, 0.2, 0.3], ["ep1"], ["smalltalk.greetings.hello"])
-      {:ok, id} = Store.add_semantic(fact)
+      {:ok, id} = Store.add_semantic(fact, world_id: @world_id)
 
-      {:ok, retrieved} = Store.get_semantic(id)
+      {:ok, retrieved} = Store.get_semantic(id, world_id: @world_id)
 
       assert retrieved.representation == "greeting pattern"
       assert retrieved.tags == ["smalltalk.greetings.hello"]
     end
 
     test "queries semantic facts by similarity" do
-      {:ok, embedding} = Embedder.embed("hello world")
+      {:ok, embedding} = WorldEmbedder.embed(@world_id, "hello world")
 
       fact = SemanticFact.new("greeting pattern", embedding, ["ep1"], ["smalltalk.greetings.hello"])
-      {:ok, _} = Store.add_semantic(fact)
+      {:ok, _} = Store.add_semantic(fact, world_id: @world_id)
 
-      {:ok, results} = Store.query_semantic("hello there", 5)
+      {:ok, results} = Store.query_semantic("hello there", 5, world_id: @world_id)
 
       assert length(results) == 1
       [{semantic, _sim}] = results
@@ -124,42 +119,42 @@ defmodule Brain.Memory.StoreTest do
 
   describe "link_episode_to_semantic" do
     test "links an episode to a semantic fact" do
-      {:ok, ep_id} = Store.add_episode("hello", "smalltalk.greetings.hello", "", [])
-      {:ok, episode} = Store.get_episode(ep_id)
+      {:ok, ep_id} = Store.add_episode("hello", "smalltalk.greetings.hello", "", [], world_id: @world_id)
+      {:ok, episode} = Store.get_episode(ep_id, world_id: @world_id)
       assert episode.semantic_id == nil
 
       sem_id = Ecto.UUID.generate()
-      :ok = Store.link_episode_to_semantic(ep_id, sem_id)
+      :ok = Store.link_episode_to_semantic(ep_id, sem_id, world_id: @world_id)
 
-      {:ok, updated} = Store.get_episode(ep_id)
+      {:ok, updated} = Store.get_episode(ep_id, world_id: @world_id)
       assert updated.semantic_id == sem_id
     end
 
     test "returns error for non-existent episode" do
       fake_id = Ecto.UUID.generate()
-      assert {:error, :not_found} = Store.link_episode_to_semantic(fake_id, Ecto.UUID.generate())
+      assert {:error, :not_found} = Store.link_episode_to_semantic(fake_id, Ecto.UUID.generate(), world_id: @world_id)
     end
   end
 
   describe "all_episodes and all_semantics" do
     test "returns all episodes" do
-      {:ok, _} = Store.add_episode("a", "b", "c", [])
-      {:ok, _} = Store.add_episode("d", "e", "f", [])
+      {:ok, _} = Store.add_episode("a", "b", "c", [], world_id: @world_id)
+      {:ok, _} = Store.add_episode("d", "e", "f", [], world_id: @world_id)
 
-      {:ok, episodes} = Store.all_episodes()
+      {:ok, episodes} = Store.all_episodes(world_id: @world_id)
 
       assert length(episodes) == 2
     end
 
     test "returns all semantic facts" do
-      {:ok, embedding} = Embedder.embed("hello")
+      {:ok, embedding} = WorldEmbedder.embed(@world_id, "hello")
 
       fact1 = SemanticFact.new("fact1", embedding, [], [])
       fact2 = SemanticFact.new("fact2", embedding, [], [])
-      {:ok, _} = Store.add_semantic(fact1)
-      {:ok, _} = Store.add_semantic(fact2)
+      {:ok, _} = Store.add_semantic(fact1, world_id: @world_id)
+      {:ok, _} = Store.add_semantic(fact2, world_id: @world_id)
 
-      {:ok, semantics} = Store.all_semantics()
+      {:ok, semantics} = Store.all_semantics(world_id: @world_id)
 
       assert length(semantics) == 2
     end
@@ -167,8 +162,8 @@ defmodule Brain.Memory.StoreTest do
 
   describe "stats" do
     test "returns store statistics" do
-      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", [])
-      {:ok, _} = Store.add_episode("goodbye", "farewell", "", [])
+      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", [], world_id: @world_id)
+      {:ok, _} = Store.add_episode("goodbye", "farewell", "", [], world_id: @world_id)
 
       stats = Store.stats()
 
@@ -180,33 +175,33 @@ defmodule Brain.Memory.StoreTest do
 
   describe "clear" do
     test "removes all data" do
-      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", [])
-      {:ok, _} = Store.add_episode("goodbye", "farewell", "", [])
+      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", [], world_id: @world_id)
+      {:ok, _} = Store.add_episode("goodbye", "farewell", "", [], world_id: @world_id)
 
       :ok = Store.clear()
 
-      {:ok, episodes} = Store.all_episodes()
+      {:ok, episodes} = Store.all_episodes(world_id: @world_id)
       assert episodes == []
     end
   end
 
   describe "rerank option" do
     test "query_similar with rerank: false returns results without entity extraction" do
-      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
-      {:ok, _} = Store.add_episode("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], world_id: @world_id)
+      {:ok, _} = Store.add_episode("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], world_id: @world_id)
 
-      {:ok, results} = Store.query_similar("hello friend", 3, rerank: false)
+      {:ok, results} = Store.query_similar("hello friend", 3, world_id: @world_id, rerank: false)
 
       assert is_list(results)
     end
 
     test "query_similar with rerank: false skips rerank even when config enables it" do
-      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
+      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], world_id: @world_id)
 
       original_config = Application.get_env(:brain, :kg_signals, [])
       Application.put_env(:brain, :kg_signals, Keyword.put(original_config, :memory_rerank, true))
 
-      {:ok, results} = Store.query_similar("hello friend", 3, rerank: false)
+      {:ok, results} = Store.query_similar("hello friend", 3, world_id: @world_id, rerank: false)
 
       Application.put_env(:brain, :kg_signals, original_config)
 
@@ -214,11 +209,11 @@ defmodule Brain.Memory.StoreTest do
     end
 
     test "query_semantic with rerank: false returns results" do
-      {:ok, embedding} = Embedder.embed("hello world")
-      fact = Brain.Memory.Types.SemanticFact.new("greeting", embedding, [], ["smalltalk.greetings.hello"])
-      {:ok, _} = Store.add_semantic(fact)
+      {:ok, embedding} = WorldEmbedder.embed(@world_id, "hello world")
+      fact = SemanticFact.new("greeting", embedding, [], ["smalltalk.greetings.hello"])
+      {:ok, _} = Store.add_semantic(fact, world_id: @world_id)
 
-      {:ok, results} = Store.query_semantic("hello there", 5, rerank: false)
+      {:ok, results} = Store.query_semantic("hello there", 5, world_id: @world_id, rerank: false)
 
       assert is_list(results)
     end
@@ -226,14 +221,14 @@ defmodule Brain.Memory.StoreTest do
 
   describe "entity_names on episodes" do
     test "add_episode populates entity_names field" do
-      {:ok, id} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", ["smalltalk.greetings.hello"])
-      {:ok, episode} = Store.get_episode(id)
+      {:ok, id} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi there", ["smalltalk.greetings.hello"], world_id: @world_id)
+      {:ok, episode} = Store.get_episode(id, world_id: @world_id)
 
       assert is_list(episode.entity_names)
     end
 
     test "add_episode_direct preserves pre-populated entity_names" do
-      episode = Brain.Memory.Types.Episode.new(
+      episode = Episode.new(
         "hello world",
         "smalltalk.greetings.hello",
         "hi there",
@@ -242,10 +237,106 @@ defmodule Brain.Memory.StoreTest do
       )
       episode = %{episode | entity_names: ["world"]}
 
-      {:ok, id} = Store.add_episode_direct(episode)
-      {:ok, retrieved} = Store.get_episode(id)
+      {:ok, id} = Store.add_episode_direct(episode, world_id: @world_id)
+      {:ok, retrieved} = Store.get_episode(id, world_id: @world_id)
 
       assert retrieved.entity_names == ["world"]
+    end
+  end
+
+  describe "a world is required" do
+    test "add_episode raises without :world_id" do
+      assert_raise ArgumentError, ~r/add_episode requires a :world_id option/, fn ->
+        Store.add_episode("hello", "smalltalk.greetings.hello", "", [], [])
+      end
+    end
+
+    test "add_episode raises on an empty :world_id" do
+      assert_raise ArgumentError, ~r/add_episode requires a :world_id option/, fn ->
+        Store.add_episode("hello", "smalltalk.greetings.hello", "", [], world_id: "")
+      end
+    end
+
+    test "add_episode_direct raises without :world_id" do
+      episode = Episode.new("hello", "smalltalk.greetings.hello", "", [], [])
+
+      assert_raise ArgumentError, ~r/add_episode_direct requires a :world_id option/, fn ->
+        Store.add_episode_direct(episode, [])
+      end
+    end
+
+    test "add_event_episode raises without :world_id" do
+      event = %{action: %{lemma: "play"}, object: %{text: "jazz"}}
+
+      assert_raise ArgumentError, ~r/add_event_episode requires a :world_id option/, fn ->
+        Store.add_event_episode(event, %{response: "Playing jazz"}, [])
+      end
+    end
+
+    test "query_similar raises without :world_id" do
+      assert_raise ArgumentError, ~r/query_similar requires a :world_id option/, fn ->
+        Store.query_similar("hello", [])
+      end
+    end
+
+    test "query_by_tags and the event queries raise without :world_id" do
+      assert_raise ArgumentError, ~r/query_by_tags requires a :world_id option/, fn ->
+        Store.query_by_tags(["smalltalk.greetings.hello"], [])
+      end
+
+      assert_raise ArgumentError, ~r/query_by_tags requires a :world_id option/, fn ->
+        Store.query_events_by_action("play", [])
+      end
+
+      assert_raise ArgumentError, ~r/query_by_tags requires a :world_id option/, fn ->
+        Store.query_events_by_object("jazz", [])
+      end
+
+      assert_raise ArgumentError, ~r/query_by_tags requires a :world_id option/, fn ->
+        Store.query_events_by_actor("user", [])
+      end
+    end
+
+    test "get_episode raises without :world_id" do
+      assert_raise ArgumentError, ~r/get_episode requires a :world_id option/, fn ->
+        Store.get_episode(Ecto.UUID.generate(), [])
+      end
+    end
+
+    test "add_semantic raises without :world_id" do
+      fact = SemanticFact.new("greeting pattern", [0.1, 0.2, 0.3], [], [])
+
+      assert_raise ArgumentError, ~r/add_semantic requires a :world_id option/, fn ->
+        Store.add_semantic(fact, [])
+      end
+    end
+
+    test "query_semantic raises without :world_id" do
+      assert_raise ArgumentError, ~r/query_semantic requires a :world_id option/, fn ->
+        Store.query_semantic("hello", [])
+      end
+    end
+
+    test "get_semantic raises without :world_id" do
+      assert_raise ArgumentError, ~r/get_semantic requires a :world_id option/, fn ->
+        Store.get_semantic(Ecto.UUID.generate(), [])
+      end
+    end
+
+    test "link_episode_to_semantic raises without :world_id" do
+      assert_raise ArgumentError, ~r/link_episode_to_semantic requires a :world_id option/, fn ->
+        Store.link_episode_to_semantic(Ecto.UUID.generate(), Ecto.UUID.generate(), [])
+      end
+    end
+
+    test "all_episodes and all_semantics raise without :world_id" do
+      assert_raise ArgumentError, ~r/all_episodes requires a :world_id option/, fn ->
+        Store.all_episodes([])
+      end
+
+      assert_raise ArgumentError, ~r/all_semantics requires a :world_id option/, fn ->
+        Store.all_semantics([])
+      end
     end
   end
 end
