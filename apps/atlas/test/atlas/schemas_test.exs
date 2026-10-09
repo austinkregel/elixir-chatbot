@@ -174,6 +174,7 @@ defmodule Atlas.SchemasTest do
     test "inserts and queries a review candidate" do
       attrs = %{
         id: "review_#{System.unique_integer([:positive])}",
+        world_id: "default",
         status: "pending",
         finding: %{"topic" => "Elixir", "claim" => "is functional"},
         aggregate_confidence: 0.88
@@ -183,9 +184,51 @@ defmodule Atlas.SchemasTest do
                %ReviewCandidate{} |> ReviewCandidate.changeset(attrs) |> Repo.insert()
 
       assert candidate.status == "pending"
+      assert candidate.world_id == "default"
 
       pending = ReviewCandidate |> ReviewCandidate.pending() |> Repo.all()
       assert length(pending) >= 1
+    end
+
+    test "every status a reviewer or the queue can give is valid, and no other" do
+      for status <- ~w(pending approved rejected deferred auto_approved) do
+        attrs = %{
+          id: "review_#{System.unique_integer([:positive])}",
+          world_id: "default",
+          status: status,
+          finding: %{"claim" => "is functional"},
+          aggregate_confidence: 0.88
+        }
+
+        assert {:ok, %ReviewCandidate{status: ^status}} =
+                 %ReviewCandidate{} |> ReviewCandidate.changeset(attrs) |> Repo.insert()
+      end
+
+      changeset =
+        ReviewCandidate.changeset(%ReviewCandidate{}, %{
+          id: "review_#{System.unique_integer([:positive])}",
+          world_id: "default",
+          status: "postponed",
+          finding: %{"claim" => "is functional"},
+          aggregate_confidence: 0.88
+        })
+
+      refute changeset.valid?
+      assert {"is invalid", _} = changeset.errors[:status]
+    end
+
+    test "a candidate without a world is invalid" do
+      attrs = %{
+        id: "review_#{System.unique_integer([:positive])}",
+        status: "pending",
+        finding: %{"claim" => "is functional"},
+        aggregate_confidence: 0.88
+      }
+
+      changeset = ReviewCandidate.changeset(%ReviewCandidate{}, attrs)
+
+      refute changeset.valid?
+      assert {"can't be blank", _} = changeset.errors[:world_id]
     end
   end
 
