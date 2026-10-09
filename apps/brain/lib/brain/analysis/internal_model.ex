@@ -172,17 +172,21 @@ defmodule Brain.Analysis.ChunkAnalysis do
           related_beliefs: list(map()),
           epistemic_status: epistemic_status(),
           pass: pass(),
-          language: String.t() | nil
+          language: String.t() | nil,
+          active_contexts: [String.t()] | nil
         }
 
-  # `language` is the code (`Brain.Language`) the chunk was analyzed in. The
-  # pipeline sets it; feature extraction requires it.
+  # `language` is the code (`Brain.Language`) the chunk was analyzed in, and
+  # `active_contexts` the conversational contexts the turn continues from
+  # (`Brain.Analysis.ActiveContexts`). The pipeline sets both; feature
+  # extraction requires both.
   defstruct [
     :chunk_index,
     :text,
     :discourse,
     :speech_act,
     :language,
+    :active_contexts,
     intent: nil,
     profile: nil,
     feature_vector: [],
