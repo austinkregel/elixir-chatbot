@@ -1924,7 +1924,10 @@ defmodule Brain do
       conversation_id: Keyword.get(opts, :conversation_id),
       unified_context: unified_context,
       dry_run_ouro: Keyword.get(opts, :dry_run_ouro, false),
-      side_effects: Keyword.fetch!(opts, :side_effects)
+      side_effects: Keyword.fetch!(opts, :side_effects),
+      # The response pipeline reports the recurring pattern it uses as a step
+      # of the turn (`Brain.Memory.RecurringPattern.used/3`).
+      progress: Keyword.get(opts, :progress)
     }
 
     case Generator.generate_via_synthesis(analysis_model, intent, entities, query_text, gen_opts) do
