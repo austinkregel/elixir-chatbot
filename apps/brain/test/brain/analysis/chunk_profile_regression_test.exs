@@ -172,7 +172,7 @@ defmodule Brain.Analysis.ChunkProfileRegressionTest do
   # reject on dimensionality and fall back to its default, which would
   # make this regression vacuously fail.
   defp analyze_entry(%{"text" => text}) when is_binary(text) do
-    analysis = Pipeline.analyze_chunk(text)
+    analysis = Pipeline.analyze_chunk(text, world_id: "default")
     {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
     {analysis, feature_vector}
   end
