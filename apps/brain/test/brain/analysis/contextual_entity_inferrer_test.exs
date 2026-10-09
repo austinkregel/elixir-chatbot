@@ -287,7 +287,7 @@ defmodule Brain.Analysis.ContextualEntityInferrerTest do
 
   describe "full pipeline integration" do
     test "pipeline processes music request and applies hierarchy-aware filtering" do
-      analysis = Pipeline.analyze_chunk("Play some Taylor Swift")
+      analysis = Pipeline.analyze_chunk("Play some Taylor Swift", world_id: "default")
 
       # The pipeline should produce an analysis struct
       assert analysis != nil
