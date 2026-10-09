@@ -179,7 +179,11 @@ defmodule Brain.Knowledge.ResearchAgent do
     if goal do
       alias Tasks.Source, as: TaskSource
 
-      case TaskSource.fetch_for_goal(goal, max_tasks: max_pages, max_instances: 20) do
+      case TaskSource.fetch_for_goal(goal,
+             max_tasks: max_pages,
+             max_instances: 20,
+             world_id: Keyword.fetch!(opts, :world_id)
+           ) do
         {:ok, findings} ->
           Enum.map(findings, fn finding ->
             task_id = finding.source.title || "unknown"
@@ -353,10 +357,10 @@ Citations: #{paper.citation_count}"
     [finding]
   end
 
-  defp extract_findings(%{paper: paper, source: _source}, _world_id) when is_struct(paper) do
+  defp extract_findings(%{paper: paper, source: _source}, world_id) when is_struct(paper) do
     alias Brain.Knowledge.Academic.Paper
 
-    case Paper.to_finding(paper) do
+    case Paper.to_finding(paper, world_id) do
       nil -> []
       finding -> [finding]
     end
@@ -383,7 +387,8 @@ Citations: #{paper.citation_count}"
             |> Enum.map(
               &build_finding(&1, source, clean_content,
                 comprehension_profile_id: profile.id,
-                confidence_multiplier: confidence_multiplier
+                confidence_multiplier: confidence_multiplier,
+                world_id: world_id
               )
             )
             |> Enum.reject(&is_nil/1)
@@ -471,7 +476,8 @@ Citations: #{paper.citation_count}"
         entity_type: entity_type,
         raw_context: extract_context(raw_content, claim),
         confidence: base_confidence * multiplier,
-        comprehension_profile_id: profile_id
+        comprehension_profile_id: profile_id,
+        world_id: Keyword.fetch!(opts, :world_id)
       )
     else
       nil
