@@ -12,6 +12,8 @@ defmodule Brain.Telemetry do
   - `[:chat_bot, :brain, :evaluate, :start | :stop | :exception]` - Brain evaluation
   - `[:chat_bot, :pipeline, :process, :start | :stop | :exception]` - Pipeline processing
   - `[:chat_bot, :memory, :query, :start | :stop]` - Memory queries
+  - `[:chat_bot, :memory, :semantic_fact, :retrieved]` - Semantic facts retrieved for a turn, and the recurring pattern found among them (`Brain.Memory.RecurringPattern`)
+  - `[:chat_bot, :memory, :semantic_fact, :used]` - A response built from a recurring pattern, by the synthesizer or the realization packet
   - `[:chat_bot, :memory, :embed, :start | :stop]` - Embedding operations
   - `[:chat_bot, :gazetteer, :lookup, :start | :stop]` - Gazetteer lookups
   - `[:chat_bot, :ml, :train, :start | :stop | :exception]` - ML model training
@@ -81,6 +83,8 @@ defmodule Brain.Telemetry do
   @brain_evaluate [:chat_bot, :brain, :evaluate]
   @pipeline_process [:chat_bot, :pipeline, :process]
   @memory_query [:chat_bot, :memory, :query]
+  @semantic_fact_retrieved [:chat_bot, :memory, :semantic_fact, :retrieved]
+  @semantic_fact_used [:chat_bot, :memory, :semantic_fact, :used]
   @memory_embed [:chat_bot, :memory, :embed]
   @gazetteer_lookup [:chat_bot, :gazetteer, :lookup]
 
@@ -654,6 +658,53 @@ defmodule Brain.Telemetry do
         subject: subject,
         timestamp: System.monotonic_time(:millisecond)
       })
+    )
+  end
+
+  @doc """
+  Emits the semantic facts retrieved for a turn in `world_id`.
+
+  Measurements: `:count`, the number retrieved. Metadata: `:world_id`,
+  `:semantic_fact_ids` and `:similarities` (in retrieval order), and
+  `:recurring_pattern_id`, the fact found as the turn's recurring pattern
+  (`Brain.Memory.RecurringPattern.find/2`), or `nil`.
+  """
+  def emit_semantic_facts_retrieved(world_id, semantic_facts, recurring_pattern_id) when is_list(semantic_facts) do
+    :telemetry.execute(
+      @semantic_fact_retrieved,
+      %{count: length(semantic_facts)},
+      %{
+        world_id: world_id,
+        semantic_fact_ids: Enum.map(semantic_facts, fn {fact, _similarity} -> fact.id end),
+        similarities: Enum.map(semantic_facts, fn {_fact, similarity} -> similarity end),
+        recurring_pattern_id: recurring_pattern_id,
+        timestamp: System.monotonic_time(:millisecond)
+      }
+    )
+  end
+
+  @doc """
+  Emits a response built from a recurring pattern
+  (`Brain.Memory.RecurringPattern`), by `used_by`: `:synthesizer` or
+  `:realization_packet`.
+
+  Measurements: `:similarity`, `:evidence_count`, `:reply_count`. Metadata:
+  `:world_id`, `:semantic_fact_id`, `:used_by`.
+  """
+  def emit_semantic_fact_used(%Brain.Memory.RecurringPattern{} = pattern, used_by) do
+    :telemetry.execute(
+      @semantic_fact_used,
+      %{
+        similarity: pattern.similarity,
+        evidence_count: pattern.evidence_count,
+        reply_count: pattern.reply_count
+      },
+      %{
+        world_id: pattern.world_id,
+        semantic_fact_id: pattern.fact.id,
+        used_by: used_by,
+        timestamp: System.monotonic_time(:millisecond)
+      }
     )
   end
 
