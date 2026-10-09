@@ -717,13 +717,19 @@ defmodule Brain.Knowledge.ReviewQueue do
             name: finding.entity_type
           })
 
+        # The instance carries the finding's world; a finding about the world
+        # at large (nil) belongs to no world, so the node gets no world_id.
+        instance_props =
+          %{name: finding.entity, type: finding.entity_type, source: "knowledge_expansion"}
+          |> then(fn props ->
+            case finding.world_id do
+              nil -> props
+              world_id -> Map.put(props, :world_id, world_id)
+            end
+          end)
+
         {:ok, instance_node} =
-          Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityInstance", %{
-            name: finding.entity,
-            type: finding.entity_type,
-            world_id: "default",
-            source: "knowledge_expansion"
-          })
+          Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityInstance", instance_props)
 
         Brain.AtlasIntegration.find_or_create_edge(
           "knowledge_graph",
