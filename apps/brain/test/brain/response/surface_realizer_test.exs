@@ -7,6 +7,10 @@ defmodule Brain.Response.SurfaceRealizerTest do
 
   alias Brain.Response.{Primitive, SurfaceRealizer}
 
+  # The world the test suite runs in, seeded by `mix test.models`. A realization
+  # with side effects records its pairs as training data in that world.
+  @world_id "default"
+
   describe "realize/2 with empty list" do
     test "returns error with :empty_primitive_list reason" do
       assert {:error, :empty_primitive_list} = SurfaceRealizer.realize([])
@@ -17,7 +21,7 @@ defmodule Brain.Response.SurfaceRealizerTest do
     test "single primitive returns {:ok, rendered_list, response_text}" do
       p = Primitive.new(:acknowledgment, :social, %{speech_act_sub_type: :greeting})
 
-      {:ok, rendered, response} = SurfaceRealizer.realize([p])
+      {:ok, rendered, response} = SurfaceRealizer.realize([p], world_id: @world_id)
 
       assert is_binary(response), "Expected response to be a string, got: #{inspect(response)}"
       assert response != "", "Response should not be empty"
@@ -41,7 +45,7 @@ defmodule Brain.Response.SurfaceRealizerTest do
         Primitive.new(:follow_up, :elaboration, %{topic: "feelings"})
       ]
 
-      {:ok, rendered, response} = SurfaceRealizer.realize(primitives)
+      {:ok, rendered, response} = SurfaceRealizer.realize(primitives, world_id: @world_id)
 
       assert is_binary(response)
       assert response != ""
@@ -58,7 +62,7 @@ defmodule Brain.Response.SurfaceRealizerTest do
     test "preserves primitive type and variant through realization" do
       p = Primitive.new(:hedging, :epistemic, %{confidence_level: 0.3})
 
-      {:ok, [rendered], _response} = SurfaceRealizer.realize([p])
+      {:ok, [rendered], _response} = SurfaceRealizer.realize([p], world_id: @world_id)
 
       assert rendered.type == :hedging, "Type should be preserved, got: #{inspect(rendered.type)}"
 
@@ -81,7 +85,7 @@ defmodule Brain.Response.SurfaceRealizerTest do
         intent: "weather.query"
       }
 
-      {:ok, rendered, response} = SurfaceRealizer.realize([p], analysis: analysis)
+      {:ok, rendered, response} = SurfaceRealizer.realize([p], world_id: @world_id, analysis: analysis)
 
       assert is_binary(response)
       assert response != ""
@@ -89,10 +93,10 @@ defmodule Brain.Response.SurfaceRealizerTest do
       assert hd(rendered).source == :ouro
     end
 
-    test "works with empty opts" do
+    test "works with no option but the world" do
       p = Primitive.new(:content, :reflective, %{understood_meaning: "testing"})
 
-      {:ok, rendered, response} = SurfaceRealizer.realize([p], [])
+      {:ok, rendered, response} = SurfaceRealizer.realize([p], world_id: @world_id)
 
       assert is_binary(response)
       assert response != ""
