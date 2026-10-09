@@ -5,7 +5,7 @@ defmodule Brain.ML.EntityExtractor do
   alias Brain.ML
   require Logger
 
-  alias ML.{Gazetteer, Tokenizer, EntityTrainer, POSTagger}
+  alias ML.{Gazetteer, Tokenizer, POSTagger}
   alias Analysis.{EntityDisambiguator, EntityTypeScorer, TypeHierarchy}
   alias Brain.Telemetry
 
@@ -284,39 +284,6 @@ defmodule Brain.ML.EntityExtractor do
 
   defp filter_by_confidence(entities, _) do
     entities
-  end
-
-  @doc "Extract entities using the BIO-tagged model (if available).\nFalls back to gazetteer if model not loaded.\n"
-  def extract_entities_with_model(text, opts \\ []) do
-    gazetteer_entities = extract_entities(text, opts)
-
-    model_entities =
-      case EntityTrainer.load_model() do
-        {:ok, model} ->
-          tokens = Tokenizer.tokenize_words(text)
-          predictions = EntityTrainer.predict(tokens, model)
-
-          EntityTrainer.extract_entities_from_bio(predictions)
-          |> Enum.map(fn entity ->
-            %{
-              entity_type: entity.entity_type,
-              value: entity.value,
-              match: entity.value,
-              start_pos: 0,
-              end_pos: String.length(entity.value) - 1,
-              confidence: entity.confidence
-            }
-          end)
-
-        {:error, _} ->
-          []
-      end
-
-    all_entities = gazetteer_entities ++ model_entities
-
-    all_entities
-    |> Enum.uniq_by(fn e -> {String.downcase(e.value), e.entity_type} end)
-    |> resolve_entity_conflicts()
   end
 
   # Every candidate reading of a span is kept in :types and scored by
