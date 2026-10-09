@@ -64,6 +64,20 @@ defmodule Brain.LearnerDataTest do
     end
   end
 
+  describe "learn_from_input/3 without a world" do
+    test "raises when :world_id is absent" do
+      assert_raise ArgumentError, ~r/Learner.learn_from_input needs :world_id/, fn ->
+        Learner.learn_from_input(@test_persona, "My cat is named Whiskers", [])
+      end
+    end
+
+    test "raises when :world_id is empty" do
+      assert_raise ArgumentError, ~r/Learner.learn_from_input needs :world_id/, fn ->
+        Learner.learn_from_input(@test_persona, "My cat is named Whiskers", world_id: "")
+      end
+    end
+  end
+
   # Test learn_from_classical_extraction/3. Entities are in the analysis
   # shape a conversation turn passes: the type is under :entity_type.
   @classical_extraction_cases [
