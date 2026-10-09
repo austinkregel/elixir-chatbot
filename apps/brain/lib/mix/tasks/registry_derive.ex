@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Registry.Derive do
   | `entity_mappings` | each parameter's `dataType`, minus the `@` |
   | `clarification_templates` | each parameter's first `prompts[].value` |
   | `defaults` | each parameter's non-empty `defaultValue` |
-  | `input_contexts` | `contexts` |
+  | `input_contexts` | `contexts`, plus each `followupContexts[].context` |
   | `output_contexts` | `responses[0].affectedContexts` |
 
   Slot names, entity types and context names are written with underscores in
@@ -146,39 +146,21 @@ defmodule Mix.Tasks.Registry.Derive do
 
   defp definition_path(intent), do: Brain.data_path("intents/#{intent}.json")
 
-  # Three places a definition can live:
-  #
-  #   * under the intent's own name
-  #   * under its pre-fold name, for anything `mix rebuild_gold_standard` folded
-  #     from `smarthome.lights.*`
-  #   * under a ` - context_...` variant, for an intent that exists in the export
-  #     only as a follow-up and has no base definition of its own
-  #     (`smarthome.device.switch` is one)
+  # Two places a definition can live: under the intent's own name, or under its
+  # pre-fold name for anything `mix rebuild_gold_standard` folded from
+  # `smarthome.lights.*`. Follow-up variants are collapsed into their intent's
+  # definition (`followupContexts`), so there is no variant file to look for.
   defp definition_for(intent) do
-    exact =
+    paths =
       case intent do
         @device_prefix <> rest -> [definition_path(intent), definition_path(@lights_prefix <> rest)]
         _ -> [definition_path(intent)]
       end
 
-    case Enum.find(exact, &File.regular?/1) || context_variant(intent) do
+    case Enum.find(paths, &File.regular?/1) do
       nil -> nil
       path -> path |> File.read!() |> Jason.decode!()
     end
-  end
-
-  defp context_variant(intent) do
-    names =
-      case intent do
-        @device_prefix <> rest -> [intent, @lights_prefix <> rest]
-        _ -> [intent]
-      end
-
-    names
-    |> Enum.flat_map(fn name -> Path.wildcard(Brain.data_path("intents/#{name} - *.json")) end)
-    |> Enum.reject(&String.ends_with?(&1, "_usersays_en.json"))
-    |> Enum.sort()
-    |> List.first()
   end
 
   defp build_entry(intent, definition, decided) do
@@ -244,12 +226,16 @@ defmodule Mix.Tasks.Registry.Derive do
     name
   end
 
+  # The contexts the intent can continue from: its own required `contexts` and
+  # the contexts of the follow-ups collapsed into it (`followupContexts`).
   # Dialogflow input contexts carry no lifespan; the registry's existing entries
   # use 2 for theirs.
   defp input_contexts(definition) do
-    definition
-    |> Map.get("contexts", [])
-    |> Enum.map(fn name -> %{"name" => name, "lifespan" => 2} end)
+    followups = definition |> Map.get("followupContexts", []) |> Enum.map(&Map.fetch!(&1, "context"))
+
+    (Map.get(definition, "contexts", []) ++ followups)
+    |> Enum.uniq()
+    |> Enum.map(fn name -> %{"name" => canonical(name), "lifespan" => 2} end)
   end
 
   defp output_contexts(definition) do
