@@ -4,17 +4,13 @@ defmodule World.EntityPromoterTest do
   gazetteer itself. Runs in an Atlas sandbox so the review candidates it
   writes roll back.
   """
-  use ExUnit.Case, async: false
+  use World.AtlasCase, async: false
 
   alias Brain.Knowledge.ReviewQueue
   alias Brain.ML.Gazetteer
   alias World.EntityPromoter
 
   setup do
-    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(%{async: false})
-
-    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
-
     ReviewQueue.clear()
 
     # The knowledge-graph gate scores entities with a trained model; these
@@ -23,7 +19,7 @@ defmodule World.EntityPromoterTest do
     Application.put_env(:brain, :kg_signals, Keyword.put(previous || [], :entity_promoter_kg_gate, false))
     on_exit(fn -> Application.put_env(:brain, :kg_signals, previous) end)
 
-    world_id = "promoter_test_#{System.unique_integer([:positive])}"
+    world_id = "test_promoter_#{System.unique_integer([:positive])}"
     name = "Quibbleton#{System.unique_integer([:positive])}"
     {:ok, world_id: world_id, name: name}
   end
