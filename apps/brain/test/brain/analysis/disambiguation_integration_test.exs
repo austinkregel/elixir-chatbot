@@ -11,6 +11,9 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
   alias ML.{EntityExtractor, Gazetteer, POSTagger}
   import Brain.TestHelpers
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   defmodule TelemetryCollector do
     use Agent
 
@@ -78,7 +81,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
   describe "introduction disambiguation" do
     test "Hello, I'm Austin - contains greeting and assertive introduction" do
       text = "Hello, I'm Austin"
-      result = Pipeline.process(text, [])
+      result = Pipeline.process(text, world_id: @world_id)
       assert result.analyses != []
 
       if length(result.analyses) > 1 do
@@ -95,7 +98,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     test "What's the weather in Austin - Austin disambiguated as location" do
       text = "What's the weather in Austin?"
 
-      result = Pipeline.process(text, [])
+      result = Pipeline.process(text, world_id: @world_id)
 
       assert result.analyses != []
       analysis = hd(result.analyses)
@@ -143,7 +146,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       speech_act = %{category: :expressive, sub_type: :greeting}
 
       entities =
-        EntityExtractor.extract_entities(text, discourse: discourse, speech_act: speech_act)
+        EntityExtractor.extract_entities(text, world_id: @world_id, discourse: discourse, speech_act: speech_act)
 
       austin =
         Enum.find(entities, fn e ->
@@ -176,7 +179,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
   describe "response content verification" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
@@ -318,7 +321,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
         capture_log([level: :warning], fn ->
           {:ok, %{response: response1}} = Brain.evaluate(conv_id, "Hello Austin")
           Logger.warning("Response to 'Hello Austin': #{response1}")
-          {:ok, conv_id2} = Brain.create_conversation()
+          {:ok, conv_id2} = Brain.create_conversation(world_id: @world_id)
           {:ok, %{response: response2}} = Brain.evaluate(conv_id2, "Hello, I'm Austin")
           Logger.warning("Response to 'Hello, I'm Austin': #{response2}")
 
@@ -448,7 +451,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       speech_act = %{category: :expressive, sub_type: :greeting}
 
       entities =
-        EntityExtractor.extract_entities(text, discourse: discourse, speech_act: speech_act)
+        EntityExtractor.extract_entities(text, world_id: @world_id, discourse: discourse, speech_act: speech_act)
 
       austin =
         Enum.find(entities, fn e ->
@@ -511,7 +514,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     test "emits telemetry events for disambiguation" do
       TelemetryCollector.clear()
       text = "What's the weather in Austin?"
-      _result = Pipeline.process(text, emit_telemetry: true)
+      _result = Pipeline.process(text, world_id: @world_id, emit_telemetry: true)
       Process.sleep(50)
 
       events = TelemetryCollector.get_events()
@@ -543,7 +546,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       speech_act = %{category: :expressive, sub_type: :greeting}
 
       _entities =
-        EntityExtractor.extract_entities(text, discourse: discourse, speech_act: speech_act)
+        EntityExtractor.extract_entities(text, world_id: @world_id, discourse: discourse, speech_act: speech_act)
 
       Process.sleep(50)
 
