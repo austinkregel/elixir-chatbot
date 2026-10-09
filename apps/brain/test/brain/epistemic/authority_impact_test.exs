@@ -15,7 +15,12 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
   alias Brain.FactDatabase.Integration, as: FactIntegration
   import Brain.TestHelpers
 
+  # The beliefs and JTMS nodes of this file are held in a test world of their
+  # own, whose graphs are created inside each test's transaction.
+  @world_id "test_authority_impact"
+
   setup do
+    Atlas.Graph.ensure_world_graphs!(@world_id)
     ensure_epistemic_stores_started()
 
     # Empty before each test and empty again after. Every belief this file adds
@@ -25,7 +30,7 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
     # three (0 rows in atlas_beliefs and in atlas_source_authority; JTMS loads
     # nothing at all), and clearing SourceAuthority wipes only its learned
     # `tracking` counts, not the bootstrap tier profiles these tests read.
-    Brain.Test.Singletons.reset_epistemic_stores!([:beliefs, :jtms, :source_authority])
+    Brain.Test.Singletons.reset_epistemic_stores!([:beliefs, :jtms, :source_authority], world_id: @world_id)
 
     :ok
   end
@@ -41,14 +46,14 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
 
       # Add belief via mentor authority (effective confidence ~0.85)
       {:ok, mentor_id} =
-        BeliefStore.add_belief_with_authority(
+        BeliefStore.add_belief_with_authority(@world_id,
           :world,
           :elixir_lang,
           fact_text,
           :mentor
         )
 
-      {:ok, mentor_belief} = BeliefStore.get_belief(mentor_id)
+      {:ok, mentor_belief} = BeliefStore.get_belief(@world_id,mentor_id)
 
       # Mentor belief should have confidence >= 0.7 (verify threshold)
       assert mentor_belief.confidence >= 0.7,
@@ -57,22 +62,22 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
       assert mentor_belief.source_authority == :mentor
 
       # Verify fact against the mentor belief
-      result = FactIntegration.verify_fact(entity, fact_text)
+      result = FactIntegration.verify_fact(@world_id,entity, fact_text)
       assert {:verified, confidence} = result
       assert_in_delta confidence, 0.85, 0.02
 
       # Clear and try the same with stranger
-      BeliefStore.clear()
+      BeliefStore.clear(@world_id)
 
       {:ok, stranger_id} =
-        BeliefStore.add_belief_with_authority(
+        BeliefStore.add_belief_with_authority(@world_id,
           :world,
           :elixir_lang,
           fact_text,
           :stranger
         )
 
-      {:ok, stranger_belief} = BeliefStore.get_belief(stranger_id)
+      {:ok, stranger_belief} = BeliefStore.get_belief(@world_id,stranger_id)
 
       # Stranger belief should have confidence < 0.7 (below verify threshold)
       assert stranger_belief.confidence < 0.7,
@@ -81,7 +86,7 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
       assert stranger_belief.source_authority == :stranger
 
       # Verify fact against the stranger belief — should be uncertain
-      result = FactIntegration.verify_fact(entity, fact_text)
+      result = FactIntegration.verify_fact(@world_id,entity, fact_text)
       assert {:uncertain, :low_confidence} = result
     end
 
@@ -90,33 +95,33 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
       fact_text = "Plants convert CO2 to oxygen using sunlight"
 
       {:ok, expert_id} =
-        BeliefStore.add_belief_with_authority(
+        BeliefStore.add_belief_with_authority(@world_id,
           :world,
           :photosynthesis,
           fact_text,
           :academic_expert
         )
 
-      {:ok, expert_belief} = BeliefStore.get_belief(expert_id)
+      {:ok, expert_belief} = BeliefStore.get_belief(@world_id,expert_id)
       assert expert_belief.confidence >= 0.7
 
-      result = FactIntegration.verify_fact(entity, fact_text)
+      result = FactIntegration.verify_fact(@world_id,entity, fact_text)
       assert {:verified, _conf} = result
 
-      BeliefStore.clear()
+      BeliefStore.clear(@world_id)
 
       {:ok, student_id} =
-        BeliefStore.add_belief_with_authority(
+        BeliefStore.add_belief_with_authority(@world_id,
           :world,
           :photosynthesis,
           fact_text,
           :student
         )
 
-      {:ok, student_belief} = BeliefStore.get_belief(student_id)
+      {:ok, student_belief} = BeliefStore.get_belief(@world_id,student_id)
       assert student_belief.confidence < 0.7
 
-      result = FactIntegration.verify_fact(entity, fact_text)
+      result = FactIntegration.verify_fact(@world_id,entity, fact_text)
       assert {:uncertain, :low_confidence} = result
     end
   end
@@ -249,14 +254,14 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
 
       # Now add belief with degraded mentor — should NOT reach :verified
       {:ok, belief_id} =
-        BeliefStore.add_belief_with_authority(
+        BeliefStore.add_belief_with_authority(@world_id,
           :world,
           :mars,
           "Mars is the fourth planet",
           :mentor
         )
 
-      {:ok, belief} = BeliefStore.get_belief(belief_id)
+      {:ok, belief} = BeliefStore.get_belief(@world_id,belief_id)
 
       assert belief.confidence < 0.7,
         "Belief from degraded mentor (#{belief.confidence}) should be below 0.7"
@@ -296,20 +301,20 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
   describe "parody source limitations" do
     test "parody beliefs never reach verification threshold" do
       {:ok, parody_id} =
-        BeliefStore.add_belief_with_authority(
+        BeliefStore.add_belief_with_authority(@world_id,
           :world,
           :gravity,
           "Gravity pulls things down",
           :parody
         )
 
-      {:ok, parody_belief} = BeliefStore.get_belief(parody_id)
+      {:ok, parody_belief} = BeliefStore.get_belief(@world_id,parody_id)
 
       # Parody confidence should be near zero (0.05 * 1.0 = 0.05)
       assert parody_belief.confidence < 0.1,
         "Parody belief confidence (#{parody_belief.confidence}) should be < 0.1"
 
-      result = FactIntegration.verify_fact("gravity", "Gravity pulls things down")
+      result = FactIntegration.verify_fact(@world_id,"gravity", "Gravity pulls things down")
       assert {:uncertain, :low_confidence} = result
     end
 
@@ -327,17 +332,17 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
       assert conf < 0.1
 
       {:ok, belief_id} =
-        BeliefStore.add_belief_with_authority(
+        BeliefStore.add_belief_with_authority(@world_id,
           :world,
           :earth,
           "The Earth is round",
           :parody
         )
 
-      {:ok, belief} = BeliefStore.get_belief(belief_id)
+      {:ok, belief} = BeliefStore.get_belief(@world_id,belief_id)
       assert belief.confidence < 0.1
 
-      result = FactIntegration.verify_fact("earth", "The Earth is round")
+      result = FactIntegration.verify_fact(@world_id,"earth", "The Earth is round")
       assert {:uncertain, :low_confidence} = result
     end
   end
@@ -349,7 +354,7 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
   describe "credibility hooks in BeliefStore" do
     test "confirming a belief with authority records :confirmed outcome" do
       {:ok, belief_id} =
-        BeliefStore.add_belief_with_authority(
+        BeliefStore.add_belief_with_authority(@world_id,
           :world,
           :test_subject,
           "Test value",
@@ -364,7 +369,7 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
       assert friend_before.total_added == 1
 
       # Confirm the belief
-      BeliefStore.confirm_belief(belief_id)
+      BeliefStore.confirm_belief(@world_id,belief_id)
       Process.sleep(50)
 
       profiles_after = SourceAuthority.list_profiles()
@@ -374,7 +379,7 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
 
     test "retracting a belief with authority records :contradicted outcome" do
       {:ok, belief_id} =
-        BeliefStore.add_belief_with_authority(
+        BeliefStore.add_belief_with_authority(@world_id,
           :world,
           :test_retract,
           "Will be retracted",
@@ -383,7 +388,7 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
 
       Process.sleep(50)
 
-      BeliefStore.retract_belief(belief_id)
+      BeliefStore.retract_belief(@world_id,belief_id)
       Process.sleep(50)
 
       profiles = SourceAuthority.list_profiles()
@@ -400,18 +405,18 @@ defmodule Brain.Epistemic.AuthorityImpactTest do
     test "same authority + same statement produces consistent confidence within 1%" do
       results =
         for _i <- 1..5 do
-          BeliefStore.clear()
+          BeliefStore.clear(@world_id)
           SourceAuthority.clear()
 
           {:ok, bid} =
-            BeliefStore.add_belief_with_authority(
+            BeliefStore.add_belief_with_authority(@world_id,
               :world,
               :test_repro,
               "Reproducible belief",
               :industry_expert
             )
 
-          {:ok, belief} = BeliefStore.get_belief(bid)
+          {:ok, belief} = BeliefStore.get_belief(@world_id,bid)
           belief.confidence
         end
 
