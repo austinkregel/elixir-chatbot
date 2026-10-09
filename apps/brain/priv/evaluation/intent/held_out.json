@@ -194,13 +194,17 @@
   {
     "intent": "music.play",
     "labeled_by": "dialogflow",
-    "source_file": "music.play - context_play_music_usersays_en.json",
+    "followup_context": "play_music",
+    "followup_variant": "context_play_music",
+    "source_file": "music.play_usersays_en.json",
     "text": "now the summer playlist"
   },
   {
     "intent": "music.play",
     "labeled_by": "dialogflow",
-    "source_file": "music.play - context_play_music_usersays_en.json",
+    "followup_context": "play_music",
+    "followup_variant": "context_play_music",
+    "source_file": "music.play_usersays_en.json",
     "text": "now Monster by Rihanna feat Eminem"
   },
   {
@@ -308,7 +312,9 @@
   {
     "intent": "music.play",
     "labeled_by": "dialogflow",
-    "source_file": "music.play - context_play_music_usersays_en.json",
+    "followup_context": "play_music",
+    "followup_variant": "context_play_music",
+    "source_file": "music.play_usersays_en.json",
     "text": "now album Please Please Me of The Beatles"
   },
   {
@@ -344,7 +350,9 @@
   {
     "intent": "music.play",
     "labeled_by": "dialogflow",
-    "source_file": "music.play - context_play_music_usersays_en.json",
+    "followup_context": "play_music",
+    "followup_variant": "context_play_music",
+    "source_file": "music.play_usersays_en.json",
     "text": "now rock"
   },
   {
@@ -446,7 +454,9 @@
   {
     "intent": "smarthome.device.switch.on",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch.on - context_device_switch - comment_turn on devices_usersays_en.json",
+    "followup_context": "device_switch",
+    "followup_variant": "context_device_switch - comment_turn on devices",
+    "source_file": "smarthome.device.switch.on_usersays_en.json",
     "text": "turn on now"
   },
   {
@@ -668,7 +678,9 @@
   {
     "intent": "smarthome.device.switch.off",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch.off - context_device_switch - comment_turn off devices_usersays_en.json",
+    "followup_context": "device_switch",
+    "followup_variant": "context_device_switch - comment_turn off devices",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
     "text": "turn this off"
   },
   {
@@ -680,7 +692,9 @@
   {
     "intent": "smarthome.device.switch.off",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch.off - context_device_switch - comment_turn off devices_usersays_en.json",
+    "followup_context": "device_switch",
+    "followup_variant": "context_device_switch - comment_turn off devices",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
     "text": "switch it off"
   },
   {
@@ -704,7 +718,9 @@
   {
     "intent": "smarthome.device.switch.off",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch.off - context_device_switch - comment_turn off devices_usersays_en.json",
+    "followup_context": "device_switch",
+    "followup_variant": "context_device_switch - comment_turn off devices",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
     "text": "now off"
   },
   {
@@ -776,13 +792,17 @@
   {
     "intent": "smarthome.device.switch.off",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch.off - context_device_switch - comment_turn off devices_usersays_en.json",
+    "followup_context": "device_switch",
+    "followup_variant": "context_device_switch - comment_turn off devices",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
     "text": "now turn off"
   },
   {
     "intent": "smarthome.device.switch.off",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch.off - context_device_switch - comment_turn off devices_usersays_en.json",
+    "followup_context": "device_switch",
+    "followup_variant": "context_device_switch - comment_turn off devices",
+    "source_file": "smarthome.device.switch.off_usersays_en.json",
     "text": "now switch off"
   },
   {
@@ -884,7 +904,9 @@
   {
     "intent": "smarthome.device.brightness.down",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.brightness.down - context_device_brightness - comment_not dim enough_usersays_en.json",
+    "followup_context": "device_brightness",
+    "followup_variant": "context_device_brightness - comment_not dim enough",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
     "text": "too bright"
   },
   {
@@ -926,7 +948,9 @@
   {
     "intent": "smarthome.device.brightness.down",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.brightness.down - context_device_brightness - comment_not dim enough_usersays_en.json",
+    "followup_context": "device_brightness",
+    "followup_variant": "context_device_brightness - comment_not dim enough",
+    "source_file": "smarthome.device.brightness.down_usersays_en.json",
     "text": "too bright here"
   },
   {
@@ -1052,7 +1076,9 @@
   {
     "intent": "smarthome.heating.down",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.heating.down - context_heating - comment_not cold enough_usersays_en.json",
+    "followup_context": "heating",
+    "followup_variant": "context_heating - comment_not cold enough",
+    "source_file": "smarthome.heating.down_usersays_en.json",
     "text": "not cold enough"
   },
   {
@@ -1106,7 +1132,9 @@
   {
     "intent": "smarthome.heating.down",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.heating.down - context_heating - comment_not cold enough_usersays_en.json",
+    "followup_context": "heating",
+    "followup_variant": "context_heating - comment_not cold enough",
+    "source_file": "smarthome.heating.down_usersays_en.json",
     "text": "still hot"
   },
   {
@@ -1166,19 +1194,25 @@
   {
     "intent": "music.search",
     "labeled_by": "dialogflow",
-    "source_file": "music.search - context_search_music_usersays_en.json",
+    "followup_context": "search_music",
+    "followup_variant": "context_search_music",
+    "source_file": "music.search_usersays_en.json",
     "text": "now search for Eminem"
   },
   {
     "intent": "music.search",
     "labeled_by": "dialogflow",
-    "source_file": "music.search - context_search_music_usersays_en.json",
+    "followup_context": "search_music",
+    "followup_variant": "context_search_music",
+    "source_file": "music.search_usersays_en.json",
     "text": "now songs about love"
   },
   {
     "intent": "music.search",
     "labeled_by": "dialogflow",
-    "source_file": "music.search - context_search_music_usersays_en.json",
+    "followup_context": "search_music",
+    "followup_variant": "context_search_music",
+    "source_file": "music.search_usersays_en.json",
     "text": "now search for album Lucky Star"
   },
   {
@@ -1208,7 +1242,9 @@
   {
     "intent": "music.search",
     "labeled_by": "dialogflow",
-    "source_file": "music.search - context_search_music_usersays_en.json",
+    "followup_context": "search_music",
+    "followup_variant": "context_search_music",
+    "source_file": "music.search_usersays_en.json",
     "text": "now Elton John"
   },
   {
@@ -1244,31 +1280,41 @@
   {
     "intent": "music.search",
     "labeled_by": "dialogflow",
-    "source_file": "music.search - context_search_music_usersays_en.json",
+    "followup_context": "search_music",
+    "followup_variant": "context_search_music",
+    "source_file": "music.search_usersays_en.json",
     "text": "now search for jazz"
   },
   {
     "intent": "music.search",
     "labeled_by": "dialogflow",
-    "source_file": "music.search - context_search_music_usersays_en.json",
+    "followup_context": "search_music",
+    "followup_variant": "context_search_music",
+    "source_file": "music.search_usersays_en.json",
     "text": "now find album called Let it be"
   },
   {
     "intent": "music.search",
     "labeled_by": "dialogflow",
-    "source_file": "music.search - context_search_music_usersays_en.json",
+    "followup_context": "search_music",
+    "followup_variant": "context_search_music",
+    "source_file": "music.search_usersays_en.json",
     "text": "now find jazz"
   },
   {
     "intent": "music.search",
     "labeled_by": "dialogflow",
-    "source_file": "music.search - context_search_music_usersays_en.json",
+    "followup_context": "search_music",
+    "followup_variant": "context_search_music",
+    "source_file": "music.search_usersays_en.json",
     "text": "how about Pandora"
   },
   {
     "intent": "music.search",
     "labeled_by": "dialogflow",
-    "source_file": "music.search - context_search_music_usersays_en.json",
+    "followup_context": "search_music",
+    "followup_variant": "context_search_music",
+    "source_file": "music.search_usersays_en.json",
     "text": "now find album Burning up"
   },
   {
@@ -1308,7 +1354,9 @@
     ],
     "intent": "smarthome.device.brightness.up",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.brightness.up - context_device_brightness - comment_not bright enough_usersays_en.json",
+    "followup_context": "device_brightness",
+    "followup_variant": "context_device_brightness - comment_not bright enough",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
     "status": "needs_review",
     "text": "it's too dark"
   },
@@ -1351,7 +1399,9 @@
   {
     "intent": "smarthome.device.brightness.up",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.brightness.up - context_device_brightness - comment_not bright enough_usersays_en.json",
+    "followup_context": "device_brightness",
+    "followup_variant": "context_device_brightness - comment_not bright enough",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
     "text": "it is dark"
   },
   {
@@ -1375,7 +1425,9 @@
   {
     "intent": "smarthome.device.brightness.up",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.brightness.up - context_device_brightness - comment_not bright enough_usersays_en.json",
+    "followup_context": "device_brightness",
+    "followup_variant": "context_device_brightness - comment_not bright enough",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
     "text": "it is too dark here"
   },
   {
@@ -1387,7 +1439,9 @@
   {
     "intent": "smarthome.device.brightness.up",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.brightness.up - context_device_brightness - comment_not bright enough_usersays_en.json",
+    "followup_context": "device_brightness",
+    "followup_variant": "context_device_brightness - comment_not bright enough",
+    "source_file": "smarthome.device.brightness.up_usersays_en.json",
     "text": "brighten it"
   },
   {
@@ -1771,7 +1825,9 @@
   {
     "intent": "smarthome.heating.up",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.heating.up - context_heating - comment_not warm enough_usersays_en.json",
+    "followup_context": "heating",
+    "followup_variant": "context_heating - comment_not warm enough",
+    "source_file": "smarthome.heating.up_usersays_en.json",
     "text": "still not hot enough"
   },
   {
@@ -1783,7 +1839,9 @@
   {
     "intent": "smarthome.heating.up",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.heating.up - context_heating - comment_not warm enough_usersays_en.json",
+    "followup_context": "heating",
+    "followup_variant": "context_heating - comment_not warm enough",
+    "source_file": "smarthome.heating.up_usersays_en.json",
     "text": "not warm enough"
   },
   {
@@ -1867,7 +1925,9 @@
   {
     "intent": "smarthome.heating.up",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.heating.up - context_heating - comment_not warm enough_usersays_en.json",
+    "followup_context": "heating",
+    "followup_variant": "context_heating - comment_not warm enough",
+    "source_file": "smarthome.heating.up_usersays_en.json",
     "text": "still not warm"
   },
   {
@@ -1975,7 +2035,9 @@
   {
     "intent": "news.search",
     "labeled_by": "dialogflow",
-    "source_file": "news.search - context_news_search_usersays_en.json",
+    "followup_context": "news_search",
+    "followup_variant": "context_news_search",
+    "source_file": "news.search_usersays_en.json",
     "text": "how about CNN"
   },
   {
@@ -1985,7 +2047,9 @@
     ],
     "intent": "news.search",
     "labeled_by": "dialogflow",
-    "source_file": "news.search - next_usersays_en.json",
+    "followup_context": "newssearch_followup",
+    "followup_variant": "next",
+    "source_file": "news.search_usersays_en.json",
     "status": "needs_review",
     "text": "read the next results"
   },
@@ -1998,7 +2062,9 @@
   {
     "intent": "news.search",
     "labeled_by": "dialogflow",
-    "source_file": "news.search - context_news_search_usersays_en.json",
+    "followup_context": "news_search",
+    "followup_variant": "context_news_search",
+    "source_file": "news.search_usersays_en.json",
     "text": "from BBC also"
   },
   {
@@ -2008,14 +2074,18 @@
     ],
     "intent": "news.search",
     "labeled_by": "dialogflow",
-    "source_file": "news.search - next_usersays_en.json",
+    "followup_context": "newssearch_followup",
+    "followup_variant": "next",
+    "source_file": "news.search_usersays_en.json",
     "status": "needs_review",
     "text": "switch to the next"
   },
   {
     "intent": "news.search",
     "labeled_by": "dialogflow",
-    "source_file": "news.search - context_news_search_usersays_en.json",
+    "followup_context": "news_search",
+    "followup_variant": "context_news_search",
+    "source_file": "news.search_usersays_en.json",
     "text": "from BBC"
   },
   {
@@ -2025,7 +2095,9 @@
     ],
     "intent": "news.search",
     "labeled_by": "dialogflow",
-    "source_file": "news.search - previous_usersays_en.json",
+    "followup_context": "newssearch_followup",
+    "followup_variant": "previous",
+    "source_file": "news.search_usersays_en.json",
     "status": "needs_review",
     "text": "return to previous page"
   },
@@ -2036,7 +2108,9 @@
     ],
     "intent": "news.search",
     "labeled_by": "dialogflow",
-    "source_file": "news.search - previous_usersays_en.json",
+    "followup_context": "newssearch_followup",
+    "followup_variant": "previous",
+    "source_file": "news.search_usersays_en.json",
     "status": "needs_review",
     "text": "return to the previous"
   },
@@ -2047,7 +2121,9 @@
     ],
     "intent": "news.search",
     "labeled_by": "dialogflow",
-    "source_file": "news.search - next_usersays_en.json",
+    "followup_context": "newssearch_followup",
+    "followup_variant": "next",
+    "source_file": "news.search_usersays_en.json",
     "status": "needs_review",
     "text": "following result"
   },
@@ -2064,7 +2140,9 @@
     ],
     "intent": "news.search",
     "labeled_by": "dialogflow",
-    "source_file": "news.search - next_usersays_en.json",
+    "followup_context": "newssearch_followup",
+    "followup_variant": "next",
+    "source_file": "news.search_usersays_en.json",
     "status": "needs_review",
     "text": "show me the next page"
   },
@@ -2081,7 +2159,9 @@
     ],
     "intent": "news.search",
     "labeled_by": "dialogflow",
-    "source_file": "news.search - repeat_usersays_en.json",
+    "followup_context": "newssearch_followup",
+    "followup_variant": "repeat",
+    "source_file": "news.search_usersays_en.json",
     "status": "needs_review",
     "text": "do it again"
   },
@@ -2290,9 +2370,11 @@
     "text": "it's not good"
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "smarthome.device.volume.up",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.volume - context_device_volume - comment_up_usersays_en.json",
+    "followup_context": "device_volume",
+    "followup_variant": "context_device_volume - comment_up",
+    "source_file": "smarthome.device.volume.up_usersays_en.json",
     "text": "up again"
   },
   {
@@ -2302,44 +2384,58 @@
     ],
     "intent": "smarthome.device.volume",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.volume - context_device_volume - comment_room_usersays_en.json",
+    "followup_context": "device_volume",
+    "followup_variant": "context_device_volume - comment_room",
+    "source_file": "smarthome.device.volume_usersays_en.json",
     "status": "needs_review",
     "text": "in the kitchen"
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "smarthome.device.volume.down",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.volume - context_device_volume - comment_down_usersays_en.json",
+    "followup_context": "device_volume",
+    "followup_variant": "context_device_volume - comment_down",
+    "source_file": "smarthome.device.volume.down_usersays_en.json",
     "text": "down once more"
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "smarthome.device.volume.up",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.volume - context_device_volume - comment_up_usersays_en.json",
+    "followup_context": "device_volume",
+    "followup_variant": "context_device_volume - comment_up",
+    "source_file": "smarthome.device.volume.up_usersays_en.json",
     "text": "again up"
   },
   {
     "intent": "smarthome.device.volume",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.volume - context_device_volume - comment_points_usersays_en.json",
+    "followup_context": "device_volume",
+    "followup_variant": "context_device_volume - comment_points",
+    "source_file": "smarthome.device.volume_usersays_en.json",
     "text": "to 5 points please"
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "smarthome.device.volume.down",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.volume - context_device_volume - comment_down_usersays_en.json",
+    "followup_context": "device_volume",
+    "followup_variant": "context_device_volume - comment_down",
+    "source_file": "smarthome.device.volume.down_usersays_en.json",
     "text": "down now"
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "smarthome.device.volume.up",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.volume - context_device_volume - comment_up_usersays_en.json",
+    "followup_context": "device_volume",
+    "followup_variant": "context_device_volume - comment_up",
+    "source_file": "smarthome.device.volume.up_usersays_en.json",
     "text": "turn it up"
   },
   {
     "intent": "smarthome.device.volume",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.volume - context_device_volume - comment_points_usersays_en.json",
+    "followup_context": "device_volume",
+    "followup_variant": "context_device_volume - comment_points",
+    "source_file": "smarthome.device.volume_usersays_en.json",
     "text": "to 5 now"
   },
   {
@@ -2349,14 +2445,18 @@
     ],
     "intent": "smarthome.device.volume",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.volume - context_device_volume - comment_device_usersays_en.json",
+    "followup_context": "device_volume",
+    "followup_variant": "context_device_volume - comment_device",
+    "source_file": "smarthome.device.volume_usersays_en.json",
     "status": "needs_review",
     "text": "speakers too"
   },
   {
-    "intent": "smarthome.device.volume",
+    "intent": "smarthome.device.volume.up",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.volume - context_device_volume - comment_up_usersays_en.json",
+    "followup_context": "device_volume",
+    "followup_variant": "context_device_volume - comment_up",
+    "source_file": "smarthome.device.volume.up_usersays_en.json",
     "text": "more"
   },
   {
@@ -2512,7 +2612,9 @@
   {
     "intent": "smarthome.device.volume.check",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.volume.check - context_volume_check - comment_device_usersays_en.json",
+    "followup_context": "volume_check",
+    "followup_variant": "context_volume_check - comment_device",
+    "source_file": "smarthome.device.volume.check_usersays_en.json",
     "text": "also speakers"
   },
   {
@@ -2998,13 +3100,17 @@
   {
     "intent": "smarthome.device.switch.check.on",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch.check.on - context_check - comment_check if device is on_usersays_en.json",
+    "followup_context": "check",
+    "followup_variant": "context_check - comment_check if device is on",
+    "source_file": "smarthome.device.switch.check.on_usersays_en.json",
     "text": "did I turn them on"
   },
   {
     "intent": "smarthome.device.switch.check.on",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch.check.on - context_check - comment_check if device is on_usersays_en.json",
+    "followup_context": "check",
+    "followup_variant": "context_check - comment_check if device is on",
+    "source_file": "smarthome.device.switch.check.on_usersays_en.json",
     "text": "but is it on"
   },
   {
@@ -3388,13 +3494,17 @@
   {
     "intent": "smarthome.device.switch.check.off",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch.check.off - context_check - comment_check if device is off_usersays_en.json",
+    "followup_context": "check",
+    "followup_variant": "context_check - comment_check if device is off",
+    "source_file": "smarthome.device.switch.check.off_usersays_en.json",
     "text": "is it off"
   },
   {
     "intent": "smarthome.device.switch.check.off",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch.check.off - context_check - comment_check if device is off_usersays_en.json",
+    "followup_context": "check",
+    "followup_variant": "context_check - comment_check if device is off",
+    "source_file": "smarthome.device.switch.check.off_usersays_en.json",
     "text": "did you turn them off"
   },
   {
@@ -3410,33 +3520,43 @@
     "text": "is TV off in the living room"
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.heating - context_heating - comment_increase or decrease grad_usersays_en.json",
+    "followup_context": "heating",
+    "followup_variant": "context_heating - comment_increase or decrease grad",
+    "source_file": "smarthome.heating.set_usersays_en.json",
     "text": "add more 30 points"
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.heating - context_heating - comment_increase or decrease grad_usersays_en.json",
+    "followup_context": "heating",
+    "followup_variant": "context_heating - comment_increase or decrease grad",
+    "source_file": "smarthome.heating.set_usersays_en.json",
     "text": "15 points less"
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.heating - context_heating - comment_change final grad_usersays_en.json",
+    "followup_context": "heating",
+    "followup_variant": "context_heating - comment_change final grad",
+    "source_file": "smarthome.heating.set_usersays_en.json",
     "text": "set to 20"
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.heating - context_heating - comment_increase or decrease grad_usersays_en.json",
+    "followup_context": "heating",
+    "followup_variant": "context_heating - comment_increase or decrease grad",
+    "source_file": "smarthome.heating.set_usersays_en.json",
     "text": "turn it down by 15 degrees"
   },
   {
-    "intent": "smarthome.heating",
+    "intent": "smarthome.heating.set",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.heating - context_heating - comment_increase or decrease grad_usersays_en.json",
+    "followup_context": "heating",
+    "followup_variant": "context_heating - comment_increase or decrease grad",
+    "source_file": "smarthome.heating.set_usersays_en.json",
     "text": "add 25 more"
   },
   {
@@ -3496,7 +3616,9 @@
   {
     "intent": "smarthome.locks.open",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.locks.open - context_open_usersays_en.json",
+    "followup_context": "open",
+    "followup_variant": "context_open",
+    "source_file": "smarthome.locks.open_usersays_en.json",
     "text": "I want to open it now"
   },
   {
@@ -3508,7 +3630,9 @@
   {
     "intent": "smarthome.locks.open",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.locks.open - context_open_usersays_en.json",
+    "followup_context": "open",
+    "followup_variant": "context_open",
+    "source_file": "smarthome.locks.open_usersays_en.json",
     "text": "open them"
   },
   {
@@ -3640,7 +3764,9 @@
   {
     "intent": "account.balance.check",
     "labeled_by": "dialogflow",
-    "source_file": "account.balance.check - context_ balance_usersays_en.json",
+    "followup_context": "balance",
+    "followup_variant": "context_ balance",
+    "source_file": "account.balance.check_usersays_en.json",
     "text": "check how much"
   },
   {
@@ -3652,7 +3778,9 @@
   {
     "intent": "web.search",
     "labeled_by": "dialogflow",
-    "source_file": "web.search - context_web_search_usersays_en.json",
+    "followup_context": "web_search",
+    "followup_variant": "context_web_search",
+    "source_file": "web.search_usersays_en.json",
     "text": "how about apple pie recipes"
   },
   {
@@ -3706,7 +3834,9 @@
   {
     "intent": "smarthome.locks.close",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.locks.close - context_close_usersays_en.json",
+    "followup_context": "close",
+    "followup_variant": "context_close",
+    "source_file": "smarthome.locks.close_usersays_en.json",
     "text": "they should be closed"
   },
   {
@@ -3724,7 +3854,9 @@
   {
     "intent": "smarthome.locks.close",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.locks.close - context_close_usersays_en.json",
+    "followup_context": "close",
+    "followup_variant": "context_close",
+    "source_file": "smarthome.locks.close_usersays_en.json",
     "text": "close it"
   },
   {
@@ -3946,13 +4078,17 @@
   {
     "intent": "smarthome.locks.lock",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.locks.lock - context_lock_usersays_en.json",
+    "followup_context": "lock",
+    "followup_variant": "context_lock",
+    "source_file": "smarthome.locks.lock_usersays_en.json",
     "text": "can you lock them now"
   },
   {
     "intent": "smarthome.locks.lock",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.locks.lock - context_lock_usersays_en.json",
+    "followup_context": "lock",
+    "followup_variant": "context_lock",
+    "source_file": "smarthome.locks.lock_usersays_en.json",
     "text": "I need to lock them"
   },
   {
@@ -3964,7 +4100,9 @@
   {
     "intent": "smarthome.locks.lock",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.locks.lock - context_lock_usersays_en.json",
+    "followup_context": "lock",
+    "followup_variant": "context_lock",
+    "source_file": "smarthome.locks.lock_usersays_en.json",
     "text": "could you lock them please"
   },
   {
@@ -4389,25 +4527,33 @@
   {
     "intent": "smarthome.device.switch",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch - context_color - comment_change color_usersays_en.json",
+    "followup_context": "color",
+    "followup_variant": "context_color - comment_change color",
+    "source_file": "smarthome.device.switch_usersays_en.json",
     "text": "change color to blue"
   },
   {
     "intent": "smarthome.device.switch",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch - context_color - comment_change color_usersays_en.json",
+    "followup_context": "color",
+    "followup_variant": "context_color - comment_change color",
+    "source_file": "smarthome.device.switch_usersays_en.json",
     "text": "can you make it green now please"
   },
   {
     "intent": "smarthome.device.switch",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch - context_device_switch - comment_add or change device_usersays_en.json",
+    "followup_context": "device_switch",
+    "followup_variant": "context_device_switch - comment_add or change device",
+    "source_file": "smarthome.device.switch_usersays_en.json",
     "text": "video player"
   },
   {
     "intent": "smarthome.device.switch",
     "labeled_by": "dialogflow",
-    "source_file": "smarthome.device.switch - context_color - comment_change color_usersays_en.json",
+    "followup_context": "color",
+    "followup_variant": "context_color - comment_change color",
+    "source_file": "smarthome.device.switch_usersays_en.json",
     "text": "now make it red"
   },
   {
@@ -4779,7 +4925,9 @@
   {
     "intent": "account.earning.check",
     "labeled_by": "dialogflow",
-    "source_file": "account.earning.check - context_ earning - date_usersays_en.json",
+    "followup_context": "earning",
+    "followup_variant": "context_ earning - date",
+    "source_file": "account.earning.check_usersays_en.json",
     "text": "and January 2"
   },
   {
