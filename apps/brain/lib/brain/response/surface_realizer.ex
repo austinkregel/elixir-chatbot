@@ -19,12 +19,13 @@ defmodule Brain.Response.SurfaceRealizer do
   Renders a list of content-specified primitives into text via Ouro.
 
   Options:
+    - `:world_id` - required: the world the response is realized in; what it
+      collects for training belongs to that world. Absent raises.
     - `:analysis` - ChunkAnalysis for Ouro realization packet context
     - `:unified_context` - rich context map from ContextBuilder
   """
-  def realize(primitives, opts \\ [])
-
   def realize(primitives, opts) when is_list(primitives) do
+    world_id!(opts)
     analysis = Keyword.get(opts, :analysis)
     domain = extract_domain(analysis)
 
@@ -48,6 +49,17 @@ defmodule Brain.Response.SurfaceRealizer do
           {:ok, _, _} = result -> result
           {:error, _} -> try_synthesizer_fallback(primitives, analysis, opts)
         end
+    end
+  end
+
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      _ ->
+        raise ArgumentError,
+              "SurfaceRealizer.realize needs :world_id, the world the response is realized in, got: #{inspect(Keyword.get(opts, :world_id))}"
     end
   end
 
@@ -133,7 +145,7 @@ defmodule Brain.Response.SurfaceRealizer do
         # with side effects off keeps them out of it.
         if Keyword.get(opts, :side_effects, true) do
           collect_plan(primitives, text, opts)
-          collect_pairs(primitives, Keyword.fetch!(opts, :world_id))
+          collect_pairs(primitives, world_id!(opts))
         end
 
         {:ok, rendered, text}
