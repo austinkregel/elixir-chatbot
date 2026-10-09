@@ -3,10 +3,14 @@ defmodule Atlas.SchemasTest do
 
   alias Atlas.Schemas.{Credential, Belief, Episode, SemanticFact, ReviewCandidate, LearnedFact}
 
+  # Rows are rolled back with the test's transaction; no world directory is
+  # created.
+  @world_id "test_atlas_schemas"
+
   describe "Credential" do
     test "inserts and retrieves a credential" do
       attrs = %{
-        world: "default",
+        world: @world_id,
         service: "weather",
         key: "api_key",
         encrypted_value: "encrypted_data_here"
@@ -21,11 +25,11 @@ defmodule Atlas.SchemasTest do
       assert credential.key == "api_key"
 
       found = Repo.get!(Credential, credential.id)
-      assert found.world == "default"
+      assert found.world == @world_id
     end
 
     test "enforces unique constraint on (world, service, key)" do
-      attrs = %{service: "weather", key: "api_key", encrypted_value: "v1"}
+      attrs = %{world: @world_id, service: "weather", key: "api_key", encrypted_value: "v1"}
 
       assert {:ok, _} =
                %Credential{} |> Credential.changeset(attrs) |> Repo.insert()
@@ -35,6 +39,26 @@ defmodule Atlas.SchemasTest do
 
       assert errors_on(changeset)[:world] || errors_on(changeset)[:service] ||
                errors_on(changeset)[:key]
+    end
+
+    test "the same service and key may be stored in two worlds" do
+      attrs = %{service: "weather", key: "api_key", encrypted_value: "v1"}
+
+      assert {:ok, _} =
+               %Credential{} |> Credential.changeset(Map.put(attrs, :world, @world_id)) |> Repo.insert()
+
+      assert {:ok, _} =
+               %Credential{}
+               |> Credential.changeset(Map.put(attrs, :world, "#{@world_id}_other"))
+               |> Repo.insert()
+    end
+
+    test "requires a world" do
+      changeset =
+        Credential.changeset(%Credential{}, %{service: "weather", key: "api_key", encrypted_value: "v1"})
+
+      refute changeset.valid?
+      assert "can't be blank" in errors_on(changeset)[:world]
     end
   end
 
@@ -62,6 +86,7 @@ defmodule Atlas.SchemasTest do
   describe "Episode" do
     test "inserts and queries an episode" do
       attrs = %{
+        world_id: @world_id,
         state: "user asked about weather",
         action: "retrieved weather data",
         outcome: "provided forecast",
@@ -73,14 +98,40 @@ defmodule Atlas.SchemasTest do
 
       assert episode.tags == ["weather", "query"]
 
-      world_episodes = Episode |> Episode.for_world("default") |> Repo.all()
-      assert length(world_episodes) >= 1
+      world_episodes = Episode |> Episode.for_world(@world_id) |> Repo.all()
+      assert Enum.map(world_episodes, & &1.id) == [episode.id]
+    end
+
+    test "requires a world" do
+      changeset =
+        Episode.changeset(%Episode{}, %{state: "user asked about weather", action: "retrieved weather data"})
+
+      refute changeset.valid?
+      assert "can't be blank" in errors_on(changeset)[:world_id]
+    end
+
+    test "the table fills in no world for a row that leaves it out" do
+      now = DateTime.utc_now()
+
+      row = %{
+        id: Ecto.UUID.bingenerate(),
+        state: "user asked about weather",
+        action: "retrieved weather data",
+        outcome: "",
+        inserted_at: now,
+        updated_at: now
+      }
+
+      error = assert_raise Postgrex.Error, fn -> Repo.insert_all("atlas_episodes", [row]) end
+      assert error.postgres.code == :not_null_violation
+      assert error.postgres.column == "world_id"
     end
   end
 
   describe "SemanticFact" do
     test "inserts and queries a semantic fact" do
       attrs = %{
+        world_id: @world_id,
         content: "Weather queries are common in the afternoon",
         category: "patterns",
         confidence: 0.8
@@ -90,6 +141,19 @@ defmodule Atlas.SchemasTest do
                %SemanticFact{} |> SemanticFact.changeset(attrs) |> Repo.insert()
 
       assert fact.category == "patterns"
+      assert fact.world_id == @world_id
+    end
+
+    test "requires a world" do
+      changeset =
+        SemanticFact.changeset(%SemanticFact{}, %{
+          content: "Weather queries are common in the afternoon",
+          category: "patterns",
+          confidence: 0.8
+        })
+
+      refute changeset.valid?
+      assert "can't be blank" in errors_on(changeset)[:world_id]
     end
   end
 
