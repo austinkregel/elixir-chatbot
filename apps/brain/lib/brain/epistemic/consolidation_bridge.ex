@@ -35,16 +35,18 @@ defmodule Brain.Epistemic.ConsolidationBridge do
   Attempts SRL-based triple extraction first. Falls back to the legacy
   single-belief path if SRL produces no frames.
 
+  `world_id` is the world the semantic fact and its evidence episodes belong to.
+
   Returns `{:ok, belief_ids}` or `{:error, reason}`.
   """
-  def bridge_semantic_fact(semantic_fact) do
+  def bridge_semantic_fact(semantic_fact, world_id) do
     if BeliefStore.ready?() do
       evidence_count = length(semantic_fact.evidence_ids || [])
       count_prior = evidence_count / (evidence_count + 2)
       provenance_base = build_provenance(semantic_fact)
 
       if kg_signals_enabled?() do
-        triples = extract_triples(semantic_fact)
+        triples = extract_triples(semantic_fact, world_id)
 
         if triples == [] do
           build_legacy_belief(semantic_fact, count_prior, provenance_base)
@@ -67,10 +69,11 @@ defmodule Brain.Epistemic.ConsolidationBridge do
   Extract `(subject, predicate, object)` triples from a SemanticFact.
 
   First tries SRL on constituent episode utterances (fetched via evidence_ids),
-  then falls back to SRL on the raw representation text.
+  then falls back to SRL on the raw representation text. The episodes are read
+  from `world_id`.
   """
-  def extract_triples(semantic_fact) do
-    episode_triples = extract_from_episodes(semantic_fact.evidence_ids || [])
+  def extract_triples(semantic_fact, world_id) do
+    episode_triples = extract_from_episodes(semantic_fact.evidence_ids || [], world_id)
 
     if episode_triples != [] do
       episode_triples
@@ -79,10 +82,10 @@ defmodule Brain.Epistemic.ConsolidationBridge do
     end
   end
 
-  defp extract_from_episodes(evidence_ids) do
+  defp extract_from_episodes(evidence_ids, world_id) do
     evidence_ids
     |> Enum.flat_map(fn id ->
-      case Brain.Memory.Store.get_episode(id) do
+      case Brain.Memory.Store.get_episode(id, world_id: world_id) do
         {:ok, episode} ->
           text = episode_text(episode)
           if text != "", do: run_srl(text), else: []
