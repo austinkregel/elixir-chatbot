@@ -4,9 +4,18 @@ defmodule Brain.Graph.ReaderTest do
 
   alias Brain.Graph.Reader
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   describe "entity_context/2" do
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/world_id/, fn ->
+        Reader.entity_context([%{entity_type: "Location", value: "Paris"}])
+      end
+    end
+
     test "returns neighbors for seeded entity" do
-      result = Reader.entity_context([%{entity_type: "Location", value: "Paris"}])
+      result = Reader.entity_context([%{entity_type: "Location", value: "Paris"}], world_id: @world_id)
       assert [%{entity: _, neighbors: neighbors, node: node}] = result
       assert node != nil
       neighbor_names = Enum.map(neighbors, &(&1.properties["name"]))
@@ -14,7 +23,7 @@ defmodule Brain.Graph.ReaderTest do
     end
 
     test "returns empty neighbors for unknown entity" do
-      result = Reader.entity_context([%{entity_type: "Location", value: "Atlantis"}])
+      result = Reader.entity_context([%{entity_type: "Location", value: "Atlantis"}], world_id: @world_id)
       assert [%{neighbors: [], node: nil}] = result
     end
 
@@ -24,7 +33,7 @@ defmodule Brain.Graph.ReaderTest do
         %{entity_type: "Location", value: "London"}
       ]
 
-      result = Reader.entity_context(entities)
+      result = Reader.entity_context(entities, world_id: @world_id)
       assert length(result) == 2
       assert Enum.all?(result, fn r -> r.node != nil end)
     end
@@ -50,10 +59,10 @@ defmodule Brain.Graph.ReaderTest do
     end
   end
 
-  describe "expand_query/2" do
+  describe "expand_query/3" do
     test "expands query with related entity names" do
       entities = [%{entity_type: "Location", value: "Paris"}]
-      {query, related} = Reader.expand_query("What about Paris?", entities)
+      {query, related} = Reader.expand_query("What about Paris?", entities, world_id: @world_id)
 
       assert query == "What about Paris?"
       assert is_list(related)
@@ -62,7 +71,7 @@ defmodule Brain.Graph.ReaderTest do
 
     test "returns no graph neighbors for unknown entities" do
       entities = [%{entity_type: "Location", value: "Atlantis"}]
-      {_query, related} = Reader.expand_query("Find Atlantis", entities)
+      {_query, related} = Reader.expand_query("Find Atlantis", entities, world_id: @world_id)
       assert is_list(related)
       refute "Atlantis" in related,
              "Should not return the query entity itself as a related term"
