@@ -1,10 +1,12 @@
 defmodule Brain.Response.TemplateStore do
-  @moduledoc "Stores and retrieves response templates from intent definition files.\n\nThis module:\n- Loads response templates from data/intents/*.json files at startup\n- Loads custom smalltalk responses from data/customSmalltalkResponses_en.json\n- Builds TF-IDF embeddings per-template for similarity-based selection\n- Evaluates conditions for context-aware template selection\n- Provides slot-aware template matching and substitution\n- Supports enrichment hooks for real-time data integration\n\nTemplates are categorized by intent and can include slot placeholders\nlike $location, $artist, etc. that are substituted with entity values.\n\n## Conditional Template Selection\n\nTemplates can specify conditions that must match for selection:\n- `has_entity:person` - Entity of type \"person\" is present\n- `missing_entity:location` - No location entity\n- `slot_filled:address` - Slot has a value\n- `confidence:high` - Confidence >= 0.8\n\nWhen multiple templates match, semantic similarity to the query is used for ranking.\n"
+  @moduledoc "Stores and retrieves response templates from intent definition files.\n\nThis module:\n- Loads response templates from data/intents/*.json files at startup\n- Loads custom smalltalk responses from data/customSmalltalkResponses_en.json\n- Builds TF-IDF embeddings per-template, per world, for similarity-based selection\n- Evaluates conditions for context-aware template selection\n- Provides slot-aware template matching and substitution\n- Supports enrichment hooks for real-time data integration\n\nTemplates are categorized by intent and can include slot placeholders\nlike $location, $artist, etc. that are substituted with entity values.\n\n## Conditional Template Selection\n\nTemplates can specify conditions that must match for selection:\n- `has_entity:person` - Entity of type \"person\" is present\n- `missing_entity:location` - No location entity\n- `slot_filled:address` - Slot has a value\n- `confidence:high` - Confidence >= 0.8\n\nWhen multiple templates match, semantic similarity to the query is used for ranking.\n\n## Worlds\n\nTemplates and queries are embedded by a world's embedder (`World.Embedder`), so\nthe embeddings are held per world: a world's are built from the loaded\ntemplates the first time the world ranks or searches them. When the world's\nvocabulary is rebuilt, or the world is destroyed, its embeddings are forgotten\n(`forget_world/1`) and built again with the world's vocabulary the next time it\nasks. A world whose embedder cannot embed raises, and so does a template\nembedding whose length differs from the query's. A rebuild of the world's\nvocabulary calls the store, so the store never waits for one: while the\nvocabulary is being rebuilt it replies `{:error, :vocabulary_building}`, and\n`get_best_template/4` and `find_similar/3` wait in the caller for the rebuild\nto finish (`World.Embedder.await_ready/2`) and ask again. Templates added or edited\nafterwards carry no embedding in a world that was already built.\n"
 
   use GenServer
   require Logger
 
-  alias Brain.Memory.Embedder
+  # World.Embedder is in a sibling umbrella app that depends on :brain.
+  @compile {:no_warn_undefined, World.Embedder}
+  alias World.Embedder, as: WorldEmbedder
   alias Brain.Response.ConditionEvaluator
 
   @custom_smalltalk_file "customSmalltalkResponses_en.json"
@@ -79,9 +81,25 @@ defmodule Brain.Response.TemplateStore do
     end
   end
 
-  @doc "Get the best template for an intent using conditions and semantic ranking.\n\nThis is the main entry point for context-aware template selection:\n1. Filter this intent's templates by conditions that match the context\n2. Rank matching templates by semantic similarity to the query\n\nOnly ever returns a template belonging to `intent` or its one-level parent\nprefix. There is deliberately no cross-intent fallback; see the note where\n`fallback_semantic_search/2` was removed.\n\n## Parameters\n- `intent` - The classified intent name\n- `query_text` - The original user query (for semantic ranking)\n- `context` - Map with entities, filled_slots, missing_slots, confidence, speech_act\n\n## Returns\n- `{:ok, template_text}` - Best matching template\n- `{:error, :no_template}` - This intent has no template matching the context\n"
-  def get_best_template(intent, query_text, context) do
-    GenServer.call(__MODULE__, {:get_best_template, intent, query_text, context}, 5000)
+  @doc "Get the best template for an intent using conditions and semantic ranking.\n\nThis is the main entry point for context-aware template selection:\n1. Filter this intent's templates by conditions that match the context\n2. Rank matching templates by semantic similarity to the query, in the world's embedder\n\nOnly ever returns a template belonging to `intent` or its one-level parent\nprefix. There is deliberately no cross-intent fallback; see the note where\n`fallback_semantic_search/2` was removed.\n\n## Parameters\n- `world_id` - The world whose embedder ranks the templates\n- `intent` - The classified intent name\n- `query_text` - The original user query (for semantic ranking)\n- `context` - Map with entities, filled_slots, missing_slots, confidence, speech_act\n\n## Returns\n- `{:ok, template_text}` - Best matching template\n- `{:error, :no_template}` - This intent has no template matching the context\n"
+  def get_best_template(world_id, intent, query_text, context) when is_binary(world_id) do
+    awaiting_rebuild(world_id, fn ->
+      GenServer.call(__MODULE__, {:get_best_template, world_id, intent, query_text, context}, 30_000)
+    end)
+  end
+
+  # A rebuild of the world's vocabulary calls the store (`forget_world/1`), so
+  # the store never waits for one: it replies `{:error, :vocabulary_building}`,
+  # and the caller waits here for the rebuild to finish and asks again.
+  defp awaiting_rebuild(world_id, call) do
+    case call.() do
+      {:error, :vocabulary_building} ->
+        :ok = WorldEmbedder.await_ready(world_id)
+        awaiting_rebuild(world_id, call)
+
+      result ->
+        result
+    end
   end
 
   @doc "Get structured templates with conditions for an intent.\nReturns a list of %Template{} structs.\n"
@@ -102,7 +120,7 @@ defmodule Brain.Response.TemplateStore do
     |> Enum.map(fn template ->
       similarity =
         if template.embedding do
-          cosine_similarity(query_embedding, template.embedding)
+          FourthWall.Math.cosine_similarity!(query_embedding, template.embedding)
         else
           0.0
         end
@@ -113,9 +131,26 @@ defmodule Brain.Response.TemplateStore do
     |> Enum.map(fn {template, _} -> template end)
   end
 
-  @doc "Find the best matching template for given context using TF-IDF similarity.\n\nOptions:\n- :intent - filter to specific intent\n- :filled_slots - list of slot names that have values\n- :top_k - number of candidates to return (default: 3)\n"
-  def find_similar(query_text, opts \\ []) do
-    GenServer.call(__MODULE__, {:find_similar, query_text, opts}, 5000)
+  @doc "Find the best matching template for given context using TF-IDF similarity\nin the world's embedder.\n\nOptions:\n- :intent - filter to specific intent\n- :filled_slots - list of slot names that have values\n- :top_k - number of candidates to return (default: 3)\n"
+  def find_similar(world_id, query_text, opts \\ []) when is_binary(world_id) do
+    awaiting_rebuild(world_id, fn ->
+      GenServer.call(__MODULE__, {:find_similar, world_id, query_text, opts}, 30_000)
+    end)
+  end
+
+  @doc """
+  Forgets the world's template embeddings, for a world whose vocabulary was
+  rebuilt or that is destroyed (`Brain.EmbeddingCaches.forget_world/1`); they
+  are built again with the world's vocabulary the next time it asks. A store
+  that is not running holds no embeddings, so there is nothing to forget.
+  """
+  @spec forget_world(String.t()) :: :ok
+  def forget_world(world_id) when is_binary(world_id) do
+    if GenServer.whereis(__MODULE__) do
+      GenServer.call(__MODULE__, {:forget_world, world_id}, 30_000)
+    end
+
+    :ok
   end
 
   @doc "Substitute slot placeholders in a template with entity values.\n\nPlaceholders are in the format $slot_name (e.g., $location, $artist).\n"
@@ -241,7 +276,7 @@ defmodule Brain.Response.TemplateStore do
        templates: %{},
        structured_templates: %{},
        parameters: %{},
-       embeddings: %{},
+       world_embeddings: %{},
        all_template_structs: [],
        loading: true,
        dirty: false,
@@ -287,14 +322,18 @@ defmodule Brain.Response.TemplateStore do
     {:reply, templates, state}
   end
 
-  def handle_call({:get_best_template, intent, query_text, context}, _from, state) do
-    result = do_get_best_template(intent, query_text, context, state)
+  def handle_call({:get_best_template, world_id, intent, query_text, context}, _from, state) do
+    {result, state} = do_get_best_template(world_id, intent, query_text, context, state)
     {:reply, result, state}
   end
 
-  def handle_call({:find_similar, query_text, opts}, _from, state) do
-    result = do_find_similar(query_text, opts, state)
+  def handle_call({:find_similar, world_id, query_text, opts}, _from, state) do
+    {result, state} = do_find_similar(world_id, query_text, opts, state)
     {:reply, result, state}
+  end
+
+  def handle_call({:forget_world, world_id}, _from, state) do
+    {:reply, :ok, %{state | world_embeddings: Map.delete(state.world_embeddings, world_id)}}
   end
 
   def handle_call(:list_intents, _from, state) do
@@ -313,7 +352,7 @@ defmodule Brain.Response.TemplateStore do
       intent_count: map_size(state.templates),
       template_count: state.templates |> Map.values() |> List.flatten() |> length(),
       structured_template_count: length(state.all_template_structs),
-      with_embeddings: map_size(state.embeddings),
+      worlds_embedded: map_size(state.world_embeddings),
       admin_template_count: admin_count,
       has_unsaved_changes: state.dirty,
       ready: state.ready
@@ -464,8 +503,7 @@ defmodule Brain.Response.TemplateStore do
               :admin
             else
               :file
-            end,
-          has_embedding: t.embedding != nil
+            end
         }
       end)
 
@@ -482,7 +520,10 @@ defmodule Brain.Response.TemplateStore do
     {:reply, result, new_state}
   end
 
-  defp do_get_best_template(intent, query_text, context, state) do
+  # While the world's vocabulary is being rebuilt from its episodes, a choice
+  # among several matching templates for a query cannot be ranked, and this is
+  # `{:error, :vocabulary_building}`, which `get_best_template/4` waits out.
+  defp do_get_best_template(world_id, intent, query_text, context, state) do
     templates = Map.get(state.structured_templates, intent, [])
 
     templates =
@@ -497,24 +538,70 @@ defmodule Brain.Response.TemplateStore do
 
     case matching do
       [] ->
-        {:error, :no_template}
+        {{:error, :no_template}, state}
 
       [single] ->
-        {:ok, single.text}
+        {{:ok, single.text}, state}
+
+      multiple when is_binary(query_text) ->
+        with {:ok, embedded, state} <- world_template_embeddings(state, world_id),
+             {:ok, query_embedding} <- world_embedding(world_id, query_text) do
+          best =
+            multiple
+            |> Enum.map(&%{&1 | embedding: Map.get(embedded.templates, {&1.intent, &1.text})})
+            |> rank_by_similarity(query_embedding)
+            |> List.first()
+
+          {{:ok, best.text}, state}
+        else
+          {:vocabulary_building, state} -> {{:error, :vocabulary_building}, state}
+          :vocabulary_building -> {{:error, :vocabulary_building}, state}
+        end
 
       multiple ->
-        if is_binary(query_text) do
-          case Embedder.embed(query_text) do
-            {:ok, query_embedding} ->
-              best = rank_by_similarity(multiple, query_embedding) |> List.first()
-              {:ok, best.text}
+        {{:ok, Enum.random(multiple).text}, state}
+    end
+  end
 
-            _ ->
-              {:ok, Enum.random(multiple).text}
-          end
-        else
-          {:ok, Enum.random(multiple).text}
+  # The world's template embeddings: each template's, keyed `{intent, text}`, and
+  # each intent's combined text's. Built the first time the world asks; not kept
+  # while the world's vocabulary is being rebuilt.
+  defp world_template_embeddings(state, world_id) do
+    case Map.fetch(state.world_embeddings, world_id) do
+      {:ok, embedded} ->
+        {:ok, embedded, state}
+
+      :error ->
+        case build_world_embeddings(world_id, state) do
+          {:ok, embedded} ->
+            {:ok, embedded, %{state | world_embeddings: Map.put(state.world_embeddings, world_id, embedded)}}
+
+          :vocabulary_building ->
+            {:vocabulary_building, state}
         end
+    end
+  end
+
+  defp build_world_embeddings(world_id, state) do
+    with {:ok, per_template} <- build_per_template_embeddings(world_id, state.all_template_structs),
+         {:ok, per_intent} <- build_template_embeddings(world_id, state.templates) do
+      Logger.info("Built template embeddings for world #{world_id}: #{map_size(per_template)} templates")
+      {:ok, %{templates: per_template, intents: per_intent}}
+    end
+  end
+
+  # A world's embedding comes from the world's embedder and nowhere else. A world
+  # whose embedder has no copy, no vocabulary, or no table raises.
+  defp world_embedding(world_id, text) do
+    case WorldEmbedder.embed(world_id, text) do
+      {:ok, embedding} ->
+        {:ok, embedding}
+
+      {:error, :vocabulary_building} ->
+        :vocabulary_building
+
+      {:error, reason} ->
+        raise "TemplateStore: world #{inspect(world_id)}'s embedder cannot embed: #{inspect(reason)}"
     end
   end
 
@@ -561,19 +648,15 @@ defmodule Brain.Response.TemplateStore do
     merged_structured = merge_custom_structured_responses(structured_templates, custom_smalltalk)
 
     Logger.info("Merged #{map_size(custom_smalltalk)} custom smalltalk responses")
-    embeddings = build_template_embeddings(merged_templates)
-    all_template_structs = build_per_template_embeddings(merged_structured)
-    structured_with_embeddings = group_templates_by_intent(all_template_structs)
-
-    Logger.info("Built embeddings for #{length(all_template_structs)} individual templates")
+    all_template_structs = Enum.flat_map(merged_structured, fn {_intent, templates} -> templates end)
 
     {:noreply,
      %{
        state
        | templates: merged_templates,
-         structured_templates: structured_with_embeddings,
+         structured_templates: group_templates_by_intent(all_template_structs),
          parameters: parameters,
-         embeddings: embeddings,
+         world_embeddings: %{},
          all_template_structs: all_template_structs,
          ready: true,
          loading: false
@@ -695,26 +778,15 @@ defmodule Brain.Response.TemplateStore do
     end
   end
 
-  defp build_per_template_embeddings(structured_templates) do
-    if Embedder.ready?() do
-      structured_templates
-      |> Enum.flat_map(fn {_intent, templates} -> templates end)
-      |> Enum.map(fn template ->
-        if is_binary(template.text) and template.text != "" do
-          case Embedder.embed(template.text) do
-            {:ok, embedding} ->
-              %{template | embedding: embedding}
-
-            _ ->
-              template
-          end
-        else
-          template
-        end
-      end)
-    else
-      Enum.flat_map(structured_templates, fn {_intent, templates} -> templates end)
-    end
+  defp build_per_template_embeddings(world_id, template_structs) do
+    template_structs
+    |> Enum.filter(&(is_binary(&1.text) and &1.text != ""))
+    |> Enum.reduce_while({:ok, %{}}, fn template, {:ok, acc} ->
+      case world_embedding(world_id, template.text) do
+        {:ok, embedding} -> {:cont, {:ok, Map.put(acc, {template.intent, template.text}, embedding)}}
+        :vocabulary_building -> {:halt, :vocabulary_building}
+      end
+    end)
   end
 
   defp group_templates_by_intent(template_structs) do
@@ -738,47 +810,52 @@ defmodule Brain.Response.TemplateStore do
     end)
   end
 
-  defp build_template_embeddings(templates) do
-    if Embedder.ready?() do
-      templates
-      |> Enum.filter(fn {_intent, tpls} -> tpls != [] end)
-      |> Enum.reduce(%{}, fn {intent, tpls}, acc ->
-        combined_text =
-          tpls
-          |> Enum.filter(&is_binary/1)
-          |> Enum.join(" ")
+  defp build_template_embeddings(world_id, templates) do
+    templates
+    |> Enum.filter(fn {_intent, tpls} -> tpls != [] end)
+    |> Enum.reduce_while({:ok, %{}}, fn {intent, tpls}, {:ok, acc} ->
+      combined_text =
+        tpls
+        |> Enum.filter(&is_binary/1)
+        |> Enum.join(" ")
 
-        case Embedder.embed(combined_text) do
-          {:ok, embedding} ->
-            Map.put(acc, intent, embedding)
+      case world_embedding(world_id, combined_text) do
+        {:ok, embedding} -> {:cont, {:ok, Map.put(acc, intent, embedding)}}
+        :vocabulary_building -> {:halt, :vocabulary_building}
+      end
+    end)
+  end
 
-          _ ->
-            acc
-        end
-      end)
-    else
-      %{}
+  defp do_find_similar(_world_id, query_text, _opts, state) when not is_binary(query_text) or query_text == "" do
+    {{:ok, []}, state}
+  end
+
+  # While the world's vocabulary is being rebuilt from its episodes there is
+  # nothing to compare the query with.
+  defp do_find_similar(world_id, query_text, opts, state) do
+    case world_template_embeddings(state, world_id) do
+      {:ok, embedded, state} ->
+        {find_similar_in(embedded, world_id, query_text, opts, state), state}
+
+      {:vocabulary_building, state} ->
+        {{:error, :vocabulary_building}, state}
     end
   end
 
-  defp do_find_similar(query_text, _opts, _state) when not is_binary(query_text) or query_text == "" do
-    {:ok, []}
-  end
-
-  defp do_find_similar(query_text, opts, state) do
+  defp find_similar_in(embedded, world_id, query_text, opts, state) do
     intent_filter = Keyword.get(opts, :intent)
     top_k = Keyword.get(opts, :top_k, 3)
 
-    case Embedder.embed(query_text) do
+    case world_embedding(world_id, query_text) do
       {:ok, query_embedding} ->
         candidates =
-          state.embeddings
+          embedded.intents
           |> Enum.filter(fn {intent, _} ->
             intent_filter == nil or intent == intent_filter or
               String.starts_with?(intent, intent_filter <> ".")
           end)
           |> Enum.map(fn {intent, embedding} ->
-            similarity = cosine_similarity(query_embedding, embedding)
+            similarity = FourthWall.Math.cosine_similarity!(query_embedding, embedding)
             templates = Map.get(state.templates, intent, [])
             {intent, similarity, templates}
           end)
@@ -788,24 +865,8 @@ defmodule Brain.Response.TemplateStore do
 
         {:ok, candidates}
 
-      _ ->
-        {:error, :embedder_not_ready}
-    end
-  end
-
-  defp cosine_similarity(vec1, vec2) when is_list(vec1) and is_list(vec2) do
-    if length(vec1) != length(vec2) do
-      0.0
-    else
-      dot = Enum.zip(vec1, vec2) |> Enum.reduce(0.0, fn {a, b}, sum -> sum + a * b end)
-      mag1 = :math.sqrt(Enum.reduce(vec1, 0.0, fn x, sum -> sum + x * x end))
-      mag2 = :math.sqrt(Enum.reduce(vec2, 0.0, fn x, sum -> sum + x * x end))
-
-      if mag1 == 0.0 or mag2 == 0.0 do
-        0.0
-      else
-        dot / (mag1 * mag2)
-      end
+      :vocabulary_building ->
+        {:error, :vocabulary_building}
     end
   end
 
