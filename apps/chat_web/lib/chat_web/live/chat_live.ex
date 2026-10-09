@@ -783,6 +783,8 @@ defmodule ChatWeb.ChatLive do
       :pipeline_complete -> "⏹"
       :racing_complete -> "⚡"
       :memory_query -> "🧠"
+      :semantic_facts_retrieved -> "🧠"
+      :semantic_fact_used -> "🔁"
       :response_generated -> "💭"
       :followup_detected -> "↪"
       :meta_cognitive_query -> "🪞"
@@ -892,6 +894,14 @@ defmodule ChatWeb.ChatLive do
         count = step[:match_count] || step["match_count"] || 0
 
         if count > 0, do: "#{count} match(es)", else: "no matches"
+
+      :semantic_facts_retrieved ->
+        count = length(step_value(step, :semantic_facts) || [])
+        pattern = if step_value(step, :recurring_pattern_id), do: ", recurring pattern found", else: ""
+        "#{count} semantic fact(s)#{pattern}"
+
+      :semantic_fact_used ->
+        "recurring pattern used by #{step_label(step_value(step, :used_by))}"
 
       :response_generated ->
         type = step[:response_type] || step["response_type"]
@@ -1130,6 +1140,12 @@ defmodule ChatWeb.ChatLive do
     end
   end
 
+  # The episode query and the semantic facts arrive as separate steps; each
+  # sets its own keys of the turn's memory details.
+  defp merge_memory_details(details, memory) do
+    Map.update(details, :memory, memory, &Map.merge(&1, memory))
+  end
+
   defp update_analysis_details(details, payload) when is_map(details) and is_map(payload) do
     step = Map.get(payload, :step) || Map.get(payload, "step")
     ts = Map.get(payload, :timestamp) || Map.get(payload, "timestamp")
@@ -1202,13 +1218,31 @@ defmodule ChatWeb.ChatLive do
           })
 
         :memory_query ->
-          Map.put(details, :memory, %{
+          merge_memory_details(details, %{
             query_text: Map.get(payload, :query_text) || Map.get(payload, "query_text"),
             match_count: Map.get(payload, :match_count) || Map.get(payload, "match_count") || 0,
             top_similarity:
               Map.get(payload, :top_similarity) || Map.get(payload, "top_similarity") || 0.0,
             matches: Map.get(payload, :matches) || Map.get(payload, "matches") || []
           })
+
+        :semantic_facts_retrieved ->
+          merge_memory_details(details, %{
+            semantic_facts: Map.fetch!(payload, :semantic_facts),
+            recurring_pattern_id: Map.fetch!(payload, :recurring_pattern_id)
+          })
+
+        # A refined response can use the pattern on each pass; each user of
+        # it is listed once.
+        :semantic_fact_used ->
+          used = %{
+            semantic_fact_id: Map.fetch!(payload, :semantic_fact_id),
+            used_by: Map.fetch!(payload, :used_by),
+            reply: Map.fetch!(payload, :reply)
+          }
+
+          used_so_far = get_in(details, [:memory, :semantic_facts_used]) || []
+          merge_memory_details(details, %{semantic_facts_used: Enum.uniq(used_so_far ++ [used])})
 
         :response_generated ->
           Map.put(details, :response, %{
