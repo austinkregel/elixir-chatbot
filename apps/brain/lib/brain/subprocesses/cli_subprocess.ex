@@ -80,7 +80,9 @@ defmodule Brain.Subprocesses.CliSubprocess do
 
   @impl true
   def init({subprocess_id, memory_snapshot, world_id, brain}) do
-    user_id = "cli_#{subprocess_id}"
+    # A CLI session has no web user, so it has no user model: its turns carry
+    # no user and learn nothing about one.
+    user_id = nil
 
     # Exits are trapped so `terminate/2` runs when the session is stopped, and
     # ends the session's conversation.
