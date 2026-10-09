@@ -260,7 +260,7 @@ defmodule Mix.Tasks.Evaluate do
 
   defp classifier_for("intent", world_id), do: &classify_intent(&1, world_id)
   defp classifier_for("sentiment", _world_id), do: &classify_sentiment/1
-  defp classifier_for("speech_act", _world_id), do: &classify_speech_act/1
+  defp classifier_for("speech_act", world_id), do: &classify_speech_act(&1, world_id)
 
   defp classify_intent(text, world_id) do
     analysis = Pipeline.analyze_chunk(text, side_effects: false, world_id: world_id)
@@ -287,8 +287,8 @@ defmodule Mix.Tasks.Evaluate do
     _ -> {:error, "neutral"}
   end
 
-  defp classify_speech_act(text) do
-    case SpeechActClassifier.classify(text) do
+  defp classify_speech_act(text, world_id) do
+    case SpeechActClassifier.classify(text, world_id: world_id) do
       %{category: category} -> {:ok, to_string(category)}
       _ -> {:unknown, "unknown"}
     end
