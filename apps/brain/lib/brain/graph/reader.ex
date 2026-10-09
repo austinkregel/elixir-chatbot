@@ -34,11 +34,18 @@ defmodule Brain.Graph.Reader do
 
   Returns a list of maps, one per entity:
     `%{entity: entity, neighbors: [%Vertex{}], node: %Vertex{} | nil}`
-  """
-  def entity_context(entities, opts \\ []) when is_list(entities) do
-    depth = Keyword.get(opts, :depth, 2)
-    world_id = Keyword.get(opts, :world_id, "default")
 
+  ## Options
+    - `:world_id` (required) - the world whose lookups are cached
+    - `:depth` - neighborhood depth (default: 2)
+  """
+  def entity_context(entities, opts) when is_list(entities) do
+    world_id = world_id!(opts, "entity_context")
+    depth = Keyword.get(opts, :depth, 2)
+    lookup_entity_contexts(entities, world_id, depth)
+  end
+
+  defp lookup_entity_contexts(entities, world_id, depth) do
     Enum.map(entities, fn entity ->
       entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type") || "Entity"
       value = Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :text, "")
@@ -76,10 +83,18 @@ defmodule Brain.Graph.Reader do
   Issues a single Cypher query that matches any of the provided labels,
   then fetches the neighborhood once for the first match. Returns a map
   keyed by normalized label: `%{label => %{node: vertex, neighbors: [vertex]}}`.
+
+  ## Options
+    - `:world_id` (required) - the world whose lookups are cached
+    - `:depth` - neighborhood depth (default: 2)
   """
-  def entity_context_multi_label(name, labels, opts \\ []) when is_binary(name) and is_list(labels) do
+  def entity_context_multi_label(name, labels, opts) when is_binary(name) and is_list(labels) do
+    world_id = world_id!(opts, "entity_context_multi_label")
     depth = Keyword.get(opts, :depth, 2)
-    world_id = Keyword.get(opts, :world_id, "default")
+    lookup_multi_label(name, labels, world_id, depth)
+  end
+
+  defp lookup_multi_label(name, labels, world_id, depth) do
     escaped = String.replace(to_string(name), "'", "\\'")
     normalized_labels = Enum.map(labels, &normalize_label/1)
 
@@ -117,6 +132,21 @@ defmodule Brain.Graph.Reader do
     end
   rescue
     _ -> %{}
+  end
+
+  # Entity lookups are cached per world, so the caller names the world; there
+  # is no default.
+  defp world_id!(opts, function) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "Reader.#{function} option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "Reader.#{function} needs :world_id, the world whose lookups are cached"
+    end
   end
 
   defp fetch_entity_context(label, value, depth) do
@@ -202,12 +232,20 @@ defmodule Brain.Graph.Reader do
   Expand a query with graph-derived related concept names.
 
   Returns `{query_text, [related_name]}`.
+
+  ## Options
+    - `:world_id` (required) - the world whose entity lookups are cached
   """
-  def expand_query(query_text, entities) when is_list(entities) do
+  def expand_query(query_text, entities, opts) when is_list(entities) do
+    world_id = world_id!(opts, "expand_query")
+    expand_query_in_world(query_text, entities, world_id)
+  end
+
+  defp expand_query_in_world(query_text, entities, world_id) do
     graph_names =
       entities
       |> Enum.flat_map(fn e ->
-        case entity_context([e], depth: 1) do
+        case entity_context([e], depth: 1, world_id: world_id) do
           [%{neighbors: neighbors}] when neighbors != [] ->
             neighbors
             |> Enum.map(fn v -> Map.get(v.properties, "name", "") end)
