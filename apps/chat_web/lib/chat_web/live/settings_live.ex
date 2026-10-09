@@ -834,13 +834,17 @@ defmodule ChatWeb.SettingsLive do
     service_atom = String.to_existing_atom(service_name)
     key_atom = String.to_existing_atom(key)
 
-    CredentialVault.delete(service_atom, key_atom, world: world)
+    case CredentialVault.delete(service_atom, key_atom, world: world) do
+      :ok ->
+        {:noreply,
+         socket
+         |> close_confirm()
+         |> load_services_data()
+         |> put_flash(:info, "Credential removed")}
 
-    {:noreply,
-     socket
-     |> close_confirm()
-     |> load_services_data()
-     |> put_flash(:info, "Credential removed")}
+      {:error, reason} ->
+        {:noreply, assign(socket, :confirm_error, "Failed to remove credential: #{inspect(reason)}")}
+    end
   rescue
     ArgumentError ->
       {:noreply, assign(socket, :confirm_error, "Invalid service or credential key")}
@@ -1586,8 +1590,8 @@ defmodule ChatWeb.SettingsLive do
       <.card class="p-space-lg">
         <h3 class="text-heading text-ink mb-space-lg">Auto-Learning World</h3>
         <p class="text-body text-ink-muted mb-space-lg">
-          Learning sessions triggered by novel input research for this world. Its initial value comes from the
-          <code class="text-term">:auto_learning_world_id</code> setting; a change here lasts until the node restarts.
+          Learning sessions triggered by novel input research for this world. It is saved and kept across
+          restarts; until one is saved, it comes from the <code class="text-term">:auto_learning_world_id</code> setting.
         </p>
         <form phx-submit="set_auto_learning_world" class="flex flex-wrap gap-space-lg items-end">
           <div>
