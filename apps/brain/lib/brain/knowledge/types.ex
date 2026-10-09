@@ -360,6 +360,10 @@ defmodule Brain.Knowledge.Types do
     alias Brain.Lattice
     alias Brain.Lattice.Candidate, as: LatticeCandidate
 
+    # World.Embedder is in a sibling umbrella app that depends on :brain.
+    @compile {:no_warn_undefined, World.Embedder}
+    alias World.Embedder, as: WorldEmbedder
+
     @type status :: :planning | :gathering_evidence | :evaluating | :concluded
     @type conclusion :: :hypotheses_supported | :hypotheses_falsified | :inconclusive | :mixed
 
@@ -436,14 +440,21 @@ defmodule Brain.Knowledge.Types do
       %{investigation | control_evidence: control_findings}
     end
 
-    @doc "Records evidence and associates it with relevant hypotheses.\n"
-    def record_evidence(%__MODULE__{} = investigation, findings) when is_list(findings) do
+    @doc """
+    Records evidence and associates it with relevant hypotheses, comparing each
+    finding's claim with each hypothesis's in `world_id`'s embedder
+    (`World.Embedder`). While the world's vocabulary is being rebuilt from its
+    episodes this waits for the rebuild to finish; raises when it does not, and
+    when the world cannot embed.
+    """
+    def record_evidence(world_id, %__MODULE__{} = investigation, findings)
+        when is_binary(world_id) and world_id != "" and is_list(findings) do
       updated_evidence = investigation.evidence ++ findings
 
       updated_hypotheses =
         investigation.hypotheses
         |> Enum.map(fn hypothesis ->
-          associate_evidence(hypothesis, findings)
+          associate_evidence(world_id, hypothesis, findings)
         end)
 
       %{
@@ -577,14 +588,13 @@ defmodule Brain.Knowledge.Types do
       question
     end
 
-    defp associate_evidence(%Hypothesis{} = hypothesis, findings) do
+    defp associate_evidence(world_id, %Hypothesis{} = hypothesis, findings) do
       Enum.reduce(findings, hypothesis, fn finding, hyp ->
         # Skip findings with empty claims
         if finding.claim == nil or finding.claim == "" do
           hyp
         else
-          # Use TF-IDF cosine similarity instead of token overlap
-          base_similarity = text_similarity(hyp.claim, finding.claim)
+          base_similarity = text_similarity(world_id, hyp.claim, finding.claim)
 
           # Entity-match boost: if finding entity matches hypothesis entity, add 0.15
           entity_boost =
@@ -611,28 +621,33 @@ defmodule Brain.Knowledge.Types do
       end)
     end
 
-    defp text_similarity(text_a, text_b) when is_binary(text_a) and is_binary(text_b) do
-      alias Brain.Memory.Embedder
-
-      if Embedder.ready?() do
-        with {:ok, vec_a} <- Embedder.embed(text_a),
-             {:ok, vec_b} <- Embedder.embed(text_b) do
-          Embedder.cosine_similarity(vec_a, vec_b)
-        else
-          _ -> token_overlap_similarity(text_a, text_b)
-        end
-      else
-        token_overlap_similarity(text_a, text_b)
-      end
+    # The cosine similarity of the two texts' embeddings in the world's embedder.
+    # Vectors of different lengths (the vocabulary was rebuilt between the two
+    # embeddings) raise rather than compare as 0.0.
+    defp text_similarity(world_id, text_a, text_b) when is_binary(text_a) and is_binary(text_b) do
+      FourthWall.Math.cosine_similarity!(
+        world_embedding!(world_id, text_a),
+        world_embedding!(world_id, text_b)
+      )
     end
 
-    defp token_overlap_similarity(text_a, text_b) do
-      tokens_a = text_a |> Brain.ML.Tokenizer.tokenize_words() |> MapSet.new()
-      tokens_b = text_b |> Brain.ML.Tokenizer.tokenize_words() |> MapSet.new()
-      overlap = MapSet.intersection(tokens_a, tokens_b) |> MapSet.size()
-      union = MapSet.union(tokens_a, tokens_b) |> MapSet.size()
+    # A world's embedding comes from the world's embedder and nowhere else. While
+    # the world's vocabulary is being rebuilt nothing can be embedded in it, so
+    # this waits for the rebuild to finish (`World.Embedder.await_ready/2`, which
+    # raises naming the world when it does not) and embeds then. Any other
+    # reason the world cannot embed raises naming the world.
+    defp world_embedding!(world_id, text) do
+      case WorldEmbedder.embed(world_id, text) do
+        {:ok, embedding} ->
+          embedding
 
-      if union > 0, do: overlap / union, else: 0.0
+        {:error, :vocabulary_building} ->
+          :ok = WorldEmbedder.await_ready(world_id)
+          world_embedding!(world_id, text)
+
+        {:error, reason} ->
+          raise "Investigation: world #{inspect(world_id)}'s embedder cannot embed: #{inspect(reason)}"
+      end
     end
 
     defp evidence_contradicts?(claim, finding_claim) do
@@ -725,11 +740,11 @@ defmodule Brain.Knowledge.Types do
 
     @doc """
     Builds a `Brain.Lattice` over competing hypotheses: a null triple (supported /
-    not supported / insufficient) plus non-contradicting priors from `BeliefStore`
-    for `subject: entity_value`.
+    not supported / insufficient) plus non-contradicting priors from `world_id`'s
+    `BeliefStore` beliefs for `subject: entity_value`.
     """
-    def formulate_competing_hypotheses(%__MODULE__{} = goal, entity_value)
-        when is_binary(entity_value) do
+    def formulate_competing_hypotheses(world_id, %__MODULE__{} = goal, entity_value)
+        when is_binary(world_id) and world_id != "" and is_binary(entity_value) do
       topic = goal.topic
 
       h_true =
@@ -760,7 +775,7 @@ defmodule Brain.Knowledge.Types do
         )
 
       priors =
-        case BeliefStore.query_beliefs(subject: entity_value, min_confidence: 0.5) do
+        case BeliefStore.query_beliefs(world_id, subject: entity_value, min_confidence: 0.5) do
           {:ok, beliefs} -> filter_non_contradicting_beliefs(beliefs)
           _ -> []
         end
