@@ -10,7 +10,7 @@ defmodule Brain.Analysis.FeatureExtractor.SchemaContractTest do
   one sentence, with the POS tagger bypassed.
 
   That is the shape production never sees. This file closes the gap by driving
-  `Pipeline.analyze_chunk/1` end to end, which is the path
+  `Pipeline.analyze_chunk/2` end to end, which is the path
   `Brain.materialize_profiles/1` and `mix gen_micro_data` both take, over
   sentences chosen to exercise different branches — a command, a question, a
   negation, an unknown proper noun, a sentence fragment.
@@ -45,12 +45,15 @@ defmodule Brain.Analysis.FeatureExtractor.SchemaContractTest do
     "I was walking home yesterday"
   ]
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   describe "the pipeline's emitted vector against the manifest" do
     test "every sentence emits exactly as many values as the manifest names" do
       declared = ChunkFeatures.vector_dimension()
 
       for text <- @sentences do
-        vector = text |> Pipeline.analyze_chunk() |> FeatureExtractor.extract_vector()
+        vector = text |> Pipeline.analyze_chunk(world_id: @world_id) |> FeatureExtractor.extract_vector()
 
         assert length(vector) == declared,
                "#{inspect(text)} emitted #{length(vector)} values for #{declared} named " <>
@@ -65,7 +68,7 @@ defmodule Brain.Analysis.FeatureExtractor.SchemaContractTest do
       manifest = ChunkFeatures.dimension_manifest()
 
       for text <- @sentences do
-        vector = text |> Pipeline.analyze_chunk() |> FeatureExtractor.extract_vector()
+        vector = text |> Pipeline.analyze_chunk(world_id: @world_id) |> FeatureExtractor.extract_vector()
 
         offenders =
           vector
@@ -90,7 +93,7 @@ defmodule Brain.Analysis.FeatureExtractor.SchemaContractTest do
       # share a schema, which is the one thing a snapshot must guarantee.
       fingerprints =
         Enum.map(@sentences, fn text ->
-          _ = Pipeline.analyze_chunk(text)
+          _ = Pipeline.analyze_chunk(text, world_id: @world_id)
           ChunkFeatures.schema_fingerprint()
         end)
 
