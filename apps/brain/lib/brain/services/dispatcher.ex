@@ -15,11 +15,11 @@ defmodule Brain.Services.Dispatcher do
         :no_handler -> # No service registered for this intent
       end
 
-      # Check if a service is available
-      Dispatcher.service_available?(:weather)
+      # Check if a service is available in a world
+      Dispatcher.service_available?(:weather, world: world_id)
 
-      # List all registered services
-      Dispatcher.list_services()
+      # List all registered services with their status in a world
+      Dispatcher.list_services(world: world_id)
   """
 
   require Logger
@@ -59,10 +59,12 @@ defmodule Brain.Services.Dispatcher do
   ## Parameters
     - intent: The classified intent name
     - slots: Map of filled slot values (e.g., %{location: "NYC"})
-    - context: Additional context (world_id, user_id, etc.). With
-      `side_effects: false`, an intent the service says `writes?/1` (a device
-      action, a stored alarm) is refused with `{:error, :side_effects_off}`
-      and the service is not called; read-only intents still run.
+    - context: Additional context (user_id, etc.). It must name the world
+      whose credentials the service uses, as `:world_id` (or `:world`);
+      a missing world raises. With `side_effects: false`, an intent the
+      service says `writes?/1` (a device action, a stored alarm) is refused
+      with `{:error, :side_effects_off}` and the service is not called;
+      read-only intents still run.
 
   ## Returns
     - {:ok, enrichment_data} on success
@@ -71,9 +73,9 @@ defmodule Brain.Services.Dispatcher do
   """
   @spec dispatch(String.t(), map(), map()) ::
           {:ok, map()} | {:error, term()} | :no_handler
-  def dispatch(intent, slots, context \\ %{})
-
   def dispatch(intent, slots, context) when is_binary(intent) and is_map(slots) do
+    world = context_world!(context)
+
     case find_service(intent) do
       nil ->
         Logger.debug("Dispatcher: no handler for intent=#{intent}")
@@ -85,7 +87,7 @@ defmodule Brain.Services.Dispatcher do
           {:error, :side_effects_off}
         else
           Logger.info("Dispatcher: routing intent=#{intent} to #{inspect(service)}")
-          dispatch_to_service(service, intent, slots, context)
+          dispatch_to_service(service, intent, slots, world)
         end
     end
   end
@@ -97,20 +99,21 @@ defmodule Brain.Services.Dispatcher do
 
   ## Parameters
     - service_name: Atom identifying the service (e.g., :weather)
-    - opts: Optional keyword list with :world
+    - opts: Keyword list with :world (required), the world whose credentials are checked
 
   ## Returns
     - true if all required credentials are present
     - false otherwise
   """
   @spec service_available?(atom(), keyword()) :: boolean()
-  def service_available?(service_name, opts \\ []) do
+  def service_available?(service_name, opts) do
+    world = world_opt!(opts, "service_available?")
+
     case find_service_by_name(service_name) do
       nil ->
         false
 
       service ->
-        world = Keyword.get(opts, :world, "default")
         has_all_credentials?(service, world)
     end
   end
@@ -118,12 +121,16 @@ defmodule Brain.Services.Dispatcher do
   @doc """
   List all registered services with their status.
 
+  ## Parameters
+    - opts: Keyword list with :world (required), the world whose credentials
+      decide each service's `configured` status
+
   ## Returns
     List of maps with service info and availability status.
   """
   @spec list_services(keyword()) :: [map()]
-  def list_services(opts \\ []) do
-    world = Keyword.get(opts, :world, "default")
+  def list_services(opts) do
+    world = world_opt!(opts, "list_services")
 
     @registered_services
     |> Enum.filter(&Code.ensure_loaded?/1)
@@ -251,19 +258,23 @@ defmodule Brain.Services.Dispatcher do
   @doc """
   Run a health check for a service.
 
+  ## Parameters
+    - service_name: Atom identifying the service
+    - opts: Keyword list with :world (required), the world whose credentials are checked
+
   ## Returns
     - :ok if credentials are valid
     - {:error, reason} if check fails
   """
   @spec health_check(atom(), keyword()) :: :ok | {:error, term()}
-  def health_check(service_name, opts \\ []) do
+  def health_check(service_name, opts) do
+    world = world_opt!(opts, "health_check")
+
     case find_service_by_name(service_name) do
       nil ->
         {:error, :service_not_found}
 
       service ->
-        world = Keyword.get(opts, :world, "default")
-
         case get_credentials(service, world) do
           {:ok, credentials} ->
             service.health_check(credentials)
@@ -278,9 +289,35 @@ defmodule Brain.Services.Dispatcher do
   # Private Functions
   # ============================================================================
 
-  defp dispatch_to_service(service, intent, slots, context) do
-    world = Map.get(context, :world_id) || Map.get(context, :world, "default")
+  # Credentials are stored per world, so every lookup names the world; there is
+  # no default.
+  defp world_opt!(opts, function) do
+    case Keyword.fetch(opts, :world) do
+      {:ok, world} when is_binary(world) and world != "" ->
+        world
 
+      {:ok, other} ->
+        raise ArgumentError, "Dispatcher.#{function} option :world must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "Dispatcher.#{function} needs :world, the world whose credentials are used"
+    end
+  end
+
+  defp context_world!(context) do
+    case Map.get(context, :world_id) || Map.get(context, :world) do
+      world when is_binary(world) and world != "" ->
+        world
+
+      nil ->
+        raise ArgumentError, "Dispatcher.dispatch context needs :world_id, the world whose credentials are used"
+
+      other ->
+        raise ArgumentError, "Dispatcher.dispatch context :world_id must be a world id, got: #{inspect(other)}"
+    end
+  end
+
+  defp dispatch_to_service(service, intent, slots, world) do
     # Check if service is enabled
     if service_enabled?(service) do
       case get_credentials(service, world) do
@@ -290,7 +327,7 @@ defmodule Brain.Services.Dispatcher do
 
         result =
           try do
-            service.enrich(intent, slots, credentials)
+            service.enrich(intent, slots, credentials, world)
           rescue
             e ->
               Logger.error("Service error",
