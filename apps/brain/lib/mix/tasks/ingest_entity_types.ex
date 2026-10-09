@@ -14,8 +14,7 @@ defmodule Mix.Tasks.IngestEntityTypes do
 
   ## Usage
 
-      mix ingest_entity_types                  # default world
-      mix ingest_entity_types --world my_world # specific world
+      mix ingest_entity_types --world my_world
 
   Requires Atlas to be running. Fails loud with remediation if not.
   """
@@ -29,7 +28,9 @@ defmodule Mix.Tasks.IngestEntityTypes do
   @impl true
   def run(args) do
     {opts, _, _} = OptionParser.parse(args, strict: [world: :string])
-    world_id = Keyword.get(opts, :world, "default")
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix ingest_entity_types needs --world <id>, the world the entity types are ingested into")
 
     Mix.Task.run("app.start")
 
