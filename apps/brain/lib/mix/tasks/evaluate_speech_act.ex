@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Evaluate.SpeechAct do
   alias Brain.Analysis.SpeechActClassifier
   alias Brain.ML
   @shortdoc "Evaluate speech act classification accuracy"
-  @moduledoc "Evaluate speech act classification against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy.\n\n## Usage\n\n    mix evaluate.speech_act              # Run evaluation\n    mix evaluate.speech_act --save       # Save results\n    mix evaluate.speech_act --verbose    # Show per-class details\n\n## Gold Standard Format\n\n    [{\"text\": \"What time is it?\", \"speech_act\": \"directive\"}, ...]\n"
+  @moduledoc "Evaluate speech act classification against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy.\n\n## Usage\n\n    mix evaluate.speech_act --world <id>              # Run evaluation\n    mix evaluate.speech_act --world <id> --save       # Save results\n    mix evaluate.speech_act --world <id> --verbose    # Show per-class details\n\n`--world <id>` is required: the world whose memory the classifier's memory voter reads.\n\n## Gold Standard Format\n\n    [{\"text\": \"What time is it?\", \"speech_act\": \"directive\"}, ...]\n"
 
   use Mix.Task
 
@@ -10,10 +10,16 @@ defmodule Mix.Tasks.Evaluate.SpeechAct do
 
   @impl Mix.Task
   def run(args) do
+    {opts, _, _} = OptionParser.parse(args, strict: [save: :boolean, verbose: :boolean, world: :string])
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix evaluate.speech_act needs --world <id>, the world whose memory the classifier reads")
+
     Mix.Task.run("app.start")
 
-    save? = "--save" in args
-    verbose? = "--verbose" in args
+    save? = Keyword.get(opts, :save, false)
+    verbose? = Keyword.get(opts, :verbose, false)
 
     gold = EvaluationStore.load_gold_standard("speech_act")
 
@@ -30,7 +36,7 @@ defmodule Mix.Tasks.Evaluate.SpeechAct do
     IO.puts(String.duplicate("=", 60) <> "\n")
 
     start_time = System.monotonic_time(:millisecond)
-    {predictions, actuals} = evaluate_all(gold)
+    {predictions, actuals} = evaluate_all(gold, world_id)
     duration_ms = System.monotonic_time(:millisecond) - start_time
 
     result = Evaluation.build_result("speech_act", predictions, actuals)
@@ -64,7 +70,7 @@ defmodule Mix.Tasks.Evaluate.SpeechAct do
     IO.puts("")
   end
 
-  defp evaluate_all(gold) do
+  defp evaluate_all(gold, world_id) do
     total = length(gold)
 
     gold
@@ -77,7 +83,7 @@ defmodule Mix.Tasks.Evaluate.SpeechAct do
 
       predicted =
         try do
-          result = SpeechActClassifier.classify(text)
+          result = SpeechActClassifier.classify(text, world_id: world_id)
           to_string(result.category)
         rescue
           _ -> "unknown"
