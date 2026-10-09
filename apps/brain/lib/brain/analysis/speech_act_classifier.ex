@@ -32,7 +32,6 @@ defmodule Brain.Analysis.SpeechActClassifier do
   alias Brain.ML.{POSTagger, Tokenizer}
 
   alias Brain.Memory.Store
-  alias Brain.Memory.Embedder
   require Logger
 
   @doc """
@@ -358,19 +357,13 @@ defmodule Brain.Analysis.SpeechActClassifier do
     end
   end
 
+  # The query is embedded by the world's embedder, inside `Store.query_similar/3`.
   defp query_memory_for_classification(text, world_id) do
     store_pid = Process.whereis(Brain.Memory.Store)
-    embedder_pid = Process.whereis(Brain.Memory.Embedder)
 
     cond do
       store_pid == nil ->
         {:error, :store_not_running}
-
-      embedder_pid == nil ->
-        {:error, :embedder_not_running}
-
-      not Embedder.ready?() ->
-        {:error, :embedder_not_ready}
 
       true ->
         task = Task.async(fn -> Store.query_similar(text, 5, world_id: world_id, rerank: false) end)
