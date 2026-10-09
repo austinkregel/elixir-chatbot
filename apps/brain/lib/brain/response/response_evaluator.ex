@@ -57,14 +57,16 @@ defmodule Brain.Response.ResponseEvaluator do
 
   Returns a `%Score{}` with per-dimension scores and the overall score.
 
-  The response is itself run through the analysis pipeline. `opts` may carry
+  The response is itself run through the analysis pipeline. `opts` must carry
+  `:world_id`, the world the response is analyzed in, and may carry
   `:side_effects`, which is passed to that run; `false` keeps the analysis of
   the bot's own response from writing.
   """
-  def evaluate(primitives, response, analysis, opts \\ [])
+  def evaluate(primitives, response, analysis, opts)
 
   def evaluate(primitives, response, %ChunkAnalysis{} = analysis, opts) when is_list(primitives) do
-    response_analysis = analyze_response(response, Keyword.take(opts, [:side_effects]))
+    pipeline_opts = [world_id: Keyword.fetch!(opts, :world_id)] ++ Keyword.take(opts, [:side_effects])
+    response_analysis = analyze_response(response, pipeline_opts)
 
     speech_act = score_speech_act_alignment(response_analysis, analysis)
     confidence = score_confidence_alignment(primitives, analysis)
