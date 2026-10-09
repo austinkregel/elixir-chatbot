@@ -21,28 +21,54 @@ defmodule World.Embedder do
   has (its seeded copy, or one built earlier). While the vocabulary is rebuilt
   the world cannot embed, so `Brain.Memory.Store` stores an episode written in
   that time without an embedding; when the world's vocabulary is ready again,
-  the rebuild tells the store (`Brain.Memory.Store.vocabulary_rebuilt/1`), which
-  re-embeds and re-indexes every episode and semantic fact of the world with
-  it, those episodes included.
+  the rebuild forgets every cache of vectors embedded with the world's
+  vocabulary (`Brain.EmbeddingCaches.forget_world/1`), each built again on its
+  next use, and tells the store (`Brain.Memory.Store.vocabulary_rebuilt/1`),
+  which re-embeds and re-indexes every episode and semantic fact of the world
+  with it, those episodes included.
+
+  A caller that needs an embedding while the world's vocabulary is being
+  rebuilt waits for the rebuild to finish (`await_ready/2`). It is woken when
+  the whole rebuild has finished (the vocabulary built, the caches forgotten,
+  and the world's memory re-embedded), and raises when the rebuild fails or
+  does not finish in time. A rebuild that raises leaves the world's embedder
+  in the `:rebuild_failed` phase, which `embed/2` returns as
+  `{:error, :rebuild_failed}` and `await_ready/2` raises on, until the world is
+  rebuilt or reseeded.
+
+  A process that a rebuild calls (`Brain.Memory.Store` and the caches
+  `Brain.EmbeddingCaches` forgets) must not wait inside its own callbacks: the
+  rebuild would wait on it in turn. Such a process returns
+  `{:error, :vocabulary_building}` to its caller, which waits and calls again.
   """
 
+  alias Brain.EmbeddingCaches
   alias Brain.Memory.Store
   require Logger
 
   alias Brain.ML.{Tokenizer, WorldModelFile}
 
   @ets_table :world_embedders
+  # The callers waiting for a world's rebuild to finish: `{world_id, pid, ref}`.
+  @waiters_table :world_embedder_waiters
   @default_vocab_size 2000
   @min_word_frequency 2
   @file_name "embedder.term"
+  # How long `await_ready/1` waits for a rebuild to finish.
+  @rebuild_wait_ms 60_000
 
   @doc """
-  Ensures the ETS table exists. `World.Manager` calls it when it starts, so the
-  table lives as long as the worlds whose embedders it holds.
+  Ensures the ETS tables exist: the embedders, and the callers waiting for a
+  rebuild. `World.Manager` calls it when it starts, so the tables live as long
+  as the worlds whose embedders they hold.
   """
   def init do
     if :ets.whereis(@ets_table) == :undefined do
       :ets.new(@ets_table, [:set, :public, :named_table, read_concurrency: true])
+    end
+
+    if :ets.whereis(@waiters_table) == :undefined do
+      :ets.new(@waiters_table, [:bag, :public, :named_table])
     end
 
     :ok
@@ -107,6 +133,9 @@ defmodule World.Embedder do
       {:ok, %{phase: :no_data}} ->
         {:error, :no_training_data}
 
+      {:ok, %{phase: :rebuild_failed}} ->
+        {:error, :rebuild_failed}
+
       {:ok, _state} ->
         {:error, :vocabulary_building}
 
@@ -132,10 +161,16 @@ defmodule World.Embedder do
   `{:error, :no_data}`; one whose vocabulary was never loaded reads its seeded
   copy, raising when it has none (`loaded!/1`).
 
-  When the vocabulary is ready again, every episode and semantic fact of the
-  world, the episodes stored while it was being rebuilt included, is
-  re-embedded with it and re-indexed (`Brain.Memory.Store.vocabulary_rebuilt/1`)
-  before this returns; a failure there raises.
+  When the vocabulary is ready again, the world's embedding caches are
+  forgotten (`Brain.EmbeddingCaches.forget_world/1`), and every episode and
+  semantic fact of the world, the episodes stored while it was being rebuilt
+  included, is re-embedded with it and re-indexed
+  (`Brain.Memory.Store.vocabulary_rebuilt/1`) before this returns; a failure
+  there raises.
+
+  The callers waiting for the rebuild (`await_ready/2`) are woken when it
+  finishes. A rebuild that raises leaves the world in the `:rebuild_failed`
+  phase, wakes its waiters with the failure, and raises.
   """
   def build_vocabulary(world_id, opts \\ []) do
     force = Keyword.get(opts, :force, false)
@@ -145,8 +180,118 @@ defmodule World.Embedder do
         {:ok, :already_built}
 
       _ ->
-        do_build_vocabulary(world_id)
+        rebuild!(world_id)
     end
+  end
+
+  # A rebuild that raises, or exits (a call it makes times out), is failed:
+  # the world is left in the `:rebuild_failed` phase, its waiters are woken
+  # with the failure, and the failure goes on to the caller unchanged.
+  defp rebuild!(world_id) do
+    do_build_vocabulary(world_id)
+  catch
+    kind, reason ->
+      stacktrace = __STACKTRACE__
+
+      case get_state(world_id) do
+        {:ok, state} -> set_state(world_id, %{state | ready: false, phase: :rebuild_failed})
+        _ -> :ok
+      end
+
+      notify_waiters(world_id, {:failed, Exception.format_banner(kind, reason, stacktrace)})
+      :erlang.raise(kind, reason, stacktrace)
+  end
+
+  @doc """
+  Blocks the caller until `world_id`'s embedder can embed: at once when it can,
+  or, while its vocabulary is being rebuilt, until the rebuild has finished
+  (the vocabulary built, the world's embedding caches forgotten, and its
+  memory re-embedded). A world whose vocabulary was never loaded reads its
+  seeded copy (`loaded!/1`).
+
+  Returns `:ok`. Raises naming the world when the rebuild does not finish
+  within `timeout` milliseconds, when it fails or ends with no vocabulary, when
+  the world has no vocabulary and none is being built, and when the world has
+  no copy to read.
+
+  A process that a rebuild calls must not wait in its own callbacks (see the
+  moduledoc): it returns `{:error, :vocabulary_building}` to its caller, which
+  waits here.
+  """
+  @spec await_ready(String.t(), non_neg_integer()) :: :ok
+  def await_ready(world_id, timeout \\ @rebuild_wait_ms)
+      when is_binary(world_id) and is_integer(timeout) and timeout >= 0 do
+    ref = make_ref()
+    waiter = {world_id, self(), ref}
+
+    # Registered before the state is read, so a rebuild that finishes between
+    # the two still wakes this caller.
+    add_waiter!(waiter)
+
+    try do
+      case get_state(world_id) do
+        {:ok, %{ready: true, phase: :ready}} ->
+          :ok
+
+        {:ok, %{phase: :no_data}} ->
+          raise "World.Embedder: world #{inspect(world_id)} has no vocabulary: it had no episodes to " <>
+                  "build one from and none to keep"
+
+        {:ok, %{phase: :rebuild_failed}} ->
+          raise "World.Embedder: world #{inspect(world_id)}'s last vocabulary rebuild failed; rebuild " <>
+                  "or reseed it before embedding in it"
+
+        {:ok, %{phase: phase}} ->
+          wait_for_rebuild(world_id, ref, timeout, phase)
+
+        {:error, :not_found} ->
+          loaded!(world_id)
+          :ok
+
+        {:error, :table_not_ready} ->
+          raise table_not_ready_message(world_id)
+      end
+    after
+      :ets.delete_object(@waiters_table, waiter)
+
+      # A wake-up sent after this caller stopped waiting.
+      receive do
+        {__MODULE__, ^ref, _outcome} -> :ok
+      after
+        0 -> :ok
+      end
+    end
+  end
+
+  defp wait_for_rebuild(world_id, ref, timeout, phase) do
+    receive do
+      {__MODULE__, ^ref, :ready} ->
+        :ok
+
+      {__MODULE__, ^ref, {:failed, message}} ->
+        raise "World.Embedder: world #{inspect(world_id)}'s vocabulary rebuild failed: #{message}"
+    after
+      timeout ->
+        raise "World.Embedder: world #{inspect(world_id)}'s vocabulary rebuild did not finish within " <>
+                "#{timeout} ms (it was #{phase_label(phase)})"
+    end
+  end
+
+  defp add_waiter!(waiter) do
+    if :ets.whereis(@waiters_table) == :undefined do
+      raise table_not_ready_message(elem(waiter, 0))
+    end
+
+    :ets.insert(@waiters_table, waiter)
+  end
+
+  # Wakes every caller waiting for the world's rebuild with its outcome.
+  defp notify_waiters(world_id, outcome) do
+    for {^world_id, pid, ref} <- :ets.take(@waiters_table, world_id) do
+      send(pid, {__MODULE__, ref, outcome})
+    end
+
+    :ok
   end
 
   @doc "Computes cosine similarity between two embeddings.\n"
@@ -421,7 +566,7 @@ defmodule World.Embedder do
 
       set_state(world_id, %{
         ready: true,
-        phase: :ready,
+        phase: :reembedding,
         vocabulary: vocabulary,
         idf_weights: idf_weights,
         built_at: DateTime.utc_now(),
@@ -432,7 +577,7 @@ defmodule World.Embedder do
         "World embedder built for #{world_id}: #{vocab_size} terms from #{episode_count} episodes"
       )
 
-      reembed_world!(world_id)
+      vocabulary_ready!(world_id)
       {:ok, vocab_size}
     end
   end
@@ -442,17 +587,19 @@ defmodule World.Embedder do
   # copy (raising when it has none). Only a world that had no vocabulary at all
   # is left without one.
   defp keep_vocabulary(world_id, {:ok, %{ready: true} = previous_state}) do
-    set_state(world_id, previous_state)
+    set_state(world_id, %{previous_state | phase: :reembedding})
     Logger.info("No episodes in world #{world_id} to rebuild its embedder from; kept its vocabulary")
-    reembed_world!(world_id)
+    vocabulary_ready!(world_id)
     {:ok, :kept}
   end
 
   defp keep_vocabulary(world_id, {:error, :not_found}) do
     clear(world_id)
     loaded!(world_id)
+    {:ok, seeded_state} = get_state(world_id)
+    set_state(world_id, %{seeded_state | phase: :reembedding})
     Logger.info("No episodes in world #{world_id} to rebuild its embedder from; kept its seeded vocabulary")
-    reembed_world!(world_id)
+    vocabulary_ready!(world_id)
     {:ok, :kept}
   end
 
@@ -468,7 +615,21 @@ defmodule World.Embedder do
       episode_count: 0
     })
 
+    notify_waiters(world_id, {:failed, "it had no episodes to build a vocabulary from and none to keep"})
     {:error, :no_data}
+  end
+
+  # The world's vocabulary is ready again after a rebuild. Every cache of
+  # vectors embedded with the world's vocabulary is forgotten first, so none
+  # is compared with what the vocabulary now embeds while the episodes and
+  # semantic facts are re-embedded; then they are re-embedded. Only then is
+  # the rebuild finished, and its waiters woken.
+  defp vocabulary_ready!(world_id) do
+    :ok = EmbeddingCaches.forget_world(world_id)
+    reembed_world!(world_id)
+    {:ok, state} = get_state(world_id)
+    set_state(world_id, %{state | phase: :ready})
+    notify_waiters(world_id, :ready)
   end
 
   defp reembed_world!(world_id) do
@@ -535,8 +696,16 @@ defmodule World.Embedder do
     "Calculating IDF weights"
   end
 
+  defp phase_label(:reembedding) do
+    "Re-embedding the world's memory"
+  end
+
   defp phase_label(:ready) do
     "Ready"
+  end
+
+  defp phase_label(:rebuild_failed) do
+    "Rebuild failed"
   end
 
   defp phase_label(:no_data) do
