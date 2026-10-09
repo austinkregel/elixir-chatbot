@@ -56,7 +56,7 @@ defmodule Mix.Tasks.GenMicroData do
   use Mix.Task
   require Logger
 
-  alias Brain.Analysis.{LexicalEvidence, Pipeline, SlotDetector, SpeechActTable}
+  alias Brain.Analysis.{ActiveContexts, LexicalEvidence, Pipeline, SlotDetector, SpeechActTable}
   alias Brain.Lexicon.IntentDomains
 
   @shortdoc "Generate training data for new micro-classifiers from gold_standard.json"
@@ -277,13 +277,17 @@ defmodule Mix.Tasks.GenMicroData do
   # models trained on vectors they never saw at runtime.
   #
   # `fold_key` names the entry's out-of-fold lexical evidence model in
-  # :persistent_term; nil uses the model loaded at boot.
+  # :persistent_term; nil uses the model loaded at boot. A follow-up row is
+  # analyzed with the context it continues from active, as it would be at
+  # runtime after the turn that set it.
   defp enrich_entry({%{"text" => text} = entry, fold_key}) when is_binary(text) do
     try do
+      base_opts = [side_effects: false, active_contexts: ActiveContexts.for_row(entry)]
+
       pipeline_opts =
         case fold_key do
-          nil -> [side_effects: false]
-          key -> [side_effects: false, lexical_evidence: :persistent_term.get(key)]
+          nil -> base_opts
+          key -> Keyword.put(base_opts, :lexical_evidence, :persistent_term.get(key))
         end
 
       analysis = Pipeline.analyze_chunk(text, pipeline_opts)
