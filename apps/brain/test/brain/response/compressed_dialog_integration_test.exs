@@ -396,7 +396,7 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       primary = List.first(model.analyses)
 
       plan = DiscoursePlanner.plan(model)
-      specified = ContentSpecifier.specify(plan, primary)
+      specified = ContentSpecifier.specify(plan, primary, world_id: @world_id)
 
       assert length(specified) == length(plan),
         "Specifier must preserve primitive count (plan: #{length(plan)}, specified: #{length(specified)})"
@@ -415,7 +415,7 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       primary = List.first(model.analyses)
 
       plan = DiscoursePlanner.plan(model)
-      specified = ContentSpecifier.specify(plan, primary)
+      specified = ContentSpecifier.specify(plan, primary, world_id: @world_id)
 
       for p <- specified do
         refute Primitive.rendered?(p),
