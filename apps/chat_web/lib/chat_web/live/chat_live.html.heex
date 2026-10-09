@@ -312,11 +312,11 @@
             <div class="flex items-center gap-space-sm">
               <.icon name="hero-exclamation-triangle" class="size-4" />
               <span>
-                <span class="font-semibold">No trained models for "{@current_world_id}"</span>
+                <span class="font-semibold">World "{@current_world_id}" has no embedder</span>
                 <span class="hidden sm:inline">
-                  Using default models. Train world-specific models with:
+                  Conversations in it fail until its models are copied in:
                   <code class="px-space-xs bg-surface rounded-sm text-ref text-ink">
-                    mix train_models --world {@current_world_id}
+                    mix world.seed_model embedder --world {@current_world_id}
                   </code>
                 </span>
               </span>
