@@ -239,6 +239,22 @@ defmodule Brain.Response.TemplateStoreTest do
       result = TemplateStore.rank_by_similarity([], [0.1, 0.2, 0.3])
       assert result == []
     end
+
+    test "raises for a template embedding whose length differs from the query's" do
+      # A template embedded with a vocabulary the query was not embedded with.
+      templates = [
+        %TemplateStore.Template{
+          text: "Embedded with another vocabulary",
+          condition: nil,
+          embedding: [0.9, 0.8],
+          intent: "test"
+        }
+      ]
+
+      assert_raise ArgumentError, ~r/different lengths \(3 and 2\)/, fn ->
+        TemplateStore.rank_by_similarity(templates, [0.9, 0.8, 0.7])
+      end
+    end
   end
 
   describe "substitute_slots/2" do
