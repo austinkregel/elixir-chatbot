@@ -87,7 +87,7 @@ defmodule Brain.Services.HomeAssistant do
   - otherwise the most specific action verb (a pair before a single segment,
     rightmost first) gives `{:action, verb, services}`;
   - an intent with no verb in the map is `:unsupported`: Home Assistant does
-    not handle it, and `enrich/3` says so rather than querying state.
+    not handle it, and `enrich/4` says so rather than querying state.
   """
   def classify(intent) do
     verbs = load_action_verbs()
@@ -120,13 +120,13 @@ defmodule Brain.Services.HomeAssistant do
   end
 
   @impl true
-  def enrich(intent, slots, credentials) do
+  def enrich(intent, slots, credentials, world_id) do
     url = Map.get(credentials, :url, Map.get(credentials, "url"))
     token = Map.get(credentials, :access_token, Map.get(credentials, "access_token"))
 
-    Logger.info("HomeAssistant.enrich called: intent=#{inspect(intent)} slots=#{inspect(slots)} url=#{is_binary(url) and url != ""} token=#{is_binary(token) and token != ""}")
+    Logger.info("HomeAssistant.enrich called: intent=#{inspect(intent)} slots=#{inspect(slots)} world=#{inspect(world_id)} url=#{is_binary(url) and url != ""} token=#{is_binary(token) and token != ""}")
 
-    entity_id = EntityMapper.resolve_entity_id(slots)
+    entity_id = EntityMapper.resolve_entity_id(slots, world_id)
     classification = classify(intent)
 
     Logger.info("HomeAssistant.enrich resolved: entity_id=#{inspect(entity_id)} classification=#{inspect(classification)}")
@@ -134,10 +134,10 @@ defmodule Brain.Services.HomeAssistant do
     result =
       case classification do
         {:action, verb, ha_services} ->
-          handle_action(entity_id, ha_services, slots, url, token, intent, verb)
+          handle_action(entity_id, ha_services, slots, url, token, intent, verb, world_id)
 
         :query ->
-          handle_query(entity_id, url, token, intent)
+          handle_query(entity_id, url, token, intent, world_id)
 
         :unsupported ->
           {:error, {:unsupported_intent, intent}}
@@ -147,9 +147,9 @@ defmodule Brain.Services.HomeAssistant do
     result
   end
 
-  defp handle_action(entity_id, ha_services, slots, url, token, intent, action_suffix) do
+  defp handle_action(entity_id, ha_services, slots, url, token, intent, action_suffix, world_id) do
     ha_domain = determine_ha_domain(entity_id, intent)
-    ha_service = pick_service_with_polarity(ha_domain, ha_services, slots, action_suffix)
+    ha_service = pick_service_with_polarity(ha_domain, ha_services, slots, action_suffix, world_id)
 
     service_data =
       slots
@@ -171,9 +171,11 @@ defmodule Brain.Services.HomeAssistant do
     end
   end
 
-  defp handle_query(entity_id, url, token, intent) do
+  # Each world connects to its own instance, so a cached state is keyed by
+  # world as well as entity.
+  defp handle_query(entity_id, url, token, intent, world_id) do
     if entity_id do
-      cache_key = "state:#{entity_id}"
+      cache_key = "state:#{world_id}:#{entity_id}"
 
       state =
         case Cache.get(:home_assistant, cache_key) do
@@ -226,7 +228,7 @@ defmodule Brain.Services.HomeAssistant do
     end
   end
 
-  defp pick_service_with_polarity(ha_domain, ha_services, slots, action_suffix) do
+  defp pick_service_with_polarity(ha_domain, ha_services, slots, action_suffix, world_id) do
     polarity = infer_polarity(slots, action_suffix)
 
     preferred = case polarity do
@@ -237,10 +239,10 @@ defmodule Brain.Services.HomeAssistant do
     end
 
     service = preferred || Enum.find(ha_services, List.first(ha_services), fn service ->
-      CapabilityRegistry.can_handle?(ha_domain, service)
+      CapabilityRegistry.can_handle?(world_id, ha_domain, service)
     end)
 
-    if CapabilityRegistry.can_handle?(ha_domain, service), do: service, else: List.first(ha_services)
+    if CapabilityRegistry.can_handle?(world_id, ha_domain, service), do: service, else: List.first(ha_services)
   end
 
   defp infer_polarity(slots, action_suffix) do
