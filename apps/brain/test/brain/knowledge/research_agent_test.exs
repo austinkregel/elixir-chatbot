@@ -61,6 +61,7 @@ defmodule Brain.Knowledge.ResearchAgentTest do
 
       for finding <- findings do
         assert %Finding{} = finding
+        assert finding.world_id == @world_id
         assert is_binary(finding.id)
         assert is_binary(finding.claim)
         assert finding.source != nil
