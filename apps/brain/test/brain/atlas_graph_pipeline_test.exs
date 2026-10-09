@@ -19,6 +19,9 @@ defmodule Brain.AtlasGraphPipelineTest do
   alias Brain.Graph.{Writer, Reader}
   alias Atlas.Schemas.{Belief, LearnedFact}
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   describe "graph-seeded pipeline analysis" do
     test "seeds knowledge graph then pipeline correctly analyzes a geography question" do
       {:ok, _} =
@@ -45,7 +48,7 @@ defmodule Brain.AtlasGraphPipelineTest do
 
       {:ok, kg_before} = count_nodes("knowledge_graph")
 
-      model = Pipeline.process("What is the capital of France?")
+      model = Pipeline.process("What is the capital of France?", world_id: @world_id)
 
       assert model != nil
       assert model.raw_input == "What is the capital of France?"
@@ -77,7 +80,7 @@ defmodule Brain.AtlasGraphPipelineTest do
     end
 
     test "pipeline identifies greeting speech act" do
-      model = Pipeline.process("Hello there!")
+      model = Pipeline.process("Hello there!", world_id: @world_id)
 
       assert model != nil
       assert length(model.analyses) >= 1
@@ -89,7 +92,7 @@ defmodule Brain.AtlasGraphPipelineTest do
     end
 
     test "pipeline processes statement with user graph context" do
-      model = Pipeline.process("I really like jazz music")
+      model = Pipeline.process("I really like jazz music", world_id: @world_id)
 
       assert model != nil
       assert length(model.analyses) >= 1
@@ -104,7 +107,7 @@ defmodule Brain.AtlasGraphPipelineTest do
     end
 
     test "multi-sentence input with entity extraction and graph verification" do
-      model = Pipeline.process("I love Elixir. What runtime does it use?")
+      model = Pipeline.process("I love Elixir. What runtime does it use?", world_id: @world_id)
 
       assert model != nil
       assert length(model.chunks) >= 2
@@ -130,7 +133,7 @@ defmodule Brain.AtlasGraphPipelineTest do
     end
 
     test "directive speech act with graph-enriched domain" do
-      model = Pipeline.process("Turn off the lights in the living room")
+      model = Pipeline.process("Turn off the lights in the living room", world_id: @world_id)
 
       assert model != nil
       best = Enum.max_by(model.analyses, & &1.confidence)
@@ -153,7 +156,7 @@ defmodule Brain.AtlasGraphPipelineTest do
       # Seed data + new nodes = at least 3 triples from the new nodes
       assert length(triples) >= 3
 
-      model = Pipeline.process("What is TensorFlow used for?")
+      model = Pipeline.process("What is TensorFlow used for?", world_id: @world_id)
       assert model != nil
       best = Enum.max_by(model.analyses, & &1.confidence)
       assert best.speech_act.is_question == true
