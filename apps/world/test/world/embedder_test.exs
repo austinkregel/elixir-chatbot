@@ -233,6 +233,27 @@ defmodule World.EmbedderTest do
       assert fact_similarity > 0.0
     end
 
+    test "a fact with no evidence episodes is re-embedded from its own text and found by it" do
+      {:ok, world} = create_test_world("embedder_rebuild_textual_fact")
+
+      for text <- ["the weather in paris is sunny", "is the weather in paris sunny"] do
+        {:ok, _id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
+      end
+
+      {:ok, fact_id} = Store.add_semantic(SemanticFact.new("the weather in paris", [], [], []), world_id: world.id)
+
+      assert {:ok, vocabulary_size} = Embedder.build_vocabulary(world.id, force: true)
+
+      {:ok, stored_fact} = Store.get_semantic(fact_id, world_id: world.id)
+      assert length(stored_fact.embedding) == vocabulary_size
+      assert {:ok, stored_fact.embedding} == Embedder.embed(world.id, "the weather in paris")
+
+      assert {:ok, [{%{id: ^fact_id}, similarity}]} =
+               Store.query_semantic("the weather in paris", 1, world_id: world.id, rerank: false)
+
+      assert_in_delta similarity, 1.0, 1.0e-9
+    end
+
     test "a fact whose evidence episodes are not in the world stops the rebuild, naming it" do
       {:ok, world} = create_test_world("embedder_rebuild_missing_evidence")
 
