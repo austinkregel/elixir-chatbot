@@ -52,8 +52,7 @@ defmodule Brain.Test.Singletons do
   For a test that calls `Embedder.build_vocabulary/1`: the vocabulary is
   global, and a small one built from a handful of texts leaves every later
   text embedding as a zero vector, which reads downstream as "no similarity"
-  rather than as an error (`Corroborator.compare_claims/2` returns 0.0,
-  `ChunkSegmenter` falls back to a tie-break).
+  rather than as an error.
   """
   @spec preserve_embedder!() :: :ok
   def preserve_embedder! do
@@ -198,12 +197,26 @@ defmodule Brain.Test.Singletons do
   outcomes against `:mentor` leaves every later reader a lower confidence than
   the tier declares.
   """
-  @spec reset_epistemic_stores!([:beliefs | :jtms | :user_models | :source_authority]) :: :ok
-  def reset_epistemic_stores!(stores) when is_list(stores) do
+  @spec reset_epistemic_stores!([:beliefs | :jtms | :user_models | :source_authority], keyword()) :: :ok
+  def reset_epistemic_stores!(stores, opts \\ []) when is_list(stores) do
+    # Beliefs and JTMS networks are held per world: clearing them clears the
+    # test's world, named by `:world_id`, which they require.
+    world_id =
+      if Enum.any?(stores, &(&1 in [:beliefs, :jtms])) do
+        case Keyword.get(opts, :world_id) do
+          world_id when is_binary(world_id) and world_id != "" ->
+            world_id
+
+          other ->
+            raise ArgumentError,
+                  "reset_epistemic_stores! clears :beliefs and :jtms in a world; pass world_id:, got: #{inspect(other)}"
+        end
+      end
+
     clear = fn ->
       Enum.each(stores, fn
-        :beliefs -> if Process.whereis(BeliefStore), do: BeliefStore.clear()
-        :jtms -> if Process.whereis(JTMS), do: JTMS.clear()
+        :beliefs -> if Process.whereis(BeliefStore), do: BeliefStore.clear(world_id)
+        :jtms -> if Process.whereis(JTMS), do: JTMS.clear(world_id)
         :user_models -> if Process.whereis(UserModelStore), do: UserModelStore.clear_all()
         :source_authority -> if Process.whereis(SourceAuthority), do: SourceAuthority.clear()
       end)
