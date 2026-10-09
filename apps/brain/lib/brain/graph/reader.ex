@@ -9,11 +9,21 @@ defmodule Brain.Graph.Reader do
 
   ## Graphs Read From
 
+  Each world has its own graph of these kinds (`Atlas.Graph.world_graph/2`).
+  Every function reading one takes the world as the `:world_id` option and
+  reads only that world's graph. The world is checked before any fallback
+  applies, so a missing or malformed world raises instead of reading as an
+  empty result:
+
   - `knowledge_graph` -- entity neighborhoods, relationship paths
   - `user_graph` -- user preferences
   - `semantic_graph` -- evidence chains
   - `conversation_graph` -- conversation topics, topic transitions
   - `epistemic_graph` -- belief justification chains
+
+  The expression-level graph is shared by every world, so its readers take
+  no world:
+
   - `pos_graph` -- POS tag patterns and transitions
   """
 
@@ -30,22 +40,23 @@ defmodule Brain.Graph.Reader do
   # ============================================================================
 
   @doc """
-  Look up each entity in knowledge_graph and return its neighborhood.
+  Look up each entity in the world's knowledge_graph and return its
+  neighborhood.
 
   Returns a list of maps, one per entity:
     `%{entity: entity, neighbors: [%Vertex{}], node: %Vertex{} | nil}`
 
   ## Options
-    - `:world_id` (required) - the world whose lookups are cached
+    - `:world_id` (required) - the world whose graph is read and whose lookups are cached
     - `:depth` - neighborhood depth (default: 2)
   """
   def entity_context(entities, opts) when is_list(entities) do
-    world_id = world_id!(opts, "entity_context")
+    {world_id, graph} = world_graph!(opts, "knowledge_graph", "entity_context")
     depth = Keyword.get(opts, :depth, 2)
-    lookup_entity_contexts(entities, world_id, depth)
+    lookup_entity_contexts(entities, world_id, graph, depth)
   end
 
-  defp lookup_entity_contexts(entities, world_id, depth) do
+  defp lookup_entity_contexts(entities, world_id, graph, depth) do
     Enum.map(entities, fn entity ->
       entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type") || "Entity"
       value = Map.get(entity, :value) || Map.get(entity, "value") || Map.get(entity, :text, "")
@@ -57,12 +68,12 @@ defmodule Brain.Graph.Reader do
           %{entity: entity, neighbors: neighbors, node: node}
 
         :miss ->
-          case fetch_entity_context(label, value, depth) do
+          case fetch_entity_context(graph, label, value, depth) do
             {node, neighbors} when not is_nil(node) ->
               ContextCache.put(world_id, "knowledge_graph", label, value, {node, neighbors})
               %{entity: entity, neighbors: neighbors, node: node}
 
-            # A miss is not cached. `fetch_entity_context/3` cannot tell "no
+            # A miss is not cached. `fetch_entity_context/4` cannot tell "no
             # such entity" from a lookup that failed -- an unavailable graph,
             # a connection error -- so caching it records a failure as a fact,
             # for every later reader, until the process that cached it
@@ -78,23 +89,24 @@ defmodule Brain.Graph.Reader do
   end
 
   @doc """
-  Look up a single entity name across multiple candidate labels in one batch.
+  Look up a single entity name across multiple candidate labels in one batch,
+  in the world's knowledge_graph.
 
   Issues a single Cypher query that matches any of the provided labels,
   then fetches the neighborhood once for the first match. Returns a map
   keyed by normalized label: `%{label => %{node: vertex, neighbors: [vertex]}}`.
 
   ## Options
-    - `:world_id` (required) - the world whose lookups are cached
+    - `:world_id` (required) - the world whose graph is read and whose lookups are cached
     - `:depth` - neighborhood depth (default: 2)
   """
   def entity_context_multi_label(name, labels, opts) when is_binary(name) and is_list(labels) do
-    world_id = world_id!(opts, "entity_context_multi_label")
+    {world_id, graph} = world_graph!(opts, "knowledge_graph", "entity_context_multi_label")
     depth = Keyword.get(opts, :depth, 2)
-    lookup_multi_label(name, labels, world_id, depth)
+    lookup_multi_label(name, labels, world_id, graph, depth)
   end
 
-  defp lookup_multi_label(name, labels, world_id, depth) do
+  defp lookup_multi_label(name, labels, world_id, graph, depth) do
     escaped = String.replace(to_string(name), "'", "\\'")
     normalized_labels = Enum.map(labels, &normalize_label/1)
 
@@ -106,7 +118,7 @@ defmodule Brain.Graph.Reader do
     query = "MATCH (n) WHERE (#{label_or}) AND n.name = '#{escaped}' RETURN n"
 
     nodes =
-      case Graph.cypher("knowledge_graph", query) do
+      case Graph.cypher(graph, query) do
         {:ok, rows} when is_list(rows) ->
           rows
           |> Enum.flat_map(fn
@@ -123,7 +135,7 @@ defmodule Brain.Graph.Reader do
         %{}
 
       [node | _] ->
-        neighbors = get_neighbors("knowledge_graph", node.id, depth)
+        neighbors = get_neighbors(graph, node.id, depth)
         ContextCache.put(world_id, "knowledge_graph", hd(normalized_labels), name, {node, neighbors})
 
         Map.new(normalized_labels, fn label ->
@@ -134,25 +146,25 @@ defmodule Brain.Graph.Reader do
     _ -> %{}
   end
 
-  # Entity lookups are cached per world, so the caller names the world; there
-  # is no default.
-  defp world_id!(opts, function) do
+  # Every world-scoped read names its world; there is no default. Returns the
+  # world and its graph of the kind, raising for a missing or malformed world.
+  defp world_graph!(opts, kind, function) do
     case Keyword.fetch(opts, :world_id) do
       {:ok, world_id} when is_binary(world_id) and world_id != "" ->
-        world_id
+        {world_id, Graph.world_graph(kind, world_id)}
 
       {:ok, other} ->
         raise ArgumentError, "Reader.#{function} option :world_id must be a world id, got: #{inspect(other)}"
 
       :error ->
-        raise ArgumentError, "Reader.#{function} needs :world_id, the world whose lookups are cached"
+        raise ArgumentError, "Reader.#{function} needs :world_id, the world whose graph is read"
     end
   end
 
-  defp fetch_entity_context(label, value, depth) do
-    case AtlasIntegration.find_node("knowledge_graph", label, value) do
+  defp fetch_entity_context(graph, label, value, depth) do
+    case AtlasIntegration.find_node(graph, label, value) do
       {:ok, node} ->
-        neighbors = get_neighbors("knowledge_graph", node.id, depth)
+        neighbors = get_neighbors(graph, node.id, depth)
         {node, neighbors}
 
       :not_found ->
@@ -173,22 +185,31 @@ defmodule Brain.Graph.Reader do
   end
 
   @doc """
-  Find a relationship path between two entities in knowledge_graph.
+  Find a relationship path between two entities in the world's
+  knowledge_graph.
 
   Uses a simple 1-3 hop search since Apache AGE doesn't support
   the Cypher `shortestPath()` function.
 
   Returns `{:ok, path_nodes}` or `{:error, :not_found}`.
+
+  ## Options
+    - `:world_id` (required) - the world whose graph is read
   """
-  def relationship_path(entity_a, entity_b) do
+  def relationship_path(entity_a, entity_b, opts) do
+    {_world_id, graph} = world_graph!(opts, "knowledge_graph", "relationship_path")
+    find_relationship_path(graph, entity_a, entity_b)
+  end
+
+  defp find_relationship_path(graph, entity_a, entity_b) do
     name_a = Map.get(entity_a, :value) || Map.get(entity_a, "value", "")
     name_b = Map.get(entity_b, :value) || Map.get(entity_b, "value", "")
     label_a = normalize_label(Map.get(entity_a, :entity_type, "Entity"))
     label_b = normalize_label(Map.get(entity_b, :entity_type, "Entity"))
 
-    with {:ok, node_a} <- AtlasIntegration.find_node("knowledge_graph", label_a, name_a),
-         {:ok, node_b} <- AtlasIntegration.find_node("knowledge_graph", label_b, name_b) do
-      find_path("knowledge_graph", node_a, node_b)
+    with {:ok, node_a} <- AtlasIntegration.find_node(graph, label_a, name_a),
+         {:ok, node_b} <- AtlasIntegration.find_node(graph, label_b, name_b) do
+      find_path(graph, node_a, node_b)
     else
       :not_found ->
         {:error, :not_found}
@@ -229,15 +250,16 @@ defmodule Brain.Graph.Reader do
   end
 
   @doc """
-  Expand a query with graph-derived related concept names.
+  Expand a query with related concept names from the world's
+  knowledge_graph.
 
   Returns `{query_text, [related_name]}`.
 
   ## Options
-    - `:world_id` (required) - the world whose entity lookups are cached
+    - `:world_id` (required) - the world whose graph is read and whose entity lookups are cached
   """
   def expand_query(query_text, entities, opts) when is_list(entities) do
-    world_id = world_id!(opts, "expand_query")
+    {world_id, _graph} = world_graph!(opts, "knowledge_graph", "expand_query")
     expand_query_in_world(query_text, entities, world_id)
   end
 
@@ -279,11 +301,19 @@ defmodule Brain.Graph.Reader do
   # ============================================================================
 
   @doc """
-  Get all preference edges for a user from user_graph.
+  Get all preference edges for a user from the world's user_graph.
 
   Returns a list of `%{topic: name, rel_type: type, properties: map}`.
+
+  ## Options
+    - `:world_id` (required) - the world whose graph is read
   """
-  def user_preferences(user_id) do
+  def user_preferences(user_id, opts) do
+    {_world_id, graph} = world_graph!(opts, "user_graph", "user_preferences")
+    read_user_preferences(graph, user_id)
+  end
+
+  defp read_user_preferences(graph, user_id) do
     escaped = String.replace(to_string(user_id), "'", "\\'")
     # AGE doesn't support type(r) or properties(r) as Cypher functions.
     # Query specific relationship types individually.
@@ -297,7 +327,7 @@ defmodule Brain.Graph.Reader do
       RETURN t, r
       """
 
-      case Graph.cypher("user_graph", query) do
+      case Graph.cypher(graph, query) do
         {:ok, rows} when is_list(rows) ->
           Enum.map(rows, fn
             [%Vertex{properties: props}, %Atlas.Graph.Types.Edge{properties: r_props}] ->
@@ -325,11 +355,20 @@ defmodule Brain.Graph.Reader do
   # ============================================================================
 
   @doc """
-  Get the episode evidence chain for a semantic fact.
+  Get the episode evidence chain for a semantic fact in the world's
+  semantic_graph.
 
   Returns a list of episode vertex maps.
+
+  ## Options
+    - `:world_id` (required) - the world whose graph is read
   """
-  def evidence_chain(semantic_fact_name) do
+  def evidence_chain(semantic_fact_name, opts) do
+    {_world_id, graph} = world_graph!(opts, "semantic_graph", "evidence_chain")
+    read_evidence_chain(graph, semantic_fact_name)
+  end
+
+  defp read_evidence_chain(graph, semantic_fact_name) do
     escaped = String.replace(to_string(semantic_fact_name), "'", "\\'")
     query = """
     MATCH (e:Episode)-[:#{EdgeLabels.evidence_for()}]->(sf:SemanticFact)
@@ -337,7 +376,7 @@ defmodule Brain.Graph.Reader do
     RETURN e
     """
 
-    case Graph.cypher("semantic_graph", query) do
+    case Graph.cypher(graph, query) do
       {:ok, rows} ->
         Enum.map(rows, fn [%Vertex{} = v] -> v; _ -> nil end)
         |> Enum.reject(&is_nil/1)
@@ -353,8 +392,19 @@ defmodule Brain.Graph.Reader do
   # conversation_graph: Conversations + Topics
   # ============================================================================
 
-  @doc "Get all topics discussed in a conversation."
-  def conversation_topics(conversation_id) do
+  @doc """
+  Get all topics discussed in a conversation, from the world's
+  conversation_graph.
+
+  ## Options
+    - `:world_id` (required) - the world whose graph is read
+  """
+  def conversation_topics(conversation_id, opts) do
+    {_world_id, graph} = world_graph!(opts, "conversation_graph", "conversation_topics")
+    read_conversation_topics(graph, conversation_id)
+  end
+
+  defp read_conversation_topics(graph, conversation_id) do
     escaped = String.replace(to_string(conversation_id), "'", "\\'")
     query = """
     MATCH (c:Conversation)-[:#{EdgeLabels.contains()}]->(m:Message)-[:#{EdgeLabels.has_topic()}]->(t:Topic)
@@ -362,7 +412,7 @@ defmodule Brain.Graph.Reader do
     RETURN DISTINCT t
     """
 
-    case Graph.cypher("conversation_graph", query) do
+    case Graph.cypher(graph, query) do
       {:ok, rows} ->
         Enum.map(rows, fn [%Vertex{properties: props}] -> Map.get(props, "name", "") end)
         |> Enum.reject(&(&1 == ""))
@@ -374,14 +424,26 @@ defmodule Brain.Graph.Reader do
     _ -> []
   end
 
-  @doc "Get the most common topic-to-topic transitions."
-  def topic_transitions(limit \\ 20) do
+  @doc """
+  Get the most common topic-to-topic transitions in the world's
+  conversation_graph.
+
+  ## Options
+    - `:world_id` (required) - the world whose graph is read
+    - `:limit` - how many transitions (default: 20)
+  """
+  def topic_transitions(opts) do
+    {_world_id, graph} = world_graph!(opts, "conversation_graph", "topic_transitions")
+    read_topic_transitions(graph, Keyword.get(opts, :limit, 20))
+  end
+
+  defp read_topic_transitions(graph, limit) do
     query = """
     MATCH (a:Topic)-[r:#{EdgeLabels.topic_transition()}]->(b:Topic)
     RETURN a, b, r
     """
 
-    case Graph.cypher("conversation_graph", query) do
+    case Graph.cypher(graph, query) do
       {:ok, rows} ->
         rows
         |> Enum.map(fn
@@ -406,8 +468,20 @@ defmodule Brain.Graph.Reader do
     _ -> []
   end
 
-  @doc "Get the last N messages in a conversation with their topics."
-  def recent_context(conversation_id, n \\ 5) do
+  @doc """
+  Get the last N messages in a conversation with their topics, from the
+  world's conversation_graph.
+
+  ## Options
+    - `:world_id` (required) - the world whose graph is read
+    - `:n` - how many messages (default: 5)
+  """
+  def recent_context(conversation_id, opts) do
+    {_world_id, graph} = world_graph!(opts, "conversation_graph", "recent_context")
+    read_recent_context(graph, conversation_id, Keyword.get(opts, :n, 5))
+  end
+
+  defp read_recent_context(graph, conversation_id, n) do
     escaped = String.replace(to_string(conversation_id), "'", "\\'")
     query = """
     MATCH (c:Conversation)-[:#{EdgeLabels.contains()}]->(m:Message)
@@ -418,7 +492,7 @@ defmodule Brain.Graph.Reader do
     LIMIT #{n}
     """
 
-    case Graph.cypher("conversation_graph", query) do
+    case Graph.cypher(graph, query) do
       {:ok, rows} ->
         Enum.map(rows, fn
           [%Vertex{} = msg, %Vertex{properties: tp}] ->
@@ -445,11 +519,20 @@ defmodule Brain.Graph.Reader do
   # ============================================================================
 
   @doc """
-  Get the full justification chain for a JTMS node.
+  Get the full justification chain for a JTMS node in the world's
+  epistemic_graph.
 
   Returns the node, its supporting justifications, and their required nodes.
+
+  ## Options
+    - `:world_id` (required) - the world whose graph is read
   """
-  def belief_justification_chain(node_name) do
+  def belief_justification_chain(node_name, opts) do
+    {_world_id, graph} = world_graph!(opts, "epistemic_graph", "belief_justification_chain")
+    read_belief_justification_chain(graph, node_name)
+  end
+
+  defp read_belief_justification_chain(graph, node_name) do
     escaped = String.replace(to_string(node_name), "'", "\\'")
     query = """
     MATCH (j:Justification)-[:#{EdgeLabels.supports()}]->(n:JTMSNode)
@@ -458,7 +541,7 @@ defmodule Brain.Graph.Reader do
     RETURN n, j, collect(req)
     """
 
-    case Graph.cypher("epistemic_graph", query) do
+    case Graph.cypher(graph, query) do
       {:ok, rows} ->
         Enum.map(rows, fn
           [%Vertex{} = node, %Vertex{} = just, requirements] ->
@@ -478,11 +561,20 @@ defmodule Brain.Graph.Reader do
   end
 
   @doc """
-  Get what would break if an assumption was retracted.
+  Get what would break if an assumption was retracted, from the world's
+  epistemic_graph.
 
   Returns nodes that depend on this assumption through justification chains.
+
+  ## Options
+    - `:world_id` (required) - the world whose graph is read
   """
-  def assumption_consequences(node_name) do
+  def assumption_consequences(node_name, opts) do
+    {_world_id, graph} = world_graph!(opts, "epistemic_graph", "assumption_consequences")
+    read_assumption_consequences(graph, node_name)
+  end
+
+  defp read_assumption_consequences(graph, node_name) do
     escaped = String.replace(to_string(node_name), "'", "\\'")
     query = """
     MATCH (j:Justification)-[:#{EdgeLabels.requires_in()}]->(a:JTMSNode)
@@ -491,7 +583,7 @@ defmodule Brain.Graph.Reader do
     RETURN DISTINCT derived
     """
 
-    case Graph.cypher("epistemic_graph", query) do
+    case Graph.cypher(graph, query) do
       {:ok, rows} ->
         Enum.map(rows, fn [%Vertex{} = v] -> v; _ -> nil end)
         |> Enum.reject(&is_nil/1)
@@ -507,7 +599,7 @@ defmodule Brain.Graph.Reader do
   # pos_graph: POS Patterns
   # ============================================================================
 
-  @doc "Get what POS tags commonly follow a given tag, with frequencies."
+  @doc "Get what POS tags commonly follow a given tag, with frequencies, from the shared pos_graph."
   def tag_transitions(from_tag) do
     escaped = String.replace(to_string(from_tag), "'", "\\'")
     query = """
@@ -536,7 +628,7 @@ defmodule Brain.Graph.Reader do
     _ -> []
   end
 
-  @doc "Find tokens that have multiple POS tags (ambiguous words)."
+  @doc "Find tokens that have multiple POS tags (ambiguous words), in the shared pos_graph."
   def ambiguous_tokens(min_tag_count \\ 2) do
     query = """
     MATCH (t:Token)-[r:#{EdgeLabels.has_tag()}]->(tag:POSTag)
@@ -568,7 +660,7 @@ defmodule Brain.Graph.Reader do
     _ -> []
   end
 
-  @doc "Find matching POS tag patterns."
+  @doc "Find matching POS tag patterns in the shared pos_graph."
   def pos_patterns(tag_sequence) when is_list(tag_sequence) do
     pattern_name = Enum.join(tag_sequence, "_")
     escaped = String.replace(pattern_name, "'", "\\'")
