@@ -99,7 +99,7 @@ MIX_ENV=prod mix augment_training_data 2>&1 && ok "Training data augmented" || w
 # --- Training ---
 if [ "$SKIP_TRAINING" = false ]; then
   step "Train all models"
-  MIX_ENV=prod mix train $TRAIN_FLAGS
+  MIX_ENV=prod mix train --world default $TRAIN_FLAGS
   train_exit=$?
   if [ "$train_exit" -eq 0 ]; then
     ok "Training complete"
@@ -117,7 +117,7 @@ if [ "$SKIP_EVAL" = false ]; then
 
   echo ""
   echo "  Intent..."
-  MIX_ENV=prod mix evaluate.intent --save 2>&1 && ok "Intent evaluation saved" || fail "Intent evaluation failed"
+  MIX_ENV=prod mix evaluate.intent --world default --save 2>&1 && ok "Intent evaluation saved" || fail "Intent evaluation failed"
 
   echo ""
   echo "  Sentiment..."
@@ -129,7 +129,7 @@ if [ "$SKIP_EVAL" = false ]; then
 
   echo ""
   echo "  NER..."
-  MIX_ENV=prod mix evaluate.ner --save 2>&1 && ok "NER evaluation saved" || fail "NER evaluation failed"
+  MIX_ENV=prod mix evaluate.ner --world default --save 2>&1 && ok "NER evaluation saved" || fail "NER evaluation failed"
 else
   step "Evaluation (skipped)"
   warn "Skipped via --skip-eval"
