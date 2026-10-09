@@ -89,8 +89,19 @@ defmodule Atlas.ImporterTest do
   describe "semantic_facts import" do
     test "imports semantic facts from .term fixture" do
       assert {:ok, summary} = Importer.import_all(only: ["semantic_facts"])
-      assert {:ok, 1} = summary["semantic_facts"]
-      assert Repo.aggregate(SemanticFact, :count) == 1
+      assert {:ok, 2} = summary["semantic_facts"]
+      assert Repo.aggregate(SemanticFact, :count) == 2
+    end
+
+    test "splits a consolidated fact into its action and its examples; a plain fact keeps its text" do
+      assert {:ok, _summary} = Importer.import_all(only: ["semantic_facts"])
+
+      facts = SemanticFact |> Repo.all() |> Map.new(&{&1.content, &1.action})
+
+      assert facts == %{
+               "Weather queries are common in the afternoon" => nil,
+               "is it raining | will it rain today" => "weather.query"
+             }
     end
   end
 
@@ -345,9 +356,19 @@ defmodule Atlas.ImporterTest do
       tags: ["patterns"]
     }
 
+    # Consolidated in the single string consolidation once wrote.
+    consolidated = %{
+      id: "sem2",
+      timestamp: 1_000_002,
+      representation: "Action: weather.query | Examples: is it raining | will it rain today",
+      embedding: [0.5, 0.6],
+      evidence_ids: ["ep1"],
+      tags: ["weather"]
+    }
+
     memory_data = %{
       episodes: %{"default" => %{"ep1" => episode}},
-      semantics: %{"default" => %{"sem1" => semantic}}
+      semantics: %{"default" => %{"sem1" => semantic, "sem2" => consolidated}}
     }
 
     write_term(data_dir, "memory_store.term", memory_data)
