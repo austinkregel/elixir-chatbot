@@ -79,14 +79,21 @@ defmodule Brain.AtlasIntegration do
     :ok
   end
 
-  @doc "Wait for all in-flight Atlas async tasks to complete."
+  @doc """
+  Waits for all in-flight Atlas async tasks to complete.
+
+  Returns `:ok` once none is left, or `{:error, {:drain_timeout, pending}}`
+  when `pending` tasks are still running after `timeout` ms: their writes
+  have not landed, and the caller must not act as if they had.
+  """
+  @spec drain(non_neg_integer()) :: :ok | {:error, {:drain_timeout, pos_integer()}}
   def drain(timeout \\ 5_000) do
     if Process.whereis(Brain.AtlasTaskSupervisor) do
       deadline = System.monotonic_time(:millisecond) + timeout
       do_drain(deadline)
+    else
+      :ok
     end
-
-    :ok
   end
 
   defp do_drain(deadline) do
@@ -94,12 +101,12 @@ defmodule Brain.AtlasIntegration do
       [] ->
         :ok
 
-      _children ->
+      children ->
         if System.monotonic_time(:millisecond) < deadline do
           Process.sleep(10)
           do_drain(deadline)
         else
-          :ok
+          {:error, {:drain_timeout, length(children)}}
         end
     end
   end
@@ -672,7 +679,7 @@ defmodule Brain.AtlasIntegration do
             source: source,
             raw_context: Map.get(row.finding || %{}, "raw_context", ""),
             confidence: Map.get(row.finding || %{}, "confidence", 0.5),
-            world_id: Map.get(row.finding || %{}, "world_id")
+            world_id: row.world_id
           }
 
           candidate = %Brain.Knowledge.Types.ReviewCandidate{
@@ -693,7 +700,7 @@ defmodule Brain.AtlasIntegration do
 
   @doc """
   Returns every entity a human reviewer approved, as `{entity, entity_type,
-  world_id}` with `world_id` nil for the world at large.
+  world_id}`, `world_id` being the world the candidate belongs to.
 
   Only `approved` candidates count: `auto_approved` ones were never seen by a
   human, and pending, deferred or rejected ones were not approved. A
@@ -701,7 +708,7 @@ defmodule Brain.AtlasIntegration do
   out. The gazetteer reads this at boot, so what a reviewer approved survives
   a restart.
   """
-  @spec load_reviewed_entities() :: {:ok, [{String.t(), String.t(), String.t() | nil}]} | {:error, term()}
+  @spec load_reviewed_entities() :: {:ok, [{String.t(), String.t(), String.t()}]} | {:error, term()}
   def load_reviewed_entities do
     import Ecto.Query, only: [from: 2]
 
@@ -713,7 +720,7 @@ defmodule Brain.AtlasIntegration do
         rows
         |> Enum.map(fn row ->
           finding = row.finding || %{}
-          {finding["entity"], finding["entity_type"], finding["world_id"]}
+          {finding["entity"], finding["entity_type"], row.world_id}
         end)
         |> Enum.filter(fn {entity, type, _world} ->
           is_binary(entity) and entity != "" and is_binary(type) and type != ""
@@ -723,16 +730,20 @@ defmodule Brain.AtlasIntegration do
     end
   end
 
-  @doc "Persist a review candidate to Atlas."
+  @doc """
+  Persist a review candidate to Atlas, in its finding's world (the row's
+  `world_id`). A candidate whose finding names no world raises in the caller.
+  """
   def persist_review_candidate(%Brain.Knowledge.Types.ReviewCandidate{} = candidate) do
+    world_id = Brain.Knowledge.Types.ReviewCandidate.world_id!(candidate)
+
     async(fn ->
       finding_map = %{
         "claim" => candidate.finding.claim,
         "entity" => candidate.finding.entity,
         "entity_type" => candidate.finding.entity_type,
         "raw_context" => candidate.finding.raw_context,
-        "confidence" => candidate.finding.confidence,
-        "world_id" => candidate.finding.world_id
+        "confidence" => candidate.finding.confidence
       }
 
       corroborating =
@@ -742,6 +753,7 @@ defmodule Brain.AtlasIntegration do
 
       attrs = %{
         id: candidate.id,
+        world_id: world_id,
         status: to_string(candidate.status),
         finding: finding_map,
         aggregate_confidence: candidate.aggregate_confidence,
@@ -914,7 +926,15 @@ defmodule Brain.AtlasIntegration do
   # UserModel Integration
   # ============================================================================
 
-  @doc "Load user models from Atlas."
+  # A user model belongs to a web user (`atlas_user_models.user_id` references
+  # `web_users.id`) and has no world: the same model is used in every world.
+
+  @doc """
+  Load every user model from Atlas, keyed by the web user's id.
+
+  Returns `{:ok, models}` or `{:error, reason}` when the table could not be
+  read.
+  """
   def load_user_models do
     with {:ok, rows} <- sync(fn -> Atlas.Repo.all(Atlas.Schemas.UserModel) end) do
       models =
@@ -925,7 +945,9 @@ defmodule Brain.AtlasIntegration do
             facts: atomize_keys(row.facts || %{}),
             interaction_patterns: row.interaction_patterns || %{},
             epistemic_bounds: atomize_keys(row.epistemic_bounds || %{}),
-            provenance_map: atomize_keys(row.provenance_map || %{}),
+            # Provenance is an atom (:explicit, :inferred, ...) on the way in;
+            # JSON stores it as a string, so it is read back as the atom.
+            provenance_map: Map.new(row.provenance_map || %{}, fn {k, v} -> {safe_to_atom(k), safe_to_atom(v)} end),
             disclosure_history: row.disclosure_history || [],
             created_at: row.inserted_at,
             updated_at: row.updated_at
@@ -939,25 +961,38 @@ defmodule Brain.AtlasIntegration do
     end
   end
 
-  @doc "Persist a user model to Atlas."
-  def persist_user_model(%Brain.Epistemic.Types.UserModel{} = model) do
-    async(fn ->
-      attrs = %{
-        user_id: model.user_id,
-        facts: stringify_keys(model.facts || %{}),
-        interaction_patterns: model.interaction_patterns || %{},
-        epistemic_bounds: stringify_keys(model.epistemic_bounds || %{}),
-        provenance_map: stringify_keys(model.provenance_map || %{}),
-        disclosure_history: model.disclosure_history || []
-      }
+  @doc """
+  Write a user model to Atlas, synchronously, inserting or replacing the web
+  user's row.
 
+  Returns `{:ok, row}`, or `{:error, reason}` when it was not written: an
+  invalid changeset (a user id that is not a web user's, for one) or Atlas
+  being unreachable.
+  """
+  def persist_user_model(%Brain.Epistemic.Types.UserModel{} = model) do
+    attrs = %{
+      user_id: model.user_id,
+      facts: stringify_keys(model.facts || %{}),
+      interaction_patterns: model.interaction_patterns || %{},
+      epistemic_bounds: stringify_keys(model.epistemic_bounds || %{}),
+      provenance_map: stringify_keys(model.provenance_map || %{}),
+      disclosure_history: model.disclosure_history || []
+    }
+
+    write = fn ->
       %Atlas.Schemas.UserModel{}
       |> Atlas.Schemas.UserModel.changeset(attrs)
       |> Atlas.Repo.insert(
         on_conflict: {:replace, [:facts, :interaction_patterns, :epistemic_bounds, :provenance_map, :disclosure_history, :updated_at]},
         conflict_target: :user_id
       )
-    end)
+    end
+
+    case sync(write) do
+      {:ok, {:ok, row}} -> {:ok, row}
+      {:ok, {:error, changeset}} -> {:error, changeset}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   # ============================================================================
