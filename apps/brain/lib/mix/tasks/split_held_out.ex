@@ -7,10 +7,13 @@ defmodule Mix.Tasks.Split.HeldOut do
   @default_size 1000
   @default_seed 42
 
+  # The stratum each row is split within. NER rows are stratified by the set of
+  # entity types they contain, so every combination is represented in training.
   @label_keys %{
     "sentiment" => "sentiment",
     "speech_act" => "speech_act",
-    "intent" => "intent"
+    "intent" => "intent",
+    "ner" => :entity_types
   }
 
   @impl Mix.Task
@@ -66,7 +69,7 @@ defmodule Mix.Tasks.Split.HeldOut do
       )
     end
 
-    grouped = Enum.group_by(examples, &Map.fetch!(&1, label_key))
+    grouped = Enum.group_by(examples, &stratum(&1, label_key))
 
     :rand.seed(:exsss, {seed, seed, seed})
 
@@ -89,13 +92,26 @@ defmodule Mix.Tasks.Split.HeldOut do
     report(examples, held_out, remaining, label_key, gold_path, held_path)
   end
 
+  defp stratum(row, :entity_types) do
+    case row |> Map.fetch!("expected") |> Enum.map(&Map.fetch!(&1, "type")) |> Enum.uniq() |> Enum.sort() do
+      [] -> "(no entities)"
+      types -> Enum.join(types, "+")
+    end
+  end
+
+  defp stratum(row, key) when is_binary(key), do: Map.fetch!(row, key)
+
+  # Each stratum gives the held-out set its proportional share, but always keeps
+  # at least one row for training: a label whose every example is held out
+  # cannot be learned, and its held-out rows would measure nothing but that. A
+  # stratum of one row is therefore never held out.
   defp stratified_split(grouped, target_size, total) do
     allocations =
       grouped
       |> Enum.map(fn {label, items} ->
         proportion = length(items) / total
         count = round(proportion * target_size)
-        {label, max(count, 1)}
+        {label, count |> max(1) |> min(length(items) - 1)}
       end)
 
     allocated_total = Enum.reduce(allocations, 0, fn {_, c}, acc -> acc + c end)
@@ -107,6 +123,15 @@ defmodule Mix.Tasks.Split.HeldOut do
       else
         allocations
       end
+
+    held_total = Enum.reduce(allocations, 0, fn {_, c}, acc -> acc + c end)
+
+    if held_total != target_size do
+      Mix.raise(
+        "split.held_out: could hold out only #{held_total} of the requested #{target_size} rows " <>
+          "while keeping a training row in every stratum"
+      )
+    end
 
     {held, rest} =
       Enum.reduce(allocations, {[], []}, fn {label, count}, {held_acc, rest_acc} ->
@@ -125,7 +150,7 @@ defmodule Mix.Tasks.Split.HeldOut do
         -(length(Map.fetch!(grouped, label)) - count)
       end)
 
-    do_adjust(sorted, diff)
+    do_adjust(sorted, diff, grouped)
   end
 
   defp adjust_allocations(allocations, diff, grouped) when diff < 0 do
@@ -134,27 +159,33 @@ defmodule Mix.Tasks.Split.HeldOut do
         length(Map.fetch!(grouped, label))
       end)
 
-    do_adjust(sorted, diff)
+    do_adjust(sorted, diff, grouped)
   end
 
-  defp do_adjust(allocations, 0), do: allocations
+  defp do_adjust(allocations, 0, _grouped), do: allocations
+  defp do_adjust([], _diff, _grouped), do: []
 
-  defp do_adjust([{label, count} | rest], diff) when diff > 0 do
-    [{label, count + 1} | do_adjust(rest, diff - 1)]
+  # Adds a row only where the stratum keeps at least one for training.
+  defp do_adjust([{label, count} | rest], diff, grouped) when diff > 0 do
+    if count + 1 < length(Map.fetch!(grouped, label)) do
+      [{label, count + 1} | do_adjust(rest, diff - 1, grouped)]
+    else
+      [{label, count} | do_adjust(rest, diff, grouped)]
+    end
   end
 
-  defp do_adjust([{label, count} | rest], diff) when diff < 0 and count > 1 do
-    [{label, count - 1} | do_adjust(rest, diff + 1)]
+  defp do_adjust([{label, count} | rest], diff, grouped) when diff < 0 and count > 1 do
+    [{label, count - 1} | do_adjust(rest, diff + 1, grouped)]
   end
 
-  defp do_adjust([head | rest], diff), do: [head | do_adjust(rest, diff)]
+  defp do_adjust([head | rest], diff, grouped), do: [head | do_adjust(rest, diff, grouped)]
 
   defp report(original, held_out, remaining, label_key, gold_path, held_path) do
     IO.puts("\n=== Held-Out Split Report ===\n")
 
-    orig_dist = Enum.frequencies_by(original, &Map.fetch!(&1, label_key))
-    held_dist = Enum.frequencies_by(held_out, &Map.fetch!(&1, label_key))
-    remain_dist = Enum.frequencies_by(remaining, &Map.fetch!(&1, label_key))
+    orig_dist = Enum.frequencies_by(original, &stratum(&1, label_key))
+    held_dist = Enum.frequencies_by(held_out, &stratum(&1, label_key))
+    remain_dist = Enum.frequencies_by(remaining, &stratum(&1, label_key))
 
     IO.puts("Original: #{length(original)} examples")
     print_distribution(orig_dist)
