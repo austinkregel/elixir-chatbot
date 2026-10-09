@@ -18,6 +18,10 @@ defmodule Mix.Tasks.World.SeedModel do
 
   - `entity_model` — `Brain.ML.EntityModel`, from `Brain.ML.EntityModel.trained_path/0`.
   - `embedder` — `World.Embedder`, from `World.Embedder.trained_path/0`.
+  - `poincare_embeddings` — `Brain.ML.Poincare.Embeddings`, from
+    `Brain.ML.Poincare.Embeddings.trained_path/0`.
+  - `triple_scorer` — `Brain.ML.KnowledgeGraph.TripleScorer`, from
+    `Brain.ML.KnowledgeGraph.TripleScorer.trained_path/0`.
 
   A running server keeps the model it loaded for a world until it restarts.
   """
@@ -25,12 +29,19 @@ defmodule Mix.Tasks.World.SeedModel do
   use Mix.Task
 
   alias Brain.ML.EntityModel
+  alias Brain.ML.KnowledgeGraph.TripleScorer
+  alias Brain.ML.Poincare.Embeddings, as: PoincareEmbeddings
   alias World.Embedder
   alias World.Persistence
 
   @requirements ["app.config"]
 
-  @seeders %{"entity_model" => &EntityModel.seed!/1, "embedder" => &Embedder.seed!/1}
+  @seeders %{
+    "entity_model" => &EntityModel.seed!/1,
+    "embedder" => &Embedder.seed!/1,
+    "poincare_embeddings" => &PoincareEmbeddings.seed!/1,
+    "triple_scorer" => &TripleScorer.seed!/1
+  }
 
   @impl Mix.Task
   def run(args) do
