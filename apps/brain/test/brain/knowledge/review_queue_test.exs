@@ -339,20 +339,34 @@ defmodule Brain.Knowledge.ReviewQueueTest do
       {:ok, _} = ReviewQueue.add(candidate)
       {:ok, _} = ReviewQueue.approve(candidate.id)
 
-      {:ok, instance} = Brain.AtlasIntegration.find_node("knowledge_graph", "EntityInstance", name)
+      graph = Atlas.Graph.world_graph("knowledge_graph", world_id)
+      {:ok, instance} = Brain.AtlasIntegration.find_node(graph, "EntityInstance", name)
       assert instance.properties["world_id"] == world_id
       assert instance.properties["type"] == "person"
       assert instance.properties["source"] == "knowledge_expansion"
     end
 
-    test "a finding about no world gives the instance no world_id", %{name: name} do
+    test "the instance is written to the finding's world's graph only", %{name: name} do
+      world_id = create_review_world!()
+      other = create_review_world!()
+
+      candidate = entity_candidate(name, "person", world_id: world_id)
+      {:ok, _} = ReviewQueue.add(candidate)
+      {:ok, _} = ReviewQueue.approve(candidate.id)
+
+      other_graph = Atlas.Graph.world_graph("knowledge_graph", other)
+      assert :not_found = Brain.AtlasIntegration.find_node(other_graph, "EntityInstance", name)
+    end
+
+    test "a finding about no world teaches the base gazetteer and writes no graph node", %{name: name} do
       candidate = entity_candidate(name, "person")
       {:ok, _} = ReviewQueue.add(candidate)
       {:ok, _} = ReviewQueue.approve(candidate.id)
 
-      {:ok, instance} = Brain.AtlasIntegration.find_node("knowledge_graph", "EntityInstance", name)
-      refute Map.has_key?(instance.properties, "world_id")
-      assert instance.properties["type"] == "person"
+      assert types_of(name) == [{"person", :reviewed}]
+
+      default_graph = Atlas.Graph.world_graph("knowledge_graph", "default")
+      assert :not_found = Brain.AtlasIntegration.find_node(default_graph, "EntityInstance", name)
     end
   end
 
