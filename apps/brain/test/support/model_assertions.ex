@@ -74,7 +74,7 @@ defmodule Brain.Test.ModelAssertions do
 
       To fix this:
         1. In the Brain test suite, `test_helper.exs` runs `ModelFactory.train_and_load_test_models/0`.
-        2. In dev/prod, run `mix train` (or the relevant `mix train_*` tasks).
+        2. In dev/prod, run `mix train --world default` (or the relevant `mix train_*` tasks).
 
       Tag tests with `@tag :requires_models` if you need to exclude them in a minimal CI profile.
       ============================================================
