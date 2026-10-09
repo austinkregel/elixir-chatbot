@@ -32,16 +32,19 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
 
   @min_response_words 3
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   # ──────────────────────────────────────────────────────────────────
   # Helpers
   # ──────────────────────────────────────────────────────────────────
 
   defp analyze(text, opts \\ []) do
-    Pipeline.process(text, opts)
+    Pipeline.process(text, [world_id: @world_id] ++ opts)
   end
 
   defp generate(model, opts \\ []) do
-    RefinementLoop.generate(model, opts)
+    RefinementLoop.generate(model, [world_id: @world_id] ++ opts)
   end
 
   defp primitive_types(metadata) do
@@ -444,7 +447,7 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
     test "single_pass produces a coherent scored response" do
       input = "What time is it?"
       model = analyze(input)
-      assert {:ok, response, metadata} = RefinementLoop.single_pass(model)
+      assert {:ok, response, metadata} = RefinementLoop.single_pass(model, world_id: @world_id)
 
       assert_coherent_response(input, response, metadata)
 
