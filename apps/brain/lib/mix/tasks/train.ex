@@ -38,8 +38,9 @@ defmodule Mix.Tasks.Train do
     --skip-lattice     Skip lattice phrase inventory generation
     --include-graph    Run graph-to-training integration after training
     --world ID         Required. The world the stages that analyze text or read
-                       world data run in (micro data, framing data, lattice
-                       data, entity type ingestion, type vector warm-up). It
+                       world data run in (KG triple scorer beliefs, micro data,
+                       framing data, lattice data, entity type ingestion,
+                       type vector warm-up). It
                        names no output location: models are written to the
                        trained models directory, not into the world
     --publish          Publish trained models to S3/MinIO
@@ -52,7 +53,9 @@ defmodule Mix.Tasks.Train do
   `Brain.ML.EntityModel.trained_path/0` and `World.Embedder.trained_path/0`
   read the files worlds are seeded from. The Poincare embeddings and the KG
   triple scorer are written there too (`Brain.ML.Poincare.Embeddings.trained_path/0`,
-  `Brain.ML.KnowledgeGraph.TripleScorer.trained_path/0`). Training does not seed:
+  `Brain.ML.KnowledgeGraph.TripleScorer.trained_path/0`); the triple scorer is
+  also trained on the `--world` world's beliefs, so its trained copy reflects
+  that world's beliefs (`mix train_kg_lstm`). Training does not seed:
   a world receives the retrained models through `mix world.seed_model`, or from
   `World.Manager` when it creates the world.
 
@@ -429,7 +432,7 @@ defmodule Mix.Tasks.Train do
         [{:kg_lstm, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_kg_triple_scorer()
+        result = train_kg_triple_scorer(opts)
         duration = System.monotonic_time(:second) - start
         [{:kg_lstm, result, duration} | results]
       end
@@ -581,14 +584,15 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  # Trained from triple sources no world owns (`mix train_kg_lstm`).
-  defp train_kg_triple_scorer do
+  # Trained from the shared triple sources and the --world world's beliefs
+  # (`mix train_kg_lstm`).
+  defp train_kg_triple_scorer(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 4/9: KG Triple Scorer  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    args = ["--verbose"]
+    args = ["--world", opts[:world], "--verbose"]
 
     try do
       Mix.Tasks.TrainKgLstm.run(args)
