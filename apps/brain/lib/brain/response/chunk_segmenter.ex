@@ -1,7 +1,9 @@
 defmodule Brain.Response.ChunkSegmenter do
-  @moduledoc "Segments response templates into typed chunks for template blending.\n\nUses sentence boundaries and embedding-based classification to identify\nchunk types. Chunks can then be recombined to generate novel responses.\n\n## Chunk Types\n\n- `:greeting` - Opening phrases (\"Hello!\", \"Nice to meet you!\")\n- `:acknowledgment` - Confirmation phrases (\"I understand.\", \"Got it.\")\n- `:body` - Substantive content (\"The weather in $location is...\")\n- `:offer` - Invitations for next action (\"What can I help with?\")\n- `:clarification` - Requests for missing info (\"Which location?\")\n- `:closing` - Farewell phrases (\"Have a great day!\", \"Goodbye!\")\n\n## Usage\n\n    ChunkSegmenter.segment(\"Hello! The weather is sunny. Anything else?\")\n    # => [\n    #   %Chunk{text: \"Hello!\", type: :greeting},\n    #   %Chunk{text: \"The weather is sunny.\", type: :body},\n    #   %Chunk{text: \"Anything else?\", type: :offer}\n    # ]\n"
+  @moduledoc "Segments response templates into typed chunks for template blending.\n\nUses sentence boundaries and embedding-based classification to identify\nchunk types. Chunks can then be recombined to generate novel responses.\n\nChunks are embedded, and classified against the chunk type centroids, by a\nworld's embedder (`World.Embedder`), so every segmenting call names its world.\nA world whose embedder cannot embed raises. While its vocabulary is being\nrebuilt from its episodes, segmenting waits for the rebuild to finish\n(`World.Embedder.await_ready/2`); the `try_` functions, for a process that a\nrebuild calls, return `{:error, :vocabulary_building}` instead. A world's centroids are built once and kept until its\nvocabulary is rebuilt or it is destroyed (`forget_world/1`); a chunk embedding\nwhose length differs from the centroids' raises.\n\n## Chunk Types\n\n- `:greeting` - Opening phrases (\"Hello!\", \"Nice to meet you!\")\n- `:acknowledgment` - Confirmation phrases (\"I understand.\", \"Got it.\")\n- `:body` - Substantive content (\"The weather in $location is...\")\n- `:offer` - Invitations for next action (\"What can I help with?\")\n- `:clarification` - Requests for missing info (\"Which location?\")\n- `:closing` - Farewell phrases (\"Have a great day!\", \"Goodbye!\")\n\n## Usage\n\n    ChunkSegmenter.segment(world_id, \"Hello! The weather is sunny. Anything else?\")\n    # => [\n    #   %Chunk{text: \"Hello!\", type: :greeting},\n    #   %Chunk{text: \"The weather is sunny.\", type: :body},\n    #   %Chunk{text: \"Anything else?\", type: :offer}\n    # ]\n"
 
-  alias Brain.Memory.Embedder
+  # World.Embedder is in a sibling umbrella app that depends on :brain.
+  @compile {:no_warn_undefined, World.Embedder}
+  alias World.Embedder, as: WorldEmbedder
   alias Brain.ML.Tokenizer
 
   require Logger
@@ -42,55 +44,107 @@ defmodule Brain.Response.ChunkSegmenter do
                      end)
   @centroid_key :chunk_type_centroids
 
-  @doc "Segments a template text into typed chunks.\n\nReturns a list of %Chunk{} structs, each with:\n- text: The chunk text\n- type: The classified chunk type (:greeting, :body, etc.)\n- embedding: TF-IDF embedding for the chunk\n"
-  def segment(template_text) when is_binary(template_text) do
+  @doc "Segments a template text into typed chunks, in the world's embedder.\n\nReturns a list of %Chunk{} structs, each with:\n- text: The chunk text\n- type: The classified chunk type (:greeting, :body, etc.)\n- embedding: the world's TF-IDF embedding for the chunk\n\nWhile the world's vocabulary is being rebuilt this waits for the rebuild to\nfinish (`World.Embedder.await_ready/2`).\n"
+  def segment(world_id, template_text) when is_binary(world_id) and is_binary(template_text) do
+    awaiting_rebuild(world_id, fn -> try_segment(world_id, template_text) end)
+  end
+
+  @doc "Segments a template in the world's embedder and associates it with an intent.\n"
+  def segment(world_id, template_text, source_intent)
+      when is_binary(world_id) and is_binary(template_text) do
+    awaiting_rebuild(world_id, fn -> try_segment(world_id, template_text, source_intent) end)
+  end
+
+  @doc "Segments all templates from a map of {intent => [template_texts]} in the\nworld's embedder. Returns a flat list of all chunks.\n"
+  def segment_all(world_id, templates_by_intent) when is_binary(world_id) and is_map(templates_by_intent) do
+    awaiting_rebuild(world_id, fn -> try_segment_all(world_id, templates_by_intent) end)
+  end
+
+  @doc """
+  `segment/2` that does not wait for a rebuild: `{:ok, chunks}`, or
+  `{:error, :vocabulary_building}` while the world's vocabulary is being
+  rebuilt. For a process that a rebuild calls, which must not wait in its own
+  callbacks (`World.Embedder`): it returns the error to its caller, which waits.
+  """
+  @spec try_segment(String.t(), String.t()) :: {:ok, [%Chunk{}]} | {:error, :vocabulary_building}
+  def try_segment(world_id, template_text) when is_binary(world_id) and is_binary(template_text) do
     template_text
     |> split_into_sentences()
-    |> Enum.map(&classify_and_embed/1)
-    |> Enum.filter(& &1)
-  end
-
-  @doc "Segments a template and associates it with an intent.\n"
-  def segment(template_text, source_intent) when is_binary(template_text) do
-    template_text
-    |> segment()
-    |> Enum.map(fn chunk -> %{chunk | source_intent: source_intent} end)
-  end
-
-  @doc "Segments all templates from a map of {intent => [template_texts]}.\nReturns a flat list of all chunks.\n"
-  def segment_all(templates_by_intent) when is_map(templates_by_intent) do
-    templates_by_intent
-    |> Enum.flat_map(fn {intent, templates} ->
-      Enum.flat_map(templates, fn template ->
-        segment(template, intent)
-      end)
+    |> Enum.reduce_while({:ok, []}, fn sentence, {:ok, chunks} ->
+      case classify_and_embed(world_id, sentence) do
+        {:ok, chunk} -> {:cont, {:ok, [chunk | chunks]}}
+        {:error, :vocabulary_building} = building -> {:halt, building}
+      end
     end)
+    |> case do
+      {:ok, chunks} -> {:ok, Enum.reverse(chunks)}
+      building -> building
+    end
+  end
+
+  @doc "`segment/3` that does not wait for a rebuild, as `try_segment/2`.\n"
+  @spec try_segment(String.t(), String.t(), term()) :: {:ok, [%Chunk{}]} | {:error, :vocabulary_building}
+  def try_segment(world_id, template_text, source_intent)
+      when is_binary(world_id) and is_binary(template_text) do
+    with {:ok, chunks} <- try_segment(world_id, template_text) do
+      {:ok, Enum.map(chunks, fn chunk -> %{chunk | source_intent: source_intent} end)}
+    end
+  end
+
+  @doc "`segment_all/2` that does not wait for a rebuild, as `try_segment/2`.\n"
+  @spec try_segment_all(String.t(), map()) :: {:ok, [%Chunk{}]} | {:error, :vocabulary_building}
+  def try_segment_all(world_id, templates_by_intent) when is_binary(world_id) and is_map(templates_by_intent) do
+    templates_by_intent
+    |> Enum.flat_map(fn {intent, templates} -> Enum.map(templates, &{intent, &1}) end)
+    |> Enum.reduce_while({:ok, []}, fn {intent, template}, {:ok, acc} ->
+      case try_segment(world_id, template, intent) do
+        {:ok, chunks} -> {:cont, {:ok, [chunks | acc]}}
+        {:error, :vocabulary_building} = building -> {:halt, building}
+      end
+    end)
+    |> case do
+      {:ok, chunk_lists} -> {:ok, chunk_lists |> Enum.reverse() |> List.flatten()}
+      building -> building
+    end
+  end
+
+  # Runs `attempt` until the world's vocabulary is not being rebuilt, waiting
+  # for each rebuild to finish.
+  defp awaiting_rebuild(world_id, attempt) do
+    case attempt.() do
+      {:ok, result} ->
+        result
+
+      {:error, :vocabulary_building} ->
+        :ok = WorldEmbedder.await_ready(world_id)
+        awaiting_rebuild(world_id, attempt)
+    end
   end
 
   @doc """
   Segments a template text into typed chunks, preserving $placeholder slot tokens.
 
   Extracts slot names and enrichment fields from $placeholder patterns before
-  splitting, then attaches them to each resulting chunk.
+  splitting, then attaches them to each resulting chunk. Chunks are embedded in
+  the world's embedder, waiting for a rebuild of its vocabulary to finish as
+  `segment/2` does.
   """
-  def segment_with_slots(template_text) when is_binary(template_text) do
+  def segment_with_slots(world_id, template_text) when is_binary(world_id) and is_binary(template_text) do
     {slots, enrichment_fields} = extract_slot_info(template_text)
 
-    template_text
-    |> split_into_sentences()
-    |> Enum.map(fn sentence ->
-      chunk = classify_and_embed(sentence)
-      %{chunk | slots: slots, enrichment_fields: enrichment_fields}
-    end)
-    |> Enum.filter(& &1)
+    world_id
+    |> segment(template_text)
+    |> Enum.map(fn chunk -> %{chunk | slots: slots, enrichment_fields: enrichment_fields} end)
   end
 
   @doc """
-  Segments a template with slots and associates it with an intent.
+  Segments a template with slots in the world's embedder and associates it with
+  an intent.
   """
-  def segment_with_slots(template_text, source_intent) when is_binary(template_text) do
-    template_text
-    |> segment_with_slots()
+  def segment_with_slots(world_id, template_text, source_intent)
+      when is_binary(world_id) and is_binary(template_text) do
+    world_id
+    |> segment_with_slots(template_text)
     |> Enum.map(fn chunk -> %{chunk | source_intent: source_intent} end)
   end
 
@@ -173,9 +227,14 @@ defmodule Brain.Response.ChunkSegmenter do
     @chunk_type_seeds
   end
 
-  @doc "Clears the cached centroids (useful for testing).\n"
-  def clear_centroids do
-    Process.delete(@centroid_key)
+  @doc """
+  Forgets the world's chunk type centroids, for a world whose vocabulary was
+  rebuilt or that is destroyed (`Brain.EmbeddingCaches.forget_world/1`); the
+  world's next classification builds them with the world's vocabulary.
+  """
+  @spec forget_world(String.t()) :: :ok
+  def forget_world(world_id) when is_binary(world_id) do
+    :persistent_term.erase(centroid_key(world_id))
     :ok
   end
 
@@ -188,44 +247,32 @@ defmodule Brain.Response.ChunkSegmenter do
     |> Enum.filter(&(String.length(&1) > 0))
   end
 
-  defp classify_and_embed(sentence) do
-    heuristic_type = classify_by_heuristic(sentence)
-    embedding = case Embedder.embed(sentence) do
-      {:ok, emb} -> emb
-      _ -> nil
+  defp classify_and_embed(world_id, sentence) do
+    with {:ok, embedding} <- world_embedding(world_id, sentence),
+         {:ok, chunk_type} <- chunk_type(world_id, sentence, embedding) do
+      {:ok, %Chunk{text: sentence, type: chunk_type, embedding: embedding, source_intent: nil}}
     end
-
-    chunk_type =
-      if heuristic_type != :body do
-        heuristic_type
-      else
-        if embedding do
-          classify_chunk_type(embedding)
-        else
-          :body
-        end
-      end
-
-    %Chunk{
-      text: sentence,
-      type: chunk_type,
-      embedding: embedding,
-      source_intent: nil
-    }
   end
 
-  defp classify_chunk_type(embedding) do
-    centroids = get_or_build_centroids()
+  defp chunk_type(world_id, sentence, embedding) do
+    case classify_by_heuristic(sentence) do
+      :body -> classify_chunk_type(world_id, embedding)
+      heuristic_type -> {:ok, heuristic_type}
+    end
+  end
 
-    {best_type, _best_similarity} =
-      centroids
-      |> Enum.map(fn {type, centroid} ->
-        similarity = cosine_similarity(embedding, centroid)
-        {type, similarity}
-      end)
-      |> Enum.max_by(fn {_type, sim} -> sim end, fn -> {:body, 0.0} end)
+  defp classify_chunk_type(world_id, embedding) do
+    with {:ok, centroids} <- get_or_build_centroids(world_id) do
+      {best_type, _best_similarity} =
+        centroids
+        |> Enum.map(fn {type, centroid} ->
+          similarity = FourthWall.Math.cosine_similarity!(embedding, centroid)
+          {type, similarity}
+        end)
+        |> Enum.max_by(fn {_type, sim} -> sim end, fn -> {:body, 0.0} end)
 
-    best_type
+      {:ok, best_type}
+    end
   end
 
   @greeting_tokens MapSet.new(~w(hello hi hey welcome howdy greetings))
@@ -272,45 +319,58 @@ defmodule Brain.Response.ChunkSegmenter do
     end
   end
 
-  defp get_or_build_centroids do
-    case Process.get(@centroid_key) do
+  # The world's chunk type centroids, built once per world and shared by every
+  # process (`:persistent_term`) until the world's vocabulary is rebuilt or the
+  # world is destroyed (`forget_world/1`). Centroids are not kept while the
+  # world's vocabulary is being rebuilt, so the next call builds them from the
+  # rebuilt vocabulary.
+  defp get_or_build_centroids(world_id) do
+    case :persistent_term.get(centroid_key(world_id), nil) do
       nil ->
-        centroids = build_centroids()
-        Process.put(@centroid_key, centroids)
-        centroids
+        with {:ok, centroids} <- build_centroids(world_id) do
+          :persistent_term.put(centroid_key(world_id), centroids)
+          {:ok, centroids}
+        end
 
       centroids ->
-        centroids
+        {:ok, centroids}
     end
   end
 
-  defp build_centroids do
-    if Embedder.ready?() do
-      @chunk_type_seeds
-      |> Enum.map(fn {type, seeds} ->
-        embeddings =
-          seeds
-          |> Enum.map(fn seed ->
-            case Embedder.embed(seed) do
-              {:ok, embedding} -> embedding
-              _ -> nil
-            end
-          end)
-          |> Enum.filter(& &1)
+  defp centroid_key(world_id), do: {__MODULE__, @centroid_key, world_id}
 
-        centroid =
-          if embeddings != [] do
-            average_vectors(embeddings)
-          else
-            nil
+  defp build_centroids(world_id) do
+    Enum.reduce_while(@chunk_type_seeds, {:ok, %{}}, fn {type, seeds}, {:ok, acc} ->
+      embedded =
+        Enum.reduce_while(seeds, {:ok, []}, fn seed, {:ok, embeddings} ->
+          case world_embedding(world_id, seed) do
+            {:ok, embedding} -> {:cont, {:ok, [embedding | embeddings]}}
+            {:error, :vocabulary_building} = building -> {:halt, building}
           end
+        end)
 
-        {type, centroid}
-      end)
-      |> Enum.filter(fn {_, centroid} -> centroid != nil end)
-      |> Map.new()
-    else
-      %{}
+      case embedded do
+        {:ok, []} -> {:cont, {:ok, acc}}
+        {:ok, embeddings} -> {:cont, {:ok, Map.put(acc, type, average_vectors(Enum.reverse(embeddings)))}}
+        {:error, :vocabulary_building} = building -> {:halt, building}
+      end
+    end)
+  end
+
+  # A world's embedding comes from the world's embedder and nowhere else. While
+  # its vocabulary is being rebuilt this is `{:error, :vocabulary_building}`,
+  # which the public functions wait out and the `try_` ones return. A world
+  # whose embedder has no copy, no vocabulary, or no table raises.
+  defp world_embedding(world_id, text) do
+    case WorldEmbedder.embed(world_id, text) do
+      {:ok, embedding} ->
+        {:ok, embedding}
+
+      {:error, :vocabulary_building} ->
+        {:error, :vocabulary_building}
+
+      {:error, reason} ->
+        raise "ChunkSegmenter: world #{inspect(world_id)}'s embedder cannot embed: #{inspect(reason)}"
     end
   end
 
@@ -329,25 +389,5 @@ defmodule Brain.Response.ChunkSegmenter do
 
   defp average_vectors(_) do
     nil
-  end
-
-  defp cosine_similarity(vec1, vec2) when is_list(vec1) and is_list(vec2) do
-    if length(vec1) != length(vec2) do
-      0.0
-    else
-      dot = Enum.zip(vec1, vec2) |> Enum.reduce(0.0, fn {a, b}, sum -> sum + a * b end)
-      mag1 = :math.sqrt(Enum.reduce(vec1, 0.0, fn x, sum -> sum + x * x end))
-      mag2 = :math.sqrt(Enum.reduce(vec2, 0.0, fn x, sum -> sum + x * x end))
-
-      if mag1 == 0.0 or mag2 == 0.0 do
-        0.0
-      else
-        dot / (mag1 * mag2)
-      end
-    end
-  end
-
-  defp cosine_similarity(_, _) do
-    0.0
   end
 end
