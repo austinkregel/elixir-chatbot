@@ -330,18 +330,13 @@ defmodule Brain.Subprocesses.CliSubprocess do
 
   defp ensure_conversation_id(state) do
     case state[:conversation_id] do
+      # Brain owns conversation ids; one it did not create would be unknown to it.
       nil ->
-        case Brain.create_conversation(world_id: state.world_id) do
-          {:ok, id} -> id
-          _ -> generate_conversation_id()
-        end
+        {:ok, id} = Brain.create_conversation(world_id: state.world_id)
+        id
 
       id ->
         id
     end
-  end
-
-  defp generate_conversation_id do
-    :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
   end
 end
