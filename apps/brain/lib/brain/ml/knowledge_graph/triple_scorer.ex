@@ -504,16 +504,19 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   end
 
   defp generate_type_constrained(h, r, t, entities, entity_types, positive_set, count, rand) do
-    h_type = Map.get(entity_types, h)
-    t_type = Map.get(entity_types, t)
-
-    h_peers =
-      if h_type, do: Map.get(entity_types, {:type_members, h_type}, entities), else: entities
-
-    t_peers =
-      if t_type, do: Map.get(entity_types, {:type_members, t_type}, entities), else: entities
+    h_peers = type_peers(entity_types, h, entities)
+    t_peers = type_peers(entity_types, t, entities)
 
     sample_corruptions({h, r, t}, h_peers, t_peers, positive_set, count, rand)
+  end
+
+  # The members of every type `entity` belongs to; every entity when it has no
+  # type in the hierarchy.
+  defp type_peers(entity_types, entity, entities) do
+    case Map.get(entity_types, entity, []) do
+      [] -> entities
+      types -> types |> Enum.flat_map(&Map.fetch!(entity_types, {:type_members, &1})) |> Enum.uniq()
+    end
   end
 
   # Replaces the head (from h_peers) or the tail (from t_peers) with even odds,
@@ -542,37 +545,21 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
     end
   end
 
+  # entity => its parent types, and {:type_members, type} => the entities under
+  # that type. An entity under several types is a member of each.
   defp build_entity_type_index(entities) do
-    entity_to_type =
-      Enum.reduce(entities, %{}, fn entity, acc ->
-        type = infer_entity_type(entity)
-        if type, do: Map.put(acc, entity, type), else: acc
-      end)
-
-    type_to_members =
-      Enum.group_by(
-        Enum.filter(entities, &Map.has_key?(entity_to_type, &1)),
-        &Map.get(entity_to_type, &1)
-      )
+    entity_to_types =
+      entities
+      |> Map.new(&{&1, Brain.Analysis.TypeHierarchy.parents_of(&1)})
+      |> Map.reject(fn {_entity, types} -> types == [] end)
 
     type_members =
-      Enum.into(type_to_members, %{}, fn {type, members} ->
-        {{:type_members, type}, members}
-      end)
+      entity_to_types
+      |> Enum.flat_map(fn {entity, types} -> Enum.map(types, &{&1, entity}) end)
+      |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+      |> Map.new(fn {type, members} -> {{:type_members, type}, members} end)
 
-    Map.merge(entity_to_type, type_members)
-  end
-
-  defp infer_entity_type(entity) do
-    cond do
-      function_exported?(Brain.Analysis.TypeHierarchy, :parent_of, 1) ->
-        Brain.Analysis.TypeHierarchy.parent_of(entity)
-
-      true ->
-        nil
-    end
-  rescue
-    _ -> nil
+    Map.merge(entity_to_types, type_members)
   end
 
   defp ensure_model_state(%Axon.ModelState{} = state), do: state
