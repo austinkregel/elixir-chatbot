@@ -41,6 +41,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
       analysis = %ChunkAnalysis{
         chunk_index: 0,
         language: "en",
+        active_contexts: [],
         text: "what time is it",
         pos_tags: []
       }
@@ -65,6 +66,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
       analysis = %ChunkAnalysis{
         chunk_index: 0,
         language: "en",
+        active_contexts: [],
         text: "hello world from elixir today",
         pos_tags: []
       }
@@ -86,6 +88,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
       analysis = %ChunkAnalysis{
         chunk_index: 0,
         language: "en",
+        active_contexts: [],
         text: "hi",
         pos_tags: [],
         accumulated_context: acc
@@ -111,6 +114,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
       analysis = %ChunkAnalysis{
         chunk_index: 0,
         language: "en",
+        active_contexts: [],
         text: "hi",
         pos_tags: [],
         accumulated_context: acc
@@ -142,6 +146,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
       analysis = %ChunkAnalysis{
         chunk_index: 0,
         language: "en",
+        active_contexts: [],
         text: "hi",
         pos_tags: [],
         slots: slots
@@ -161,13 +166,13 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
 
       empty_vec =
         ChunkFeatures.extract(
-          %ChunkAnalysis{chunk_index: 0, language: "en", text: "hi", pos_tags: [], slots: empty},
+          %ChunkAnalysis{chunk_index: 0, language: "en", active_contexts: [], text: "hi", pos_tags: [], slots: empty},
           []
         )
 
       filled_vec =
         ChunkFeatures.extract(
-          %ChunkAnalysis{chunk_index: 0, language: "en", text: "hi", pos_tags: [], slots: filled},
+          %ChunkAnalysis{chunk_index: 0, language: "en", active_contexts: [], text: "hi", pos_tags: [], slots: filled},
           []
         )
 
@@ -222,7 +227,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     end
 
     test "the emitted vector is exactly as long as the manifest" do
-      analysis = %ChunkAnalysis{chunk_index: 0, language: "en", text: "turn on the kitchen lights", pos_tags: []}
+      analysis = %ChunkAnalysis{chunk_index: 0, language: "en", active_contexts: [], text: "turn on the kitchen lights", pos_tags: []}
       vector = ChunkFeatures.extract(analysis, [])
 
       assert length(vector) == length(ChunkFeatures.dimension_manifest()),
@@ -281,7 +286,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
 
   describe "the lexical evidence group" do
     test "is the loaded model's evidence for the chunk's text" do
-      analysis = %ChunkAnalysis{chunk_index: 0, language: "en", text: "good morning to you", pos_tags: []}
+      analysis = %ChunkAnalysis{chunk_index: 0, language: "en", active_contexts: [], text: "good morning to you", pos_tags: []}
       vector = ChunkFeatures.extract(analysis, [])
 
       assert group_slice(vector, :lexical_evidence) ==
@@ -291,11 +296,31 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeaturesTest do
     test "uses a model passed as :lexical_evidence in place of the loaded one" do
       loaded = LexicalEvidence.loaded!("en")
       zeroed = %{loaded | scores: %{}}
-      analysis = %ChunkAnalysis{chunk_index: 0, language: "en", text: "good morning to you", pos_tags: []}
+      analysis = %ChunkAnalysis{chunk_index: 0, language: "en", active_contexts: [], text: "good morning to you", pos_tags: []}
 
       vector = ChunkFeatures.extract(analysis, [], lexical_evidence: zeroed)
 
       assert group_slice(vector, :lexical_evidence) == List.duplicate(0.0, length(loaded.intents))
+    end
+
+    test "an analysis with no active contexts raises" do
+      assert_raise ArgumentError, ~r/the analysis has no active contexts/, fn ->
+        ChunkFeatures.extract(%ChunkAnalysis{chunk_index: 0, language: "en", text: "to 5", pos_tags: []}, [])
+      end
+    end
+
+    test "the follow-up group marks exactly the active contexts" do
+      tables = Brain.Analysis.ActiveContexts.loaded!()
+      [context | _] = tables.vocabulary
+
+      vector =
+        ChunkFeatures.extract(
+          %ChunkAnalysis{chunk_index: 0, language: "en", active_contexts: [context], text: "to 5", pos_tags: []},
+          []
+        )
+
+      expected = Enum.map(tables.vocabulary, &if(&1 == context, do: 1.0, else: 0.0))
+      assert group_slice(vector, :followup_context) == expected
     end
 
     test "an analysis with no language raises" do
