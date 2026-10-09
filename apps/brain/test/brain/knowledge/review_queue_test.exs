@@ -254,9 +254,7 @@ defmodule Brain.Knowledge.ReviewQueueTest do
     test "a world-scoped approval teaches that world's overlay, not the global gazetteer", %{
       name: name
     } do
-      world_id = "review_test_world_#{System.unique_integer([:positive])}"
-      :ok = Gazetteer.create_world_overlay(world_id)
-      on_exit(fn -> Gazetteer.destroy_world_overlay(world_id) end)
+      world_id = create_review_world!()
 
       candidate = entity_candidate(name, "person", world_id: world_id)
       {:ok, _} = ReviewQueue.add(candidate)
@@ -327,6 +325,37 @@ defmodule Brain.Knowledge.ReviewQueueTest do
     end
   end
 
+  describe "approving an entity finding writes its instance to the knowledge graph" do
+    setup do
+      name = "Zorblax#{System.unique_integer([:positive])}"
+      on_exit(fn -> Gazetteer.remove_entry(name) end)
+      {:ok, name: name}
+    end
+
+    test "the instance records the finding's world", %{name: name} do
+      world_id = create_review_world!()
+
+      candidate = entity_candidate(name, "person", world_id: world_id)
+      {:ok, _} = ReviewQueue.add(candidate)
+      {:ok, _} = ReviewQueue.approve(candidate.id)
+
+      {:ok, instance} = Brain.AtlasIntegration.find_node("knowledge_graph", "EntityInstance", name)
+      assert instance.properties["world_id"] == world_id
+      assert instance.properties["type"] == "person"
+      assert instance.properties["source"] == "knowledge_expansion"
+    end
+
+    test "a finding about no world gives the instance no world_id", %{name: name} do
+      candidate = entity_candidate(name, "person")
+      {:ok, _} = ReviewQueue.add(candidate)
+      {:ok, _} = ReviewQueue.approve(candidate.id)
+
+      {:ok, instance} = Brain.AtlasIntegration.find_node("knowledge_graph", "EntityInstance", name)
+      refute Map.has_key?(instance.properties, "world_id")
+      assert instance.properties["type"] == "person"
+    end
+  end
+
   describe "has_entity_candidate?/3" do
     test "matches entity case-insensitively, by type and world, in any status" do
       source = SourceInfo.new("https://review-test.example/x")
@@ -343,6 +372,14 @@ defmodule Brain.Knowledge.ReviewQueueTest do
       refute ReviewQueue.has_entity_candidate?("qux", "person", "w2")
       refute ReviewQueue.has_entity_candidate?("qux", "person", nil)
     end
+  end
+
+  # A test world, with its gazetteer overlay, removed when the test ends.
+  defp create_review_world! do
+    ensure_started(World.Manager)
+    setup_world_sandbox()
+    {:ok, world} = create_test_world("review_queue")
+    world.id
   end
 
   defp entity_candidate(entity, type, opts \\ []) do
