@@ -59,8 +59,8 @@ defmodule Brain.Services.CredentialVault do
     - opts: Keyword list with :world (required), the world the credential belongs to
 
   ## Returns
-    - :ok on success
-    - {:error, reason} on failure
+    - :ok on success, once the credential is written to the database
+    - {:error, reason} when it could not be written; the vault is unchanged
   """
   @spec store(atom(), atom(), String.t(), keyword()) :: :ok | {:error, term()}
   def store(service, key, value, opts) when is_atom(service) and is_atom(key) do
@@ -88,8 +88,12 @@ defmodule Brain.Services.CredentialVault do
 
   @doc """
   Delete a credential for a service in the world named by the required `:world` option.
+
+  The credential's database row is deleted before this returns, so it does not
+  come back when the vault next loads. Returns `{:error, reason}` when the row
+  could not be deleted; the credential is then kept.
   """
-  @spec delete(atom(), atom(), keyword()) :: :ok
+  @spec delete(atom(), atom(), keyword()) :: :ok | {:error, term()}
   def delete(service, key, opts) when is_atom(service) and is_atom(key) do
     world = world!(opts, "delete")
     GenServer.call(__MODULE__, {:delete, service, key, world}, 5_000)
@@ -186,25 +190,33 @@ defmodule Brain.Services.CredentialVault do
   end
 
   @impl true
+  # Written to the database before the in-memory table, and in the caller's
+  # call: a write that fails is reported to the caller and the table is left
+  # as it was, so the table never holds a credential the database does not.
   def handle_call({:store, service, key, value, world}, _from, state) do
     storage_key = {world, service, key}
 
     # Encrypt the value before storing
     encrypted = encrypt_value(value, state.encryption_key)
-    :ets.insert(state.table, {storage_key, encrypted})
 
-    persist_to_database(state)
+    case persist_credential(world, service, key, encrypted) do
+      :ok ->
+        :ets.insert(state.table, {storage_key, encrypted})
 
-    Logger.debug("Credential stored",
-      service: service,
-      key: key,
-      world: world
-    )
+        Logger.debug("Credential stored",
+          service: service,
+          key: key,
+          world: world
+        )
 
-    # Emit telemetry (without exposing the credential value)
-    Brain.Telemetry.emit_credential_operation(:store, service, world)
+        # Emit telemetry (without exposing the credential value)
+        Brain.Telemetry.emit_credential_operation(:store, service, world)
 
-    {:reply, :ok, state}
+        {:reply, :ok, state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
   end
 
   @impl true
@@ -227,22 +239,30 @@ defmodule Brain.Services.CredentialVault do
   end
 
   @impl true
+  # The row is deleted from the database first, so the credential does not
+  # come back when the vault next loads; a delete that fails is reported to the
+  # caller and the credential stays.
   def handle_call({:delete, service, key, world}, _from, state) do
     storage_key = {world, service, key}
 
-    :ets.delete(state.table, storage_key)
-    persist_to_database(state)
+    case delete_credential(world, service, key) do
+      :ok ->
+        :ets.delete(state.table, storage_key)
 
-    Logger.debug("Credential deleted",
-      service: service,
-      key: key,
-      world: world
-    )
+        Logger.debug("Credential deleted",
+          service: service,
+          key: key,
+          world: world
+        )
 
-    # Emit telemetry
-    Brain.Telemetry.emit_credential_operation(:delete, service, world)
+        # Emit telemetry
+        Brain.Telemetry.emit_credential_operation(:delete, service, world)
 
-    {:reply, :ok, state}
+        {:reply, :ok, state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
   end
 
   @impl true
@@ -342,18 +362,16 @@ defmodule Brain.Services.CredentialVault do
     end
   end
 
-  defp persist_to_database(state) do
-    entries = :ets.tab2list(state.table)
+  defp persist_credential(world, service, key, encrypted_value) do
+    attrs = %{
+      world: to_string(world),
+      service: to_string(service),
+      key: to_string(key),
+      encrypted_value: encrypted_value
+    }
 
-    Brain.AtlasIntegration.async(fn ->
-      Enum.each(entries, fn {{world, service, key}, encrypted_value} ->
-        attrs = %{
-          world: to_string(world),
-          service: to_string(service),
-          key: to_string(key),
-          encrypted_value: encrypted_value
-        }
-
+    result =
+      Brain.AtlasIntegration.sync(fn ->
         %Atlas.Schemas.Credential{}
         |> Atlas.Schemas.Credential.changeset(attrs)
         |> Atlas.Repo.insert(
@@ -361,7 +379,32 @@ defmodule Brain.Services.CredentialVault do
           conflict_target: [:world, :service, :key]
         )
       end)
-    end)
+
+    case result do
+      {:ok, {:ok, _credential}} -> :ok
+      {:ok, {:error, changeset}} -> {:error, {:credential_not_stored, changeset.errors}}
+      {:error, reason} -> {:error, {:credential_not_stored, reason}}
+    end
+  end
+
+  defp delete_credential(world, service, key) do
+    import Ecto.Query
+
+    world = to_string(world)
+    service = to_string(service)
+    key = to_string(key)
+
+    result =
+      Brain.AtlasIntegration.sync(fn ->
+        Atlas.Schemas.Credential
+        |> where([c], c.world == ^world and c.service == ^service and c.key == ^key)
+        |> Atlas.Repo.delete_all()
+      end)
+
+    case result do
+      {:ok, {_deleted, _}} -> :ok
+      {:error, reason} -> {:error, {:credential_not_deleted, reason}}
+    end
   end
 
   defp load_from_database(state) do
