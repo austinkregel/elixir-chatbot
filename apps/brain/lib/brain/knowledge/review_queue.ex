@@ -20,9 +20,14 @@ defmodule Brain.Knowledge.ReviewQueue do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc "Adds a candidate to the review queue.\n"
+  @doc """
+  Adds a candidate to the review queue. The candidate belongs to its finding's
+  world; a finding that names no world raises `ArgumentError` here, in the
+  caller.
+  """
   @spec add(ReviewCandidate.t()) :: {:ok, String.t()} | {:error, term()}
   def add(%ReviewCandidate{} = candidate) do
+    ReviewCandidate.world_id!(candidate)
     GenServer.call(__MODULE__, {:add, candidate})
   end
 
@@ -47,13 +52,13 @@ defmodule Brain.Knowledge.ReviewQueue do
 
   @doc """
   True when the queue already holds a candidate, in any status, typing
-  `entity` as `entity_type` in `world_id` (nil for the world at large).
+  `entity` as `entity_type` in `world_id`.
   Entity names compare case-insensitively. Lets a producer avoid suggesting
   what a reviewer has already seen, approved or rejected.
   """
-  @spec has_entity_candidate?(String.t(), String.t(), String.t() | nil) :: boolean()
+  @spec has_entity_candidate?(String.t(), String.t(), String.t()) :: boolean()
   def has_entity_candidate?(entity, entity_type, world_id)
-      when is_binary(entity) and is_binary(entity_type) do
+      when is_binary(entity) and is_binary(entity_type) and is_binary(world_id) and world_id != "" do
     wanted = String.downcase(entity)
 
     @ets_table
@@ -122,10 +127,16 @@ defmodule Brain.Knowledge.ReviewQueue do
     GenServer.call(__MODULE__, :recalculate_stats)
   end
 
-  @doc "Adds a contradiction for review.\n\nUsed when JTMS detects a conflict between new knowledge and existing beliefs.\n"
-  @spec add_contradiction(map(), map()) :: {:ok, String.t()}
-  def add_contradiction(new_fact, existing_belief) do
-    GenServer.call(__MODULE__, {:add_contradiction, new_fact, existing_belief})
+  @doc "Adds a contradiction found in `world_id` for review.\n\nUsed when JTMS detects a conflict between new knowledge and existing beliefs.\nThe candidate belongs to that world; a missing world raises `ArgumentError`.\n"
+  @spec add_contradiction(String.t(), map(), map()) :: {:ok, String.t()}
+  def add_contradiction(world_id, new_fact, existing_belief)
+      when is_binary(world_id) and world_id != "" do
+    GenServer.call(__MODULE__, {:add_contradiction, world_id, new_fact, existing_belief})
+  end
+
+  def add_contradiction(world_id, _new_fact, _existing_belief) do
+    raise ArgumentError,
+          "ReviewQueue.add_contradiction needs the world the contradiction was found in, got: #{inspect(world_id)}"
   end
 
   @doc "Checks if the queue is ready.\n"
@@ -486,9 +497,9 @@ defmodule Brain.Knowledge.ReviewQueue do
 
   @impl true
   def handle_call(:persist, _from, state) do
-    # Drain any pending async Atlas operations to ensure data is written
-    Brain.AtlasIntegration.drain()
-    {:reply, :ok, state}
+    # Drain any pending async Atlas operations to ensure data is written; a
+    # drain that times out is the caller's error.
+    {:reply, Brain.AtlasIntegration.drain(), state}
   end
 
   @impl true
@@ -515,7 +526,7 @@ defmodule Brain.Knowledge.ReviewQueue do
   end
 
   @impl true
-  def handle_call({:add_contradiction, new_fact, existing_belief}, _from, state) do
+  def handle_call({:add_contradiction, world_id, new_fact, existing_belief}, _from, state) do
     finding = %Types.Finding{
       id: generate_id(),
       claim: "CONTRADICTION: #{inspect(new_fact)} vs #{inspect(existing_belief)}",
@@ -524,7 +535,8 @@ defmodule Brain.Knowledge.ReviewQueue do
       source: SourceInfo.new("internal://contradiction"),
       raw_context: "New fact contradicts existing belief",
       extracted_at: DateTime.utc_now(),
-      confidence: 0.5
+      confidence: 0.5,
+      world_id: world_id
     }
 
     candidate =
@@ -679,17 +691,12 @@ defmodule Brain.Knowledge.ReviewQueue do
     candidates
   end
 
-  # The learned fact's belief and JTMS node and the knowledge graph nodes are
-  # held in the finding's world. A finding about the world at large (no world)
-  # names no world to hold them, so it teaches the base gazetteer only and
-  # writes none of them.
-  defp integrate_approved_candidate(%ReviewCandidate{finding: %{world_id: nil}} = candidate) do
-    teach_gazetteer(candidate)
-    :ok
-  end
+  # The learned fact, its belief and JTMS node, the gazetteer entry and the
+  # knowledge graph nodes are held in the finding's world. A candidate whose
+  # finding names no world raises (`ReviewCandidate.world_id!/1`).
+  defp integrate_approved_candidate(%ReviewCandidate{finding: finding} = candidate) do
+    world_id = ReviewCandidate.world_id!(candidate)
 
-  defp integrate_approved_candidate(%ReviewCandidate{finding: %{world_id: world_id} = finding} = candidate)
-       when is_binary(world_id) and world_id != "" do
     try do
       FactIntegration.add_fact(
         world_id,
@@ -704,7 +711,7 @@ defmodule Brain.Knowledge.ReviewQueue do
       e -> Logger.warning("Failed to add to FactDatabase", error: Exception.message(e))
     end
 
-    teach_gazetteer(candidate)
+    teach_gazetteer(world_id, candidate)
 
     try do
       if BeliefStore.ready?() do
@@ -764,22 +771,15 @@ defmodule Brain.Knowledge.ReviewQueue do
   end
 
   # Only what a human reviewer approved teaches the gazetteer; an
-  # auto-approval never does. Whatever type the reviewer approved is learned.
-  # A world-scoped finding teaches that world's overlay, which World.Manager
-  # persists with the world; a global one is loaded again at every boot from
-  # the approval itself (Gazetteer, via load_reviewed_entities/0).
-  defp teach_gazetteer(%ReviewCandidate{status: :approved, finding: finding}) do
+  # auto-approval never does. Whatever type the reviewer approved is learned,
+  # in the finding's world's overlay, which World.Manager persists with the
+  # world.
+  defp teach_gazetteer(world_id, %ReviewCandidate{status: :approved, finding: finding}) do
     entity = finding.entity
     type = finding.entity_type
 
     if is_binary(entity) and entity != "" and is_binary(type) and type != "" do
-      result =
-        case finding.world_id do
-          nil -> Gazetteer.add_reviewed(entity, type)
-          world_id -> Gazetteer.add_to_world(world_id, entity, type, %{reviewed: true})
-        end
-
-      case result do
+      case Gazetteer.add_to_world(world_id, entity, type, %{reviewed: true}) do
         {:ok, _key} ->
           :ok
 
@@ -798,7 +798,7 @@ defmodule Brain.Knowledge.ReviewQueue do
     end
   end
 
-  defp teach_gazetteer(%ReviewCandidate{}), do: :ok
+  defp teach_gazetteer(_world_id, %ReviewCandidate{}), do: :ok
 
   defp normalize_predicate(entity) when is_binary(entity) do
     normalized = entity |> String.downcase() |> String.replace(~r/[^a-z0-9]+/, "_")
