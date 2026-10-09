@@ -54,6 +54,59 @@ defmodule ChatWeb.WorldsLiveTest do
     assert reloaded |> element("#web-user-world") |> render() =~ other.id
   end
 
+  describe "your profile" do
+    setup do
+      ensure_started(Brain.Epistemic.UserModelStore)
+
+      # User models live in GenServer state, which the Sandbox does not roll
+      # back; empty is the boot state (0 rows in atlas_user_models).
+      Brain.Epistemic.UserModelStore.clear_all()
+      on_exit(fn -> Brain.Epistemic.UserModelStore.clear_all() end)
+    end
+
+    test "lists the facts held about the web user", %{conn: conn} do
+      conn = get(conn, "/worlds")
+      user_id = get_session(conn, "user_id")
+
+      {:ok, _} = Brain.Epistemic.UserModelStore.update_fact(user_id, :location, "Seattle", :explicit, 0.9)
+      {:ok, _} = Brain.Epistemic.UserModelStore.update_fact(user_id, :occupation, "Engineer", :inferred, 0.6)
+
+      {:ok, view, _html} = live(conn)
+
+      location = view |> element("#profile-fact-location") |> render()
+      assert location =~ "Seattle"
+      assert location =~ "0.90"
+      assert location =~ "explicit"
+
+      occupation = view |> element("#profile-fact-occupation") |> render()
+      assert occupation =~ "Engineer"
+      assert occupation =~ "inferred"
+    end
+
+    test "is the same whichever world is selected", %{conn: conn, other: other} do
+      conn = get(conn, "/worlds")
+      user_id = get_session(conn, "user_id")
+      {:ok, _} = Brain.Epistemic.UserModelStore.update_fact(user_id, :location, "Seattle", :explicit, 0.9)
+
+      {:ok, view, _html} = live(conn)
+      view |> element("#select-world-#{other.id}") |> render_click()
+
+      assert view |> element("#web-user-world") |> render() =~ other.id
+      assert view |> element("#profile-fact-location") |> render() =~ "Seattle"
+    end
+
+    test "shows another user's facts to no one else", %{conn: conn} do
+      first = get(conn, "/worlds")
+      {:ok, _} =
+        Brain.Epistemic.UserModelStore.update_fact(get_session(first, "user_id"), :location, "Seattle", :explicit, 0.9)
+
+      {:ok, view, _html} = live(get(build_conn(), "/worlds"))
+
+      refute has_element?(view, "#profile-facts")
+      assert render(view) =~ "No facts are held about you yet."
+    end
+  end
+
   test "a browser without the cookie is a different user", %{conn: conn} do
     first = get(conn, "/worlds")
     second = get(build_conn(), "/worlds")
