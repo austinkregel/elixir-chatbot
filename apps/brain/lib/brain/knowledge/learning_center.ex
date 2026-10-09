@@ -429,7 +429,8 @@ defmodule Brain.Knowledge.LearningCenter do
 
       {:ok, concluded} = Corroborator.test_hypotheses(session.world_id, investigation, findings)
       log_investigation_results(concluded)
-      candidates = Corroborator.hypotheses_to_candidates(concluded, session_id: session_id)
+      candidates =
+        Corroborator.hypotheses_to_candidates(concluded, session_id: session_id, world_id: session.world_id)
       candidates = check_contradictions(candidates, session.world_id)
 
       Enum.each(candidates, fn candidate ->
