@@ -569,6 +569,10 @@ defmodule Brain do
            Keyword.put(opts, :memory_snapshot, memory_snapshot)
          ) do
       {:ok, pid, subprocess_id} ->
+        # A session ended with `quit` or `exit` stops by itself; the monitor
+        # tells this server, which stops listing it.
+        Process.monitor(pid)
+
         updated_subprocesses = %{
           state.subprocesses
           | cli:
@@ -592,25 +596,22 @@ defmodule Brain do
   end
 
   @impl true
-  def handle_call({:stop_subprocess, subprocess_id}, _from, state) do
+  # The subprocess is stopped outside this server, which replies once it has
+  # stopped: a CLI subprocess ends its conversation with this server as it
+  # stops, which it could not do while this server waited for it to stop.
+  def handle_call({:stop_subprocess, subprocess_id}, from, state) do
     subprocess_info = find_subprocess_by_id(state.subprocesses, subprocess_id)
 
     case subprocess_info do
       {type, info} ->
-        case Brain.Subprocesses.Supervisor.stop_subprocess(info.pid) do
-          :ok ->
-            updated_subprocesses = remove_subprocess(state.subprocesses, type, subprocess_id)
-            Logger.info("Subprocess stopped", %{type: type, subprocess_id: subprocess_id})
-            {:reply, :ok, %{state | subprocesses: updated_subprocesses}}
+        server = self()
 
-          {:error, reason} ->
-            Logger.error("Failed to stop subprocess", %{
-              subprocess_id: subprocess_id,
-              reason: reason
-            })
+        Task.start(fn ->
+          result = Brain.Subprocesses.Supervisor.stop_subprocess(info.pid)
+          send(server, {:subprocess_stopped, from, type, subprocess_id, result})
+        end)
 
-            {:reply, {:error, reason}, state}
-        end
+        {:noreply, state}
 
       nil ->
         {:reply, {:error, "Subprocess not found"}, state}
@@ -724,6 +725,40 @@ defmodule Brain do
       {:noreply, updated_state}
     else
       {:noreply, state}
+    end
+  end
+
+  # A monitored CLI session stopped. One that stopped normally ended with
+  # `quit` or `exit` and is no longer listed; one stopped by
+  # `stop_subprocess/2` is removed when that reports back.
+  def handle_info({:DOWN, _ref, :process, pid, reason}, state) do
+    case Enum.find(state.subprocesses.cli, fn {_id, info} -> info.pid == pid end) do
+      {subprocess_id, _info} when reason == :normal ->
+        Logger.info("CLI session ended", %{subprocess_id: subprocess_id})
+        {:noreply, %{state | subprocesses: remove_subprocess(state.subprocesses, :cli, subprocess_id)}}
+
+      _ ->
+        {:noreply, state}
+    end
+  end
+
+  # The result of stopping a subprocess for `stop_subprocess/2`.
+  def handle_info({:subprocess_stopped, from, type, subprocess_id, result}, state) do
+    case result do
+      :ok ->
+        updated_subprocesses = remove_subprocess(state.subprocesses, type, subprocess_id)
+        Logger.info("Subprocess stopped", %{type: type, subprocess_id: subprocess_id})
+        GenServer.reply(from, :ok)
+        {:noreply, %{state | subprocesses: updated_subprocesses}}
+
+      {:error, reason} ->
+        Logger.error("Failed to stop subprocess", %{
+          subprocess_id: subprocess_id,
+          reason: reason
+        })
+
+        GenServer.reply(from, {:error, reason})
+        {:noreply, state}
     end
   end
 
@@ -859,7 +894,7 @@ defmodule Brain do
         analysis_for_msg =
           if msg.role == "user", do: Map.get(context, :analysis_model), else: nil
 
-        Brain.Graph.Writer.write_message(conversation_id, msg, analysis_for_msg)
+        Brain.Graph.Writer.write_message(conversation_id, msg, analysis_for_msg, world_id)
       end)
     end
 
@@ -889,7 +924,7 @@ defmodule Brain do
     entities = Map.get(context, :entities, [])
 
     if side_effects do
-      extract_and_store_beliefs(input, entities, user_id, conversation_id)
+      extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id)
       feed_entities_to_world(entities, world_id, input)
     end
 
@@ -1613,7 +1648,9 @@ defmodule Brain do
     }
 
     if side_effects do
-      Learner.learn_from_conversation(persona.name, input, analysis_for_learning)
+      Learner.learn_from_conversation(persona.name, input, analysis_for_learning,
+        world_id: Keyword.fetch!(opts, :world_id)
+      )
 
       Progress.report(opts, :learning_complete, %{
         intent: intent,
@@ -1722,8 +1759,6 @@ defmodule Brain do
     %{
       event_frames: Enum.flat_map(analyses, &Map.get(&1, :event_frames, [])),
       srl_frames: Enum.flat_map(analyses, &Map.get(&1, :srl_frames, [])),
-      poincare_available: Brain.ML.Poincare.Embeddings.ready?(),
-      kg_lstm_available: Brain.ML.KnowledgeGraph.TripleScorer.ready?(),
       stance_tracker_available: Brain.Epistemic.StanceTracker.ready?()
     }
   rescue
@@ -2262,8 +2297,20 @@ defmodule Brain do
     {response, :epistemic_response, context}
   end
 
+  # The beliefs are held in the conversation's world. The world is checked
+  # here, before the rescue below, so a missing one raises.
   @doc false
-  def extract_and_store_beliefs(input, entities, user_id, conversation_id) do
+  def extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id)
+      when is_binary(world_id) and world_id != "" do
+    do_extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id)
+  end
+
+  def extract_and_store_beliefs(world_id, _input, _entities, _user_id, _conversation_id) do
+    raise ArgumentError,
+          "Brain.extract_and_store_beliefs needs the world the beliefs are held in, got: #{inspect(world_id)}"
+  end
+
+  defp do_extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id) do
     user_id = user_id || "anonymous"
 
     if Config.auto_extraction_enabled?() do
@@ -2284,7 +2331,7 @@ defmodule Brain do
                 ]
               )
 
-            BeliefStore.add_belief(belief)
+            BeliefStore.add_belief(world_id, belief)
 
             UserModelStore.update_fact(
               user_id,
@@ -2303,7 +2350,7 @@ defmodule Brain do
         end
       end)
 
-      extract_self_referential_facts(input, user_id, conversation_id)
+      extract_self_referential_facts(world_id, input, user_id, conversation_id)
     end
   rescue
     e ->
@@ -2373,73 +2420,73 @@ defmodule Brain do
     :unknown
   end
 
-  defp extract_self_referential_facts(input, user_id, conversation_id) do
+  defp extract_self_referential_facts(world_id, input, user_id, conversation_id) do
     expanded = Tokenizer.expand_contractions(input)
     tokens = Tokenizer.tokenize_normalized(expanded)
-    extract_location_facts(tokens, expanded, user_id, conversation_id)
-    extract_name_facts(tokens, expanded, user_id, conversation_id)
-    extract_preference_facts(tokens, expanded, user_id, conversation_id)
-    extract_work_facts(tokens, expanded, user_id, conversation_id)
+    extract_location_facts(world_id, tokens, user_id, conversation_id)
+    extract_name_facts(world_id, tokens, user_id, conversation_id)
+    extract_preference_facts(world_id, tokens, user_id, conversation_id)
+    extract_work_facts(world_id, tokens, user_id, conversation_id)
   end
 
-  defp extract_location_facts(tokens, _input, user_id, conversation_id) do
+  defp extract_location_facts(world_id, tokens, user_id, conversation_id) do
     cond do
       has_sequence?(tokens, ["i", "am", "from"]) ->
         value = extract_after_sequence(tokens, ["from"])
-        store_fact_if_valid(user_id, :location, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :location, value, conversation_id)
 
       has_sequence?(tokens, ["i", "live", "in"]) ->
         value = extract_after_sequence(tokens, ["in"])
-        store_fact_if_valid(user_id, :location, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :location, value, conversation_id)
 
       true ->
         :ok
     end
   end
 
-  defp extract_name_facts(tokens, _input, user_id, conversation_id) do
+  defp extract_name_facts(world_id, tokens, user_id, conversation_id) do
     cond do
       has_sequence?(tokens, ["my", "name", "is"]) ->
         value = extract_after_sequence(tokens, ["is"])
-        store_fact_if_valid(user_id, :name, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :name, value, conversation_id)
 
       has_sequence?(tokens, ["call", "me"]) ->
         value = extract_after_sequence(tokens, ["me"])
-        store_fact_if_valid(user_id, :name, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :name, value, conversation_id)
 
       true ->
         :ok
     end
   end
 
-  defp extract_preference_facts(tokens, _input, user_id, conversation_id) do
+  defp extract_preference_facts(world_id, tokens, user_id, conversation_id) do
     cond do
       has_sequence?(tokens, ["i", "like"]) ->
         value = extract_after_sequence(tokens, ["like"])
-        store_fact_if_valid(user_id, :likes, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :likes, value, conversation_id)
 
       has_sequence?(tokens, ["i", "prefer"]) ->
         value = extract_after_sequence(tokens, ["prefer"])
-        store_fact_if_valid(user_id, :preference, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :preference, value, conversation_id)
 
       has_sequence?(tokens, ["i", "love"]) ->
         value = extract_after_sequence(tokens, ["love"])
-        store_fact_if_valid(user_id, :likes, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :likes, value, conversation_id)
 
       true ->
         :ok
     end
   end
 
-  defp extract_work_facts(tokens, _input, user_id, conversation_id) do
+  defp extract_work_facts(world_id, tokens, user_id, conversation_id) do
     cond do
       has_sequence?(tokens, ["i", "work", "at"]) ->
         value = extract_after_sequence(tokens, ["at"])
-        store_fact_if_valid(user_id, :workplace, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :workplace, value, conversation_id)
 
       has_sequence?(tokens, ["i", "work", "for"]) ->
         value = extract_after_sequence(tokens, ["for"])
-        store_fact_if_valid(user_id, :workplace, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :workplace, value, conversation_id)
 
       true ->
         :ok
@@ -2484,7 +2531,7 @@ defmodule Brain do
     end)
   end
 
-  defp store_fact_if_valid(user_id, predicate, value, conversation_id) do
+  defp store_fact_if_valid(world_id, user_id, predicate, value, conversation_id) do
     clean_value =
       if value do
         String.trim(value)
@@ -2501,7 +2548,7 @@ defmodule Brain do
           provenance: ["self_statement", "conversation:#{conversation_id}"]
         )
 
-      BeliefStore.add_belief(belief)
+      BeliefStore.add_belief(world_id, belief)
       UserModelStore.update_fact(user_id, predicate, clean_value, :explicit, 0.9)
 
       Logger.debug("Extracted self-referential fact", %{
