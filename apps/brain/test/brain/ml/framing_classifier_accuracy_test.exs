@@ -31,7 +31,7 @@ defmodule Brain.ML.FramingClassifierAccuracyTest do
 
   Prerequisites:
 
-    - `mix gen_framing_data --corpus gvfc` has been run (writes
+    - `mix gen_framing_data --world default --corpus gvfc` has been run (writes
       `data/classifiers/framing_class.json`).
     - `mix train_framing` has been run (writes
       `priv/ml_models/micro/framing_class.term`).
@@ -57,7 +57,7 @@ defmodule Brain.ML.FramingClassifierAccuracyTest do
       assert File.exists?(data_path),
              """
              Framing training data not found at #{data_path}.
-             Run `mix gen_framing_data --corpus gvfc` to (re)generate it.
+             Run `mix gen_framing_data --world default --corpus gvfc` to (re)generate it.
              """
 
       assert File.exists?(model_path),
@@ -85,7 +85,7 @@ defmodule Brain.ML.FramingClassifierAccuracyTest do
 
       assert length(data) >= 100,
              "Refusing to evaluate on tiny corpus (#{length(data)} examples). " <>
-               "Re-run `mix gen_framing_data --corpus gvfc`."
+               "Re-run `mix gen_framing_data --world default --corpus gvfc`."
 
       :rand.seed(:exsplus, @split_seed)
       {_train, test_set} = data |> Enum.shuffle() |> split_at(0.8)
