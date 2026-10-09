@@ -137,6 +137,32 @@ defmodule Brain.Services.LocalSchedulerTest do
     end
   end
 
+  describe "dispatched by Brain.Services.Dispatcher" do
+    test "a scheduler intent sets and reads back the item in the context's world", %{world_a: world_a, world_b: world_b} do
+      assert {:ok, %{alarm_status: "set", alarm_time: "7am"}} =
+               Brain.Services.Dispatcher.dispatch("alarm.set", %{time: "7am"}, %{world_id: world_a})
+
+      assert {:ok, %{alarm_status: "set", alarm_time: "7am"}} =
+               Brain.Services.Dispatcher.dispatch("alarm.check", %{}, %{world_id: world_a})
+
+      assert {:ok, %{alarm_status: "none set"}} =
+               Brain.Services.Dispatcher.dispatch("alarm.check", %{}, %{world_id: world_b})
+
+      assert {:ok, %{alarm_status: "set", alarm_time: "7am"}} = LocalScheduler.enrich("alarm.check", %{}, %{}, world_a)
+    end
+
+    test "with side effects off, a setting intent is refused and nothing is stored", %{world_a: world_a} do
+      assert {:error, :side_effects_off} =
+               Brain.Services.Dispatcher.dispatch("timer.set", %{duration: "5 minutes"}, %{
+                 world_id: world_a,
+                 side_effects: false
+               })
+
+      assert {:ok, %{timer_status: "none"}} =
+               Brain.Services.Dispatcher.dispatch("timer.check", %{}, %{world_id: world_a, side_effects: false})
+    end
+  end
+
   describe "clear_world/1" do
     test "removes every item of the world and leaves other worlds'", %{world_a: world_a, world_b: world_b} do
       LocalScheduler.enrich("alarm.set", %{time: "7am"}, %{}, world_a)
