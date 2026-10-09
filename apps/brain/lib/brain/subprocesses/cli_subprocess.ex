@@ -9,13 +9,28 @@ defmodule Brain.Subprocesses.CliSubprocess do
 
   # Client API
 
-  def start_link(opts \\ []) do
+  @doc "Starts the subprocess. `opts` must carry `:world_id`, the world its conversations run in; absent raises."
+  def start_link(opts) do
+    world_id = world_id!(opts)
     subprocess_id = Keyword.get(opts, :subprocess_id, generate_id())
     memory_snapshot = Keyword.get(opts, :memory_snapshot, %{})
 
-    GenServer.start_link(__MODULE__, {subprocess_id, memory_snapshot},
+    GenServer.start_link(__MODULE__, {subprocess_id, memory_snapshot, world_id},
       name: via_tuple(subprocess_id)
     )
+  end
+
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "CliSubprocess option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "CliSubprocess needs :world_id, the world its conversations run in"
+    end
   end
 
   @doc "Returns true if the CLI subprocess is ready to accept requests."
@@ -46,12 +61,13 @@ defmodule Brain.Subprocesses.CliSubprocess do
   # Server Callbacks
 
   @impl true
-  def init({subprocess_id, memory_snapshot}) do
+  def init({subprocess_id, memory_snapshot, world_id}) do
     user_id = "cli_#{subprocess_id}"
 
     # Initialize state
     state = %{
       subprocess_id: subprocess_id,
+      world_id: world_id,
       user_id: user_id,
       memory_snapshot: memory_snapshot,
       cli_memory: [],
@@ -232,7 +248,7 @@ defmodule Brain.Subprocesses.CliSubprocess do
         "Conversations: (This would list active conversations)"
 
       ["create", name] ->
-        case Brain.create_conversation() do
+        case Brain.create_conversation(world_id: state.world_id) do
           {:ok, id} ->
             "Created conversation '#{name}' with Brain ID: #{id}"
 
@@ -315,7 +331,7 @@ defmodule Brain.Subprocesses.CliSubprocess do
   defp ensure_conversation_id(state) do
     case state[:conversation_id] do
       nil ->
-        case Brain.create_conversation() do
+        case Brain.create_conversation(world_id: state.world_id) do
           {:ok, id} -> id
           _ -> generate_conversation_id()
         end
