@@ -92,7 +92,7 @@ defmodule Brain.Subprocesses.Supervisor do
        [
          subprocess_id: subprocess_id,
          memory_snapshot: memory_snapshot
-       ] ++ Keyword.take(opts, [:world_id])}
+       ] ++ Keyword.take(opts, [:world_id, :brain])}
 
     case DynamicSupervisor.start_child(__MODULE__, child_spec) do
       {:ok, pid} ->
