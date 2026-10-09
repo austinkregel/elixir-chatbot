@@ -591,7 +591,7 @@ defmodule Brain.Learner do
               }
 
               Enum.each(conflicting_beliefs, fn belief ->
-                ReviewQueue.add_contradiction(new_fact, belief)
+                ReviewQueue.add_contradiction(world_id, new_fact, belief)
               end)
 
             {:uncertain, reason} ->
