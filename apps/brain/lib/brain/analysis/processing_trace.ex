@@ -235,7 +235,7 @@ defmodule Brain.Analysis.ProcessingTrace do
 
     speech_act_result =
       try do
-        SpeechActClassifier.classify(chunk_text)
+        SpeechActClassifier.classify(chunk_text, world_id: opts[:world_id])
       rescue
         _ -> nil
       catch
