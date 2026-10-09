@@ -54,7 +54,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:world_memory_stats, load_world_memory_stats(world_id))
       |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:code_analysis_status, load_code_analysis_status())
-      |> assign(:services_status, load_services_status())
+      |> assign(:services_status, load_services_status(world_id))
       |> assign(:epistemic_metrics, load_epistemic_metrics())
       |> assign(:knowledge_health, load_knowledge_health())
       |> assign(:micro_classifiers_status, load_micro_classifiers_status())
@@ -111,7 +111,7 @@ defmodule ChatWeb.DashboardLive do
         |> assign(:world_memory_stats, load_world_memory_stats(world_id))
         |> assign(:world_models_status, load_world_models_status(world_id))
         |> assign(:code_analysis_status, load_code_analysis_status())
-        |> assign(:services_status, load_services_status())
+        |> assign(:services_status, load_services_status(world_id))
         |> assign(:epistemic_metrics, load_epistemic_metrics())
         |> assign(:knowledge_health, load_knowledge_health())
         |> assign(:micro_classifiers_status, load_micro_classifiers_status())
@@ -155,7 +155,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:world_memory_stats, load_world_memory_stats(world_id))
       |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:code_analysis_status, load_code_analysis_status())
-      |> assign(:services_status, load_services_status())
+      |> assign(:services_status, load_services_status(world_id))
       |> assign(:epistemic_metrics, load_epistemic_metrics())
       |> assign(:knowledge_health, load_knowledge_health())
       |> assign(:micro_classifiers_status, load_micro_classifiers_status())
@@ -201,6 +201,7 @@ defmodule ChatWeb.DashboardLive do
     |> assign(:world_memory_stats, load_world_memory_stats(world_id))
     |> assign(:world_models_status, load_world_models_status(world_id))
     |> assign(:readiness_details, load_readiness_details(world_id))
+    |> assign(:services_status, load_services_status(world_id))
   end
 
   defp load_genserver_status do
@@ -235,8 +236,8 @@ defmodule ChatWeb.DashboardLive do
     SystemStatus.get_code_analysis_status()
   end
 
-  defp load_services_status do
-    SystemStatus.get_services_status()
+  defp load_services_status(world_id) do
+    SystemStatus.get_services_status(world_id)
   end
 
   defp load_epistemic_metrics do
