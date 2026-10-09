@@ -9,11 +9,23 @@ defmodule Mix.Tasks.TrainPoincare do
 
   ## Options
 
-    * `--world` - required: the world ID to scope training to
     * `--dim` - Embedding dimension (default: 5)
     * `--epochs` - Number of training epochs (default: 50)
     * `--learning-rate` - Learning rate (default: 0.01)
     * `--verbose` - Print detailed progress
+    * `--publish` - Upload the embeddings to ModelStore after training
+
+  An option this task does not know raises.
+
+  ## Trained embeddings and worlds
+
+  The hierarchy pairs come from the shared analysis data (entity types, the
+  intent registry, domain response frames and templates), which no world owns, so
+  the embeddings are written to the trained models directory
+  (`Brain.ML.Poincare.Embeddings.trained_path/0`), not into any world. A world
+  receives retrained embeddings when it is seeded:
+  `mix world.seed_model poincare_embeddings`, or `World.Manager` when it creates
+  the world.
   """
 
   use Mix.Task
@@ -23,29 +35,27 @@ defmodule Mix.Tasks.TrainPoincare do
 
   @impl true
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args,
+    {opts, _, invalid} = OptionParser.parse(args,
       strict: [
-        world: :string,
         dim: :integer,
         epochs: :integer,
         learning_rate: :float,
         verbose: :boolean,
         publish: :boolean
       ],
-      aliases: [w: :world, d: :dim, e: :epochs, v: :verbose]
+      aliases: [d: :dim, e: :epochs, v: :verbose]
     )
+
+    if invalid != [], do: Mix.raise("train_poincare: unknown options #{inspect(invalid)}")
 
     Mix.Task.run("app.start")
 
-    world_id =
-      Keyword.get(opts, :world) ||
-        Mix.raise("mix train_poincare needs --world <id>, the world the embeddings are trained for")
     dim = Keyword.get(opts, :dim, 5)
     epochs = Keyword.get(opts, :epochs, 50)
     lr = Keyword.get(opts, :learning_rate, 0.01)
     verbose = Keyword.get(opts, :verbose, false)
 
-    Mix.shell().info("Training Poincare embeddings for world: #{world_id}")
+    Mix.shell().info("Training Poincare embeddings")
 
     pairs = load_hierarchy_pairs()
 
@@ -75,12 +85,13 @@ defmodule Mix.Tasks.TrainPoincare do
       seed: seed
     )
 
-    output_path = model_path(world_id)
+    output_path = Embeddings.trained_path()
     Embeddings.save(embeddings, entity_to_idx, idx_to_entity, dim, output_path, training_seed: seed)
     Mix.shell().info("Embeddings saved to #{output_path}")
+    Mix.shell().info("Seed worlds with them: mix world.seed_model poincare_embeddings --all")
 
     if opts[:publish] do
-      remote_key = ModelStore.version_prefix() <> "#{world_id}/poincare/embeddings.term"
+      remote_key = ModelStore.version_prefix() <> Path.basename(output_path)
       ModelStore.publish(output_path, remote_key)
     end
 
@@ -395,11 +406,6 @@ defmodule Mix.Tasks.TrainPoincare do
     ]
 
     Enum.find(candidates, hd(candidates), &File.exists?/1)
-  end
-
-  defp model_path(world_id) do
-    priv = :code.priv_dir(:brain) |> to_string()
-    Path.join([priv, "ml_models", world_id, "poincare", "embeddings.term"])
   end
 
   defp evaluate_embeddings(embeddings, entity_to_idx, pairs) do
