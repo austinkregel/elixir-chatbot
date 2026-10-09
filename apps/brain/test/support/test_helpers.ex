@@ -6,6 +6,9 @@ defmodule Brain.TestHelpers do
   alias Brain.ML.Gazetteer
   import ExUnit.Callbacks
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   @doc "Ensures a supervised process is started, handling already-started cases\nand race conditions during process shutdown/restart cycles.\n"
   def ensure_started(child_spec) do
     ensure_started(child_spec, 3)
@@ -280,9 +283,9 @@ this is typically a no-op, but some tests call it directly as a safety check.
            "Response should not match #{inspect(pattern)}, got: #{response}"
   end
 
-  @doc "Analyzes the bot's response using the Pipeline to interpret what intent it represents.\n\nThis allows tests to verify that the bot \"understands\" what it responded with\nby having it interpret its own output.\n\nReturns the analysis result from Pipeline.process/1.\n\n## Example\n\n    {:ok, response, _context} = evaluate_with_context(conv_id, \"Hello!\")\n    response_analysis = analyze_bot_response(response)\n    assert_response_is_greeting(response_analysis)\n"
+  @doc "Analyzes the bot's response using the Pipeline to interpret what intent it represents.\n\nThis allows tests to verify that the bot \"understands\" what it responded with\nby having it interpret its own output.\n\nReturns the analysis result from Pipeline.process/2, run in the world the\ntest suite runs in.\n\n## Example\n\n    {:ok, response, _context} = evaluate_with_context(conv_id, \"Hello!\")\n    response_analysis = analyze_bot_response(response)\n    assert_response_is_greeting(response_analysis)\n"
   def analyze_bot_response(response) when is_binary(response) do
-    Pipeline.process(response)
+    Pipeline.process(response, world_id: @world_id)
   end
 
   @doc "Asserts that the bot's response, when analyzed by Pipeline, indicates a greeting.\n\nThis uses the Pipeline to interpret the response and checks if it\nwould be classified as a greeting speech act. This verifies that\nBrain \"understands\" what it responded with.\n"
