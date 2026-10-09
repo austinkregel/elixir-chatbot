@@ -34,6 +34,11 @@ defmodule Brain.Memory.ConsolidationTest do
 
     Store.clear()
 
+    # The facts consolidated here outlive the test's rolled-back episodes in
+    # the store's index; cleared so no later turn recalls one whose evidence
+    # is gone (`Brain.Memory.RecurringPattern.find/2` raises on it).
+    on_exit(fn -> Store.clear() end)
+
     :ok
   end
 
@@ -94,6 +99,8 @@ defmodule Brain.Memory.ConsolidationTest do
       {:ok, semantic} = Store.get_semantic(semantic_id, world_id: @world_id)
       assert "smalltalk.greetings.hello" in semantic.tags
       assert length(semantic.evidence_ids) == 2
+      assert semantic.representation == "hello world | hello there"
+      assert semantic.action == "smalltalk.greetings.hello"
       {:ok, updated_ep1} = Store.get_episode(id1, world_id: @world_id)
       assert updated_ep1.semantic_id == semantic_id
     end
