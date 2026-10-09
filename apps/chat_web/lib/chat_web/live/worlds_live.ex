@@ -12,17 +12,31 @@ defmodule ChatWeb.WorldsLive do
   Each world's row lists the model files in its own models directory
   (`World.ModelRegistry.models_dir/1`): a world uses the models it holds, so a
   world missing one is visible here before a conversation fails on it.
+
+  "Your profile" lists the facts the system holds about this web user: their
+  user model (`Brain.Epistemic.UserModelStore`). It has no world, so it is the
+  same whichever world is selected.
   """
 
   use ChatWeb, :live_view
 
   import ChatWeb.AppShell
 
+  alias Brain.Epistemic.UserModelStore
   alias World.ModelRegistry
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, load_models(socket)}
+    {:ok, socket |> load_models() |> load_profile()}
+  end
+
+  defp load_profile(socket) do
+    facts =
+      socket.assigns.current_user_id
+      |> UserModelStore.get_facts_with_confidence(0.0)
+      |> Enum.sort_by(&to_string(&1.key))
+
+    assign(socket, :profile_facts, facts)
   end
 
   @impl true
@@ -78,6 +92,41 @@ defmodule ChatWeb.WorldsLive do
               <dt class="text-ink-muted">Selected world</dt>
               <dd id="web-user-world" class="text-ref text-ink">{@current_world_id}</dd>
             </dl>
+          </.card_body>
+        </.card>
+
+        <.card>
+          <.card_body class="space-y-space-md">
+            <.section_header icon="hero-identification">Your profile</.section_header>
+
+            <.empty_panel
+              :if={@profile_facts == []}
+              kind={:plain}
+              words="No facts are held about you yet."
+            />
+
+            <div :if={@profile_facts != []} class="overflow-x-auto">
+              <table id="profile-facts" class="w-full text-left text-body-dense text-ink">
+                <thead class="bg-surface-sunk">
+                  <tr>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Fact</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Value</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Confidence</th>
+                    <th class="h-row-compact px-space-sm text-label text-ink-muted">Learned</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  <tr :for={fact <- @profile_facts} id={"profile-fact-#{fact.key}"}>
+                    <td class="px-space-sm py-space-xs text-ref text-ink">{fact.key}</td>
+                    <td class="px-space-sm py-space-xs text-ink">{fact.value}</td>
+                    <td class="px-space-sm py-space-xs text-caption text-ink">
+                      {:erlang.float_to_binary(fact.confidence * 1.0, decimals: 2)}
+                    </td>
+                    <td class="px-space-sm py-space-xs text-caption text-ink">{fact.provenance}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </.card_body>
         </.card>
 
