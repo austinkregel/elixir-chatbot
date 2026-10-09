@@ -28,10 +28,13 @@ defmodule Brain.AtlasIntegration do
   Unlike `available?/0` (which only checks process presence), this detects
   broken Postgres connections. Used by SystemStatus for definitive health
   determination. Do NOT use in hot paths -- the query adds ~1ms latency.
+
+  Probes the shared `pos_graph`: connectivity is not a question about any
+  world.
   """
   def ping do
     try do
-      case Atlas.Graph.cypher("knowledge_graph", "RETURN 1") do
+      case Atlas.Graph.cypher("pos_graph", "RETURN 1") do
         {:ok, _} -> :ok
         {:error, reason} -> {:error, reason}
       end
@@ -120,12 +123,17 @@ defmodule Brain.AtlasIntegration do
   # BeliefStore Integration
   # ============================================================================
 
-  @doc "Load all beliefs from Atlas. Returns list of Brain.Epistemic.Types.Belief structs."
+  @doc """
+  Load all beliefs from Atlas, in every world. Returns a list of
+  `{world_id, Brain.Epistemic.Types.Belief}`: each belief with the world it is
+  held in.
+  """
   def load_beliefs do
     with {:ok, result} <- sync(fn -> Atlas.Repo.all(Atlas.Schemas.Belief) end) do
       beliefs =
         Enum.map(result, fn row ->
-          %Brain.Epistemic.Types.Belief{
+          {row.world_id,
+           %Brain.Epistemic.Types.Belief{
             id: row.id,
             subject: parse_atom_or_string(row.subject),
             predicate: safe_to_atom(row.predicate),
@@ -138,17 +146,20 @@ defmodule Brain.AtlasIntegration do
             created_at: row.inserted_at,
             last_confirmed: row.last_confirmed,
             provenance: Map.get(row.provenance || %{}, "list", [])
-          }
+          }}
         end)
 
       {:ok, beliefs}
     end
   end
 
-  @doc "Persist a belief to Atlas asynchronously."
-  def persist_belief(%Brain.Epistemic.Types.Belief{} = belief) do
+  @doc "Persist a belief held in a world to Atlas asynchronously."
+  def persist_belief(world_id, %Brain.Epistemic.Types.Belief{} = belief) do
+    world_id = belief_world_id!(world_id)
+
     async(fn ->
       attrs = %{
+        world_id: world_id,
         subject: to_string(belief.subject),
         predicate: to_string(belief.predicate),
         object: to_string(belief.object),
@@ -163,7 +174,7 @@ defmodule Brain.AtlasIntegration do
         metadata: %{}
       }
 
-      case Atlas.Repo.get(Atlas.Schemas.Belief, belief.id) do
+      case belief_in_world(world_id, belief.id) do
         # The id goes on the struct, not through the changeset:
         # `Atlas.Schemas.Belief.changeset/2` does not cast `:id`
         # (`belief.ex:33-38`), so passing it in `attrs` dropped it and the
@@ -183,10 +194,12 @@ defmodule Brain.AtlasIntegration do
     end)
   end
 
-  @doc "Update belief confidence in Atlas."
-  def update_belief_confidence(belief_id, confidence, last_confirmed) do
+  @doc "Update the confidence of a belief held in a world, in Atlas."
+  def update_belief_confidence(world_id, belief_id, confidence, last_confirmed) do
+    world_id = belief_world_id!(world_id)
+
     async(fn ->
-      case Atlas.Repo.get(Atlas.Schemas.Belief, belief_id) do
+      case belief_in_world(world_id, belief_id) do
         nil -> :ok
 
         belief ->
@@ -200,10 +213,12 @@ defmodule Brain.AtlasIntegration do
     end)
   end
 
-  @doc "Mark a belief as retracted in Atlas."
-  def retract_belief_in_atlas(belief_id) do
+  @doc "Mark a belief held in a world as retracted in Atlas."
+  def retract_belief_in_atlas(world_id, belief_id) do
+    world_id = belief_world_id!(world_id)
+
     async(fn ->
-      case Atlas.Repo.get(Atlas.Schemas.Belief, belief_id) do
+      case belief_in_world(world_id, belief_id) do
         nil -> :ok
 
         belief ->
@@ -212,6 +227,24 @@ defmodule Brain.AtlasIntegration do
           |> Atlas.Repo.update()
       end
     end)
+  end
+
+  # A belief row is only ever read or changed in the world it is held in.
+  defp belief_in_world(world_id, belief_id) do
+    import Ecto.Query
+
+    Atlas.Schemas.Belief
+    |> Atlas.Schemas.Belief.in_world(world_id)
+    |> where([b], b.id == ^belief_id)
+    |> Atlas.Repo.one()
+  end
+
+  # Checked in the caller's process, before anything runs asynchronously, so a
+  # missing world raises instead of being lost in the background.
+  defp belief_world_id!(world_id) when is_binary(world_id) and world_id != "", do: world_id
+
+  defp belief_world_id!(other) do
+    raise ArgumentError, "a belief is held in a world; got no world id: #{inspect(other)}"
   end
 
   # ============================================================================
@@ -933,6 +966,10 @@ defmodule Brain.AtlasIntegration do
 
   @doc """
   Find an existing graph node by label and name property.
+
+  Only `graph` is searched. For a world's data that is the world's graph
+  (`Atlas.Graph.world_graph/2`), so a node of another world is never found
+  and never reused; `ensure_node/3` creates within that graph only.
 
   Returns `{:ok, vertex}` when the graph holds one, `:not_found` when the
   query succeeded and matched nothing, and `{:error, reason}` when the lookup
