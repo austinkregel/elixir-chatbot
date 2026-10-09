@@ -5,6 +5,9 @@ defmodule Brain.Knowledge.CorroboratorTest do
   alias Brain.Knowledge.Corroborator
   alias Types.{Finding, SourceInfo}
 
+  # "default" is the world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   describe "corroborate/2" do
     test "groups similar claims from different sources" do
       findings = [
@@ -13,9 +16,11 @@ defmodule Brain.Knowledge.CorroboratorTest do
         build_finding("Berlin is the capital of Germany", "Germany", "source1.com")
       ]
 
-      {:ok, all_candidates} = Corroborator.corroborate(findings, include_uncorroborated: true)
+      {:ok, all_candidates} =
+        Corroborator.corroborate(findings, world_id: @world_id, include_uncorroborated: true)
+
       assert all_candidates != []
-      {:ok, filtered_candidates} = Corroborator.corroborate(findings)
+      {:ok, filtered_candidates} = Corroborator.corroborate(findings, world_id: @world_id)
 
       paris_candidates =
         Enum.filter(all_candidates, fn c ->
@@ -36,14 +41,34 @@ defmodule Brain.Knowledge.CorroboratorTest do
     test "includes uncorroborated when option set" do
       findings = [build_finding("Single source claim", "Entity", "source1.com")]
 
-      {:ok, candidates} = Corroborator.corroborate(findings, include_uncorroborated: true)
+      {:ok, candidates} =
+        Corroborator.corroborate(findings, world_id: @world_id, include_uncorroborated: true)
 
       assert length(candidates) == 1
     end
 
     test "returns empty list for empty input" do
-      {:ok, candidates} = Corroborator.corroborate([])
+      {:ok, candidates} = Corroborator.corroborate([], world_id: @world_id)
       assert candidates == []
+    end
+
+    test "raises without a :world_id, whatever the findings" do
+      findings = [
+        build_finding("Paris is the capital of France", "France", "source1.com"),
+        build_finding("France's capital city is Paris", "France", "source2.com")
+      ]
+
+      assert_raise ArgumentError, ~r/corroborate requires a :world_id option/, fn ->
+        Corroborator.corroborate(findings, include_uncorroborated: true)
+      end
+
+      assert_raise ArgumentError, ~r/corroborate requires a :world_id option/, fn ->
+        Corroborator.corroborate([], world_id: nil)
+      end
+
+      assert_raise ArgumentError, ~r/corroborate requires a :world_id option/, fn ->
+        Corroborator.corroborate(findings, world_id: "")
+      end
     end
 
     test "respects custom similarity threshold" do
@@ -52,7 +77,8 @@ defmodule Brain.Knowledge.CorroboratorTest do
         build_finding("The population is around 100", "City", "source2.com")
       ]
 
-      {:ok, candidates} = Corroborator.corroborate(findings, similarity_threshold: 0.5)
+      {:ok, candidates} =
+        Corroborator.corroborate(findings, world_id: @world_id, similarity_threshold: 0.5)
 
       assert candidates != []
     end
