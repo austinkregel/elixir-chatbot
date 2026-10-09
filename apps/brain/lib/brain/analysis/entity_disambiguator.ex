@@ -219,7 +219,17 @@ defmodule Brain.Analysis.EntityDisambiguator do
     entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
     original_type = Map.get(entity, :entity_type) || ""
     intent = Map.get(context, :intent, "")
-    world_id = Map.get(context, :world_id) || "default"
+    world_id =
+      case Map.get(context, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "EntityDisambiguator.infer_type_with_type_inferrer needs :world_id in the context, " <>
+                  "the world types are inferred in; got #{inspect(other)}"
+      end
+
     profile = Map.get(context, :profile)
 
     expected_types = registry_expected_types(profile, intent)
