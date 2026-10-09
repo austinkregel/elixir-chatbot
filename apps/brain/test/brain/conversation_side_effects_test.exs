@@ -35,6 +35,9 @@ defmodule Brain.ConversationSideEffectsTest do
 
   @graphs ~w(conversation_graph knowledge_graph epistemic_graph user_graph semantic_graph)
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup do
     {:ok, user_id: "conversation_side_effects_#{System.unique_integer([:positive])}"}
   end
@@ -43,7 +46,7 @@ defmodule Brain.ConversationSideEffectsTest do
     test "writes nothing across its turns", %{user_id: user_id} do
       before = snapshot()
 
-      {:ok, conversation_id} = Brain.create_conversation(side_effects: false)
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id, side_effects: false)
 
       for input <- @inputs do
         assert {:ok, %{response: _}} = Brain.evaluate(conversation_id, input, user_id: user_id)
@@ -57,7 +60,7 @@ defmodule Brain.ConversationSideEffectsTest do
     test "still writes what its turns learn", %{user_id: user_id} do
       before = snapshot()
 
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
 
       for input <- @inputs do
         assert {:ok, %{response: _}} = Brain.evaluate(conversation_id, input, user_id: user_id)
@@ -73,12 +76,12 @@ defmodule Brain.ConversationSideEffectsTest do
   describe "the option is validated" do
     test "create_conversation raises on a value other than true or false" do
       assert_raise ArgumentError, ~r/:side_effects must be true or false/, fn ->
-        Brain.create_conversation(side_effects: :no)
+        Brain.create_conversation(world_id: @world_id, side_effects: :no)
       end
     end
 
     test "evaluate does not take side_effects" do
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
 
       assert_raise ArgumentError, ~r/set for the whole conversation/, fn ->
         Brain.evaluate(conversation_id, "Hello", side_effects: false)
