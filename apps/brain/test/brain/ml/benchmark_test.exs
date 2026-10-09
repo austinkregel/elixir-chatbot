@@ -23,6 +23,9 @@ defmodule Brain.ML.BenchmarkTest do
 
   alias ML.{Evaluation, EvaluationStore}
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   # These run the whole pipeline, which reads the knowledge graph. Without a
   # checked-out connection every one of those lookups fails, and the graph
   # features silently read as "unknown" — 2,960 failed lookups in one suite
@@ -269,7 +272,7 @@ defmodule Brain.ML.BenchmarkTest do
   describe "full pipeline" do
     @tag :benchmark
     test "pipeline processes multi-sentence input with correct strategy" do
-      result = Pipeline.process("Hello! What's the weather?")
+      result = Pipeline.process("Hello! What's the weather?", world_id: @world_id)
 
       assert result.analyses != [], "Expected at least 1 analysis chunk"
 
@@ -283,7 +286,7 @@ defmodule Brain.ML.BenchmarkTest do
 
     @tag :benchmark
     test "pipeline includes sentiment in analysis" do
-      result = Pipeline.process("I'm really frustrated with this.")
+      result = Pipeline.process("I'm really frustrated with this.", world_id: @world_id)
 
       first_analysis = List.first(result.analyses)
 
@@ -303,7 +306,7 @@ defmodule Brain.ML.BenchmarkTest do
     Enum.map(texts, fn text ->
       intent =
         try do
-          analysis = Pipeline.analyze_chunk(text, side_effects: false)
+          analysis = Pipeline.analyze_chunk(text, world_id: @world_id, side_effects: false)
           to_string(analysis.intent || "unknown")
         rescue
           _ -> "unknown"
@@ -321,7 +324,7 @@ defmodule Brain.ML.BenchmarkTest do
 
   defp extract_entities(text) do
     try do
-      EntityExtractor.extract_entities(text)
+      EntityExtractor.extract_entities(text, world_id: @world_id)
     rescue
       _ -> []
     catch
@@ -376,7 +379,7 @@ defmodule Brain.ML.BenchmarkTest do
         expected = example["intent"]
 
         try do
-          analysis = Pipeline.analyze_chunk(text, side_effects: false)
+          analysis = Pipeline.analyze_chunk(text, world_id: @world_id, side_effects: false)
           {[to_string(analysis.intent || "unknown") | preds], [expected | acts], errors}
         rescue
           e -> {preds, acts, [{text, Exception.message(e)} | errors]}
