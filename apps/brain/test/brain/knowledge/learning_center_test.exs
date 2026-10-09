@@ -6,6 +6,9 @@ defmodule Brain.Knowledge.LearningCenterTest do
   alias Knowledge.{LearningCenter, ReviewQueue, SourceReliability}
   alias Brain.Knowledge.Types.ResearchGoal
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup _context do
     ensure_pubsub_started()
 
@@ -24,7 +27,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
 
   describe "start_session/2" do
     test "starts a new learning session" do
-      {:ok, session} = LearningCenter.start_session("European capitals", mock: true)
+      {:ok, session} = LearningCenter.start_session("European capitals", world_id: @world_id, mock: true)
 
       assert is_binary(session.id)
       assert session.status == :active
@@ -33,7 +36,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
     end
 
     test "generates goals from topic" do
-      {:ok, session} = LearningCenter.start_session("Test topic", mock: true, max_goals: 2)
+      {:ok, session} = LearningCenter.start_session("Test topic", world_id: @world_id, mock: true, max_goals: 2)
 
       assert length(session.goals) <= 2
       assert Enum.all?(session.goals, &match?(%ResearchGoal{}, &1))
@@ -43,7 +46,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
       {:ok, session} =
         LearningCenter.start_session("France",
           questions: ["What is the capital?", "What is the population?"],
-          mock: true
+          world_id: @world_id, mock: true
         )
 
       assert session.goals != []
@@ -52,7 +55,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
 
   describe "get_session/1" do
     test "retrieves existing session" do
-      {:ok, session} = LearningCenter.start_session("Test", mock: true)
+      {:ok, session} = LearningCenter.start_session("Test", world_id: @world_id, mock: true)
 
       {:ok, retrieved} = LearningCenter.get_session(session.id)
 
@@ -67,7 +70,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
 
   describe "cancel_session/1" do
     test "cancels an active session" do
-      {:ok, session} = LearningCenter.start_session("To Cancel", mock: true)
+      {:ok, session} = LearningCenter.start_session("To Cancel", world_id: @world_id, mock: true)
 
       :ok = LearningCenter.cancel_session(session.id)
 
@@ -82,8 +85,8 @@ defmodule Brain.Knowledge.LearningCenterTest do
 
   describe "list_sessions/1" do
     test "lists all sessions" do
-      {:ok, _} = LearningCenter.start_session("Session 1", mock: true)
-      {:ok, _} = LearningCenter.start_session("Session 2", mock: true)
+      {:ok, _} = LearningCenter.start_session("Session 1", world_id: @world_id, mock: true)
+      {:ok, _} = LearningCenter.start_session("Session 2", world_id: @world_id, mock: true)
 
       sessions = LearningCenter.list_sessions()
 
@@ -91,7 +94,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
     end
 
     test "filters by status" do
-      {:ok, session} = LearningCenter.start_session("To Cancel", mock: true)
+      {:ok, session} = LearningCenter.start_session("To Cancel", world_id: @world_id, mock: true)
       LearningCenter.cancel_session(session.id)
 
       active = LearningCenter.list_sessions(status: :active)
@@ -103,7 +106,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
 
     test "respects limit" do
       for i <- 1..5 do
-        LearningCenter.start_session("Session #{i}", mock: true)
+        LearningCenter.start_session("Session #{i}", world_id: @world_id, mock: true)
       end
 
       sessions = LearningCenter.list_sessions(limit: 3)
@@ -126,7 +129,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
 
   describe "add_goal/2" do
     test "adds goal to existing session" do
-      {:ok, session} = LearningCenter.start_session("Main topic", mock: true)
+      {:ok, session} = LearningCenter.start_session("Main topic", world_id: @world_id, mock: true)
       goal = ResearchGoal.new("Sub topic")
 
       :ok = LearningCenter.add_goal(session.id, goal)
@@ -143,7 +146,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
 
   describe "session completion" do
     test "session completes when all agents finish" do
-      {:ok, session} = LearningCenter.start_session("Quick topic", mock: true, max_goals: 1)
+      {:ok, session} = LearningCenter.start_session("Quick topic", world_id: @world_id, mock: true, max_goals: 1)
       Process.sleep(500)
 
       {:ok, completed} = LearningCenter.get_session(session.id)
