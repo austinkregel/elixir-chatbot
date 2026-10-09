@@ -262,6 +262,7 @@ defmodule Mix.Tasks.Intent.Attribute do
     analysis =
       Pipeline.analyze_chunk(text,
         side_effects: false,
+        active_contexts: Brain.Analysis.ActiveContexts.for_row(entry),
         progress: %{conversation_id: tag, message_id: tag}
       )
 
