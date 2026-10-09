@@ -50,14 +50,15 @@ defmodule Brain.Response.Enricher do
     - intent: The classified intent
     - slots: Map of filled slots (e.g., %{location: "NYC"})
     - context: Current generation context. It must carry `:world_id` (or
-      `:world`), the world whose service credentials are used; absent raises
-      when the intent is not nil.
+      `:world`), the world whose service credentials are used; absent raises.
 
   ## Returns
     Updated context map with enrichment information.
   """
   @spec prepare_context(String.t() | nil, map(), map()) :: map()
   def prepare_context(intent, slots, context) do
+    context_world!(context)
+
     # Check which services are available for this intent
     available_services = get_available_services(intent, context)
 
