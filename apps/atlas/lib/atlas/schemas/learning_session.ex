@@ -15,6 +15,7 @@ defmodule Atlas.Schemas.LearningSession do
   @primary_key {:id, :binary_id, autogenerate: true}
 
   schema "atlas_learning_sessions" do
+    field :world_id, :string
     field :topic, :string
     field :status, :string, default: "active"
     field :started_at, :utc_datetime_usec
@@ -37,7 +38,8 @@ defmodule Atlas.Schemas.LearningSession do
   @valid_statuses ~w(active completed cancelled)
   @valid_source_types ~w(web academic task auto_trigger)
 
-  @required_fields ~w()a
+  # A session researches for one world; the caller names it.
+  @required_fields ~w(world_id)a
   @optional_fields ~w(topic status started_at completed_at findings_count approved_count
     rejected_count hypotheses_tested hypotheses_supported hypotheses_falsified
     source_type metadata)a
@@ -45,6 +47,7 @@ defmodule Atlas.Schemas.LearningSession do
   def changeset(session, attrs) do
     session
     |> cast(attrs, @required_fields ++ @optional_fields)
+    |> validate_required(@required_fields)
     |> validate_inclusion(:status, @valid_statuses)
     |> validate_inclusion(:source_type, @valid_source_types)
     |> validate_number(:findings_count, greater_than_or_equal_to: 0)
