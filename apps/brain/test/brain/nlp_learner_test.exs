@@ -4,6 +4,9 @@ defmodule Brain.NLPLearnerTest do
   alias Brain.KnowledgeStore
   import Brain.TestHelpers
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup _context do
     start_test_services()
 
@@ -25,7 +28,7 @@ defmodule Brain.NLPLearnerTest do
     test "extracts entities from natural language", %{persona_name: persona_name} do
       input = "Turn on the kitchen lights"
 
-      {:ok, result} = Learner.learn_from_input(persona_name, input)
+      {:ok, result} = Learner.learn_from_input(persona_name, input, world_id: @world_id)
 
       # Should return some kind of result (either extracted data or general memory)
       assert is_map(result)
@@ -38,7 +41,7 @@ defmodule Brain.NLPLearnerTest do
     test "extracts location information from natural language", %{persona_name: persona_name} do
       input = "What's the weather in New York?"
 
-      {:ok, result} = Learner.learn_from_input(persona_name, input)
+      {:ok, result} = Learner.learn_from_input(persona_name, input, world_id: @world_id)
 
       assert is_map(result)
 
@@ -49,7 +52,7 @@ defmodule Brain.NLPLearnerTest do
     test "extracts device information from natural language", %{persona_name: persona_name} do
       input = "Turn off the living room TV"
 
-      {:ok, result} = Learner.learn_from_input(persona_name, input)
+      {:ok, result} = Learner.learn_from_input(persona_name, input, world_id: @world_id)
 
       assert is_map(result)
 
@@ -60,7 +63,7 @@ defmodule Brain.NLPLearnerTest do
     test "handles ambiguous or unclear input gracefully", %{persona_name: persona_name} do
       input = "Hello, how are you today? The weather is nice."
 
-      {:ok, result} = Learner.learn_from_input(persona_name, input)
+      {:ok, result} = Learner.learn_from_input(persona_name, input, world_id: @world_id)
 
       # Should still return a result, even if no specific entities found
       assert is_map(result)
@@ -77,7 +80,7 @@ defmodule Brain.NLPLearnerTest do
       # The system should fall back to storing general memory
       input = "Hello world"
 
-      {:ok, result} = Learner.learn_from_input(persona_name, input)
+      {:ok, result} = Learner.learn_from_input(persona_name, input, world_id: @world_id)
 
       # Should always return a result
       assert is_map(result)
@@ -93,7 +96,7 @@ defmodule Brain.NLPLearnerTest do
       # For now, we just ensure the system handles confidence scores
       input = "I am John and I am 30 years old"
 
-      {:ok, result} = Learner.learn_from_input(persona_name, input)
+      {:ok, result} = Learner.learn_from_input(persona_name, input, world_id: @world_id)
 
       assert is_map(result)
 
@@ -107,7 +110,7 @@ defmodule Brain.NLPLearnerTest do
       input =
         "John owns a dog named Max. Sarah lives in the apartment next door. The dog belongs to John."
 
-      {:ok, result} = Learner.learn_from_input(persona_name, input)
+      {:ok, result} = Learner.learn_from_input(persona_name, input, world_id: @world_id)
 
       assert is_map(result)
 
@@ -121,7 +124,7 @@ defmodule Brain.NLPLearnerTest do
       input =
         "My car is a red Toyota Camry that I bought last year. It has great fuel efficiency and is very reliable."
 
-      {:ok, result} = Learner.learn_from_input(persona_name, input)
+      {:ok, result} = Learner.learn_from_input(persona_name, input, world_id: @world_id)
 
       assert is_map(result)
 
@@ -134,7 +137,7 @@ defmodule Brain.NLPLearnerTest do
     test "stores learning context in memory", %{persona_name: persona_name} do
       input = "I am learning about machine learning and artificial intelligence."
 
-      {:ok, result} = Learner.learn_from_input(persona_name, input)
+      {:ok, result} = Learner.learn_from_input(persona_name, input, world_id: @world_id)
 
       assert is_map(result)
 
