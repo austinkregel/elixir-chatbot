@@ -513,8 +513,20 @@ defmodule Brain.SystemStatus do
   - Dispatch metrics (success rate, avg latency)
   - Cache performance (hit rate)
   - Health check results
+
+  Credentials are stored per world, so "configured" is reported for
+  `world_id`; a missing world raises.
   """
-  def get_services_status do
+  def get_services_status(world_id) do
+    unless is_binary(world_id) and world_id != "" do
+      raise ArgumentError,
+            "SystemStatus.get_services_status needs the world whose service credentials are checked, got: #{inspect(world_id)}"
+    end
+
+    services_status_in_world(world_id)
+  end
+
+  defp services_status_in_world(world_id) do
     alias Brain.Services.{Dispatcher, CredentialVault, Cache}
 
     # GenServer statuses
@@ -523,7 +535,7 @@ defmodule Brain.SystemStatus do
 
     # Get registered services info
     services =
-      Dispatcher.list_services()
+      Dispatcher.list_services(world: world_id)
       |> Enum.map(fn service_info ->
         service_name = service_info.name
 
@@ -735,9 +747,18 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  @doc "Returns readiness details for a specific world.\n\nOptions:\n  - `:world_id` - The world ID to check (default: \"default\")\n"
-  def get_readiness_details(opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, "default")
+  @doc "Returns readiness details for a specific world.\n\nOptions:\n  - `:world_id` - Required. The world ID to check; absent raises.\n"
+  def get_readiness_details(opts) do
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "SystemStatus.get_readiness_details requires a :world_id option, the world whose " <>
+                  "readiness is reported; got #{inspect(other)}"
+      end
 
     status = get_all()
     models = get_ml_models_status()
@@ -856,9 +877,7 @@ defmodule Brain.SystemStatus do
           end
 
         embedder = models[:embedder]
-        pos_model = models[:pos_model]
         embedder_vocab_size = extract_vocab_size(embedder, :vocabulary)
-        pos_model_tags = extract_vocab_size(pos_model, :tag_vocabulary)
         has_embedder = embedder != nil and is_map(embedder) and map_size(embedder) > 0
 
         %{
@@ -877,10 +896,10 @@ defmodule Brain.SystemStatus do
           has_embedder: has_embedder,
           # Whether the world holds its own copy (Brain.ML.EntityModel).
           has_entity_model: File.regular?(Brain.ML.EntityModel.path(world_id)),
-          has_pos_model: pos_model != nil and map_size(pos_model) > 0,
+          # POS tagging is shared by every world (Brain.ML.POSTagger).
+          has_pos_model: Brain.ML.POSTagger.model_exists?(),
           classifier_vocab_size: embedder_vocab_size,
           embedder_vocab_size: embedder_vocab_size,
-          pos_model_size: pos_model_tags,
           checked_at: DateTime.utc_now()
         }
       catch
@@ -906,7 +925,6 @@ defmodule Brain.SystemStatus do
       has_pos_model: false,
       classifier_vocab_size: 0,
       embedder_vocab_size: 0,
-      pos_model_size: 0,
       checked_at: DateTime.utc_now()
     }
   end
