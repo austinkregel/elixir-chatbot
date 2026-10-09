@@ -27,14 +27,17 @@ defmodule Brain.Analysis.EntityGraphEnricher do
   When 2+ entities appear in the same chunk, also discovers
   `relationship_path` between each pair for event understanding.
 
-  `world_id` is the world whose graph lookups are cached; anything other than
-  a world id raises `ArgumentError`, before any lookup runs.
+  `world_id` is the world whose knowledge graph is read and whose lookups are
+  cached; anything other than a world id that names a graph raises
+  `ArgumentError`, before any lookup runs.
   """
   def enrich(entities, world_id) when is_list(entities) do
     unless is_binary(world_id) and world_id != "" do
       raise ArgumentError,
             "EntityGraphEnricher.enrich needs the world the entities were extracted in, got: #{inspect(world_id)}"
     end
+
+    Atlas.Graph.world_graph("knowledge_graph", world_id)
 
     if entities == [] or not atlas_available?() do
       Enum.map(entities, &default_enrichment/1)
@@ -51,7 +54,7 @@ defmodule Brain.Analysis.EntityGraphEnricher do
       known_count = Enum.count(enriched, &Map.get(&1, :graph_known, false))
       if debug?, do: Logger.info("    graph_enrich:apply_context=#{System.monotonic_time(:millisecond) - t0}ms (#{known_count} known)")
 
-      result = apply_relationships(enriched)
+      result = apply_relationships(enriched, world_id)
 
       if debug?, do: Logger.info("    graph_enrich:relationships=#{System.monotonic_time(:millisecond) - t0}ms")
 
@@ -114,7 +117,7 @@ defmodule Brain.Analysis.EntityGraphEnricher do
     end)
   end
 
-  defp apply_relationships(entities) do
+  defp apply_relationships(entities, world_id) do
     known_entities = Enum.filter(entities, &Map.get(&1, :graph_known, false))
 
     if length(known_entities) < 2 do
@@ -126,7 +129,7 @@ defmodule Brain.Analysis.EntityGraphEnricher do
         pairs
         |> Enum.take(10)
         |> Enum.flat_map(fn {a, b} ->
-          case safe_relationship_path(a, b) do
+          case safe_relationship_path(a, b, world_id) do
             {:ok, path} ->
               a_val = Map.get(a, :value, "")
               b_val = Map.get(b, :value, "")
@@ -150,8 +153,9 @@ defmodule Brain.Analysis.EntityGraphEnricher do
     end
   end
 
-  defp safe_relationship_path(entity_a, entity_b) do
-    Reader.relationship_path(entity_a, entity_b)
+  # The world is checked in `enrich/2` before this rescue.
+  defp safe_relationship_path(entity_a, entity_b, world_id) do
+    Reader.relationship_path(entity_a, entity_b, world_id: world_id)
   rescue
     _ -> {:error, :not_found}
   catch
