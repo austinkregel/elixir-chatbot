@@ -85,13 +85,13 @@ defmodule Brain.Knowledge.Types do
             corroboration_group: String.t() | nil,
             embedding: [float()] | nil,
             comprehension_profile_id: String.t() | nil,
-            world_id: String.t() | nil
+            world_id: String.t()
           }
 
-    # `world_id` scopes an entity finding to one world: once approved, the
-    # entity is added to that world's gazetteer overlay rather than to the
-    # global gazetteer. `nil` means the finding is about the world at large.
-    @enforce_keys [:id, :claim, :entity, :source]
+    # A finding belongs to the world it was found for. Once approved, its
+    # fact, belief and knowledge graph nodes are held in that world, and its
+    # entity is added to that world's gazetteer overlay.
+    @enforce_keys [:id, :claim, :entity, :source, :world_id]
     defstruct [
       :id,
       :claim,
@@ -107,7 +107,12 @@ defmodule Brain.Knowledge.Types do
       confidence: 0.5
     ]
 
-    @doc "Creates a new Finding with a generated ID.\n"
+    @doc """
+    Creates a new Finding with a generated ID.
+
+    `:world_id` is required: the world the finding was found for. Absent or
+    not a world id raises `ArgumentError`.
+    """
     def new(claim, entity, source, opts \\ []) do
       %__MODULE__{
         id: generate_id(),
@@ -121,8 +126,21 @@ defmodule Brain.Knowledge.Types do
         corroboration_group: Keyword.get(opts, :corroboration_group),
         embedding: Keyword.get(opts, :embedding),
         comprehension_profile_id: Keyword.get(opts, :comprehension_profile_id),
-        world_id: Keyword.get(opts, :world_id)
+        world_id: world_id!(opts)
       }
+    end
+
+    defp world_id!(opts) do
+      case Keyword.fetch(opts, :world_id) do
+        {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        {:ok, other} ->
+          raise ArgumentError, "Finding option :world_id must be a world id, got: #{inspect(other)}"
+
+        :error ->
+          raise ArgumentError, "Finding.new needs :world_id, the world the finding was found for"
+      end
     end
 
     defp generate_id do
@@ -944,8 +962,15 @@ defmodule Brain.Knowledge.Types do
       status: :pending
     ]
 
-    @doc "Creates a new ReviewCandidate from a finding.\n"
+    @doc """
+    Creates a new ReviewCandidate from a finding.
+
+    The candidate belongs to its finding's world (`finding.world_id`). A
+    finding that names no world raises `ArgumentError`.
+    """
     def new(%Finding{} = finding, opts \\ []) do
+      world_id!(finding)
+
       %__MODULE__{
         id: generate_id(),
         finding: finding,
@@ -976,6 +1001,22 @@ defmodule Brain.Knowledge.Types do
     @doc "Marks a candidate as deferred for later review.\n"
     def defer(%__MODULE__{} = candidate, notes \\ nil) do
       %{candidate | status: :deferred, reviewed_at: DateTime.utc_now(), reviewer_notes: notes}
+    end
+
+    @doc """
+    The world the candidate belongs to: its finding's. A candidate whose
+    finding names no world raises `ArgumentError`.
+    """
+    @spec world_id!(t() | Finding.t()) :: String.t()
+    def world_id!(%__MODULE__{finding: finding}), do: world_id!(finding)
+
+    def world_id!(%Finding{world_id: world_id}) when is_binary(world_id) and world_id != "",
+      do: world_id
+
+    def world_id!(%Finding{} = finding) do
+      raise ArgumentError,
+            "review candidate finding #{inspect(finding.id)} (#{inspect(finding.entity)}) names no world, " <>
+              "got: #{inspect(finding.world_id)}"
     end
 
     defp generate_id do
