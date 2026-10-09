@@ -65,7 +65,9 @@ defmodule Brain.Subprocesses.HttpSubprocess do
 
   @impl true
   def init({subprocess_id, port, memory_snapshot, world_id}) do
-    user_id = "http_#{subprocess_id}"
+    # An HTTP session has no web user, so it has no user model: its turns carry
+    # no user and learn nothing about one.
+    user_id = nil
 
     state = %{
       subprocess_id: subprocess_id,
