@@ -18,6 +18,7 @@ defmodule Brain.Response.ContextBuilder do
   }
 
   alias Brain.Graph.Reader
+  alias Brain.Memory.RecurringPattern
   alias Brain.Response.{Enricher, FactRetriever}
 
   require Logger
@@ -31,7 +32,9 @@ defmodule Brain.Response.ContextBuilder do
   - Graph database context (justification chains, evidence chains,
     user preferences, conversation topics, recent context)
   - Enrichment data from external services
-  - Memory signals (similar episodes, entity familiarity)
+  - Memory signals (similar episodes, semantic facts and the recurring
+    pattern found among them, entity familiarity); the retrieved facts are
+    reported with `opts`' `:progress` (`Brain.Memory.RecurringPattern.retrieved/4`)
   - ContextAccumulator signals (combined confidence, conflict, hedging)
 
   `opts` must carry `:world_id`, the world whose memory and service credentials
@@ -58,7 +61,7 @@ defmodule Brain.Response.ContextBuilder do
     analysis_context = extract_analysis_context(primary, analyses, model)
     graph_context = extract_graph_context(analyses, user_id, conversation_id, world_id)
     enrichment_context = extract_enrichment_context(primary, opts, world_id)
-    memory_context = extract_memory_context(primary, analyses, world_id)
+    memory_context = extract_memory_context(primary, analyses, world_id, opts)
     accumulator_context = extract_accumulator_context(primary)
     all_analyses_summary = build_all_analyses(analyses)
     per_chunk_facts = build_per_chunk_facts(analyses, question_chunk, opts)
@@ -348,7 +351,11 @@ defmodule Brain.Response.ContextBuilder do
 
   defp extract_slot_values(_), do: %{}
 
-  defp extract_memory_context(primary, analyses, world_id) do
+  # The semantic facts retrieved for the turn's chunks, each once at its
+  # highest similarity, most similar first, and the recurring pattern found
+  # among them (`Brain.Memory.RecurringPattern.find/2`), which the response
+  # draws on ahead of the similar episodes.
+  defp extract_memory_context(primary, analyses, world_id, opts) do
     accumulated_contexts =
       analyses
       |> Enum.map(&Map.get(&1, :accumulated_context))
@@ -362,7 +369,12 @@ defmodule Brain.Response.ContextBuilder do
     semantics =
       accumulated_contexts
       |> Enum.flat_map(&(Map.get(&1, :relevant_semantics) || []))
-      |> Enum.uniq()
+      |> Enum.group_by(fn {fact, _similarity} -> fact.id end)
+      |> Enum.map(fn {_id, matches} -> Enum.max_by(matches, fn {_fact, similarity} -> similarity end) end)
+      |> Enum.sort_by(fn {_fact, similarity} -> similarity end, :desc)
+
+    recurring_pattern = RecurringPattern.find(semantics, world_id)
+    :ok = RecurringPattern.retrieved(semantics, recurring_pattern, world_id, opts)
 
     query =
       [
@@ -391,7 +403,8 @@ defmodule Brain.Response.ContextBuilder do
 
     %{
       similar_episodes: fallback_episodes,
-      semantic_facts: semantics
+      semantic_facts: semantics,
+      recurring_pattern: recurring_pattern
     }
   end
 
