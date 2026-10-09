@@ -857,9 +857,11 @@ acc =
       {"", :empty, nil}
     ]
 
+    coverage = Brain.ML.KnowledgeGraph.TripleScorer.relation_coverage(acc.world_id)
+
     results =
       Enum.map(test_predicates, fn {pred, expected_kind, expected_canon} ->
-        result = PredicateNormalizer.normalize(pred)
+        result = PredicateNormalizer.normalize(pred, coverage)
 
         {ok, actual_kind, actual_canon} =
           case result do
@@ -901,36 +903,19 @@ acc =
   section.("10. KG Signals — TripleScorer Status", acc, fn acc ->
     alias Brain.ML.KnowledgeGraph.TripleScorer
 
-    scorer_ready = TripleScorer.ready?()
-    IO.puts("  TripleScorer ready? #{scorer_ready}")
+    scorer_ready = TripleScorer.held?(acc.world_id)
+    IO.puts("  World #{acc.world_id} holds a TripleScorer? #{scorer_ready}")
 
-    model_version =
-      case TripleScorer.current_model_version() do
-        {:ok, v} ->
-          IO.puts("  Model version: #{v}")
-          v
+    model_version = TripleScorer.current_model_version(acc.world_id)
+    IO.puts("  Model version: #{inspect(model_version)}")
 
-        {:error, reason} ->
-          IO.puts("  Model version: unavailable (#{inspect(reason)})")
-          nil
-      end
+    relation_coverage = TripleScorer.relation_coverage(acc.world_id)
+    IO.puts("  Relation coverage: #{map_size(relation_coverage)} relations")
+    top_5 = relation_coverage |> Enum.sort_by(fn {_, c} -> -c end) |> Enum.take(5)
 
-    relation_coverage =
-      case TripleScorer.relation_coverage() do
-        {:ok, coverage} when is_map(coverage) ->
-          IO.puts("  Relation coverage: #{map_size(coverage)} relations")
-          top_5 = coverage |> Enum.sort_by(fn {_, c} -> -c end) |> Enum.take(5)
-
-          Enum.each(top_5, fn {rel, count} ->
-            IO.puts("    - #{rel}: #{count} training examples")
-          end)
-
-          coverage
-
-        {:error, reason} ->
-          IO.puts("  Relation coverage: unavailable (#{inspect(reason)})")
-          %{}
-      end
+    Enum.each(top_5, fn {rel, count} ->
+      IO.puts("    - #{rel}: #{count} training examples")
+    end)
 
     if scorer_ready do
       IO.puts("\n  --- Scoring sample triples ---")
@@ -946,25 +931,19 @@ acc =
       Enum.each(sample_triples, fn {h, r, t} ->
         {result, elapsed} =
           timed.("score(#{h}, #{r}, #{t})", fn ->
-            TripleScorer.score(h, r, t)
+            TripleScorer.score(acc.world_id, h, r, t)
           end)
 
-        case result do
-          {:ok, score} ->
-            quality =
-              cond do
-                score >= 0.7 -> "HIGH"
-                score >= 0.4 -> "MEDIUM"
-                true -> "LOW"
-              end
+        {:ok, score} = result
 
-            IO.puts(
-              "    (#{h}, #{r}, #{t}) => #{Float.round(score, 4)} [#{quality}] (#{elapsed}ms)"
-            )
+        quality =
+          cond do
+            score >= 0.7 -> "HIGH"
+            score >= 0.4 -> "MEDIUM"
+            true -> "LOW"
+          end
 
-          {:error, reason} ->
-            IO.puts("    (#{h}, #{r}, #{t}) => ERROR: #{inspect(reason)} (#{elapsed}ms)")
-        end
+        IO.puts("    (#{h}, #{r}, #{t}) => #{Float.round(score, 4)} [#{quality}] (#{elapsed}ms)")
       end)
 
       IO.puts("\n  --- Batch scoring ---")
@@ -972,24 +951,16 @@ acc =
 
       {batch_result, elapsed} =
         timed.("score_batch(#{length(batch)} triples)", fn ->
-          TripleScorer.score_batch(batch)
+          TripleScorer.score_batch(acc.world_id, batch)
         end)
 
-      case batch_result do
-        {:ok, scores} ->
-          IO.puts("    Batch scored #{length(scores)} triples in #{elapsed}ms")
+      {:ok, scores} = batch_result
+      IO.puts("    Batch scored #{length(scores)} triples in #{elapsed}ms")
 
-          Enum.zip(sample_triples, scores)
-          |> Enum.each(fn {{h, r, t}, score} ->
-            IO.puts("      (#{h}, #{r}, #{t}) => #{Float.round(score, 4)}")
-          end)
-
-        {:error, reason} ->
-          IO.puts("    Batch scoring failed: #{inspect(reason)}")
-      end
-    else
-      IO.puts("\n  [SKIP] TripleScorer not ready — scoring tests skipped")
-      IO.puts("  Run `mix train_kg_lstm` to train the model")
+      Enum.zip(sample_triples, scores)
+      |> Enum.each(fn {{h, r, t}, score} ->
+        IO.puts("      (#{h}, #{r}, #{t}) => #{Float.round(score, 4)}")
+      end)
     end
 
     acc
@@ -1105,7 +1076,11 @@ acc =
         IO.puts("      => (no triples extracted)")
       else
         Enum.each(triples, fn {s, p, o} ->
-          norm = Brain.ML.KnowledgeGraph.PredicateNormalizer.normalize(p)
+          norm =
+            Brain.ML.KnowledgeGraph.PredicateNormalizer.normalize(
+              p,
+              Brain.ML.KnowledgeGraph.TripleScorer.relation_coverage(acc.world_id)
+            )
 
           norm_str =
             case norm do
@@ -1172,7 +1147,8 @@ acc =
       result =
         NoveltyDetector.is_novel?(tc.best_score, tc.margin,
           text: tc.text,
-          entities: []
+          entities: [],
+          world_id: acc.world_id
         )
 
       case result do
@@ -1190,7 +1166,7 @@ acc =
 
     IO.puts("\n  --- KG downweight function directly ---")
     raw_score = 0.85
-    downweighted = NoveltyDetector.maybe_kg_downweight(raw_score, "Dogs are animals", nil)
+    downweighted = NoveltyDetector.maybe_kg_downweight(raw_score, "Dogs are animals", nil, acc.world_id)
     IO.puts("    raw=#{raw_score}, after KG downweight=#{Float.round(downweighted, 4)}")
 
     if downweighted < raw_score do
@@ -1330,7 +1306,8 @@ acc =
 
     {total_mapped, total_oov} =
       Enum.reduce(sources, {0, 0}, fn {source_name, predicates}, {mapped, oov} ->
-        results = Enum.map(predicates, fn p -> {p, PredicateNormalizer.normalize(p)} end)
+        coverage = Brain.ML.KnowledgeGraph.TripleScorer.relation_coverage(acc.world_id)
+        results = Enum.map(predicates, fn p -> {p, PredicateNormalizer.normalize(p, coverage)} end)
 
         mapped_count = Enum.count(results, fn {_, r} -> match?({:ok, _, _}, r) end)
         oov_count = Enum.count(results, fn {_, r} -> r == {:error, :oov} end)
