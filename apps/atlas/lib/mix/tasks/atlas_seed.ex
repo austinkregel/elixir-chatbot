@@ -12,9 +12,12 @@ defmodule Mix.Tasks.Atlas.Seed do
 
   ## Usage
 
-      mix atlas.seed              # Seed all baseline data
-      mix atlas.seed --verbose    # Show detailed progress
-      mix atlas.seed --dry-run    # Show what would be seeded without writing
+      mix atlas.seed --world default              # Seed all baseline data
+      mix atlas.seed --world default --verbose    # Show detailed progress
+      mix atlas.seed --world default --dry-run    # Show what would be seeded without writing
+
+  Beliefs and JTMS networks are held per world, so the curated facts are
+  synced into the world named by `--world`, which is required.
   """
 
   use Mix.Task
@@ -33,10 +36,14 @@ defmodule Mix.Tasks.Atlas.Seed do
   @impl Mix.Task
   def run(args) do
     {opts, _, _} =
-      OptionParser.parse(args, strict: [verbose: :boolean, dry_run: :boolean])
+      OptionParser.parse(args, strict: [verbose: :boolean, dry_run: :boolean, world: :string])
 
     verbose? = Keyword.get(opts, :verbose, false)
     dry_run? = Keyword.get(opts, :dry_run, false)
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("atlas.seed needs --world <id>, the world the curated facts' beliefs are held in")
 
     Mix.Task.run("app.start")
 
@@ -46,7 +53,7 @@ defmodule Mix.Tasks.Atlas.Seed do
 
     results = [
       {"Curated facts", seed_curated_facts(verbose?, dry_run?)},
-      {"Facts → Beliefs sync", seed_beliefs(verbose?, dry_run?)},
+      {"Facts → Beliefs sync", seed_beliefs(world_id, dry_run?)},
       {"Source authority", seed_source_authority(verbose?, dry_run?)},
       {"Lexicon facts", seed_lexicon(verbose?, dry_run?)},
       {"Training worlds", seed_training_worlds(verbose?, dry_run?)}
@@ -147,12 +154,12 @@ defmodule Mix.Tasks.Atlas.Seed do
   # ---------------------------------------------------------------------------
   # Sync facts to beliefs + JTMS premises via the existing integration module
   # ---------------------------------------------------------------------------
-  defp seed_beliefs(_verbose?, dry_run?) do
+  defp seed_beliefs(world_id, dry_run?) do
     if dry_run? do
-      {:ok, "would sync facts to beliefs"}
+      {:ok, "would sync facts to beliefs in world #{world_id}"}
     else
-      case Brain.FactDatabase.Integration.sync_facts_to_beliefs() do
-        {:ok, count} -> {:ok, "#{count} facts synced to beliefs"}
+      case Brain.FactDatabase.Integration.sync_facts_to_beliefs(world_id) do
+        {:ok, count} -> {:ok, "#{count} facts synced to beliefs in world #{world_id}"}
         {:error, reason} -> {:error, inspect(reason)}
       end
     end
