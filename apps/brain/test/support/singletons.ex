@@ -174,7 +174,7 @@ defmodule Brain.Test.Singletons do
 
   * `BeliefStore.init/1` fills itself from `load_from_atlas/1`
     (`belief_store.ex:278, 635-658`) and `UserModelStore.init/1` does the same
-    (`user_model.ex:112-119`); the prepared test database holds **0 rows** in
+    (`user_model.ex:139-147`); the prepared test database holds **0 rows** in
     both `atlas_test.atlas_beliefs` and `atlas_test.atlas_user_models`, so both
     boot empty.
   * `JTMS.init/1` builds its state literally, with no load of any kind
