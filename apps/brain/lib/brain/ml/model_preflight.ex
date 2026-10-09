@@ -208,51 +208,26 @@ defmodule Brain.ML.ModelPreflight do
     end)
   end
 
+  # The trained embeddings every world is seeded from. Each world's own copy is
+  # checked when the world first uses it (`Brain.ML.Poincare.Embeddings.loaded!/1`).
   defp validate_poincare do
-    path = model_file("default/poincare/embeddings.term")
+    alias Brain.ML.Poincare.Embeddings
 
-    with_term_file(path, fn data ->
-      dim = Map.get(data, :dim)
-      embeddings = Map.get(data, :embeddings)
-
-      cond do
-        is_nil(dim) ->
-          {:error, "Poincare: missing :dim field"}
-
-        is_struct(embeddings, Nx.Tensor) and Nx.axis_size(embeddings, 1) != dim ->
-          {:error,
-           "Poincare: dim mismatch: embeddings have #{Nx.axis_size(embeddings, 1)} dims, " <>
-             "stored dim=#{dim}"}
-
-        true ->
-          :ok
-      end
-    end)
+    Embeddings.read!(Embeddings.trained_path(), :trained)
+    :ok
+  rescue
+    e in RuntimeError -> {:error, Exception.message(e)}
   end
 
+  # The trained scorer every world is seeded from. Each world's own copy is
+  # checked when the world first scores (`Brain.ML.KnowledgeGraph.TripleScorer.loaded!/1`).
   defp validate_triple_scorer do
-    path = model_file("default/kg_lstm/triple_scorer.term")
+    alias Brain.ML.KnowledgeGraph.TripleScorer
 
-    with_term_file(path, fn data ->
-      config = Map.get(data, :config, %{})
-      vocab = Map.get(data, :vocab, %{})
-
-      cond do
-        not is_map_key(config, :vocab_size) ->
-          {:error, "TripleScorer: missing :vocab_size in config"}
-
-        map_size(vocab) == 0 ->
-          {:error, "TripleScorer: empty vocab"}
-
-        config.vocab_size != map_size(vocab) ->
-          {:error,
-           "TripleScorer: vocab size mismatch: config says #{config.vocab_size}, " <>
-             "vocab has #{map_size(vocab)} entries"}
-
-        true ->
-          :ok
-      end
-    end)
+    TripleScorer.read!(TripleScorer.trained_path(), :trained)
+    :ok
+  rescue
+    e in RuntimeError -> {:error, Exception.message(e)}
   end
 
   defp models_path do
