@@ -314,7 +314,7 @@
         "value": "Experimental"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -435,7 +435,7 @@
         "value": "Ramones"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -922,7 +922,7 @@
         "value": "Shape of My Heart"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Google music"
       }
     ],
@@ -948,7 +948,7 @@
         "value": "Rihanna"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -1004,7 +1004,7 @@
         "value": "popular wallpapers"
       },
       {
-        "type": "service",
+        "type": "search_engine",
         "value": "Yahoo"
       }
     ],
@@ -1104,7 +1104,7 @@
   {
     "expected": [
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -1445,7 +1445,7 @@
         "value": "Justin Bieber"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
@@ -1462,7 +1462,7 @@
         "value": "Wretch 32"
       },
       {
-        "type": "service",
+        "type": "music_service",
         "value": "Spotify"
       }
     ],
