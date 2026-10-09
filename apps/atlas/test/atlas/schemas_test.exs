@@ -65,6 +65,7 @@ defmodule Atlas.SchemasTest do
   describe "Belief" do
     test "inserts and queries a belief" do
       attrs = %{
+        world_id: "test_schemas",
         subject: "Paris",
         predicate: "is_a",
         object: "city",
@@ -76,10 +77,22 @@ defmodule Atlas.SchemasTest do
                %Belief{} |> Belief.changeset(attrs) |> Repo.insert()
 
       assert belief.subject == "Paris"
+      assert belief.world_id == "test_schemas"
       assert belief.confidence == 0.95
 
       active_beliefs = Belief |> Belief.active() |> Repo.all()
       assert length(active_beliefs) >= 1
+    end
+
+    test "a belief names its world, and is found only in that world" do
+      attrs = %{subject: "Paris", predicate: "is_a", object: "city", confidence: 0.9, source: "conversation"}
+
+      refute Belief.changeset(%Belief{}, attrs).valid?
+
+      {:ok, _} = %Belief{} |> Belief.changeset(Map.put(attrs, :world_id, "test_belief_a")) |> Repo.insert()
+
+      assert [%Belief{world_id: "test_belief_a"}] = Belief |> Belief.in_world("test_belief_a") |> Repo.all()
+      assert [] = Belief |> Belief.in_world("test_belief_b") |> Repo.all()
     end
   end
 
