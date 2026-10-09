@@ -400,6 +400,7 @@ defmodule ChatWeb.ExplorerLive do
         end
 
       case BeliefStore.add_belief_with_authority(
+             socket.assigns.current_world_id,
              normalize_subject(subject),
              predicate_atom,
              object,
@@ -426,7 +427,7 @@ defmodule ChatWeb.ExplorerLive do
   end
 
   def handle_event("retract_belief", %{"id" => belief_id}, socket) do
-    case BeliefStore.retract_belief(belief_id) do
+    case BeliefStore.retract_belief(socket.assigns.current_world_id, belief_id) do
       :ok ->
         socket =
           socket
@@ -444,7 +445,7 @@ defmodule ChatWeb.ExplorerLive do
   end
 
   def handle_event("confirm_belief", %{"id" => belief_id}, socket) do
-    case BeliefStore.confirm_belief(belief_id) do
+    case BeliefStore.confirm_belief(socket.assigns.current_world_id, belief_id) do
       {:ok, _updated} ->
         socket =
           socket
@@ -464,7 +465,7 @@ defmodule ChatWeb.ExplorerLive do
   def handle_event("save_confidence", %{"belief_id" => belief_id, "confidence" => conf_str}, socket) do
     confidence = parse_confidence(conf_str)
 
-    case BeliefStore.update_confidence(belief_id, confidence) do
+    case BeliefStore.update_confidence(socket.assigns.current_world_id, belief_id, confidence) do
       {:ok, _updated} ->
         socket =
           socket
@@ -1853,15 +1854,21 @@ defmodule ChatWeb.ExplorerLive do
     if socket.assigns.beliefs_data do
       socket
     else
-      beliefs_data = load_beliefs_data()
+      beliefs_data = load_beliefs_data(socket.assigns.current_world_id)
       assign(socket, :beliefs_data, beliefs_data)
     end
   end
 
-  defp load_beliefs_data do
+  # Beliefs and the JTMS network are the current world's. The world is checked
+  # here, before the rescues below, so a missing one raises.
+  defp load_beliefs_data(world_id) when not (is_binary(world_id) and world_id != "") do
+    raise ArgumentError, "ExplorerLive shows the beliefs of a world, got no world id: #{inspect(world_id)}"
+  end
+
+  defp load_beliefs_data(world_id) do
     beliefs =
       try do
-        case BeliefStore.query_beliefs([]) do
+        case BeliefStore.query_beliefs(world_id, []) do
           {:ok, list} -> list
           _ -> []
         end
@@ -1878,14 +1885,14 @@ defmodule ChatWeb.ExplorerLive do
 
     jtms_stats =
       try do
-        JTMS.stats()
+        JTMS.stats(world_id)
       rescue
         _ -> %{}
       end
 
     jtms_contradictions =
       try do
-        JTMS.get_contradictions()
+        JTMS.get_contradictions(world_id)
       rescue
         _ -> []
       end
