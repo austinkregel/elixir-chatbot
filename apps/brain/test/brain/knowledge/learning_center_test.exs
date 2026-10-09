@@ -4,7 +4,7 @@ defmodule Brain.Knowledge.LearningCenterTest do
   import Brain.TestHelpers
 
   alias Knowledge.{LearningCenter, ReviewQueue, SourceReliability}
-  alias Brain.Knowledge.Types.ResearchGoal
+  alias Brain.Knowledge.Types.{Hypothesis, Investigation, ResearchGoal}
 
   # The world the test suite runs in, seeded by `mix test.models`.
   @world_id "default"
@@ -180,6 +180,30 @@ defmodule Brain.Knowledge.LearningCenterTest do
   describe "ready?/0" do
     test "returns true when service is running" do
       assert LearningCenter.ready?() == true
+    end
+  end
+
+  describe "test_predictions/2" do
+    test "evaluates a belief-query prediction against the world's beliefs" do
+      hypothesis = %{
+        Hypothesis.new("Paris is the capital of France", entity: "Paris")
+        | prediction: %{type: :belief_query, params: %{subject: :world, predicate: :paris}}
+      }
+
+      investigation = Investigation.new("capitals", hypotheses: [hypothesis])
+
+      assert {:ok, %Investigation{hypotheses: [evaluated]}} =
+               LearningCenter.test_predictions(@world_id, investigation)
+
+      assert evaluated.claim == hypothesis.claim
+    end
+
+    test "raises without a world" do
+      investigation = Investigation.new("capitals", hypotheses: [])
+
+      for world <- [nil, ""] do
+        assert_raise FunctionClauseError, fn -> LearningCenter.test_predictions(world, investigation) end
+      end
     end
   end
 end
