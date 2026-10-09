@@ -18,7 +18,8 @@ defmodule Brain.Test.AtlasSandbox do
     Brain,
     Brain.Epistemic.JTMS,
     Brain.Analysis.ComprehensionAssessor,
-    Brain.Lexicon.UserDefined
+    Brain.Lexicon.UserDefined,
+    Brain.Knowledge.LearningTriggers
   ]
 
   @task_supervisors [
