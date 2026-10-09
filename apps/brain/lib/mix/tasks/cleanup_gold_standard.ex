@@ -13,9 +13,11 @@ defmodule Mix.Tasks.CleanupGoldStandard do
 
   ## Rules applied (in order)
 
-  0. Strip context-variant suffixes (`*_-_context:*` -> base intent)
+  A contextual-variant label (` - ` or `_-_` in the intent) raises before any
+  rule runs: follow-ups are collapsed in `data/intents`, where each moved row
+  keeps `followupContext` and `followupVariant`.
+
   1. Merge smarthome.device.brightness/switch into smarthome.lights.*
-  2. Merge news/web.search navigation variants into base search intents
   3. Normalize music_player_control.* to music.player.*
   4. Promote flat "continuation" to "dialog.continuation"
   5. Fix known mislabels
@@ -50,18 +52,6 @@ defmodule Mix.Tasks.CleanupGoldStandard do
     "smarthome.device.switch.check.off" => "smarthome.lights.switch.check.off",
     "smarthome.device.switch.schedule.on" => "smarthome.lights.switch.schedule.on",
     "smarthome.device.switch.schedule.off" => "smarthome.lights.switch.schedule.off"
-  }
-
-  @nav_map %{
-    "news.search - next" => "news.search",
-    "news.search - previous" => "news.search",
-    "news.search - repeat" => "news.search",
-    "news.search_-_next" => "news.search",
-    "news.search_-_previous" => "news.search",
-    "news.search_-_repeat" => "news.search",
-    "web.search - next" => "web.search",
-    "web.search - previous" => "web.search",
-    "web.search - repeat" => "web.search"
   }
 
   @music_map %{
@@ -229,7 +219,6 @@ defmodule Mix.Tasks.CleanupGoldStandard do
   |> Map.merge(@phantom_renames)
 
   @all_renames @device_to_lights_map
-              |> Map.merge(@nav_map)
               |> Map.merge(@music_map)
               |> Map.merge(@extra_renames)
 
@@ -275,10 +264,10 @@ defmodule Mix.Tasks.CleanupGoldStandard do
   end
 
   defp apply_all_rules(entries) do
+    reject_context_variants!(entries)
+
     stats = %{
-      rule0: 0,
       rule1: 0,
-      rule2: 0,
       rule3: 0,
       rule4: 0,
       rule5: 0,
@@ -287,7 +276,6 @@ defmodule Mix.Tasks.CleanupGoldStandard do
       dupes_removed: 0
     }
 
-    {entries, stats} = strip_context_variants(entries, stats)
     {entries, stats} = apply_renames(entries, stats)
     {entries, stats} = apply_mislabel_fixes(entries, stats)
     {entries, stats} = apply_smarthome_consolidation(entries, stats)
@@ -296,19 +284,27 @@ defmodule Mix.Tasks.CleanupGoldStandard do
     {entries, stats}
   end
 
-  defp strip_context_variants(entries, stats) do
-    Enum.reduce(entries, {[], stats}, fn entry, {acc, s} ->
-      intent = Map.get(entry, "intent", "")
+  # A contextual-variant label (` - ` in the export name, `_-_` in older
+  # flattened forms) is a follow-up that was not collapsed into its intent.
+  # Collapsing belongs in data/intents, where the follow-up is recorded on the
+  # row; renaming it here would drop that record.
+  defp reject_context_variants!(entries) do
+    case entries
+         |> Enum.map(&Map.get(&1, "intent", ""))
+         |> Enum.filter(&(String.contains?(&1, " - ") or String.contains?(&1, "_-_")))
+         |> Enum.uniq() do
+      [] ->
+        :ok
 
-      case String.split(intent, "_-_context:", parts: 2) do
-        [base, _rest] ->
-          {[Map.put(entry, "intent", base) | acc], %{s | rule0: s.rule0 + 1}}
+      labels ->
+        Mix.raise("""
+        cleanup_gold_standard: #{length(labels)} intent label(s) name a contextual variant:
 
-        _ ->
-          {[entry | acc], s}
-      end
-    end)
-    |> then(fn {entries, stats} -> {Enum.reverse(entries), stats} end)
+        #{Enum.map_join(labels, "\n", &"  #{&1}")}
+
+        Collapse the variant into the intent its action names in data/intents and rebuild.
+        """)
+    end
   end
 
   defp apply_renames(entries, stats) do
@@ -319,10 +315,6 @@ defmodule Mix.Tasks.CleanupGoldStandard do
         Map.has_key?(@device_to_lights_map, intent) ->
           new_intent = Map.fetch!(@device_to_lights_map, intent)
           {[Map.put(entry, "intent", new_intent) | acc], %{s | rule1: s.rule1 + 1}}
-
-        Map.has_key?(@nav_map, intent) ->
-          new_intent = Map.fetch!(@nav_map, intent)
-          {[Map.put(entry, "intent", new_intent) | acc], %{s | rule2: s.rule2 + 1}}
 
         Map.has_key?(@music_map, intent) ->
           new_intent = Map.fetch!(@music_map, intent)
@@ -375,7 +367,9 @@ defmodule Mix.Tasks.CleanupGoldStandard do
   defp deduplicate(entries, stats) do
     {unique, _seen} =
       Enum.reduce(entries, {[], MapSet.new()}, fn entry, {acc, seen} ->
-        key = {Map.get(entry, "text", ""), Map.get(entry, "intent", "")}
+        key =
+          {Map.get(entry, "text", ""), Map.get(entry, "intent", ""), Map.get(entry, "followup_context"),
+           Map.get(entry, "followup_variant")}
 
         if MapSet.member?(seen, key) do
           {acc, seen}
@@ -390,9 +384,7 @@ defmodule Mix.Tasks.CleanupGoldStandard do
   end
 
   defp print_stats(stats, original_count, final_count) do
-    Mix.shell().info("[cleanup] Rule 0: Stripped #{stats.rule0} context-variant suffixes")
     Mix.shell().info("[cleanup] Rule 1: Merged #{stats.rule1} entries from smarthome.device.* to smarthome.lights.*")
-    Mix.shell().info("[cleanup] Rule 2: Merged #{stats.rule2} navigation-variant entries into base search intents")
     Mix.shell().info("[cleanup] Rule 3: Renamed #{stats.rule3} entries from music_player_control.* to music.player.*")
     Mix.shell().info("[cleanup] Rule 4: Promoted #{stats.rule4} continuation entries to dialog.continuation")
     Mix.shell().info("[cleanup] Rule 5: Fixed #{stats.rule5} mislabel(s)")
