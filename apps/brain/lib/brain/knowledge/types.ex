@@ -991,7 +991,8 @@ defmodule Brain.Knowledge.Types do
             hypotheses_supported: non_neg_integer(),
             hypotheses_falsified: non_neg_integer(),
             status: status(),
-            topic: String.t() | nil
+            topic: String.t() | nil,
+            world_id: String.t() | nil
           }
 
     @enforce_keys [:id, :started_at]
@@ -1000,6 +1001,7 @@ defmodule Brain.Knowledge.Types do
       :started_at,
       :completed_at,
       :topic,
+      :world_id,
       goals: [],
       investigations: [],
       findings_count: 0,
@@ -1011,15 +1013,16 @@ defmodule Brain.Knowledge.Types do
       status: :active
     ]
 
-    @doc "Creates a new LearningSession.\n"
-    def new(opts \\ []) do
+    @doc "Creates a new LearningSession.\n\n`opts` must carry `:world_id`, the world the session researches for.\n"
+    def new(opts) do
       %__MODULE__{
         id: generate_id(),
         goals: Keyword.get(opts, :goals, []),
         investigations: [],
         started_at: DateTime.utc_now(),
         status: :active,
-        topic: Keyword.get(opts, :topic)
+        topic: Keyword.get(opts, :topic),
+        world_id: Keyword.fetch!(opts, :world_id)
       }
     end
 
