@@ -1,5 +1,5 @@
 defmodule Brain.TestWorldSandbox do
-  @moduledoc "Sandbox module for managing test world lifecycle.\n\nProvides automatic cleanup of test worlds to ensure complete isolation\nbetween tests and prevent pollution of production world data.\n\n## Usage\n\nIn your test module:\n\n    defmodule MyTest do\n      use ExUnit.Case\n      import Brain.TestHelpers\n\n      setup do\n        setup_world_sandbox()\n      end\n\n      test \"creates a test world\" do\n        {:ok, world} = create_test_world(\"my_test\")\n        assert world.metadata.test == true\n        # World is automatically cleaned up after test\n      end\n    end\n\n## How It Works\n\n1. `setup_world_sandbox/0` registers an `on_exit` callback that cleans up\n   all worlds created during the test.\n\n2. `create_test_world/2` creates a world with `:test` metadata and tracks\n   it for cleanup.\n\n3. When the test completes (pass or fail), all tracked worlds are destroyed.\n\n4. Test worlds are stored in a temp directory (configured via `:test_world_sandbox`)\n   to ensure complete isolation from production worlds.\n"
+  @moduledoc "Sandbox module for managing test world lifecycle.\n\nProvides automatic cleanup of test worlds to ensure complete isolation\nbetween tests and prevent pollution of real world data.\n\n## Usage\n\nIn your test module:\n\n    defmodule MyTest do\n      use ExUnit.Case\n      import Brain.TestHelpers\n\n      setup do\n        setup_world_sandbox()\n      end\n\n      test \"creates a test world\" do\n        {:ok, world} = create_test_world(\"my_test\")\n        assert world.metadata.test == true\n        # World is automatically cleaned up after test\n      end\n    end\n\n## How It Works\n\n1. `setup_world_sandbox/0` checks that worlds are written to the test world\n   directory (`:test_world_sandbox`), not the real one.\n\n2. `create_test_world/2` creates a world whose id starts with `test_`, with\n   `:test` metadata, and registers an `on_exit` callback that removes it.\n\n3. When the test completes (pass or fail), each world it created is destroyed\n   and its persisted data deleted.\n\n4. Cleanup only ever touches worlds whose id starts with `test_`. Every other\n   world -- `default`, the one the suite runs in, among them -- is a real\n   world and is never deleted.\n"
 
   # World.Manager is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
@@ -8,24 +8,38 @@ defmodule Brain.TestWorldSandbox do
   alias World.Manager, as: WorldManager
 
   alias ExUnit.Callbacks
-  @ets_table :test_world_sandbox
 
-  @doc "Sets up the test world sandbox for the current test.\n\nCall this in your test's `setup` block. Returns an `on_exit` callback\nthat will clean up all worlds created during the test.\n\n## Example\n\n    setup do\n      setup_world_sandbox()\n    end\n"
+  @test_world_prefix "test_"
+
+  @doc "Sets up the test world sandbox for the current test.\n\nCall this in your test's `setup` block. Raises unless worlds are written to\nthe test world directory, so a test world can never land among real ones.\n\n## Example\n\n    setup do\n      setup_world_sandbox()\n    end\n"
   def setup_world_sandbox do
-    ensure_ets_table()
-    test_pid = self()
-    :ets.insert(@ets_table, {test_pid, []})
-
-    Callbacks.on_exit(fn ->
-      cleanup_worlds_for_pid(test_pid)
-    end)
+    unless Application.get_env(:world, :test_world_sandbox) == true do
+      raise "Brain.TestWorldSandbox: :test_world_sandbox is not enabled for :world; " <>
+              "test worlds would be written to #{World.Persistence.base_path()}"
+    end
 
     :ok
   end
 
-  @doc "Creates a test world with automatic cleanup tracking.\n\nThe world is created with `:test` metadata and will be automatically\ndestroyed when the test completes.\n\n## Options\n\nAll options are passed to `WorldManager.create/2`, plus:\n  - `:mode` - Defaults to `:ephemeral` for tests (can override to `:persistent`)\n\n## Examples\n\n    {:ok, world} = create_test_world(\"my_feature\")\n    {:ok, world} = create_test_world(\"persistent_test\", mode: :persistent)\n"
+  @doc "Creates a test world with automatic cleanup.\n\nThe world's id is `test_<name>_<unique integer>`, it carries `:test` metadata,\nand an `on_exit` callback destroys it and deletes its persisted data when the\ntest completes.\n\n## Options\n\nAll options are passed to `WorldManager.create/2`, plus:\n  - `:mode` - Defaults to `:ephemeral` for tests (can override to `:persistent`)\n  - `:id` - Must start with `test_`; defaults to a unique `test_` id\n\n## Examples\n\n    {:ok, world} = create_test_world(\"my_feature\")\n    {:ok, world} = create_test_world(\"persistent_test\", mode: :persistent)\n"
   def create_test_world(name, opts \\ []) do
     test_pid = self()
+
+    id =
+      case Keyword.fetch(opts, :id) do
+        {:ok, id} ->
+          unless test_world?(id) do
+            raise ArgumentError,
+                  "create_test_world: id #{inspect(id)} must start with #{inspect(@test_world_prefix)}"
+          end
+
+          id
+
+        :error ->
+          "#{@test_world_prefix}#{name}_#{System.unique_integer([:positive])}"
+      end
+
+    opts = Keyword.put(opts, :id, id)
     opts = Keyword.put_new(opts, :mode, :ephemeral)
     metadata = Keyword.get(opts, :metadata, %{})
     metadata = Map.put(metadata, :test, true)
@@ -34,7 +48,7 @@ defmodule Brain.TestWorldSandbox do
 
     case WorldManager.create(name, opts) do
       {:ok, world} ->
-        track_world(test_pid, world.id)
+        Callbacks.on_exit({__MODULE__, world.id}, fn -> remove_test_world!(world.id) end)
         {:ok, world}
 
       error ->
@@ -42,133 +56,34 @@ defmodule Brain.TestWorldSandbox do
     end
   end
 
-  @doc "Manually cleans up all worlds created by the current test.\n\nThis is called automatically by the `on_exit` callback, but can be\ncalled manually if needed.\n"
-  def cleanup do
-    cleanup_worlds_for_pid(self())
+  @doc "Deletes everything persisted under a test world's directory.\n\nFor a test that writes into a world directory without creating the world\nthrough `create_test_world/2`. Raises for an id that does not start with\n`test_`.\n"
+  def delete_test_world_data!(world_id) do
+    refuse_unless_test_world!(world_id)
+    :ok = World.Persistence.delete(world_id)
   end
 
-  @doc "Cleans up all test worlds across all tests.\n\nUse this for global cleanup at the end of a test suite.\n"
-  def cleanup_all do
-    ensure_ets_table()
+  # Destroys the world's runtime state -- a test may already have done that
+  # itself -- and deletes whatever it persisted. Refuses any id that is not a
+  # test world's.
+  defp remove_test_world!(world_id) do
+    refuse_unless_test_world!(world_id)
 
-    try do
-      :ets.tab2list(@ets_table)
-      |> Enum.each(fn {pid, world_ids} ->
-        Enum.each(world_ids, &destroy_world_safely/1)
-        :ets.delete(@ets_table, pid)
-      end)
-    rescue
-      _ -> :ok
+    case WorldManager.destroy(world_id) do
+      :ok -> :ok
+      {:error, :not_found} -> :ok
     end
 
-    cleanup_test_directory()
-    cleanup_orphaned_test_worlds()
+    delete_test_world_data!(world_id)
   end
 
-  defp ensure_ets_table do
-    if :ets.whereis(@ets_table) == :undefined do
-      :ets.new(@ets_table, [:set, :public, :named_table])
-    end
-  rescue
-    ArgumentError ->
-      :ok
-  end
-
-  defp track_world(test_pid, world_id) do
-    ensure_ets_table()
-
-    case :ets.lookup(@ets_table, test_pid) do
-      [{^test_pid, world_ids}] ->
-        :ets.insert(@ets_table, {test_pid, [world_id | world_ids]})
-
-      [] ->
-        :ets.insert(@ets_table, {test_pid, [world_id]})
-    end
-  rescue
-    _ -> :ok
-  end
-
-  defp cleanup_worlds_for_pid(test_pid) do
-    ensure_ets_table()
-
-    try do
-      case :ets.lookup(@ets_table, test_pid) do
-        [{^test_pid, world_ids}] ->
-          Enum.each(world_ids, &destroy_world_safely/1)
-          :ets.delete(@ets_table, test_pid)
-
-        [] ->
-          :ok
-      end
-    rescue
-      _ -> :ok
+  defp refuse_unless_test_world!(world_id) do
+    unless test_world?(world_id) do
+      raise ArgumentError,
+            "Brain.TestWorldSandbox: refusing to remove #{inspect(world_id)}, which is not a test world"
     end
   end
 
-  defp destroy_world_safely(world_id) do
-    try do
-      WorldManager.destroy(world_id)
-    rescue
-      _ -> :ok
-    catch
-      :exit, _ -> :ok
-    end
-  end
-
-  # Removes the test worlds in the sandbox directory, not the directory itself:
-  # the world the suite runs in, which `mix test.models` seeds there, must
-  # survive.
-  defp cleanup_test_directory do
-    test_path = World.Persistence.base_path()
-
-    if File.dir?(test_path) do
-      test_path
-      |> File.ls!()
-      |> Enum.filter(&is_test_world?(&1, test_path))
-      |> Enum.each(&File.rm_rf!(Path.join(test_path, &1)))
-    end
-  end
-
-  @doc "Cleans up orphaned test worlds that were created in priv/training_worlds/.\n\nThis handles edge cases where tests:\n- Created worlds directly via WorldManager instead of create_test_world\n- Failed before cleanup could run\n- Used hardcoded paths that bypassed the test sandbox\n\nA world is considered a test world if:\n- Its ID starts with \"test_world_\"\n- Its config.json contains \"test\": true in metadata\n- It has no config.json (incomplete world from crashed test)\n"
-  def cleanup_orphaned_test_worlds do
-    prod_path = "priv/training_worlds"
-
-    if File.dir?(prod_path) do
-      prod_path
-      |> File.ls!()
-      |> Enum.filter(&is_test_world?(&1, prod_path))
-      |> Enum.each(fn world_id ->
-        world_path = Path.join(prod_path, world_id)
-        File.rm_rf(world_path)
-      end)
-    end
-  rescue
-    _ -> :ok
-  end
-
-  defp is_test_world?(world_id, base_path) do
-    if String.starts_with?(world_id, "test_world_") do
-      true
-    else
-      config_path = Path.join([base_path, world_id, "config.json"])
-
-      if File.exists?(config_path) do
-        try do
-          config = File.read!(config_path) |> Jason.decode!()
-          metadata = config["metadata"] || %{}
-          metadata["test"] == true
-        rescue
-          _ -> false
-        end
-      else
-        world_path = Path.join(base_path, world_id)
-
-        has_only_knowledge =
-          File.dir?(world_path) and
-            File.ls!(world_path) == ["knowledge.json"]
-
-        has_only_knowledge
-      end
-    end
+  defp test_world?(world_id) when is_binary(world_id) do
+    String.starts_with?(world_id, @test_world_prefix)
   end
 end
