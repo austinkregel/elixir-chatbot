@@ -311,7 +311,7 @@ defmodule Brain.Response.DecompressorCollector do
           text = Map.get(pair, :output, "")
           prim = Map.get(pair, :primitive, %{})
 
-          chunks = ChunkSegmenter.segment(text)
+          chunks = ChunkSegmenter.segment(Map.fetch!(pair, :world_id), text)
 
           Enum.map(chunks, fn chunk ->
             prototype_vector =
