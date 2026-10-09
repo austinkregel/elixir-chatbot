@@ -1261,6 +1261,63 @@
                   <p class="text-caption">No similar episodes found in memory</p>
                 </div>
               <% end %>
+
+              <% semantic_facts = memory[:semantic_facts] || [] %>
+              <% semantic_facts_used = memory[:semantic_facts_used] || [] %>
+              <.card id="memory-semantic-facts">
+                <.card_body class="p-space-md">
+                  <div class="text-caption font-semibold text-ink mb-space-sm">
+                    Semantic Facts
+                  </div>
+                  <%= if semantic_facts == [] do %>
+                    <p class="text-caption text-ink-muted">No semantic facts retrieved</p>
+                  <% else %>
+                    <div class="space-y-space-sm">
+                      <%= for fact <- semantic_facts do %>
+                        <% uses = Enum.filter(semantic_facts_used, &(&1.semantic_fact_id == fact.semantic_fact_id)) %>
+                        <div
+                          id={"semantic-fact-#{fact.semantic_fact_id}"}
+                          class="p-space-sm bg-surface-sunk rounded-sm text-caption"
+                        >
+                          <div class="flex items-center justify-between gap-space-sm mb-space-xs">
+                            <span class="text-ref text-ink-muted">
+                              {String.slice(fact.semantic_fact_id, 0, 12)}...
+                            </span>
+                            <.score_display value={fact.similarity} kind={:cosine_similarity} />
+                          </div>
+                          <div class="p-space-xs bg-surface rounded-sm text-term text-ink-muted mb-space-xs">
+                            "{fact.text}"
+                          </div>
+                          <div class="flex flex-wrap gap-space-xs">
+                            <span :if={fact.action} class="px-space-xs py-space-2xs bg-surface border border-border rounded-sm text-caption text-ink-muted">
+                              action: {fact.action}
+                            </span>
+                            <span class="px-space-xs py-space-2xs bg-surface border border-border rounded-sm text-caption text-ink-muted">
+                              {fact.evidence_count} evidence episode(s)
+                            </span>
+                            <span
+                              :if={fact.semantic_fact_id == memory[:recurring_pattern_id]}
+                              class="px-space-xs py-space-2xs bg-surface border border-border rounded-sm text-caption text-ink"
+                            >
+                              recurring pattern
+                            </span>
+                            <%= for use <- uses do %>
+                              <span class="px-space-xs py-space-2xs bg-surface border border-border rounded-sm text-caption font-semibold text-ink">
+                                used by {ChatWeb.ChatLive.step_label(use.used_by)}
+                              </span>
+                            <% end %>
+                          </div>
+                          <%= for use <- Enum.take(uses, 1) do %>
+                            <div class="mt-space-xs text-ink-muted">
+                              reply: "{use.reply}"
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </.card_body>
+              </.card>
             </div>
           <% end %>
 
