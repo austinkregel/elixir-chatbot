@@ -16,9 +16,21 @@ defmodule Tasks.Source do
     general: ["Question Answering", "Commonsense Classification", "Text Categorization"]
   }
 
-  @doc "Fetches findings from domain-specific tasks matching a research goal.\n\n## Options\n  - `:max_tasks` - Maximum task files to use (default: 5)\n  - `:max_instances` - Maximum instances per task (default: 20)\n  - `:goal_type` - Type of goal for task selection (:factual, :reasoning, :general)\n"
+  @doc "Fetches findings from domain-specific tasks matching a research goal.\n\n## Options\n  - `:world_id` - required: the world the findings are found for. Absent raises.\n  - `:max_tasks` - Maximum task files to use (default: 5)\n  - `:max_instances` - Maximum instances per task (default: 20)\n  - `:goal_type` - Type of goal for task selection (:factual, :reasoning, :general)\n"
   @spec fetch_for_goal(map(), keyword()) :: {:ok, [Finding.t()]} | {:error, term()}
-  def fetch_for_goal(goal, opts \\ []) do
+  def fetch_for_goal(goal, opts) do
+    world_id =
+      case Keyword.fetch(opts, :world_id) do
+        {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        {:ok, other} ->
+          raise ArgumentError, "Tasks.Source option :world_id must be a world id, got: #{inspect(other)}"
+
+        :error ->
+          raise ArgumentError, "Tasks.Source.fetch_for_goal needs :world_id, the world the findings are found for"
+      end
+
     max_tasks = Keyword.get(opts, :max_tasks, 5)
     max_instances = Keyword.get(opts, :max_instances, 20)
     goal_type = Keyword.get(opts, :goal_type, infer_goal_type(goal))
@@ -31,7 +43,7 @@ defmodule Tasks.Source do
 
     case select_tasks(goal, goal_type, max_tasks) do
       {:ok, tasks} ->
-        findings = extract_findings_from_tasks(tasks, goal, max_instances)
+        findings = extract_findings_from_tasks(tasks, max_instances, world_id)
 
         Logger.info("TaskSource completed",
           topic: goal.topic,
@@ -167,14 +179,14 @@ defmodule Tasks.Source do
     domain_score * 2 + keyword_overlap + task.instance_count / 1000
   end
 
-  defp extract_findings_from_tasks(tasks, goal, max_instances) do
+  defp extract_findings_from_tasks(tasks, max_instances, world_id) do
     tasks
     |> Enum.flat_map(fn task ->
-      extract_findings_from_task(task, goal, max_instances)
+      extract_findings_from_task(task, max_instances, world_id)
     end)
   end
 
-  defp extract_findings_from_task(task, goal, max_instances) do
+  defp extract_findings_from_task(task, max_instances, world_id) do
     case Analyzer.load_instances(task.file, max_instances: max_instances) do
       {:ok, instances} ->
         source_info =
@@ -186,7 +198,7 @@ defmodule Tasks.Source do
           )
 
         Enum.flat_map(instances, fn instance ->
-          instance_to_findings(instance, task, source_info, goal)
+          instance_to_findings(instance, task, source_info, world_id)
         end)
 
       {:error, _} ->
@@ -194,7 +206,7 @@ defmodule Tasks.Source do
     end
   end
 
-  defp instance_to_findings(instance, task, source_info, _goal) do
+  defp instance_to_findings(instance, task, source_info, world_id) do
     input = Map.get(instance, "input", "")
     outputs = get_outputs(instance)
     explanation = Map.get(instance, "explanation", "")
@@ -211,7 +223,8 @@ defmodule Tasks.Source do
             source_info,
             entity_type: "question_answer",
             raw_context: input,
-            confidence: 0.9
+            confidence: 0.9,
+            world_id: world_id
           )
         end)
 
@@ -230,7 +243,8 @@ defmodule Tasks.Source do
             source_info,
             entity_type: "commonsense",
             raw_context: input,
-            confidence: 0.85
+            confidence: 0.85,
+            world_id: world_id
           )
         ]
 
@@ -242,7 +256,8 @@ defmodule Tasks.Source do
             source_info,
             entity_type: "explanation",
             raw_context: input,
-            confidence: 0.88
+            confidence: 0.88,
+            world_id: world_id
           )
         end)
 
@@ -254,7 +269,8 @@ defmodule Tasks.Source do
             source_info,
             entity_type: category,
             raw_context: input,
-            confidence: 0.8
+            confidence: 0.8,
+            world_id: world_id
           )
         end)
     end
