@@ -119,19 +119,22 @@ defmodule Brain.Analysis.TypeHierarchy do
   end
 
   @doc """
-  Get the parent type for a given child type, if any.
+  Every parent type of a child type, sorted; `[]` for a type with none.
+
+  A type can sit under several parents (`color` is both `information` and a
+  property of a `device`), and each is kept: choosing one would drop the others.
 
   ## Examples
 
-      iex> TypeHierarchy.parent_of("artist")
-      "person"
-      iex> TypeHierarchy.parent_of("person")
-      nil
+      iex> TypeHierarchy.parents_of("artist")
+      ["person"]
+      iex> TypeHierarchy.parents_of("person")
+      []
   """
-  def parent_of(child_type) when is_binary(child_type) do
+  def parents_of(child_type) when is_binary(child_type) do
     case safe_ets_lookup(:_all_parents) do
-      [{:_all_parents, parent_map}] -> Map.get(parent_map, child_type)
-      _ -> nil
+      [{:_all_parents, parent_map}] -> Map.get(parent_map, child_type, [])
+      _ -> []
     end
   end
 
@@ -142,7 +145,7 @@ defmodule Brain.Analysis.TypeHierarchy do
     case safe_ets_lookup(:_all_parents) do
       [{:_all_parents, parent_map}] ->
         children = Map.keys(parent_map)
-        parents = Map.values(parent_map) |> Enum.uniq()
+        parents = parent_map |> Map.values() |> List.flatten()
         Enum.uniq(children ++ parents) |> Enum.sort()
 
       _ ->
@@ -158,7 +161,7 @@ defmodule Brain.Analysis.TypeHierarchy do
   def parent_types do
     case safe_ets_lookup(:_all_parents) do
       [{:_all_parents, parent_map}] ->
-        Map.values(parent_map) |> Enum.uniq() |> Enum.sort()
+        parent_map |> Map.values() |> List.flatten() |> Enum.uniq() |> Enum.sort()
 
       _ ->
         []
@@ -368,12 +371,15 @@ defmodule Brain.Analysis.TypeHierarchy do
     end)
   end
 
+  # child => every parent it is listed under, sorted.
   defp build_parent_map(hierarchy) do
-    Enum.reduce(hierarchy, %{}, fn {parent, children}, acc ->
+    hierarchy
+    |> Enum.reduce(%{}, fn {parent, children}, acc ->
       Enum.reduce(children, acc, fn child, inner_acc ->
-        Map.put(inner_acc, child, parent)
+        Map.update(inner_acc, child, [parent], &[parent | &1])
       end)
     end)
+    |> Map.new(fn {child, parents} -> {child, parents |> Enum.uniq() |> Enum.sort()} end)
   end
 
   defp do_sync_to_atlas do
