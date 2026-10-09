@@ -34,12 +34,15 @@ defmodule Brain.Response.RefinementLoop do
   score, iteration count, and rendered primitives.
 
   Options:
+    - `:world_id` - required: the world the response is realized and evaluated
+      in. Absent raises.
     - `:unified_context` - rich context map from ContextBuilder
     - `:max_iterations` - override default iteration limit
     - `:side_effects` - `false` keeps realization and evaluation from writing
       (Ouro decompressor training data, the analysis of the response)
   """
-  def generate(%InternalModel{} = model, opts \\ []) do
+  def generate(%InternalModel{} = model, opts) do
+    world_id!(opts)
     analyses = model.analyses || []
     max_iter = Keyword.get(opts, :max_iterations, @max_iterations)
 
@@ -88,9 +91,11 @@ defmodule Brain.Response.RefinementLoop do
 
   @doc """
   Runs a single pass of the synthesis pipeline without iteration.
-  Useful for testing individual stages.
+  Useful for testing individual stages. Takes the same options as `generate/2`;
+  `:world_id` is required.
   """
-  def single_pass(%InternalModel{} = model, opts \\ []) do
+  def single_pass(%InternalModel{} = model, opts) do
+    world_id!(opts)
     analyses = model.analyses || []
     primary = select_primary_analysis(analyses)
     primitives = DiscoursePlanner.plan(model, opts)
@@ -295,6 +300,17 @@ defmodule Brain.Response.RefinementLoop do
   end
 
   defp adjust_content(plan, _, _, _), do: plan
+
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      _ ->
+        raise ArgumentError,
+              "RefinementLoop needs :world_id, the world the response is realized in, got: #{inspect(Keyword.get(opts, :world_id))}"
+    end
+  end
 
   defp select_primary_analysis(analyses) do
     respondable =
