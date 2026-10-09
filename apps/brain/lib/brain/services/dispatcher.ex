@@ -31,11 +31,15 @@ defmodule Brain.Services.Dispatcher do
   # ============================================================================
 
   # Register service modules here. The dispatcher will discover their
-  # supported intents and route requests accordingly.
+  # supported intents and route requests accordingly. An exact intent wins
+  # over a domain (`find_service/1`): the local scheduler's intents
+  # (`alarm.set`, `timer.check`, ...) go to it, and the other intents of the
+  # alarm, reminder, timer and calendar domains to Home Assistant.
   @registered_services [
     Brain.Services.Weather,
     Brain.Services.SystemStatus,
-    Brain.Services.HomeAssistant
+    Brain.Services.HomeAssistant,
+    Brain.Services.LocalScheduler
   ]
 
   # Build intent -> service lookup dynamically to handle module compilation order
