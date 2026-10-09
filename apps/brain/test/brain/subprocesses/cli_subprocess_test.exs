@@ -60,6 +60,9 @@ defmodule Brain.Subprocesses.CliSubprocessTest do
     # Extract the real conversation ID from "Created conversation 'my_chat' with Brain ID: <id>"
     [_, conv_id] = Regex.run(~r/Brain ID: (\S+)/, result)
 
+    # Brain owns the id, and the conversation runs in the subprocess's world
+    assert {:ok, %{world_id: "default"}} = Brain.get_conversation(conv_id)
+
     # Send message using the real conversation ID
     {:ok, result} = CliSubprocess.execute_command(subprocess_id, "send #{conv_id} Hello there!")
     assert is_binary(result)
