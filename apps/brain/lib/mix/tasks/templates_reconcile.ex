@@ -10,13 +10,10 @@ defmodule Mix.Tasks.Templates.Reconcile do
 
   ## What it applies
 
-  The same two transformations `mix rebuild_gold_standard` applied to the corpus,
-  and nothing else:
-
-    * a ` - context: …` suffix is stripped, since it names a context of an intent
-      rather than a separate intent
-    * `smarthome.lights.X` becomes `smarthome.device.X`, lights being a kind of
-      device
+  The transformation `mix rebuild_gold_standard` applies to the corpus, and
+  nothing else: `smarthome.lights.X` becomes `smarthome.device.X`, lights being a
+  kind of device. A key containing `" - "` names a contextual variant, which is
+  collapsed into its intent in the data rather than renamed here, and raises.
 
   When the transformed key already has templates the two lists are merged,
   de-duplicated on `{text, condition}`. Otherwise the entry moves.
@@ -105,9 +102,15 @@ defmodule Mix.Tasks.Templates.Reconcile do
 
   # -- transformations --------------------------------------------------------
 
-  defp transform(key), do: key |> strip_context() |> fold_lights()
+  defp transform(key), do: key |> reject_context_variant!() |> fold_lights()
 
-  defp strip_context(key), do: key |> String.split(" - ") |> List.first() |> String.trim()
+  defp reject_context_variant!(key) do
+    if String.contains?(key, " - ") do
+      Mix.raise("templates.reconcile: #{inspect(key)} names a contextual variant; key its templates by the intent the variant collapses into")
+    end
+
+    key
+  end
 
   defp fold_lights(@lights_prefix <> rest), do: @device_prefix <> rest
   defp fold_lights(key), do: key
