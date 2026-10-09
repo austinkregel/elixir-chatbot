@@ -167,14 +167,6 @@ defmodule ChatWeb.DashboardLive do
     {:noreply, socket}
   end
 
-  def handle_event("switch_world", %{"world_id" => world_id}, socket) do
-    {:noreply, reload_world_data(socket, world_id)}
-  end
-
-  def handle_event("refresh_worlds", _params, socket) do
-    {:noreply, socket}
-  end
-
   def handle_event("toggle_category", %{"category" => category}, socket) do
     category = String.to_existing_atom(category)
     expanded = socket.assigns.expanded_categories
