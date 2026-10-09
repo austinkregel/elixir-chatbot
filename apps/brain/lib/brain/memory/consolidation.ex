@@ -6,12 +6,20 @@ defmodule Brain.Memory.Consolidation do
 
   require Logger
 
-  @doc "Consolidate similar episodes into semantic facts.\n\nEpisodes with embeddings whose cosine similarity exceeds the threshold\nwill be clustered together. For each cluster with at least min_cluster_size\nmembers, a new SemanticFact is created.\n\nOptions:\n- threshold: minimum cosine similarity for clustering (default: 0.8)\n- min_cluster_size: minimum episodes per cluster (default: 2)\n\nReturns the number of new semantic facts created.\n"
-  def consolidate(opts \\ []) do
+  @doc "Consolidate similar episodes into semantic facts.\n\nEpisodes with embeddings whose cosine similarity exceeds the threshold\nwill be clustered together. For each cluster with at least min_cluster_size\nmembers, a new SemanticFact is created.\n\nOptions:\n- world_id: the world whose episodes are consolidated (required)\n- threshold: minimum cosine similarity for clustering (default: 0.8)\n- min_cluster_size: minimum episodes per cluster (default: 2)\n\nReturns the number of new semantic facts created.\n"
+  def consolidate(opts) do
     threshold = Keyword.get(opts, :threshold, 0.8)
     min_cluster_size = Keyword.get(opts, :min_cluster_size, 2)
-    world_id = Keyword.get(opts, :world_id)
-    store_opts = if world_id, do: [world_id: world_id], else: []
+
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "Brain.Memory.Consolidation.consolidate requires a :world_id option; got #{inspect(other)}"
+      end
 
     Logger.info("Starting consolidation",
       threshold: threshold,
@@ -19,7 +27,7 @@ defmodule Brain.Memory.Consolidation do
       world_id: world_id
     )
 
-    {:ok, episodes} = Store.all_episodes(store_opts)
+    {:ok, episodes} = Store.all_episodes(world_id: world_id)
 
     if length(episodes) < min_cluster_size do
       Logger.info("Not enough episodes for consolidation", count: length(episodes))
@@ -31,7 +39,7 @@ defmodule Brain.Memory.Consolidation do
 
       new_semantics =
         Enum.reduce(clusters, 0, fn cluster, acc ->
-          case create_semantic_from_cluster(cluster) do
+          case create_semantic_from_cluster(cluster, world_id) do
             {:ok, _semantic_id} -> acc + 1
             {:error, _} -> acc
           end
@@ -72,8 +80,8 @@ defmodule Brain.Memory.Consolidation do
     Enum.reverse(clusters)
   end
 
-  @doc "Create a semantic fact from a cluster of episodes.\n"
-  def create_semantic_from_cluster(cluster) when is_list(cluster) and cluster != [] do
+  @doc "Create a semantic fact in `world_id` from a cluster of that world's episodes.\n"
+  def create_semantic_from_cluster(cluster, world_id) when is_list(cluster) and cluster != [] do
     representation = aggregate_representation(cluster)
     embeddings = Enum.map(cluster, & &1.embedding)
     mean_embedding = VectorIndex.mean_vector(embeddings)
@@ -86,16 +94,16 @@ defmodule Brain.Memory.Consolidation do
 
     semantic = SemanticFact.new(representation, mean_embedding, evidence_ids, tags)
 
-    case Store.add_semantic(semantic) do
+    case Store.add_semantic(semantic, world_id: world_id) do
       {:ok, semantic_id} ->
         Enum.each(evidence_ids, fn ep_id ->
-          Store.link_episode_to_semantic(ep_id, semantic_id)
+          Store.link_episode_to_semantic(ep_id, semantic_id, world_id: world_id)
         end)
 
         # Bridge to BeliefStore for epistemic integration
-        Brain.Epistemic.ConsolidationBridge.bridge_semantic_fact(semantic)
+        Brain.Epistemic.ConsolidationBridge.bridge_semantic_fact(semantic, world_id)
 
-        Brain.Graph.Writer.write_semantic_cluster(semantic, evidence_ids)
+        Brain.Graph.Writer.write_semantic_cluster(semantic, evidence_ids, world_id)
 
         {:ok, semantic_id}
 
@@ -104,7 +112,7 @@ defmodule Brain.Memory.Consolidation do
     end
   end
 
-  def create_semantic_from_cluster([]) do
+  def create_semantic_from_cluster([], _world_id) do
     {:error, :empty_cluster}
   end
 
