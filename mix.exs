@@ -43,7 +43,7 @@ defmodule ChatBot.Umbrella.MixProject do
       setup: [
         "cmd mix setup",
         "atlas.setup",
-        "atlas.seed",
+        "atlas.seed --world default",
         "download_speech_act_corpus",
         "download_sentiment_corpus",
         "setup_lexicon",
