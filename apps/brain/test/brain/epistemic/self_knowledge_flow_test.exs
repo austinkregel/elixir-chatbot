@@ -19,7 +19,7 @@ defmodule Brain.Epistemic.SelfKnowledgeFlowTest do
     # contents in GenServer state, which the Sandbox does not roll back.
     # Empty is the boot state for both (0 rows in atlas_user_models and
     # atlas_beliefs).
-    Brain.Test.Singletons.reset_epistemic_stores!([:user_models, :beliefs])
+    Brain.Test.Singletons.reset_epistemic_stores!([:user_models, :beliefs], world_id: "default")
 
     :ok
   end
