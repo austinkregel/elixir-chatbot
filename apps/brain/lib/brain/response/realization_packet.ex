@@ -8,11 +8,18 @@ defmodule Brain.Response.RealizationPacket do
   science, chat) in ChatML format -- never on structured JSON -- so the
   prompt must be readable prose, not a JSON blob.
 
+  The turn's recurring pattern (`Brain.Memory.RecurringPattern`), when the
+  unified context has one, is named ahead of the similar past interactions:
+  what the user says in it, and the reply it most often got across its
+  episodes. A packet that names it reports the use
+  (`Brain.Memory.RecurringPattern.used/3`).
+
   Building a packet writes nothing.
   """
 
   alias Brain.Response.Primitive
   alias Brain.Analysis.{ChunkAnalysis, ChunkProfile}
+  alias Brain.Memory.RecurringPattern
 
   require Logger
 
@@ -38,7 +45,7 @@ defmodule Brain.Response.RealizationPacket do
     user_message =
       [
         render_analysis(analysis, unified_context),
-        render_context(unified_context),
+        render_context(unified_context, opts),
         render_plan(primitives),
         render_instructions(tone, opts)
       ]
@@ -343,18 +350,33 @@ defmodule Brain.Response.RealizationPacket do
 
   # --- Context rendering ---
 
-  defp render_context(unified_context) when unified_context in [nil, %{}], do: []
+  defp render_context(unified_context, _opts) when unified_context in [nil, %{}], do: []
 
-  defp render_context(unified_context) when is_map(unified_context) do
+  defp render_context(unified_context, opts) when is_map(unified_context) do
     lines = []
 
     lines = lines ++ render_enriched_data(unified_context)
     lines = lines ++ render_per_chunk_facts(unified_context)
     lines = lines ++ render_accumulator(unified_context)
+    lines = lines ++ render_recurring_pattern(unified_context, opts)
     lines = lines ++ render_episodes(unified_context)
 
     lines
   end
+
+  defp render_recurring_pattern(%{memory: %{recurring_pattern: %RecurringPattern{} = pattern}}, opts) do
+    :ok = RecurringPattern.used(pattern, :realization_packet, opts)
+
+    [
+      "A recurring pattern from past conversations " <>
+        "(#{pattern.evidence_count} similar messages, similarity #{Float.round(pattern.similarity * 1.0, 2)}): " <>
+        "the user says things like \"#{pattern.fact.representation}\", and the reply " <>
+        "#{pattern.reply_count} of them got was \"#{pattern.reply}\"."
+    ]
+  end
+
+  # A turn with no recurring pattern, or a context built without memory.
+  defp render_recurring_pattern(_ctx, _opts), do: []
 
   defp render_per_chunk_facts(ctx) do
     facts_map = Map.get(ctx, :per_chunk_facts)
