@@ -205,12 +205,31 @@ defmodule Brain.Services.DispatcherTest do
       assert Dispatcher.find_service("music.play") == Brain.Services.HomeAssistant
     end
 
-    test "routes alarm.set to HomeAssistant via supported_domains" do
-      assert Dispatcher.find_service("alarm.set") == Brain.Services.HomeAssistant
+    test "routes an alarm intent the local scheduler does not handle to HomeAssistant via supported_domains" do
+      assert Dispatcher.find_service("alarm.snooze") == Brain.Services.HomeAssistant
     end
 
     test "routes timer.start to HomeAssistant via supported_domains" do
       assert Dispatcher.find_service("timer.start") == Brain.Services.HomeAssistant
+    end
+  end
+
+  describe "find_service/1 local scheduler routing" do
+    test "routes every intent the local scheduler supports to it, ahead of HomeAssistant's domains" do
+      for intent <- Brain.Services.LocalScheduler.supported_intents() do
+        assert Dispatcher.find_service(intent) == Brain.Services.LocalScheduler, intent
+      end
+    end
+
+    test "lists the local scheduler among the services" do
+      assert Dispatcher.find_service_by_name(:local_scheduler) == Brain.Services.LocalScheduler
+
+      scheduler =
+        Dispatcher.list_services(world: "default")
+        |> Enum.find(&(&1.module == Brain.Services.LocalScheduler))
+
+      assert scheduler.configured
+      assert "alarm.set" in scheduler.supported_intents
     end
   end
 
