@@ -15,6 +15,11 @@ defmodule Brain.ML.TrainingServer do
   - `:gen_micro_data`, `:train_micro`, `:gen_framing_data`,
     `:train_framing`, `:evaluate`, `:reload_models`
 
+  `:gen_micro_data`, `:gen_framing_data` and `:evaluate` analyze text in a
+  world, so their config must carry `:world_id`; the job runs its mix task
+  with `--world <id>`. Starting or scheduling one without it raises
+  `ArgumentError`.
+
   ## Progress
 
   Start, completion and cancellation are broadcast on `"training:progress"`.
@@ -25,6 +30,7 @@ defmodule Brain.ML.TrainingServer do
   ## Usage
 
       TrainingServer.start_training(:pos, sentences: 2_000, max_epochs: 100, patience: nil, seed: 42)
+      TrainingServer.start_training(:evaluate, task: "intent", world_id: "star_trek")
       TrainingServer.get_status()
       # => :idle | {:training, :pos, ~U[2026-09-19 12:00:00Z]}
       TrainingServer.cancel()
@@ -72,10 +78,11 @@ defmodule Brain.ML.TrainingServer do
   @doc "The PubSub topic POS runs broadcast their progress on."
   def pos_topic, do: @pos_topic
 
-  @doc "Start an async training job for the given model type.\n\n## Options\n- `:epochs` - Number of training epochs (default varies by model)\n- `:batch_size` - Training batch size (default varies by model)\n- `:name` - Experiment name for tracking\n- `:learning_rate` - Learning rate override\n\nFor `:pos` the options are the run params; invalid params are refused\nwith `{:error, message}` before anything starts.\n\nReturns `{:ok, model_type}` (`{:ok, :pos, run_id}` for a POS run) or `{:error, reason}`.\n"
+  @doc "Start an async training job for the given model type.\n\n## Options\n- `:epochs` - Number of training epochs (default varies by model)\n- `:batch_size` - Training batch size (default varies by model)\n- `:name` - Experiment name for tracking\n- `:learning_rate` - Learning rate override\n- `:world_id` - Required for `:gen_micro_data`, `:gen_framing_data` and `:evaluate`: the world the job analyzes text in; raises `ArgumentError` when missing\n\nFor `:pos` the options are the run params; invalid params are refused\nwith `{:error, message}` before anything starts.\n\nReturns `{:ok, model_type}` (`{:ok, :pos, run_id}` for a POS run) or `{:error, reason}`.\n"
   @spec start_training(model_type(), keyword(), GenServer.name()) ::
           {:ok, model_type()} | {:ok, :pos, String.t()} | {:error, term()}
   def start_training(model_type, config \\ [], name \\ __MODULE__) do
+    require_world!(model_type, config)
     GenServer.call(name, {:start_training, model_type, config}, 5000)
   end
 
@@ -100,10 +107,11 @@ defmodule Brain.ML.TrainingServer do
     GenServer.call(name, :cancel, 15_000)
   end
 
-  @doc "Schedule recurring training for a model.\n\n## Parameters\n- `model_type` - The model to train\n- `config` - Training configuration (keyword list)\n- `interval_hours` - Hours between training runs\n\nReturns `{:ok, schedule_id}`.\n"
+  @doc "Schedule recurring training for a model.\n\n## Parameters\n- `model_type` - The model to train\n- `config` - Training configuration (keyword list)\n- `interval_hours` - Hours between training runs\n\n`config` carries `:world_id` for the model types that require it (see `start_training/3`); raises `ArgumentError` when missing.\n\nReturns `{:ok, schedule_id}`.\n"
   @spec schedule(model_type(), keyword(), pos_integer(), GenServer.name()) ::
           {:ok, String.t()}
   def schedule(model_type, config \\ [], interval_hours, name \\ __MODULE__) do
+    require_world!(model_type, config)
     GenServer.call(name, {:schedule, model_type, config, interval_hours}, 5000)
   end
 
@@ -136,6 +144,22 @@ defmodule Brain.ML.TrainingServer do
   end
 
   @valid_types [:tfidf, :pos, :gen_micro_data, :train_micro, :gen_framing_data, :train_framing, :evaluate, :reload_models]
+
+  # Jobs whose mix task analyzes text in a world and takes --world <id>.
+  @world_types [:gen_micro_data, :gen_framing_data, :evaluate]
+
+  defp require_world!(model_type, config) when model_type in @world_types do
+    case Keyword.get(config, :world_id) do
+      world_id when is_binary(world_id) and world_id != "" ->
+        :ok
+
+      other ->
+        raise ArgumentError,
+              "TrainingServer #{inspect(model_type)} needs config :world_id, the world the job analyzes text in; got #{inspect(other)}"
+    end
+  end
+
+  defp require_world!(_model_type, _config), do: :ok
 
   @impl true
   def handle_call({:start_training, model_type, config}, _from, %{status: :idle} = state) do
@@ -386,7 +410,7 @@ defmodule Brain.ML.TrainingServer do
       name -> ["--only", to_string(name)]
     end
 
-    Mix.Task.rerun("gen_micro_data", args)
+    Mix.Task.rerun("gen_micro_data", ["--world", Keyword.fetch!(config, :world_id) | args])
     {:ok, :gen_micro_data_complete}
   end
 
@@ -400,8 +424,8 @@ defmodule Brain.ML.TrainingServer do
     {:ok, :train_micro_complete}
   end
 
-  defp run_training(:gen_framing_data, _config) do
-    Mix.Task.rerun("gen_framing_data", ["--corpus", "gvfc"])
+  defp run_training(:gen_framing_data, config) do
+    Mix.Task.rerun("gen_framing_data", ["--world", Keyword.fetch!(config, :world_id), "--corpus", "gvfc"])
     {:ok, :gen_framing_data_complete}
   end
 
@@ -412,7 +436,7 @@ defmodule Brain.ML.TrainingServer do
 
   defp run_training(:evaluate, config) do
     task = Keyword.get(config, :task, "intent")
-    Mix.Task.rerun("evaluate.#{task}", ["--save"])
+    Mix.Task.rerun("evaluate.#{task}", ["--world", Keyword.fetch!(config, :world_id), "--save"])
     {:ok, {:evaluate_complete, task}}
   end
 
