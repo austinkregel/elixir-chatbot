@@ -8,11 +8,11 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
   require Logger
   @min_confidence 0.5
 
-  @doc "Analyzes text to detect meta-cognitive queries.\n\nReturns an AnalyzerResult if a meta-cognitive query is detected,\notherwise returns a low-confidence result.\n"
-  def analyze(text, opts \\ []) do
+  @doc "Analyzes text to detect meta-cognitive queries.\n\nReturns an AnalyzerResult if a meta-cognitive query is detected,\notherwise returns a low-confidence result.\n\n`opts` must carry `:world_id`, the world the text is analyzed in.\n"
+  def analyze(text, opts) do
     user_id = Keyword.get(opts, :user_id)
 
-    case detect_meta_intent(text) do
+    case detect_meta_intent(text, opts) do
       {:ok, intent, confidence} when confidence >= @min_confidence ->
         query_type = intent_to_query_type(intent)
 
@@ -38,8 +38,8 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     end
   end
 
-  @doc "Checks if the text contains a meta-cognitive query.\nUses the intent classifier trained on meta.* intents.\n\n`opts` may carry `:side_effects`, passed to the analysis the classifier runs on the text; `false` keeps it from writing.\n"
-  def is_self_knowledge_query?(text, opts \\ []) do
+  @doc "Checks if the text contains a meta-cognitive query.\nUses the intent classifier trained on meta.* intents.\n\n`opts` must carry `:world_id`, the world the text is analyzed in, and may carry `:side_effects`, passed to the analysis the classifier runs on the text; `false` keeps it from writing.\n"
+  def is_self_knowledge_query?(text, opts) do
     case detect_meta_intent(text, opts) do
       {:ok, _intent, confidence} when confidence >= @min_confidence -> true
       _ -> false
@@ -71,9 +71,9 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     end
   end
 
-  @doc "Detects if the text matches a meta-cognitive intent.\n\nUses the intent classifier and filters for meta.* intents. The classifier is\nrequired: when it is not ready, or classification fails, this raises rather\nthan guessing from keywords.\nReturns {:ok, intent, confidence} or :no_match\n"
-  def detect_meta_intent(text, opts \\ []) do
-    %{intent: intent, confidence: confidence} = classify_meta(text, Keyword.take(opts, [:side_effects]))
+  @doc "Detects if the text matches a meta-cognitive intent.\n\nUses the intent classifier and filters for meta.* intents. The classifier is\nrequired: when it is not ready, or classification fails, this raises rather\nthan guessing from keywords.\n`opts` must carry `:world_id`, the world the text is analyzed in.\nReturns {:ok, intent, confidence} or :no_match\n"
+  def detect_meta_intent(text, opts) do
+    %{intent: intent, confidence: confidence} = classify_meta(text, Keyword.take(opts, [:world_id, :side_effects]))
 
     if is_meta_intent?(intent) do
       {:ok, intent, confidence}
@@ -82,9 +82,9 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
     end
   end
 
-  @doc "Determines the type of meta-cognitive query from the intent.\n"
-  def detect_query_type(text) do
-    case detect_meta_intent(text) do
+  @doc "Determines the type of meta-cognitive query from the intent.\n\n`opts` must carry `:world_id`, the world the text is analyzed in.\n"
+  def detect_query_type(text, opts) do
+    case detect_meta_intent(text, opts) do
       {:ok, intent, confidence} ->
         {:ok, intent_to_query_type(intent), confidence}
 
