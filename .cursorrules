@@ -252,18 +252,18 @@ mix train --list                   # List all training stages
 mix train_models                   # TF-IDF models only
 mix train_micro                    # Micro-classifiers (TF-IDF + feature-vector)
 mix train_framing                  # Framing classifier (GVFC corpus)
-mix gen_micro_data                 # Regenerate micro-classifier JSON from gold standard
-mix gen_framing_data --corpus gvfc # Generate framing training data
+mix gen_micro_data --world default                 # Regenerate micro-classifier JSON from gold standard
+mix gen_framing_data --world default --corpus gvfc # Generate framing training data
 ```
 
 ### Evaluation
 
 ```bash
-mix evaluate                       # Evaluate all tasks
-mix evaluate.intent --save         # Intent classification with save
+mix evaluate --world default                       # Evaluate all tasks
+mix evaluate.intent --world default --save         # Intent classification with save
 mix evaluate.sentiment --verbose   # Sentiment with per-class details
 mix evaluate.speech_act            # Speech act classification
-mix evaluate.ner                   # Named entity recognition
+mix evaluate.ner --world default                   # Named entity recognition
 
 mix test --only benchmark          # Run accuracy threshold tests
 ```
@@ -377,7 +377,7 @@ mix phx.server                     # Start dev server
 iex -S mix phx.server              # Start with IEx
 
 mix train                          # Train all models (6 stages)
-mix evaluate --save                # Evaluate + save
+mix evaluate --world default --save                # Evaluate + save
 
 Brain.SystemStatus.get_all()       # Check all statuses
 Brain.ML.MicroClassifiers.ready?()
