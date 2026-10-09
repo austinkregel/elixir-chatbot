@@ -250,6 +250,8 @@ defmodule Atlas.Importer do
   # Semantic Facts (memory_store.term)
   #
   # SemanticFact struct has: id, timestamp, representation, embedding, evidence_ids, tags
+  # Its representation is in the form consolidation wrote, "Action: <action> |
+  # Examples: <examples>", which is split into the action and the content.
   # ============================================================================
   defp import_semantic_facts(opts) do
     with_term_file(memory_store_path(), SemanticFact, opts, fn data ->
@@ -260,9 +262,13 @@ defmodule Atlas.Importer do
           Enum.map(world_sems, fn {_id, sem} ->
             category = (g(sem, :tags) || []) |> List.first() || "general"
 
+            {action, content} =
+              SemanticFact.split_legacy_content(to_string(g(sem, :representation) || ""))
+
             %{
               world_id: world_id,
-              content: to_string(g(sem, :representation) || ""),
+              content: content,
+              action: action,
               category: category,
               confidence: 0.8,
               embedding: g(sem, :embedding) || [],
