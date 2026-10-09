@@ -1,18 +1,19 @@
 defmodule Brain.Knowledge.Corroborator do
-  @moduledoc "Analyzes findings for cross-source agreement and conflict detection.\n\nThe Corroborator implements the **evidence evaluation** phase of the\nscientific method:\n\n## Scientific Method Integration\n\n1. **Hypothesis Testing**: Evaluates hypotheses against gathered evidence\n2. **Falsifiability**: Contradicting evidence can falsify hypotheses\n3. **Support**: Agreeing evidence supports (but doesn't prove) hypotheses\n4. **Independent Verification**: Requires 2+ independent sources\n\nKey principle: \"We cannot prove a hypothesis true, only support it with\nevidence or falsify it with contradicting evidence.\"\n\n## Features\n\n- Groups findings by semantic similarity using TF-IDF embeddings\n- Requires 2+ independent sources for high-confidence facts\n- Detects conflicting claims between sources\n- Computes aggregate confidence scores based on corroboration\n- Evaluates hypotheses and determines if they are supported/falsified\n\n## Example\n\n    findings = [\n      %Finding{claim: \"Paris is the capital of France\", source: %{domain: \"source1.com\"}},\n      %Finding{claim: \"France's capital is Paris\", source: %{domain: \"source2.com\"}}\n    ]\n\n    {:ok, candidates} = Corroborator.corroborate(findings)\n    # => Single ReviewCandidate with 2 corroborating sources\n\n    # Or with hypothesis testing:\n    {:ok, investigation} = Corroborator.test_hypotheses(investigation, findings)\n"
+  @moduledoc "Analyzes findings for cross-source agreement and conflict detection.\n\nThe Corroborator implements the **evidence evaluation** phase of the\nscientific method:\n\n## Scientific Method Integration\n\n1. **Hypothesis Testing**: Evaluates hypotheses against gathered evidence\n2. **Falsifiability**: Contradicting evidence can falsify hypotheses\n3. **Support**: Agreeing evidence supports (but doesn't prove) hypotheses\n4. **Independent Verification**: Requires 2+ independent sources\n\nKey principle: \"We cannot prove a hypothesis true, only support it with\nevidence or falsify it with contradicting evidence.\"\n\n## Features\n\n- Groups findings by semantic similarity using TF-IDF embeddings\n- Requires 2+ independent sources for high-confidence facts\n- Detects conflicting claims between sources\n- Computes aggregate confidence scores based on corroboration\n- Evaluates hypotheses and determines if they are supported/falsified\n\n## Example\n\n    findings = [\n      %Finding{claim: \"Paris is the capital of France\", source: %{domain: \"source1.com\"}},\n      %Finding{claim: \"France's capital is Paris\", source: %{domain: \"source2.com\"}}\n    ]\n\n    {:ok, candidates} = Corroborator.corroborate(findings)\n    # => Single ReviewCandidate with 2 corroborating sources\n\n    # Or with hypothesis testing:\n    {:ok, investigation} = Corroborator.test_hypotheses(world_id, investigation, findings)\n"
 
   alias Brain.Knowledge.Types
-  alias Brain.ML.Tokenizer
   require Logger
 
-  alias Brain.Memory.Embedder
+  # World.Embedder is in a sibling umbrella app that depends on :brain.
+  @compile {:no_warn_undefined, World.Embedder}
+  alias World.Embedder, as: WorldEmbedder
   alias Types.{Finding, ReviewCandidate, Hypothesis, Investigation}
   alias Brain.Telemetry
   @similarity_threshold 0.7
   @min_sources 2
   @max_cluster_size 20
 
-  @doc "Groups findings by semantic similarity and calculates corroboration.\n\nReturns ReviewCandidates with corroboration metadata. Only findings\nthat meet the minimum source threshold are returned.\n\n## Options\n  - :world_id - Required. The world whose entity vectors inform clustering; absent raises.\n  - :similarity_threshold - Override default similarity threshold\n  - :min_sources - Override minimum source requirement\n  - :include_uncorroborated - If true, include findings below threshold\n"
+  @doc "Groups findings by semantic similarity and calculates corroboration.\n\nReturns ReviewCandidates with corroboration metadata. Only findings\nthat meet the minimum source threshold are returned.\n\n## Options\n  - :world_id - Required. The world whose embedder embeds the claims, whose entity vectors inform clustering and whose triple scorer scores each candidate; absent raises.\n  - :similarity_threshold - Override default similarity threshold\n  - :min_sources - Override minimum source requirement\n  - :include_uncorroborated - If true, include findings below threshold\n"
   @spec corroborate([Finding.t()], keyword()) :: {:ok, [ReviewCandidate.t()]}
   def corroborate(findings, opts) when is_list(findings) do
     world_id =
@@ -41,12 +42,12 @@ defmodule Brain.Knowledge.Corroborator do
     if findings == [] do
       {:ok, []}
     else
-      embedded = embed_findings(findings)
+      embedded = embed_findings(findings, world_id)
       clusters = cluster_by_similarity(embedded, similarity_threshold, world_id)
 
       candidates =
         clusters
-        |> Enum.map(&build_candidate_from_cluster/1)
+        |> Enum.map(&build_candidate_from_cluster(&1, world_id))
         |> maybe_filter_by_threshold(min_sources, include_uncorroborated)
 
       Logger.info("Corroboration completed",
@@ -59,20 +60,11 @@ defmodule Brain.Knowledge.Corroborator do
     end
   end
 
-  @doc "Checks if two claims are semantically similar.\n\nReturns {:ok, similarity_score} where score is 0.0-1.0.\n"
-  @spec compare_claims(String.t(), String.t()) :: {:ok, float()} | {:error, term()}
-  def compare_claims(claim1, claim2) when is_binary(claim1) and is_binary(claim2) do
-    if Embedder.ready?() do
-      with {:ok, emb1} <- Embedder.embed(claim1),
-           {:ok, emb2} <- Embedder.embed(claim2) do
-        similarity = compute_similarity(emb1, emb2)
-        {:ok, similarity}
-      else
-        _ -> {:ok, token_overlap_similarity(claim1, claim2)}
-      end
-    else
-      {:ok, token_overlap_similarity(claim1, claim2)}
-    end
+  @doc "Checks if two claims are semantically similar in the world's embedder.\n\nReturns {:ok, similarity_score} where score is 0.0-1.0. While the world's\nvocabulary is being rebuilt from its episodes, this waits for the rebuild to\nfinish (`World.Embedder.await_ready/2`) and compares the claims then. A world\nwhose embedder cannot embed, or whose rebuild does not finish, raises.\n"
+  @spec compare_claims(String.t(), String.t(), String.t()) :: {:ok, float()}
+  def compare_claims(world_id, claim1, claim2)
+      when is_binary(world_id) and is_binary(claim1) and is_binary(claim2) do
+    {:ok, compute_similarity(world_embedding!(world_id, claim1), world_embedding!(world_id, claim2))}
   end
 
   @doc "Detects conflicts between a new claim and existing claims.\n\nReturns a list of claims that conflict with the given claim.\n"
@@ -84,9 +76,10 @@ defmodule Brain.Knowledge.Corroborator do
     end)
   end
 
-  @doc "Tests hypotheses in an investigation against gathered evidence.\n\nThis is the core of the scientific method implementation:\n1. For each hypothesis, find relevant evidence\n2. Classify evidence as supporting or contradicting\n3. Apply falsifiability rules\n4. Update hypothesis status\n\n## Falsifiability Rules\n\nA hypothesis is **falsified** if:\n- Reliable contradicting evidence exists (reliability >= 0.6)\n- The contradicting source is independent\n\nA hypothesis is **supported** if:\n- 2+ independent sources provide agreeing evidence\n- No reliable contradicting evidence exists\n\n## Returns\n\nUpdated investigation with evaluated hypotheses.\n"
-  @spec test_hypotheses(Investigation.t(), [Finding.t()]) :: {:ok, Investigation.t()}
-  def test_hypotheses(%Investigation{} = investigation, findings) when is_list(findings) do
+  @doc "Tests hypotheses in an investigation against gathered evidence, comparing\nclaims in `world_id`'s embedder (`Investigation.record_evidence/3`).\n\nThis is the core of the scientific method implementation:\n1. For each hypothesis, find relevant evidence\n2. Classify evidence as supporting or contradicting\n3. Apply falsifiability rules\n4. Update hypothesis status\n\n## Falsifiability Rules\n\nA hypothesis is **falsified** if:\n- Reliable contradicting evidence exists (reliability >= 0.6)\n- The contradicting source is independent\n\nA hypothesis is **supported** if:\n- 2+ independent sources provide agreeing evidence\n- No reliable contradicting evidence exists\n\n## Returns\n\nUpdated investigation with evaluated hypotheses.\n"
+  @spec test_hypotheses(String.t(), Investigation.t(), [Finding.t()]) :: {:ok, Investigation.t()}
+  def test_hypotheses(world_id, %Investigation{} = investigation, findings)
+      when is_binary(world_id) and world_id != "" and is_list(findings) do
     Telemetry.span(
       :knowledge_corroborate,
       %{
@@ -94,18 +87,18 @@ defmodule Brain.Knowledge.Corroborator do
         evidence_count: length(findings)
       },
       fn ->
-        do_test_hypotheses(investigation, findings)
+        do_test_hypotheses(world_id, investigation, findings)
       end
     )
   end
 
-  defp do_test_hypotheses(%Investigation{} = investigation, findings) do
+  defp do_test_hypotheses(world_id, %Investigation{} = investigation, findings) do
     Logger.debug("Testing hypotheses",
       hypotheses: length(investigation.hypotheses),
       findings: length(findings)
     )
 
-    investigation = Investigation.record_evidence(investigation, findings)
+    investigation = Investigation.record_evidence(world_id, investigation, findings)
     concluded = Investigation.conclude(investigation)
 
     Logger.info("Hypothesis testing completed",
@@ -117,10 +110,10 @@ defmodule Brain.Knowledge.Corroborator do
     {:ok, concluded}
   end
 
-  @doc "Evaluates a single hypothesis against a set of findings.\n\nReturns the hypothesis with updated status and evidence.\n"
-  @spec evaluate_hypothesis(Hypothesis.t(), [Finding.t()]) :: Hypothesis.t()
-  def evaluate_hypothesis(%Hypothesis{} = hypothesis, findings) when is_list(findings) do
-    {supporting, contradicting} = partition_evidence(hypothesis, findings)
+  @doc "Evaluates a single hypothesis against a set of findings, comparing\nclaims in the world's embedder.\n\nReturns the hypothesis with updated status and evidence.\n"
+  @spec evaluate_hypothesis(String.t(), Hypothesis.t(), [Finding.t()]) :: Hypothesis.t()
+  def evaluate_hypothesis(world_id, %Hypothesis{} = hypothesis, findings) when is_list(findings) do
+    {supporting, contradicting} = partition_evidence(world_id, hypothesis, findings)
 
     hypothesis =
       supporting
@@ -137,11 +130,11 @@ defmodule Brain.Knowledge.Corroborator do
     Hypothesis.evaluate(hypothesis)
   end
 
-  @doc "Determines if evidence supports or contradicts a hypothesis.\n\nUses semantic similarity and negation detection.\n"
-  @spec classify_evidence(Hypothesis.t(), Finding.t()) ::
+  @doc "Determines if evidence supports or contradicts a hypothesis.\n\nUses semantic similarity in the world's embedder and negation detection.\n"
+  @spec classify_evidence(String.t(), Hypothesis.t(), Finding.t()) ::
           :supporting | :contradicting | :irrelevant
-  def classify_evidence(%Hypothesis{} = hypothesis, %Finding{} = finding) do
-    case compare_claims(hypothesis.claim, finding.claim) do
+  def classify_evidence(world_id, %Hypothesis{} = hypothesis, %Finding{} = finding) do
+    case compare_claims(world_id, hypothesis.claim, finding.claim) do
       {:ok, similarity} when similarity >= @similarity_threshold ->
         if contradicts?(hypothesis.claim, finding.claim) do
           :contradicting
@@ -150,9 +143,6 @@ defmodule Brain.Knowledge.Corroborator do
         end
 
       {:ok, _low_similarity} ->
-        :irrelevant
-
-      {:error, _} ->
         :irrelevant
     end
   end
@@ -181,10 +171,10 @@ defmodule Brain.Knowledge.Corroborator do
     end)
   end
 
-  defp partition_evidence(%Hypothesis{} = hypothesis, findings) do
+  defp partition_evidence(world_id, %Hypothesis{} = hypothesis, findings) do
     findings
     |> Enum.reduce({[], []}, fn finding, {supporting, contradicting} ->
-      case classify_evidence(hypothesis, finding) do
+      case classify_evidence(world_id, hypothesis, finding) do
         :supporting -> {[finding | supporting], contradicting}
         :contradicting -> {supporting, [finding | contradicting]}
         :irrelevant -> {supporting, contradicting}
@@ -218,36 +208,30 @@ defmodule Brain.Knowledge.Corroborator do
     SourceInfo.new("internal://hypothesis", title: "Hypothesis-derived")
   end
 
-  defp embed_findings(findings) do
+  defp embed_findings(findings, world_id) do
     findings
     |> Enum.map(fn finding ->
-      embedding = get_embedding(finding.claim)
+      embedding = world_embedding!(world_id, finding.claim)
       {finding, embedding}
     end)
   end
 
-  defp get_embedding(text) do
-    if Embedder.ready?() do
-      case Embedder.embed(text) do
-        {:ok, embedding} -> embedding
-        _ -> compute_simple_embedding(text)
-      end
-    else
-      compute_simple_embedding(text)
-    end
-  end
+  # A world's embedding comes from the world's embedder and nowhere else. While
+  # the world's vocabulary is being rebuilt this waits for the rebuild to finish
+  # (`World.Embedder.await_ready/2`, which raises naming the world when it does
+  # not) and embeds then. A world whose embedder has no copy, no vocabulary, or
+  # no table raises.
+  defp world_embedding!(world_id, text) do
+    case WorldEmbedder.embed(world_id, text) do
+      {:ok, embedding} ->
+        embedding
 
-  defp compute_simple_embedding(text) do
-    words = tokenize(text)
-    word_counts = Enum.frequencies(words)
-    total = Enum.sum(Map.values(word_counts))
+      {:error, :vocabulary_building} ->
+        :ok = WorldEmbedder.await_ready(world_id)
+        world_embedding!(world_id, text)
 
-    if total > 0 do
-      word_counts
-      |> Enum.map(fn {word, count} -> {word, count / total} end)
-      |> Map.new()
-    else
-      %{}
+      {:error, reason} ->
+        raise "Corroborator: world #{inspect(world_id)}'s embedder cannot embed: #{inspect(reason)}"
     end
   end
 
@@ -293,8 +277,6 @@ defmodule Brain.Knowledge.Corroborator do
   end
 
   defp blend_with_kg_similarity(tfidf_sim, primary_finding, world_id) do
-    alias Brain.ML.KnowledgeGraph.EntityVectorCache
-
     primary_entity = Map.get(primary_finding, :entity) || Map.get(primary_finding, :claim, "")
     primary_vec = entity_vector(primary_entity, world_id)
 
@@ -303,19 +285,14 @@ defmodule Brain.Knowledge.Corroborator do
     else
       tfidf_sim
     end
-  rescue
-    _ -> tfidf_sim
   end
 
+  # The world's entity vector; a world with no copy of the triple scorer raises.
   defp entity_vector(text, world_id) when is_binary(text) and text != "" do
     alias Brain.ML.KnowledgeGraph.EntityVectorCache
 
-    case EntityVectorCache.get_or_compute(world_id, text) do
-      {:ok, vec} -> vec
-      _ -> nil
-    end
-  rescue
-    _ -> nil
+    {:ok, vec} = EntityVectorCache.get_or_compute(world_id, text)
+    vec
   end
 
   defp entity_vector(_, _world_id), do: nil
@@ -341,75 +318,28 @@ defmodule Brain.Knowledge.Corroborator do
     {primary_finding, supporting_findings}
   end
 
+  # The cosine similarity of two of the world's embeddings. Vectors of
+  # different lengths (the world's vocabulary was rebuilt between the two
+  # embeddings) raise rather than compare as 0.0, and so does anything that is
+  # not an embedding.
   defp compute_similarity(emb1, emb2) when is_list(emb1) and is_list(emb2) do
-    cosine_similarity(emb1, emb2)
+    FourthWall.Math.cosine_similarity!(emb1, emb2)
   end
 
-  defp compute_similarity(emb1, emb2) when is_map(emb1) and is_map(emb2) do
-    map_similarity(emb1, emb2)
+  defp compute_similarity(emb1, emb2) do
+    raise ArgumentError,
+          "Corroborator compares embeddings, lists of numbers; got #{inspect(emb1, limit: 3)} and " <>
+            "#{inspect(emb2, limit: 3)}"
   end
 
-  defp compute_similarity(_, _) do
-    0.0
-  end
-
-  defp cosine_similarity(v1, v2) when is_list(v1) and is_list(v2) do
-    if length(v1) == length(v2) and v1 != [] do
-      dot = Enum.zip(v1, v2) |> Enum.map(fn {a, b} -> a * b end) |> Enum.sum()
-      norm1 = :math.sqrt(Enum.map(v1, &(&1 * &1)) |> Enum.sum())
-      norm2 = :math.sqrt(Enum.map(v2, &(&1 * &1)) |> Enum.sum())
-
-      if norm1 > 0 and norm2 > 0 do
-        dot / (norm1 * norm2)
-      else
-        0.0
-      end
-    else
-      0.0
-    end
-  end
-
-  defp map_similarity(map1, map2) do
-    keys1 = MapSet.new(Map.keys(map1))
-    keys2 = MapSet.new(Map.keys(map2))
-
-    intersection = MapSet.intersection(keys1, keys2) |> MapSet.size()
-    union = MapSet.union(keys1, keys2) |> MapSet.size()
-
-    if union > 0 do
-      intersection / union
-    else
-      0.0
-    end
-  end
-
-  defp token_overlap_similarity(text1, text2) do
-    words1 = tokenize(text1) |> MapSet.new()
-    words2 = tokenize(text2) |> MapSet.new()
-
-    intersection = MapSet.intersection(words1, words2) |> MapSet.size()
-    union = MapSet.union(words1, words2) |> MapSet.size()
-
-    if union > 0 do
-      intersection / union
-    else
-      0.0
-    end
-  end
-
-  defp tokenize(text) do
-    text
-    |> Tokenizer.tokenize_normalized(min_length: 3)
-  end
-
-  defp build_candidate_from_cluster({primary, supporting}) do
+  defp build_candidate_from_cluster({primary, supporting}, world_id) do
     all_findings = [primary | supporting]
     source_count = count_unique_domains(all_findings)
     avg_reliability = average_source_reliability(all_findings)
     {corroborating, conflicting} = partition_by_conflict(primary, supporting)
 
     aggregate = calculate_aggregate_confidence(source_count, avg_reliability, length(conflicting))
-    aggregate = apply_kg_triple_scoring(primary, aggregate)
+    aggregate = apply_kg_triple_scoring(primary, aggregate, world_id)
 
     corroborating_sources =
       corroborating
@@ -423,31 +353,12 @@ defmodule Brain.Knowledge.Corroborator do
     )
   end
 
-  defp apply_kg_triple_scoring(finding, aggregate) do
-    if Brain.ML.KnowledgeGraph.TripleScorer.ready?() do
-      case Brain.ML.KnowledgeGraph.TripleScorer.score(finding.entity, "claims", finding.claim) do
-        {:ok, score} ->
-          adjusted = aggregate * 0.7 + score * 0.3
-          min(max(adjusted, 0.0), 1.0)
-
-        {:error, _reason} ->
-          aggregate
-      end
-    else
-      log_once(:kg_lstm_not_ready, "KG-LSTM TripleScorer not ready; skipping graph-aware scoring")
-
-      :telemetry.execute(
-        [:chat_bot, :ml, :kg_lstm, :unavailable],
-        %{count: 1},
-        %{stage: :corroboration}
-      )
-
-      aggregate
-    end
-  rescue
-    e ->
-      Logger.warning("KG-LSTM scoring failed: #{Exception.message(e)}")
-      aggregate
+  # Blends in the world's triple scorer's score for the claim; a world with no
+  # copy of the scorer raises.
+  defp apply_kg_triple_scoring(finding, aggregate, world_id) do
+    {:ok, score} = Brain.ML.KnowledgeGraph.TripleScorer.score(world_id, finding.entity, "claims", finding.claim)
+    adjusted = aggregate * 0.7 + score * 0.3
+    min(max(adjusted, 0.0), 1.0)
   end
 
   defp count_unique_domains(findings) do
@@ -536,12 +447,4 @@ defmodule Brain.Knowledge.Corroborator do
 
   defp has_number_disagreement?(c1, c2),
     do: Brain.Knowledge.ContradictionDetector.has_number_disagreement?(c1, c2)
-
-  defp log_once(key, message) do
-    pt_key = {__MODULE__, :logged, key}
-    unless :persistent_term.get(pt_key, false) do
-      Logger.info(message)
-      :persistent_term.put(pt_key, true)
-    end
-  end
 end
