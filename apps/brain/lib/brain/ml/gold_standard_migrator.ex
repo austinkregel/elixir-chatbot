@@ -1,5 +1,5 @@
 defmodule Brain.ML.GoldStandardMigrator do
-  @moduledoc "Migrates intent training data from multiple sources into the gold standard\nevaluation file. Supports destructive mode to delete source files after migration.\n\n## Data Sources\n\n1. `data/intents/*_usersays_en.json` - Dialogflow usersays files\n2. `data/training/intents/*.json` - Enriched training data (tokens, POS, entities)\n3. `data/legacy/intents/*.json` - Legacy Dialogflow definition files\n\n## Features\n\n- Intents named by `Brain.Corpus.Label.canonical/1`, the same rule the corpus uses:\n  \"intent - context_ foo\" is \"intent\", and `smarthome.lights.*` folds to\n  `smarthome.device.*`\n- Deduplication by text+intent, favoring entries with richer metadata\n- Destructive mode: deletes source files after successful migration\n\n## Usage\n\n    # List available intents\n    GoldStandardMigrator.list_available_intents()\n\n    # Preview migration for specific intents\n    GoldStandardMigrator.preview([\"smarthome.lights.switch.off\"])\n\n    # Migrate all intents (non-destructive)\n    GoldStandardMigrator.migrate_intents(:all)\n\n    # Migrate and delete source files\n    GoldStandardMigrator.migrate_intents(:all, destructive: true)\n"
+  @moduledoc "Migrates intent training data from multiple sources into the gold standard\nevaluation file. Supports destructive mode to delete source files after migration.\n\n## Data Sources\n\n1. `data/intents/*_usersays_en.json` - Dialogflow usersays files\n2. `data/training/intents/*.json` - Enriched training data (tokens, POS, entities)\n3. `data/legacy/intents/*.json` - Legacy Dialogflow definition files\n\n## Features\n\n- Intents named by `Brain.Corpus.Label.canonical/1`, the same rule the corpus uses:\n  `smarthome.lights.*` folds to `smarthome.device.*`, and a contextual-variant\n  name (`\"intent - context_ foo\"`) raises\n- Deduplication by text+intent, favoring entries with richer metadata\n- Destructive mode: deletes source files after successful migration\n\n## Usage\n\n    # List available intents\n    GoldStandardMigrator.list_available_intents()\n\n    # Preview migration for specific intents\n    GoldStandardMigrator.preview([\"smarthome.lights.switch.off\"])\n\n    # Migrate all intents (non-destructive)\n    GoldStandardMigrator.migrate_intents(:all)\n\n    # Migrate and delete source files\n    GoldStandardMigrator.migrate_intents(:all, destructive: true)\n"
 
   require Logger
 
@@ -88,10 +88,9 @@ defmodule Brain.ML.GoldStandardMigrator do
     |> Enum.into(%{})
   end
 
-  @doc "Preview what would be migrated for the given intent names.\n\nOptions:\n- `:limit` - max examples per intent (default: all)\n- `:exclude_context_variants` - if true, skip context-variant files entirely (default: false)\n\nIntents are named by `Brain.Corpus.Label.canonical/1`, the same rule the corpus\nuses, so a context variant is already filed under its base intent and there is no\noption that changes the vocabulary.\n\nReturns `{intent_examples, entity_examples, source_files}` where:\n- `intent_examples` is a list of `%{\"text\" => \"...\", \"intent\" => \"...\"}`\n- `entity_examples` is a list of `%{\"text\" => \"...\", \"expected\" => [...]}`\n- `source_files` is a list of paths that were read (for destructive cleanup)\n"
+  @doc "Preview what would be migrated for the given intent names.\n\nOptions:\n- `:limit` - max examples per intent (default: all)\n\nIntents are named by `Brain.Corpus.Label.canonical/1`, the same rule the corpus\nuses; a contextual-variant file name raises there.\n\nReturns `{intent_examples, entity_examples, source_files}` where:\n- `intent_examples` is a list of `%{\"text\" => \"...\", \"intent\" => \"...\"}`\n- `entity_examples` is a list of `%{\"text\" => \"...\", \"expected\" => [...]}`\n- `source_files` is a list of paths that were read (for destructive cleanup)\n"
   def preview(intent_names, opts \\ []) do
     limit = Keyword.get(opts, :limit, :all)
-    exclude_context_variants? = Keyword.get(opts, :exclude_context_variants, false)
 
     intents = list_available_intents()
 
@@ -99,20 +98,6 @@ defmodule Brain.ML.GoldStandardMigrator do
       case intent_names do
         :all -> intents
         names when is_list(names) -> Enum.filter(intents, fn i -> i.name in names end)
-      end
-
-    selected =
-      if exclude_context_variants? do
-        selected
-        |> Enum.map(fn intent ->
-          filtered_paths =
-            Enum.reject(intent.paths, &context_variant_path?/1)
-
-          %{intent | paths: filtered_paths}
-        end)
-        |> Enum.reject(fn intent -> intent.paths == [] end)
-      else
-        selected
       end
 
     {intent_examples, entity_examples, source_files} =
@@ -132,12 +117,12 @@ defmodule Brain.ML.GoldStandardMigrator do
     {deduplicated, deduplicated_entity, Enum.uniq(source_files)}
   end
 
-  @doc "Migrate intents from all data sources into the gold standard files.\n\nOptions:\n- `:limit` - max examples per intent (default: all)\n- `:append` - if true, append to existing gold standard (default: false for destructive)\n- `:include_ner` - if true, also populate NER gold standard (default: true)\n- `:destructive` - if true, delete source files after successful migration (default: false)\n- `:exclude_context_variants` - if true, skip context-variant files entirely (default: false)\n  Context variants are follow-up utterances (e.g., \"how much\") that require prior\n  conversational context. They are filed under their base intent either way.\n\nReturns `{:ok, %{intent_count: N, ner_count: M, deleted_files: [...]}}`.\n"
+  @doc "Migrate intents from all data sources into the gold standard files.\n\nOptions:\n- `:limit` - max examples per intent (default: all)\n- `:append` - if true, append to existing gold standard (default: false for destructive)\n- `:include_ner` - if true, also populate NER gold standard (default: true)\n- `:destructive` - if true, delete source files after successful migration (default: false)\n\nReturns `{:ok, %{intent_count: N, ner_count: M, deleted_files: [...]}}`.\n"
   def migrate_intents(intent_names, opts \\ []) do
     destructive? = Keyword.get(opts, :destructive, false)
     append? = Keyword.get(opts, :append, not destructive?)
     include_ner? = Keyword.get(opts, :include_ner, true)
-    preview_opts = Keyword.take(opts, [:limit, :exclude_context_variants])
+    preview_opts = Keyword.take(opts, [:limit])
     {intent_examples, entity_examples, source_files} = preview(intent_names, preview_opts)
 
     intent_count = save_to_gold_standard("intent", intent_examples, append?)
@@ -598,11 +583,6 @@ defmodule Brain.ML.GoldStandardMigrator do
     |> Path.basename()
     |> String.replace_suffix("_usersays_en.json", "")
     |> Label.canonical()
-  end
-
-  defp context_variant_path?(path) do
-    basename = Path.basename(path)
-    String.match?(basename, ~r/context_.*_usersays_en\.json$/)
   end
 
   defp count_examples(path) do
