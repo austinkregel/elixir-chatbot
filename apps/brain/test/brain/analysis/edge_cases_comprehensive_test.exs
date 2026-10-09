@@ -18,6 +18,9 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   # wrong. Snapshots live in apps/brain/test/snapshots/edge_cases/.
   @snapshot_dir "edge_cases"
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   @doc "Extracts a normalized snapshot from a Pipeline analysis result.\nThis captures the key fields we want to assert on.\n"
   def extract_snapshot(result) do
     %{
@@ -158,7 +161,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   describe "names overlapping with locations" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
@@ -282,7 +285,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   describe "names overlapping with songs" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
@@ -322,7 +325,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   describe "names overlapping with products" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
@@ -353,7 +356,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   describe "informal greetings not in training data" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
@@ -441,7 +444,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   describe "text formatting edge cases" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
@@ -498,7 +501,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   describe "common typos" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
@@ -535,7 +538,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   describe "unusual introduction patterns" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
@@ -624,7 +627,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   describe "time-based greetings with ambiguous names" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
@@ -661,7 +664,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   describe "complex multi-sentence scenarios" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
@@ -669,7 +672,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     test "greeting + introduction + weather.query", %{conversation_id: conv_id} do
       input = "Hello! I'm Austin. What's the weather in Owosso?"
 
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
       snapshot = extract_snapshot(result)
 
       assert snapshot.chunk_count == 3,
@@ -729,7 +732,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   describe "extremely long input handling" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
@@ -783,7 +786,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
           fn _ -> "Hello! Hi! Hey there!" end
         )
 
-      result = Pipeline.process(long_greetings, [])
+      result = Pipeline.process(long_greetings, world_id: @world_id)
       assert result.analyses != []
     end
 
@@ -865,7 +868,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :disambiguation
     test "I'm Austin pattern triggers self-referential context" do
-      result = Pipeline.process("Hello, I'm Austin", [])
+      result = Pipeline.process("Hello, I'm Austin", world_id: @world_id)
       assert result.analyses != []
       analysis = hd(result.analyses)
 
@@ -876,13 +879,13 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :disambiguation
     test "I'm from Austin triggers location context" do
-      result = Pipeline.process("I'm from Austin", [])
+      result = Pipeline.process("I'm from Austin", world_id: @world_id)
       assert result.analyses != []
     end
 
     @tag :disambiguation
     test "weather in Austin triggers location context" do
-      result = Pipeline.process("What's the weather in Austin?", [])
+      result = Pipeline.process("What's the weather in Austin?", world_id: @world_id)
 
       assert result.analyses != []
       analysis = hd(result.analyses)
@@ -915,7 +918,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :snapshot
     test "Hello, I'm Austin - complete analysis snapshot" do
       input = "Hello, I'm Austin"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       if @log_snapshots do
         log_snapshot(result)
@@ -950,7 +953,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :snapshot
     test "Hi, my name is Sarah - complete analysis snapshot" do
       input = "Hi, my name is Sarah"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       if @log_snapshots do
         log_snapshot(result)
@@ -987,7 +990,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :snapshot
     test "What's the weather in Austin? - location disambiguation" do
       input = "What's the weather in Austin?"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       if @log_snapshots do
         log_snapshot(result)
@@ -1020,7 +1023,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :snapshot
     test "What's the weather? - missing location slot" do
       input = "What's the weather?"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       if @log_snapshots do
         log_snapshot(result)
@@ -1050,7 +1053,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :snapshot
     test "Hello! What's the weather? - greeting then question" do
       input = "Hello! What's the weather?"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       if @log_snapshots do
         log_snapshot(result)
@@ -1071,7 +1074,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :snapshot
     test "Hello, I'm Austin. What's the weather in Dallas? - intro then weather" do
       input = "Hello, I'm Austin. What's the weather in Dallas?"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       if @log_snapshots do
         log_snapshot(result)
@@ -1116,7 +1119,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :snapshot
     test "Play some music - music command" do
       input = "Play some music"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       if @log_snapshots do
         log_snapshot(result)
@@ -1135,7 +1138,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :snapshot
     test "Turn on the lights in the living room - device command with location" do
       input = "Turn on the lights in the living room"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       if @log_snapshots do
         log_snapshot(result)
@@ -1173,7 +1176,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :snapshot
     test "yo - informal greeting analysis" do
       input = "yo"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       if @log_snapshots do
         log_snapshot(result)
@@ -1193,7 +1196,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :snapshot
     test "The name's Bond, James Bond - unusual intro pattern" do
       input = "The name's Bond, James Bond"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       if @log_snapshots do
         log_snapshot(result)
@@ -1211,7 +1214,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     test "mixed content inspection" do
       input = "Hello, I'm Austin. What's the weather? Play some music. Turn on the lights.\n"
 
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       if @log_snapshots do
         log_snapshot(result)
@@ -1238,7 +1241,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :regression
     test "Hello should NOT trigger music playback" do
       input = "Hello"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       snapshot = extract_snapshot(result)
       [analysis] = snapshot.analyses
@@ -1258,7 +1261,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     @tag :regression
     test "Hello, I'm Austin should NOT ask about weather in Austin" do
       input = "Hello, I'm Austin"
-      result = Pipeline.process(input, [])
+      result = Pipeline.process(input, world_id: @world_id)
 
       snapshot = extract_snapshot(result)
       [analysis] = snapshot.analyses
