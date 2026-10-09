@@ -184,7 +184,7 @@ defmodule Brain.Response.PhraseInventory do
       raise """
       PhraseInventory: #{inventory_path} yielded zero fragments.
       The lattice realizer cannot run without an inventory.
-      Rebuild it with `mix gen_lattice_data`.
+      Rebuild it with `mix gen_lattice_data --world <id>`.
       """
     end
 
@@ -219,7 +219,7 @@ defmodule Brain.Response.PhraseInventory do
       {:error, reason} ->
         raise """
         PhraseInventory: cannot read #{path}: #{inspect(reason)}
-        Rebuild it with `mix gen_lattice_data`.
+        Rebuild it with `mix gen_lattice_data --world <id>`.
         """
     end
   end
