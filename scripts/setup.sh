@@ -301,7 +301,7 @@ if [ "$SKIP_DB" = false ]; then
     warn "atlas.setup failed (database may already exist), running migrations"
     mix atlas.migrate && ok "Migrations applied" || fail "Database migrations failed"
   }
-  mix atlas.seed 2>&1 && ok "Seeds applied" || warn "Seeding had issues (non-fatal)"
+  mix atlas.seed --world default 2>&1 && ok "Seeds applied" || warn "Seeding had issues (non-fatal)"
 else
   step "Database setup (skipped)"
   warn "Skipped via --skip-db"
