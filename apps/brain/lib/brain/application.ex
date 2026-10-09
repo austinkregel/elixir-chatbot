@@ -1,14 +1,6 @@
 defmodule Brain.Application do
   @moduledoc false
 
-  # These modules are in sibling umbrella apps that depend on :brain.
-  # They're available at runtime but not at compile time.
-  @compile {:no_warn_undefined, [World.Embedder, World.ModelRegistry]}
-
-  require Logger
-
-  alias World.Embedder
-  alias World.ModelRegistry
   alias Brain.Telemetry
   use Application
 
@@ -80,81 +72,14 @@ defmodule Brain.Application do
       {Brain, Application.get_env(:brain, :artifact_path, "priv/static/demo.echo.json")}
     ]
 
+    # Models load in the children that own them: Brain.ML.Gazetteer reads its
+    # sources in init/1, Brain.Memory.Embedder reads the trained vocabulary when
+    # it starts, and a world's models are read the first time the world uses
+    # them. No world is activated at boot.
     opts = [strategy: :one_for_one, name: Brain.Supervisor]
     result = Supervisor.start_link(children, opts)
     Telemetry.attach_handlers()
-    ml_config = Application.get_env(:brain, :ml, [])
-    skip_init = Application.get_env(:brain, :skip_ml_init, false)
-
-    if ml_config[:enabled] and not skip_init do
-      init_ml_pipeline()
-    end
 
     result
-  end
-
-  defp init_ml_pipeline do
-    require Logger
-
-    Task.start(fn ->
-      Process.sleep(100)
-
-      Logger.info("Initializing NLP pipeline...")
-
-      # The gazetteer is not loaded here: Brain.ML.Gazetteer loads its sources
-      # in init/1, before anything that reads it starts.
-
-      if Code.ensure_loaded?(World.ModelRegistry) and Process.whereis(World.ModelRegistry) do
-        case ModelRegistry.activate_world("default") do
-          {:ok, status} ->
-            Logger.info("Default world models activated", status)
-
-          {:error, reason} ->
-            Logger.warning("Default world model activation failed: #{inspect(reason)}")
-            load_classifier_fallback()
-        end
-      else
-        Logger.debug("World.ModelRegistry not available, using fallback classifier loading")
-        load_classifier_fallback()
-      end
-
-      # Ensure the embedder is loaded (may not be loaded by ModelRegistry)
-      unless Brain.Memory.Embedder.ready?() do
-        load_embedder_fallback()
-      end
-
-      if Code.ensure_loaded?(World.Embedder) do
-        Embedder.init()
-        Logger.info("World embedder system initialized")
-      end
-
-      Logger.info("NLP pipeline initialization complete")
-    end)
-  end
-
-  defp load_classifier_fallback do
-    load_embedder_fallback()
-  end
-
-  defp load_embedder_fallback do
-    embedder_path =
-      case Application.get_env(:brain, :ml, [])[:models_path] do
-        nil -> Path.join(:code.priv_dir(:brain), "ml_models/embedder.term")
-        path -> Path.join(path, "embedder.term")
-      end
-
-    if File.exists?(embedder_path) do
-      case File.read(embedder_path) do
-        {:ok, binary} ->
-          model = :erlang.binary_to_term(binary)
-          Brain.Memory.Embedder.load_model(model)
-          Logger.info("Embedder vocabulary loaded via fallback")
-
-        {:error, reason} ->
-          Logger.warning("Failed to read embedder model: #{inspect(reason)}")
-      end
-    else
-      Logger.debug("No embedder model found at #{embedder_path}")
-    end
   end
 end
