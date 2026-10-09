@@ -8,9 +8,12 @@ defmodule Brain.Analysis.PipelineTier3Test do
 
   alias Brain.Analysis.Pipeline
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   describe "pipeline produces Tier 3 fields" do
     test "simple sentence produces event_frames and srl_frames" do
-      analysis = Pipeline.analyze_chunk("John visited Berlin yesterday")
+      analysis = Pipeline.analyze_chunk("John visited Berlin yesterday", world_id: @world_id)
 
       assert Map.has_key?(analysis, :event_frames)
       assert Map.has_key?(analysis, :srl_frames)
@@ -19,21 +22,21 @@ defmodule Brain.Analysis.PipelineTier3Test do
     end
 
     test "greeting has empty Tier 3 fields" do
-      analysis = Pipeline.analyze_chunk("Hello!")
+      analysis = Pipeline.analyze_chunk("Hello!", world_id: @world_id)
 
       assert is_list(analysis.event_frames)
       assert is_list(analysis.srl_frames)
     end
 
     test "multi-entity sentence" do
-      analysis = Pipeline.analyze_chunk("The teacher gave Mary a book in the library")
+      analysis = Pipeline.analyze_chunk("The teacher gave Mary a book in the library", world_id: @world_id)
 
       assert is_list(analysis.event_frames)
       assert is_list(analysis.srl_frames)
     end
 
     test "question produces analysis with Tier 3 fields" do
-      analysis = Pipeline.analyze_chunk("What did Einstein discover?")
+      analysis = Pipeline.analyze_chunk("What did Einstein discover?", world_id: @world_id)
 
       assert Map.has_key?(analysis, :event_frames)
       assert Map.has_key?(analysis, :srl_frames)
@@ -42,7 +45,7 @@ defmodule Brain.Analysis.PipelineTier3Test do
 
   describe "full pipeline with Tier 3" do
     test "multi-chunk input produces Tier 3 in each chunk" do
-      model = Pipeline.process("Good morning! The president visited Berlin yesterday.")
+      model = Pipeline.process("Good morning! The president visited Berlin yesterday.", world_id: @world_id)
 
       for analysis <- model.analyses do
         assert Map.has_key?(analysis, :event_frames)
@@ -53,21 +56,21 @@ defmodule Brain.Analysis.PipelineTier3Test do
     end
 
     test "imperative sentence" do
-      analysis = Pipeline.analyze_chunk("Turn on the lights in the living room")
+      analysis = Pipeline.analyze_chunk("Turn on the lights in the living room", world_id: @world_id)
 
       assert is_list(analysis.event_frames)
       assert is_list(analysis.srl_frames)
     end
 
     test "passive construction" do
-      analysis = Pipeline.analyze_chunk("The book was written by Shakespeare")
+      analysis = Pipeline.analyze_chunk("The book was written by Shakespeare", world_id: @world_id)
 
       assert is_list(analysis.event_frames)
       assert is_list(analysis.srl_frames)
     end
 
     test "compound sentence" do
-      analysis = Pipeline.analyze_chunk("John ran and Mary jumped")
+      analysis = Pipeline.analyze_chunk("John ran and Mary jumped", world_id: @world_id)
 
       assert is_list(analysis.event_frames)
       assert is_list(analysis.srl_frames)
@@ -81,7 +84,7 @@ defmodule Brain.Analysis.PipelineTier3Test do
     # emits Universal Dependencies. The whole subsystem was dead and these
     # tests were green. They now assert the predicate.
     test "a sentence with a verb gets an SRL frame naming that verb" do
-      analysis = Pipeline.analyze_chunk("She quickly ate the pizza")
+      analysis = Pipeline.analyze_chunk("She quickly ate the pizza", world_id: @world_id)
 
       assert [%{predicate: predicate} | _] = analysis.srl_frames,
              "expected at least one SRL frame, got: #{inspect(analysis.srl_frames)}"
@@ -90,7 +93,7 @@ defmodule Brain.Analysis.PipelineTier3Test do
     end
 
     test "a sentence with no verb produces no frames" do
-      analysis = Pipeline.analyze_chunk("Hello!")
+      analysis = Pipeline.analyze_chunk("Hello!", world_id: @world_id)
 
       assert analysis.srl_frames == [],
              "a verbless greeting has no predicate to build a frame around, got: " <>
@@ -100,14 +103,14 @@ defmodule Brain.Analysis.PipelineTier3Test do
 
   describe "error resilience" do
     test "pipeline handles empty input" do
-      analysis = Pipeline.analyze_chunk("")
+      analysis = Pipeline.analyze_chunk("", world_id: @world_id)
 
       assert is_list(analysis.event_frames)
       assert is_list(analysis.srl_frames)
     end
 
     test "pipeline handles single word" do
-      analysis = Pipeline.analyze_chunk("Hello")
+      analysis = Pipeline.analyze_chunk("Hello", world_id: @world_id)
 
       assert is_list(analysis.event_frames)
       assert is_list(analysis.srl_frames)
@@ -115,7 +118,7 @@ defmodule Brain.Analysis.PipelineTier3Test do
 
     test "pipeline handles very long input" do
       long_text = String.duplicate("The cat sat on the mat. ", 20)
-      analysis = Pipeline.analyze_chunk(long_text)
+      analysis = Pipeline.analyze_chunk(long_text, world_id: @world_id)
 
       assert is_list(analysis.event_frames)
       assert is_list(analysis.srl_frames)
