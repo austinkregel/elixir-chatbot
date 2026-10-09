@@ -4,6 +4,9 @@ defmodule BrainTest do
   alias Brain
   import Brain.TestHelpers
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup _context do
     start_brain_services()
     %{brain: Brain}
@@ -11,13 +14,18 @@ defmodule BrainTest do
 
   describe "conversation management" do
     test "creates a new conversation", %{brain: _brain} do
-      assert {:ok, conversation_id} = Brain.create_conversation()
+      assert {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       assert is_binary(conversation_id)
       assert String.length(conversation_id) > 0
     end
 
+    test "raises when no world is named", %{brain: _brain} do
+      assert_raise ArgumentError, ~r/needs :world_id/, fn -> Brain.create_conversation() end
+      assert_raise ArgumentError, ~r/needs :world_id/, fn -> Brain.create_conversation(side_effects: false) end
+    end
+
     test "evaluates input in a conversation", %{brain: _brain} do
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
 
       assert {:ok, %{response: response, context: context, processing_method: method}} =
                Brain.evaluate(conversation_id, "Hello, world!")
@@ -33,7 +41,7 @@ defmodule BrainTest do
     end
 
     test "raises for an unsupported language before reaching the Brain", %{brain: _brain} do
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
 
       assert_raise ArgumentError, ~r/"fr" is not supported/, fn ->
         Brain.evaluate(conversation_id, "Bonjour", language: "fr")
@@ -41,7 +49,7 @@ defmodule BrainTest do
     end
 
     test "ends a conversation", %{brain: _brain} do
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       assert :ok = Brain.end_conversation(conversation_id)
 
       # Should not be able to evaluate in ended conversation
@@ -77,7 +85,7 @@ defmodule BrainTest do
       assert is_list(conversations)
 
       initial_count = length(conversations)
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       conversations = Brain.get_conversations()
       assert length(conversations) == initial_count + 1
 
@@ -90,7 +98,7 @@ defmodule BrainTest do
 
   describe "urgent interrupts" do
     test "handles urgent interrupt", %{brain: _brain} do
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       Brain.evaluate(conversation_id, "Test message")
 
       # Capture logs during urgent interrupt handling (including warnings)
@@ -114,7 +122,7 @@ defmodule BrainTest do
     end
 
     test "handles urgent emergency", %{brain: _brain} do
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       Brain.evaluate(conversation_id, "Test message")
 
       # Capture logs during urgent emergency handling (including errors)
@@ -138,7 +146,7 @@ defmodule BrainTest do
 
   describe "learning system" do
     test "processes learning queue", %{brain: _brain} do
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
 
       # Send multiple messages to build up learning queue
       Brain.evaluate(conversation_id, "First message")
