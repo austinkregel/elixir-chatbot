@@ -94,14 +94,19 @@ defmodule Brain.ConversationSideEffectsTest do
       assert Brain.Services.HomeAssistant.writes?("smarthome.switch")
 
       assert {:error, :side_effects_off} =
-               Dispatcher.dispatch("smarthome.switch", %{device: "kitchen lights"}, %{side_effects: false})
+               Dispatcher.dispatch("smarthome.switch", %{device: "kitchen lights"}, %{
+                 world_id: @world_id,
+                 side_effects: false
+               })
     end
 
     test "a read-only intent is not refused" do
       refute Brain.Services.HomeAssistant.writes?("smarthome.device_check")
 
-      refute Dispatcher.dispatch("smarthome.device_check", %{device: "kitchen lights"}, %{side_effects: false}) ==
-               {:error, :side_effects_off}
+      refute Dispatcher.dispatch("smarthome.device_check", %{device: "kitchen lights"}, %{
+               world_id: @world_id,
+               side_effects: false
+             }) == {:error, :side_effects_off}
     end
   end
 
