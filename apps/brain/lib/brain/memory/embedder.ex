@@ -1,22 +1,16 @@
 defmodule Brain.Memory.Embedder do
-  @moduledoc "Embedding utilities for the cognitive memory system.\n\nProduces TF-IDF based embeddings for text that can be used in\nsimilarity search. This replaces the byte frequency approach\nfrom the Rust implementation with a more semantically meaningful\nTF-IDF vectorization.\n\nThe embedder maintains a vocabulary and IDF weights that are\nbuilt from training data and used to consistently embed new text.\n\n## World Scoping\n\nThis module provides both global and world-scoped embedding:\n- `embed/1` - Uses the global/default vocabulary\n- `embed/2` - Uses world-specific vocabulary via WorldEmbedder\n\nWorld-specific embeddings are managed by `World.Embedder`\nand are built lazily from world-specific episodes.\n"
-
-  # World.Embedder is in a sibling umbrella app that depends on :brain.
-  # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Embedder}
+  @moduledoc "Embedding utilities for the cognitive memory system.\n\nProduces TF-IDF based embeddings for text that can be used in\nsimilarity search. This replaces the byte frequency approach\nfrom the Rust implementation with a more semantically meaningful\nTF-IDF vectorization.\n\nThe embedder maintains a vocabulary and IDF weights that are\nbuilt from training data and used to consistently embed new text.\n\nThis holds the trained vocabulary, read from `<models_path>/embedder.term`, and\nhas no world. A world's own vocabulary is `World.Embedder`'s.\n"
 
   alias Phoenix.PubSub
   alias Brain.Telemetry
   use GenServer
 
   alias Brain.ML.Tokenizer
-  alias World.Embedder, as: WorldEmbedder
 
   require Logger
 
   @default_vocab_size 2000
   @min_word_frequency 2
-  @default_world_id "default"
   @pubsub Brain.PubSub
 
   @doc """
@@ -35,44 +29,11 @@ defmodule Brain.Memory.Embedder do
     GenServer.call(__MODULE__, {:build_vocabulary, texts}, :infinity)
   end
 
-  @doc "Build vocabulary for a specific world.\nFor non-default worlds, this triggers the WorldEmbedder to build from episodes.\nFor the default world, uses the provided texts directly.\n"
-  def build_vocabulary(texts, world_id) when is_list(texts) and is_binary(world_id) do
-    if world_id == @default_world_id do
-      build_vocabulary(texts)
-    else
-      WorldEmbedder.build_vocabulary(world_id, force: true)
-    end
-  end
-
-  @doc "Embed text into a TF-IDF vector using the global/default vocabulary.\nReturns a list of floats representing the embedding.\n"
+  @doc "Embed text into a TF-IDF vector using the trained vocabulary.\nReturns a list of floats representing the embedding.\n"
   def embed(text) when is_binary(text) do
     Telemetry.span(:memory_embed, %{text_length: byte_size(text)}, fn ->
       GenServer.call(__MODULE__, {:embed, text})
     end)
-  end
-
-  @doc "Embed text using a world-specific vocabulary.\nFalls back to global vocabulary if world vocabulary is not available.\n"
-  def embed(text, world_id) when is_binary(text) and is_binary(world_id) do
-    if world_id == @default_world_id do
-      embed(text)
-    else
-      case WorldEmbedder.embed(world_id, text) do
-        {:ok, embedding} ->
-          {:ok, embedding}
-
-        {:error, reason}
-        when reason in [
-               :no_training_data,
-               :vocabulary_building,
-               :not_initialized,
-               :table_not_ready
-             ] ->
-          embed(text)
-
-        error ->
-          error
-      end
-    end
   end
 
   @doc "Compute cosine similarity between two embedding vectors.\nReturns a float in [-1, 1].\n"
@@ -90,30 +51,9 @@ defmodule Brain.Memory.Embedder do
     end
   end
 
-  @doc "Check if a world-specific embedder is ready.\n"
-  def ready?(world_id) when is_binary(world_id) do
-    if world_id == @default_world_id do
-      ready?()
-    else
-      WorldEmbedder.ready?(world_id)
-    end
-  end
-
   @doc "Get the current vocabulary size.\n"
   def vocabulary_size do
     GenServer.call(__MODULE__, :vocabulary_size)
-  end
-
-  @doc "Get vocabulary size for a specific world.\n"
-  def vocabulary_size(world_id) when is_binary(world_id) do
-    if world_id == @default_world_id do
-      vocabulary_size()
-    else
-      case WorldEmbedder.get_status(world_id) do
-        %{vocabulary_size: size} -> size
-        _ -> 0
-      end
-    end
   end
 
   @doc "Load a pre-built vocabulary and IDF weights.\n"
@@ -121,27 +61,9 @@ defmodule Brain.Memory.Embedder do
     GenServer.call(__MODULE__, {:load_model, model})
   end
 
-  @doc "Load a pre-built vocabulary for a specific world.\n"
-  def load_model(model, world_id) when is_map(model) and is_binary(world_id) do
-    if world_id == @default_world_id do
-      load_model(model)
-    else
-      WorldEmbedder.load_model(world_id, model)
-    end
-  end
-
   @doc "Export the current vocabulary and IDF weights for persistence.\n"
   def export_model do
     GenServer.call(__MODULE__, :export_model)
-  end
-
-  @doc "Export vocabulary for a specific world.\n"
-  def export_model(world_id) when is_binary(world_id) do
-    if world_id == @default_world_id do
-      export_model()
-    else
-      WorldEmbedder.export_model(world_id)
-    end
   end
 
   @doc "Get detailed status of the embedder including initialization progress.\nUses a short timeout to avoid blocking.\n"
@@ -168,15 +90,6 @@ defmodule Brain.Memory.Embedder do
           vocabulary_size: 0,
           started_at: nil
         }
-    end
-  end
-
-  @doc "Get status for a specific world's embedder.\n"
-  def get_status(world_id) when is_binary(world_id) do
-    if world_id == @default_world_id do
-      get_status()
-    else
-      WorldEmbedder.get_status(world_id)
     end
   end
 
