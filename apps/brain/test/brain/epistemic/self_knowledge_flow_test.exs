@@ -8,6 +8,9 @@ defmodule Brain.Epistemic.SelfKnowledgeFlowTest do
   alias Brain.Epistemic.Types.SelfKnowledgeAssessment
   alias Brain.Response.Synthesizer
 
+  # "default" is the world the test suite runs in, seeded by `mix test.models`.
+  @opts [world_id: "default"]
+
   setup _context do
     start_test_services()
     ensure_started(UserModelStore)
@@ -21,58 +24,58 @@ defmodule Brain.Epistemic.SelfKnowledgeFlowTest do
     :ok
   end
 
-  describe "SelfKnowledgeAnalyzer.is_self_knowledge_query?/1" do
+  describe "SelfKnowledgeAnalyzer.is_self_knowledge_query?/2" do
     test "detects 'what do you know about me'" do
-      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("What do you know about me?")
-      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("what do you know about me")
+      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("What do you know about me?", @opts)
+      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("what do you know about me", @opts)
     end
 
     test "detects 'do you remember me'" do
-      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("Do you remember me?")
-      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("do you remember anything about me")
+      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("Do you remember me?", @opts)
+      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("do you remember anything about me", @opts)
     end
 
     test "detects privacy probes" do
-      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("Are you tracking me?")
-      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("are you monitoring me")
+      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("Are you tracking me?", @opts)
+      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("are you monitoring me", @opts)
     end
 
     test "detects variations" do
-      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("What have you learned about me?")
-      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("Tell me what you know about me")
-      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("How much do you know about me?")
+      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("What have you learned about me?", @opts)
+      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("Tell me what you know about me", @opts)
+      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?("How much do you know about me?", @opts)
     end
 
     test "does not match regular queries" do
-      refute SelfKnowledgeAnalyzer.is_self_knowledge_query?("What's the weather?")
-      refute SelfKnowledgeAnalyzer.is_self_knowledge_query?("Hello!")
-      refute SelfKnowledgeAnalyzer.is_self_knowledge_query?("Play some music")
+      refute SelfKnowledgeAnalyzer.is_self_knowledge_query?("What's the weather?", @opts)
+      refute SelfKnowledgeAnalyzer.is_self_knowledge_query?("Hello!", @opts)
+      refute SelfKnowledgeAnalyzer.is_self_knowledge_query?("Play some music", @opts)
     end
   end
 
-  describe "SelfKnowledgeAnalyzer.detect_query_type/1" do
+  describe "SelfKnowledgeAnalyzer.detect_query_type/2" do
     test "identifies self_query type" do
       {:ok, type, confidence} =
-        SelfKnowledgeAnalyzer.detect_query_type("What do you know about me?")
+        SelfKnowledgeAnalyzer.detect_query_type("What do you know about me?", @opts)
 
       assert type == :self_query
       assert confidence >= 0.5
     end
 
     test "identifies memory_check type" do
-      {:ok, type, _confidence} = SelfKnowledgeAnalyzer.detect_query_type("Do you remember me?")
+      {:ok, type, _confidence} = SelfKnowledgeAnalyzer.detect_query_type("Do you remember me?", @opts)
 
       assert type == :memory_check
     end
 
     test "identifies privacy_probe type" do
-      {:ok, type, _confidence} = SelfKnowledgeAnalyzer.detect_query_type("Are you tracking me?")
+      {:ok, type, _confidence} = SelfKnowledgeAnalyzer.detect_query_type("Are you tracking me?", @opts)
 
       assert type == :privacy_probe
     end
 
     test "returns no_match for regular queries" do
-      result = SelfKnowledgeAnalyzer.detect_query_type("What's the weather?")
+      result = SelfKnowledgeAnalyzer.detect_query_type("What's the weather?", @opts)
 
       assert result == :no_match
     end
@@ -186,7 +189,7 @@ defmodule Brain.Epistemic.SelfKnowledgeFlowTest do
       UserModelStore.update_fact(user_id, :location, "Portland", :explicit, 0.85)
       UserModelStore.update_fact(user_id, :interest, "AI", :inferred, 0.7)
       query = "What do you know about me?"
-      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?(query)
+      assert SelfKnowledgeAnalyzer.is_self_knowledge_query?(query, @opts)
       assessment = SelfKnowledgeAnalyzer.build_self_knowledge_assessment(user_id)
       assert assessment.total_facts >= 2
 
