@@ -296,15 +296,29 @@ defmodule Atlas.Importer do
   # Review Candidates (review_queue.term)
   #
   # File shape: %{candidates: [{id, candidate_map_or_struct}, ...], stats: ...}
+  #
+  # A candidate belongs to its finding's world. A finding in that file that
+  # names no world predates candidates being held per world, and is imported
+  # into the "default" world explicitly, as the migration that added the world
+  # column assigned existing rows.
   # ============================================================================
+  @legacy_review_candidate_world "default"
+
   defp import_review_candidates(opts) do
     with_term_file(review_queue_path(), ReviewCandidate, opts, fn data ->
       candidates = g(data, :candidates, [])
 
       rows =
         Enum.map(candidates, fn {id, cand} ->
+          world_id =
+            case g(g(cand, :finding) || %{}, :world_id) do
+              world_id when is_binary(world_id) and world_id != "" -> world_id
+              _ -> @legacy_review_candidate_world
+            end
+
           %{
             id: id,
+            world_id: world_id,
             status: to_string(g(cand, :status) || :pending),
             finding: ensure_map(g(cand, :finding)),
             aggregate_confidence: g(cand, :aggregate_confidence) || 0.5,
