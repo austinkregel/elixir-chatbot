@@ -13,8 +13,6 @@
     "music_album": "album",
     "music_artist": "artist",
     "news_source": "source",
-    "music_service": "service",
-    "search_engine": "service",
     "weather_condition": "condition",
     "news_sort": "sort",
     "music_sort": "sort",
