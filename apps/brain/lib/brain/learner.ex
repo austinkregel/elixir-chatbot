@@ -11,17 +11,21 @@ defmodule Brain.Learner do
   alias Brain.FactDatabase.Integration
   alias Brain.Knowledge.ReviewQueue
 
-  @doc "Learn from user input using classical NLP entity extraction.\nExtracts entities and stores them in the knowledge store.\n\nOptions:\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification result for entity disambiguation\n- `:world_id` - World ID for world-scoped type inference (required for disambiguation)\n"
-  def learn_from_input(persona_name, input, opts \\ []) do
+  @doc "Learn from user input using classical NLP entity extraction.\nExtracts entities and stores them in the knowledge store.\n\nOptions:\n- `:world_id` - required: the world entities are extracted in. Absent raises.\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification result for entity disambiguation\n"
+  def learn_from_input(persona_name, input, opts) do
     Logger.debug("Learner.learn_from_input called", %{persona_name: persona_name, input: input})
+
+    unless is_binary(opts[:world_id]) and opts[:world_id] != "" do
+      raise ArgumentError,
+            "Learner.learn_from_input needs :world_id, the world entities are extracted in, got: #{inspect(opts[:world_id])}"
+    end
+
     discourse = Keyword.get(opts, :discourse)
     speech_act = Keyword.get(opts, :speech_act)
-    world_id = Keyword.get(opts, :world_id)
-    skip_disambiguation = is_nil(world_id)
 
     entity_opts =
       if discourse || speech_act do
-        opts ++ [skip_disambiguation: skip_disambiguation]
+        opts
       else
         discourse_result =
           try do
@@ -44,8 +48,7 @@ defmodule Brain.Learner do
         opts ++
           [
             discourse: discourse_result,
-            speech_act: speech_act_result,
-            skip_disambiguation: skip_disambiguation
+            speech_act: speech_act_result
           ]
       end
 
