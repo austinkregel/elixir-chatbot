@@ -40,6 +40,8 @@ defmodule Brain.Subprocesses.HttpSubprocessTest do
   test "creates and manages conversations", %{subprocess_id: subprocess_id} do
     {:ok, conversation_id} = HttpSubprocess.create_conversation(subprocess_id)
     assert is_binary(conversation_id)
+    # Brain owns the id, and the conversation runs in the subprocess's world
+    assert {:ok, %{world_id: "default"}} = Brain.get_conversation(conversation_id)
     conversations = HttpSubprocess.get_conversations(subprocess_id)
     assert length(conversations) == 1
     assert hd(conversations).id == conversation_id
