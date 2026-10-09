@@ -14,9 +14,12 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
 
   ## Usage
 
-      mix benchmark_ouro_pipeline              # Run all stages
-      mix benchmark_ouro_pipeline --stage 1    # Run only stage 1
-      mix benchmark_ouro_pipeline --runs 5     # Repeat each measurement N times (default 3)
+      mix benchmark_ouro_pipeline --world <id>              # Run all stages
+      mix benchmark_ouro_pipeline --world <id> --stage 1    # Run only stage 1
+      mix benchmark_ouro_pipeline --world <id> --runs 5     # Repeat each measurement N times (default 3)
+
+  `--world <id>` is required: the world the end-to-end stages' conversations
+  run in.
 
   Every stage runs with side effects off: conversations are created with
   `side_effects: false`, and the refinement stages pass the same option, so a
@@ -39,8 +42,12 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
-        strict: [stage: :integer, runs: :integer]
+        strict: [stage: :integer, runs: :integer, world: :string]
       )
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix benchmark_ouro_pipeline needs --world <id>, the world its conversations run in")
 
     stage_filter = opts[:stage]
     runs = opts[:runs] || @default_runs
@@ -83,28 +90,28 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
 
     results =
       if stage_filter == nil or stage_filter == 3 do
-        run_stage_3(results, runs)
+        run_stage_3(results, runs, world_id)
       else
         results
       end
 
     results =
       if stage_filter == nil or stage_filter == 4 do
-        run_stage_4(results, runs)
+        run_stage_4(results, runs, world_id)
       else
         results
       end
 
     results =
       if stage_filter == nil or stage_filter == 5 do
-        run_stage_5(results, runs)
+        run_stage_5(results, runs, world_id)
       else
         results
       end
 
     results =
       if stage_filter == nil or stage_filter == 6 do
-        run_stage_6(results)
+        run_stage_6(results, world_id)
       else
         results
       end
@@ -289,7 +296,7 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
   # ---------------------------------------------------------------------------
   # Stage 3: RefinementLoop.single_pass
   # ---------------------------------------------------------------------------
-  defp run_stage_3(results, runs) do
+  defp run_stage_3(results, runs, world_id) do
     header("Stage 3: RefinementLoop.single_pass (1 Ouro call)")
 
     model = build_test_internal_model()
@@ -299,7 +306,7 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
         {elapsed, result} =
           timed(fn ->
             try do
-              Brain.Response.RefinementLoop.single_pass(model, side_effects: false)
+              Brain.Response.RefinementLoop.single_pass(model, side_effects: false, world_id: world_id)
             rescue
               e -> {:error, Exception.message(e)}
             end
@@ -331,7 +338,7 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
   # ---------------------------------------------------------------------------
   # Stage 4: Full RefinementLoop.generate (up to 3 iterations)
   # ---------------------------------------------------------------------------
-  defp run_stage_4(results, runs) do
+  defp run_stage_4(results, runs, world_id) do
     header("Stage 4: Full RefinementLoop.generate (up to @max_iterations)")
 
     model = build_test_internal_model()
@@ -341,7 +348,7 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
         {elapsed, result} =
           timed(fn ->
             try do
-              Brain.Response.RefinementLoop.generate(model, side_effects: false)
+              Brain.Response.RefinementLoop.generate(model, side_effects: false, world_id: world_id)
             rescue
               e -> {:error, Exception.message(e)}
             end
@@ -377,14 +384,14 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
   # ---------------------------------------------------------------------------
   # Stage 5: End-to-end Brain.evaluate (with :infinity timeout)
   # ---------------------------------------------------------------------------
-  defp run_stage_5(results, runs) do
+  defp run_stage_5(results, runs, world_id) do
     header("Stage 5: End-to-end Brain.evaluate")
 
     test_input = List.first(@test_inputs)
 
     timings =
       Enum.map(1..runs, fn i ->
-        {:ok, conv} = ensure_conversation()
+        {:ok, conv} = ensure_conversation(world_id)
 
         {elapsed, result} =
           timed(fn ->
@@ -411,10 +418,10 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
   # ---------------------------------------------------------------------------
   # Stage 6: Queued Brain.evaluate (two back-to-back)
   # ---------------------------------------------------------------------------
-  defp run_stage_6(results) do
+  defp run_stage_6(results, world_id) do
     header("Stage 6: Concurrent Brain.evaluate (queueing measurement)")
 
-    {:ok, conv} = ensure_conversation()
+    {:ok, conv} = ensure_conversation(world_id)
     [input_a, input_b | _] = @test_inputs
 
     info("    Sending two evaluate calls concurrently...")
@@ -492,8 +499,8 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
 
   # Benchmark turns measure latency only; with side effects off they write
   # nothing to the stores and send no device actions.
-  defp ensure_conversation do
-    case Brain.create_conversation(side_effects: false) do
+  defp ensure_conversation(world_id) do
+    case Brain.create_conversation(side_effects: false, world_id: world_id) do
       {:ok, id} when is_binary(id) -> {:ok, id}
       other -> {:error, "Could not create conversation: #{inspect(other)}"}
     end
