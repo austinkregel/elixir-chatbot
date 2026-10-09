@@ -97,14 +97,16 @@ defmodule Brain.Knowledge.LearningCenter do
   end
 
   @doc """
-  Evaluates structured predictions on hypotheses using `BeliefStore` (when ready).
+  Evaluates structured predictions on hypotheses against the beliefs held in
+  `world_id` (`BeliefStore`, when ready).
 
   Returns `{:error, :not_ready}` if `BeliefStore.ready?/0` is false.
   """
-  @spec test_predictions(Investigation.t()) ::
+  @spec test_predictions(String.t(), Investigation.t()) ::
           {:ok, Investigation.t()} | {:error, :not_ready}
-  def test_predictions(%Investigation{} = investigation) do
-    GenServer.call(__MODULE__, {:test_predictions, investigation}, 60_000)
+  def test_predictions(world_id, %Investigation{} = investigation)
+      when is_binary(world_id) and world_id != "" do
+    GenServer.call(__MODULE__, {:test_predictions, world_id, investigation}, 60_000)
   end
 
   @impl true
@@ -177,9 +179,9 @@ defmodule Brain.Knowledge.LearningCenter do
   end
 
   @impl true
-  def handle_call({:test_predictions, %Investigation{} = inv}, _from, state) do
+  def handle_call({:test_predictions, world_id, %Investigation{} = inv}, _from, state) do
     if BeliefStore.ready?() do
-      {:reply, {:ok, do_test_predictions(inv)}, state}
+      {:reply, {:ok, do_test_predictions(world_id, inv)}, state}
     else
       {:reply, {:error, :not_ready}, state}
     end
@@ -425,10 +427,10 @@ defmodule Brain.Knowledge.LearningCenter do
         evidence: length(findings)
       )
 
-      {:ok, concluded} = Corroborator.test_hypotheses(investigation, findings)
+      {:ok, concluded} = Corroborator.test_hypotheses(session.world_id, investigation, findings)
       log_investigation_results(concluded)
       candidates = Corroborator.hypotheses_to_candidates(concluded, session_id: session_id)
-      candidates = check_contradictions(candidates)
+      candidates = check_contradictions(candidates, session.world_id)
 
       Enum.each(candidates, fn candidate ->
         ReviewQueue.add(%{candidate | session_id: session_id})
@@ -540,7 +542,7 @@ defmodule Brain.Knowledge.LearningCenter do
 
     {:ok, candidates} =
       Corroborator.corroborate(findings, include_uncorroborated: true, world_id: world_id)
-    candidates = check_contradictions(candidates)
+    candidates = check_contradictions(candidates, world_id)
 
     Enum.each(candidates, fn candidate ->
       ReviewQueue.add(%{candidate | session_id: session_id})
@@ -735,13 +737,14 @@ defmodule Brain.Knowledge.LearningCenter do
     {agent_refs, %{state | stats: new_stats}}
   end
 
-  defp check_contradictions(candidates) do
+  # The candidates' contradictions with the beliefs held in the session's world.
+  defp check_contradictions(candidates, world_id) do
     if BeliefStore.ready?() do
       Enum.map(candidates, fn candidate ->
         entity = candidate.finding.entity
         predicate = normalize_predicate(entity)
 
-        case BeliefStore.query_beliefs(predicate: predicate) do
+        case BeliefStore.query_beliefs(world_id, predicate: predicate) do
           {:ok, existing} ->
             conflicts = find_conflicting_beliefs(candidate.finding.claim, existing)
             %{candidate | existing_contradictions: conflicts}
@@ -1045,11 +1048,11 @@ defmodule Brain.Knowledge.LearningCenter do
   defp encode_hypothesis_prediction_for_atlas(pred) when is_binary(pred), do: pred
   defp encode_hypothesis_prediction_for_atlas(nil), do: nil
 
-  defp do_test_predictions(%Investigation{hypotheses: hs} = inv) when is_list(hs) do
+  defp do_test_predictions(world_id, %Investigation{hypotheses: hs} = inv) when is_list(hs) do
     evaluated =
       hs
       |> Task.async_stream(
-        &apply_prediction_evaluation/1,
+        &apply_prediction_evaluation(world_id, &1),
         max_concurrency: 4,
         timeout: 5_000,
         on_timeout: :kill_task
@@ -1063,7 +1066,7 @@ defmodule Brain.Knowledge.LearningCenter do
     %{inv | hypotheses: evaluated}
   end
 
-  defp apply_prediction_evaluation(%Hypothesis{} = h) do
+  defp apply_prediction_evaluation(world_id, %Hypothesis{} = h) do
     case h.prediction do
       %{type: :unstructured} ->
         h
@@ -1074,7 +1077,7 @@ defmodule Brain.Knowledge.LearningCenter do
       %{type: :belief_query, params: params} when is_map(params) ->
         opts = Map.to_list(params)
 
-        case BeliefStore.query_beliefs(opts) do
+        case BeliefStore.query_beliefs(world_id, opts) do
           {:ok, beliefs} when beliefs == [] -> Hypothesis.evaluate(h)
           {:ok, _} -> Hypothesis.evaluate(h)
           _ -> h
