@@ -679,9 +679,20 @@ defmodule Brain.Knowledge.ReviewQueue do
     candidates
   end
 
-  defp integrate_approved_candidate(%ReviewCandidate{finding: finding} = candidate) do
+  # The learned fact's belief and JTMS node and the knowledge graph nodes are
+  # held in the finding's world. A finding about the world at large (no world)
+  # names no world to hold them, so it teaches the base gazetteer only and
+  # writes none of them.
+  defp integrate_approved_candidate(%ReviewCandidate{finding: %{world_id: nil}} = candidate) do
+    teach_gazetteer(candidate)
+    :ok
+  end
+
+  defp integrate_approved_candidate(%ReviewCandidate{finding: %{world_id: world_id} = finding} = candidate)
+       when is_binary(world_id) and world_id != "" do
     try do
       FactIntegration.add_fact(
+        world_id,
         finding.entity,
         finding.claim,
         category: "learned",
@@ -698,6 +709,7 @@ defmodule Brain.Knowledge.ReviewQueue do
     try do
       if BeliefStore.ready?() do
         BeliefStore.add_belief(
+          world_id,
           :world,
           normalize_predicate(finding.entity),
           finding.claim,
@@ -711,28 +723,26 @@ defmodule Brain.Knowledge.ReviewQueue do
     end
 
     if finding.entity_type not in [nil, ""] do
+      graph = Atlas.Graph.world_graph("knowledge_graph", world_id)
+
       try do
         {:ok, type_node} =
-          Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityType", %{
+          Brain.AtlasIntegration.ensure_node(graph, "EntityType", %{
             name: finding.entity_type
           })
 
-        # The instance carries the finding's world; a finding about the world
-        # at large (nil) belongs to no world, so the node gets no world_id.
-        instance_props =
-          %{name: finding.entity, type: finding.entity_type, source: "knowledge_expansion"}
-          |> then(fn props ->
-            case finding.world_id do
-              nil -> props
-              world_id -> Map.put(props, :world_id, world_id)
-            end
-          end)
+        instance_props = %{
+          name: finding.entity,
+          type: finding.entity_type,
+          source: "knowledge_expansion",
+          world_id: world_id
+        }
 
         {:ok, instance_node} =
-          Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityInstance", instance_props)
+          Brain.AtlasIntegration.ensure_node(graph, "EntityInstance", instance_props)
 
         Brain.AtlasIntegration.find_or_create_edge(
-          "knowledge_graph",
+          graph,
           instance_node.id,
           type_node.id,
           Atlas.Graph.EdgeLabels.instance_of(),
