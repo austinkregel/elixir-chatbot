@@ -10,6 +10,7 @@ defmodule ChatWeb.SettingsLive do
   alias World.Manager, as: WorldManager
   alias World.Persistence, as: WorldPersistence
   alias Brain.Knowledge.LearningCenter
+  alias Brain.Knowledge.LearningTriggers
   alias Tasks.Source, as: TaskSource
   alias Brain.ML.Gazetteer
   alias Brain.ML.TrainingServer
@@ -57,6 +58,8 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:starting_training, false)
       |> assign(:tasks_loading, false)
       |> assign(:lc_stats, %{total_sessions: 0, active_agents: 0})
+      |> assign(:auto_learning_world_id, nil)
+      |> assign(:auto_learning_worlds, [])
       |> assign(:ml_model_statuses, %{})
       |> assign(:ml_training_status, :idle)
       |> assign(:ml_selected_model, "tfidf")
@@ -180,6 +183,7 @@ defmodule ChatWeb.SettingsLive do
       socket
       |> assign(:training_sessions, sessions)
       |> assign(:lc_stats, lc_stats)
+      |> assign_auto_learning_world()
       |> assign(:available_tasks, socket.assigns[:available_tasks] || %{})
       |> assign(:tasks_loading, true)
 
@@ -204,6 +208,15 @@ defmodule ChatWeb.SettingsLive do
     end
 
     socket
+  end
+
+  # The world auto-triggered learning sessions start in, and the worlds it can
+  # be set to. LearningTriggers holds the setting; it is not read from anywhere
+  # else.
+  defp assign_auto_learning_world(socket) do
+    socket
+    |> assign(:auto_learning_world_id, LearningTriggers.auto_learning_world())
+    |> assign(:auto_learning_worlds, ChatWeb.Worlds.list())
   end
 
   defp load_ml_training_data(socket) do
@@ -525,6 +538,22 @@ defmodule ChatWeb.SettingsLive do
          socket
          |> assign(:starting_training, false)
          |> assign(:confirm_error, "Failed to start training: #{inspect(reason)}")}
+    end
+  end
+
+  def handle_event("set_auto_learning_world", %{"world_id" => world_id}, socket) do
+    case LearningTriggers.set_auto_learning_world(world_id) do
+      :ok ->
+        {:noreply,
+         socket
+         |> assign_auto_learning_world()
+         |> put_flash(:info, "Auto-triggered learning sessions now start in world #{world_id}")}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> assign_auto_learning_world()
+         |> put_flash(:error, "Failed to set the auto-learning world: #{inspect(reason)}")}
     end
   end
 
@@ -861,11 +890,12 @@ defmodule ChatWeb.SettingsLive do
   end
 
   def handle_event("discover_ha_entities", _params, socket) do
+    world = socket.assigns.current_world_id
     socket = assign(socket, :ha_discovering, true)
 
     Task.start(fn ->
       result =
-        case fetch_ha_credentials() do
+        case fetch_ha_credentials(world) do
           {:ok, creds} ->
             Brain.Services.HomeAssistant.Discovery.discover(creds)
 
@@ -880,9 +910,11 @@ defmodule ChatWeb.SettingsLive do
   end
 
   def handle_event("register_ha_entities", _params, socket) do
-    case fetch_ha_credentials() do
+    world = socket.assigns.current_world_id
+
+    case fetch_ha_credentials(world) do
       {:ok, creds} ->
-        case Brain.Services.HomeAssistant.Discovery.discover_and_register(creds) do
+        case Brain.Services.HomeAssistant.Discovery.discover_and_register(creds, world) do
           {:ok, %{total: count}} ->
             {:noreply, put_flash(socket, :info, "Registered #{count} entities in Gazetteer")}
 
@@ -1130,6 +1162,8 @@ defmodule ChatWeb.SettingsLive do
               starting_training={@starting_training}
               tasks_loading={@tasks_loading}
               lc_stats={@lc_stats}
+              auto_learning_world_id={@auto_learning_world_id}
+              auto_learning_worlds={@auto_learning_worlds}
               open_confirm={@open_confirm}
               confirm_error={@confirm_error}
             />
@@ -1546,6 +1580,51 @@ defmodule ChatWeb.SettingsLive do
           error={@confirm_error}
           class="mt-space-md"
         />
+      </.card>
+
+      <!-- Auto-Learning World -->
+      <.card class="p-space-lg">
+        <h3 class="text-heading text-ink mb-space-lg">Auto-Learning World</h3>
+        <p class="text-body text-ink-muted mb-space-lg">
+          Learning sessions triggered by novel input research for this world. Its initial value comes from the
+          <code class="text-term">:auto_learning_world_id</code> setting; a change here lasts until the node restarts.
+        </p>
+        <form phx-submit="set_auto_learning_world" class="flex flex-wrap gap-space-lg items-end">
+          <div>
+            <label for="auto-learning-world" class="block mb-space-xs text-label text-ink-muted">World</label>
+            <select
+              id="auto-learning-world"
+              name="world_id"
+              class="h-control-md px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body text-ink"
+            >
+              <option
+                :for={world <- @auto_learning_worlds}
+                value={world.id}
+                selected={world.id == @auto_learning_world_id}
+              >
+                {world.name} ({world.id})
+              </option>
+            </select>
+          </div>
+          <.btn
+            id="set-auto-learning-world"
+            type="submit"
+            variant={:primary}
+            reach={:local}
+            target="auto-learning world"
+            icon="hero-check"
+          >
+            Set World
+          </.btn>
+        </form>
+        <p
+          :if={not Enum.any?(@auto_learning_worlds, &(&1.id == @auto_learning_world_id))}
+          class="mt-space-md text-body text-ink"
+        >
+          <.icon name="hero-exclamation-triangle" class="size-4" />
+          The auto-learning world <span class="text-ref">{@auto_learning_world_id}</span>
+          is not loaded. An auto-triggered session will fail until it is loaded or another world is set.
+        </p>
       </.card>
 
       <!-- Active Sessions -->
@@ -2733,11 +2812,9 @@ defmodule ChatWeb.SettingsLive do
   defp service_icon(:home_assistant), do: "hero-home"
   defp service_icon(_), do: "hero-cloud"
 
-  defp fetch_ha_credentials do
-    vault = Brain.Services.CredentialVault
-
-    with {:ok, url} <- vault.get(:home_assistant, :url),
-         {:ok, token} <- vault.get(:home_assistant, :access_token) do
+  defp fetch_ha_credentials(world) do
+    with {:ok, url} <- CredentialVault.get(:home_assistant, :url, world: world),
+         {:ok, token} <- CredentialVault.get(:home_assistant, :access_token, world: world) do
       {:ok, %{url: url, access_token: token}}
     else
       _ -> {:error, :missing_credentials}
