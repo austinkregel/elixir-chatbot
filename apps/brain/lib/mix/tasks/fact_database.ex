@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.FactDatabase do
-  @moduledoc "Mix task for interacting with the fact database.\n\n## Usage\n\n    mix fact_database              # Show stats\n    mix fact_database stats        # Show detailed stats\n    mix fact_database list         # List all facts\n    mix fact_database categories   # List categories\n    mix fact_database search TERM  # Search facts\n    mix fact_database entity NAME  # Get facts about an entity\n    mix fact_database sync         # Sync facts to epistemic system\n    mix fact_database add ENTITY FACT  # Add a new fact\n"
+  @moduledoc "Mix task for interacting with the fact database.\n\n## Usage\n\n    mix fact_database              # Show stats\n    mix fact_database stats        # Show detailed stats\n    mix fact_database list         # List all facts\n    mix fact_database categories   # List categories\n    mix fact_database search TERM  # Search facts\n    mix fact_database entity NAME  # Get facts about an entity\n    mix fact_database sync --world ID         # Sync facts to the world's epistemic system\n    mix fact_database add ENTITY FACT --world ID  # Add a new fact, its belief held in the world\n\nBeliefs are held per world, so `sync` and `add` need `--world`.\n"
 
   alias Brain.FactDatabase.Integration
   alias Brain.FactDatabase
@@ -9,8 +9,24 @@ defmodule Mix.Tasks.FactDatabase do
 
   @impl Mix.Task
   def run(args) do
+    {opts, args, invalid} = OptionParser.parse(args, strict: [world: :string])
+    if invalid != [], do: Mix.raise("fact_database: unknown options #{inspect(invalid)}")
+
     Mix.Task.run("app.start")
 
+    case args do
+      ["sync"] -> sync_to_beliefs(world!(opts))
+      ["add", entity | fact_parts] -> add_fact(world!(opts), entity, Enum.join(fact_parts, " "))
+      _ -> run_query(args)
+    end
+  end
+
+  defp world!(opts) do
+    Keyword.get(opts, :world) ||
+      Mix.raise("fact_database: sync and add need --world <id>, the world the beliefs are held in")
+  end
+
+  defp run_query(args) do
     case args do
       [] -> show_stats()
       ["stats"] -> show_stats()
@@ -18,8 +34,6 @@ defmodule Mix.Tasks.FactDatabase do
       ["categories"] -> list_categories()
       ["search" | terms] -> search_facts(Enum.join(terms, " "))
       ["entity" | names] -> get_entity_facts(Enum.join(names, " "))
-      ["sync"] -> sync_to_beliefs()
-      ["add", entity | fact_parts] -> add_fact(entity, Enum.join(fact_parts, " "))
       _ -> show_help()
     end
   end
@@ -109,22 +123,23 @@ defmodule Mix.Tasks.FactDatabase do
     end
   end
 
-  defp sync_to_beliefs do
-    IO.puts("\n=== Syncing Facts to Epistemic System ===\n")
+  defp sync_to_beliefs(world_id) do
+    IO.puts("\n=== Syncing Facts to Epistemic System of world #{world_id} ===\n")
 
-    {:ok, count} = Integration.sync_facts_to_beliefs()
+    {:ok, count} = Integration.sync_facts_to_beliefs(world_id)
     IO.puts("  Successfully synced #{count} facts to beliefs")
 
     IO.puts("")
   end
 
-  defp add_fact(entity, fact_text) do
+  defp add_fact(world_id, entity, fact_text) do
     IO.puts("\n=== Adding New Fact ===\n")
+    IO.puts("  World: #{world_id}")
     IO.puts("  Entity: #{entity}")
     IO.puts("  Fact: #{fact_text}")
 
     {:ok, fact_id, _fact} =
-      Integration.add_fact(entity, fact_text,
+      Integration.add_fact(world_id, entity, fact_text,
         category: "learned",
         confidence: 0.8,
         verification_source: "manual_entry"
