@@ -57,4 +57,25 @@ defmodule Mix.Tasks.World.SeedModelTest do
     world_id = world.id
     assert_received {:mix_shell, :info, ["  seeded " <> ^world_id]}
   end
+
+  test "seeds a named world with byte-identical copies of the Poincare embeddings and the triple scorer" do
+    {:ok, world} = create_test_world("seed_graph_models_task", mode: :persistent)
+    on_exit(fn -> WorldManager.purge(world.id) end)
+
+    for {name, model} <- [
+          {"poincare_embeddings", Brain.ML.Poincare.Embeddings},
+          {"triple_scorer", Brain.ML.KnowledgeGraph.TripleScorer}
+        ] do
+      path = model.path(world.id)
+      File.rm!(path)
+      refute File.exists?(path)
+
+      SeedModel.run([name, "--world", world.id])
+
+      assert File.read!(path) == File.read!(model.trained_path()), "#{name}: copy differs from the trained file"
+
+      world_id = world.id
+      assert_received {:mix_shell, :info, ["  seeded " <> ^world_id]}
+    end
+  end
 end
