@@ -117,16 +117,16 @@ defmodule Brain.Response.Generator do
     user_id = Map.get(opts, :user_id)
     conversation_id = Map.get(opts, :conversation_id)
 
-    user_prefs = if user_id, do: Brain.Graph.Reader.user_preferences(user_id), else: []
+    user_prefs = if user_id, do: Brain.Graph.Reader.user_preferences(user_id, world_id: world_id), else: []
 
     conversation_topics =
       if conversation_id,
-        do: Brain.Graph.Reader.conversation_topics(to_string(conversation_id)),
+        do: Brain.Graph.Reader.conversation_topics(to_string(conversation_id), world_id: world_id),
         else: []
 
     recent_context =
       if conversation_id,
-        do: Brain.Graph.Reader.recent_context(to_string(conversation_id)),
+        do: Brain.Graph.Reader.recent_context(to_string(conversation_id), world_id: world_id),
         else: []
 
     event_frames = Map.get(opts, :event_frames, [])
@@ -529,7 +529,7 @@ defmodule Brain.Response.Generator do
             {:ok, response, type}
 
           :not_handled ->
-            case try_blended_response(query_text, full_context) do
+            case try_blended_response(world_id, query_text, full_context) do
               {:ok, response} ->
                 {:ok, response, :blended}
 
@@ -680,7 +680,7 @@ defmodule Brain.Response.Generator do
     expanded_query = if related_terms != [], do: query_str <> " " <> Enum.join(Enum.take(related_terms, 3), " "), else: query_str
 
     if SemanticFactRetriever.ready?() and query_str != "" do
-      results = SemanticFactRetriever.search(expanded_query, limit: 3, threshold: 0.25)
+      results = SemanticFactRetriever.search(world_id, expanded_query, limit: 3, threshold: 0.25)
 
       if results != [] do
         response = format_semantic_results(query_str, results)
@@ -735,7 +735,7 @@ defmodule Brain.Response.Generator do
     if TemplateStore.ready?() do
       template =
         if is_map(context) and Map.has_key?(context, :query_text) do
-          case TemplateStore.get_best_template(intent, context.query_text, context) do
+          case TemplateStore.get_best_template(Map.fetch!(context, :world_id), intent, context.query_text, context) do
             {:ok, t} -> t
             # This intent has no template that matches the context. Asking for a
             # random one cannot help -- get_random_template/1 reads the same
@@ -761,7 +761,7 @@ defmodule Brain.Response.Generator do
 
   defp try_conditional_template(intent, query_text, entities, context) do
     if TemplateStore.ready?() do
-      case TemplateStore.get_best_template(intent, query_text, context) do
+      case TemplateStore.get_best_template(Map.fetch!(context, :world_id), intent, query_text, context) do
         {:ok, template} ->
           response = TemplateStore.substitute_slots(template, entities)
           {:ok, response, :conditional_template}
@@ -774,9 +774,9 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  defp try_blended_response(query_text, context) do
+  defp try_blended_response(world_id, query_text, context) do
     if TemplateBlender.ready?() do
-      case TemplateBlender.blend(query_text, context) do
+      case TemplateBlender.blend(world_id, query_text, context) do
         {:ok, response} when is_binary(response) and response != "" ->
           {:ok, response}
 
