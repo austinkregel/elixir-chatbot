@@ -318,23 +318,6 @@ defmodule Brain.ML.Gazetteer do
   end
 
   @doc """
-  Adds an entity a human reviewer approved.
-
-  Unlike `add_entry/3`, a name the gazetteer already knows under another
-  type gains the reviewed type as a further candidate reading: approving
-  "Paris" as a person keeps Paris the city. The entry records
-  `source: :reviewed`.
-
-  Returns `{:ok, normalized_key}`, or `{:error, {:duplicate, entity_type}}`
-  when the name already has this type.
-  """
-  @spec add_reviewed(String.t(), String.t()) :: {:ok, String.t()} | {:error, {:duplicate, String.t()}}
-  def add_reviewed(name, entity_type)
-      when is_binary(name) and name != "" and is_binary(entity_type) and entity_type != "" do
-    GenServer.call(__MODULE__, {:add_reviewed, name, entity_type})
-  end
-
-  @doc """
   Remove an entity from the gazetteer.
   """
   def remove_entry(name) when is_binary(name) do
@@ -503,7 +486,7 @@ defmodule Brain.ML.Gazetteer do
   Adds an entity to a world's overlay (not the base gazetteer).
   """
   def add_to_world(world_id, text, entity_type, metadata \\ %{})
-      when is_binary(world_id) and is_binary(text) and is_binary(entity_type) do
+      when is_binary(world_id) and world_id != "" and is_binary(text) and is_binary(entity_type) do
     GenServer.call(__MODULE__, {:add_to_world, world_id, text, entity_type, metadata})
   end
 
@@ -520,11 +503,14 @@ defmodule Brain.ML.Gazetteer do
   end
 
   @doc """
-  Restores a world overlay from saved data.
+  Restores a world overlay from saved data, then adds every entity a
+  reviewer approved in the world, so an approval made after the overlay was
+  saved survives the restore. Raises when the approvals cannot be read.
   """
   def restore_world_overlay(world_id, overlay_data)
-      when is_binary(world_id) and is_list(overlay_data) do
-    GenServer.call(__MODULE__, {:restore_world_overlay, world_id, overlay_data}, 30_000)
+      when is_binary(world_id) and world_id != "" and is_list(overlay_data) do
+    approved = Enum.filter(reviewed_entities!(), fn {_name, _type, w} -> w == world_id end)
+    GenServer.call(__MODULE__, {:restore_world_overlay, world_id, overlay_data, approved}, 30_000)
   end
 
   @doc """
@@ -687,20 +673,6 @@ defmodule Brain.ML.Gazetteer do
   end
 
   @impl true
-  def handle_call({:add_reviewed, name, entity_type}, _from, state) do
-    normalized_key = normalize(name)
-    new_key? = :ets.lookup(@table_name, normalized_key) == []
-
-    if insert_entry_direct(name, entity_type, %{}, :reviewed) do
-      if new_key?, do: update_entity_count(1)
-      Logger.info("Added reviewed gazetteer entry", %{name: name, type: entity_type})
-      {:reply, {:ok, normalized_key}, state}
-    else
-      {:reply, {:error, {:duplicate, entity_type}}, state}
-    end
-  end
-
-  @impl true
   def handle_call({:remove_entry, name}, _from, state) do
     normalized_key = normalize(name)
 
@@ -817,53 +789,14 @@ defmodule Brain.ML.Gazetteer do
 
   @impl true
   def handle_call({:add_to_world, world_id, text, entity_type, metadata}, _from, state) do
-    normalized_key = normalize(text)
-    key = {world_id, normalized_key}
-
-    entity_info =
-      metadata
-      |> Map.put(:entity_type, entity_type)
-      |> Map.put(:type, entity_type)
-      |> Map.put(:value, text)
-      |> Map.put(:original_name, text)
-      |> Map.put(:source, :world_learning)
-      |> Map.put(:world_id, world_id)
-      |> Map.put(:added_at, System.system_time(:second))
-
-    # Check if entry already exists
-    case :ets.lookup(@world_overlay_table, key) do
-      [{^key, existing_infos}] when is_list(existing_infos) ->
-        # Check if this type already exists
-        already_has_type =
-          Enum.any?(existing_infos, fn info ->
-            (Map.get(info, :entity_type) || Map.get(info, :type)) == entity_type
-          end)
-
-        if already_has_type do
-          {:reply, {:error, {:duplicate, entity_type}}, state}
-        else
-          :ets.insert(@world_overlay_table, {key, [entity_info | existing_infos]})
-          {:reply, {:ok, normalized_key}, state}
-        end
-
-      [{^key, existing_info}] when is_map(existing_info) ->
-        existing_type = Map.get(existing_info, :entity_type) || Map.get(existing_info, :type)
-
-        if existing_type == entity_type do
-          {:reply, {:error, {:duplicate, entity_type}}, state}
-        else
-          :ets.insert(@world_overlay_table, {key, [entity_info, existing_info]})
-          {:reply, {:ok, normalized_key}, state}
-        end
-
-      [] ->
-        :ets.insert(@world_overlay_table, {key, [entity_info]})
-        {:reply, {:ok, normalized_key}, state}
-    end
+    {:reply, insert_world_entry(world_id, text, entity_type, metadata), state}
   end
 
+  # The saved overlay replaces what the world's overlay held; what reviewers
+  # approved in the world is then laid over it, so an approval made after the
+  # overlay was saved is not lost to the restore.
   @impl true
-  def handle_call({:restore_world_overlay, world_id, overlay_data}, _from, state) do
+  def handle_call({:restore_world_overlay, world_id, overlay_data, approved}, _from, state) do
     # First clean any existing overlay
     entries = :ets.match_object(@world_overlay_table, {{world_id, :_}, :_})
     Enum.each(entries, fn {key, _} -> :ets.delete(@world_overlay_table, key) end)
@@ -873,7 +806,14 @@ defmodule Brain.ML.Gazetteer do
       :ets.insert(@world_overlay_table, {{world_id, key}, info})
     end)
 
-    Logger.debug("Restored world overlay", %{world_id: world_id, entries: length(overlay_data)})
+    reviewed = load_reviewed(approved)
+
+    Logger.debug("Restored world overlay", %{
+      world_id: world_id,
+      entries: length(overlay_data),
+      reviewed: reviewed
+    })
+
     {:reply, :ok, state}
   end
 
@@ -945,10 +885,8 @@ defmodule Brain.ML.Gazetteer do
     indexed = emojis |> DataLoaders.build_emoji_lookup() |> index_entities("emoji")
     stats = %{stats | entities: stats.entities + indexed, emojis: length(emojis)}
 
-    # Entities a human reviewer approved
-    reviewed = load_reviewed()
-
-    stats = %{stats | entities: stats.entities + reviewed}
+    # Entities a human reviewer approved, each into its world's overlay
+    reviewed = load_reviewed(reviewed_entities!())
 
     # Build prefix index
     prefix_count = build_prefix_index()
@@ -973,21 +911,25 @@ defmodule Brain.ML.Gazetteer do
     final_stats
   end
 
-  # The gazetteer learns only what a human reviewer approved. Approved
-  # entities scoped to a world live in that world's overlay, which
-  # World.Manager persists and restores with the world, so only the global
-  # ones are loaded here.
-  defp load_reviewed do
+  # The gazetteer learns only what a human reviewer approved, and an approval
+  # belongs to the world its candidate is in: each approved entity is loaded
+  # into that world's overlay, as `ReviewQueue` teaches it when the approval
+  # is made. Returns `{entity, entity_type, world_id}` for every approval.
+  #
+  # Raises when Atlas cannot be read or an approval names no world. At boot
+  # it runs in `init/1`; for a restore it runs in the caller, before the
+  # call, so a failure raises there rather than crashing this server.
+  defp reviewed_entities! do
     case Brain.AtlasIntegration.load_reviewed_entities() do
       {:ok, entities} ->
-        count =
-          Enum.count(entities, fn
-            {name, entity_type, nil} -> insert_entry_direct(name, entity_type, %{}, :reviewed)
-            {_name, _entity_type, _world_id} -> false
-          end)
+        Enum.each(entities, fn {name, _entity_type, world_id} ->
+          unless is_binary(world_id) and world_id != "" do
+            raise "Gazetteer: the approved entity #{inspect(name)} names no world " <>
+                    "(world_id #{inspect(world_id)}); an approval is learned in its world's overlay"
+          end
+        end)
 
-        Logger.debug("Gazetteer loaded #{count} reviewed entities")
-        count
+        entities
 
       # No approvals is {:ok, []}; an error means Atlas could not be read,
       # which is a failure like any other missing source.
@@ -996,58 +938,65 @@ defmodule Brain.ML.Gazetteer do
     end
   end
 
-  defp insert_entry_direct(name, entity_type, metadata, source) when is_binary(name) and name != "" do
-    normalized_key = normalize(name)
+  # Adds approved entities to their worlds' overlays; returns how many
+  # entries were added (an entity the overlay already holds under the
+  # approved type is not added again).
+  defp load_reviewed(entities) do
+    count =
+      Enum.count(entities, fn {name, entity_type, world_id} ->
+        match?({:ok, _}, insert_world_entry(world_id, name, entity_type, %{reviewed: true}))
+      end)
+
+    Logger.debug("Gazetteer loaded #{count} reviewed entities into world overlays")
+    count
+  end
+
+  # Adds a reading to a world's overlay. A name the overlay already holds
+  # under another type gains this one as a further reading; one it already
+  # holds under this type is `{:error, {:duplicate, entity_type}}`.
+  defp insert_world_entry(world_id, text, entity_type, metadata) do
+    normalized_key = normalize(text)
+    key = {world_id, normalized_key}
 
     entity_info =
       metadata
       |> Map.put(:entity_type, entity_type)
       |> Map.put(:type, entity_type)
-      |> Map.put(:value, name)
-      |> Map.put(:original_name, name)
-      |> Map.put(:source, source)
+      |> Map.put(:value, text)
+      |> Map.put(:original_name, text)
+      |> Map.put(:source, :world_learning)
+      |> Map.put(:world_id, world_id)
       |> Map.put(:added_at, System.system_time(:second))
 
-    case :ets.lookup(@table_name, normalized_key) do
-      [{^normalized_key, existing}] ->
-        existing_list =
-          case existing do
-            l when is_list(l) -> l
-            m when is_map(m) -> [m]
-          end
-
+    case :ets.lookup(@world_overlay_table, key) do
+      [{^key, existing_infos}] when is_list(existing_infos) ->
         already_has_type =
-          Enum.any?(existing_list, fn entry ->
-            Map.get(entry, :entity_type) == entity_type
+          Enum.any?(existing_infos, fn info ->
+            (Map.get(info, :entity_type) || Map.get(info, :type)) == entity_type
           end)
 
         if already_has_type do
-          false
+          {:error, {:duplicate, entity_type}}
         else
-          :ets.insert(@table_name, {normalized_key, [entity_info | existing_list]})
-          true
+          :ets.insert(@world_overlay_table, {key, [entity_info | existing_infos]})
+          {:ok, normalized_key}
+        end
+
+      [{^key, existing_info}] when is_map(existing_info) ->
+        existing_type = Map.get(existing_info, :entity_type) || Map.get(existing_info, :type)
+
+        if existing_type == entity_type do
+          {:error, {:duplicate, entity_type}}
+        else
+          :ets.insert(@world_overlay_table, {key, [entity_info, existing_info]})
+          {:ok, normalized_key}
         end
 
       [] ->
-        :ets.insert(@table_name, {normalized_key, entity_info})
-
-        words = String.split(normalized_key)
-
-        if length(words) > 1 do
-          prefixes =
-            1..(length(words) - 1)
-            |> Enum.map(fn n -> Enum.take(words, n) |> Enum.join(" ") end)
-
-          Enum.each(prefixes, fn prefix ->
-            :ets.insert(@prefix_table, {prefix, true})
-          end)
-        end
-
-        true
+        :ets.insert(@world_overlay_table, {key, [entity_info]})
+        {:ok, normalized_key}
     end
   end
-
-  defp insert_entry_direct(_, _, _, _), do: false
 
   defp update_entity_count(delta) do
     case :ets.lookup(@stats_table, :stats) do
