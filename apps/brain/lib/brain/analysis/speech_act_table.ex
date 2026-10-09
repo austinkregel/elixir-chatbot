@@ -106,7 +106,7 @@ defmodule Brain.Analysis.SpeechActTable do
         end
 
       {:error, reason} ->
-        raise "SpeechActTable: cannot read #{file} (#{inspect(reason)}). Train it with `mix gen_micro_data`."
+        raise "SpeechActTable: cannot read #{file} (#{inspect(reason)}). Train it with `mix gen_micro_data --world <id>`."
     end
   end
 
