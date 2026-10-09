@@ -62,9 +62,12 @@ defmodule Atlas.SchemasExtendedTest do
   end
 
   describe "UserModel" do
+    # A user model belongs to a web user: its user_id is the web user's id.
+    defp web_user_id, do: Atlas.WebUsers.create!(@world_id).id
+
     test "inserts with valid attributes" do
       attrs = %{
-        user_id: "user_#{System.unique_integer([:positive])}",
+        user_id: web_user_id(),
         facts: %{"name" => "Alice"},
         interaction_patterns: %{"greeting_style" => "formal"}
       }
@@ -73,13 +76,55 @@ defmodule Atlas.SchemasExtendedTest do
       assert um.facts == %{"name" => "Alice"}
     end
 
+    test "is persisted and linked to its web user" do
+      user = Atlas.WebUsers.create!(@world_id)
+
+      {:ok, _} =
+        %UserModel{}
+        |> UserModel.changeset(%{user_id: user.id, facts: %{"location" => "Seattle"}})
+        |> Repo.insert()
+
+      [stored] = UserModel |> UserModel.for_user(user.id) |> Repo.all() |> Repo.preload(:web_user)
+      assert stored.facts == %{"location" => "Seattle"}
+      assert stored.web_user.id == user.id
+    end
+
+    test "has no world: a web user has one user model whichever world they select" do
+      user = Atlas.WebUsers.create!(@world_id)
+      {:ok, _} = %UserModel{} |> UserModel.changeset(%{user_id: user.id}) |> Repo.insert()
+
+      Atlas.WebUsers.select_world!(user, "#{@world_id}_other")
+
+      assert [_one] = UserModel |> UserModel.for_user(user.id) |> Repo.all()
+      refute :world_id in UserModel.__schema__(:fields)
+    end
+
+    test "refuses a user id that is no web user's" do
+      assert {:error, changeset} =
+               %UserModel{} |> UserModel.changeset(%{user_id: Ecto.UUID.generate()}) |> Repo.insert()
+
+      assert "does not exist" in errors_on(changeset)[:user_id]
+
+      assert {:error, changeset} =
+               %UserModel{} |> UserModel.changeset(%{user_id: "anonymous"}) |> Repo.insert()
+
+      assert "is invalid" in errors_on(changeset)[:user_id]
+    end
+
+    test "a web user with a user model cannot be deleted" do
+      user = Atlas.WebUsers.create!(@world_id)
+      {:ok, _} = %UserModel{} |> UserModel.changeset(%{user_id: user.id}) |> Repo.insert()
+
+      assert_raise Ecto.ConstraintError, ~r/atlas_user_models_user_id_fkey/, fn -> Repo.delete!(user) end
+    end
+
     test "requires user_id" do
       assert {:error, changeset} = %UserModel{} |> UserModel.changeset(%{}) |> Repo.insert()
       assert errors_on(changeset)[:user_id]
     end
 
     test "enforces unique user_id" do
-      uid = "user_unique_#{System.unique_integer([:positive])}"
+      uid = web_user_id()
       {:ok, _} = %UserModel{} |> UserModel.changeset(%{user_id: uid}) |> Repo.insert()
 
       assert {:error, changeset} =
@@ -89,7 +134,7 @@ defmodule Atlas.SchemasExtendedTest do
     end
 
     test "queries by user_id" do
-      uid = "user_query_#{System.unique_integer([:positive])}"
+      uid = web_user_id()
       {:ok, _} = %UserModel{} |> UserModel.changeset(%{user_id: uid}) |> Repo.insert()
       results = UserModel |> UserModel.for_user(uid) |> Repo.all()
       assert length(results) == 1
