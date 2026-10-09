@@ -172,32 +172,26 @@ defmodule World.EntityPromoter do
     Enum.map(World.Manager.list_worlds(), & &1.id)
   end
 
-  defp passes_kg_gate?(entity, _world_id) do
+  defp passes_kg_gate?(entity, world_id) do
     config = Application.get_env(:brain, :kg_signals, [])
 
     if Keyword.get(config, :enabled, true) and Keyword.get(config, :entity_promoter_kg_gate, true) do
-      entity_has_quality_triple?(entity.value)
+      entity_has_quality_triple?(entity.value, world_id)
     else
       true
     end
   end
 
-  defp entity_has_quality_triple?(entity_name) do
-    unless Brain.ML.KnowledgeGraph.TripleScorer.ready?() do
-      true
-    else
-      canonical_relations =
-        Brain.ML.KnowledgeGraph.PredicateNormalizer.canonical_relations()
-        |> Enum.take(10)
+  # Scored by the triple scorer of the world the entity was observed in; a world
+  # with no copy of the scorer raises.
+  defp entity_has_quality_triple?(entity_name, world_id) do
+    canonical_relations =
+      Brain.ML.KnowledgeGraph.PredicateNormalizer.canonical_relations()
+      |> Enum.take(10)
 
-      Enum.any?(canonical_relations, fn relation ->
-        case Brain.ML.KnowledgeGraph.TripleScorer.score(entity_name, relation, "entity") do
-          {:ok, score} when score >= 0.4 -> true
-          _ -> false
-        end
-      end)
-    end
-  rescue
-    _ -> true
+    Enum.any?(canonical_relations, fn relation ->
+      {:ok, score} = Brain.ML.KnowledgeGraph.TripleScorer.score(world_id, entity_name, relation, "entity")
+      score >= 0.4
+    end)
   end
 end
