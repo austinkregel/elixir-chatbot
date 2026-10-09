@@ -9,6 +9,9 @@ defmodule Brain.LearnerDataTest do
 
   @test_persona "LearnerTestPersona"
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup _context do
     ensure_pubsub_started()
     ensure_started(Brain.KnowledgeStore)
@@ -35,7 +38,7 @@ defmodule Brain.LearnerDataTest do
       @description description
 
       test "#{description}" do
-        {:ok, data} = Learner.learn_from_input(@persona, @input)
+        {:ok, data} = Learner.learn_from_input(@persona, @input, world_id: @world_id)
         assert is_map(data)
       end
     end
@@ -43,9 +46,9 @@ defmodule Brain.LearnerDataTest do
 
   # Test with options
   @learning_with_opts_cases [
-    {@test_persona, "Turn on the kitchen light", [discourse: nil], "with nil discourse"},
-    {@test_persona, "Play some jazz music", [speech_act: nil], "with nil speech_act"},
-    {@test_persona, "Weather in Paris", [], "with empty options"},
+    {@test_persona, "Turn on the kitchen light", [world_id: @world_id, discourse: nil], "with nil discourse"},
+    {@test_persona, "Play some jazz music", [world_id: @world_id, speech_act: nil], "with nil speech_act"},
+    {@test_persona, "Weather in Paris", [world_id: @world_id], "with no option but the world"},
   ]
 
   describe "learn_from_input/3 with options - data driven" do
@@ -103,18 +106,18 @@ defmodule Brain.LearnerDataTest do
   # Edge cases
   describe "edge cases" do
     test "handles unicode input" do
-      result = Learner.learn_from_input(@test_persona, "日本語テスト")
+      result = Learner.learn_from_input(@test_persona, "日本語テスト", world_id: @world_id)
       assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
 
     test "handles very long input" do
       long_input = String.duplicate("This is a test sentence. ", 100)
-      result = Learner.learn_from_input(@test_persona, long_input)
+      result = Learner.learn_from_input(@test_persona, long_input, world_id: @world_id)
       assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
 
     test "handles special characters" do
-      result = Learner.learn_from_input(@test_persona, "Test's & query <script>")
+      result = Learner.learn_from_input(@test_persona, "Test's & query <script>", world_id: @world_id)
       assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
   end
