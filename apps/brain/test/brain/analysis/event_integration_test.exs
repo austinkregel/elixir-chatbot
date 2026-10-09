@@ -124,7 +124,7 @@ defmodule Brain.Analysis.EventIntegrationTest do
 
   describe "Epistemic integration" do
     @tag :epistemic
-    test "beliefs can be extracted from events" do
+    test "beliefs can be extracted from events", %{graph_world_id: world} do
       event =
         Event.new(%{verb: "want", lemma: "want", tense: :present},
           actor: %{text: "I", type: "pronoun", token_index: 0},
@@ -133,11 +133,11 @@ defmodule Brain.Analysis.EventIntegrationTest do
         )
 
       if Process.whereis(BeliefStore) do
-        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_event(event, "test_user")
+        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_event(world, event, "test_user")
         assert is_list(belief_ids)
 
         if belief_ids != [] do
-          {:ok, belief} = BeliefStore.get_belief(hd(belief_ids))
+          {:ok, belief} = BeliefStore.get_belief(world, hd(belief_ids))
           assert belief.predicate == :wants
           assert belief.object == "coffee"
         end
@@ -145,7 +145,7 @@ defmodule Brain.Analysis.EventIntegrationTest do
     end
 
     @tag :epistemic
-    test "low confidence events don't create beliefs" do
+    test "low confidence events don't create beliefs", %{graph_world_id: world} do
       event =
         Event.new(%{verb: "want", lemma: "want", tense: :present},
           actor: %{text: "I", type: "pronoun", token_index: 0},
@@ -154,13 +154,13 @@ defmodule Brain.Analysis.EventIntegrationTest do
         )
 
       if Process.whereis(BeliefStore) do
-        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_event(event, "test_user")
+        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_event(world, event, "test_user")
         assert belief_ids == []
       end
     end
 
     @tag :epistemic
-    test "extract_beliefs_from_events handles multiple events" do
+    test "extract_beliefs_from_events handles multiple events", %{graph_world_id: world} do
       events = [
         Event.new(%{verb: "want", lemma: "want", tense: :present},
           actor: %{text: "I", type: "pronoun", token_index: 0},
@@ -175,7 +175,7 @@ defmodule Brain.Analysis.EventIntegrationTest do
       ]
 
       if Process.whereis(BeliefStore) do
-        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_events(events, "test_user")
+        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_events(world, events, "test_user")
 
         assert is_list(belief_ids)
       end
