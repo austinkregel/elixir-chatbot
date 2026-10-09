@@ -9,15 +9,35 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
 
   # Client API
 
-  def start_link(opts \\ []) do
+  @doc """
+  Starts the subprocess on `:conversation_id`, or on a new Brain conversation
+  when none is given. A new conversation needs `:world_id`, the world it runs
+  in; without either option this raises.
+  """
+  def start_link(opts) do
     subprocess_id = Keyword.get(opts, :subprocess_id, generate_id())
     conversation_id = Keyword.get(opts, :conversation_id)
+    world_id = if conversation_id, do: nil, else: world_id!(opts)
     memory_snapshot = Keyword.get(opts, :memory_snapshot, %{})
     user_id = Keyword.get(opts, :user_id) || "conv_#{subprocess_id}"
 
-    GenServer.start_link(__MODULE__, {subprocess_id, conversation_id, memory_snapshot, user_id},
+    GenServer.start_link(__MODULE__, {subprocess_id, conversation_id, world_id, memory_snapshot, user_id},
       name: via_tuple(subprocess_id)
     )
+  end
+
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "ConversationSubprocess option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError,
+              "ConversationSubprocess needs :conversation_id, or :world_id for the new conversation it creates"
+    end
   end
 
   @doc "Returns true if the Conversation subprocess is ready to accept requests."
@@ -48,18 +68,13 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
   # Server Callbacks
 
   @impl true
-  def init(args) do
-    {subprocess_id, conversation_id, memory_snapshot, user_id} =
-      case args do
-        {sid, cid, snap} -> {sid, cid, snap, "conv_#{elem(args, 0)}"}
-        {sid, cid, snap, uid} -> {sid, cid, snap, uid}
-      end
+  def init({subprocess_id, conversation_id, world_id, memory_snapshot, user_id}) do
     # Ensure a Brain-level conversation exists so evaluate/3 works
     resolved_conversation_id =
       if conversation_id do
         conversation_id
       else
-        case Brain.create_conversation() do
+        case Brain.create_conversation(world_id: world_id) do
           {:ok, id} -> id
           _ -> generate_id()
         end
