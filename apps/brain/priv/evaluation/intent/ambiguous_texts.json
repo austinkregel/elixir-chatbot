@@ -3,8 +3,8 @@
     "text": "back",
     "sources": [
       "music.player.skip_backward_usersays_en.json",
-      "news.search - previous_usersays_en.json",
-      "web.search - previous_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "music.player.skip_backward",
@@ -26,8 +26,8 @@
   {
     "text": "Check January 1.",
     "sources": [
-      "account.earning.check - context_ earning - date_usersays_en.json",
-      "account.spending.check - context_ spending - date_usersays_en.json"
+      "account.earning.check_usersays_en.json",
+      "account.spending.check_usersays_en.json"
     ],
     "candidates": [
       "account.earning.check",
@@ -37,8 +37,8 @@
   {
     "text": "come again",
     "sources": [
-      "news.search - repeat_usersays_en.json",
-      "web.search - repeat_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -48,8 +48,8 @@
   {
     "text": "could you repeat that",
     "sources": [
-      "news.search - repeat_usersays_en.json",
-      "web.search - repeat_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -59,8 +59,8 @@
   {
     "text": "do it again",
     "sources": [
-      "news.search - repeat_usersays_en.json",
-      "web.search - repeat_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -70,8 +70,8 @@
   {
     "text": "following result",
     "sources": [
-      "news.search - next_usersays_en.json",
-      "web.search - next_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -81,8 +81,8 @@
   {
     "text": "for speakers too",
     "sources": [
-      "smarthome.device.volume - context_device_volume - comment_device_usersays_en.json",
-      "smarthome.device.volume.check - context_volume_check - comment_device_usersays_en.json"
+      "smarthome.device.volume_usersays_en.json",
+      "smarthome.device.volume.check_usersays_en.json"
     ],
     "candidates": [
       "smarthome.device.volume",
@@ -93,8 +93,8 @@
     "text": "go back",
     "sources": [
       "music.player.skip_backward_usersays_en.json",
-      "news.search - previous_usersays_en.json",
-      "web.search - previous_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "music.player.skip_backward",
@@ -105,8 +105,8 @@
   {
     "text": "go back to previous results",
     "sources": [
-      "news.search - previous_usersays_en.json",
-      "web.search - previous_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -117,8 +117,8 @@
     "text": "go forward",
     "sources": [
       "music.player.skip_forward_usersays_en.json",
-      "news.search - next_usersays_en.json",
-      "web.search - next_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "music.player.skip_forward",
@@ -129,8 +129,8 @@
   {
     "text": "go to the next page",
     "sources": [
-      "news.search - next_usersays_en.json",
-      "web.search - next_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -140,8 +140,8 @@
   {
     "text": "go to the previous page",
     "sources": [
-      "news.search - previous_usersays_en.json",
-      "web.search - previous_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -151,8 +151,8 @@
   {
     "text": "in the kitchen",
     "sources": [
-      "smarthome.device.volume - context_device_volume - comment_room_usersays_en.json",
-      "smarthome.device.volume.check - context_volume_check - comment_room_usersays_en.json"
+      "smarthome.device.volume_usersays_en.json",
+      "smarthome.device.volume.check_usersays_en.json"
     ],
     "candidates": [
       "smarthome.device.volume",
@@ -184,8 +184,8 @@
   {
     "text": "it's dark here",
     "sources": [
-      "smarthome.device.brightness.up - context_device_brightness - comment_not bright enough_usersays_en.json",
-      "smarthome.lights.brightness.up - context_lights_brightness - comment_not bright enough_usersays_en.json",
+      "smarthome.device.brightness.up_usersays_en.json",
+      "smarthome.lights.brightness.up_usersays_en.json",
       "smarthome.lights.brightness.up.implicit_usersays_en.json"
     ],
     "candidates": [
@@ -196,9 +196,9 @@
   {
     "text": "it's too bright",
     "sources": [
-      "smarthome.device.brightness.down - context_device_brightness - comment_not dim enough_usersays_en.json",
+      "smarthome.device.brightness.down_usersays_en.json",
       "smarthome.device.brightness.down.implicit_usersays_en.json",
-      "smarthome.lights.brightness.down - context_lights_brightness - comment_not dim enough_usersays_en.json",
+      "smarthome.lights.brightness.down_usersays_en.json",
       "smarthome.lights.brightness.down.implicit_usersays_en.json"
     ],
     "candidates": [
@@ -209,8 +209,8 @@
   {
     "text": "it's too dark",
     "sources": [
-      "smarthome.device.brightness.up - context_device_brightness - comment_not bright enough_usersays_en.json",
-      "smarthome.lights.brightness.up - context_lights_brightness - comment_not bright enough_usersays_en.json",
+      "smarthome.device.brightness.up_usersays_en.json",
+      "smarthome.lights.brightness.up_usersays_en.json",
       "smarthome.lights.brightness.up.implicit_usersays_en.json"
     ],
     "candidates": [
@@ -221,9 +221,9 @@
   {
     "text": "less",
     "sources": [
-      "smarthome.device.brightness.down - context_device_brightness - comment_not dim enough_usersays_en.json",
-      "smarthome.device.volume - context_device_volume - comment_down_usersays_en.json",
-      "smarthome.lights.brightness.down - context_lights_brightness - comment_not dim enough_usersays_en.json"
+      "smarthome.device.brightness.down_usersays_en.json",
+      "smarthome.device.volume_usersays_en.json",
+      "smarthome.lights.brightness.down_usersays_en.json"
     ],
     "candidates": [
       "smarthome.device.brightness.down",
@@ -267,8 +267,8 @@
     "text": "next",
     "sources": [
       "music.player.skip_forward_usersays_en.json",
-      "news.search - next_usersays_en.json",
-      "web.search - next_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "music.player.skip_forward",
@@ -279,8 +279,8 @@
   {
     "text": "next page",
     "sources": [
-      "news.search - next_usersays_en.json",
-      "web.search - next_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -290,8 +290,8 @@
   {
     "text": "now on Spotify",
     "sources": [
-      "music.play - context_play_music_usersays_en.json",
-      "music.search - context_search_music_usersays_en.json"
+      "music.play_usersays_en.json",
+      "music.search_usersays_en.json"
     ],
     "candidates": [
       "music.play",
@@ -301,8 +301,8 @@
   {
     "text": "please repeat that",
     "sources": [
-      "news.search - repeat_usersays_en.json",
-      "web.search - repeat_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -313,8 +313,8 @@
     "text": "previous",
     "sources": [
       "music.player.skip_backward_usersays_en.json",
-      "news.search - previous_usersays_en.json",
-      "web.search - previous_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "music.player.skip_backward",
@@ -325,8 +325,8 @@
   {
     "text": "previous page",
     "sources": [
-      "news.search - previous_usersays_en.json",
-      "web.search - previous_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -336,8 +336,8 @@
   {
     "text": "previous results",
     "sources": [
-      "news.search - previous_usersays_en.json",
-      "web.search - previous_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -347,8 +347,8 @@
   {
     "text": "read out the previous results",
     "sources": [
-      "news.search - previous_usersays_en.json",
-      "web.search - previous_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -358,8 +358,8 @@
   {
     "text": "read the next results",
     "sources": [
-      "news.search - next_usersays_en.json",
-      "web.search - next_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -370,8 +370,8 @@
     "text": "repeat",
     "sources": [
       "music.player.repeat_usersays_en.json",
-      "news.search - repeat_usersays_en.json",
-      "web.search - repeat_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "music.player.repeat",
@@ -383,8 +383,8 @@
     "text": "repeat it",
     "sources": [
       "music.player.repeat_usersays_en.json",
-      "news.search - repeat_usersays_en.json",
-      "web.search - repeat_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "music.player.repeat",
@@ -395,8 +395,8 @@
   {
     "text": "repeat these results",
     "sources": [
-      "news.search - repeat_usersays_en.json",
-      "web.search - repeat_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -406,8 +406,8 @@
   {
     "text": "repeat what you've just said",
     "sources": [
-      "news.search - repeat_usersays_en.json",
-      "web.search - repeat_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -417,8 +417,8 @@
   {
     "text": "return to previous page",
     "sources": [
-      "news.search - previous_usersays_en.json",
-      "web.search - previous_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -428,8 +428,8 @@
   {
     "text": "return to the previous",
     "sources": [
-      "news.search - previous_usersays_en.json",
-      "web.search - previous_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -439,8 +439,8 @@
   {
     "text": "say it again",
     "sources": [
-      "news.search - repeat_usersays_en.json",
-      "web.search - repeat_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -450,8 +450,8 @@
   {
     "text": "say the same again",
     "sources": [
-      "news.search - repeat_usersays_en.json",
-      "web.search - repeat_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -461,8 +461,8 @@
   {
     "text": "show me next",
     "sources": [
-      "news.search - next_usersays_en.json",
-      "web.search - next_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -472,8 +472,8 @@
   {
     "text": "show me the following results",
     "sources": [
-      "news.search - next_usersays_en.json",
-      "web.search - next_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -483,8 +483,8 @@
   {
     "text": "show me the next page",
     "sources": [
-      "news.search - next_usersays_en.json",
-      "web.search - next_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -516,8 +516,8 @@
   {
     "text": "speakers too",
     "sources": [
-      "smarthome.device.volume - context_device_volume - comment_device_usersays_en.json",
-      "smarthome.device.volume.check - context_volume_check - comment_device_usersays_en.json"
+      "smarthome.device.volume_usersays_en.json",
+      "smarthome.device.volume.check_usersays_en.json"
     ],
     "candidates": [
       "smarthome.device.volume",
@@ -527,8 +527,8 @@
   {
     "text": "switch to the next",
     "sources": [
-      "news.search - next_usersays_en.json",
-      "web.search - next_usersays_en.json"
+      "news.search_usersays_en.json",
+      "web.search_usersays_en.json"
     ],
     "candidates": [
       "news.search",
@@ -538,7 +538,7 @@
   {
     "text": "too cold",
     "sources": [
-      "smarthome.heating.up - context_heating - comment_not warm enough_usersays_en.json",
+      "smarthome.heating.up_usersays_en.json",
       "smarthome.heating.up.implicit_usersays_en.json"
     ],
     "candidates": [
@@ -549,7 +549,7 @@
   {
     "text": "too warm",
     "sources": [
-      "smarthome.heating.down - context_heating - comment_not cold enough_usersays_en.json",
+      "smarthome.heating.down_usersays_en.json",
       "smarthome.heating.down.implicit_usersays_en.json"
     ],
     "candidates": [
