@@ -30,7 +30,6 @@ defmodule ChatWeb.ChatLive do
     knowledge = get_combined_knowledge(status.name)
     memory_stats = get_cognitive_memory_stats()
     system_status = SystemStatus.get_all()
-    user_id = "web_user_" <> (:crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower))
 
     socket =
       socket
@@ -51,7 +50,6 @@ defmodule ChatWeb.ChatLive do
       |> assign(:dev_panel_tabs, %{})
       |> assign(:memory_stats, memory_stats)
       |> assign(:system_status, system_status)
-      |> assign(:user_id, user_id)
       |> assign(:language, language)
       |> assign(:selected_message_id, nil)
       |> assign(:world_models_loading, false)
@@ -66,8 +64,7 @@ defmodule ChatWeb.ChatLive do
   end
 
   defp get_world_models_status(socket) do
-    world_id = Map.get(socket.assigns, :current_world_id, "default")
-    SystemStatus.get_world_models_status(world_id)
+    SystemStatus.get_world_models_status(socket.assigns.current_world_id)
   end
 
   @impl true
@@ -190,14 +187,6 @@ defmodule ChatWeb.ChatLive do
       |> assign(:selected_message_id, nil)
       |> push_patch(to: ~p"/chat")
 
-    {:noreply, socket}
-  end
-
-  def handle_event("switch_world", %{"world_id" => _world_id}, socket) do
-    {:noreply, reset_for_world_change(socket)}
-  end
-
-  def handle_event("refresh_worlds", _params, socket) do
     {:noreply, socket}
   end
 
@@ -710,7 +699,7 @@ defmodule ChatWeb.ChatLive do
 
     view_pid = self()
 
-    user_id = socket.assigns.user_id
+    user_id = socket.assigns.current_user_id
     language = socket.assigns.language
 
     Task.start(fn ->
