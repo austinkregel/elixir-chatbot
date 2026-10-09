@@ -33,8 +33,9 @@ defmodule Atlas.Schemas.IntentReviewCandidate do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @required_fields ~w(id text status predicted_intent best_score)a
-  @optional_fields ~w(second_score margin top_k extracted_entities slot_fill_summary annotation conversation_id world_id reviewer_notes reviewed_at promotion_action promoted_to_intent)a
+  # A candidate was observed in one world; the caller names it.
+  @required_fields ~w(id text status predicted_intent best_score world_id)a
+  @optional_fields ~w(second_score margin top_k extracted_entities slot_fill_summary annotation conversation_id reviewer_notes reviewed_at promotion_action promoted_to_intent)a
 
   def changeset(candidate, attrs) do
     candidate
