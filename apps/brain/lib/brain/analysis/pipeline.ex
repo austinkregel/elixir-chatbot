@@ -1381,7 +1381,7 @@ defmodule Brain.Analysis.Pipeline do
           end
 
         if intent_domain != "" do
-          topic_similarity = compute_topic_similarity(intent_domain, recent_topics, world_id)
+          topic_similarity = topic_similarity(intent_domain, recent_topics, world_id)
           topic_similarity * 0.15
         else
           0.0
@@ -1393,14 +1393,21 @@ defmodule Brain.Analysis.Pipeline do
     min(entity_type_overlap + topic_overlap, 0.3)
   end
 
-  # The closest of the recent topics to the intent's domain, in the world's
-  # embedder.
-  defp compute_topic_similarity(domain, topics, world_id) do
+  @doc """
+  The cosine similarity of the closest of the recent `topics` to the intent's
+  `domain`, both embedded with the world's embedder (`World.Embedder.embed/2`);
+  0.0 when there are no topics. The domain and every topic are embedded with
+  the same vocabulary, so vectors of different lengths raise
+  (`FourthWall.Math.cosine_similarity!/2`), as does a world whose embedder
+  cannot embed.
+  """
+  @spec topic_similarity(String.t(), [String.t()], String.t()) :: float()
+  def topic_similarity(domain, topics, world_id) do
     domain_vec = world_embedding!(world_id, domain)
 
     similarities =
       Enum.map(topics, fn topic ->
-        FourthWall.Math.cosine_similarity(domain_vec, world_embedding!(world_id, topic))
+        FourthWall.Math.cosine_similarity!(domain_vec, world_embedding!(world_id, topic))
       end)
 
     case similarities do
@@ -1801,13 +1808,18 @@ defmodule Brain.Analysis.Pipeline do
   # analyzing a corpus passes `side_effects: false`; otherwise each utterance
   # would be stored as a belief about the user.
   #
+  # Every belief an event yields is about the user who said it, so a run with
+  # no user (`:user_id` absent or nil) extracts none: there is no one to hold
+  # them about, and no stand-in user is made up.
+  #
   # Nothing here is rescued. A failure in the synchronous mode reaches the
   # caller, and one in the supervised child is reported by its supervisor.
   defp maybe_extract_beliefs_from_events([], _opts), do: :ok
 
   defp maybe_extract_beliefs_from_events(events, opts) do
-    if side_effects?(opts) and Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
-      user_id = Keyword.get(opts, :user_id) || "anonymous"
+    user_id = turn_user_id!(opts)
+
+    if side_effects?(opts) and user_id != nil and Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
       world_id = world_id!(opts)
 
       if Application.get_env(:brain, :pipeline_belief_extraction_sync, false) do
@@ -1821,6 +1833,20 @@ defmodule Brain.Analysis.Pipeline do
     end
 
     :ok
+  end
+
+  # The user the text was said by: nil when the run has none, otherwise their id.
+  defp turn_user_id!(opts) do
+    case Keyword.get(opts, :user_id) do
+      nil ->
+        nil
+
+      user_id when is_binary(user_id) and user_id != "" ->
+        user_id
+
+      other ->
+        raise ArgumentError, "Pipeline option :user_id must be a user id or nil, got: #{inspect(other)}"
+    end
   end
 
   # Whether this run may write what it learned. On unless the caller passed
