@@ -17,9 +17,8 @@ defmodule Atlas do
 
   ## Graph Data (Apache AGE)
 
-  Three graph schemas for NLP computational primitives:
-  - `knowledge_graph` -- entity-relation triples for GNN input
-  - `user_graph` -- conversational memory and personalization
-  - `semantic_graph` -- AMR-style semantic role representations
+  Each world has its own knowledge, user, semantic, conversation and
+  epistemic graph; the expression-level `pos_graph` is shared by every
+  world. `Atlas.Graph` names them and describes each.
   """
 end
