@@ -69,15 +69,14 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
 
   @impl true
   def init({subprocess_id, conversation_id, world_id, memory_snapshot, user_id}) do
-    # Ensure a Brain-level conversation exists so evaluate/3 works
+    # Ensure a Brain-level conversation exists so evaluate/3 works. Brain owns
+    # conversation ids; one it did not create would be unknown to it.
     resolved_conversation_id =
       if conversation_id do
         conversation_id
       else
-        case Brain.create_conversation(world_id: world_id) do
-          {:ok, id} -> id
-          _ -> generate_id()
-        end
+        {:ok, id} = Brain.create_conversation(world_id: world_id)
+        id
       end
 
     # Initialize state
