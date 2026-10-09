@@ -250,16 +250,6 @@ defmodule ChatWeb.ExplorerLive do
   # ============================================================================
 
   @impl true
-  def handle_event("switch_world", %{"world_id" => world_id}, socket) do
-    # World context hook already updated current_world_id, reload data for new world
-    {:noreply, reload_for_world(socket, world_id)}
-  end
-
-  def handle_event("refresh_worlds", _params, socket) do
-    # World context hook already refreshed available_worlds
-    {:noreply, socket}
-  end
-
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
     params =
       build_url_params(assign(socket, :tab, String.to_existing_atom(tab)) |> assign(:page, 1))
@@ -566,7 +556,6 @@ defmodule ChatWeb.ExplorerLive do
   end
 
   def handle_info({:world_context_changed, world_id}, socket) do
-    # World was changed from another LiveView or tab
     {:noreply, reload_for_world(socket, world_id)}
   end
 
