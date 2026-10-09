@@ -66,6 +66,7 @@ defmodule Brain.GenServerHardeningTest do
       {:ok, _pid, subprocess_id} =
         Brain.Subprocesses.Supervisor.start_cli_subprocess(
           subprocess_id: "test-genserver-#{System.unique_integer([:positive])}",
+          world_id: "default",
           memory_snapshot: %{}
         )
 
