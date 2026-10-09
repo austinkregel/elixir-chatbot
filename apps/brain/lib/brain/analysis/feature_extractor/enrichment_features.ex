@@ -968,10 +968,8 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
     parents_list = parent_type_list()
     entities = get_entity_types(analysis)
 
-    parents =
-      entities
-      |> Enum.map(&TypeHierarchy.parent_of/1)
-      |> Enum.reject(&is_nil/1)
+    # A type under several parents counts toward each of them.
+    parents = Enum.flat_map(entities, &TypeHierarchy.parents_of/1)
 
     parent_histogram =
       Enum.map(parents_list, fn pt ->
@@ -984,7 +982,7 @@ defmodule Brain.Analysis.FeatureExtractor.EnrichmentFeatures do
     coherence = if total > 0, do: 1.0 - (unique_parents - 1) / max(total, 1), else: 0.0
 
     kg_total = length(entities)
-    kg_known = Enum.count(entities, fn etype -> TypeHierarchy.parent_of(etype) != nil end)
+    kg_known = Enum.count(entities, fn etype -> TypeHierarchy.parents_of(etype) != [] end)
     coverage = if kg_total > 0, do: kg_known / kg_total, else: 0.0
 
     parent_histogram ++ [coherence, coverage]
