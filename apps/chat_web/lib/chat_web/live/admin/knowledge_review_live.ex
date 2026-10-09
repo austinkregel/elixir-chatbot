@@ -644,7 +644,7 @@ defmodule ChatWeb.Admin.KnowledgeReviewLive do
   @impl true
   def handle_event("start_session", %{"topic" => topic}, socket) do
     if String.trim(topic) != "" do
-      case LearningCenter.start_session(topic) do
+      case LearningCenter.start_session(topic, world_id: socket.assigns.current_world_id) do
         {:ok, session} ->
           Logger.info("Started learning session", session_id: session.id, topic: topic)
 
