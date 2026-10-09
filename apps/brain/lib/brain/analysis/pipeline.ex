@@ -1595,8 +1595,7 @@ defmodule Brain.Analysis.Pipeline do
         parents =
           sig.entity_types
           |> MapSet.to_list()
-          |> Enum.map(&TypeHierarchy.parent_of/1)
-          |> Enum.reject(&is_nil/1)
+          |> Enum.flat_map(&TypeHierarchy.parents_of/1)
           |> Enum.uniq()
 
         if parents != [] do
