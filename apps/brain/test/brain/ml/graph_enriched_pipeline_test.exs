@@ -15,6 +15,9 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
   alias Brain.Analysis.{EventLinker, SemanticRoleLabeler}
   alias Brain.Epistemic.StanceTracker
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   @test_sentences [
     "The president visited Berlin yesterday",
     "John likes coffee and tea",
@@ -145,9 +148,9 @@ defmodule Brain.ML.GraphEnrichedPipelineTest do
     test "Phase 5A: Stance tracker records and detects drift" do
       {:ok, tracker} = StanceTracker.start_link(name: :"integration_tracker_#{:rand.uniform(100000)}")
 
-      StanceTracker.record_stance("test_conv", "climate", 0.3, :system, tracker)
-      StanceTracker.record_stance("test_conv", "climate", 0.8, :user, tracker)
-      StanceTracker.record_stance("test_conv", "climate", 0.7, :system, tracker)
+      StanceTracker.record_stance("test_conv", "climate", 0.3, :system, world_id: @world_id, name: tracker)
+      StanceTracker.record_stance("test_conv", "climate", 0.8, :user, world_id: @world_id, name: tracker)
+      StanceTracker.record_stance("test_conv", "climate", 0.7, :system, world_id: @world_id, name: tracker)
       Process.sleep(100)
 
       {:ok, drift_info} = StanceTracker.check_drift("test_conv", "climate", tracker)
