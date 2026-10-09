@@ -12,17 +12,19 @@ defmodule Brain.Response.Generator do
   alias Memory.Store
   alias Brain.Code.QueryHandler
 
-  @doc "Generate a response for the given intent and entities.\n\n`opts` may carry `:side_effects`; with `false`, a service call that would change state (a device action) is refused during enrichment.\n\nUses a generative pipeline:\n1. Retrieve similar episodes from memory\n2. Synthesize response from domain knowledge and primitives\n3. Fall back to templates if synthesis doesn't produce a result\n4. Run the (now no-op) refinement hook and the quality improver\n\nReturns:\n- {:ok, response, :synthesized} for generated responses\n- {:ok, response, :memory_adapted} for memory-adapted responses\n- {:ok, response, :template} for template-based responses\n- {:ok, response, :fallback} for fallback responses\n"
-  def generate(intent, entities, query_text \\ nil, opts \\ []) do
+  @doc "Generate a response for the given intent and entities.\n\n`opts` must carry `:world_id`, the world whose memory and code index the response draws on; absent raises. It may carry `:side_effects`; with `false`, a service call that would change state (a device action) is refused during enrichment.\n\nUses a generative pipeline:\n1. Retrieve similar episodes from memory\n2. Synthesize response from domain knowledge and primitives\n3. Fall back to templates if synthesis doesn't produce a result\n4. Run the (now no-op) refinement hook and the quality improver\n\nReturns:\n- {:ok, response, :synthesized} for generated responses\n- {:ok, response, :memory_adapted} for memory-adapted responses\n- {:ok, response, :template} for template-based responses\n- {:ok, response, :fallback} for fallback responses\n"
+  def generate(intent, entities, query_text, opts) do
     generate_with_events(intent, entities, query_text, [], opts)
   end
 
-  @doc "Generate a response with event context for better slot filling.\n\nWhen events are provided, they are used to:\n- Provide action/actor/object slots for template filling\n- Enhance context retrieval from memory\n- Improve response relevance based on user intent structure\n\n## Examples\n\n    events = [%Event{action: %{lemma: \"play\"}, object: %{text: \"jazz\"}}]\n    generate_with_events(\"music.play\", entities, \"Play some jazz\", events)\n"
-  def generate_with_events(intent, entities, query_text, events, opts \\ []) when is_list(events) do
+  @doc "Generate a response with event context for better slot filling.\n\nWhen events are provided, they are used to:\n- Provide action/actor/object slots for template filling\n- Enhance context retrieval from memory\n- Improve response relevance based on user intent structure\n\n`opts` takes the same options as `generate/4`; `:world_id` is required.\n\n## Examples\n\n    events = [%Event{action: %{lemma: \"play\"}, object: %{text: \"jazz\"}}]\n    generate_with_events(\"music.play\", entities, \"Play some jazz\", events, world_id: \"default\")\n"
+  def generate_with_events(intent, entities, query_text, events, opts) when is_list(events) do
+    world_id = world_id!(opts, :generate_with_events)
+
     Brain.Telemetry.span(:response_generate, %{intent: intent}, fn ->
       context =
         intent
-        |> build_generation_context_with_events(entities, query_text, events)
+        |> build_generation_context_with_events(entities, query_text, events, %{world_id: world_id})
         |> Map.put(:side_effects, Keyword.get(opts, :side_effects, true))
 
       # Build slot map for enrichment from entity list
@@ -87,13 +89,28 @@ defmodule Brain.Response.Generator do
 
   defp maybe_enrich_response(other, _context), do: other
 
-  defp build_generation_context(intent, entities, query_text) do
-    build_generation_context_with_events(intent, entities, query_text, [], %{})
+  defp world_id!(opts, function) do
+    case opts[:world_id] do
+      world_id when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      other ->
+        raise ArgumentError,
+              "Brain.Response.Generator.#{function} requires :world_id, the world whose memory and " <>
+                "code index the response draws on; got #{inspect(other)}"
+    end
   end
 
-  defp build_generation_context_with_events(intent, entities, query_text, events, opts \\ %{}) do
-    similar_episodes = retrieve_similar_episodes(intent, entities, query_text)
-    event_episodes = retrieve_event_episodes(events)
+  defp build_generation_context(intent, entities, query_text, world_id) do
+    build_generation_context_with_events(intent, entities, query_text, [], %{world_id: world_id})
+  end
+
+  # `opts` must carry `:world_id`; it is also kept on the returned context so the
+  # later strategies (memory, special handlers) read the same world.
+  defp build_generation_context_with_events(intent, entities, query_text, events, opts) do
+    world_id = Map.fetch!(opts, :world_id)
+    similar_episodes = retrieve_similar_episodes(intent, entities, query_text, world_id)
+    event_episodes = retrieve_event_episodes(events, world_id)
     event_slots = build_context_from_events(events, entities)
 
     epistemic_context = Map.get(opts, :epistemic_context, %{})
@@ -138,19 +155,20 @@ defmodule Brain.Response.Generator do
       srl_frames: srl_frames,
       entity_familiarity: entity_familiarity,
       user_id: user_id,
-      conversation_id: conversation_id
+      conversation_id: conversation_id,
+      world_id: world_id
     }
   end
 
 
-  defp retrieve_event_episodes(events) when is_list(events) and events != [] do
+  defp retrieve_event_episodes(events, world_id) when is_list(events) and events != [] do
     case get_primary_action(events) do
       nil ->
         []
 
       action_lemma ->
         if Process.whereis(Store) do
-          case Store.query_events_by_action(action_lemma, 3) do
+          case Store.query_events_by_action(action_lemma, 3, world_id: world_id) do
             {:ok, episodes} -> episodes
             _ -> []
           end
@@ -160,7 +178,7 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  defp retrieve_event_episodes(_) do
+  defp retrieve_event_episodes(_, _world_id) do
     []
   end
 
@@ -258,7 +276,7 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  defp retrieve_similar_episodes(intent, entities, query_text) do
+  defp retrieve_similar_episodes(intent, entities, query_text, world_id) do
     query =
       [
         intent || "",
@@ -269,7 +287,7 @@ defmodule Brain.Response.Generator do
       |> Enum.join(" ")
 
     if query != "" and Process.whereis(Store) do
-      case Store.query_similar(query, 5) do
+      case Store.query_similar(query, 5, world_id: world_id) do
         {:ok, episodes} -> episodes
         _ -> []
       end
@@ -290,7 +308,7 @@ defmodule Brain.Response.Generator do
         {:ok, response, :synthesized}
 
       :not_synthesized ->
-        case try_memory_augmented(intent, entities) do
+        case try_memory_augmented(intent, entities, context.world_id) do
           {:ok, response} ->
             {:ok, response, :memory_adapted}
 
@@ -300,7 +318,7 @@ defmodule Brain.Response.Generator do
                 {:ok, response, :template}
 
               :not_handled ->
-                case try_special_handlers(intent, entities, query_text) do
+                case try_special_handlers(intent, entities, query_text, context.world_id) do
                   {:ok, response} ->
                     {:ok, response, :special_handler}
 
@@ -343,16 +361,15 @@ defmodule Brain.Response.Generator do
     other
   end
 
-  defp try_special_handlers(intent, entities, query_text, opts \\ []) do
-    profile = Keyword.get(opts, :profile)
-    domain = if profile, do: profile.domain, else: infer_domain_from_label(intent)
+  defp try_special_handlers(intent, entities, query_text, world_id) do
+    domain = infer_domain_from_label(intent)
 
     cond do
       domain == :code ->
-        handle_code_intent(intent, entities, query_text)
+        handle_code_intent(intent, entities, query_text, world_id)
 
       domain == :question or intent == "knowledge.query" ->
-        handle_factual_query(entities, query_text)
+        handle_factual_query(entities, query_text, world_id)
 
       true ->
         :not_handled
@@ -371,9 +388,7 @@ defmodule Brain.Response.Generator do
     ArgumentError -> String.to_atom(str)
   end
 
-  defp handle_code_intent(intent, entities, query_text) do
-    world_id = get_code_world_id()
-
+  defp handle_code_intent(intent, entities, query_text, world_id) do
     case QueryHandler.handle(intent, entities, world_id: world_id, query_text: query_text) do
       {:ok, response} -> {:ok, response}
       :not_handled -> :not_handled
@@ -383,21 +398,15 @@ defmodule Brain.Response.Generator do
   # Handle factual queries using semantic search with keyword fallback.
   # This uses the TF-IDF semantic retriever for best results, falling back
   # to keyword-based FactRetriever when semantic search isn't available.
-  defp handle_factual_query(entities, query_text) do
-    generate_factual_with_semantic_search(entities, query_text)
+  defp handle_factual_query(entities, query_text, world_id) do
+    generate_factual_with_semantic_search(entities, query_text, world_id)
   end
 
-  defp get_code_world_id do
-    case Process.get(:current_world_id) do
-      nil -> "default"
-      world_id -> world_id
-    end
-  end
-
-  @doc "Generate a response with full path tracking for debugging/inspection.\n\nReturns:\n- {:ok, response, response_type, path} where path is a list of steps taken\n\nThe path shows exactly how the response was reached:\n- Which handlers were tried\n- Why each was skipped or selected\n- What data stores were accessed\n"
-  def generate_with_path(intent, entities, query_text \\ nil) do
+  @doc "Generate a response with full path tracking for debugging/inspection.\n\n`opts` must carry `:world_id`, the world whose memory and code index the response draws on; absent raises.\n\nReturns:\n- {:ok, response, response_type, path} where path is a list of steps taken\n\nThe path shows exactly how the response was reached:\n- Which handlers were tried\n- Why each was skipped or selected\n- What data stores were accessed\n"
+  def generate_with_path(intent, entities, query_text, opts) do
+    world_id = world_id!(opts, :generate_with_path)
     path = []
-    context = build_generation_context(intent, entities, query_text)
+    context = build_generation_context(intent, entities, query_text, world_id)
     path = path ++ [%{step: :try, handler: :synthesizer, intent: intent}]
 
     case Synthesizer.synthesize(intent, entities,
@@ -423,7 +432,7 @@ defmodule Brain.Response.Generator do
           path ++
             [%{step: :skip, handler: :synthesizer, reason: "no domain knowledge for intent"}]
 
-        {path, memory_result} = try_memory_with_path(intent, entities, path)
+        {path, memory_result} = try_memory_with_path(intent, entities, path, world_id)
 
         case memory_result do
           {:ok, response} ->
@@ -447,7 +456,7 @@ defmodule Brain.Response.Generator do
               :not_handled ->
                 path = path ++ [%{step: :try, handler: :special, intent: intent}]
 
-                case try_special_handlers(intent, entities, query_text) do
+                case try_special_handlers(intent, entities, query_text, world_id) do
                   {:ok, response} ->
                     path =
                       path ++
@@ -469,10 +478,10 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  defp try_memory_with_path(intent, entities, path) do
+  defp try_memory_with_path(intent, entities, path, world_id) do
     path = path ++ [%{step: :try, handler: :memory_augmented, store: "Memory.Store"}]
 
-    case try_memory_augmented(intent, entities) do
+    case try_memory_augmented(intent, entities, world_id) do
       {:ok, response} ->
         {path, {:ok, response}}
 
@@ -504,9 +513,10 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  @doc "Generate a response using context-aware template selection.\n\nThis uses conditional template matching and semantic ranking:\n1. Filter this intent's templates by conditions that match the context\n2. Rank matching templates by similarity to the query\n\n## Parameters\n- `intent` - The classified intent name\n- `entities` - List of extracted entities\n- `query_text` - The original user query\n- `context` - Additional context (filled_slots, missing_slots, confidence, speech_act)\n\n## Returns\n- {:ok, response, :conditional_template} for condition-matched templates\n- Falls back to regular generate/3 if conditional selection fails\n"
-  def generate_with_context(intent, entities, query_text, context \\ %{}) do
-    full_context = build_template_context(entities, context)
+  @doc "Generate a response using context-aware template selection.\n\nThis uses conditional template matching and semantic ranking:\n1. Filter this intent's templates by conditions that match the context\n2. Rank matching templates by similarity to the query\n\n## Parameters\n- `intent` - The classified intent name\n- `entities` - List of extracted entities\n- `query_text` - The original user query\n- `context` - Additional context (filled_slots, missing_slots, confidence, speech_act); must carry `:world_id`, the world whose memory the response draws on (absent raises)\n\n## Returns\n- {:ok, response, :conditional_template} for condition-matched templates\n- Falls back to regular generate/4 if conditional selection fails\n"
+  def generate_with_context(intent, entities, query_text, context) do
+    world_id = world_id!(context, :generate_with_context)
+    full_context = entities |> build_template_context(context) |> Map.put(:world_id, world_id)
     confidence = Map.get(context, :confidence, 0.7)
 
     case Synthesizer.synthesize(intent, entities, confidence: confidence, context: context) do
@@ -524,7 +534,7 @@ defmodule Brain.Response.Generator do
                 {:ok, response, :blended}
 
               :not_handled ->
-                case try_memory_augmented(intent, entities) do
+                case try_memory_augmented(intent, entities, world_id) do
                   {:ok, response} ->
                     {:ok, response, :memory_augmented}
 
@@ -660,13 +670,13 @@ defmodule Brain.Response.Generator do
   # Semantic fact retrieval with fallback to keyword-based retrieval.
   # Uses SemanticFactRetriever for TF-IDF similarity matching, falling back
   # to FactRetriever keyword search if semantic search yields no results.
-  defp generate_factual_with_semantic_search(entities, query_text) do
+  defp generate_factual_with_semantic_search(entities, query_text, world_id) do
     alias Brain.Response.SemanticFactRetriever
 
     query_str = query_text || ""
 
     # Expand query with graph-derived related concepts
-    {_original, related_terms} = Brain.Graph.Reader.expand_query(query_str, entities)
+    {_original, related_terms} = Brain.Graph.Reader.expand_query(query_str, entities, world_id: world_id)
     expanded_query = if related_terms != [], do: query_str <> " " <> Enum.join(Enum.take(related_terms, 3), " "), else: query_str
 
     if SemanticFactRetriever.ready?() and query_str != "" do
@@ -676,20 +686,20 @@ defmodule Brain.Response.Generator do
         response = format_semantic_results(query_str, results)
         {:ok, response}
       else
-        try_keyword_fact_retrieval(entities, query_str)
+        try_keyword_fact_retrieval(entities, query_str, world_id)
       end
     else
-      try_keyword_fact_retrieval(entities, query_str)
+      try_keyword_fact_retrieval(entities, query_str, world_id)
     end
   end
 
-  defp try_keyword_fact_retrieval(entities, query_str) do
+  defp try_keyword_fact_retrieval(entities, query_str, world_id) do
     if FactRetriever.available?() do
       entity_names = extract_entity_names_for_facts(entities)
       facts = FactRetriever.get_facts_for_query(query_str, entity_names)
 
       if facts != [] do
-        response = format_factual_response(query_str, facts, entities)
+        response = format_factual_response(query_str, facts, entities, world_id)
         {:ok, response}
       else
         :not_handled
@@ -711,8 +721,8 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  defp try_memory_augmented(intent, entities) do
-    case MemoryAugmented.generate(intent, entities) do
+  defp try_memory_augmented(intent, entities, world_id) do
+    case MemoryAugmented.generate(intent, entities, world_id: world_id) do
       {:ok, response, _metadata} ->
         {:ok, response}
 
@@ -778,15 +788,15 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  defp format_factual_response(query_text, facts, entities)
+  defp format_factual_response(query_text, facts, entities, world_id)
 
-  defp format_factual_response(query_text, facts, entities)
+  defp format_factual_response(query_text, facts, entities, world_id)
        when is_binary(query_text) and query_text != "" do
     alias Brain.ML.Tokenizer
     alias Brain.ML.POSTagger
 
     query_tokens = Tokenizer.tokenize(query_text)
-    speech_act = SpeechActClassifier.classify(query_text, entities: entities)
+    speech_act = SpeechActClassifier.classify(query_text, entities: entities, world_id: world_id)
     is_question = Map.get(speech_act, :is_question, false)
 
     query_numbers =
@@ -832,7 +842,7 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  defp format_factual_response(_query_text, facts, _entities) do
+  defp format_factual_response(_query_text, facts, _entities, _world_id) do
     formatted = FactRetriever.format_facts(facts, 2)
     "Here's what I know: #{Enum.join(formatted, ". ")}."
   end
