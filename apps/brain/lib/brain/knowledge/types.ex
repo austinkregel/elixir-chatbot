@@ -349,9 +349,8 @@ defmodule Brain.Knowledge.Types do
       |> length()
     end
 
-    defp generate_id do
-      :crypto.strong_rand_bytes(12) |> Base.url_encode64(padding: false)
-    end
+    # A UUID: a hypothesis is stored in Atlas under this id.
+    defp generate_id, do: Ecto.UUID.generate()
   end
 
   defmodule Investigation do
@@ -663,9 +662,8 @@ defmodule Brain.Knowledge.Types do
       end
     end
 
-    defp generate_id do
-      :crypto.strong_rand_bytes(12) |> Base.url_encode64(padding: false)
-    end
+    # A UUID: an investigation is stored in Atlas under this id.
+    defp generate_id, do: Ecto.UUID.generate()
   end
 
   defmodule ResearchGoal do
@@ -890,9 +888,8 @@ defmodule Brain.Knowledge.Types do
       end
     end
 
-    defp generate_id do
-      :crypto.strong_rand_bytes(12) |> Base.url_encode64(padding: false)
-    end
+    # A UUID: a research goal is stored in Atlas under this id.
+    defp generate_id, do: Ecto.UUID.generate()
   end
 
   defmodule ReviewCandidate do
@@ -1090,9 +1087,9 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    defp generate_id do
-      :crypto.strong_rand_bytes(12) |> Base.url_encode64(padding: false)
-    end
+    # A UUID: a session is stored in Atlas under this id, and later updates
+    # find its row by it.
+    defp generate_id, do: Ecto.UUID.generate()
   end
 
   defmodule SourceProfile do
