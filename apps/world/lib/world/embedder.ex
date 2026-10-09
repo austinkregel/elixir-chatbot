@@ -1,16 +1,39 @@
 defmodule World.Embedder do
-  @moduledoc "Manages world-specific TF-IDF embeddings.\n\nEach training world can have its own vocabulary and IDF weights, built from\nthe episodes stored in that world. This provides domain-specific semantic\nsimilarity within each world's context.\n\nEmbeddings are built lazily on first use and stored in ETS for performance.\nVocabulary can be rebuilt when significant new data is added.\n"
+  @moduledoc """
+  Each world's TF-IDF embedder: its vocabulary and IDF weights.
+
+  The embedder's vocabulary is a world's vocabulary statistics, so it belongs to
+  a world. A world holds its own copy at `<world>/models/embedder.term`
+  (`path/1`), seeded by copying the trained vocabulary (`trained_path/0`, where
+  `mix train_models` writes it):
+
+  - a persistent world is seeded when `World.Manager` creates it, and an existing
+    world, or every world after a retrain, with `mix world.seed_model embedder`;
+  - an ephemeral world has no directory, so it is seeded in memory when it is
+    created (`seed_in_memory!/1`) and cleared with it (`clear/1`).
+
+  `loaded!/1` reads a world's copy the first time the world embeds and keeps it
+  in ETS. A world with no copy raises naming the world: there is no fallback to
+  the trained vocabulary or to another world.
+
+  `build_vocabulary/2` rebuilds a world's vocabulary from the episodes stored in
+  it, replacing the loaded one.
+  """
 
   alias Brain.Memory.Store
   require Logger
 
-  alias Brain.ML.Tokenizer
+  alias Brain.ML.{Tokenizer, WorldModelFile}
 
   @ets_table :world_embedders
   @default_vocab_size 2000
   @min_word_frequency 2
+  @file_name "embedder.term"
 
-  @doc "Ensures the ETS table exists. Called during application startup.\n"
+  @doc """
+  Ensures the ETS table exists. `World.Manager` calls it when it starts, so the
+  table lives as long as the worlds whose embedders it holds.
+  """
   def init do
     if :ets.whereis(@ets_table) == :undefined do
       :ets.new(@ets_table, [:set, :public, :named_table, read_concurrency: true])
@@ -62,7 +85,13 @@ defmodule World.Embedder do
     end
   end
 
-  @doc "Embeds text using the world's vocabulary.\nDoes NOT auto-build vocabulary to avoid deadlocks - call build_vocabulary first.\n\nReturns {:ok, embedding} or {:error, reason}\n"
+  @doc """
+  Embeds text using the world's vocabulary, reading the world's copy
+  (`loaded!/1`) the first time the world embeds. Raises when the world has no
+  copy.
+
+  Returns {:ok, embedding} or {:error, reason}
+  """
   def embed(world_id, text) when is_binary(world_id) and is_binary(text) do
     case get_state(world_id) do
       {:ok, %{ready: true} = state} ->
@@ -76,7 +105,8 @@ defmodule World.Embedder do
         {:error, :vocabulary_building}
 
       {:error, :not_found} ->
-        {:error, :not_initialized}
+        loaded!(world_id)
+        embed(world_id, text)
 
       {:error, :table_not_ready} ->
         {:error, :table_not_ready}
@@ -119,7 +149,7 @@ defmodule World.Embedder do
     end
   end
 
-  @doc "Clears the embedder state for a world (used when world is destroyed).\n"
+  @doc "Clears the embedder loaded for a world, for a world that is destroyed or reseeded.\n"
   def clear(world_id) do
     :ets.delete(@ets_table, world_id)
     :ok
@@ -178,6 +208,97 @@ defmodule World.Embedder do
         build_vocabulary(world_id)
     end
   end
+
+  @doc "Where a world keeps its copy of the embedder vocabulary."
+  @spec path(String.t()) :: Path.t()
+  def path(world_id) when is_binary(world_id), do: WorldModelFile.path(world_id, @file_name)
+
+  @doc "Where training writes the embedder vocabulary that worlds are seeded from."
+  @spec trained_path() :: Path.t()
+  def trained_path, do: WorldModelFile.trained_path(@file_name)
+
+  @doc """
+  The world's embedder vocabulary: the one loaded for it, or its copy read from
+  disk the first time it is asked for. Raises when the world has no copy, or
+  when its vocabulary is being rebuilt from its episodes.
+  """
+  @spec loaded!(String.t()) :: map()
+  def loaded!(world_id) when is_binary(world_id) do
+    case get_state(world_id) do
+      {:ok, %{ready: true} = state} ->
+        Map.take(state, [:vocabulary, :idf_weights, :built_at, :episode_count])
+
+      {:ok, %{phase: phase}} ->
+        raise "World.Embedder: world #{inspect(world_id)}'s embedder is not ready (#{phase_label(phase)})"
+
+      {:error, :not_found} ->
+        model = read!(path(world_id), world_id)
+        load!(world_id, model)
+        model
+
+      {:error, :table_not_ready} ->
+        raise table_not_ready_message(world_id)
+    end
+  end
+
+  @doc """
+  Copies the trained vocabulary into the world's models directory, checks the
+  copy byte for byte, and clears the vocabulary loaded for the world so its
+  next embedding reads the new copy. Replaces any copy the world held, which is
+  how a retrained vocabulary reaches a world.
+  """
+  @spec seed!(String.t()) :: :ok
+  def seed!(world_id) when is_binary(world_id) do
+    read!(trained_path(), :trained)
+    :ok = WorldModelFile.copy!(world_id, @file_name)
+    clear(world_id)
+  end
+
+  @doc "Makes a copy of the trained vocabulary the loaded vocabulary of a world that has no directory."
+  @spec seed_in_memory!(String.t()) :: :ok
+  def seed_in_memory!(world_id) when is_binary(world_id) do
+    load!(world_id, read!(trained_path(), :trained))
+  end
+
+  @doc """
+  Reads and checks an embedder vocabulary file. Raises when it is missing, or
+  does not hold a vocabulary and IDF weights.
+  """
+  @spec read!(Path.t(), String.t() | :trained) :: map()
+  def read!(file, owner) do
+    unless File.regular?(file) do
+      raise missing_message(file, owner)
+    end
+
+    case file |> File.read!() |> :erlang.binary_to_term() do
+      %{vocabulary: vocabulary, idf_weights: idf_weights} = model
+      when is_map(vocabulary) and is_map(idf_weights) ->
+        model
+
+      other ->
+        raise "World.Embedder: #{file} does not hold an embedder vocabulary, got #{inspect(other, limit: 3)}"
+    end
+  end
+
+  defp load!(world_id, model) do
+    case load_model(world_id, model) do
+      :ok -> :ok
+      {:error, :table_not_ready} -> raise table_not_ready_message(world_id)
+    end
+  end
+
+  defp missing_message(file, :trained),
+    do: "World.Embedder: no trained embedder vocabulary at #{file}; train one with `mix train_models`"
+
+  defp missing_message(file, world_id),
+    do:
+      "World.Embedder: world #{inspect(world_id)} has no embedder vocabulary at #{file}; " <>
+        "seed it with `mix world.seed_model embedder --world #{world_id}`"
+
+  defp table_not_ready_message(world_id),
+    do:
+      "World.Embedder: the #{inspect(@ets_table)} table does not exist, so world #{inspect(world_id)}'s " <>
+        "embedder cannot be held; World.Manager creates it when it starts"
 
   defp get_state(world_id) do
     try do
