@@ -45,7 +45,7 @@ defmodule Brain.GenServerHardeningTest do
   describe "CredentialVault with timeout" do
     @tag :gen_server_hardening
     test "store returns :ok or error tuple when vault is ready" do
-      result = Brain.Services.CredentialVault.store(:test, :key, "value", [])
+      result = Brain.Services.CredentialVault.store(:test, :key, "value", world: "default")
       assert result == :ok or match?({:error, _}, result)
     end
   end
