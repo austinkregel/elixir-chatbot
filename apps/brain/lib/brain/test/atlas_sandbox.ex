@@ -19,7 +19,10 @@ defmodule Brain.Test.AtlasSandbox do
     Brain.Epistemic.JTMS,
     Brain.Analysis.ComprehensionAssessor,
     Brain.Lexicon.UserDefined,
-    Brain.Knowledge.LearningTriggers
+    Brain.Knowledge.LearningTriggers,
+    Brain.Services.LocalScheduler,
+    # Creates each world's graphs when it creates or loads the world.
+    World.Manager
   ]
 
   @task_supervisors [
