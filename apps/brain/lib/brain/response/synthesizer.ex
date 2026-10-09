@@ -2,6 +2,7 @@ defmodule Brain.Response.Synthesizer do
   @moduledoc "Generative response composition from primitives and domain knowledge.\n\nInstead of template-based responses, this module composes responses\nfrom primitives based on:\n- Domain knowledge (loaded from priv/knowledge/domains/*.json)\n- Confidence levels of the knowledge being shared\n- Speech act analysis\n- Entity slot filling\n- Disclosure policy decisions\n\nResponse primitives:\n- Acknowledgments - \"Sure,\", \"Of course,\"\n- Hedges - confidence-based language adjustments\n- Entity verbalizations - \"in $location\", \"by $artist\"\n- Response frames - domain-specific sentence structures\n- Uncertainty markers - \"but that's just my understanding\"\n\nThis enables novel, appropriate responses without massive training data.\n"
 
   alias Brain.Analysis.SlotDetector
+  alias Brain.Memory.RecurringPattern
   alias Brain.Epistemic.Types.SelfKnowledgeAssessment
   alias Brain.Epistemic.DisclosurePolicy
 
@@ -67,12 +68,40 @@ defmodule Brain.Response.Synthesizer do
   @frame_key_mappings Map.get(@frame_key_config, "slot_to_frame_key", %{})
   @frame_key_default Map.get(@frame_key_config, "default", "general")
 
-  @doc "Synthesizes a response for any intent using domain knowledge and primitives.\n\nThis is the primary entry point for generative response creation.\n\n## Parameters\n- `intent` - The classified intent (e.g., \"weather.query\")\n- `entities` - List of extracted entities\n- `opts` - Options including:\n  - `:confidence` - Classification confidence (0.0-1.0)\n  - `:speech_act` - Speech act analysis result\n  - `:similar_episodes` - Similar past interactions from memory\n  - `:semantic_facts` - Retrieved semantic facts\n\n## Returns\n`{:ok, response}` or `:not_synthesized`\n"
+  @doc """
+  Synthesizes a response for any intent using domain knowledge and primitives.
+
+  This is the primary entry point for generative response creation.
+
+  Unless the epistemic context answers first, a response is adapted from
+  memory before domain knowledge is tried: from the turn's recurring pattern
+  when there is one, its reply with the turn's entities filled in; otherwise
+  from the most similar single episode at least
+  `Brain.Memory.RecurringPattern.similarity_threshold/0` similar, its outcome
+  filled in the same way. The pattern comes first because its reply was given
+  across several matching messages, a single episode's only once. A response
+  built from the pattern is reported (`Brain.Memory.RecurringPattern.used/3`).
+
+  ## Parameters
+  - `intent` - The classified intent (e.g., "weather.query")
+  - `entities` - List of extracted entities
+  - `opts` - Options including:
+    - `:confidence` - Classification confidence (0.0-1.0)
+    - `:speech_act` - Speech act analysis result
+    - `:similar_episodes` - Similar past interactions from memory
+    - `:recurring_pattern` - The turn's recurring pattern
+      (`Brain.Memory.RecurringPattern.find/2`), or `nil`
+    - `:progress` - The turn's progress reporting (`Brain.Analysis.Progress`)
+
+  ## Returns
+  `{:ok, response}` or `:not_synthesized`
+  """
   def synthesize(intent, entities, opts \\ []) do
     profile = Keyword.get(opts, :profile)
     domain = if profile, do: profile.domain, else: infer_domain(intent)
     confidence = Keyword.get(opts, :confidence, 0.7)
     similar_episodes = Keyword.get(opts, :similar_episodes, [])
+    recurring_pattern = Keyword.get(opts, :recurring_pattern)
     context = Keyword.get(opts, :context, %{})
 
     # Check epistemic context FIRST — contradictions and uncertainty should
@@ -86,7 +115,7 @@ defmodule Brain.Response.Synthesizer do
         {:ok, response}
 
       :continue ->
-        case adapt_from_episodes(similar_episodes, entities) do
+        case adapt_from_memory(recurring_pattern, similar_episodes, entities, opts) do
           {:ok, response} ->
             {:ok, response}
 
@@ -94,6 +123,16 @@ defmodule Brain.Response.Synthesizer do
             synthesize_from_domain(domain, intent, entities, confidence, opts)
         end
     end
+  end
+
+  # A recurring pattern outranks any single episode.
+  defp adapt_from_memory(%RecurringPattern{} = pattern, _similar_episodes, entities, opts) do
+    :ok = RecurringPattern.used(pattern, :synthesizer, opts)
+    {:ok, adapt_response_pattern(pattern.reply, entities)}
+  end
+
+  defp adapt_from_memory(nil, similar_episodes, entities, _opts) do
+    adapt_from_episodes(similar_episodes, entities)
   end
 
   @doc "Synthesizes a response using domain knowledge and entity slots.\n"
@@ -386,7 +425,8 @@ defmodule Brain.Response.Synthesizer do
     best_episode =
       episodes
       |> Enum.filter(fn {episode, similarity} ->
-        similarity >= 0.7 and episode.outcome != nil and episode.outcome != ""
+        similarity >= RecurringPattern.similarity_threshold() and episode.outcome != nil and
+          episode.outcome != ""
       end)
       |> Enum.max_by(fn {_ep, sim} -> sim end, fn -> nil end)
 
