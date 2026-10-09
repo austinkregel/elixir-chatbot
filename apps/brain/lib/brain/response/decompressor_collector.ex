@@ -46,11 +46,12 @@ defmodule Brain.Response.DecompressorCollector do
   Records a primitive->text training pair.
 
   Called by the SurfaceRealizer after rendering a primitive.
-  Only collects pairs with meaningful rendered text.
+  Only collects pairs with meaningful rendered text. `world_id` is the world
+  the response was realized in; the pair's fragments are analyzed in it.
   """
-  def collect(primitive, rendered_text, name \\ __MODULE__)
-  def collect(%{type: type, variant: variant, content: content}, rendered_text, name)
-      when is_binary(rendered_text) do
+  def collect(primitive, rendered_text, world_id, name \\ __MODULE__)
+  def collect(%{type: type, variant: variant, content: content}, rendered_text, world_id, name)
+      when is_binary(rendered_text) and is_binary(world_id) do
     if String.length(rendered_text) > 3 do
       pair = %{
         primitive: %{
@@ -59,6 +60,7 @@ defmodule Brain.Response.DecompressorCollector do
           content: serialize_content(content)
         },
         output: rendered_text,
+        world_id: world_id,
         source: "runtime",
         collected_at: System.system_time(:millisecond)
       }
@@ -73,17 +75,18 @@ defmodule Brain.Response.DecompressorCollector do
     :ok
   end
 
-  def collect(_, _, _), do: :ok
+  def collect(_, _, world_id, _) when is_binary(world_id), do: :ok
 
   @doc """
   Records a primitive->text training pair with an associated analysis for feature vectors.
 
   Called by the SurfaceRealizer after rendering a primitive when analysis context is available.
+  `world_id` is the world the response was realized in.
   """
-  def collect_with_analysis(primitive, rendered_text, analysis, name \\ __MODULE__)
+  def collect_with_analysis(primitive, rendered_text, analysis, world_id, name \\ __MODULE__)
 
-  def collect_with_analysis(%{type: type, variant: variant, content: content}, rendered_text, analysis, name)
-      when is_binary(rendered_text) do
+  def collect_with_analysis(%{type: type, variant: variant, content: content}, rendered_text, analysis, world_id, name)
+      when is_binary(rendered_text) and is_binary(world_id) do
     if String.length(rendered_text) > 3 do
       pair = %{
         primitive: %{
@@ -92,6 +95,7 @@ defmodule Brain.Response.DecompressorCollector do
           content: serialize_content(content)
         },
         output: rendered_text,
+        world_id: world_id,
         source: "runtime",
         collected_at: System.system_time(:millisecond),
         feature_vector: extract_feature_vector(analysis)
@@ -107,7 +111,7 @@ defmodule Brain.Response.DecompressorCollector do
     :ok
   end
 
-  def collect_with_analysis(_, _, _, _), do: :ok
+  def collect_with_analysis(_, _, _, world_id, _) when is_binary(world_id), do: :ok
 
   @doc """
   Records a plan-level training example.
@@ -311,7 +315,7 @@ defmodule Brain.Response.DecompressorCollector do
 
           Enum.map(chunks, fn chunk ->
             prototype_vector =
-              case FragmentVectorizer.vectorize_fragment_text(chunk.text) do
+              case FragmentVectorizer.vectorize_fragment_text(chunk.text, Map.fetch!(pair, :world_id)) do
                 {:ok, fv} -> fv
                 _ -> []
               end
