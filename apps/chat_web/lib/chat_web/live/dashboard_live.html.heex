@@ -384,9 +384,13 @@
           </div>
         </div>
         <div class="mt-space-md text-caption text-ink-muted">
-          Train world-specific models with:
+          Copy the trained models into this world with:
           <code class="px-space-xs bg-surface-sunk rounded-sm text-term text-ink">
-            mix train_models --world {@current_world_id}
+            mix world.seed_model entity_model --world {@current_world_id}
+          </code>
+          and
+          <code class="px-space-xs bg-surface-sunk rounded-sm text-term text-ink">
+            mix world.seed_model embedder --world {@current_world_id}
           </code>
         </div>
       </div>
