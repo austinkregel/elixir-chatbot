@@ -4,12 +4,13 @@ defmodule Mix.Tasks.TrainFromGraph do
 
   ## Usage
 
-      mix train_from_graph              # Extract intent priors
-      mix train_from_graph --priors     # The same; the only step left
+      mix train_from_graph --world default            # Extract intent priors
+      mix train_from_graph --world default --priors   # The same; the only step left
 
   ## Options
 
-  - `--priors` - Extract intent priors from conversation_graph
+  - `--world` - required: the world whose conversation_graph is read
+  - `--priors` - Extract intent priors from the world's conversation_graph
 
   Neither the gazetteer nor the POS tagger is trained from the graph. The
   gazetteer learns only what a human reviewer approved, through
@@ -26,14 +27,19 @@ defmodule Mix.Tasks.TrainFromGraph do
   def run(args) do
     Mix.Task.run("app.start")
 
-    {_opts, _, invalid} = OptionParser.parse(args, strict: [priors: :boolean], aliases: [i: :priors])
+    {opts, _, invalid} =
+      OptionParser.parse(args, strict: [priors: :boolean, world: :string], aliases: [i: :priors])
 
     # An unknown option (such as the removed --gazetteer or --pos-only) would
     # otherwise be dropped silently.
     if invalid != [], do: Mix.raise("train_from_graph: unknown options #{inspect(invalid)}")
 
-    Mix.shell().info("Extracting intent priors from conversation_graph...")
-    priors = Brain.Graph.Training.extract_intent_priors()
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("train_from_graph needs --world <id>, the world whose conversation_graph is read")
+
+    Mix.shell().info("Extracting intent priors from world #{world_id}'s conversation_graph...")
+    priors = Brain.Graph.Training.extract_intent_priors(world_id)
     Mix.shell().info("  Extracted #{map_size(priors)} intent transition entries")
 
     Mix.shell().info("Graph training pipeline complete.")
