@@ -140,21 +140,34 @@ defmodule Brain.Graph.Writer do
 
   @doc """
   Write a semantic fact and its episode evidence as a subgraph in semantic_graph.
+
+  `world_id` is the world the fact and its episodes belong to, recorded on the
+  nodes; anything other than a world id raises rather than filing the cluster
+  under no world.
   """
-  def write_semantic_cluster(semantic_fact, episode_ids) when is_list(episode_ids) do
+  def write_semantic_cluster(semantic_fact, episode_ids, world_id) when is_list(episode_ids) do
+    world_id = cluster_world_id!(world_id)
+
     AtlasIntegration.async(fn ->
       representation = Map.get(semantic_fact, :representation, "")
 
       props = %{
         name: "sf_#{:crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)}",
         representation: representation,
-        evidence_count: length(episode_ids)
+        evidence_count: length(episode_ids),
+        world_id: world_id
       }
 
       case Atlas.Graph.add_node("semantic_graph", "SemanticFact", props) do
         {:ok, fact_node} ->
           Enum.each(episode_ids, fn ep_id ->
-            {:ok, ep_node} = AtlasIntegration.ensure_node("semantic_graph", "Episode", %{name: to_string(ep_id), id: to_string(ep_id)})
+            {:ok, ep_node} =
+              AtlasIntegration.ensure_node("semantic_graph", "Episode", %{
+                name: to_string(ep_id),
+                id: to_string(ep_id),
+                world_id: world_id
+              })
+
             Atlas.Graph.add_edge("semantic_graph", ep_node.id, fact_node.id, EdgeLabels.evidence_for())
           end)
 
@@ -164,17 +177,36 @@ defmodule Brain.Graph.Writer do
     end)
   end
 
-  def write_semantic_cluster(_, _), do: :ok
+  def write_semantic_cluster(_, _, world_id) do
+    cluster_world_id!(world_id)
+    :ok
+  end
+
+  defp cluster_world_id!(world_id) when is_binary(world_id) and world_id != "", do: world_id
+
+  defp cluster_world_id!(nil) do
+    raise ArgumentError, "Writer.write_semantic_cluster needs the world the semantic fact belongs to"
+  end
+
+  defp cluster_world_id!(other) do
+    raise ArgumentError, "Writer.write_semantic_cluster world must be a world id, got: #{inspect(other)}"
+  end
 
   # ============================================================================
   # conversation_graph: Conversations + Messages
   # ============================================================================
 
-  @doc "Write a new conversation node."
+  @doc """
+  Write a new conversation node.
+
+  The conversation must carry its `:world_id`; a conversation always runs in
+  a world, so a missing one raises rather than being filed under another.
+  """
   def write_conversation(conversation) do
+    world_id = conversation_world_id!(conversation)
+
     AtlasIntegration.async(fn ->
       conv_id = Map.get(conversation, :id) || Map.get(conversation, "id", "")
-      world_id = Map.get(conversation, :world_id) || Map.get(conversation, "world_id", "default")
 
       Atlas.Graph.add_node("conversation_graph", "Conversation", %{
         name: to_string(conv_id),
@@ -182,6 +214,19 @@ defmodule Brain.Graph.Writer do
         created_at: System.system_time(:millisecond)
       })
     end)
+  end
+
+  defp conversation_world_id!(conversation) do
+    case Map.get(conversation, :world_id) || Map.get(conversation, "world_id") do
+      world_id when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      nil ->
+        raise ArgumentError, "Writer.write_conversation needs the conversation's :world_id, the world it runs in"
+
+      other ->
+        raise ArgumentError, "Writer.write_conversation conversation :world_id must be a world id, got: #{inspect(other)}"
+    end
   end
 
   @doc """
