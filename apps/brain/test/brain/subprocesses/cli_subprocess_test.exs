@@ -149,6 +149,91 @@ defmodule Brain.Subprocesses.CliSubprocessTest do
       assert restarted_pid != pid
       on_exit(fn -> DynamicSupervisor.terminate_child(Brain.Subprocesses.Supervisor, restarted_pid) end)
     end
+
+    test "a session restarted after a crash goes on with the conversation it had" do
+      {:ok, subprocess_id} = Brain.start_cli_subprocess(world_id: "default")
+      %{conversation_id: conversation_id} = CliSubprocess.get_status(subprocess_id)
+      {:ok, _} = CliSubprocess.execute_command(subprocess_id, "chat Hello there!")
+      conversations_before = length(Brain.get_conversations())
+      pid = session_pid!(subprocess_id)
+      ref = Process.monitor(pid)
+
+      # Killed, so its terminate/2 does not run and nothing ends the conversation.
+      Process.exit(pid, :kill)
+      assert_receive {:DOWN, ^ref, :process, ^pid, :killed}
+
+      [{restarted_pid, _}] =
+        eventually(
+          fn -> Registry.lookup(Brain.SubprocessRegistry, {:cli_subprocess, subprocess_id}) end,
+          &match?([{restarted, _}] when restarted != pid, &1)
+        )
+
+      on_exit(fn -> DynamicSupervisor.terminate_child(Brain.Subprocesses.Supervisor, restarted_pid) end)
+
+      assert CliSubprocess.get_status(subprocess_id).conversation_id == conversation_id
+      assert length(Brain.get_conversations()) == conversations_before
+
+      {:ok, _} = CliSubprocess.execute_command(subprocess_id, "chat How are you?")
+      {:ok, conversation} = Brain.get_conversation(conversation_id)
+      user_turns = conversation.memory |> Enum.filter(&(&1[:role] == "user")) |> Enum.map(& &1[:content])
+      assert user_turns == ["Hello there!", "How are you?"]
+
+      # Stopping the restarted session ends the one conversation.
+      assert :ok = Brain.stop_subprocess(subprocess_id)
+      assert {:error, _} = Brain.get_conversation(conversation_id)
+    end
+
+    test "a session restarted after its conversation was ended starts a new one" do
+      {:ok, subprocess_id} = Brain.start_cli_subprocess(world_id: "default")
+      %{conversation_id: conversation_id} = CliSubprocess.get_status(subprocess_id)
+      :ok = Brain.end_conversation(conversation_id)
+      pid = session_pid!(subprocess_id)
+      ref = Process.monitor(pid)
+
+      Process.exit(pid, :kill)
+      assert_receive {:DOWN, ^ref, :process, ^pid, :killed}
+
+      [{restarted_pid, _}] =
+        eventually(
+          fn -> Registry.lookup(Brain.SubprocessRegistry, {:cli_subprocess, subprocess_id}) end,
+          &match?([{restarted, _}] when restarted != pid, &1)
+        )
+
+      on_exit(fn -> DynamicSupervisor.terminate_child(Brain.Subprocesses.Supervisor, restarted_pid) end)
+
+      %{conversation_id: new_conversation_id} = CliSubprocess.get_status(subprocess_id)
+      assert new_conversation_id != conversation_id
+      assert {:ok, %{world_id: "default"}} = Brain.get_conversation(new_conversation_id)
+
+      assert :ok = Brain.stop_subprocess(subprocess_id)
+      assert {:error, _} = Brain.get_conversation(new_conversation_id)
+    end
+
+    test "a session restarted after a crash is still listed, and stop_subprocess stops it" do
+      {:ok, subprocess_id} = Brain.start_cli_subprocess(world_id: "default")
+      pid = session_pid!(subprocess_id)
+      ref = Process.monitor(pid)
+
+      Process.exit(pid, :kill)
+      assert_receive {:DOWN, ^ref, :process, ^pid, :killed}
+
+      [{restarted_pid, _}] =
+        eventually(
+          fn -> Registry.lookup(Brain.SubprocessRegistry, {:cli_subprocess, subprocess_id}) end,
+          &match?([{restarted, _}] when restarted != pid, &1)
+        )
+
+      # The restarted session has told Brain its pid once `get_status/1`
+      # answers: it cast that from `init/1`, before it could take a call.
+      %{subprocess_id: ^subprocess_id} = CliSubprocess.get_status(subprocess_id)
+      assert subprocess_id in Brain.list_subprocesses().cli
+
+      restarted_ref = Process.monitor(restarted_pid)
+      assert :ok = Brain.stop_subprocess(subprocess_id)
+
+      assert_receive {:DOWN, ^restarted_ref, :process, ^restarted_pid, _reason}
+      assert_stays_stopped(subprocess_id)
+    end
   end
 
   defp session_pid!(subprocess_id) do
