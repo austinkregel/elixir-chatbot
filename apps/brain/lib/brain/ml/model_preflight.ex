@@ -38,7 +38,7 @@ defmodule Brain.ML.ModelPreflight do
     if failures != [] do
       msg = format_failures(failures)
       IO.puts(:stderr, "\n" <> msg)
-      raise "Model preflight failed. #{length(failures)} model(s) missing or incompatible. Run `mix train` or test `ModelFactory` setup."
+      raise "Model preflight failed. #{length(failures)} model(s) missing or incompatible. Run `mix train --world <id>` or test `ModelFactory` setup."
     end
 
     :ok
@@ -52,7 +52,8 @@ defmodule Brain.ML.ModelPreflight do
         {:pos_model, validate_pos_model()},
         {:sentiment_classifier, validate_simple_classifier_root("sentiment_classifier.term")},
         {:speech_act_classifier, validate_simple_classifier_root("speech_act_classifier.term")},
-        {:framing_neutral_centroid, validate_framing_neutral_centroid()}
+        {:framing_neutral_centroid, validate_framing_neutral_centroid()},
+        {:entity_model, validate_entity_model()}
       ]
 
     micro =
@@ -84,6 +85,20 @@ defmodule Brain.ML.ModelPreflight do
       %Brain.Analysis.LexicalEvidence{intents: [_ | _], scores: scores} when map_size(scores) > 0 -> :ok
       %Brain.Analysis.SpeechActTable{entries: entries} when map_size(entries) > 0 -> :ok
       other -> {:error, "#{inspect(module)} #{code}: empty #{inspect(other.__struct__)}"}
+    end
+  rescue
+    e in RuntimeError -> {:error, Exception.message(e)}
+  end
+
+  # The trained model every world is seeded from. Each world's own copy is
+  # checked when the world first extracts (`Brain.ML.EntityModel.loaded!/1`).
+  defp validate_entity_model do
+    model = Brain.ML.EntityModel.read!(Brain.ML.EntityModel.trained_path(), :trained)
+
+    if map_size(model.tag_vocabulary) > 1 do
+      :ok
+    else
+      {:error, "entity_model.term: tags only #{inspect(Map.keys(model.tag_vocabulary))}"}
     end
   rescue
     e in RuntimeError -> {:error, Exception.message(e)}
@@ -271,7 +286,7 @@ defmodule Brain.ML.ModelPreflight do
     ╔══════════════════════════════════════════════════════════════╗
     ║  MODEL PREFLIGHT CHECK FAILED                              ║
     ║  Stored models are missing or incompatible with code.      ║
-    ║  Run `mix train` (prod) or `ModelFactory` (test).          ║
+    ║  Prod: `mix train --world <id>`. Test: `ModelFactory`.     ║
     ╚══════════════════════════════════════════════════════════════╝
     """
 
