@@ -304,15 +304,7 @@ defmodule Brain.AtlasIntegration do
       semantics =
         rows
         |> Enum.map(fn row ->
-          sf = %Brain.Memory.Types.SemanticFact{
-            id: row.id,
-            representation: row.content,
-            embedding: row.embedding || [],
-            evidence_ids: row.source_episodes || [],
-            timestamp: DateTime.to_unix(row.inserted_at, :millisecond)
-          }
-
-          {row.id, sf}
+          {row.id, row_to_semantic(row)}
         end)
         |> Map.new()
 
@@ -356,6 +348,7 @@ defmodule Brain.AtlasIntegration do
         id: semantic.id,
         world_id: world_id,
         content: semantic.representation,
+        action: semantic.action,
         category: "consolidated",
         confidence: 0.5,
         embedding: semantic.embedding || [],
@@ -448,6 +441,7 @@ defmodule Brain.AtlasIntegration do
             id: semantic.id,
             world_id: world_id,
             content: semantic.representation,
+            action: semantic.action,
             category: "consolidated",
             confidence: 0.5,
             embedding: semantic.embedding || [],
@@ -633,6 +627,7 @@ defmodule Brain.AtlasIntegration do
     %Brain.Memory.Types.SemanticFact{
       id: row.id,
       representation: row.content,
+      action: row.action,
       embedding: row.embedding || [],
       evidence_ids: row.source_episodes || [],
       tags: row.tags || [],
