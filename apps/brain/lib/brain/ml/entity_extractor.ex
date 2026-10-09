@@ -1,11 +1,11 @@
 defmodule Brain.ML.EntityExtractor do
-  @moduledoc "Entity extraction using gazetteer lookups and classical NLP techniques.\n\nThis module extracts entities from user input text using:\n- Gazetteer lookups for known entities (cities, artists, devices, etc.)\n- BIO-tagged sequence model for unknown entity detection\n- Token-based pattern matching for system entities (dates, numbers)\n\nAvoids regex in favor of tokenizer-based approaches.\n\nKnown entities come from `Brain.ML.Gazetteer`, which loads its sources before\nthe application finishes starting. There is no second copy of the gazetteer\nhere.\n"
+  @moduledoc "Entity extraction using gazetteer lookups and classical NLP techniques.\n\nThis module extracts entities from user input text using:\n- Gazetteer lookups for known entities (cities, artists, devices, etc.)\n- the world's BIO entity model (`Brain.ML.EntityModel`), run on the same tokens\n- Token-based pattern matching for system entities (dates, numbers)\n\nAvoids regex in favor of tokenizer-based approaches.\n\nKnown entities come from `Brain.ML.Gazetteer`, which loads its sources before\nthe application finishes starting. There is no second copy of the gazetteer\nhere.\n"
 
   alias Brain.Analysis
   alias Brain.ML
   require Logger
 
-  alias ML.{Gazetteer, Tokenizer, POSTagger}
+  alias ML.{EntityModel, EntityTrainer, Gazetteer, Tokenizer, POSTagger}
   alias Analysis.{EntityDisambiguator, EntityTypeScorer, TypeHierarchy}
   alias Brain.Telemetry
 
@@ -25,7 +25,7 @@ defmodule Brain.ML.EntityExtractor do
   @doc "Returns true when the gazetteer extraction reads from has loaded.\n"
   def is_loaded?, do: Gazetteer.loaded?()
 
-  @doc "Extract entities from text using gazetteer lookups and pattern matching.\nReturns a list of entity matches with positions and confidence scores.\n\n## Options\n\n- `:discourse` - Discourse analysis result for disambiguation context\n- `:speech_act` - Speech act classification result for disambiguation context\n- `:skip_disambiguation` - If true, skip the disambiguation step (default: false)\n- `:world_id` - World ID for world-scoped type inference (required for disambiguation)\n"
+  @doc "Extract entities from text using gazetteer lookups and pattern matching.\nReturns a list of entity matches with positions and confidence scores.\n\n## Options\n\n- `:discourse` - Discourse analysis result for disambiguation context\n- `:speech_act` - Speech act classification result for disambiguation context\n- `:skip_disambiguation` - If true, skip the disambiguation step (default: false)\n- `:world_id` - required: the world whose entities are extracted. Absent raises.\n"
   def extract_entities(text, opts \\ [])
 
   def extract_entities(text, opts) when is_list(opts) do
@@ -45,7 +45,7 @@ defmodule Brain.ML.EntityExtractor do
     discourse = Keyword.get(opts, :discourse)
     speech_act = Keyword.get(opts, :speech_act)
     skip_disambiguation = Keyword.get(opts, :skip_disambiguation, false)
-    world_id = Keyword.get(opts, :world_id)
+    world_id = world_id!(opts)
     tokens = Tokenizer.tokenize(text)
 
     if debug?, do: Logger.info("    extractor:tokenize=#{System.monotonic_time(:millisecond) - t0}ms")
@@ -62,11 +62,12 @@ defmodule Brain.ML.EntityExtractor do
 
     location_entities = extract_location_hints(tokens, tags)
     proper_noun_entities = extract_proper_noun_hints(tokens, tags)
+    model_entities = extract_model_entities(text, tokens, EntityModel.loaded!(world_id))
 
-    if debug?, do: Logger.info("    extractor:location+proper=#{System.monotonic_time(:millisecond) - t0}ms")
+    if debug?, do: Logger.info("    extractor:location+proper+model=#{System.monotonic_time(:millisecond) - t0}ms")
 
     all_entities =
-      gazetteer_entities ++ system_entities ++ location_entities ++ proper_noun_entities
+      gazetteer_entities ++ system_entities ++ location_entities ++ proper_noun_entities ++ model_entities
 
     resolved_entities =
       all_entities
@@ -87,6 +88,21 @@ defmodule Brain.ML.EntityExtractor do
     min_confidence = Keyword.get(opts, :min_confidence) || get_min_confidence_threshold()
 
     filter_by_confidence(disambiguated_entities, min_confidence)
+  end
+
+  # Entities are nomens, so extraction always runs in a world: the caller names
+  # it, and there is no default.
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "EntityExtractor option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "EntityExtractor needs :world_id, the world whose entities are extracted"
+    end
   end
 
   @doc """
@@ -668,6 +684,32 @@ defmodule Brain.ML.EntityExtractor do
 
   defp extract_proper_noun_hints(tokens, tags) do
     extract_with_pos_tagger(tokens, tags)
+  end
+
+  # The world's BIO tagger over the same tokens. It was trained on
+  # `Tokenizer.tokenize/1` tokens (`Brain.ML.NerGold`), so its token indexes map
+  # straight back to positions in the text, and its confidence is the mean
+  # posterior of the entity's tags.
+  defp extract_model_entities(text, tokens, model) do
+    tokens
+    |> Enum.map(& &1.text)
+    |> EntityTrainer.tag(model)
+    |> EntityTrainer.extract_entities_from_bio()
+    |> Enum.map(fn entity ->
+      start_pos = Enum.at(tokens, entity.start_index).start_pos
+      end_pos = Enum.at(tokens, entity.end_index).end_pos
+      surface = String.slice(text, start_pos, end_pos - start_pos + 1)
+
+      %{
+        entity_type: entity.entity_type,
+        value: surface,
+        match: surface,
+        start_pos: start_pos,
+        end_pos: end_pos,
+        confidence: entity.confidence,
+        source: :entity_model
+      }
+    end)
   end
 
   # Takes the sentence's tags rather than tagging it a second time: this and
