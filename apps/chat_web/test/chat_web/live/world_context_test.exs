@@ -330,6 +330,29 @@ defmodule ChatWeb.WorldContextTest do
     end
   end
 
+  describe "a selected world that was purged" do
+    test "is shown as not in the world list, and a conversation in it raises naming the world" do
+      conn = get(build_conn(), "/worlds")
+      user_id = get_session(conn, "user_id")
+
+      world_id = "test_world_context_purged_#{System.unique_integer([:positive])}"
+      {:ok, world} = WorldManager.create(world_id, id: world_id, mode: :ephemeral)
+      user_id |> Atlas.WebUsers.get!() |> Atlas.WebUsers.select_world!(world.id)
+
+      :ok = WorldManager.purge(world.id)
+      assert Atlas.WebUsers.get!(user_id).selected_world_id == world.id
+
+      {:ok, view, _html} = live(recycle(conn), "/dashboard")
+
+      assert view |> element("#selected-world") |> render() =~ "not in the world list"
+      assert has_element?(view, ~s(#world-select option[value="#{world.id}"][selected]), "(not in the world list)")
+
+      assert_raise ArgumentError, ~r/world "#{world.id}" is not loaded/, fn ->
+        Brain.create_conversation(world_id: world.id)
+      end
+    end
+  end
+
   describe "flash messages" do
     setup do
       %{other_world: create_listed_world("world_context_flash")}
