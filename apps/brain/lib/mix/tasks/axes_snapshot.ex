@@ -6,9 +6,11 @@ defmodule Mix.Tasks.Axes.Snapshot do
   result as an `Atlas.Schemas.AxisRun` plus one observation per utterance per
   axis.
 
-      mix axes.snapshot --corpus .claude/corpus/utterances.json
-      mix axes.snapshot --corpus path/to/corpus.json --tag baseline --note "first honest measurement"
-      mix axes.snapshot --corpus path/to/corpus.json --limit 200
+      mix axes.snapshot --world <id> --corpus .claude/corpus/utterances.json
+      mix axes.snapshot --world <id> --corpus path/to/corpus.json --tag baseline --note "first honest measurement"
+      mix axes.snapshot --world <id> --corpus path/to/corpus.json --limit 200
+
+  `--world <id>` is required: the world the corpus is analyzed in.
 
   ## Tagged and untagged runs
 
@@ -20,8 +22,8 @@ defmodule Mix.Tasks.Axes.Snapshot do
 
   ## Why `--corpus` has no default
 
-  Whether `.claude/corpus/` is the right home for this data is task 067, still
-  open. Defaulting to a path inside `.claude/` would put an undecided location
+  Whether `.claude/corpus/` is the right home for this data is still
+  undecided. Defaulting to a path inside `.claude/` would put an undecided location
   on a production code path and quietly bake the decision in, so the path is
   required and a missing file raises.
 
@@ -39,7 +41,7 @@ defmodule Mix.Tasks.Axes.Snapshot do
 
   @requirements ["app.start"]
 
-  @switches [corpus: :string, tag: :string, note: :string, limit: :integer]
+  @switches [corpus: :string, tag: :string, note: :string, limit: :integer, world: :string]
 
   @impl Mix.Task
   def run(args) do
@@ -49,6 +51,7 @@ defmodule Mix.Tasks.Axes.Snapshot do
     if positional != [], do: Mix.raise("axes.snapshot: unexpected arguments #{inspect(positional)}")
 
     corpus_path = opts[:corpus] || Mix.raise(usage("--corpus is required"))
+    world_id = opts[:world] || Mix.raise(usage("--world is required: the world the corpus is analyzed in"))
     tag = opts[:tag]
     note = opts[:note]
 
@@ -77,7 +80,7 @@ defmodule Mix.Tasks.Axes.Snapshot do
     utterances = load_corpus!(corpus_path, opts[:limit])
     Mix.shell().info("Measuring #{length(utterances)} utterances over #{length(ChunkProfile.axes())} axes ...")
 
-    observations = measure(utterances, store_vectors?: not is_nil(tag))
+    observations = measure(utterances, store_vectors?: not is_nil(tag), world_id: world_id)
 
     run_attrs = %{
       provenance: provenance,
@@ -107,6 +110,7 @@ defmodule Mix.Tasks.Axes.Snapshot do
 
   defp measure(utterances, opts) do
     store_vectors? = Keyword.fetch!(opts, :store_vectors?)
+    world_id = Keyword.fetch!(opts, :world_id)
     axes = ChunkProfile.axes()
 
     utterances
@@ -116,12 +120,12 @@ defmodule Mix.Tasks.Axes.Snapshot do
         Mix.shell().info("  #{position}/#{length(utterances)}")
       end
 
-      observations_for(utterance, axes, store_vectors?)
+      observations_for(utterance, axes, store_vectors?, world_id)
     end)
   end
 
-  defp observations_for(%{id: id, text: text}, axes, store_vectors?) do
-    analysis = Pipeline.analyze_chunk(text, side_effects: false)
+  defp observations_for(%{id: id, text: text}, axes, store_vectors?, world_id) do
+    analysis = Pipeline.analyze_chunk(text, side_effects: false, world_id: world_id)
     vector = FeatureExtractor.extract_vector(analysis)
     profile = ChunkProfile.materialize(analysis, vector)
 
@@ -279,7 +283,7 @@ defmodule Mix.Tasks.Axes.Snapshot do
     """
     axes.snapshot: #{message}
 
-        mix axes.snapshot --corpus PATH [--tag NAME --note "what this represents"] [--limit N]
+        mix axes.snapshot --world ID --corpus PATH [--tag NAME --note "what this represents"] [--limit N]
     """
   end
 end
