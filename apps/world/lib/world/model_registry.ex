@@ -1,5 +1,5 @@
 defmodule World.ModelRegistry do
-  @moduledoc "Central registry for per-world ML models.\n\nManages loading, caching, and switching of world-specific models:\n- Intent classifier\n- Embedder vocabulary/IDF weights\n- POS tagger\n- Entity model\n\nWhen a world is activated, all its models are loaded (or created from defaults).\nComponents can query this registry to get the active world's models.\n\n## PubSub Events\n\nSubscribes to:\n- `world_context:global` - `{:world_changed, session_id, world_id}` - Triggers model switch\n\nBroadcasts on `world_models:status`:\n- `{:world_models_loading, world_id}` - Models are being loaded\n- `{:world_models_loaded, world_id, status}` - Models finished loading\n- `{:world_models_error, world_id, reason}` - Loading failed\n"
+  @moduledoc "Central registry for per-world ML models.\n\nManages loading, caching, and switching of world-specific models:\n- Intent classifier\n- Embedder vocabulary/IDF weights\n- POS tagger\n\nA world's entity model is not here: `Brain.ML.EntityModel` owns it.\n\nWhen a world is activated, all its models are loaded (or created from defaults).\nComponents can query this registry to get the active world's models.\n\n## PubSub Events\n\nSubscribes to:\n- `world_context:global` - `{:world_changed, session_id, world_id}` - Triggers model switch\n\nBroadcasts on `world_models:status`:\n- `{:world_models_loading, world_id}` - Models are being loaded\n- `{:world_models_loaded, world_id, status}` - Models finished loading\n- `{:world_models_error, world_id, reason}` - Loading failed\n"
 
   alias Phoenix.PubSub
   alias World.Persistence
@@ -11,7 +11,7 @@ defmodule World.ModelRegistry do
 
   @pubsub Brain.PubSub
   @default_world_id "default"
-  @model_types [:embedder, :pos_model, :entity_model]
+  @model_types [:embedder, :pos_model]
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -84,7 +84,6 @@ defmodule World.ModelRegistry do
       case model_type do
         :embedder -> "embedder.term"
         :pos_model -> "pos_model.term"
-        :entity_model -> "entity_model.term"
       end
 
     Path.join(models_dir(world_id), filename)
@@ -98,7 +97,6 @@ defmodule World.ModelRegistry do
       case model_type do
         :embedder -> "embedder.term"
         :pos_model -> "pos_model.term"
-        :entity_model -> "entity_model.term"
       end
 
     Path.join(models_path, filename)
@@ -346,8 +344,7 @@ defmodule World.ModelRegistry do
 
     models = %{
       embedder: load_embedder_model(world_id),
-      pos_model: load_model_file(world_id, :pos_model),
-      entity_model: load_model_file(world_id, :entity_model)
+      pos_model: load_model_file(world_id, :pos_model)
     }
 
     if Enum.all?(Map.values(models), &is_nil/1) do
@@ -475,7 +472,6 @@ defmodule World.ModelRegistry do
       is_loading: MapSet.member?(state.loading, world_id),
       has_embedder: models[:embedder] != nil,
       has_pos_model: models[:pos_model] != nil,
-      has_entity_model: models[:entity_model] != nil,
       embedder_vocab_size: get_embedder_vocab_size(models[:embedder])
     }
   end
@@ -499,8 +495,7 @@ defmodule World.ModelRegistry do
   defp broadcast_models_loaded(world_id, models) do
     status = %{
       embedder: models[:embedder] != nil,
-      pos_model: models[:pos_model] != nil,
-      entity_model: models[:entity_model] != nil
+      pos_model: models[:pos_model] != nil
     }
 
     PubSub.broadcast(
