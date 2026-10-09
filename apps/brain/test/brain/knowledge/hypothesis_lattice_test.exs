@@ -1,7 +1,8 @@
 defmodule Brain.Knowledge.HypothesisLatticeTest do
   use ExUnit.Case, async: true
 
-  alias Brain.Knowledge.Types.{Hypothesis, Investigation}
+  alias Brain.Epistemic.BeliefStore
+  alias Brain.Knowledge.Types.{Hypothesis, Investigation, ResearchGoal}
   alias Brain.Lattice
 
   defp sample_investigation do
@@ -38,10 +39,44 @@ defmodule Brain.Knowledge.HypothesisLatticeTest do
     assert Investigation.falsification_margin(inv) >= 0.0
   end
 
-  test "formulate_competing_hypotheses/2 returns a lattice" do
-    goal = Brain.Knowledge.Types.ResearchGoal.new("Research X")
-    lat = Brain.Knowledge.Types.ResearchGoal.formulate_competing_hypotheses(goal, "TestEntity")
-    assert %Lattice{} = lat
-    assert length(lat.candidates) >= 3
+  describe "formulate_competing_hypotheses/3" do
+    setup do
+      world = "test_hypothesis_lattice_#{System.unique_integer([:positive])}"
+      other = "test_hypothesis_lattice_other_#{System.unique_integer([:positive])}"
+
+      on_exit(fn ->
+        :ok = BeliefStore.clear(world)
+        :ok = BeliefStore.clear(other)
+      end)
+
+      {:ok, world: world, other: other}
+    end
+
+    test "returns a lattice", %{world: world} do
+      goal = ResearchGoal.new("Research X")
+      lat = ResearchGoal.formulate_competing_hypotheses(world, goal, "TestEntity")
+      assert %Lattice{} = lat
+      assert length(lat.candidates) >= 3
+    end
+
+    test "takes its priors from the world's own beliefs", %{world: world, other: other} do
+      {:ok, _id} = BeliefStore.add_belief(world, "TestEntity", :is, "a prior", confidence: 0.9)
+      goal = ResearchGoal.new("Research X")
+
+      here = ResearchGoal.formulate_competing_hypotheses(world, goal, "TestEntity")
+      there = ResearchGoal.formulate_competing_hypotheses(other, goal, "TestEntity")
+
+      assert length(here.candidates) == length(there.candidates) + 1
+    end
+
+    test "raises without a world" do
+      goal = ResearchGoal.new("Research X")
+
+      for world <- [nil, ""] do
+        assert_raise FunctionClauseError, fn ->
+          ResearchGoal.formulate_competing_hypotheses(world, goal, "TestEntity")
+        end
+      end
+    end
   end
 end
