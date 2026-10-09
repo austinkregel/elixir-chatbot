@@ -1,7 +1,10 @@
 defmodule World.ManagerTest do
-  use ExUnit.Case, async: false
+  use World.AtlasCase, async: false
   import Brain.TestHelpers
 
+  alias Brain.Epistemic.BeliefStore
+  alias Brain.Memory.Store, as: MemoryStore
+  alias Brain.Services.LocalScheduler
   alias World.Manager
 
   setup do
@@ -44,13 +47,6 @@ defmodule World.ManagerTest do
   end
 
   describe "a world's graphs" do
-    setup tags do
-      # The graphs are created inside this test's sandbox transaction.
-      owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
-      on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
-      :ok
-    end
-
     test "are created when the world is created" do
       {:ok, world} = create_test_world("manager_graphs_created")
 
@@ -74,6 +70,170 @@ defmodule World.ManagerTest do
 
       assert {:ok, _world} = Manager.load_world(world.id)
       assert Enum.all?(names, &Atlas.Graph.graph_exists?/1)
+    end
+  end
+
+  # A world with something in each of the places a world keeps data in Atlas
+  # through the running processes: an episode in the memory store, a belief, a
+  # scheduler item, and a node in its knowledge graph.
+  defp populate!(world_id) do
+    {:ok, _id} = MemoryStore.add_episode("the weather in paris is sunny", "weather", "", [], world_id: world_id)
+    {:ok, _id} = BeliefStore.add_belief(world_id, :user, :likes, "tea")
+    {:ok, _} = LocalScheduler.enrich("alarm.set", %{time: "7am"}, %{}, world_id)
+    {:ok, _} = Atlas.Graph.add_node(Atlas.Graph.world_graph("knowledge_graph", world_id), "Thing", %{name: "tea"})
+    :ok = Brain.AtlasIntegration.drain()
+  end
+
+  defp atlas_rows(world_id) do
+    import Ecto.Query
+
+    Map.new(Atlas.Worlds.world_tables(), fn {schema, column} ->
+      {schema, schema |> where([row], field(row, ^column) == ^world_id) |> Atlas.Repo.aggregate(:count)}
+    end)
+  end
+
+  describe "purge/1" do
+    test "drops the world's graphs and deletes what it holds in Atlas, and leaves another world's" do
+      {:ok, world} = create_test_world("manager_purged", mode: :persistent)
+      {:ok, other} = create_test_world("manager_purge_kept")
+      populate!(world.id)
+      populate!(other.id)
+
+      assert atlas_rows(world.id)[Atlas.Schemas.Episode] == 1
+      assert atlas_rows(world.id)[Atlas.Schemas.Belief] == 1
+      assert atlas_rows(world.id)[Atlas.Schemas.SchedulerItem] == 1
+
+      assert :ok = Manager.purge(world.id)
+
+      assert Manager.get(world.id) == {:error, :not_found}
+      refute File.exists?(World.Persistence.world_path(world.id))
+      refute Enum.any?(Atlas.Graph.world_graphs(world.id), &Atlas.Graph.graph_exists?/1)
+      assert Enum.all?(atlas_rows(world.id), fn {_schema, count} -> count == 0 end)
+
+      # Nothing the running processes held of it is left either.
+      assert {:ok, []} = BeliefStore.query_beliefs(world.id)
+      assert {:ok, %{alarm_status: "none set"}} = LocalScheduler.enrich("alarm.check", %{}, %{}, world.id)
+      assert {:ok, []} = MemoryStore.all_episodes(world_id: world.id)
+
+      assert Enum.all?(Atlas.Graph.world_graphs(other.id), &Atlas.Graph.graph_exists?/1)
+      assert {:ok, 1} = Atlas.Graph.count_nodes(Atlas.Graph.world_graph("knowledge_graph", other.id))
+      assert atlas_rows(other.id)[Atlas.Schemas.Episode] == 1
+      assert atlas_rows(other.id)[Atlas.Schemas.Belief] == 1
+      assert {:ok, [_belief]} = BeliefStore.query_beliefs(other.id)
+      assert {:ok, %{alarm_status: "set"}} = LocalScheduler.enrich("alarm.check", %{}, %{}, other.id)
+    end
+
+    test "is refused for a world the manager does not have" do
+      assert Manager.purge("test_manager_never_created") == {:error, :not_found}
+    end
+
+    test "purges Atlas before the disk; a world whose files cannot be deleted is an error, stays listed, " <>
+           "and can be purged again" do
+      {:ok, world} = create_test_world("manager_purge_disk_fails", mode: :persistent)
+      populate!(world.id)
+      path = World.Persistence.world_path(world.id)
+      assert File.dir?(path)
+
+      # A directory that cannot be written: its files cannot be deleted.
+      File.chmod!(path, 0o500)
+      on_exit(fn -> File.chmod(path, 0o755) end)
+
+      assert {:error, {:disk_delete_failed, :eacces}} = Manager.purge(world.id)
+
+      # Atlas went first; the world and its files are still there.
+      assert Enum.all?(atlas_rows(world.id), fn {_schema, count} -> count == 0 end)
+      refute Enum.any?(Atlas.Graph.world_graphs(world.id), &Atlas.Graph.graph_exists?/1)
+      assert {:ok, _world} = Manager.get(world.id)
+      assert File.dir?(path)
+
+      File.chmod!(path, 0o755)
+
+      assert :ok = Manager.purge(world.id)
+      assert Manager.get(world.id) == {:error, :not_found}
+      refute File.exists?(path)
+    end
+
+    test "raises while queued Atlas writes have not finished, and leaves the world to be purged again" do
+      {:ok, world} = create_test_world("manager_purge_drain_fails")
+      populate!(world.id)
+
+      # A queued Atlas write that does not finish.
+      {:ok, blocked} = Task.Supervisor.start_child(Brain.AtlasTaskSupervisor, fn -> Process.sleep(:infinity) end)
+      on_exit(fn -> Process.exit(blocked, :kill) end)
+
+      assert {:error, {:drain_timeout, 1}} = Brain.AtlasIntegration.drain(50)
+
+      assert_raise RuntimeError, ~r/queued Atlas writes did not finish/, fn -> Manager.purge(world.id) end
+
+      assert {:ok, _world} = Manager.get(world.id)
+      assert Enum.all?(Atlas.Graph.world_graphs(world.id), &Atlas.Graph.graph_exists?/1)
+
+      Process.exit(blocked, :kill)
+      eventually(fn -> Task.Supervisor.children(Brain.AtlasTaskSupervisor) end, &(&1 == []), 50, 20)
+
+      assert :ok = Manager.purge(world.id)
+      assert Manager.get(world.id) == {:error, :not_found}
+      assert Enum.all?(atlas_rows(world.id), fn {_schema, count} -> count == 0 end)
+    end
+  end
+
+  describe "an ephemeral world's knowledge" do
+    test "is held in memory, never on disk, and goes with the world" do
+      {:ok, world} = create_test_world("manager_ephemeral_knowledge")
+
+      assert :ok = Brain.KnowledgeStore.add_to_world(world.id, "people", "zed", %{"name" => "Zed"})
+      assert %{"zed" => %{"name" => "Zed"}} = Brain.KnowledgeStore.get_world_knowledge(world.id, "people")
+      refute File.exists?(World.Persistence.world_path(world.id))
+
+      assert :ok = Manager.destroy(world.id)
+      assert Brain.KnowledgeStore.get_world_knowledge(world.id) == %{}
+      refute File.exists?(World.Persistence.world_path(world.id))
+    end
+
+    test "a persistent world's is its knowledge.json" do
+      {:ok, world} = create_test_world("manager_persistent_knowledge", mode: :persistent)
+
+      assert :ok = Brain.KnowledgeStore.add_to_world(world.id, "people", "zed", %{"name" => "Zed"})
+      assert File.exists?(Path.join(World.Persistence.world_path(world.id), "knowledge.json"))
+    end
+  end
+
+  describe "destroy/1" do
+    test "keeps the world's graphs and what it holds in Atlas" do
+      {:ok, world} = create_test_world("manager_destroyed_keeps")
+      populate!(world.id)
+      before = atlas_rows(world.id)
+
+      assert :ok = Manager.destroy(world.id)
+
+      assert Enum.all?(Atlas.Graph.world_graphs(world.id), &Atlas.Graph.graph_exists?/1)
+      assert {:ok, 1} = Atlas.Graph.count_nodes(Atlas.Graph.world_graph("knowledge_graph", world.id))
+      assert atlas_rows(world.id) == before
+    end
+  end
+
+  describe "while unscoped graphs exist" do
+    # The unscoped graph is created inside this test's sandbox transaction, so
+    # it is gone when the test ends.
+    test "creating or loading a world raises in the caller, and the manager and its worlds keep running" do
+      {:ok, world} = create_test_world("manager_unscoped_kept")
+      assert {:ok, embedding} = World.Embedder.embed(world.id, "hello there")
+      manager = Process.whereis(Manager)
+
+      Atlas.Repo.query!("SELECT ag_catalog.create_graph('knowledge_graph')", [])
+
+      assert_raise ArgumentError, ~r/unscoped graphs \["knowledge_graph"\].*mix atlas.move_graphs_to_world/, fn ->
+        Manager.create("test_manager_unscoped_refused", id: "test_manager_unscoped_refused")
+      end
+
+      assert_raise ArgumentError, ~r/unscoped graphs \["knowledge_graph"\]/, fn -> Manager.load_world(world.id) end
+      assert_raise ArgumentError, ~r/unscoped graphs \["knowledge_graph"\]/, fn -> Manager.reload_persisted_worlds() end
+
+      assert Process.whereis(Manager) == manager
+      assert Manager.get("test_manager_unscoped_refused") == {:error, :not_found}
+      assert {:ok, %{id: id}} = Manager.get(world.id)
+      assert id == world.id
+      assert World.Embedder.embed(world.id, "hello there") == {:ok, embedding}
     end
   end
 
