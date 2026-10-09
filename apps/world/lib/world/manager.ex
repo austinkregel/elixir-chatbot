@@ -6,6 +6,7 @@ defmodule World.Manager do
   use GenServer
   require Logger
 
+  alias World.Embedder, as: WorldEmbedder
   alias World.EntityCandidate
   alias World.TrainingWorld
   alias World.Events, as: WorldEvents
@@ -20,7 +21,7 @@ defmodule World.Manager do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc "Creates a new training world.\n\n## Options\n  - `:mode` - :ephemeral (default) or :persistent\n  - `:base` - ID of parent world to inherit from (nil = empty)\n  - `:config` - Custom configuration map\n  - `:metadata` - Additional metadata\n"
+  @doc "Creates a new training world.\n\n## Options\n  - `:mode` - :ephemeral (default) or :persistent\n  - `:base` - ID of the world this one was seeded from, recorded as metadata;\n    nothing is read through it at runtime (nil = none)\n  - `:config` - Custom configuration map\n  - `:metadata` - Additional metadata\n"
   def create(name, opts \\ []) when is_binary(name) do
     GenServer.call(__MODULE__, {:create_world, name, opts}, 30_000)
   end
@@ -74,6 +75,17 @@ defmodule World.Manager do
 
   defp is_test_world?(_) do
     false
+  end
+
+  @test_world_prefix "test_"
+
+  @doc """
+  Whether a world id is a test world's: it starts with `test_`. Cleanup only
+  ever deletes worlds whose id passes this; every other world is a real world.
+  """
+  @spec test_world_id?(String.t()) :: boolean()
+  def test_world_id?(world_id) when is_binary(world_id) do
+    String.starts_with?(world_id, @test_world_prefix)
   end
 
   @doc "Gets the metrics for a training world.\n"
@@ -207,7 +219,7 @@ defmodule World.Manager do
     GenServer.call(__MODULE__, :reload_persisted_worlds, 60_000)
   end
 
-  @doc "Cleans up orphaned world directories from disk.\n\nAn orphaned directory is one that exists on disk but:\n- Is not currently loaded in memory (ETS)\n- Has no valid config.json file\n\n## Options\n  - `:dry_run` - If true (default), only reports what would be deleted\n  - `:max_age_hours` - Only delete directories older than this (default: 24)\n  - `:exclude` - List of world IDs to never delete (default: [\"default\"])\n\nReturns `{:ok, deleted_count}` or `{:ok, {would_delete, directories}}` for dry run.\n"
+  @doc "Cleans up orphaned test world directories from disk.\n\nOnly a test world's directory (its id starts with `test_`, see\n`test_world_id?/1`) is ever deleted; a real world's never is. A test world's\ndirectory is orphaned when it exists on disk and:\n- Is not currently loaded in memory (ETS)\n- Has no valid config.json file, or is older than `:max_age_hours`\n\n## Options\n  - `:dry_run` - If true (default), only reports what would be deleted\n  - `:max_age_hours` - Only delete directories older than this (default: 24)\n  - `:exclude` - List of world IDs to never delete (default: [\"default\"])\n\nReturns `{:ok, deleted_count}` or `{:ok, {would_delete, directories}}` for dry run.\n"
   def cleanup_orphaned_worlds(opts \\ []) do
     GenServer.call(__MODULE__, {:cleanup_orphaned_worlds, opts}, 120_000)
   end
@@ -215,6 +227,9 @@ defmodule World.Manager do
   @impl true
   def init(_opts) do
     create_tables()
+    # The worlds' embedders live in a table this process owns, so they last as
+    # long as the worlds do.
+    WorldEmbedder.init()
     do_load_persisted_worlds()
     Logger.info("WorldManager started")
     {:ok, %{initialized: true}}
@@ -312,12 +327,14 @@ defmodule World.Manager do
       end
     end
 
-    # A world starts with its own copy of the trained entity model; an ephemeral
-    # world has no directory, so its copy is held in memory.
+    # A world starts with its own copy of each trained world-scoped model; an
+    # ephemeral world has no directory, so its copies are held in memory.
     if world.mode == :persistent do
       EntityModel.seed!(world.id)
+      WorldEmbedder.seed!(world.id)
     else
       EntityModel.seed_in_memory!(world.id)
+      WorldEmbedder.seed_in_memory!(world.id)
     end
 
     Logger.info("Created training world", %{id: world.id, name: name, mode: world.mode})
@@ -665,6 +682,7 @@ defmodule World.Manager do
 
           orphaned =
             entries
+            |> Enum.filter(&test_world_id?/1)
             |> Enum.filter(&File.dir?(Path.join(base_path, &1)))
             |> Enum.reject(&(&1 in exclude))
             |> Enum.reject(&MapSet.member?(loaded_world_ids, &1))
@@ -728,5 +746,6 @@ defmodule World.Manager do
     :ets.delete(@ets_events, world_id)
     Gazetteer.destroy_world_overlay(world_id)
     EntityModel.drop(world_id)
+    WorldEmbedder.clear(world_id)
   end
 end
