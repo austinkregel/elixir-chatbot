@@ -333,9 +333,11 @@ defmodule Brain.Analysis.SpeechActClassifier do
     }
   end
 
+  # A world whose memory holds nothing like the text gives no vote; that is
+  # an answer, not a failure.
   defp analyze_with_memory(text, world_id) do
     case query_memory_for_classification(text, world_id) do
-      {:ok, [_ | _] = results} ->
+      [_ | _] = results ->
         {category, sub_type, confidence} = vote_on_memory_results(results)
 
         %{
@@ -346,7 +348,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
           source: :memory
         }
 
-      _ ->
+      [] ->
         %{
           category: nil,
           sub_type: nil,
@@ -358,23 +360,21 @@ defmodule Brain.Analysis.SpeechActClassifier do
   end
 
   # The query is embedded by the world's embedder, inside `Store.query_similar/3`.
+  # It runs in the caller and is not cut short: while the world's vocabulary is
+  # being rebuilt it waits for the rebuild, whose own bound raises
+  # (`World.Embedder.await_ready/2`). A query that fails raises here.
   defp query_memory_for_classification(text, world_id) do
-    store_pid = Process.whereis(Brain.Memory.Store)
-
-    cond do
-      store_pid == nil ->
-        {:error, :store_not_running}
-
-      true ->
-        task = Task.async(fn -> Store.query_similar(text, 5, world_id: world_id, rerank: false) end)
-
-        case Task.yield(task, 500) || Task.shutdown(task, :brutal_kill) do
-          {:ok, result} -> result
-          nil -> {:error, :timeout}
-        end
+    if Process.whereis(Brain.Memory.Store) == nil do
+      raise "SpeechActClassifier: the memory voter needs Brain.Memory.Store, which is not running"
     end
-  rescue
-    _ -> {:error, :not_available}
+
+    case Store.query_similar(text, 5, world_id: world_id, rerank: false) do
+      {:ok, results} ->
+        results
+
+      {:error, reason} ->
+        raise "SpeechActClassifier: the memory query in world #{inspect(world_id)} failed: #{inspect(reason)}"
+    end
   end
 
   defp vote_on_memory_results(results) do
