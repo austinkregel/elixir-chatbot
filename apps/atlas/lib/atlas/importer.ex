@@ -85,7 +85,13 @@ defmodule Atlas.Importer do
   #     by_predicate: %{...},
   #     retracted: MapSet.t()
   #   }
+  #
+  # That file predates beliefs being held per world: its beliefs were held in
+  # the "default" world, and are imported into it explicitly, as the migration
+  # that added the world column assigned existing rows.
   # ============================================================================
+  @legacy_belief_world "default"
+
   defp import_beliefs(opts) do
     with_term_file(belief_store_path(), Belief, opts, fn data ->
       beliefs = data |> g(:beliefs, %{}) |> Map.values()
@@ -96,6 +102,7 @@ defmodule Atlas.Importer do
         |> Enum.reject(fn b -> MapSet.member?(retracted, g(b, :id)) end)
         |> Enum.map(fn b ->
           %{
+            world_id: @legacy_belief_world,
             subject: to_string(g(b, :subject)),
             predicate: to_string(g(b, :predicate)),
             object: to_string(g(b, :object)),
