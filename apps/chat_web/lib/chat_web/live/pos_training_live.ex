@@ -255,6 +255,12 @@ defmodule ChatWeb.POSTrainingLive do
     {:noreply, socket |> assign(:current_run, nil) |> reload_runs()}
   end
 
+  # POS tagging belongs to the language, not to a world, so nothing here
+  # changes with the selected world.
+  def handle_info({:world_context_changed, _world_id}, socket) do
+    {:noreply, socket}
+  end
+
   defp reload_runs(socket), do: assign(socket, :runs, POSRuns.list())
 
   defp replace_run(socket, run) do
