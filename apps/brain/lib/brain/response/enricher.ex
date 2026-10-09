@@ -49,7 +49,9 @@ defmodule Brain.Response.Enricher do
   ## Parameters
     - intent: The classified intent
     - slots: Map of filled slots (e.g., %{location: "NYC"})
-    - context: Current generation context
+    - context: Current generation context. It must carry `:world_id` (or
+      `:world`), the world whose service credentials are used; absent raises
+      when the intent is not nil.
 
   ## Returns
     Updated context map with enrichment information.
@@ -212,7 +214,7 @@ defmodule Brain.Response.Enricher do
   defp get_available_services(nil, _context), do: []
 
   defp get_available_services(intent, context) do
-    world = Map.get(context, :world_id) || Map.get(context, :world, "default")
+    world = context_world!(context)
 
     exact_matches =
       Dispatcher.list_services(world: world)
@@ -242,6 +244,19 @@ defmodule Brain.Response.Enricher do
           Logger.info("Enricher: found service #{inspect(service_module)} for intent=#{intent}, configured=#{result != []}")
           result
       end
+    end
+  end
+
+  # Service credentials are stored per world, so the context must name one.
+  defp context_world!(context) do
+    case Map.get(context, :world_id) || Map.get(context, :world) do
+      world when is_binary(world) and world != "" ->
+        world
+
+      other ->
+        raise ArgumentError,
+              "Enricher.prepare_context needs :world_id (or :world) in the context, the world " <>
+                "whose service credentials are used; got #{inspect(other)}"
     end
   end
 
