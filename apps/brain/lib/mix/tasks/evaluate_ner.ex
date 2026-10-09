@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Evaluate.Ner do
   alias Brain.Analysis.Pipeline
   alias Brain.ML
   @shortdoc "Evaluate named entity recognition accuracy"
-  @moduledoc "Evaluate NER against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy,\nincluding type normalization and disambiguation.\n\n## Usage\n\n    mix evaluate.ner              # Run evaluation\n    mix evaluate.ner --save       # Save results\n    mix evaluate.ner --verbose    # Show per-type details\n\n## Gold Standard Format\n\nAccepts either `\"entities\"` or `\"expected\"` as the key for entity annotations:\n\n    [\n      {\n        \"text\": \"What's the weather in London?\",\n        \"entities\": [{\"value\": \"London\", \"type\": \"location\"}]\n      }\n    ]\n"
+  @moduledoc "Evaluate NER against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy,\nincluding type normalization and disambiguation.\n\n## Usage\n\n    mix evaluate.ner --world <id>              # Run evaluation\n    mix evaluate.ner --world <id> --save       # Save results\n    mix evaluate.ner --world <id> --verbose    # Show per-type details\n\n## Options\n\n    --world <id>   Required. The world the gold standard is analyzed in.\n    --save         Save results\n    --verbose      Show per-type details\n\n## Gold Standard Format\n\nAccepts either `\"entities\"` or `\"expected\"` as the key for entity annotations:\n\n    [\n      {\n        \"text\": \"What's the weather in London?\",\n        \"entities\": [{\"value\": \"London\", \"type\": \"location\"}]\n      }\n    ]\n"
 
   use Mix.Task
 
@@ -12,14 +12,20 @@ defmodule Mix.Tasks.Evaluate.Ner do
 
   @impl Mix.Task
   def run(args) do
+    {opts, _, _} = OptionParser.parse(args, strict: [save: :boolean, verbose: :boolean, world: :string])
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix evaluate.ner needs --world <id>, the world the gold standard is analyzed in")
+
     Mix.Task.run("app.start")
 
     IO.puts("\nAwaiting MicroClassifiers readiness...")
     ML.MicroClassifiers.await_ready(:infinity)
     IO.puts("MicroClassifiers ready.")
 
-    save? = "--save" in args
-    verbose? = "--verbose" in args
+    save? = Keyword.get(opts, :save, false)
+    verbose? = Keyword.get(opts, :verbose, false)
 
     # The held-out split only: the entity model trains on the rest. Raises when no
     # split has been carved (`mix split.held_out ner`).
@@ -31,7 +37,7 @@ defmodule Mix.Tasks.Evaluate.Ner do
     IO.puts(String.duplicate("=", 60) <> "\n")
 
     start_time = System.monotonic_time(:millisecond)
-    {predictions, actuals, counts} = evaluate_all(gold)
+    {predictions, actuals, counts} = evaluate_all(gold, world_id)
     duration_ms = System.monotonic_time(:millisecond) - start_time
 
     total_entities = counts.ok + counts.errored
@@ -81,7 +87,7 @@ defmodule Mix.Tasks.Evaluate.Ner do
     IO.puts("")
   end
 
-  defp evaluate_all(gold) do
+  defp evaluate_all(gold, world_id) do
     initial_counts = %{ok: 0, errored: 0}
 
     Enum.reduce(gold, {[], [], initial_counts}, fn example, {preds, acts, counts} ->
@@ -90,7 +96,7 @@ defmodule Mix.Tasks.Evaluate.Ner do
 
       {extracted, counts} =
         try do
-          analysis = Pipeline.analyze_chunk(text, side_effects: false)
+          analysis = Pipeline.analyze_chunk(text, side_effects: false, world_id: world_id)
           # The pipeline emits system types; map them onto the gold standard's labels.
           extracted = ML.EntityExtractor.normalize_entity_types(analysis.entities || [])
           {extracted, %{counts | ok: counts.ok + 1}}
