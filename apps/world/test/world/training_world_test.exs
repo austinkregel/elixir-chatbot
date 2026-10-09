@@ -1,5 +1,5 @@
 defmodule World.TrainingWorldTest do
-  use ExUnit.Case, async: false
+  use World.AtlasCase, async: false
   import Brain.TestHelpers
 
   alias World.{
