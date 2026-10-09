@@ -1,8 +1,8 @@
 defmodule Mix.Tasks.EnrichEntityTypeNodes do
   @shortdoc "Backfill WordNet enrichment on existing EntityType nodes"
   @moduledoc """
-  One-shot migration that enriches existing bare EntityType nodes in the
-  knowledge_graph with WordNet/ConceptNet semantic properties.
+  One-shot migration that enriches existing bare EntityType nodes in a
+  world's knowledge_graph with WordNet/ConceptNet semantic properties.
 
   For each EntityType node, calls `Brain.AtlasIntegration.enrich_existing_node/4`
   which adds whitelisted lexicon properties and creates LexiconFacet nodes
@@ -13,22 +13,31 @@ defmodule Mix.Tasks.EnrichEntityTypeNodes do
 
   ## Usage
 
-      mix enrich_entity_type_nodes
+      mix enrich_entity_type_nodes --world default
   """
 
   use Mix.Task
 
   @impl true
-  def run(_args) do
+  def run(args) do
+    {opts, _, invalid} = OptionParser.parse(args, strict: [world: :string])
+    if invalid != [], do: Mix.raise("enrich_entity_type_nodes: unknown options #{inspect(invalid)}")
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("enrich_entity_type_nodes needs --world <id>, the world whose knowledge graph is enriched")
+
+    graph = Atlas.Graph.world_graph("knowledge_graph", world_id)
+
     Mix.Task.run("app.start")
 
     unless Brain.AtlasIntegration.available?() do
       Mix.raise("Atlas is not reachable. Cannot enrich EntityType nodes. Start Atlas with docker compose up.")
     end
 
-    Mix.shell().info("Querying existing EntityType nodes...")
+    Mix.shell().info("Querying existing EntityType nodes in #{graph}...")
 
-    case Atlas.Graph.cypher("knowledge_graph",
+    case Atlas.Graph.cypher(graph,
            "MATCH (n:EntityType) RETURN n.name AS name, id(n) AS node_id"
          ) do
       {:ok, rows} when is_list(rows) ->
@@ -41,7 +50,7 @@ defmodule Mix.Tasks.EnrichEntityTypeNodes do
 
           if name && node_id do
             Mix.shell().info("  Enriching: #{name}")
-            Brain.AtlasIntegration.enrich_existing_node("knowledge_graph", node_id, name)
+            Brain.AtlasIntegration.enrich_existing_node(graph, node_id, name)
           end
         end)
 
@@ -54,7 +63,7 @@ defmodule Mix.Tasks.EnrichEntityTypeNodes do
         Mix.shell().info("Enrichment complete for #{count} EntityType nodes.")
 
       {:ok, []} ->
-        Mix.shell().info("No EntityType nodes found in knowledge_graph.")
+        Mix.shell().info("No EntityType nodes found in #{graph}.")
 
       {:error, reason} ->
         Mix.raise("Failed to query EntityType nodes: #{inspect(reason)}")
