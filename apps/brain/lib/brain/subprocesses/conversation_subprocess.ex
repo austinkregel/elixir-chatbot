@@ -19,7 +19,9 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
     conversation_id = Keyword.get(opts, :conversation_id)
     world_id = if conversation_id, do: nil, else: world_id!(opts)
     memory_snapshot = Keyword.get(opts, :memory_snapshot, %{})
-    user_id = Keyword.get(opts, :user_id) || "conv_#{subprocess_id}"
+    # The web user the conversation is with, when there is one. Without one the
+    # turns carry no user and learn nothing about one.
+    user_id = Keyword.get(opts, :user_id)
 
     GenServer.start_link(__MODULE__, {subprocess_id, conversation_id, world_id, memory_snapshot, user_id},
       name: via_tuple(subprocess_id)
@@ -239,7 +241,7 @@ defmodule Brain.Subprocesses.ConversationSubprocess do
   defp process_conversation_input(input, state) do
     # Route through the main Brain.evaluate pipeline for full NLP processing
     conv_id = state.conversation_id
-    user_id = Map.get(state, :user_id, "conv_#{state.subprocess_id}")
+    user_id = state.user_id
 
     case Brain.evaluate(conv_id, input, user_id: user_id) do
       {:ok, %{response: response}} when is_binary(response) ->
