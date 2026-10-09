@@ -193,8 +193,8 @@ defmodule Brain.SystemStatusTest do
   end
 
   describe "get_readiness_details/1" do
-    test "returns readiness details with defaults" do
-      result = SystemStatus.get_readiness_details()
+    test "returns readiness details for the suite's world" do
+      result = SystemStatus.get_readiness_details(world_id: "default")
 
       assert is_map(result)
       assert Map.has_key?(result, :core)
@@ -212,6 +212,42 @@ defmodule Brain.SystemStatusTest do
 
       assert result.world_embedder.world_id == "test_world"
       assert result.world_models.world_id == "test_world"
+    end
+
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/SystemStatus.get_readiness_details requires a :world_id option/, fn ->
+        SystemStatus.get_readiness_details([])
+      end
+
+      assert_raise ArgumentError, ~r/SystemStatus.get_readiness_details requires a :world_id option/, fn ->
+        SystemStatus.get_readiness_details(world_id: "")
+      end
+    end
+  end
+
+  describe "get_services_status/1" do
+    test "reports each registered service's configuration in the named world" do
+      result = SystemStatus.get_services_status("default")
+
+      assert is_map(result)
+      assert result.ready == true
+      assert result.genservers.credential_vault.ready == true
+
+      weather = Enum.find(result.services, &(&1.name == :weather))
+      assert weather != nil
+
+      assert weather.configured ==
+               Brain.Services.Dispatcher.service_available?(:weather, world: "default")
+    end
+
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/SystemStatus.get_services_status needs the world/, fn ->
+        SystemStatus.get_services_status(nil)
+      end
+
+      assert_raise ArgumentError, ~r/SystemStatus.get_services_status needs the world/, fn ->
+        SystemStatus.get_services_status("")
+      end
     end
   end
 
