@@ -65,7 +65,8 @@ defmodule Brain.Response.ResponseEvaluator do
   def evaluate(primitives, response, analysis, opts)
 
   def evaluate(primitives, response, %ChunkAnalysis{} = analysis, opts) when is_list(primitives) do
-    pipeline_opts = [world_id: world_id!(opts)] ++ Keyword.take(opts, [:side_effects])
+    world_id = world_id!(opts)
+    pipeline_opts = [world_id: world_id] ++ Keyword.take(opts, [:side_effects])
     response_analysis = analyze_response(response, pipeline_opts)
 
     speech_act = score_speech_act_alignment(response_analysis, analysis)
@@ -75,8 +76,8 @@ defmodule Brain.Response.ResponseEvaluator do
     slots = score_slot_coverage(primitives, analysis)
     natural = score_naturalness(response)
     echo = score_echo_avoidance(response, analysis)
-    grounding = score_belief_grounding(response_analysis, primitives, analysis)
-    epistemic = score_epistemic_consistency(response_analysis, analysis)
+    grounding = score_belief_grounding(response_analysis, primitives, analysis, world_id)
+    epistemic = score_epistemic_consistency(response_analysis, analysis, world_id)
 
     overall = weighted_average([
       {speech_act, 0.12},
@@ -346,14 +347,15 @@ defmodule Brain.Response.ResponseEvaluator do
 
   # --- Belief grounding ---
 
-  defp score_belief_grounding(response_analysis, _primitives, _analysis) do
+  # The world is resolved by `evaluate/4`, outside the rescues below.
+  defp score_belief_grounding(response_analysis, _primitives, _analysis, world_id) do
     response_entities = extract_response_entities(response_analysis)
 
     if response_entities == [] do
       0.7
     else
       if epistemic_services_ready?() do
-        scores = Enum.map(response_entities, &score_entity_belief/1)
+        scores = Enum.map(response_entities, &score_entity_belief(&1, world_id))
         Enum.sum(scores) / max(length(scores), 1)
       else
         0.7
@@ -373,7 +375,7 @@ defmodule Brain.Response.ResponseEvaluator do
     end)
   end
 
-  defp score_entity_belief(entity) do
+  defp score_entity_belief(entity, world_id) do
     value = Map.get(entity, :value) || ""
     entity_type = Map.get(entity, :entity_type) || "unknown"
 
@@ -382,9 +384,9 @@ defmodule Brain.Response.ResponseEvaluator do
     else
       predicate = safe_to_atom(entity_type)
 
-      case BeliefStore.query_beliefs(subject: :world, predicate: predicate, min_confidence: 0.3) do
+      case BeliefStore.query_beliefs(world_id, subject: :world, predicate: predicate, min_confidence: 0.3) do
         {:ok, beliefs} when beliefs != [] ->
-          score_against_beliefs(value, beliefs)
+          score_against_beliefs(value, beliefs, world_id)
 
         _ ->
           0.7
@@ -396,7 +398,7 @@ defmodule Brain.Response.ResponseEvaluator do
     :exit, _ -> 0.7
   end
 
-  defp score_against_beliefs(claim_value, beliefs) do
+  defp score_against_beliefs(claim_value, beliefs, world_id) do
     scores = Enum.map(beliefs, fn belief ->
       belief_object = to_string(belief.object)
 
@@ -411,7 +413,7 @@ defmodule Brain.Response.ResponseEvaluator do
         not is_related ->
           0.7
 
-        is_related and check_belief_justified?(belief) ->
+        is_related and check_belief_justified?(belief, world_id) ->
           check_disclosure_score(belief)
 
         is_related ->
@@ -425,11 +427,11 @@ defmodule Brain.Response.ResponseEvaluator do
     if scores == [], do: 0.7, else: Enum.min(scores)
   end
 
-  defp check_belief_justified?(belief) do
+  defp check_belief_justified?(belief, world_id) do
     case belief.node_id do
       nil -> true
       node_id ->
-        case JTMS.is_in?(node_id) do
+        case JTMS.is_in?(world_id, node_id) do
           true -> true
           false -> false
           {:error, _} -> true
@@ -455,19 +457,19 @@ defmodule Brain.Response.ResponseEvaluator do
 
   # --- Epistemic consistency ---
 
-  defp score_epistemic_consistency(response_analysis, analysis) do
+  defp score_epistemic_consistency(response_analysis, analysis, world_id) do
     if not epistemic_services_ready?() do
       0.8
     else
-      consistency_score = check_jtms_consistency()
+      consistency_score = check_jtms_consistency(world_id)
       drift_score = check_stance_drift(response_analysis, analysis)
 
       consistency_score * 0.6 + drift_score * 0.4
     end
   end
 
-  defp check_jtms_consistency do
-    case JTMS.check_consistency() do
+  defp check_jtms_consistency(world_id) do
+    case JTMS.check_consistency(world_id) do
       {:ok, :consistent} -> 1.0
       {:error, {:contradiction, _node_id}} -> 0.2
       _ -> 0.8
