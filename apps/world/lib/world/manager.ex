@@ -2,10 +2,13 @@ defmodule World.Manager do
   @moduledoc "Manages training world lifecycle - creation, destruction, checkpointing.\n\nThis GenServer maintains the registry of active training worlds and\ncoordinates their data isolation while sharing computational processes.\n"
 
   alias Brain.EmbeddingCaches
+  alias Brain.Epistemic.{BeliefStore, JTMS}
+  alias Brain.KnowledgeStore
   alias Brain.ML.{EntityModel, Gazetteer}
   alias Brain.ML.KnowledgeGraph.TripleScorer
   alias Brain.ML.Poincare.Embeddings, as: PoincareEmbeddings
   alias Brain.Memory.Store, as: MemoryStore
+  alias Brain.Services.LocalScheduler
   use GenServer
   require Logger
 
@@ -26,17 +29,82 @@ defmodule World.Manager do
 
   @doc "Creates a new training world.\n\n## Options\n  - `:mode` - :ephemeral (default) or :persistent\n  - `:base` - ID of the world this one was seeded from, recorded as metadata;\n    nothing is read through it at runtime (nil = none)\n  - `:config` - Custom configuration map\n  - `:metadata` - Additional metadata\n"
   def create(name, opts \\ []) when is_binary(name) do
+    refuse_unscoped_graphs_in_caller!()
     GenServer.call(__MODULE__, {:create_world, name, opts}, 30_000)
   end
 
-  @doc "Destroys a training world from memory while preserving persisted data.\n\nFor persistent worlds, this removes runtime ETS/Gazetteer state but leaves\ndisk checkpoints intact so the world can be loaded again via `load_world/1`.\n"
+  # A world's graphs are refused while unscoped graphs exist
+  # (`Atlas.Graph.ensure_world_graphs!/1`). The refusal is raised here, in the
+  # caller, before the call: raised inside this server it would crash it, and
+  # its restart would drop every world's runtime state and the embedder tables
+  # it owns, then fail again in `init/1` while loading the persisted worlds.
+  defp refuse_unscoped_graphs_in_caller! do
+    :ok = Atlas.Graph.refuse_unscoped_graphs!()
+  end
+
+  @doc "Destroys a training world from memory while preserving persisted data.\n\nFor persistent worlds, this removes runtime ETS/Gazetteer state but leaves\ndisk checkpoints, and everything the world holds in Atlas (its rows and its\ngraphs), intact so the world can be loaded again via `load_world/1`.\n"
   def destroy(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:destroy_world, world_id}, 30_000)
   end
 
-  @doc "Permanently deletes a training world from memory and disk.\n\nFor persistent worlds, this removes both runtime state and persisted files.\n"
+  @doc """
+  Permanently deletes a training world from memory, Atlas and disk.
+
+  This removes every row the world holds in a world-scoped Atlas table and its
+  graphs (`Atlas.Worlds.purge!/1`), with what the running stores hold of it;
+  then, for a persistent world, its persisted files; then its runtime state.
+  Every step can be repeated, so a purge that fails part way leaves a world
+  that is still listed and can be purged again: a failure purging Atlas
+  raises, and a persisted world whose files cannot be deleted is
+  `{:error, {:disk_delete_failed, reason}}`, with its runtime state kept.
+  An unknown world is `{:error, :not_found}`.
+  """
   def purge(world_id) when is_binary(world_id) do
-    GenServer.call(__MODULE__, {:purge_world, world_id}, 30_000)
+    case get(world_id) do
+      {:ok, _world} ->
+        purge_world_atlas_data!(world_id)
+        GenServer.call(__MODULE__, {:purge_world, world_id}, 30_000)
+
+      error ->
+        error
+    end
+  end
+
+  # What a purged world held in Atlas, and what the running processes hold of
+  # it: the memory store's index of its episodes and facts, the beliefs and
+  # JTMS network held for it, and the scheduler's items (each owner deletes
+  # the rows it caches along with its cache); then, once the Atlas writes
+  # already queued (a belief is persisted asynchronously) have run, so none
+  # lands after the purge, every row of every world-scoped table that is left,
+  # and the world's graphs (`Atlas.Worlds.purge!/1`). A destroyed world keeps
+  # all of it.
+  #
+  # It runs in the caller, before this server drops the world: a failure
+  # raises there, rather than crashing this server, whose restart would drop
+  # every other world's runtime state and the embedder tables it owns.
+  defp purge_world_atlas_data!(world_id) do
+    :ok = MemoryStore.clear(world_id: world_id)
+    :ok = BeliefStore.clear(world_id)
+    :ok = JTMS.clear(world_id)
+    :ok = LocalScheduler.clear_world(world_id)
+
+    case Brain.AtlasIntegration.drain() do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        raise "World.Manager: purging #{inspect(world_id)}: the queued Atlas writes did not finish " <>
+                "(#{inspect(reason)}), so a write could land after the purge; the world's rows and " <>
+                "graphs were not purged from Atlas"
+    end
+
+    purged = Atlas.Worlds.purge!(world_id)
+
+    Logger.info("Purged world data from Atlas", %{
+      id: world_id,
+      rows: Map.new(purged.rows, fn {schema, count} -> {inspect(schema), count} end),
+      graphs: purged.graphs
+    })
   end
 
   @doc "Gets a training world by ID.\n"
@@ -186,6 +254,7 @@ defmodule World.Manager do
 
   @doc "Loads a persistent world from disk.\n"
   def load_world(world_id) when is_binary(world_id) do
+    refuse_unscoped_graphs_in_caller!()
     GenServer.call(__MODULE__, {:load_world, world_id}, 60_000)
   end
 
@@ -219,6 +288,7 @@ defmodule World.Manager do
 
   @doc "Reloads persisted worlds from disk.\n\nUseful when worlds have been saved by another process (e.g., mix task)\nand you want the running server to pick them up.\n"
   def reload_persisted_worlds do
+    refuse_unscoped_graphs_in_caller!()
     GenServer.call(__MODULE__, :reload_persisted_worlds, 60_000)
   end
 
@@ -345,6 +415,7 @@ defmodule World.Manager do
       WorldEmbedder.seed_in_memory!(world.id)
       PoincareEmbeddings.seed_in_memory!(world.id)
       TripleScorer.seed_in_memory!(world.id)
+      :ok = KnowledgeStore.keep_in_memory(world.id)
     end
 
     Logger.info("Created training world", %{id: world.id, name: name, mode: world.mode})
@@ -368,23 +439,19 @@ defmodule World.Manager do
   def handle_call({:purge_world, world_id}, _from, state) do
     case :ets.lookup(@ets_worlds, world_id) do
       [{^world_id, world}] ->
-        drop_world_runtime_state(world_id)
+        # What the world holds in Atlas was purged by `purge/1`, in the
+        # caller, before this call. The files go before the runtime state, so
+        # a world whose files cannot be deleted is still listed and can be
+        # purged again.
+        case delete_persisted_files(world) do
+          :ok ->
+            drop_world_runtime_state(world_id)
+            Logger.info("Purged training world", %{id: world_id, name: world.name})
+            {:reply, :ok, state}
 
-        if world.mode == :persistent do
-          case WorldPersistence.delete(world_id) do
-            :ok ->
-              Logger.info("Purged persisted world data from disk", %{id: world_id})
-
-            {:error, reason} ->
-              Logger.warning("Failed to purge persisted world data", %{
-                id: world_id,
-                reason: reason
-              })
-          end
+          {:error, reason} ->
+            {:reply, {:error, {:disk_delete_failed, reason}}, state}
         end
-
-        Logger.info("Purged training world", %{id: world_id, name: world.name})
-        {:reply, :ok, state}
 
       [] ->
         {:reply, {:error, :not_found}, state}
@@ -750,6 +817,16 @@ defmodule World.Manager do
     end
   end
 
+  # An ephemeral world has no files.
+  defp delete_persisted_files(%TrainingWorld{mode: :persistent, id: world_id}) do
+    with :ok <- WorldPersistence.delete(world_id) do
+      Logger.info("Purged persisted world data from disk", %{id: world_id})
+      :ok
+    end
+  end
+
+  defp delete_persisted_files(%TrainingWorld{}), do: :ok
+
   defp drop_world_runtime_state(world_id) do
     :ets.delete(@ets_worlds, world_id)
     :ets.delete(@ets_worlds, {:metrics, world_id})
@@ -761,5 +838,6 @@ defmodule World.Manager do
     :ok = EmbeddingCaches.forget_world(world_id)
     PoincareEmbeddings.drop(world_id)
     TripleScorer.drop(world_id)
+    :ok = KnowledgeStore.drop_world(world_id)
   end
 end
