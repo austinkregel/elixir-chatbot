@@ -350,6 +350,7 @@ defmodule World.Persistence do
         %{
           id: semantic.id,
           representation: semantic.representation,
+          action: semantic.action,
           evidence_ids: semantic.evidence_ids,
           tags: semantic.tags,
           timestamp: semantic.timestamp,
@@ -575,9 +576,12 @@ defmodule World.Persistence do
       {:ok, data} when is_list(data) ->
         semantics =
           Enum.map(data, fn sem ->
+            {action, representation} = semantic_text(sem)
+
             %SemanticFact{
               id: Map.get(sem, "id"),
-              representation: Map.get(sem, "representation", ""),
+              representation: representation,
+              action: action,
               evidence_ids: Map.get(sem, "evidence_ids", []),
               tags: Map.get(sem, "tags", []),
               timestamp: Map.get(sem, "timestamp", 0),
@@ -593,6 +597,15 @@ defmodule World.Persistence do
       error ->
         error
     end
+  end
+
+  # A fact saved with its action has its text as its representation. One saved
+  # before facts had an action holds both in the single string consolidation
+  # wrote, "Action: <action> | Examples: <examples>", and is split.
+  defp semantic_text(%{"action" => action} = sem), do: {action, Map.get(sem, "representation", "")}
+
+  defp semantic_text(sem) do
+    Atlas.Schemas.SemanticFact.split_legacy_content(Map.get(sem, "representation", ""))
   end
 
   defp load_knowledge(path) do
