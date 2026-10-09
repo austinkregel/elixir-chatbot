@@ -5,6 +5,10 @@ defmodule Tasks.TransformerTest do
 
   @test_tasks_path "test/fixtures/domain_tasks_transformer"
 
+  # The world the test suite runs in. Extraction reads that world's entity
+  # model, so every call that extracts names it.
+  @world_id "default"
+
   setup_all do
     File.mkdir_p!(@test_tasks_path)
 
@@ -130,7 +134,9 @@ defmodule Tasks.TransformerTest do
     test "transforms QA task into training samples and knowledge facts" do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
 
-      {:ok, result} = Transformer.transform_task(file_path, extract_entities: false)
+      {:ok, result} =
+        Transformer.transform_task(file_path, extract_entities: false, world_id: @world_id)
+
       assert length(result.training_samples) == 3
       sample = Enum.find(result.training_samples, &(&1.id == "test-qa-1"))
       assert sample.text == "Who wrote Romeo and Juliet?"
@@ -183,7 +189,11 @@ defmodule Tasks.TransformerTest do
       file_path = Path.join(@test_tasks_path, "task_test_qa.json")
 
       {:ok, result} =
-        Transformer.transform_task(file_path, max_instances: 1, extract_entities: false)
+        Transformer.transform_task(file_path,
+          max_instances: 1,
+          extract_entities: false,
+          world_id: @world_id
+        )
 
       assert length(result.training_samples) == 1
     end
@@ -219,10 +229,17 @@ defmodule Tasks.TransformerTest do
           "Hello world",
           "greeting",
           "test-id-2",
-          metadata: %{source: "test"}
+          metadata: %{source: "test"},
+          world_id: @world_id
         )
 
       assert sample.metadata == %{source: "test"}
+    end
+
+    test "extracting entities without a world raises, naming the option" do
+      assert_raise ArgumentError, ~r/:world_id/, fn ->
+        Transformer.text_to_training_sample("Hello world", "greeting", "test-id-3")
+      end
     end
   end
 
@@ -233,7 +250,9 @@ defmodule Tasks.TransformerTest do
         Path.join(@test_tasks_path, "task_test_sentiment.json")
       ]
 
-      {:ok, result} = Transformer.transform_tasks(files, extract_entities: false)
+      {:ok, result} =
+        Transformer.transform_tasks(files, extract_entities: false, world_id: @world_id)
+
       assert length(result.training_samples) >= 5
     end
 
@@ -248,6 +267,7 @@ defmodule Tasks.TransformerTest do
       {:ok, _result} =
         Transformer.transform_tasks(files,
           extract_entities: false,
+          world_id: @world_id,
           progress_callback: fn progress ->
             :ets.insert(progress_reports, {progress.current, progress})
           end
@@ -271,7 +291,8 @@ defmodule Tasks.TransformerTest do
 
       metadata = %{task_id: "test_qa", categories: ["Question Answering"]}
 
-      result = Transformer.convert_qa(instances, metadata, "", extract_entities: false)
+      result =
+        Transformer.convert_qa(instances, metadata, "", extract_entities: false, world_id: @world_id)
 
       assert length(result.training_samples) == 1
       assert length(result.knowledge_facts) == 1
@@ -280,6 +301,15 @@ defmodule Tasks.TransformerTest do
       assert fact.subject =~ "World War"
       assert fact.object == "1945"
       assert fact.predicate == "has_answer"
+    end
+
+    test "raises without a world, since answers are always extracted as entity candidates" do
+      instances = [%{"id" => "qa-1", "input" => "What year did World War 2 end?", "output" => ["1945"]}]
+      metadata = %{task_id: "test_qa", categories: ["Question Answering"]}
+
+      assert_raise ArgumentError, ~r/:world_id/, fn ->
+        Transformer.convert_qa(instances, metadata, "", extract_entities: false)
+      end
     end
   end
 
