@@ -21,6 +21,7 @@ defmodule Brain.ML.NLPPipeline do
 
   ## Options
 
+  - `:world_id` - required: the world the text is processed in. Absent raises.
   - `:discourse` - Discourse analysis result for entity disambiguation
   - `:speech_act` - Speech act classification for entity disambiguation
   - `:reuse_intent` - `{intent_string, confidence}` tuple. When provided,
@@ -34,7 +35,8 @@ defmodule Brain.ML.NLPPipeline do
   - `:side_effects` - passed to `Pipeline.analyze_chunk/2` when the intent is
     classified here; `false` keeps that analysis from writing.
   """
-  def process(text, opts \\ []) do
+  def process(text, opts) do
+    world_id!(opts)
     Logger.debug("Processing text with classical NLP", %{text: text})
 
     try do
@@ -102,16 +104,32 @@ defmodule Brain.ML.NLPPipeline do
         {:ok, intent, confidence / 1}
 
       _ ->
-        classify_intent(text, Keyword.take(opts, [:side_effects]))
+        classify_intent(text, Keyword.take(opts, [:world_id, :side_effects]))
     end
   end
 
-  @doc "Extract features from text (entities + intent) for learning.\n\nOptions:\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification result for entity disambiguation\n"
-  def extract_features(text, opts \\ []) do
+  # Checked before the processing's own rescue, so a missing world raises
+  # rather than coming back as a failed or unclassified result.
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "NLPPipeline option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "NLPPipeline needs :world_id, the world the text is processed in"
+    end
+  end
+
+  @doc "Extract features from text (entities + intent) for learning.\n\nOptions:\n- `:world_id` - required: the world the text is processed in. Absent raises.\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification result for entity disambiguation\n"
+  def extract_features(text, opts) do
+    world_id = world_id!(opts)
     tokens = Tokenizer.tokenize(text)
     entities = EntityExtractor.extract_entities(text, opts)
 
-    case classify_intent(text) do
+    case classify_intent(text, world_id: world_id) do
       {:ok, intent, confidence} ->
         %{
           intent: intent,
@@ -148,7 +166,7 @@ defmodule Brain.ML.NLPPipeline do
     confidence >= threshold
   end
 
-  defp classify_intent(text, pipeline_opts \\ []) do
+  defp classify_intent(text, pipeline_opts) do
     alias Brain.Analysis.{FeatureExtractor, Pipeline}
     alias Brain.ML.MicroClassifiers
 
