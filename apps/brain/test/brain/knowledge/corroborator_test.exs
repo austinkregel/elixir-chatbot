@@ -1,6 +1,7 @@
 defmodule Brain.Knowledge.CorroboratorTest do
   alias Brain.Knowledge.Types
   use ExUnit.Case, async: false
+  import Brain.TestHelpers
 
   alias Brain.Knowledge.Corroborator
   alias Types.{Finding, SourceInfo}
@@ -84,10 +85,11 @@ defmodule Brain.Knowledge.CorroboratorTest do
     end
   end
 
-  describe "compare_claims/2" do
+  describe "compare_claims/3" do
     test "similar claims have high similarity" do
       {:ok, similarity} =
         Corroborator.compare_claims(
+          @world_id,
           "Paris is the capital of France",
           "The capital of France is Paris"
         )
@@ -98,11 +100,76 @@ defmodule Brain.Knowledge.CorroboratorTest do
     test "different claims have low similarity" do
       {:ok, similarity} =
         Corroborator.compare_claims(
+          @world_id,
           "Paris is the capital of France",
           "Tokyo is a large city in Japan"
         )
 
       assert similarity < 0.5
+    end
+
+    test "compares in the named world's embedder" do
+      ensure_started(World.Manager)
+      setup_world_sandbox()
+      {:ok, world} = create_test_world("corroborator_embedder")
+
+      # The world's vocabulary knows only "paris", so both claims embed as the
+      # same vector. Token overlap ({paris, capital} against {paris, city})
+      # would be 1/3.
+      :ok = World.Embedder.load_model(world.id, %{vocabulary: %{"paris" => 0}, idf_weights: %{"paris" => 1.0}})
+
+      assert {:ok, 1.0} = Corroborator.compare_claims(world.id, "Paris capital", "Paris city")
+    end
+
+    test "raises for a world that holds no embedder" do
+      # World.Manager holds the table world embedders are loaded into.
+      ensure_started(World.Manager)
+      world_id = "test_corroborator_no_embedder_#{System.unique_integer([:positive])}"
+
+      assert_raise RuntimeError, ~r/world #{inspect(world_id)} has no embedder vocabulary/, fn ->
+        Corroborator.compare_claims(world_id, "Paris is the capital of France", "Paris is in France")
+      end
+    end
+  end
+
+  describe "test_hypotheses/3" do
+    test "records the evidence in the named world's embedder and concludes" do
+      ensure_started(World.Manager)
+      setup_world_sandbox()
+      {:ok, paris_world} = create_test_world("corroborator_hypotheses_paris_only")
+      {:ok, capital_city_world} = create_test_world("corroborator_hypotheses_capital_and_city")
+
+      # In the first world "Paris capital" and "Paris city" are the same
+      # vector; in the second they are orthogonal.
+      :ok = World.Embedder.load_model(paris_world.id, %{vocabulary: %{"paris" => 0}, idf_weights: %{"paris" => 1.0}})
+
+      :ok =
+        World.Embedder.load_model(capital_city_world.id, %{
+          vocabulary: %{"capital" => 0, "city" => 1},
+          idf_weights: %{"capital" => 1.0, "city" => 1.0}
+        })
+
+      findings = [
+        build_finding("Paris city", "Paris", "source1.com"),
+        build_finding("Paris city", "Paris", "source2.com")
+      ]
+
+      investigation = Types.Investigation.new("Paris", hypotheses: [Types.Hypothesis.new("Paris capital")])
+
+      {:ok, concluded} = Corroborator.test_hypotheses(paris_world.id, investigation, findings)
+      assert [%{status: :supported, supporting_evidence: [_, _]}] = concluded.hypotheses
+      assert concluded.status == :concluded
+
+      {:ok, concluded} = Corroborator.test_hypotheses(capital_city_world.id, investigation, findings)
+      assert [%{status: :inconclusive, supporting_evidence: []}] = concluded.hypotheses
+    end
+
+    test "requires a world" do
+      investigation = Types.Investigation.new("Paris", hypotheses: [Types.Hypothesis.new("Paris capital")])
+
+      assert_raise FunctionClauseError, fn ->
+        Corroborator.test_hypotheses("", investigation, [])
+      end
     end
   end
 
