@@ -15,6 +15,7 @@ defmodule Brain.Application do
       {Registry, [keys: :unique, name: Brain.SubprocessRegistry]},
       Brain.Services.CredentialVault,
       Brain.Services.Cache,
+      Brain.Services.LocalScheduler,
       Brain.ML.Lexicon,
       Brain.ML.POSTagger.LexicalFeatures,
       Brain.Analysis.LexicalEvidence.Loader,
@@ -39,8 +40,6 @@ defmodule Brain.Application do
       Brain.Epistemic.UserModelStore,
       Brain.Epistemic.ContradictionHandler,
       Brain.Epistemic.StanceTracker,
-      Brain.ML.Poincare.Embeddings,
-      Brain.ML.KnowledgeGraph.TripleScorer,
       Brain.ML.KnowledgeGraph.EntityVectorCache,
       Brain.ML.MicroClassifiers,
       Brain.Analysis.FramingDetector,
@@ -62,14 +61,17 @@ defmodule Brain.Application do
       Brain.ML.TrainingExampleBuffer,
       {Task.Supervisor, [name: Brain.ML.WeightOptimizer.TaskSupervisor]},
       Brain.ML.WeightOptimizer.Tracker,
-      Brain.Subprocesses.Supervisor,
       {Task.Supervisor, [name: Brain.Knowledge.AgentSupervisor]},
       Brain.Knowledge.SourceReliability,
       Brain.Knowledge.ReviewQueue,
       Brain.Knowledge.LearningCenter,
       Brain.Knowledge.LearningTriggers,
       Brain.Analysis.TypeHierarchy,
-      {Brain, Application.get_env(:brain, :artifact_path, "priv/static/demo.echo.json")}
+      {Brain, Application.get_env(:brain, :artifact_path, "priv/static/demo.echo.json")},
+      # After Brain, so it stops before Brain does (children stop in reverse
+      # order): a CLI session ends its Brain conversation as it stops, which
+      # needs Brain still running.
+      Brain.Subprocesses.Supervisor
     ]
 
     # Models load in the children that own them: Brain.ML.Gazetteer reads its
