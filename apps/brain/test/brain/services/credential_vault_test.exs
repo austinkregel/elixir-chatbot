@@ -1,5 +1,6 @@
 defmodule Brain.Services.CredentialVaultTest do
   use Brain.Test.GraphCase, async: false
+  import Brain.TestHelpers, only: [eventually: 2]
 
   alias Brain.Services.CredentialVault
 
@@ -17,6 +18,14 @@ defmodule Brain.Services.CredentialVaultTest do
     cleanup_test_data()
     on_exit(&cleanup_test_data/0)
     :ok
+  end
+
+  defp stored_row(world) do
+    Atlas.Repo.get_by(Atlas.Schemas.Credential,
+      world: world,
+      service: to_string(@test_service),
+      key: to_string(@test_key)
+    )
   end
 
   defp cleanup_test_data do
@@ -104,6 +113,27 @@ defmodule Brain.Services.CredentialVaultTest do
 
       assert :ok = CredentialVault.delete(@test_service, @test_key, world: @suite_world)
       assert {:error, :not_found} = CredentialVault.get(@test_service, @test_key, world: @suite_world)
+    end
+
+    test "a deleted credential does not come back when the vault reloads from the database" do
+      assert :ok = CredentialVault.store(@test_service, @test_key, @test_value, world: @test_world)
+      assert stored_row(@test_world) != nil
+
+      assert :ok = CredentialVault.delete(@test_service, @test_key, world: @test_world)
+      assert stored_row(@test_world) == nil
+
+      # A restarted vault loads every credential from the database.
+      vault = Process.whereis(CredentialVault)
+      GenServer.stop(vault)
+
+      eventually(
+        fn -> Process.whereis(CredentialVault) end,
+        fn pid -> is_pid(pid) and pid != vault end
+      )
+
+      assert CredentialVault.ready?()
+      refute CredentialVault.has_credential?(@test_service, @test_key, world: @test_world)
+      assert {:error, :not_found} = CredentialVault.get(@test_service, @test_key, world: @test_world)
     end
 
     test "deleting non-existent credential succeeds silently" do
