@@ -11,7 +11,7 @@ defmodule Atlas.Schemas.KnowledgeEntry do
   import Ecto.Query
 
   schema "atlas_knowledge_entries" do
-    field :world_id, :string, default: "default"
+    field :world_id, :string
     field :persona_name, :string
     field :category, :string
     field :key, :string
@@ -20,8 +20,10 @@ defmodule Atlas.Schemas.KnowledgeEntry do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @required_fields ~w(persona_name category key)a
-  @optional_fields ~w(world_id data)a
+  # An entry belongs to the world its persona knowledge is held in; the caller
+  # names it.
+  @required_fields ~w(world_id persona_name category key)a
+  @optional_fields ~w(data)a
 
   def changeset(knowledge_entry, attrs) do
     knowledge_entry
