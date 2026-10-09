@@ -15,18 +15,19 @@ defmodule Brain.Lattice.FragmentVectorizer do
   @default_min_success_ratio 0.95
 
   @doc """
-  Vectorizes a single fragment text.
+  Vectorizes a single fragment text, analyzed in the world `world_id`.
 
   Returns `{:ok, feature_vector}` or `{:error, reason}`.
   """
-  def vectorize_fragment_text(text) when is_binary(text) do
+  def vectorize_fragment_text(text, world_id) when is_binary(text) do
+    world_id!(world_id)
     trimmed = String.trim(text)
 
     if trimmed == "" do
       {:error, :empty_text}
     else
       try do
-        analysis = Pipeline.analyze_chunk(trimmed)
+        analysis = Pipeline.analyze_chunk(trimmed, world_id: world_id)
         {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
 
         if is_list(feature_vector) and feature_vector != [] and
@@ -43,19 +44,30 @@ defmodule Brain.Lattice.FragmentVectorizer do
     end
   end
 
-  def vectorize_fragment_text(_), do: {:error, :not_binary}
+  def vectorize_fragment_text(_, _), do: {:error, :not_binary}
+
+  # Checked before the analysis runs, so a missing world raises instead of
+  # being counted as a failed fragment.
+  defp world_id!(world_id) when is_binary(world_id) and world_id != "", do: world_id
+
+  defp world_id!(other) do
+    raise ArgumentError,
+          "FragmentVectorizer needs a world id, the world fragments are analyzed in, got: #{inspect(other)}"
+  end
 
   @doc """
   Vectorizes a list of fragment maps (`%{"text" => ...}`).
 
   Options:
+    - `:world_id` - required: the world fragments are analyzed in. Absent raises.
     - `:min_success_ratio` - fail if below this fraction succeed (default 0.95)
     - `:timeout_ms` - per-fragment async timeout
     - `:verbose` - log progress
 
   Returns `{:ok, fragments}` or `{:error, reason}`.
   """
-  def vectorize_fragments(fragments, opts \\ []) when is_list(fragments) do
+  def vectorize_fragments(fragments, opts) when is_list(fragments) do
+    world_id = world_id!(Keyword.get(opts, :world_id))
     min_ratio = Keyword.get(opts, :min_success_ratio, @default_min_success_ratio)
     timeout_ms = Keyword.get(opts, :timeout_ms, @default_timeout_ms)
     verbose? = Keyword.get(opts, :verbose, false)
@@ -77,7 +89,7 @@ defmodule Brain.Lattice.FragmentVectorizer do
           fn frag ->
             text = Map.get(frag, "text", "")
 
-            case vectorize_fragment_text(text) do
+            case vectorize_fragment_text(text, world_id) do
               {:ok, fv} -> {:ok, fv}
               {:error, reason} -> {:error, reason}
             end
