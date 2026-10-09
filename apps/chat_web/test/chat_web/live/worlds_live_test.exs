@@ -16,9 +16,11 @@ defmodule ChatWeb.WorldsLiveTest do
     ensure_started(World.ModelRegistry)
 
     # A world the page lists. `World.Manager.list_worlds/0` leaves out worlds
-    # marked as test worlds, so this one is created without that mark and
-    # destroyed when the test ends.
-    {:ok, other} = WorldManager.create("worlds_live_other_#{System.unique_integer([:positive])}")
+    # marked as test worlds, so this one is created without that mark. Its id
+    # starts with `test_`, it is ephemeral, so nothing of it is on disk, and it
+    # is destroyed when the test ends.
+    other_id = "test_worlds_live_other_#{System.unique_integer([:positive])}"
+    {:ok, other} = WorldManager.create(other_id, id: other_id, mode: :ephemeral)
     on_exit(fn -> WorldManager.destroy(other.id) end)
 
     %{other: other}
