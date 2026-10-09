@@ -18,7 +18,8 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
     start_brain_services()
     ensure_epistemic_stores_started()
     {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
-    user_id = "test_user_#{:rand.uniform(100_000)}"
+    # The conversation's user: a web user, whose user model the turns write.
+    user_id = Atlas.WebUsers.create!(@world_id).id
 
     %{conversation_id: conversation_id, user_id: user_id}
   end
