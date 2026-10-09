@@ -241,6 +241,7 @@ defmodule ChatWeb.SessionsLive do
 
     %BrainSession{
       id: s.id,
+      world_id: s.world_id,
       topic: s.topic,
       status: safe_to_atom(s.status),
       started_at: s.started_at,
@@ -342,6 +343,7 @@ defmodule ChatWeb.SessionsLive do
 
     %LearningSession{
       id: s.id,
+      world_id: s.world_id,
       topic: s.topic,
       status: safe_to_atom(s.status),
       started_at: s.started_at,
