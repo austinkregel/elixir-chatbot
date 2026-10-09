@@ -1,5 +1,5 @@
 defmodule Brain.Response.Generator do
-  @moduledoc "Generative response synthesis entry point.\n\nThis module orchestrates response generation using a generative pipeline:\n\n1. **Retrieve Context** - Query memory for similar episodes, get semantic facts\n2. **Synthesize** - Compose response from primitives and domain knowledge\n3. **Compose** - Weave parts together using speech act analysis\n4. **Refine / improve** - Quality-check and optionally rewrite via the\n   feature-vector / template pipeline (the historical LSTM rescorer has\n   been removed; the hook is preserved as a no-op pass-through).\n\nThe system generates novel responses by combining:\n- Domain knowledge (from priv/knowledge/domains/*.json)\n- Similar past episodes (memory-augmented)\n- Response primitives (hedges, acknowledgments, connectors)\n- Entity slot filling\n\nBrain should use this module instead of implementing response logic directly.\n"
+  @moduledoc "Generative response synthesis entry point.\n\nThis module orchestrates response generation using a generative pipeline:\n\n1. **Retrieve Context** - Query memory for similar episodes, get semantic facts\n2. **Synthesize** - Compose response from primitives and domain knowledge\n3. **Compose** - Weave parts together using speech act analysis\n4. **Refine / improve** - Quality-check and optionally rewrite via the\n   feature-vector / template pipeline (the historical LSTM rescorer has\n   been removed; the hook is preserved as a no-op pass-through).\n\nThe system generates novel responses by combining:\n- Domain knowledge (from priv/knowledge/domains/*.json)\n- Recurring patterns: semantic facts consolidated from episodes (`Brain.Memory.RecurringPattern`), ahead of single episodes\n- Similar past episodes (memory-augmented)\n- Response primitives (hedges, acknowledgments, connectors)\n- Entity slot filling\n\nBrain should use this module instead of implementing response logic directly.\n"
 
   alias Brain.Analysis.SpeechActClassifier
   alias Brain.Memory
@@ -9,7 +9,7 @@ defmodule Brain.Response.Generator do
   alias Response.{TemplateStore, MemoryAugmented, FactRetriever, TemplateBlender}
   alias Response.{ResponseQuality, Synthesizer, Enricher}
   alias Response.RefinementLoop
-  alias Memory.Store
+  alias Memory.{RecurringPattern, Store}
   alias Brain.Code.QueryHandler
 
   @doc "Generate a response for the given intent and entities.\n\n`opts` must carry `:world_id`, the world whose memory and code index the response draws on; absent raises. It may carry `:side_effects`; with `false`, a service call that would change state (a device action) is refused during enrichment.\n\nUses a generative pipeline:\n1. Retrieve similar episodes from memory\n2. Synthesize response from domain knowledge and primitives\n3. Fall back to templates if synthesis doesn't produce a result\n4. Run the (now no-op) refinement hook and the quality improver\n\nReturns:\n- {:ok, response, :synthesized} for generated responses\n- {:ok, response, :memory_adapted} for memory-adapted responses\n- {:ok, response, :template} for template-based responses\n- {:ok, response, :fallback} for fallback responses\n"
@@ -109,7 +109,11 @@ defmodule Brain.Response.Generator do
   # later strategies (memory, special handlers) read the same world.
   defp build_generation_context_with_events(intent, entities, query_text, events, opts) do
     world_id = Map.fetch!(opts, :world_id)
-    similar_episodes = retrieve_similar_episodes(intent, entities, query_text, world_id)
+    memory_query = memory_query(intent, entities, query_text)
+    similar_episodes = retrieve_similar_episodes(memory_query, world_id)
+    semantic_facts = retrieve_semantic_facts(memory_query, world_id)
+    recurring_pattern = RecurringPattern.find(semantic_facts, world_id)
+    :ok = RecurringPattern.retrieved(semantic_facts, recurring_pattern, world_id, [])
     event_episodes = retrieve_event_episodes(events, world_id)
     event_slots = build_context_from_events(events, entities)
 
@@ -140,6 +144,8 @@ defmodule Brain.Response.Generator do
 
     %{
       similar_episodes: similar_episodes ++ event_episodes,
+      semantic_facts: semantic_facts,
+      recurring_pattern: recurring_pattern,
       confidence: confidence,
       should_hedge: should_hedge,
       intent: intent,
@@ -276,16 +282,34 @@ defmodule Brain.Response.Generator do
     end
   end
 
-  defp retrieve_similar_episodes(intent, entities, query_text, world_id) do
-    query =
-      [
-        intent || "",
-        query_text || "",
-        entities |> Enum.map_join(" ", fn e -> e[:value] || e["value"] || "" end)
-      ]
-      |> Enum.filter(&(&1 != ""))
-      |> Enum.join(" ")
+  # The text memory is searched with: the intent, the user's words and the
+  # entities' values.
+  defp memory_query(intent, entities, query_text) do
+    [
+      intent || "",
+      query_text || "",
+      entities |> Enum.map_join(" ", fn e -> e[:value] || e["value"] || "" end)
+    ]
+    |> Enum.filter(&(&1 != ""))
+    |> Enum.join(" ")
+  end
 
+  # The world's semantic facts most similar to the turn, searched with the
+  # same text as its similar episodes.
+  defp retrieve_semantic_facts("", _world_id), do: []
+
+  defp retrieve_semantic_facts(query, world_id) do
+    case Store.query_semantic(query, 5, world_id: world_id) do
+      {:ok, semantic_facts} ->
+        semantic_facts
+
+      {:error, reason} ->
+        raise "Brain.Response.Generator: the semantic facts of world #{inspect(world_id)} could not " <>
+                "be searched: #{inspect(reason)}"
+    end
+  end
+
+  defp retrieve_similar_episodes(query, world_id) do
     if query != "" and Process.whereis(Store) do
       case Store.query_similar(query, 5, world_id: world_id) do
         {:ok, episodes} -> episodes
@@ -302,6 +326,7 @@ defmodule Brain.Response.Generator do
     case Synthesizer.synthesize(intent, entities,
            confidence: context.confidence,
            similar_episodes: context.similar_episodes,
+           recurring_pattern: context.recurring_pattern,
            context: context
          ) do
       {:ok, response} ->
@@ -412,6 +437,7 @@ defmodule Brain.Response.Generator do
     case Synthesizer.synthesize(intent, entities,
            confidence: context.confidence,
            similar_episodes: context.similar_episodes,
+           recurring_pattern: context.recurring_pattern,
            context: context
          ) do
       {:ok, response} ->
