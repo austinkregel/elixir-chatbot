@@ -199,7 +199,7 @@ defmodule World.EntityDiscoverer do
     {status, inferred_type, confidence} =
       case known_types do
         [] ->
-          {type, conf} = infer_type_from_context(pn, tokens, pos_predictions)
+          {type, conf} = infer_type_from_context(pn, world_id, tokens, pos_predictions)
           {:unknown, type, conf}
 
         [single] ->
@@ -228,25 +228,19 @@ defmodule World.EntityDiscoverer do
     result
   end
 
-  defp infer_type_from_context(pn, tokens, pos_predictions) do
+  # Types are inferred in the world the text is being discovered for.
+  defp infer_type_from_context(pn, world_id, tokens, pos_predictions) do
     context_tags = extract_context_tags(pn, pos_predictions)
-    world_id = World.Context.default_world_id()
 
-    if world_id do
-      case World.TypeInferrer.infer_type(pn.value, tokens, context_tags, world_id) do
-        {type, confidence} when is_binary(type) and is_float(confidence) ->
-          {type, confidence}
+    case World.TypeInferrer.infer_type(pn.value, tokens, context_tags, world_id) do
+      {type, confidence} when is_binary(type) and is_float(confidence) ->
+        {type, confidence}
 
-        _ ->
-          # Fallback to local context confidence
-          confidence = calculate_context_confidence(context_tags)
-          inferred_type = infer_from_pos_context(context_tags, tokens, pn)
-          {inferred_type, confidence}
-      end
-    else
-      confidence = calculate_context_confidence(context_tags)
-      inferred_type = infer_from_pos_context(context_tags, tokens, pn)
-      {inferred_type, confidence}
+      _ ->
+        # Fallback to local context confidence
+        confidence = calculate_context_confidence(context_tags)
+        inferred_type = infer_from_pos_context(context_tags, tokens, pn)
+        {inferred_type, confidence}
     end
   end
 
