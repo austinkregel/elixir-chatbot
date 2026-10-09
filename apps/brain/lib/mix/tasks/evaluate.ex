@@ -3,7 +3,7 @@ defmodule Mix.Tasks.Evaluate do
   alias Brain.ML
   require Logger
   @shortdoc "Run all ML model evaluations"
-  @moduledoc "Run evaluation against gold standard data for all ML tasks.\n\n## Usage\n\n    mix evaluate              # Run all evaluations\n    mix evaluate --save       # Save results for historical tracking\n    mix evaluate --compare    # Compare with previous run\n    mix evaluate --verbose    # Show per-class details\n"
+  @moduledoc "Run evaluation against gold standard data for all ML tasks.\n\n## Usage\n\n    mix evaluate --world <id>              # Run all evaluations\n    mix evaluate --world <id> --save       # Save results for historical tracking\n    mix evaluate --world <id> --compare    # Compare with previous run\n    mix evaluate --world <id> --verbose    # Show per-class details\n\n## Options\n\n    --world <id>   Required. The world the gold standards are analyzed in.\n    --save         Save results for historical tracking\n    --compare      Compare with previous run\n    --verbose      Show per-class details\n"
 
   use Mix.Task
 
@@ -13,11 +13,18 @@ defmodule Mix.Tasks.Evaluate do
 
   @impl Mix.Task
   def run(args) do
+    {opts, _, _} =
+      OptionParser.parse(args, strict: [save: :boolean, compare: :boolean, verbose: :boolean, world: :string])
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix evaluate needs --world <id>, the world the gold standards are analyzed in")
+
     Mix.Task.run("app.start")
 
-    save? = "--save" in args
-    compare? = "--compare" in args
-    verbose? = "--verbose" in args
+    save? = Keyword.get(opts, :save, false)
+    compare? = Keyword.get(opts, :compare, false)
+    verbose? = Keyword.get(opts, :verbose, false)
 
     IO.puts("\nAwaiting MicroClassifiers readiness...")
     ML.MicroClassifiers.await_ready(:infinity)
@@ -39,7 +46,7 @@ defmodule Mix.Tasks.Evaluate do
           {task, nil}
         else
           IO.puts("  Evaluating #{task} (#{length(gold)} examples)...")
-          {predictions, actuals, counts} = run_task_evaluation(task, gold)
+          {predictions, actuals, counts} = run_task_evaluation(task, gold, world_id)
           result = Evaluation.build_result(task, predictions, actuals)
           result = Map.put(result, :diagnostics, counts)
 
@@ -64,7 +71,7 @@ defmodule Mix.Tasks.Evaluate do
         end
       end)
 
-    ner_result = run_ner_evaluation(save?, verbose?)
+    ner_result = run_ner_evaluation(save?, verbose?, world_id)
 
     if compare? do
       IO.puts("\n--- Comparison with previous runs ---\n")
@@ -100,7 +107,7 @@ defmodule Mix.Tasks.Evaluate do
     IO.puts("")
   end
 
-  defp run_ner_evaluation(save?, verbose?) do
+  defp run_ner_evaluation(save?, verbose?, world_id) do
     gold = EvaluationStore.load_gold_standard("ner")
 
     if gold == [] do
@@ -108,7 +115,7 @@ defmodule Mix.Tasks.Evaluate do
       nil
     else
       IO.puts("  Evaluating ner (#{length(gold)} examples)...")
-      {predictions, actuals, counts} = evaluate_ner(gold)
+      {predictions, actuals, counts} = evaluate_ner(gold, world_id)
       result = Evaluation.build_result("ner", predictions, actuals)
       result = Map.put(result, :diagnostics, counts)
 
@@ -133,13 +140,13 @@ defmodule Mix.Tasks.Evaluate do
     end
   end
 
-  defp evaluate_ner(gold) do
+  defp evaluate_ner(gold, world_id) do
     {results, counts} =
       Enum.reduce(gold, {[], %{ok: 0, errored: 0}}, fn example, {acc, counts} ->
         text = example["text"]
         expected_entities = example["entities"] || example["expected"] || []
 
-        case extract_entities_safely(text) do
+        case extract_entities_safely(text, world_id) do
           {:ok, extracted} ->
             pairs = match_entities(expected_entities, extracted)
             {pairs ++ acc, Map.update!(counts, :ok, &(&1 + 1))}
@@ -166,8 +173,8 @@ defmodule Mix.Tasks.Evaluate do
     {predictions, actuals, counts}
   end
 
-  defp extract_entities_safely(text) do
-    analysis = Pipeline.analyze_chunk(text, side_effects: false)
+  defp extract_entities_safely(text, world_id) do
+    analysis = Pipeline.analyze_chunk(text, side_effects: false, world_id: world_id)
     # The pipeline emits system types; map them onto the gold standard's labels.
     {:ok, ML.EntityExtractor.normalize_entity_types(analysis.entities || [])}
   rescue
@@ -206,8 +213,8 @@ defmodule Mix.Tasks.Evaluate do
   defp normalize_value(v) when is_binary(v), do: v |> String.downcase() |> String.trim()
   defp normalize_value(v), do: to_string(v)
 
-  defp run_task_evaluation(task, gold) do
-    classify_fn = classifier_for(task)
+  defp run_task_evaluation(task, gold, world_id) do
+    classify_fn = classifier_for(task, world_id)
 
     {results, counts} =
       Enum.reduce(gold, {[], %{ok: 0, unknown: 0, errored: 0}}, fn example, {acc, counts} ->
@@ -251,12 +258,12 @@ defmodule Mix.Tasks.Evaluate do
   defp expected_label("sentiment", example), do: example["sentiment"]
   defp expected_label("speech_act", example), do: example["speech_act"]
 
-  defp classifier_for("intent"), do: &classify_intent/1
-  defp classifier_for("sentiment"), do: &classify_sentiment/1
-  defp classifier_for("speech_act"), do: &classify_speech_act/1
+  defp classifier_for("intent", world_id), do: &classify_intent(&1, world_id)
+  defp classifier_for("sentiment", _world_id), do: &classify_sentiment/1
+  defp classifier_for("speech_act", _world_id), do: &classify_speech_act/1
 
-  defp classify_intent(text) do
-    analysis = Pipeline.analyze_chunk(text, side_effects: false)
+  defp classify_intent(text, world_id) do
+    analysis = Pipeline.analyze_chunk(text, side_effects: false, world_id: world_id)
     predicted = to_string(analysis.intent || "unknown")
 
     if predicted == "unknown", do: {:unknown, predicted}, else: {:ok, predicted}
