@@ -2,9 +2,16 @@ defmodule Brain.Subprocesses.CliSubprocess do
   @moduledoc """
   CLI subprocess GenServer for handling command-line interactions.
   Provides a command-line interface for the chat bot functionality.
+
+  A CLI session has one Brain conversation, created in the subprocess's world
+  when the session starts. Every `chat` command uses it, and it is ended
+  (`Brain.end_conversation/2`) when the session exits. `quit` or `exit` ends
+  the session: the subprocess stops and is not restarted.
   """
 
-  use GenServer
+  # Transient: a session that ends with `quit` or `exit` stops normally and is
+  # not restarted, while one that crashes is.
+  use GenServer, restart: :transient
   require Logger
 
   # Client API
@@ -64,11 +71,16 @@ defmodule Brain.Subprocesses.CliSubprocess do
   def init({subprocess_id, memory_snapshot, world_id}) do
     user_id = "cli_#{subprocess_id}"
 
+    # Exits are trapped so `terminate/2` runs when the session is stopped, and
+    # ends the session's conversation.
+    Process.flag(:trap_exit, true)
+
     # Initialize state
     state = %{
       subprocess_id: subprocess_id,
       world_id: world_id,
       user_id: user_id,
+      conversation_id: nil,
       memory_snapshot: memory_snapshot,
       cli_memory: [],
       learning_data: %{
@@ -86,7 +98,27 @@ defmodule Brain.Subprocesses.CliSubprocess do
       memory_size: map_size(memory_snapshot)
     })
 
-    {:ok, state}
+    {:ok, state, {:continue, :start_conversation}}
+  end
+
+  # Created after `init/1` returns: the subprocess may be started from inside
+  # the Brain server (`Brain.start_cli_subprocess/1`), which cannot answer this
+  # call until the start has finished.
+  @impl true
+  def handle_continue(:start_conversation, state) do
+    case Brain.create_conversation(world_id: state.world_id) do
+      {:ok, conversation_id} ->
+        Logger.info("CLI session conversation started", %{
+          subprocess_id: state.subprocess_id,
+          conversation_id: conversation_id
+        })
+
+        {:noreply, %{state | conversation_id: conversation_id}}
+
+      {:error, reason} ->
+        raise "CLI subprocess #{state.subprocess_id}: the session's conversation in world " <>
+                "#{inspect(state.world_id)} was not created: #{inspect(reason)}"
+    end
   end
 
   @impl true
@@ -96,7 +128,8 @@ defmodule Brain.Subprocesses.CliSubprocess do
 
   @impl true
   def handle_call({:execute_command, command}, _from, state) do
-    if state.is_interrupted do
+    # An interrupted session still ends on `quit` or `exit`.
+    if state.is_interrupted and not quit_command?(command) do
       {:reply, {:error, "CLI interrupted"}, state}
     else
       # Process the command
@@ -129,7 +162,14 @@ defmodule Brain.Subprocesses.CliSubprocess do
         result_type: if(is_binary(result), do: "text", else: "data")
       })
 
-      {:reply, {:ok, result}, updated_state}
+      # `quit` and `exit` end the session: the subprocess stops normally, which
+      # ends its conversation (`terminate/2`) before the reply is sent, and a
+      # normal stop is not restarted.
+      if quit_command?(command) do
+        {:stop, :normal, {:ok, result}, updated_state}
+      else
+        {:reply, {:ok, result}, updated_state}
+      end
     end
   end
 
@@ -137,6 +177,7 @@ defmodule Brain.Subprocesses.CliSubprocess do
   def handle_call(:get_status, _from, state) do
     status = %{
       subprocess_id: state.subprocess_id,
+      conversation_id: state.conversation_id,
       command_count: length(state.cli_memory),
       learning_interactions: length(state.learning_data.interactions),
       uptime: System.system_time(:millisecond) - state.start_time,
@@ -204,10 +245,40 @@ defmodule Brain.Subprocesses.CliSubprocess do
       commands: length(state.cli_memory)
     })
 
-    :ok
+    end_session_conversation(state)
+  end
+
+  # No conversation when the session stopped before its conversation was created.
+  defp end_session_conversation(%{conversation_id: nil}), do: :ok
+
+  defp end_session_conversation(%{conversation_id: conversation_id} = state) do
+    case Brain.end_conversation(conversation_id) do
+      :ok ->
+        Logger.info("CLI session conversation ended", %{
+          subprocess_id: state.subprocess_id,
+          conversation_id: conversation_id
+        })
+
+        :ok
+
+      {:error, reason} ->
+        Logger.error("CLI session conversation was not ended", %{
+          subprocess_id: state.subprocess_id,
+          conversation_id: conversation_id,
+          reason: reason
+        })
+
+        {:error, reason}
+    end
   end
 
   # Private Functions
+
+  defp quit_command?(command) do
+    case String.split(command, " ", parts: 2) do
+      [cmd | _] -> cmd in ["quit", "exit"]
+    end
+  end
 
   defp via_tuple(subprocess_id) do
     {:via, Registry, {Brain.SubprocessRegistry, {:cli_subprocess, subprocess_id}}}
@@ -241,7 +312,7 @@ defmodule Brain.Subprocesses.CliSubprocess do
         - Commands executed: #{length(state.cli_memory)}
         - Uptime: #{System.system_time(:millisecond) - state.start_time}ms
         - Interrupted: #{state.is_interrupted}
-        - Conversation ID: #{state[:conversation_id] || "none"}
+        - Conversation ID: #{state.conversation_id}
         """
 
       ["conversations"] ->
@@ -282,10 +353,8 @@ defmodule Brain.Subprocesses.CliSubprocess do
         end
 
       ["chat", message] ->
-        # Use or create a default conversation for this CLI subprocess
-        conv_id = ensure_conversation_id(state)
-
-        case Brain.evaluate(conv_id, message, user_id: state.user_id) do
+        # The session's conversation, created when the session started
+        case Brain.evaluate(state.conversation_id, message, user_id: state.user_id) do
           {:ok, %{response: response}} when is_binary(response) ->
             response
 
@@ -328,15 +397,4 @@ defmodule Brain.Subprocesses.CliSubprocess do
     end
   end
 
-  defp ensure_conversation_id(state) do
-    case state[:conversation_id] do
-      # Brain owns conversation ids; one it did not create would be unknown to it.
-      nil ->
-        {:ok, id} = Brain.create_conversation(world_id: state.world_id)
-        id
-
-      id ->
-        id
-    end
-  end
 end
