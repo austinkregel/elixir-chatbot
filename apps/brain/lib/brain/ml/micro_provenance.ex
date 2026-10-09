@@ -215,7 +215,7 @@ defmodule Brain.ML.MicroProvenance do
       gazetteer and the AGE graph, and without that record there is no way to tell
       whether this runtime still reproduces them.
 
-      Run `mix gen_micro_data` to regenerate the data and its environment together.
+      Run `mix gen_micro_data --world <id>` to regenerate the data and its environment together.
       """
     end
 
@@ -243,7 +243,7 @@ defmodule Brain.ML.MicroProvenance do
       raise """
       no training data for micro-classifier #{name} at #{path}.
 
-      Run `mix gen_micro_data` to produce it. A model cannot be stamped with,
+      Run `mix gen_micro_data --world <id>` to produce it. A model cannot be stamped with,
       or checked against, data that is not there.
       """
     end
