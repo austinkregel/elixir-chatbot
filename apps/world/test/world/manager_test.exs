@@ -43,6 +43,40 @@ defmodule World.ManagerTest do
     end
   end
 
+  describe "a world's graphs" do
+    setup tags do
+      # The graphs are created inside this test's sandbox transaction.
+      owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+      on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+      :ok
+    end
+
+    test "are created when the world is created" do
+      {:ok, world} = create_test_world("manager_graphs_created")
+
+      for name <- Atlas.Graph.world_graphs(world.id) do
+        assert Atlas.Graph.graph_exists?(name), "no graph #{name} for world #{world.id}"
+      end
+    end
+
+    test "are created when a persisted world is loaded" do
+      {:ok, world} = create_test_world("manager_graphs_loaded", mode: :persistent)
+      names = Atlas.Graph.world_graphs(world.id)
+
+      # Unloaded, with its graphs gone: its persisted data stays on disk.
+      :ok = Manager.destroy(world.id)
+
+      for name <- names do
+        Atlas.Repo.query!("SELECT ag_catalog.drop_graph($1, true)", [name])
+      end
+
+      refute Enum.any?(names, &Atlas.Graph.graph_exists?/1)
+
+      assert {:ok, _world} = Manager.load_world(world.id)
+      assert Enum.all?(names, &Atlas.Graph.graph_exists?/1)
+    end
+  end
+
   describe "get_candidates/2" do
     test "is empty for a new world" do
       {:ok, world} = create_test_world("manager_candidates")
