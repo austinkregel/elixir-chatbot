@@ -71,7 +71,7 @@ defmodule Mix.Tasks.Evaluate.Classifiers do
         text = example["text"]
         expected = example["intent"]
 
-        {fv_intent, fv_confidence, pipeline_intent} = classify_both(text)
+        {fv_intent, fv_confidence, pipeline_intent} = classify_both(example)
 
         %{
           text: text,
@@ -93,9 +93,14 @@ defmodule Mix.Tasks.Evaluate.Classifiers do
     }
   end
 
-  defp classify_both(text) do
+  defp classify_both(%{"text" => text} = example) do
     try do
-      analysis = Pipeline.analyze_chunk(text, side_effects: false)
+      analysis =
+        Pipeline.analyze_chunk(text,
+          side_effects: false,
+          active_contexts: Brain.Analysis.ActiveContexts.for_row(example)
+        )
+
       pipeline_intent = to_string(analysis.intent || "unknown")
 
       {fv_intent, fv_confidence} =
