@@ -17,7 +17,13 @@ defmodule World.Embedder do
   the trained vocabulary or to another world.
 
   `build_vocabulary/2` rebuilds a world's vocabulary from the episodes stored in
-  it, replacing the loaded one.
+  it, replacing the loaded one. A world with no episodes keeps the vocabulary it
+  has (its seeded copy, or one built earlier). While the vocabulary is rebuilt
+  the world cannot embed, so `Brain.Memory.Store` stores an episode written in
+  that time without an embedding; when the world's vocabulary is ready again,
+  the rebuild tells the store (`Brain.Memory.Store.vocabulary_rebuilt/1`), which
+  re-embeds and re-indexes every episode and semantic fact of the world with
+  it, those episodes included.
   """
 
   alias Brain.Memory.Store
@@ -116,7 +122,21 @@ defmodule World.Embedder do
     end
   end
 
-  @doc "Builds or rebuilds the vocabulary for a world from its episodes.\n"
+  @doc """
+  Builds or rebuilds the vocabulary for a world from its episodes.
+
+  Returns `{:ok, vocabulary_size}` after a rebuild, `{:ok, :already_built}`
+  when the world's vocabulary is ready and `force: true` was not given, and
+  `{:ok, :kept}` when the world has no episodes to rebuild from and keeps the
+  vocabulary it had. A world with no episodes and no vocabulary returns
+  `{:error, :no_data}`; one whose vocabulary was never loaded reads its seeded
+  copy, raising when it has none (`loaded!/1`).
+
+  When the vocabulary is ready again, every episode and semantic fact of the
+  world, the episodes stored while it was being rebuilt included, is
+  re-embedded with it and re-indexed (`Brain.Memory.Store.vocabulary_rebuilt/1`)
+  before this returns; a failure there raises.
+  """
   def build_vocabulary(world_id, opts \\ []) do
     force = Keyword.get(opts, :force, false)
 
@@ -323,6 +343,8 @@ defmodule World.Embedder do
   defp do_build_vocabulary(world_id) do
     Logger.info("Building embedder vocabulary for world: #{world_id}")
 
+    previous = get_state(world_id)
+
     set_state(world_id, %{
       ready: false,
       phase: :loading_episodes,
@@ -335,18 +357,7 @@ defmodule World.Embedder do
     episodes = get_world_episodes(world_id)
 
     if Enum.empty?(episodes) do
-      Logger.debug("No episodes found for world #{world_id}, embedder will use fallback")
-
-      set_state(world_id, %{
-        ready: false,
-        phase: :no_data,
-        vocabulary: %{},
-        idf_weights: %{},
-        built_at: nil,
-        episode_count: 0
-      })
-
-      {:error, :no_data}
+      keep_vocabulary(world_id, previous)
     else
       texts = Enum.map(episodes, & &1.state)
       episode_count = length(texts)
@@ -421,7 +432,53 @@ defmodule World.Embedder do
         "World embedder built for #{world_id}: #{vocab_size} terms from #{episode_count} episodes"
       )
 
+      reembed_world!(world_id)
       {:ok, vocab_size}
+    end
+  end
+
+  # Nothing to rebuild from: the world keeps the vocabulary it had. One that
+  # was loaded is put back; one never loaded is read from the world's seeded
+  # copy (raising when it has none). Only a world that had no vocabulary at all
+  # is left without one.
+  defp keep_vocabulary(world_id, {:ok, %{ready: true} = previous_state}) do
+    set_state(world_id, previous_state)
+    Logger.info("No episodes in world #{world_id} to rebuild its embedder from; kept its vocabulary")
+    reembed_world!(world_id)
+    {:ok, :kept}
+  end
+
+  defp keep_vocabulary(world_id, {:error, :not_found}) do
+    clear(world_id)
+    loaded!(world_id)
+    Logger.info("No episodes in world #{world_id} to rebuild its embedder from; kept its seeded vocabulary")
+    reembed_world!(world_id)
+    {:ok, :kept}
+  end
+
+  defp keep_vocabulary(world_id, _previous) do
+    Logger.info("No episodes in world #{world_id} and no vocabulary to keep; its embedder has none")
+
+    set_state(world_id, %{
+      ready: false,
+      phase: :no_data,
+      vocabulary: %{},
+      idf_weights: %{},
+      built_at: nil,
+      episode_count: 0
+    })
+
+    {:error, :no_data}
+  end
+
+  defp reembed_world!(world_id) do
+    case Store.vocabulary_rebuilt(world_id) do
+      {:ok, _reembedded} ->
+        :ok
+
+      {:error, reason} ->
+        raise "World.Embedder: world #{inspect(world_id)}'s vocabulary is ready, but its episodes " <>
+                "and semantic facts were not all re-embedded with it: #{inspect(reason)}"
     end
   end
 
