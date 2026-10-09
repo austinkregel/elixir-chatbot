@@ -237,7 +237,7 @@ defmodule ChatWeb.ChatLive do
   def handle_event("inspector_confirm_belief", %{"belief_id" => belief_id}, socket) do
     alias Brain.Epistemic.BeliefStore
 
-    case BeliefStore.confirm_belief(belief_id) do
+    case BeliefStore.confirm_belief(socket.assigns.current_world_id, belief_id) do
       {:ok, _updated} ->
         {:noreply, socket |> close_confirm() |> put_flash(:info, "Belief confirmed")}
 
@@ -249,7 +249,7 @@ defmodule ChatWeb.ChatLive do
   def handle_event("inspector_retract_belief", %{"belief_id" => belief_id}, socket) do
     alias Brain.Epistemic.BeliefStore
 
-    case BeliefStore.retract_belief(belief_id) do
+    case BeliefStore.retract_belief(socket.assigns.current_world_id, belief_id) do
       :ok ->
         {:noreply, socket |> close_confirm() |> put_flash(:info, "Belief retracted")}
 
@@ -315,7 +315,13 @@ defmodule ChatWeb.ChatLive do
           _ -> String.to_atom(authority)
         end
 
-      case BeliefStore.add_belief_with_authority(subject_atom, predicate_atom, object, authority_atom) do
+      case BeliefStore.add_belief_with_authority(
+             socket.assigns.current_world_id,
+             subject_atom,
+             predicate_atom,
+             object,
+             authority_atom
+           ) do
         {:ok, _id} ->
           socket =
             socket
