@@ -17,8 +17,8 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
       source2 = SourceInfo.new("http://source2.com", title: "Source 2")
 
       findings = [
-        Finding.new("Paris is the capital of France", "Paris", source1, confidence: 0.9),
-        Finding.new("The capital of France is Paris", "Paris", source2, confidence: 0.85)
+        Finding.new("Paris is the capital of France", "Paris", source1, confidence: 0.9, world_id: @world_id),
+        Finding.new("The capital of France is Paris", "Paris", source2, confidence: 0.85, world_id: @world_id)
       ]
 
       {:ok, candidates} = Corroborator.corroborate(findings, world_id: @world_id)
@@ -32,7 +32,7 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
 
     test "single finding below min_sources returns empty" do
       source = SourceInfo.new("http://source.com", title: "Source")
-      findings = [Finding.new("Some fact", "entity", source, confidence: 0.9)]
+      findings = [Finding.new("Some fact", "entity", source, confidence: 0.9, world_id: @world_id)]
 
       {:ok, candidates} = Corroborator.corroborate(findings, world_id: @world_id)
       assert candidates == []
@@ -40,7 +40,7 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
 
     test "include_uncorroborated returns single-source findings" do
       source = SourceInfo.new("http://source.com", title: "Source")
-      findings = [Finding.new("Some fact", "entity", source, confidence: 0.9)]
+      findings = [Finding.new("Some fact", "entity", source, confidence: 0.9, world_id: @world_id)]
 
       {:ok, candidates} =
         Corroborator.corroborate(findings, world_id: @world_id, include_uncorroborated: true)
