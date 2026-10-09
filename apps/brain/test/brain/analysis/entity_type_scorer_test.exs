@@ -18,9 +18,10 @@ defmodule Brain.Analysis.EntityTypeScorerTest do
 
   @config Application.compile_env!(:brain, :entity_type_scoring)
 
+  # "default" is the world the test suite runs in, seeded by `mix test.models`.
   defp entity_for(text, match, opts \\ []) do
     text
-    |> EntityExtractor.extract_entities(opts)
+    |> EntityExtractor.extract_entities([world_id: "default"] ++ opts)
     |> Enum.find(&(String.downcase(&1.match) == match))
   end
 
