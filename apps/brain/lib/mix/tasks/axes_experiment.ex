@@ -5,8 +5,10 @@ defmodule Mix.Tasks.Axes.Experiment do
   Measures whether predicting an intent as several independent parts beats
   predicting it as one opaque label.
 
-      mix axes.experiment
-      mix axes.experiment --verbose
+      mix axes.experiment --world <id>
+      mix axes.experiment --world <id> --verbose
+
+  `--world <id>` is required: the world the held-out rows are analyzed in.
 
   Both sides see the same feature vectors, the same train/held-out split and the
   same training seed, so the only difference is how the label is carved.
@@ -48,7 +50,7 @@ defmodule Mix.Tasks.Axes.Experiment do
 
   @requirements ["app.start"]
 
-  @switches [verbose: :boolean]
+  @switches [verbose: :boolean, world: :string]
 
   @none "(none)"
 
@@ -59,8 +61,12 @@ defmodule Mix.Tasks.Axes.Experiment do
     if invalid != [], do: Mix.raise("axes.experiment: unknown options #{inspect(invalid)}")
     if positional != [], do: Mix.raise("axes.experiment: unexpected arguments #{inspect(positional)}")
 
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("axes.experiment needs --world <id>, the world the held-out rows are analyzed in")
+
     train = load_train_vectors!()
-    held_out = compute_held_out_vectors!()
+    held_out = compute_held_out_vectors!(world_id)
 
     depth = max_depth(Enum.map(train ++ held_out, & &1.label))
     Mix.shell().info("  deepest label: #{depth} parts\n")
@@ -105,7 +111,7 @@ defmodule Mix.Tasks.Axes.Experiment do
     path = Brain.data_path("classifiers/intent_full.json")
 
     unless File.regular?(path) do
-      Mix.raise("axes.experiment: no train vectors at #{path}. Run `mix gen_micro_data` first.")
+      Mix.raise("axes.experiment: no train vectors at #{path}. Run `mix gen_micro_data --world <id>` first.")
     end
 
     rows =
@@ -127,7 +133,7 @@ defmodule Mix.Tasks.Axes.Experiment do
     rows
   end
 
-  defp compute_held_out_vectors!() do
+  defp compute_held_out_vectors!(world_id) do
     held_out = EvaluationStore.load_gold_standard("intent", :held_out)
 
     if held_out == [] do
@@ -143,6 +149,7 @@ defmodule Mix.Tasks.Axes.Experiment do
           analysis =
             Pipeline.analyze_chunk(entry["text"],
               side_effects: false,
+              world_id: world_id,
               active_contexts: Brain.Analysis.ActiveContexts.for_row(entry)
             )
 
