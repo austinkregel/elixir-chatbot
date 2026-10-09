@@ -56,12 +56,12 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:services_status, load_services_status(world_id))
       |> assign(:epistemic_metrics, load_epistemic_metrics())
-      |> assign(:knowledge_health, load_knowledge_health())
+      |> assign(:knowledge_health, load_knowledge_health(world_id))
       |> assign(:micro_classifiers_status, load_micro_classifiers_status())
       |> assign(:response_timing, load_response_timing())
       |> assign(:atlas_stats, load_atlas_stats())
       |> assign(:evaluation_summary, load_evaluation_summary())
-      |> assign(:kg_signals_status, load_kg_signals_status())
+      |> assign(:kg_signals_status, load_kg_signals_status(world_id))
       |> assign(:last_updated, DateTime.utc_now())
       |> assign(:expanded_categories, MapSet.new(@default_expanded))
       |> assign(:auto_refresh, true)
@@ -113,12 +113,12 @@ defmodule ChatWeb.DashboardLive do
         |> assign(:code_analysis_status, load_code_analysis_status())
         |> assign(:services_status, load_services_status(world_id))
         |> assign(:epistemic_metrics, load_epistemic_metrics())
-        |> assign(:knowledge_health, load_knowledge_health())
+        |> assign(:knowledge_health, load_knowledge_health(world_id))
         |> assign(:micro_classifiers_status, load_micro_classifiers_status())
         |> assign(:response_timing, load_response_timing())
         |> assign(:atlas_stats, load_atlas_stats())
         |> assign(:evaluation_summary, load_evaluation_summary())
-        |> assign(:kg_signals_status, load_kg_signals_status())
+        |> assign(:kg_signals_status, load_kg_signals_status(world_id))
         |> assign(:last_updated, DateTime.utc_now())
 
       {:noreply, socket}
@@ -157,7 +157,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:services_status, load_services_status(world_id))
       |> assign(:epistemic_metrics, load_epistemic_metrics())
-      |> assign(:knowledge_health, load_knowledge_health())
+      |> assign(:knowledge_health, load_knowledge_health(world_id))
       |> assign(:micro_classifiers_status, load_micro_classifiers_status())
       |> assign(:response_timing, load_response_timing())
       |> assign(:atlas_stats, load_atlas_stats())
@@ -202,6 +202,8 @@ defmodule ChatWeb.DashboardLive do
     |> assign(:world_models_status, load_world_models_status(world_id))
     |> assign(:readiness_details, load_readiness_details(world_id))
     |> assign(:services_status, load_services_status(world_id))
+    |> assign(:knowledge_health, load_knowledge_health(world_id))
+    |> assign(:kg_signals_status, load_kg_signals_status(world_id))
   end
 
   defp load_genserver_status do
@@ -245,7 +247,8 @@ defmodule ChatWeb.DashboardLive do
     Map.put(metrics, :miss_reasons, Brain.Metrics.Aggregator.get_verification_miss_reasons())
   end
 
-  defp load_knowledge_health do
+  # The beliefs and justification network counted here are the world's own.
+  defp load_knowledge_health(world_id) do
     fact_stats =
       try do
         if Brain.FactDatabase.ready?(), do: Brain.FactDatabase.stats(), else: %{}
@@ -255,7 +258,7 @@ defmodule ChatWeb.DashboardLive do
 
     jtms_stats =
       try do
-        if Brain.Epistemic.JTMS.ready?(), do: Brain.Epistemic.JTMS.stats(), else: %{}
+        if Brain.Epistemic.JTMS.ready?(), do: Brain.Epistemic.JTMS.stats(world_id), else: %{}
       catch
         :exit, _ -> %{}
       end
@@ -269,7 +272,7 @@ defmodule ChatWeb.DashboardLive do
 
     belief_count =
       try do
-        case Brain.Epistemic.BeliefStore.query_beliefs([]) do
+        case Brain.Epistemic.BeliefStore.query_beliefs(world_id, []) do
           {:ok, beliefs} -> length(beliefs)
           _ -> 0
         end
@@ -369,21 +372,21 @@ defmodule ChatWeb.DashboardLive do
     _ -> %{}
   end
 
-  defp load_kg_signals_status do
+  # The triple scorer shown is the world's own copy; a world that holds none
+  # shows as not loaded rather than reading another world's.
+  defp load_kg_signals_status(world_id) do
+    alias Brain.ML.KnowledgeGraph.TripleScorer
+
     config = Application.get_env(:brain, :kg_signals, [])
 
-    scorer_ready = Brain.ML.KnowledgeGraph.TripleScorer.ready?()
+    scorer_ready = TripleScorer.held?(world_id)
 
-    model_version =
-      case Brain.ML.KnowledgeGraph.TripleScorer.current_model_version() do
-        {:ok, v} -> v
-        _ -> "not loaded"
-      end
-
-    relation_count =
-      case Brain.ML.KnowledgeGraph.TripleScorer.relation_coverage() do
-        {:ok, coverage} when is_map(coverage) -> map_size(coverage)
-        _ -> 0
+    {model_version, relation_count} =
+      if scorer_ready do
+        {TripleScorer.current_model_version(world_id) || "none",
+         map_size(TripleScorer.relation_coverage(world_id))}
+      else
+        {"not loaded", 0}
       end
 
     cache_stats =
