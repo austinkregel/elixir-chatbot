@@ -7,6 +7,11 @@ defmodule Brain.Services.HomeAssistant.CapabilityRegistry do
 
   This replaces hardcoded intent/service mappings by learning what
   the connected HA instance actually supports at runtime.
+
+  Home Assistant credentials are stored per world, so each world may be
+  connected to its own instance. The registry holds capabilities per world:
+  every sync covers each world that has Home Assistant credentials, and every
+  read names the world. A world that is not a non-empty string raises.
   """
 
   use GenServer
@@ -23,57 +28,66 @@ defmodule Brain.Services.HomeAssistant.CapabilityRegistry do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def ready? do
+  @doc "Whether the world's Home Assistant capabilities have been synced."
+  def ready?(world_id) do
+    world_id = world!(world_id, "ready?")
+
     try do
-      GenServer.call(__MODULE__, :ready?, 100)
+      GenServer.call(__MODULE__, {:ready?, world_id}, 100)
     catch
       :exit, _ -> false
     end
   end
 
-  @doc "Returns all discovered HA domains with their services."
-  def available_services do
-    case :ets.lookup(@ets_table, :services) do
-      [{:services, services}] -> services
+  @doc "Returns all HA domains with their services discovered in the world."
+  def available_services(world_id) do
+    world_id = world!(world_id, "available_services")
+
+    case :ets.lookup(@ets_table, {world_id, :services}) do
+      [{_key, services}] -> services
       _ -> %{}
     end
   end
 
-  @doc "Returns all discovered entity IDs grouped by HA domain."
-  def entities_by_domain do
-    case :ets.lookup(@ets_table, :entities_by_domain) do
-      [{:entities_by_domain, entities}] -> entities
+  @doc "Returns all entity IDs discovered in the world, grouped by HA domain."
+  def entities_by_domain(world_id) do
+    world_id = world!(world_id, "entities_by_domain")
+
+    case :ets.lookup(@ets_table, {world_id, :entities_by_domain}) do
+      [{_key, entities}] -> entities
       _ -> %{}
     end
   end
 
-  @doc "Returns the full entity state list from the last sync."
-  def entity_states do
-    case :ets.lookup(@ets_table, :entity_states) do
-      [{:entity_states, states}] -> states
+  @doc "Returns the full entity state list from the world's last sync."
+  def entity_states(world_id) do
+    world_id = world!(world_id, "entity_states")
+
+    case :ets.lookup(@ets_table, {world_id, :entity_states}) do
+      [{_key, states}] -> states
       _ -> []
     end
   end
 
-  @doc "Checks if a given HA domain/service combination is available."
-  def can_handle?(ha_domain, ha_service) do
-    services = available_services()
+  @doc "Checks if a given HA domain/service combination is available in the world."
+  def can_handle?(world_id, ha_domain, ha_service) do
+    services = available_services(world_id)
     domain_services = Map.get(services, ha_domain, %{})
     Map.has_key?(domain_services, ha_service)
   end
 
-  @doc "Returns field names for a given HA service."
-  def service_fields(ha_domain, ha_service) do
-    services = available_services()
+  @doc "Returns field names for a given HA service in the world."
+  def service_fields(world_id, ha_domain, ha_service) do
+    services = available_services(world_id)
     domain_services = Map.get(services, ha_domain, %{})
     service_info = Map.get(domain_services, ha_service, %{})
     fields = Map.get(service_info, "fields", %{})
     Map.keys(fields)
   end
 
-  @doc "Returns entity IDs for a given HA domain prefix."
-  def domain_entities(ha_domain) do
-    entities = entities_by_domain()
+  @doc "Returns entity IDs for a given HA domain prefix in the world."
+  def domain_entities(world_id, ha_domain) do
+    entities = entities_by_domain(world_id)
     Map.get(entities, ha_domain, [])
   end
 
@@ -86,7 +100,8 @@ defmodule Brain.Services.HomeAssistant.CapabilityRegistry do
   end
 
   @doc """
-  Finds HA entities whose friendly_name or object_id relates to the given area name.
+  Finds HA entities in the world whose friendly_name or object_id relates to
+  the given area name.
 
   This is a registry query, not NLP -- the NER system has already identified
   the area name. We're asking HA's own data "what devices exist here?"
@@ -94,9 +109,9 @@ defmodule Brain.Services.HomeAssistant.CapabilityRegistry do
   Returns a list of `%{entity_id: ..., friendly_name: ..., ha_domain: ..., state: ...}`
   sorted with controllable domains (light, switch, fan, etc.) first.
   """
-  def find_entities_for_area(area_name) when is_binary(area_name) do
+  def find_entities_for_area(world_id, area_name) when is_binary(area_name) do
     normalized = String.downcase(area_name)
-    states = entity_states()
+    states = entity_states(world_id)
 
     states
     |> Enum.filter(fn state ->
@@ -125,7 +140,10 @@ defmodule Brain.Services.HomeAssistant.CapabilityRegistry do
     end)
   end
 
-  def find_entities_for_area(_), do: []
+  def find_entities_for_area(world_id, _) do
+    world!(world_id, "find_entities_for_area")
+    []
+  end
 
   defp domain_priority("light"), do: 0
   defp domain_priority("switch"), do: 1
@@ -137,9 +155,18 @@ defmodule Brain.Services.HomeAssistant.CapabilityRegistry do
   defp domain_priority("vacuum"), do: 7
   defp domain_priority(_), do: 99
 
-  @doc "Forces an immediate refresh of capabilities."
+  @doc "Forces an immediate refresh of capabilities for every world with Home Assistant credentials."
   def refresh do
     GenServer.cast(__MODULE__, :refresh)
+  end
+
+  # Capabilities are held per world, so every read names the world; there is
+  # no default.
+  defp world!(world_id, _function) when is_binary(world_id) and world_id != "", do: world_id
+
+  defp world!(other, function) do
+    raise ArgumentError,
+          "CapabilityRegistry.#{function} needs the world whose Home Assistant capabilities are read, got: #{inspect(other)}"
   end
 
   # GenServer callbacks
@@ -147,16 +174,15 @@ defmodule Brain.Services.HomeAssistant.CapabilityRegistry do
   @impl true
   def init(_opts) do
     :ets.new(@ets_table, [:set, :public, :named_table, read_concurrency: true])
-    :ets.insert(@ets_table, {:ready, false})
 
     send(self(), :initial_sync)
     {:ok, %{refresh_timer: nil}}
   end
 
   @impl true
-  def handle_call(:ready?, _from, state) do
-    ready = case :ets.lookup(@ets_table, :ready) do
-      [{:ready, val}] -> val
+  def handle_call({:ready?, world_id}, _from, state) do
+    ready = case :ets.lookup(@ets_table, {world_id, :ready}) do
+      [{_key, val}] -> val
       _ -> false
     end
     {:reply, ready, state}
@@ -182,36 +208,58 @@ defmodule Brain.Services.HomeAssistant.CapabilityRegistry do
     {:noreply, state}
   end
 
+  # Syncs every world that has Home Assistant credentials, and drops the
+  # capabilities held for a world whose credentials are gone.
   defp do_sync(state) do
-    case fetch_credentials() do
-      {:ok, url, token} ->
-        sync_services(url, token)
-        sync_entities(url, token)
-        :ets.insert(@ets_table, {:ready, true})
-        Logger.info("CapabilityRegistry: sync complete")
+    worlds = CredentialVault.list_worlds(@service_name)
 
-        spawn(fn ->
-          wait_for_gazetteer()
-          Brain.Services.HomeAssistant.Discovery.sync_to_gazetteer()
-        end)
+    held_worlds()
+    |> Enum.reject(&(&1 in worlds))
+    |> Enum.each(fn world_id ->
+      :ets.match_delete(@ets_table, {{world_id, :_}, :_})
+      Logger.info("CapabilityRegistry: world #{world_id} has no HA credentials, dropped its capabilities")
+    end)
 
-      :no_credentials ->
-        Logger.debug("CapabilityRegistry: no HA credentials configured, skipping sync")
-    end
+    Enum.each(worlds, &sync_world/1)
 
     state
   end
 
-  defp fetch_credentials do
-    with {:ok, url} <- CredentialVault.get(@service_name, :url),
-         {:ok, token} <- CredentialVault.get(@service_name, :access_token) do
+  defp held_worlds do
+    @ets_table
+    |> :ets.tab2list()
+    |> Enum.map(fn {{world_id, _key}, _value} -> world_id end)
+    |> Enum.uniq()
+  end
+
+  defp sync_world(world_id) do
+    case fetch_credentials(world_id) do
+      {:ok, url, token} ->
+        sync_services(world_id, url, token)
+        sync_entities(world_id, url, token)
+        :ets.insert(@ets_table, {{world_id, :ready}, true})
+        Logger.info("CapabilityRegistry: sync complete for world #{world_id}")
+
+        spawn(fn ->
+          wait_for_gazetteer()
+          Brain.Services.HomeAssistant.Discovery.sync_to_gazetteer(world_id)
+        end)
+
+      :no_credentials ->
+        Logger.debug("CapabilityRegistry: world #{world_id} lacks the HA url or access token, skipping sync")
+    end
+  end
+
+  defp fetch_credentials(world_id) do
+    with {:ok, url} <- CredentialVault.get(@service_name, :url, world: world_id),
+         {:ok, token} <- CredentialVault.get(@service_name, :access_token, world: world_id) do
       {:ok, url, token}
     else
       _ -> :no_credentials
     end
   end
 
-  defp sync_services(url, token) do
+  defp sync_services(world_id, url, token) do
     case http_get("#{url}/api/services", token) do
       {:ok, services_list} when is_list(services_list) ->
         services_map =
@@ -229,21 +277,21 @@ defmodule Brain.Services.HomeAssistant.CapabilityRegistry do
             Map.put(acc, domain, service_map)
           end)
 
-        :ets.insert(@ets_table, {:services, services_map})
-        Logger.debug("CapabilityRegistry: discovered #{map_size(services_map)} HA domains")
+        :ets.insert(@ets_table, {{world_id, :services}, services_map})
+        Logger.debug("CapabilityRegistry: discovered #{map_size(services_map)} HA domains in world #{world_id}")
 
       {:ok, _} ->
-        Logger.warning("CapabilityRegistry: unexpected format from /api/services")
+        Logger.warning("CapabilityRegistry: unexpected format from /api/services in world #{world_id}")
 
       {:error, reason} ->
-        Logger.warning("CapabilityRegistry: failed to fetch services: #{inspect(reason)}")
+        Logger.warning("CapabilityRegistry: failed to fetch services in world #{world_id}: #{inspect(reason)}")
     end
   end
 
-  defp sync_entities(url, token) do
+  defp sync_entities(world_id, url, token) do
     case http_get("#{url}/api/states", token) do
       {:ok, states} when is_list(states) ->
-        :ets.insert(@ets_table, {:entity_states, states})
+        :ets.insert(@ets_table, {{world_id, :entity_states}, states})
 
         by_domain =
           Enum.group_by(states, fn state ->
@@ -257,14 +305,14 @@ defmodule Brain.Services.HomeAssistant.CapabilityRegistry do
             {domain, Enum.map(entities, &Map.get(&1, "entity_id", ""))}
           end)
 
-        :ets.insert(@ets_table, {:entities_by_domain, by_domain})
-        Logger.debug("CapabilityRegistry: discovered #{length(states)} entities across #{map_size(by_domain)} domains")
+        :ets.insert(@ets_table, {{world_id, :entities_by_domain}, by_domain})
+        Logger.debug("CapabilityRegistry: discovered #{length(states)} entities across #{map_size(by_domain)} domains in world #{world_id}")
 
       {:ok, _} ->
-        Logger.warning("CapabilityRegistry: unexpected format from /api/states")
+        Logger.warning("CapabilityRegistry: unexpected format from /api/states in world #{world_id}")
 
       {:error, reason} ->
-        Logger.warning("CapabilityRegistry: failed to fetch states: #{inspect(reason)}")
+        Logger.warning("CapabilityRegistry: failed to fetch states in world #{world_id}: #{inspect(reason)}")
     end
   end
 
