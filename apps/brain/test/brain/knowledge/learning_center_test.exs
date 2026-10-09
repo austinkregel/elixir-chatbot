@@ -53,6 +53,29 @@ defmodule Brain.Knowledge.LearningCenterTest do
     end
   end
 
+  describe "a session in Atlas" do
+    test "is stored under the session's UUID, with its goals, and updated by it" do
+      {:ok, session} = LearningCenter.start_session("Stored session", world_id: @world_id, mock: true)
+
+      assert {:ok, _} = Ecto.UUID.cast(session.id)
+      assert Enum.all?(session.goals, &match?({:ok, _}, Ecto.UUID.cast(&1.id)))
+
+      Brain.AtlasIntegration.drain()
+
+      stored = Atlas.Learning.get_session(session.id)
+      assert stored.world_id == @world_id
+      assert stored.topic == "Stored session"
+
+      assert session.id |> Atlas.Learning.goals_for_session() |> Enum.map(& &1.id) |> Enum.sort() ==
+               session.goals |> Enum.map(& &1.id) |> Enum.sort()
+
+      :ok = LearningCenter.cancel_session(session.id)
+      Brain.AtlasIntegration.drain()
+
+      assert Atlas.Learning.get_session(session.id).status == "cancelled"
+    end
+  end
+
   describe "get_session/1" do
     test "retrieves existing session" do
       {:ok, session} = LearningCenter.start_session("Test", world_id: @world_id, mock: true)
