@@ -140,6 +140,21 @@ defmodule Atlas.Graph do
   end
 
   @doc """
+  Drop every graph of a world, with everything in it, for a world that is
+  purged. A kind the world has no graph of is left alone, so dropping is
+  idempotent. Returns the names of the graphs dropped.
+  """
+  def drop_world_graphs!(world_id) do
+    world_id
+    |> world_graphs()
+    |> Enum.filter(&graph_exists?/1)
+    |> Enum.map(fn name ->
+      Atlas.Repo.query!("SELECT ag_catalog.drop_graph($1, true)", [name])
+      name
+    end)
+  end
+
+  @doc """
   Move the unscoped graph of each per-world kind (`knowledge_graph`, ...) into
   the given world, by renaming it to that world's graph of the kind. The data
   is not copied: the same graph changes its name.
@@ -189,7 +204,13 @@ defmodule Atlas.Graph do
     Enum.map(rows, fn [name] -> name end)
   end
 
-  defp refuse_unscoped_graphs! do
+  @doc """
+  Raise while an unscoped graph of a per-world kind (`knowledge_graph`, ...)
+  still exists, naming the graphs and the task that moves them into a world.
+  `ensure_world_graphs!/1` refuses with it, and `:world` checks it before it
+  starts, so a database still holding them fails the start with this message.
+  """
+  def refuse_unscoped_graphs! do
     case Enum.filter(@world_graph_kinds, &graph_exists?/1) do
       [] ->
         :ok
