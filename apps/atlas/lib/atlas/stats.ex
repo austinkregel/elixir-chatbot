@@ -9,7 +9,8 @@ defmodule Atlas.Stats do
   Provides a unified view of:
   - Database connection pool status
   - Row counts per relational table
-  - Graph node/edge counts per graph schema
+  - Graph node/edge counts per AGE graph that exists: every world's graphs
+    and the shared ones
   - Migration status
   - Query performance metrics from telemetry
   """
@@ -137,7 +138,7 @@ defmodule Atlas.Stats do
   defp repo_stats(false), do: empty_repo_stats()
 
   defp graph_stats(true) do
-    Map.new(Atlas.Graph.graphs(), fn graph ->
+    Map.new(Atlas.Graph.existing_graphs(), fn graph ->
       nodes =
         case Atlas.Graph.count_nodes(graph) do
           {:ok, n} -> n
@@ -210,9 +211,6 @@ defmodule Atlas.Stats do
     end)
   end
 
-  defp empty_graph_stats do
-    Map.new(Atlas.Graph.graphs(), fn graph ->
-      {graph, %{nodes: 0, edges: 0}}
-    end)
-  end
+  # Without a connection there is no list of graphs to report on.
+  defp empty_graph_stats, do: %{}
 end
