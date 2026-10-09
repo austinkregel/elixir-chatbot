@@ -509,6 +509,8 @@ defmodule Mix.Tasks.GenFramingData do
     %{
       text: text,
       language: @corpus_language,
+      # A news article is not a turn in a conversation; nothing precedes it.
+      active_contexts: [],
       pos_tags: pos_tags,
       speech_act: speech_act,
       discourse: discourse,
