@@ -346,7 +346,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
 
       differing ->
         raise "ChunkFeatures: the loaded lexical evidence models score #{length(differing)} different intent lists; " <>
-                "retrain them with `mix gen_micro_data` so every language shares one vector schema"
+                "retrain them with `mix gen_micro_data --world <id>` so every language shares one vector schema"
     end
   end
 
