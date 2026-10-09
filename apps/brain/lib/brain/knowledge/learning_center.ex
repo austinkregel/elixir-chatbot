@@ -1,7 +1,7 @@
 defmodule Brain.Knowledge.LearningCenter do
   # Tasks.Source lives in the tasks app and may be unavailable at compile time
   @compile {:no_warn_undefined, Tasks.Source}
-  @moduledoc "Central orchestrator for the Knowledge Expansion System.\n\nThe Learning Center:\n- Manages learning sessions (triggered or scheduled)\n- Maintains a goal queue with research objectives\n- Dispatches Research Agents as supervised Tasks\n- Collects and synthesizes agent findings\n- Routes vetted findings to the Admin review queue\n\n## Example\n\n    # Start a learning session\n    {:ok, session} = LearningCenter.start_session(\"European capitals\")\n\n    # Check session status\n    {:ok, session} = LearningCenter.get_session(session.id)\n\n    # List active sessions\n    sessions = LearningCenter.list_sessions()\n"
+  @moduledoc "Central orchestrator for the Knowledge Expansion System.\n\nThe Learning Center:\n- Manages learning sessions (triggered or scheduled)\n- Maintains a goal queue with research objectives\n- Dispatches Research Agents as supervised Tasks\n- Collects and synthesizes agent findings\n- Routes vetted findings to the Admin review queue\n\n## Example\n\n    # Start a learning session\n    {:ok, session} = LearningCenter.start_session(\"European capitals\", world_id: world_id)\n\n    # Check session status\n    {:ok, session} = LearningCenter.get_session(session.id)\n\n    # List active sessions\n    sessions = LearningCenter.list_sessions()\n"
 
   alias Brain.ML
   alias Brain.Knowledge.Types
@@ -21,15 +21,30 @@ defmodule Brain.Knowledge.LearningCenter do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc "Starts a new learning session for a topic.\n\n## Options\n  - :questions - List of specific questions to research\n  - :max_goals - Maximum number of goals to generate\n  - :priority - :low | :normal | :high\n  - :mock - If true, uses mock data for testing\n"
+  @doc "Starts a new learning session for a topic.\n\n## Options\n  - :world_id - required: the world the session researches for; its research\n    agents analyze what they fetch in it. Absent raises.\n  - :questions - List of specific questions to research\n  - :max_goals - Maximum number of goals to generate\n  - :priority - :low | :normal | :high\n  - :mock - If true, uses mock data for testing\n"
   @spec start_session(String.t(), keyword()) :: {:ok, LearningSession.t()} | {:error, term()}
-  def start_session(topic, opts \\ []) when is_binary(topic) do
+  def start_session(topic, opts) when is_binary(topic) do
+    session_world!(opts)
     GenServer.call(__MODULE__, {:start_session, topic, opts})
   end
 
-  @doc "Starts a training session using domain-specific NLP tasks.\n\nThis uses curated benchmark tasks (Question Answering, Commonsense, etc.)\ninstead of web sources, providing high-quality training data for child agents.\n\n## Options\n  - :capability - Training capability (:question_answering, :commonsense, :sentiment, :all)\n  - :max_tasks - Maximum task files to use (default: 5)\n  - :max_instances - Maximum instances per task (default: 20)\n\n## Example\n\n    {:ok, session} = LearningCenter.start_task_training(:commonsense)\n    {:ok, session} = LearningCenter.start_task_training(:question_answering, max_tasks: 10)\n"
+  # Checked in the caller's process, so a missing world raises there.
+  defp session_world!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "LearningCenter option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "LearningCenter.start_session needs :world_id, the world the session researches for"
+    end
+  end
+
+  @doc "Starts a training session using domain-specific NLP tasks.\n\nThis uses curated benchmark tasks (Question Answering, Commonsense, etc.)\ninstead of web sources, providing high-quality training data for child agents.\n\n## Options\n  - :world_id - required, as for `start_session/2`\n  - :capability - Training capability (:question_answering, :commonsense, :sentiment, :all)\n  - :max_tasks - Maximum task files to use (default: 5)\n  - :max_instances - Maximum instances per task (default: 20)\n\n## Example\n\n    {:ok, session} = LearningCenter.start_task_training(:commonsense, world_id: world_id)\n    {:ok, session} = LearningCenter.start_task_training(:question_answering, world_id: world_id, max_tasks: 10)\n"
   @spec start_task_training(atom(), keyword()) :: {:ok, LearningSession.t()} | {:error, term()}
-  def start_task_training(capability \\ :all, opts \\ []) do
+  def start_task_training(capability, opts) do
     topic = "task_training:#{capability}"
     task_opts = Keyword.merge(opts, sources: [:task], capability: capability)
     start_session(topic, task_opts)
@@ -115,7 +130,7 @@ defmodule Brain.Knowledge.LearningCenter do
 
   @impl true
   def handle_call({:start_session, topic, opts}, _from, state) do
-    session = LearningSession.new(topic: topic)
+    session = LearningSession.new(topic: topic, world_id: Keyword.fetch!(opts, :world_id))
 
     goals =
       if Keyword.get(opts, :sources) == [:task] do
@@ -179,7 +194,7 @@ defmodule Brain.Knowledge.LearningCenter do
       session ->
         updated_session = LearningSession.add_goal(session, goal)
         new_sessions = Map.put(state.sessions, session_id, updated_session)
-        {agent_refs, updated_state} = dispatch_agents([goal], session_id, [], state)
+        {agent_refs, updated_state} = dispatch_agents([goal], session_id, [world_id: session.world_id], state)
 
         new_state = %{
           updated_state
@@ -558,7 +573,7 @@ defmodule Brain.Knowledge.LearningCenter do
 
     additional_goals =
       if questions == [] do
-        generate_default_questions(topic)
+        generate_default_questions(topic, Keyword.fetch!(opts, :world_id))
         |> Enum.take(max_goals - 1)
         |> Enum.map(fn q ->
           ResearchGoal.new(topic, questions: [q], priority: priority)
@@ -571,8 +586,8 @@ defmodule Brain.Knowledge.LearningCenter do
     |> Enum.take(max_goals)
   end
 
-  defp generate_default_questions(topic) do
-    memory_questions = extract_questions_from_memory(topic)
+  defp generate_default_questions(topic, world_id) do
+    memory_questions = extract_questions_from_memory(topic, world_id)
     pos_questions = generate_questions_with_pos(topic)
     combined = (memory_questions ++ pos_questions) |> Enum.uniq()
 
@@ -583,10 +598,10 @@ defmodule Brain.Knowledge.LearningCenter do
     end
   end
 
-  defp extract_questions_from_memory(topic) do
+  defp extract_questions_from_memory(topic, world_id) do
     alias Brain.Memory.Store
 
-    case Store.query_similar(topic, 10) do
+    case Store.query_similar(topic, 10, world_id: world_id) do
       {:ok, episodes} ->
         episodes
         |> Enum.flat_map(fn {episode, _similarity} ->
@@ -678,6 +693,7 @@ defmodule Brain.Knowledge.LearningCenter do
     mock_default = http_client != Req
 
     research_opts = [
+      world_id: Keyword.fetch!(opts, :world_id),
       mock: Keyword.get(opts, :mock, mock_default),
       sources: Keyword.get(opts, :sources, [:web]),
       max_pages: Keyword.get(opts, :max_tasks, 5),
