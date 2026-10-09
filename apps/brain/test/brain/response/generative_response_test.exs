@@ -6,6 +6,9 @@ defmodule Brain.Response.GenerativeResponseTest do
 
   alias Response.{Synthesizer, Generator}
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @opts [world_id: "default"]
+
   describe "Synthesizer.synthesize/3" do
     test "generates response for weather intent with location" do
       entities = [%{entity_type: "location", value: "New York"}]
@@ -198,13 +201,14 @@ defmodule Brain.Response.GenerativeResponseTest do
     end
   end
 
-  describe "Generator.generate/3 integration" do
+  describe "Generator.generate/4 integration" do
     test "generates response for valid intent with entities" do
       {:ok, response, type} =
         Generator.generate(
           "weather.query",
           [%{entity_type: "location", value: "Seattle"}],
-          "What's the weather in Seattle?"
+          "What's the weather in Seattle?",
+          @opts
         )
 
       assert is_binary(response)
@@ -220,7 +224,7 @@ defmodule Brain.Response.GenerativeResponseTest do
     end
 
     test "handles unknown intent gracefully" do
-      {:ok, response, type} = Generator.generate("unknown.intent", [], "Some random query")
+      {:ok, response, type} = Generator.generate("unknown.intent", [], "Some random query", @opts)
 
       assert is_binary(response)
 
@@ -235,14 +239,14 @@ defmodule Brain.Response.GenerativeResponseTest do
     end
 
     test "handles nil intent gracefully" do
-      {:ok, response, _type} = Generator.generate(nil, [], "Random text")
+      {:ok, response, _type} = Generator.generate(nil, [], "Random text", @opts)
 
       assert is_binary(response)
       assert String.length(response) > 0
     end
 
     test "handles empty entities gracefully" do
-      {:ok, response, _type} = Generator.generate("weather.query", [], nil)
+      {:ok, response, _type} = Generator.generate("weather.query", [], nil, @opts)
 
       assert is_binary(response)
       assert String.length(response) > 0
@@ -254,7 +258,7 @@ defmodule Brain.Response.GenerativeResponseTest do
       entities = [%{entity_type: "location", value: "Timbuktu"}]
 
       {:ok, response, _type} =
-        Generator.generate("weather.query", entities, "Weather in Timbuktu")
+        Generator.generate("weather.query", entities, "Weather in Timbuktu", @opts)
 
       assert is_binary(response)
 
@@ -270,7 +274,7 @@ defmodule Brain.Response.GenerativeResponseTest do
       ]
 
       {:ok, response, _type} =
-        Generator.generate("weather.query", entities, "Weather in Chicago next Tuesday afternoon")
+        Generator.generate("weather.query", entities, "Weather in Chicago next Tuesday afternoon", @opts)
 
       assert is_binary(response)
       assert String.length(response) > 0
@@ -280,8 +284,8 @@ defmodule Brain.Response.GenerativeResponseTest do
       entities1 = [%{entity_type: "location", value: "Boston"}]
       entities2 = [%{entity_type: "location", value: "Denver"}]
 
-      {:ok, response1, _} = Generator.generate("weather.query", entities1, "Weather in Boston")
-      {:ok, response2, _} = Generator.generate("weather.query", entities2, "Weather in Denver")
+      {:ok, response1, _} = Generator.generate("weather.query", entities1, "Weather in Boston", @opts)
+      {:ok, response2, _} = Generator.generate("weather.query", entities2, "Weather in Denver", @opts)
       assert is_binary(response1)
       assert is_binary(response2)
 
