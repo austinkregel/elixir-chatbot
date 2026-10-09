@@ -353,8 +353,8 @@ mix setup_lexicon && ok "Lexicon ingested" || fail "Lexicon ingestion failed"
 # Data generation (micro-classifiers + framing)
 # ---------------------------------------------------------------------------
 step "Generating classifier training data"
-mix gen_micro_data && ok "Micro-classifier data generated" || fail "Micro-classifier data generation failed"
-mix gen_framing_data --corpus gvfc && ok "Framing data generated" || fail "Framing data generation failed"
+mix gen_micro_data --world default && ok "Micro-classifier data generated" || fail "Micro-classifier data generation failed"
+mix gen_framing_data --world default --corpus gvfc && ok "Framing data generated" || fail "Framing data generation failed"
 
 # ---------------------------------------------------------------------------
 # WordNet
@@ -422,10 +422,10 @@ if [ "$SKIP_TRAINING" = false ]; then
 
     if [ "$FULL_TRAINING" = true ]; then
       info "Full training pipeline (this may take a while)..."
-      mix train && ok "Training complete" || fail "Training failed"
+      mix train --world default && ok "Training complete" || fail "Training failed"
     else
       info "Quick training (use --full-training for the complete pipeline)..."
-      mix train --quick && ok "Quick training complete" || fail "Training failed"
+      mix train --world default --quick && ok "Quick training complete" || fail "Training failed"
     fi
   else
     step "Model training"
