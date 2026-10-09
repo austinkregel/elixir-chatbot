@@ -7,6 +7,9 @@ defmodule Brain.Response.GeneratorIntegrationTest do
   alias Brain.Analysis.Pipeline
   alias Brain.Response.Generator
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup do
     start_test_services()
     :ok
@@ -14,7 +17,7 @@ defmodule Brain.Response.GeneratorIntegrationTest do
 
   describe "full pipeline to response" do
     test "greeting input produces greeting-classified response" do
-      analysis = Pipeline.process("Hello!")
+      analysis = Pipeline.process("Hello!", world_id: @world_id)
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
@@ -25,7 +28,7 @@ defmodule Brain.Response.GeneratorIntegrationTest do
     end
 
     test "weather query produces weather-classified response" do
-      analysis = Pipeline.process("What's the weather like in Seattle?")
+      analysis = Pipeline.process("What's the weather like in Seattle?", world_id: @world_id)
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
@@ -51,7 +54,7 @@ defmodule Brain.Response.GeneratorIntegrationTest do
         "category" => "geography",
         "entities" => ["France", "Paris"]
       })
-      analysis = Pipeline.process("What is the capital of France?")
+      analysis = Pipeline.process("What is the capital of France?", world_id: @world_id)
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
@@ -61,7 +64,7 @@ defmodule Brain.Response.GeneratorIntegrationTest do
     end
 
     test "sentiment-laden input produces empathetic response" do
-      analysis = Pipeline.process("I'm really frustrated")
+      analysis = Pipeline.process("I'm really frustrated", world_id: @world_id)
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
