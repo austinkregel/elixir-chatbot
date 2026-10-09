@@ -2,16 +2,23 @@ defmodule Brain.Graph.TrainingTest do
   use Brain.Test.GraphCase, async: false
   @moduletag seed_graphs: true
 
-  describe "extract_intent_priors/0" do
-    test "builds transition matrix from conversation_graph topics" do
-      priors = Brain.Graph.Training.extract_intent_priors()
-      assert is_map(priors)
+  describe "extract_intent_priors/1" do
+    test "builds the transition matrix from the world's conversation_graph topics", %{graph_world_id: world} do
+      # Seeds have a smalltalk.greetings.hello -> weather.query transition, count 2
+      assert Brain.Graph.Training.extract_intent_priors(world) == %{
+               "smalltalk.greetings.hello" => %{"weather.query" => 2}
+             }
+    end
 
-      # Seeds have smalltalk.greetings.hello -> weather.query transition
-      if Map.has_key?(priors, "smalltalk.greetings.hello") do
-        transitions = priors["smalltalk.greetings.hello"]
-        assert Map.has_key?(transitions, "weather.query")
-      end
+    test "reads only that world's conversation_graph" do
+      other = "test_graph_priors_#{System.unique_integer([:positive])}"
+      Graph.ensure_world_graphs!(other)
+
+      assert Brain.Graph.Training.extract_intent_priors(other) == %{}
+    end
+
+    test "raises without a world" do
+      assert_raise ArgumentError, fn -> Brain.Graph.Training.extract_intent_priors(nil) end
     end
   end
 
