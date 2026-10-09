@@ -47,15 +47,16 @@ defmodule Brain.Knowledge.TypesTest do
   end
 
   describe "Finding" do
-    test "creates with generated ID" do
+    test "creates with generated ID, in its world" do
       source = SourceInfo.new("https://example.com")
-      finding = Finding.new("Paris is the capital of France", "France", source)
+      finding = Finding.new("Paris is the capital of France", "France", source, world_id: "w1")
 
       assert is_binary(finding.id)
       assert String.length(finding.id) > 0
       assert finding.claim == "Paris is the capital of France"
       assert finding.entity == "France"
       assert finding.source == source
+      assert finding.world_id == "w1"
     end
 
     test "accepts optional entity type and confidence" do
@@ -64,11 +65,26 @@ defmodule Brain.Knowledge.TypesTest do
       finding =
         Finding.new("Paris is the capital of France", "France", source,
           entity_type: "location",
-          confidence: 0.85
+          confidence: 0.85,
+          world_id: "w1"
         )
 
       assert finding.entity_type == "location"
       assert finding.confidence == 0.85
+    end
+
+    test "a finding without a world raises" do
+      source = SourceInfo.new("https://example.com")
+
+      assert_raise ArgumentError, ~r/needs :world_id/, fn ->
+        Finding.new("Paris is the capital of France", "France", source)
+      end
+
+      for bad <- [nil, ""] do
+        assert_raise ArgumentError, ~r/must be a world id/, fn ->
+          Finding.new("Paris is the capital of France", "France", source, world_id: bad)
+        end
+      end
     end
   end
 
@@ -110,7 +126,7 @@ defmodule Brain.Knowledge.TypesTest do
   describe "ReviewCandidate" do
     test "creates from finding" do
       source = SourceInfo.new("https://example.com", reliability_score: 0.8)
-      finding = Finding.new("Test claim", "Test Entity", source, confidence: 0.75)
+      finding = Finding.new("Test claim", "Test Entity", source, confidence: 0.75, world_id: "w1")
 
       candidate = ReviewCandidate.new(finding)
 
@@ -118,11 +134,21 @@ defmodule Brain.Knowledge.TypesTest do
       assert candidate.finding == finding
       assert candidate.status == :pending
       assert candidate.aggregate_confidence == 0.75
+      assert ReviewCandidate.world_id!(candidate) == "w1"
+    end
+
+    test "a finding that names no world makes no candidate" do
+      source = SourceInfo.new("https://example.com")
+      finding = Finding.new("Test claim", "Test Entity", source, world_id: "w1")
+
+      assert_raise ArgumentError, ~r/names no world/, fn ->
+        ReviewCandidate.new(%{finding | world_id: nil})
+      end
     end
 
     test "approve updates status and timestamp" do
       source = SourceInfo.new("https://example.com")
-      finding = Finding.new("Test", "Entity", source)
+      finding = Finding.new("Test", "Entity", source, world_id: "w1")
       candidate = ReviewCandidate.new(finding)
 
       before_approval = DateTime.utc_now()
@@ -136,7 +162,7 @@ defmodule Brain.Knowledge.TypesTest do
 
     test "reject updates status and timestamp" do
       source = SourceInfo.new("https://example.com")
-      finding = Finding.new("Test", "Entity", source)
+      finding = Finding.new("Test", "Entity", source, world_id: "w1")
       candidate = ReviewCandidate.new(finding)
 
       rejected = ReviewCandidate.reject(candidate, "Incorrect")
