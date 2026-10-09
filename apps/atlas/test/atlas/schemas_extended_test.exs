@@ -15,6 +15,10 @@ defmodule Atlas.SchemasExtendedTest do
     IntentReviewCandidate
   }
 
+  # Rows are rolled back with the test's transaction; no world directory is
+  # created.
+  @world_id "test_atlas_schemas_extended"
+
   describe "SourceReliability" do
     test "inserts with valid attributes" do
       attrs = %{
@@ -95,6 +99,7 @@ defmodule Atlas.SchemasExtendedTest do
   describe "KnowledgeEntry" do
     test "inserts with valid attributes" do
       attrs = %{
+        world_id: @world_id,
         persona_name: "echo",
         category: "facts",
         key: "favorite_color",
@@ -102,12 +107,14 @@ defmodule Atlas.SchemasExtendedTest do
       }
 
       assert {:ok, ke} = %KnowledgeEntry{} |> KnowledgeEntry.changeset(attrs) |> Repo.insert()
+      assert ke.world_id == @world_id
       assert ke.persona_name == "echo"
       assert ke.category == "facts"
     end
 
-    test "requires persona_name, category, key" do
+    test "requires world_id, persona_name, category, key" do
       assert {:error, changeset} = %KnowledgeEntry{} |> KnowledgeEntry.changeset(%{}) |> Repo.insert()
+      assert "can't be blank" in errors_on(changeset)[:world_id]
       assert errors_on(changeset)[:persona_name]
       assert errors_on(changeset)[:category]
       assert errors_on(changeset)[:key]
@@ -116,7 +123,7 @@ defmodule Atlas.SchemasExtendedTest do
     test "queries for_persona" do
       {:ok, _} =
         %KnowledgeEntry{}
-        |> KnowledgeEntry.changeset(%{persona_name: "test_p", category: "c", key: "k"})
+        |> KnowledgeEntry.changeset(%{world_id: @world_id, persona_name: "test_p", category: "c", key: "k"})
         |> Repo.insert()
 
       results = KnowledgeEntry |> KnowledgeEntry.for_persona("test_p") |> Repo.all()
@@ -170,25 +177,47 @@ defmodule Atlas.SchemasExtendedTest do
   end
 
   describe "LearningSession" do
+    test "changeset requires a world" do
+      cs = LearningSession.changeset(%LearningSession{}, %{topic: "no world"})
+      refute cs.valid?
+      assert "can't be blank" in errors_on(cs)[:world_id]
+    end
+
+    test "the table fills in no world for a row that leaves it out" do
+      now = DateTime.utc_now()
+
+      row = %{
+        id: Ecto.UUID.bingenerate(),
+        topic: "no world",
+        status: "active",
+        inserted_at: now,
+        updated_at: now
+      }
+
+      error = assert_raise Postgrex.Error, fn -> Repo.insert_all("atlas_learning_sessions", [row]) end
+      assert error.postgres.code == :not_null_violation
+      assert error.postgres.column == "world_id"
+    end
+
     test "changeset validates status inclusion" do
-      cs = LearningSession.changeset(%LearningSession{}, %{status: "invalid"})
+      cs = LearningSession.changeset(%LearningSession{}, %{world_id: @world_id, status: "invalid"})
       assert errors_on(cs)[:status]
     end
 
     test "changeset validates source_type inclusion" do
-      cs = LearningSession.changeset(%LearningSession{}, %{source_type: "invalid"})
+      cs = LearningSession.changeset(%LearningSession{}, %{world_id: @world_id, source_type: "invalid"})
       assert errors_on(cs)[:source_type]
     end
 
     test "changeset validates counts are non-negative" do
-      cs = LearningSession.changeset(%LearningSession{}, %{findings_count: -1})
+      cs = LearningSession.changeset(%LearningSession{}, %{world_id: @world_id, findings_count: -1})
       assert errors_on(cs)[:findings_count]
     end
 
     test "with_status query" do
       {:ok, _} =
         %LearningSession{}
-        |> LearningSession.changeset(%{status: "completed"})
+        |> LearningSession.changeset(%{world_id: @world_id, status: "completed"})
         |> Repo.insert()
 
       results = LearningSession |> LearningSession.with_status("completed") |> Repo.all()
@@ -198,7 +227,7 @@ defmodule Atlas.SchemasExtendedTest do
     test "active query" do
       {:ok, _} =
         %LearningSession{}
-        |> LearningSession.changeset(%{status: "active", topic: "active_test"})
+        |> LearningSession.changeset(%{world_id: @world_id, status: "active", topic: "active_test"})
         |> Repo.insert()
 
       results = LearningSession |> LearningSession.active() |> Repo.all()
@@ -211,12 +240,12 @@ defmodule Atlas.SchemasExtendedTest do
 
       {:ok, _} =
         %LearningSession{}
-        |> LearningSession.changeset(%{topic: "older", started_at: earlier})
+        |> LearningSession.changeset(%{world_id: @world_id, topic: "older", started_at: earlier})
         |> Repo.insert()
 
       {:ok, _} =
         %LearningSession{}
-        |> LearningSession.changeset(%{topic: "newer", started_at: now})
+        |> LearningSession.changeset(%{world_id: @world_id, topic: "newer", started_at: now})
         |> Repo.insert()
 
       results = LearningSession |> LearningSession.recent_first() |> Repo.all()
@@ -268,16 +297,18 @@ defmodule Atlas.SchemasExtendedTest do
         text: "What time is it in Tokyo?",
         status: "pending",
         predicted_intent: "time.query",
-        best_score: 0.75
+        best_score: 0.75,
+        world_id: @world_id
       }
 
       assert {:ok, irc} =
                %IntentReviewCandidate{} |> IntentReviewCandidate.changeset(attrs) |> Repo.insert()
 
       assert irc.text == "What time is it in Tokyo?"
+      assert irc.world_id == @world_id
     end
 
-    test "requires id, text, predicted_intent, best_score" do
+    test "requires id, text, predicted_intent, best_score, world_id" do
       assert {:error, changeset} =
                %IntentReviewCandidate{} |> IntentReviewCandidate.changeset(%{}) |> Repo.insert()
 
@@ -285,10 +316,12 @@ defmodule Atlas.SchemasExtendedTest do
       assert errors_on(changeset)[:text]
       assert errors_on(changeset)[:predicted_intent]
       assert errors_on(changeset)[:best_score]
+      assert "can't be blank" in errors_on(changeset)[:world_id]
     end
 
     test "validates status inclusion" do
       attrs = %{
+        world_id: @world_id,
         id: "irc_status",
         text: "test",
         status: "invalid",
@@ -305,7 +338,7 @@ defmodule Atlas.SchemasExtendedTest do
 
   describe "ResearchGoal" do
     setup do
-      {:ok, session} = %LearningSession{} |> LearningSession.changeset(%{}) |> Repo.insert()
+      {:ok, session} = %LearningSession{} |> LearningSession.changeset(%{world_id: @world_id}) |> Repo.insert()
       {:ok, session: session}
     end
 
@@ -332,7 +365,7 @@ defmodule Atlas.SchemasExtendedTest do
 
   describe "Investigation" do
     setup do
-      {:ok, session} = %LearningSession{} |> LearningSession.changeset(%{}) |> Repo.insert()
+      {:ok, session} = %LearningSession{} |> LearningSession.changeset(%{world_id: @world_id}) |> Repo.insert()
       {:ok, session: session}
     end
 
@@ -360,7 +393,7 @@ defmodule Atlas.SchemasExtendedTest do
 
   describe "Hypothesis" do
     setup do
-      {:ok, session} = %LearningSession{} |> LearningSession.changeset(%{}) |> Repo.insert()
+      {:ok, session} = %LearningSession{} |> LearningSession.changeset(%{world_id: @world_id}) |> Repo.insert()
 
       {:ok, inv} =
         %Investigation{}
@@ -400,7 +433,7 @@ defmodule Atlas.SchemasExtendedTest do
 
   describe "Evidence" do
     setup do
-      {:ok, session} = %LearningSession{} |> LearningSession.changeset(%{}) |> Repo.insert()
+      {:ok, session} = %LearningSession{} |> LearningSession.changeset(%{world_id: @world_id}) |> Repo.insert()
 
       {:ok, inv} =
         %Investigation{}
