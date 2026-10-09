@@ -72,6 +72,59 @@ defmodule Brain.Memory.StoreTest do
     end
   end
 
+  describe "a query in one world beside another world's similar memories" do
+    setup do
+      ensure_started(World.Manager)
+      setup_world_sandbox()
+    end
+
+    @query "what is the weather in paris today"
+
+    test "query_similar still returns the world's own episode" do
+      {:ok, world} = create_test_world("store_scope_own")
+      {:ok, crowd} = create_test_world("store_scope_crowd")
+
+      # The other world's episodes match the query exactly, so each ranks
+      # above this world's own, which shares only part of it.
+      for _ <- 1..20 do
+        {:ok, _} = Store.add_episode(@query, "weather", "", [], world_id: crowd.id)
+      end
+
+      {:ok, own_id} = Store.add_episode("the weather in paris", "weather", "", [], world_id: world.id)
+
+      assert {:ok, [{_crowd_episode, crowd_similarity}]} =
+               Store.query_similar(@query, 1, world_id: crowd.id, rerank: false)
+
+      assert {:ok, [{%{id: ^own_id}, own_similarity}]} =
+               Store.query_similar(@query, 1, world_id: world.id, rerank: false)
+
+      assert crowd_similarity > own_similarity
+    end
+
+    test "query_semantic still returns the world's own fact" do
+      {:ok, world} = create_test_world("store_scope_own_fact")
+      {:ok, crowd} = create_test_world("store_scope_crowd_fact")
+
+      {:ok, crowd_embedding} = WorldEmbedder.embed(crowd.id, @query)
+
+      for _ <- 1..20 do
+        {:ok, _} = Store.add_semantic(SemanticFact.new(@query, crowd_embedding, [], []), world_id: crowd.id)
+      end
+
+      {:ok, own_embedding} = WorldEmbedder.embed(world.id, "the weather in paris")
+      own = SemanticFact.new("the weather in paris", own_embedding, [], [])
+      {:ok, own_id} = Store.add_semantic(own, world_id: world.id)
+
+      assert {:ok, [{_crowd_fact, crowd_similarity}]} =
+               Store.query_semantic(@query, 1, world_id: crowd.id, rerank: false)
+
+      assert {:ok, [{%{id: ^own_id}, own_similarity}]} =
+               Store.query_semantic(@query, 1, world_id: world.id, rerank: false)
+
+      assert crowd_similarity > own_similarity
+    end
+  end
+
   describe "query_by_tags" do
     test "finds episodes with matching tags" do
       {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello", "casual"], world_id: @world_id)
