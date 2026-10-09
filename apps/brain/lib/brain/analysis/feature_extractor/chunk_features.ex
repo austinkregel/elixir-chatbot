@@ -32,6 +32,9 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   24. **Lexical evidence** *(one value per intent: how strongly the chunk's 1- and
       2-grams are associated with it in the training data; see
       `Brain.Analysis.LexicalEvidence`)*
+  25. **Follow-up context** *(one value per conversational context some intent
+      continues from: 1.0 when the chunk's turn continues from it; see
+      `Brain.Analysis.ActiveContexts`)*
 
   Groups 15-22 are produced by
   `Brain.Analysis.FeatureExtractor.EnrichmentFeatures` and are
@@ -41,7 +44,7 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   """
 
   alias Brain.Analysis.FeatureExtractor.{WordFeatures, EnrichmentFeatures}
-  alias Brain.Analysis.LexicalEvidence
+  alias Brain.Analysis.{ActiveContexts, LexicalEvidence}
   alias Brain.Lexicon
   alias Brain.Provenance
 
@@ -116,13 +119,14 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
 
     group23 = EnrichmentFeatures.entity_type_semantics(analysis)
     group24 = lexical_evidence_features(analysis, opts)
+    group25 = followup_context_features(analysis)
 
     group1 ++ group2 ++ group3 ++ group4 ++ group5 ++ group6 ++
       group7 ++ group8 ++ group9 ++ group10 ++ group11 ++ group12 ++
       group14 ++
       group15 ++ group16 ++ group17_verb ++ group17_noun ++ group17_adj ++
       group18 ++ group19 ++
-      group20 ++ group21 ++ group22 ++ group23 ++ group24
+      group20 ++ group21 ++ group22 ++ group23 ++ group24 ++ group25
   end
 
   # Builds `[{token, pos}]` pairs for `subcategorization_frame/1`. The
@@ -326,7 +330,8 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
         :entity_type_semantics,
         EnrichmentFeatures.entity_type_semantics_names()
       ) ++
-      in_group(:lexical_evidence, Enum.map(lexical_evidence_intents(), &String.to_atom("lex_" <> &1)))
+      in_group(:lexical_evidence, Enum.map(lexical_evidence_intents(), &String.to_atom("lex_" <> &1))) ++
+      in_group(:followup_context, ActiveContexts.names(ActiveContexts.loaded!()))
   end
 
   defp in_group(group, names), do: Enum.map(names, &{group, &1})
@@ -373,6 +378,20 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
       end
 
     LexicalEvidence.features(model, Map.fetch!(analysis, :text))
+  end
+
+  # Group 25: which conversational contexts the chunk continues from, one
+  # dimension per context some intent follows up on. The pipeline sets
+  # `active_contexts`; an analysis without them raises.
+  defp followup_context_features(analysis) do
+    case Map.get(analysis, :active_contexts) do
+      active when is_list(active) ->
+        ActiveContexts.features(active, ActiveContexts.loaded!())
+
+      other ->
+        raise ArgumentError,
+              "ChunkFeatures: the analysis has no active contexts (got #{inspect(other)}); the pipeline sets them"
+    end
   end
 
   @doc """
