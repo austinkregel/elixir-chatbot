@@ -31,8 +31,7 @@ defmodule Mix.Tasks.MigrateGoldStandard do
       mix migrate_gold_standard --extract-templates --preview  # responses held in the export
       mix migrate_gold_standard --cleanup-sources --preview    # what deletion would remove
 
-  `--limit N`, `--no-ner`, `--append`, `--exclude-context-variants` still shape
-  what the reports show.
+  `--limit N`, `--no-ner`, `--append` still shape what the reports show.
   """
 
   use Mix.Task
@@ -48,7 +47,6 @@ defmodule Mix.Tasks.MigrateGoldStandard do
     no_ner? = "--no-ner" in args
     append? = "--append" in args
     destructive? = "--destructive" in args
-    exclude_context_variants? = "--exclude-context-variants" in args
     extract_metadata? = "--extract-metadata" in args
     extract_templates? = "--extract-templates" in args
     cleanup? = "--cleanup-sources" in args
@@ -70,10 +68,10 @@ defmodule Mix.Tasks.MigrateGoldStandard do
         cleanup_source_directories(preview?)
 
       preview? ->
-        preview_migration(select_filter, limit, exclude_context_variants?)
+        preview_migration(select_filter, limit)
 
       true ->
-        run_migration(select_filter, limit, !no_ner?, append?, destructive?, exclude_context_variants?)
+        run_migration(select_filter, limit, !no_ner?, append?, destructive?)
     end
   end
 
@@ -153,17 +151,13 @@ defmodule Mix.Tasks.MigrateGoldStandard do
     IO.puts("")
   end
 
-  defp preview_migration(select_filter, limit, exclude_context_variants?) do
+  defp preview_migration(select_filter, limit) do
     intent_names = resolve_intent_names(select_filter)
 
     IO.puts("
 Previewing migration for #{length(intent_names)} intent(s)...")
 
-    if exclude_context_variants? do
-      IO.puts("NOTE: Context-variant usersays files will be excluded")
-    end
-
-    opts = [exclude_context_variants: exclude_context_variants?]
+    opts = []
 
     opts =
       if limit do
@@ -383,7 +377,7 @@ Previewing migration for #{length(intent_names)} intent(s)...")
     end
   end
 
-  defp run_migration(select_filter, limit, include_ner?, append?, destructive?, exclude_context_variants?) do
+  defp run_migration(select_filter, limit, include_ner?, append?, destructive?) do
     refuse!(
       "migration",
       "`mix rebuild_gold_standard`",
@@ -413,10 +407,6 @@ Previewing migration for #{length(intent_names)} intent(s)...")
     IO.puts("
 Migrating #{intent_label} intent(s) [#{mode} mode]...")
 
-    if exclude_context_variants? do
-      IO.puts("NOTE: Context-variant usersays files will be excluded")
-    end
-
     if destructive? do
       IO.puts("WARNING: Source files will be deleted after successful migration!")
       Process.sleep(1000)
@@ -425,8 +415,7 @@ Migrating #{intent_label} intent(s) [#{mode} mode]...")
     opts = [
       include_ner: include_ner?,
       append: append?,
-      destructive: destructive?,
-      exclude_context_variants: exclude_context_variants?
+      destructive: destructive?
     ]
 
     opts =
