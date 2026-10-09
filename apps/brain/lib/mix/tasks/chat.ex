@@ -7,9 +7,10 @@ defmodule Mix.Tasks.Chat do
 
   ## Usage
 
-      mix chat "Hello, I'm Austin"
-      mix chat "What's the weather in NYC?" --debug
-      mix chat "I helped program some of your systems" --debug --world default
+      mix chat "Hello, I'm Austin" --world <id>
+      mix chat "What's the weather in NYC?" --world <id> --debug
+
+  `--world <id>` is required: the world the conversation runs in.
   """
 
   use Mix.Task
@@ -24,11 +25,14 @@ defmodule Mix.Tasks.Chat do
     message =
       case positional do
         [msg | _] -> msg
-        [] -> abort("Usage: mix chat \"your message\" [--debug] [--world WORLD_ID]")
+        [] -> abort("Usage: mix chat \"your message\" --world WORLD_ID [--debug]")
       end
 
     debug? = Keyword.get(opts, :debug, false)
-    world_id = Keyword.get(opts, :world, "default")
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix chat needs --world <id>, the world the conversation runs in")
 
     info("Booting application...")
     {:ok, _} = Application.ensure_all_started(:brain)
