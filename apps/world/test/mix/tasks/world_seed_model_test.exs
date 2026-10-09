@@ -5,7 +5,7 @@ defmodule Mix.Tasks.World.SeedModelTest do
   It names its worlds explicitly, refuses a model it does not know, and leaves a
   named world holding a byte-identical copy of the trained model.
   """
-  use ExUnit.Case, async: false
+  use World.AtlasCase, async: false
   import Brain.TestHelpers
 
   alias Brain.ML.EntityModel
