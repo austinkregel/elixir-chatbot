@@ -117,6 +117,6 @@ defmodule Brain.Knowledge.InvestigationTest do
 
   defp build_finding(claim) do
     source = SourceInfo.new("https://source1.com/article", reliability_score: 0.7)
-    Finding.new(claim, "Paris", source, entity_type: "location", confidence: 0.7)
+    Finding.new(claim, "Paris", source, entity_type: "location", confidence: 0.7, world_id: "test_investigation")
   end
 end
