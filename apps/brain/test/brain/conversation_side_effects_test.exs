@@ -33,6 +33,7 @@ defmodule Brain.ConversationSideEffectsTest do
     Atlas.Schemas.IntentReviewCandidate
   ]
 
+  # The conversation's world's graph of each kind.
   @graphs ~w(conversation_graph knowledge_graph epistemic_graph user_graph semantic_graph)
 
   # The world the test suite runs in, seeded by `mix test.models`.
@@ -118,12 +119,12 @@ defmodule Brain.ConversationSideEffectsTest do
     %{name: persona} = Brain.get_status()
 
     %{
-      beliefs: BeliefStore.stats().total_beliefs,
+      beliefs: BeliefStore.stats(@world_id).total_beliefs,
       atlas: Map.new(@atlas_schemas, &{&1, Atlas.Repo.aggregate(&1, :count)}),
       graphs:
-        Map.new(@graphs, fn graph ->
-          {:ok, count} = count_nodes(graph)
-          {graph, count}
+        Map.new(@graphs, fn kind ->
+          {:ok, count} = count_nodes(Atlas.Graph.world_graph(kind, @world_id))
+          {kind, count}
         end),
       learning: LearningStore.get_stats(),
       persona_memory: length(Brain.MemoryStore.get_memory_window(persona, 1_000_000))
