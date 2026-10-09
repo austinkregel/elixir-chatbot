@@ -128,6 +128,11 @@ config :brain,
   # Intent promotion (novel intent discovery)
   intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true",
 
+  # The world Brain.Knowledge.LearningTriggers starts its auto-triggered
+  # learning sessions in, until it is changed on the settings page. It must
+  # name a loaded world when a session triggers, or the trigger raises.
+  auto_learning_world_id: "default",
+
   # KG Signal Strengthening kill switches
   kg_signals: [
     enabled: System.get_env("KG_SIGNALS_ENABLED", "true") == "true",
