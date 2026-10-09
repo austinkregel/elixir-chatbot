@@ -4,6 +4,9 @@ defmodule Brain.Lattice.FragmentVectorizerTest do
   alias Brain.Analysis.FeatureExtractor.ChunkFeatures
   alias Brain.Lattice.FragmentVectorizer
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   # Feature extraction reads the knowledge graph; without a checked-out
   # connection those lookups fail silently.
   setup tags do
@@ -18,13 +21,13 @@ defmodule Brain.Lattice.FragmentVectorizerTest do
 
     text = "Hello! What is the weather like in Seattle this week? It might rain on Tuesday."
 
-    assert {:ok, fv} = FragmentVectorizer.vectorize_fragment_text(text)
+    assert {:ok, fv} = FragmentVectorizer.vectorize_fragment_text(text, @world_id)
     assert length(fv) == ChunkFeatures.vector_dimension()
     assert length(fv) == FragmentVectorizer.vector_dimension()
     assert Enum.any?(fv, &(&1 != 0.0))
   end
 
   test "vectorize_fragment_text rejects empty string" do
-    assert {:error, :empty_text} = FragmentVectorizer.vectorize_fragment_text("   ")
+    assert {:error, :empty_text} = FragmentVectorizer.vectorize_fragment_text("   ", @world_id)
   end
 end
