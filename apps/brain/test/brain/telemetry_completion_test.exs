@@ -18,7 +18,7 @@ defmodule Brain.TelemetryCompletionTest do
       )
 
       try do
-        _ = Brain.Response.Generator.generate("smalltalk.greet", [], nil)
+        _ = Brain.Response.Generator.generate("smalltalk.greet", [], nil, world_id: "default")
         assert_receive {:telemetry, %{duration: _duration}}, 2_000
       after
         :telemetry.detach(handler_id)
