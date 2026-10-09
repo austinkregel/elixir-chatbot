@@ -18,15 +18,16 @@ defmodule Atlas.Graph.Cypher do
 
   ## Parameters
     - repo: The Ecto repo (usually Atlas.Repo)
-    - graph_name: Name of the AGE graph (e.g., "knowledge_graph")
+    - graph_name: Name of the AGE graph (e.g., "pos_graph", or a world's
+      graph from `Atlas.Graph.world_graph/2`)
     - query: openCypher query string
     - params: Map of query parameters (embedded as literals -- AGE does not support $-params in all contexts)
 
   ## Examples
 
-      Cypher.execute(Atlas.Repo, "knowledge_graph", "MATCH (n) RETURN n LIMIT 10")
+      Cypher.execute(Atlas.Repo, "pos_graph", "MATCH (n) RETURN n LIMIT 10")
 
-      Cypher.execute(Atlas.Repo, "user_graph",
+      Cypher.execute(Atlas.Repo, Atlas.Graph.world_graph("user_graph", world_id),
         "MATCH (u:User {name: '\#{name}'}) RETURN u")
   """
   def execute(repo, graph_name, query, _params \\ %{}) do
