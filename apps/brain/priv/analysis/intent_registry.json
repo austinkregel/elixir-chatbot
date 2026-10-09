@@ -630,6 +630,9 @@
       "all": [
         "all"
       ],
+      "change_value": [
+        "sys.number"
+      ],
       "device": [
         "heating"
       ],
@@ -640,12 +643,18 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "heating"
+      }
+    ],
     "optional": [
       "final_value",
       "device",
       "room",
-      "all"
+      "all",
+      "change_value"
     ],
     "output_contexts": [
       {
@@ -850,16 +859,24 @@
     "entity_mappings": {
       "color": [
         "color"
+      ],
+      "device": [
+        "device"
       ]
     },
     "input_contexts": [
       {
         "lifespan": 2,
         "name": "color"
+      },
+      {
+        "lifespan": 2,
+        "name": "device_switch"
       }
     ],
     "optional": [
-      "color"
+      "color",
+      "device"
     ],
     "output_contexts": [
       {
@@ -1117,8 +1134,17 @@
     "description": "Continue a volume adjustment with another device, room, direction, or level",
     "domain": "smarthome",
     "entity_mappings": {
+      "change_value": [
+        "sys.number"
+      ],
       "device": [
         "device_volume"
+      ],
+      "final_value": [
+        "sys.number"
+      ],
+      "room": [
+        "room"
       ]
     },
     "input_contexts": [
@@ -1128,7 +1154,10 @@
       }
     ],
     "optional": [
-      "device"
+      "device",
+      "final_value",
+      "change_value",
+      "room"
     ],
     "output_contexts": [
       {
@@ -2254,29 +2283,6 @@
     ],
     "speech_act": "command"
   },
-  "smarthome.heating": {
-    "category": "directive",
-    "clarification_templates": {},
-    "description": "Adjust the heating to a temperature given as a follow-up",
-    "domain": "smarthome",
-    "entity_mappings": {
-      "final_value": [
-        "sys.number"
-      ]
-    },
-    "input_contexts": [
-      {
-        "lifespan": 2,
-        "name": "heating"
-      }
-    ],
-    "optional": [
-      "final_value"
-    ],
-    "output_contexts": [],
-    "required": [],
-    "speech_act": "command"
-  },
   "smalltalk.agent.boss": {
     "category": "expressive",
     "clarification_templates": {},
@@ -2705,7 +2711,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "device_volume"
+      }
+    ],
     "optional": [
       "device",
       "room",
@@ -3497,7 +3508,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "room"
+      }
+    ],
     "optional": [
       "color",
       "device",
@@ -3630,7 +3646,12 @@
         "room"
       ]
     },
-    "input_contexts": [],
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "device_volume"
+      }
+    ],
     "optional": [
       "device",
       "change_value",
