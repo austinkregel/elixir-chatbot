@@ -658,7 +658,11 @@ defmodule Brain.ML.EntityExtractor do
     if has_number and has_street_word do
       "address"
     else
-      TypeHierarchy.parent_of("city") || "location"
+      # A place name that is not a street address is typed as what a city is.
+      case TypeHierarchy.parents_of("city") do
+        [parent] -> parent
+        parents -> raise "EntityExtractor: a place name needs the one parent type of city; the hierarchy gives #{inspect(parents)}"
+      end
     end
   end
 
