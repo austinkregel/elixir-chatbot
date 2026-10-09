@@ -44,18 +44,19 @@ defmodule Brain.Analysis.SpeechActClassifier do
   full-features intent vote without re-running the cheap voters.
 
   ## Options
+    - `:world_id` - Required. The world whose episodic memory the memory voter reads.
     - `:entities` - Pre-extracted entities to use for arbitration (default: [])
   """
-  def classify(text, opts \\ []) when is_binary(text) do
+  def classify(text, opts) when is_binary(text) do
     entities = Keyword.get(opts, :entities, [])
-    analyses = run_all_analyses(text, entities)
+    analyses = run_all_analyses(text, entities, world_id!(opts, :classify))
     combine_analyses(analyses, text)
   end
 
-  @doc "Returns detailed analysis with all individual scores for debugging/learning.\n"
-  def analyze(text, opts \\ []) when is_binary(text) do
+  @doc "Returns detailed analysis with all individual scores for debugging/learning.\n\nTakes the same options as `classify/2`; `:world_id` is required.\n"
+  def analyze(text, opts) when is_binary(text) do
     entities = Keyword.get(opts, :entities, [])
-    analyses = run_all_analyses(text, entities)
+    analyses = run_all_analyses(text, entities, world_id!(opts, :analyze))
     result = combine_analyses(analyses, text)
 
     %{
@@ -134,7 +135,19 @@ defmodule Brain.Analysis.SpeechActClassifier do
     combine_analyses(updated_analyses, Map.get(analyses, :original_text, ""))
   end
 
-  defp run_all_analyses(text, _entities) do
+  defp world_id!(opts, function) do
+    case Keyword.get(opts, :world_id) do
+      world_id when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      other ->
+        raise ArgumentError,
+              "SpeechActClassifier.#{function} requires a :world_id option, the world whose " <>
+                "memory the memory voter reads; got #{inspect(other)}"
+    end
+  end
+
+  defp run_all_analyses(text, _entities, world_id) do
     normalized = normalize_text(text)
 
     %{
@@ -143,7 +156,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
       structural: analyze_structure(text, normalized),
       keyword: analyze_keywords(normalized),
       pragmatic: analyze_pragmatics(text, normalized),
-      memory: analyze_with_memory(text)
+      memory: analyze_with_memory(text, world_id)
     }
   end
 
@@ -321,8 +334,8 @@ defmodule Brain.Analysis.SpeechActClassifier do
     }
   end
 
-  defp analyze_with_memory(text) do
-    case query_memory_for_classification(text) do
+  defp analyze_with_memory(text, world_id) do
+    case query_memory_for_classification(text, world_id) do
       {:ok, [_ | _] = results} ->
         {category, sub_type, confidence} = vote_on_memory_results(results)
 
@@ -345,7 +358,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
     end
   end
 
-  defp query_memory_for_classification(text) do
+  defp query_memory_for_classification(text, world_id) do
     store_pid = Process.whereis(Brain.Memory.Store)
     embedder_pid = Process.whereis(Brain.Memory.Embedder)
 
@@ -360,7 +373,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
         {:error, :embedder_not_ready}
 
       true ->
-        task = Task.async(fn -> Store.query_similar(text, 5, rerank: false) end)
+        task = Task.async(fn -> Store.query_similar(text, 5, world_id: world_id, rerank: false) end)
 
         case Task.yield(task, 500) || Task.shutdown(task, :brutal_kill) do
           {:ok, result} -> result
