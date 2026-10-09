@@ -143,11 +143,8 @@ defmodule Brain.Subprocesses.HttpSubprocess do
 
   @impl true
   def handle_call(:create_conversation, _from, state) do
-    conversation_id =
-      case Brain.create_conversation(world_id: state.world_id) do
-        {:ok, id} -> id
-        _ -> generate_conversation_id()
-      end
+    # Brain owns conversation ids; one it did not create would be unknown to it.
+    {:ok, conversation_id} = Brain.create_conversation(world_id: state.world_id)
 
     conversation = %{
       id: conversation_id,
@@ -269,10 +266,6 @@ defmodule Brain.Subprocesses.HttpSubprocess do
   end
 
   defp generate_id do
-    :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
-  end
-
-  defp generate_conversation_id do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
   end
 
