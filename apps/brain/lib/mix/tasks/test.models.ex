@@ -28,6 +28,13 @@ defmodule Mix.Tasks.Test.Models do
   `entity_model.term` was the clearest case: nothing rebuilt it and nothing promoted
   it, so the test copy simply drifted away from the real one and nothing noticed.
 
+  ## The test world
+
+  The suite runs in a real world, `default`, under the test environment's world
+  directory (`World.Persistence.base_path/0`). Extraction reads that world's own
+  entity model (`Brain.ML.EntityModel`), so after promoting, this seeds the world
+  with the promoted `entity_model.term`.
+
   ## What is not promoted here
 
   `pos_model.term` has its own path: a run is trained on `/training/pos` and a
@@ -60,6 +67,9 @@ defmodule Mix.Tasks.Test.Models do
   alias Brain.Analysis.RunProvenance
 
   @requirements ["app.config"]
+
+  # The world the test suite runs its conversations and analyses in.
+  @test_world_id "default"
 
   @models ~w(
     embedder.term
@@ -110,9 +120,12 @@ defmodule Mix.Tasks.Test.Models do
 
     results = Enum.map(models(), fn name -> promote!(source, dest, name) end)
 
+    Brain.ML.EntityModel.seed!(@test_world_id)
+
     Mix.shell().info("")
     Mix.shell().info("  copied    #{Enum.count(results, &(&1 == :copied))}")
     Mix.shell().info("  unchanged #{Enum.count(results, &(&1 == :unchanged))}")
+    Mix.shell().info("  seeded world #{@test_world_id}: #{Brain.ML.EntityModel.path(@test_world_id)}")
     Mix.shell().info("")
   end
 
@@ -134,7 +147,7 @@ defmodule Mix.Tasks.Test.Models do
       test.models: no #{name} at #{from}.
 
       The test suite is meant to run against the real upstream models. Train them
-      first -- `mix train` covers the core classifiers -- or download them with
+      first -- `mix train --world <id>` covers the core classifiers -- or download them with
       `mix models.download`.
       """)
     end
