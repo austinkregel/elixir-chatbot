@@ -16,6 +16,7 @@ defmodule Brain.Subprocesses.HttpSubprocessTest do
     {:ok, pid} =
       HttpSubprocess.start_link(
         subprocess_id: subprocess_id,
+        world_id: "default",
         port: port,
         memory_snapshot: memory_snapshot
       )
