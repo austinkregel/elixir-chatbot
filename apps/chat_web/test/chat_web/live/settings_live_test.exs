@@ -120,7 +120,10 @@ defmodule ChatWeb.SettingsLiveTest do
       refute render(view) =~ "is not loaded. An auto-triggered session will fail"
     end
 
-    test "saving a loaded world sets it as the auto-learning world", %{conn: conn, other: other} do
+    test "saving a loaded world sets it as the auto-learning world and stores it", %{
+      conn: conn,
+      other: other
+    } do
       {:ok, view, _html} = live(conn, "/settings?section=training")
 
       html =
@@ -129,6 +132,9 @@ defmodule ChatWeb.SettingsLiveTest do
         |> render_submit()
 
       assert LearningTriggers.auto_learning_world() == other.id
+
+      assert Atlas.Settings.fetch(LearningTriggers.auto_learning_world_setting()) ==
+               {:ok, other.id}
       assert html =~ "Auto-triggered learning sessions now start in world #{other.id}"
       assert has_element?(view, ~s(#auto-learning-world option[value="#{other.id}"][selected]))
     end
