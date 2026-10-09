@@ -1,21 +1,21 @@
 defmodule Brain.Response.MemoryAugmented do
   @moduledoc "Generates contextually appropriate responses by:\n1. Finding similar past interactions via TF-IDF similarity\n2. Extracting successful response patterns from those interactions\n3. Adapting patterns to current context using slot filling\n\nThis module provides an alternative to template-based responses\nby leveraging episodic memory of past successful conversations.\n"
 
-  alias Brain.Memory.{Store, Embedder}
+  alias Brain.Memory.Store
   alias Brain.ML.Tokenizer
 
   require Logger
   @similarity_threshold 0.6
   @max_episodes 5
 
-  @doc "Attempts to generate a response from similar past interactions.\n\n## Options\n  - `:world_id` - Required. The world whose episodes are searched.\n\nReturns:\n- {:ok, response, metadata} - Successfully generated response\n- :no_memory_match - No suitable past interactions found\n- :embedder_not_ready - Embedder not available\n"
+  @doc "Attempts to generate a response from similar past interactions.\n\nThe query is embedded by the world's embedder, inside `Store.query_similar/3`.\n\n## Options\n  - `:world_id` - Required. The world whose episodes are searched.\n\nReturns:\n- {:ok, response, metadata} - Successfully generated response\n- :no_memory_match - No suitable past interactions found\n- :store_not_running - `Brain.Memory.Store` is not running\n"
   def generate(intent, entities, opts) do
     world_id = world_id!(opts, :generate)
 
-    if Embedder.ready?() and Process.whereis(Store) do
+    if Process.whereis(Store) do
       do_generate(intent, entities, world_id)
     else
-      :embedder_not_ready
+      :store_not_running
     end
   end
 
