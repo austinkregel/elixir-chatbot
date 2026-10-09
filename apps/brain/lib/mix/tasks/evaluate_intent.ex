@@ -127,7 +127,12 @@ defmodule Mix.Tasks.Evaluate.Intent do
 
         {status, predicted} =
           try do
-            analysis = Pipeline.analyze_chunk(text, side_effects: false)
+            analysis =
+              Pipeline.analyze_chunk(text,
+                side_effects: false,
+                active_contexts: Brain.Analysis.ActiveContexts.for_row(example)
+              )
+
             p = to_string(analysis.intent || "unknown")
             if p == "unknown", do: {:unknown, p}, else: {:ok, p}
           rescue
