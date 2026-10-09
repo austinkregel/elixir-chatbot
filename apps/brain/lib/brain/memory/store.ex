@@ -1,5 +1,5 @@
 defmodule Brain.Memory.Store do
-  @moduledoc "Storage layer for the cognitive memory system.\n\nPorted from the Rust cognitive_memory_system MemoryStore.\n\nManages collections of episodic and semantic memories with separate\nvector indices for efficient retrieval. Supports persistence to disk.\n\n## World Scoping\n\nAll operations support an optional `world_id` parameter for data isolation.\nIf not specified, operations use the \"default\" world.\n\nEpisodes and semantic facts are stored per-world, allowing complete\nisolation between training worlds while sharing the same GenServer.\n"
+  @moduledoc "Storage layer for the cognitive memory system.\n\nPorted from the Rust cognitive_memory_system MemoryStore.\n\nManages collections of episodic and semantic memories with separate\nvector indices for efficient retrieval. Supports persistence to disk.\n\n## World Scoping\n\nEvery operation on episodes or semantic facts requires a `:world_id` option and\nraises `ArgumentError` without one; no world is assumed. `stats/1` and `clear/1`\ntreat an absent `:world_id` as \"all worlds\".\n\nEpisodes and semantic facts are stored per-world, allowing complete\nisolation between training worlds while sharing the same GenServer.\n"
 
   # World.Embedder is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
@@ -11,12 +11,11 @@ defmodule Brain.Memory.Store do
   use GenServer
 
   alias Types.{Episode, SemanticFact}
-  alias Memory.{Consolidation, Embedder, VectorIndex}
+  alias Memory.{Consolidation, VectorIndex}
   alias World.Embedder, as: WorldEmbedder
 
   require Logger
 
-  @default_world_id "default"
   @consolidate_interval_ms 15 * 60 * 1000
 
   @doc "Returns true if the Store is ready to accept requests."
@@ -39,21 +38,21 @@ defmodule Brain.Memory.Store do
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
-  @doc "Add a new episode to the store.\nThe episode is embedded and indexed for similarity search.\n\n## Options\n  - world_id: The world to add the episode to (default: \"default\")\n"
-  def add_episode(state, action, outcome, tags, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  @doc "Add a new episode to the store.\nThe episode is embedded and indexed for similarity search.\n\n## Options\n  - world_id: The world to add the episode to (required)\n"
+  def add_episode(state, action, outcome, tags, opts) do
+    world_id = world_id!(opts, :add_episode)
     GenServer.call(__MODULE__, {:add_episode, state, action, outcome, tags, world_id})
   end
 
-  @doc "Add a pre-built episode to the store.\n\n## Options\n  - world_id: The world to add the episode to (default: \"default\")\n"
-  def add_episode_direct(episode, opts \\ []) when is_struct(episode, Episode) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  @doc "Add a pre-built episode to the store.\n\n## Options\n  - world_id: The world to add the episode to (required)\n"
+  def add_episode_direct(episode, opts) when is_struct(episode, Episode) do
+    world_id = world_id!(opts, :add_episode_direct)
     GenServer.call(__MODULE__, {:add_episode_direct, episode, world_id})
   end
 
-  @doc "Query for episodes similar to the given text.\nReturns top k episodes with similarity scores.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n  - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)\n"
-  def query_similar(text, k \\ 5, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  @doc "Query for episodes similar to the given text.\nReturns top k episodes with similarity scores.\n\n## Options\n  - world_id: The world to query (required)\n  - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)\n"
+  def query_similar(text, k \\ 5, opts) do
+    world_id = world_id!(opts, :query_similar)
     rerank = Keyword.get(opts, :rerank, :auto)
 
     Telemetry.span(:memory_query, %{k: k, world_id: world_id}, fn ->
@@ -61,15 +60,15 @@ defmodule Brain.Memory.Store do
     end)
   end
 
-  @doc "Query for episodes with specific tags.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
-  def query_by_tags(tags, limit \\ 10, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  @doc "Query for episodes with specific tags.\n\n## Options\n  - world_id: The world to query (required)\n"
+  def query_by_tags(tags, limit \\ 10, opts) do
+    world_id = world_id!(opts, :query_by_tags)
     GenServer.call(__MODULE__, {:query_by_tags, tags, limit, world_id})
   end
 
   @doc "Add an episode based on an extracted event.\n\nCreates an episode with structured state from the event, action from the verb lemma,\nand appropriate tags for event-based querying.\n\n## Parameters\n  - event: An Event struct from EventExtractor\n  - context: Map with :response (bot's response) and optional :user_input\n  - opts: Keyword list with :world_id, :tags\n\n## Examples\n\n    event = %Event{action: %{lemma: \"play\", ...}, object: %{text: \"jazz\"}}\n    context = %{response: \"Playing jazz music\", user_input: \"Play some jazz\"}\n    add_event_episode(event, context, world_id: \"training\")\n"
-  def add_event_episode(event, context, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def add_event_episode(event, context, opts) do
+    world_id = world_id!(opts, :add_event_episode)
     extra_tags = Keyword.get(opts, :tags, [])
     state = format_event_state(event, context)
     action = get_event_action(event)
@@ -81,17 +80,17 @@ defmodule Brain.Memory.Store do
   end
 
   @doc "Query for episodes by action/verb type.\n\nReturns episodes that were created from events with the specified action lemma.\n\n## Examples\n\n    # Find all episodes where user asked to \"play\" something\n    query_events_by_action(\"play\", 5, world_id: \"default\")\n"
-  def query_events_by_action(action_lemma, k \\ 5, opts \\ []) do
+  def query_events_by_action(action_lemma, k \\ 5, opts) do
     query_by_tags(["event:#{action_lemma}"], k, opts)
   end
 
-  @doc "Query for episodes involving a specific object.\n\n## Examples\n\n    # Find all episodes about \"music\"\n    query_events_by_object(\"music\", 5)\n"
-  def query_events_by_object(object_text, k \\ 5, opts \\ []) do
+  @doc "Query for episodes involving a specific object.\n\n## Examples\n\n    # Find all episodes about \"music\"\n    query_events_by_object(\"music\", 5, world_id: \"default\")\n"
+  def query_events_by_object(object_text, k \\ 5, opts) do
     query_by_tags(["object:#{String.downcase(object_text)}"], k, opts)
   end
 
-  @doc "Query for episodes involving a specific actor.\n\n## Examples\n\n    # Find all episodes where user was the actor\n    query_events_by_actor(\"user\", 5)\n"
-  def query_events_by_actor(actor_text, k \\ 5, opts \\ []) do
+  @doc "Query for episodes involving a specific actor.\n\n## Examples\n\n    # Find all episodes where user was the actor\n    query_events_by_actor(\"user\", 5, world_id: \"default\")\n"
+  def query_events_by_actor(actor_text, k \\ 5, opts) do
     query_by_tags(["actor:#{String.downcase(actor_text)}"], k, opts)
   end
 
@@ -159,15 +158,15 @@ defmodule Brain.Memory.Store do
     end
   end
 
-  @doc "Get a specific episode by ID.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
-  def get_episode(id, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  @doc "Get a specific episode by ID.\n\n## Options\n  - world_id: The world to query (required)\n"
+  def get_episode(id, opts) do
+    world_id = world_id!(opts, :get_episode)
     GenServer.call(__MODULE__, {:get_episode, id, world_id})
   end
 
-  @doc "Add a semantic fact to the store.\n\n## Options\n  - world_id: The world to add the semantic to (default: \"default\")\n"
-  def add_semantic(semantic, opts \\ []) when is_struct(semantic, SemanticFact) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  @doc "Add a semantic fact to the store.\n\n## Options\n  - world_id: The world to add the semantic to (required)\n"
+  def add_semantic(semantic, opts) when is_struct(semantic, SemanticFact) do
+    world_id = world_id!(opts, :add_semantic)
     GenServer.call(__MODULE__, {:add_semantic, semantic, world_id})
   end
 
@@ -175,7 +174,7 @@ defmodule Brain.Memory.Store do
   Query for semantic facts similar to the given text.
 
   ## Options
-    - world_id: The world to query (default: "default")
+    - world_id: The world to query (required)
     - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)
 
   ## Why this does not run in the GenServer
@@ -198,35 +197,47 @@ defmodule Brain.Memory.Store do
   its table without `:named_table`, so the identifiers live in the server's state
   and have to be asked for.
   """
-  def query_semantic(text, k \\ 5, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def query_semantic(text, k \\ 5, opts) do
+    world_id = world_id!(opts, :query_semantic)
     rerank = Keyword.get(opts, :rerank, :auto)
 
     do_query_semantic(tables!(), text, k, world_id, rerank)
   end
 
-  @doc "Get a specific semantic fact by ID.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
-  def get_semantic(id, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  @doc "Get a specific semantic fact by ID.\n\n## Options\n  - world_id: The world to query (required)\n"
+  def get_semantic(id, opts) do
+    world_id = world_id!(opts, :get_semantic)
     GenServer.call(__MODULE__, {:get_semantic, id, world_id})
   end
 
-  @doc "Update an episode's semantic_id after consolidation.\n\n## Options\n  - world_id: The world containing the episode (default: \"default\")\n"
-  def link_episode_to_semantic(episode_id, semantic_id, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  @doc "Update an episode's semantic_id after consolidation.\n\n## Options\n  - world_id: The world containing the episode (required)\n"
+  def link_episode_to_semantic(episode_id, semantic_id, opts) do
+    world_id = world_id!(opts, :link_episode_to_semantic)
     GenServer.call(__MODULE__, {:link_episode, episode_id, semantic_id, world_id})
   end
 
-  @doc "Get all episodes.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
-  def all_episodes(opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  @doc "Get all episodes.\n\n## Options\n  - world_id: The world to query (required)\n"
+  def all_episodes(opts) do
+    world_id = world_id!(opts, :all_episodes)
     GenServer.call(__MODULE__, {:all_episodes, world_id})
   end
 
-  @doc "Get all semantic facts.\n\n## Options\n  - world_id: The world to query (default: \"default\")\n"
-  def all_semantics(opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  @doc "Get all semantic facts.\n\n## Options\n  - world_id: The world to query (required)\n"
+  def all_semantics(opts) do
+    world_id = world_id!(opts, :all_semantics)
     GenServer.call(__MODULE__, {:all_semantics, world_id})
+  end
+
+  defp world_id!(opts, function) do
+    case Keyword.get(opts, :world_id) do
+      world_id when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      other ->
+        raise ArgumentError,
+              "Brain.Memory.Store.#{function} requires a :world_id option naming the world " <>
+                "to read or write; got #{inspect(other)}. No world is assumed."
+    end
   end
 
   @doc "Get store statistics.\n\n## Options\n  - world_id: The world to get stats for (default: nil for all worlds)\n"
@@ -634,45 +645,60 @@ defmodule Brain.Memory.Store do
     end
   end
 
+  # Every world that holds an episode or a semantic fact is loaded, so a query
+  # scoped to any world finds what that world stored before this restart.
   defp warm_vector_index(state) do
-    case Brain.AtlasIntegration.load_episodes(@default_world_id) do
-      {:ok, episodes} when episodes != %{} ->
-        episodes = backfill_entity_names(episodes, @default_world_id)
-
-        Enum.each(episodes, fn {id, ep} ->
-          if is_list(ep.embedding) and ep.embedding != [] do
-            VectorIndex.insert(state.episode_index, {@default_world_id, id}, ep.embedding)
-          end
-        end)
-
-        episode_count = map_size(episodes)
-
-        case Brain.AtlasIntegration.load_semantics(@default_world_id) do
-          {:ok, semantics} when semantics != %{} ->
-            Enum.each(semantics, fn {id, sem} ->
-              if is_list(sem.embedding) and sem.embedding != [] do
-                VectorIndex.insert(state.semantic_index, {@default_world_id, id}, sem.embedding)
-                put_semantic_record(state, @default_world_id, sem)
-              end
-            end)
-
-            Logger.info("VectorIndex warmed from Atlas",
-              episodes: episode_count,
-              semantics: map_size(semantics)
-            )
-
-          _ ->
-            Logger.info("VectorIndex warmed from Atlas (episodes only)",
-              episodes: episode_count
-            )
-        end
-
-      _ ->
+    case list_worlds_from_atlas() do
+      [] ->
         Logger.debug("No memory data in Atlas, VectorIndex empty")
+
+      world_ids ->
+        Enum.each(world_ids, &warm_world(state, &1))
     end
   rescue
     e ->
       Logger.warning("Failed to warm VectorIndex from Atlas: #{inspect(e)}")
+  end
+
+  defp warm_world(state, world_id) do
+    episode_count =
+      case Brain.AtlasIntegration.load_episodes(world_id) do
+        {:ok, episodes} when episodes != %{} ->
+          episodes = backfill_entity_names(episodes, world_id)
+
+          Enum.each(episodes, fn {id, ep} ->
+            if is_list(ep.embedding) and ep.embedding != [] do
+              VectorIndex.insert(state.episode_index, {world_id, id}, ep.embedding)
+            end
+          end)
+
+          map_size(episodes)
+
+        _ ->
+          0
+      end
+
+    semantic_count =
+      case Brain.AtlasIntegration.load_semantics(world_id) do
+        {:ok, semantics} when semantics != %{} ->
+          Enum.each(semantics, fn {id, sem} ->
+            if is_list(sem.embedding) and sem.embedding != [] do
+              VectorIndex.insert(state.semantic_index, {world_id, id}, sem.embedding)
+              put_semantic_record(state, world_id, sem)
+            end
+          end)
+
+          map_size(semantics)
+
+        _ ->
+          0
+      end
+
+    Logger.info("VectorIndex warmed from Atlas",
+      world_id: world_id,
+      episodes: episode_count,
+      semantics: semantic_count
+    )
   end
 
   defp backfill_entity_names(episodes, world_id) do
@@ -708,20 +734,21 @@ defmodule Brain.Memory.Store do
     end
   end
 
+  # A world's embedding comes from the world's embedder and nowhere else. A
+  # world whose embedder has no vocabulary, or whose embedder table does not
+  # exist, cannot embed: that raises, naming the world and the reason. A
+  # vocabulary being rebuilt from the world's episodes (`build_vocabulary/2`)
+  # is returned to the caller as `{:error, :vocabulary_building}`.
   defp get_embedding(world_id, text) do
-    world_embed_result = WorldEmbedder.embed(world_id, text)
-
-    case world_embed_result do
+    case WorldEmbedder.embed(world_id, text) do
       {:ok, embedding} ->
         {:ok, embedding}
 
-      {:error, reason}
-      when reason in [:no_training_data, :not_initialized, :vocabulary_building, :table_not_ready] ->
-        if Embedder.ready?() do
-          Embedder.embed(text)
-        else
-          {:error, :no_embedder_available}
-        end
+      {:error, :vocabulary_building} ->
+        {:error, :vocabulary_building}
+
+      {:error, reason} when reason in [:no_training_data, :not_initialized, :table_not_ready] ->
+        raise "Brain.Memory.Store: world #{inspect(world_id)}'s embedder cannot embed: #{inspect(reason)}"
 
       {:error, reason} ->
         {:error, reason}
@@ -738,7 +765,7 @@ defmodule Brain.Memory.Store do
     if query_entities == [] do
       Enum.take(candidates, k)
     else
-      query_vecs = entity_vectors(query_entities)
+      query_vecs = entity_vectors(query_entities, world_id)
 
       if query_vecs == [] do
         Enum.take(candidates, k)
@@ -746,7 +773,7 @@ defmodule Brain.Memory.Store do
         reranked =
           Enum.map(candidates, fn {item, tfidf_score} ->
             item_entities = read_item_entity_names(item)
-            item_vecs = entity_vectors(item_entities)
+            item_vecs = entity_vectors(item_entities, world_id)
 
             kg_score =
               if item_vecs == [] do
@@ -819,11 +846,11 @@ defmodule Brain.Memory.Store do
     Map.put(episode, :entity_names, extract_entity_names_for_ingest(text, world_id))
   end
 
-  defp entity_vectors(entity_names) do
+  defp entity_vectors(entity_names, world_id) do
     alias Brain.ML.KnowledgeGraph.EntityVectorCache
 
     Enum.flat_map(entity_names, fn name ->
-      case EntityVectorCache.get_or_compute("default", name) do
+      case EntityVectorCache.get_or_compute(world_id, name) do
         {:ok, vec} -> [vec]
         _ -> []
       end
