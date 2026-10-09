@@ -19,7 +19,7 @@ defmodule Mix.Tasks.TrainMicro do
   ## Workflow
 
   1. After changing `priv/evaluation/intent/gold_standard.json` or axis heuristics,
-     regenerate axis JSON: `mix gen_micro_data`.
+     regenerate axis JSON: `mix gen_micro_data --world <id>`.
   2. Train everything: `mix train_micro`, or one model: `mix train_micro --only intent_domain`.
   3. Full pipeline also runs this task as stage 9 of `mix train` unless `--skip-micro`.
 
@@ -276,7 +276,7 @@ defmodule Mix.Tasks.TrainMicro do
       [] ->
         {:error, :shape_mismatch,
          {name, "no records with non-empty :feature_vector found. " <>
-                  "Did you run `mix gen_micro_data` after the axis classifier migration?"}}
+                  "Did you run `mix gen_micro_data --world <id>` after the axis classifier migration?"}}
 
       _ ->
         {:ok, pairs, :feature_vector}
