@@ -12,15 +12,26 @@ defmodule Brain.Knowledge.Corroborator do
   @min_sources 2
   @max_cluster_size 20
 
-  @doc "Groups findings by semantic similarity and calculates corroboration.\n\nReturns ReviewCandidates with corroboration metadata. Only findings\nthat meet the minimum source threshold are returned.\n\n## Options\n  - :similarity_threshold - Override default similarity threshold\n  - :min_sources - Override minimum source requirement\n  - :include_uncorroborated - If true, include findings below threshold\n"
+  @doc "Groups findings by semantic similarity and calculates corroboration.\n\nReturns ReviewCandidates with corroboration metadata. Only findings\nthat meet the minimum source threshold are returned.\n\n## Options\n  - :world_id - Required. The world whose entity vectors inform clustering; absent raises.\n  - :similarity_threshold - Override default similarity threshold\n  - :min_sources - Override minimum source requirement\n  - :include_uncorroborated - If true, include findings below threshold\n"
   @spec corroborate([Finding.t()], keyword()) :: {:ok, [ReviewCandidate.t()]}
-  def corroborate(findings, opts \\ []) when is_list(findings) do
+  def corroborate(findings, opts) when is_list(findings) do
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "Corroborator.corroborate requires a :world_id option, the world whose entity " <>
+                  "vectors inform clustering; got #{inspect(other)}"
+      end
+
     Telemetry.span(:knowledge_corroborate, %{findings_count: length(findings)}, fn ->
-      do_corroborate(findings, opts)
+      do_corroborate(findings, opts, world_id)
     end)
   end
 
-  defp do_corroborate(findings, opts) do
+  defp do_corroborate(findings, opts, world_id) do
     similarity_threshold = Keyword.get(opts, :similarity_threshold, @similarity_threshold)
     min_sources = Keyword.get(opts, :min_sources, @min_sources)
     include_uncorroborated = Keyword.get(opts, :include_uncorroborated, false)
@@ -31,7 +42,7 @@ defmodule Brain.Knowledge.Corroborator do
       {:ok, []}
     else
       embedded = embed_findings(findings)
-      clusters = cluster_by_similarity(embedded, similarity_threshold)
+      clusters = cluster_by_similarity(embedded, similarity_threshold, world_id)
 
       candidates =
         clusters
@@ -240,10 +251,10 @@ defmodule Brain.Knowledge.Corroborator do
     end
   end
 
-  defp cluster_by_similarity(embedded_findings, threshold) do
+  defp cluster_by_similarity(embedded_findings, threshold, world_id) do
     embedded_findings
     |> Enum.reduce([], fn {finding, embedding}, clusters ->
-      case find_matching_cluster(clusters, embedding, threshold) do
+      case find_matching_cluster(clusters, embedding, threshold, world_id) do
         {:found, cluster_idx} ->
           update_cluster(clusters, cluster_idx, {finding, embedding})
 
@@ -259,7 +270,7 @@ defmodule Brain.Knowledge.Corroborator do
     |> Enum.map(&finalize_cluster/1)
   end
 
-  defp find_matching_cluster(clusters, embedding, threshold) do
+  defp find_matching_cluster(clusters, embedding, threshold, world_id) do
     clusters
     |> Enum.with_index()
     |> Enum.find_value(:not_found, fn {cluster, idx} ->
@@ -268,7 +279,7 @@ defmodule Brain.Knowledge.Corroborator do
 
       similarity =
         if kg_clustering_enabled?() do
-          blend_with_kg_similarity(tfidf_sim, primary_finding, nil)
+          blend_with_kg_similarity(tfidf_sim, primary_finding, world_id)
         else
           tfidf_sim
         end
@@ -281,11 +292,11 @@ defmodule Brain.Knowledge.Corroborator do
     end)
   end
 
-  defp blend_with_kg_similarity(tfidf_sim, primary_finding, _current_finding) do
+  defp blend_with_kg_similarity(tfidf_sim, primary_finding, world_id) do
     alias Brain.ML.KnowledgeGraph.EntityVectorCache
 
     primary_entity = Map.get(primary_finding, :entity) || Map.get(primary_finding, :claim, "")
-    primary_vec = entity_vector(primary_entity)
+    primary_vec = entity_vector(primary_entity, world_id)
 
     if primary_vec == nil do
       tfidf_sim
@@ -296,10 +307,10 @@ defmodule Brain.Knowledge.Corroborator do
     _ -> tfidf_sim
   end
 
-  defp entity_vector(text) when is_binary(text) and text != "" do
+  defp entity_vector(text, world_id) when is_binary(text) and text != "" do
     alias Brain.ML.KnowledgeGraph.EntityVectorCache
 
-    case EntityVectorCache.get_or_compute("default", text) do
+    case EntityVectorCache.get_or_compute(world_id, text) do
       {:ok, vec} -> vec
       _ -> nil
     end
@@ -307,7 +318,7 @@ defmodule Brain.Knowledge.Corroborator do
     _ -> nil
   end
 
-  defp entity_vector(_), do: nil
+  defp entity_vector(_, _world_id), do: nil
 
   defp kg_clustering_enabled? do
     config = Application.get_env(:brain, :kg_signals, [])
