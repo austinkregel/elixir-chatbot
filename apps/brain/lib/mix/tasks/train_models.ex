@@ -1,11 +1,10 @@
 defmodule Mix.Tasks.TrainModels do
-  @moduledoc "Mix task to train ML models from training data.\n\n## Usage\n\n    mix train_models [options]\n\n## Options\n\n  --world <id>     Train models for a specific world (default: saves to priv/ml_models/)\n  --intent-only    Train only the intent classifier\n  --entity-only    Train only the entity recognition model\n  --pos-only       Train only the POS tagger model\n  --skip-pos       Skip POS tagger training\n\n## World-Specific Training\n\nWhen --world is specified, models are saved to:\n  priv/training_worlds/{world_id}/models/\n\nThis allows each world to have its own isolated ML models. When no world is\nspecified, models are saved to the default location (priv/ml_models/).\n\n## Examples\n\n    # Train all models for the default location\n    mix train_models\n\n    # Train all models for the \"star_trek\" world\n    mix train_models --world star_trek\n\n    # Train only intent classifier for a world\n    mix train_models --world my_world --intent-only\n\nThis task will:\n- Load intent training data from data/intents/ (or data/training/intents/)\n- Build TF-IDF vectorizer and train intent classifier\n- Train BIO-tagged entity recognition model\n- Train POS tagger from annotated data (if available)\n- Save all models to priv/ml_models/ (or world-specific path)\n- Report training statistics and model sizes\n"
+  @moduledoc "Mix task to train ML models from training data.\n\n## Usage\n\n    mix train_models [options]\n\n## Options\n\n  --intent-only    Train only the intent classifier\n  --entity-only    Train only the entity recognition model\n  --pos-only       Train only the POS tagger model\n  --skip-pos       Skip POS tagger training\n\nAn option this task does not know raises.\n\n## Trained Models and Worlds\n\nModels are saved to the trained models directory (`:brain, :ml, :models_path`,\nor priv/ml_models/), the files worlds are seeded from\n(`Brain.ML.EntityModel.trained_path/0`, `World.Embedder.trained_path/0`).\nTraining does not write into any world. A world receives a retrained entity\nmodel or embedder vocabulary when it is seeded: `mix world.seed_model`, or\n`World.Manager` when it creates the world.\n\nThe POS tagger is shared by every world, so it is always saved to\n`Brain.ML.POSTagger.model_path/0`.\n\n## Examples\n\n    # Train all models\n    mix train_models\n\n    # Train only the intent classifier\n    mix train_models --intent-only\n\nThis task will:\n- Load intent training data from data/intents/ (or data/training/intents/)\n- Build TF-IDF vectorizer and train intent classifier\n- Train BIO-tagged entity recognition model\n- Train POS tagger from annotated data (if available)\n- Save all models to the trained models directory\n- Report training statistics and model sizes\n"
 
-  # World.Persistence is in a sibling umbrella app that depends on :brain.
+  # World.Embedder is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Persistence}
+  @compile {:no_warn_undefined, World.Embedder}
 
-  alias World.Persistence
   use Mix.Task
   require Logger
   alias Brain.ML.Trainer
@@ -13,10 +12,9 @@ defmodule Mix.Tasks.TrainModels do
   @shortdoc "Train ML models from training data"
 
   def run(args) do
-    {opts, _, _} =
+    {opts, _, invalid} =
       OptionParser.parse(args,
         strict: [
-          world: :string,
           intent_only: :boolean,
           entity_only: :boolean,
           pos_only: :boolean,
@@ -24,18 +22,19 @@ defmodule Mix.Tasks.TrainModels do
         ]
       )
 
+    if invalid != [] do
+      Mix.raise(
+        "mix train_models does not take #{inspect(invalid)}; it trains the models worlds are " <>
+          "seeded from, and `mix world.seed_model` copies them into a world"
+      )
+    end
+
     Application.put_env(:brain, :skip_ml_init, true)
     Mix.Task.run("app.start")
-    world_id = Keyword.get(opts, :world)
-    models_path = get_models_path(world_id)
+    models_path = trained_models_path()
 
-    if world_id do
-      Logger.info("Starting ML model training pipeline for world: #{world_id}")
-      Mix.shell().info("Training models for world: #{world_id}")
-      Mix.shell().info("Models will be saved to: #{models_path}")
-    else
-      Logger.info("Starting ML model training pipeline (default models)...")
-    end
+    Logger.info("Starting ML model training pipeline...")
+    Mix.shell().info("Models will be saved to: #{models_path}")
 
     File.mkdir_p!(models_path)
     training_data_path = Application.get_env(:brain, :ml)[:training_data_path] || "data"
@@ -58,7 +57,7 @@ defmodule Mix.Tasks.TrainModels do
           run_entity_training(models_path)
 
         Keyword.get(opts, :pos_only, false) ->
-          run_pos_training(models_path)
+          run_pos_training()
 
         true ->
           skip_pos = Keyword.get(opts, :skip_pos, false)
@@ -78,13 +77,20 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
-  defp get_models_path(nil) do
-    Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
-  end
+  # The directory training writes to: the one holding the trained entity model
+  # and embedder vocabulary that worlds are seeded from.
+  defp trained_models_path do
+    entity_dir = Path.dirname(Brain.ML.EntityModel.trained_path())
+    embedder_dir = Path.dirname(World.Embedder.trained_path())
 
-  defp get_models_path(world_id) do
-    world_path = Persistence.world_path(world_id)
-    Path.join(world_path, "models")
+    unless entity_dir == embedder_dir do
+      Mix.raise(
+        "mix train_models writes every model to one directory, but the trained entity model " <>
+          "is at #{entity_dir} and the trained embedder vocabulary at #{embedder_dir}"
+      )
+    end
+
+    entity_dir
   end
 
   defp run_intent_training(models_path) do
@@ -110,7 +116,7 @@ defmodule Mix.Tasks.TrainModels do
           if skip_pos do
             stats
           else
-            {:ok, pos_stats} = run_pos_training_internal(models_path)
+            {:ok, pos_stats} = run_pos_training_internal()
             Map.merge(stats, pos_stats)
           end
 
@@ -121,18 +127,19 @@ defmodule Mix.Tasks.TrainModels do
     end
   end
 
-  defp run_pos_training(models_path) do
+  defp run_pos_training do
     Mix.shell().info("Training POS tagger model only...")
-    run_pos_training_internal(models_path)
+    run_pos_training_internal()
   end
 
   # Trains on the committed EWT fixtures (Brain.Training.POS), which raises
-  # rather than saving a model that cannot beat the lookup baseline.
-  defp run_pos_training_internal(models_path) do
+  # rather than saving a model that cannot beat the lookup baseline. POS
+  # tagging is shared by every world, so the model goes to the shared tagger's
+  # path whether or not --world is given.
+  defp run_pos_training_internal do
     Mix.shell().info("  Training the POS tagger on the EWT fixtures...")
 
-    {path, model} =
-      Brain.Training.POS.train_and_save!(out: Path.join(models_path, "pos_model.term"))
+    {path, model} = Brain.Training.POS.train_and_save!(out: Brain.ML.POSTagger.model_path())
 
     Mix.shell().info("  POS model saved to #{path}")
 
@@ -282,7 +289,7 @@ defmodule Mix.Tasks.TrainModels do
 
     display_model_file(models_path, "classifier.term", "Intent Classifier")
     display_model_file(models_path, "entity_model.term", "Entity Model")
-    display_model_file(models_path, "pos_model.term", "POS Tagger")
+    display_model_file(Path.dirname(Brain.ML.POSTagger.model_path()), "pos_model.term", "POS Tagger")
     display_model_file(models_path, "vectorizer.term", "TF-IDF Vectorizer")
     display_model_file(models_path, "embedder.term", "Embedder Vocabulary")
 
