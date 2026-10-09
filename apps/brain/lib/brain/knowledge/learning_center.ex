@@ -527,7 +527,19 @@ defmodule Brain.Knowledge.LearningCenter do
   end
 
   defp process_findings_traditional(state, session_id, goal_id, findings, remaining_tasks) do
-    {:ok, candidates} = Corroborator.corroborate(findings, include_uncorroborated: true)
+    world_id =
+      case Map.get(state.sessions, session_id) do
+        %{world_id: world_id} when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        session ->
+          raise ArgumentError,
+                "LearningCenter cannot corroborate findings for session #{inspect(session_id)}: " <>
+                  "it has no world (session: #{inspect(session && Map.get(session, :world_id))})"
+      end
+
+    {:ok, candidates} =
+      Corroborator.corroborate(findings, include_uncorroborated: true, world_id: world_id)
     candidates = check_contradictions(candidates)
 
     Enum.each(candidates, fn candidate ->
@@ -911,6 +923,7 @@ defmodule Brain.Knowledge.LearningCenter do
       Brain.AtlasIntegration.async(fn ->
         Atlas.Learning.create_session(%{
           id: session.id,
+          world_id: session.world_id,
           topic: session.topic,
           status: to_string(session.status),
           started_at: session.started_at,
