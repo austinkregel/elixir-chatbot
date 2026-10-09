@@ -443,7 +443,7 @@ Migrating #{intent_label} intent(s) [#{mode} mode]...")
       IO.puts("  #{task}: #{count} examples")
     end)
 
-    IO.puts("\nRun `mix evaluate --save` to evaluate against the new gold standard.\n")
+    IO.puts("\nRun `mix evaluate --world <id> --save` to evaluate against the new gold standard.\n")
   end
 
   defp resolve_intent_names(nil) do
