@@ -8,6 +8,9 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
   alias Knowledge.{ReviewQueue, SourceReliability, LearningCenter}
   alias Types.{Finding, SourceInfo, ReviewCandidate}
 
+  # The world every candidate here belongs to.
+  @world_id "default"
+
   setup do
     ensure_pubsub_started()
 
@@ -214,7 +217,7 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
           bias_rating: :center
         )
 
-      finding = Finding.new("Test claim", "Test Entity", source)
+      finding = Finding.new("Test claim", "Test Entity", source, world_id: @world_id)
       candidate = ReviewCandidate.new(finding, aggregate_confidence: 0.8)
       ReviewQueue.add(candidate)
 
@@ -228,7 +231,7 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
       source1 = SourceInfo.new("https://source1.com/article")
       source2 = SourceInfo.new("https://source2.com/article")
 
-      finding = Finding.new("Corroborated claim", "Entity", source1)
+      finding = Finding.new("Corroborated claim", "Entity", source1, world_id: @world_id)
 
       candidate =
         ReviewCandidate.new(finding, corroborating_sources: [source2], aggregate_confidence: 0.9)
@@ -243,7 +246,7 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
 
     test "shows contradiction warning", %{conn: conn} do
       source = SourceInfo.new("https://example.com/article")
-      finding = Finding.new("Conflicting claim", "Entity", source)
+      finding = Finding.new("Conflicting claim", "Entity", source, world_id: @world_id)
 
       candidate =
         ReviewCandidate.new(finding,
@@ -300,7 +303,8 @@ defmodule ChatWeb.Admin.KnowledgeReviewLiveTest do
     source =
       SourceInfo.new("https://#{domain}/article", reliability_score: 0.8, trust_tier: :verified)
 
-    finding = Finding.new(claim, entity, source, entity_type: "location", confidence: confidence)
+    finding =
+      Finding.new(claim, entity, source, entity_type: "location", confidence: confidence, world_id: @world_id)
 
     ReviewCandidate.new(finding, aggregate_confidence: confidence)
   end
