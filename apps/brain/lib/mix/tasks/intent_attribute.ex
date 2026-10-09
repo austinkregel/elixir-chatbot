@@ -4,8 +4,10 @@ defmodule Mix.Tasks.Intent.Attribute do
   @moduledoc """
   Measures where a correct intent prediction stops being the pipeline's answer.
 
-      mix intent.attribute            # report
-      mix intent.attribute --verbose  # list every destroyed and rescued row
+      mix intent.attribute --world <id>            # report
+      mix intent.attribute --world <id> --verbose  # list every destroyed and rescued row
+
+  `--world <id>` is required: the world the held-out rows are analyzed in.
 
   `mix evaluate.intent` reports what the pipeline answered. `mix axes.experiment`
   reports what the classifier predicted. The two disagree by about ten points, and
@@ -45,7 +47,7 @@ defmodule Mix.Tasks.Intent.Attribute do
 
   @requirements ["app.start"]
 
-  @switches [verbose: :boolean, save_calibration: :boolean]
+  @switches [verbose: :boolean, save_calibration: :boolean, world: :string]
 
   @calibration_path "analysis/intent_calibration.json"
 
@@ -67,6 +69,10 @@ defmodule Mix.Tasks.Intent.Attribute do
     if invalid != [], do: Mix.raise("intent.attribute: unknown options #{inspect(invalid)}")
     if positional != [], do: Mix.raise("intent.attribute: unexpected arguments #{inspect(positional)}")
 
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("intent.attribute needs --world <id>, the world the held-out rows are analyzed in")
+
     Mix.shell().info("\nAwaiting MicroClassifiers readiness...")
     Brain.ML.MicroClassifiers.await_ready(:infinity)
 
@@ -75,7 +81,7 @@ defmodule Mix.Tasks.Intent.Attribute do
 
     Phoenix.PubSub.subscribe(Brain.PubSub, @topic)
 
-    rows = measure(held_out, model)
+    rows = measure(held_out, model, world_id)
     events = drain_events()
 
     rows = attach_methods!(rows, events)
@@ -229,7 +235,7 @@ defmodule Mix.Tasks.Intent.Attribute do
 
   # -- measuring ---------------------------------------------------------------
 
-  defp measure(held_out, model) do
+  defp measure(held_out, model, world_id) do
     total = length(held_out)
 
     rows =
@@ -237,7 +243,7 @@ defmodule Mix.Tasks.Intent.Attribute do
       |> Enum.with_index()
       |> Task.async_stream(
         fn {entry, idx} ->
-          measure_row(entry, idx, model, total)
+          measure_row(entry, idx, model, total, world_id)
         end,
         max_concurrency: @concurrency,
         timeout: 120_000,
@@ -253,7 +259,7 @@ defmodule Mix.Tasks.Intent.Attribute do
     rows
   end
 
-  defp measure_row(entry, idx, model, total) do
+  defp measure_row(entry, idx, model, total, world_id) do
     text = entry["text"]
     tag = "intent-attribute-#{idx}"
 
@@ -262,6 +268,7 @@ defmodule Mix.Tasks.Intent.Attribute do
     analysis =
       Pipeline.analyze_chunk(text,
         side_effects: false,
+        world_id: world_id,
         active_contexts: Brain.Analysis.ActiveContexts.for_row(entry),
         progress: %{conversation_id: tag, message_id: tag}
       )
