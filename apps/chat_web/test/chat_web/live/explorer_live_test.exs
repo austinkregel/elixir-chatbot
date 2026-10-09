@@ -83,6 +83,26 @@ defmodule ChatWeb.ExplorerLiveTest do
     end
   end
 
+  describe "semantics tab" do
+    test "shows a fact's text and the action it records", %{conn: conn} do
+      fact =
+        Brain.Memory.Types.SemanticFact.new("is it sunny in paris | is it raining in paris", [], [], [],
+          action: "weather.query"
+        )
+
+      {:ok, _id} = Brain.Memory.Store.add_semantic(fact, world_id: "default")
+
+      # The rows roll back with the test; the store's index is cleared with them.
+      on_exit(fn -> Brain.Memory.Store.clear(world_id: "default") end)
+
+      {:ok, _view, html} = live(conn, "/explorer?tab=semantics")
+
+      assert html =~ "is it sunny in paris | is it raining in paris"
+      assert html =~ "Action: weather.query"
+      refute html =~ "Examples:"
+    end
+  end
+
   describe "URL params" do
     test "respects tab param in URL", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/explorer?tab=episodes")
