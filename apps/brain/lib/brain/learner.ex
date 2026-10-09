@@ -38,7 +38,7 @@ defmodule Brain.Learner do
 
         speech_act_result =
           try do
-            SpeechActClassifier.classify(input)
+            SpeechActClassifier.classify(input, world_id: opts[:world_id])
           rescue
             _ -> nil
           catch
