@@ -35,11 +35,28 @@ defmodule Brain.Epistemic.ConsolidationBridge do
   Attempts SRL-based triple extraction first. Falls back to the legacy
   single-belief path if SRL produces no frames.
 
-  `world_id` is the world the semantic fact and its evidence episodes belong to.
+  `world_id` is the world the semantic fact and its evidence episodes belong to;
+  its triple scorer scores the extracted triples and its relation coverage
+  normalizes their predicates, and the beliefs are held in it.
 
-  Returns `{:ok, belief_ids}` or `{:error, reason}`.
+  Returns `{:ok, belief_ids}` or `{:error, reason}`. A missing world, or a world
+  with no copy of the triple scorer, raises.
   """
+  def bridge_semantic_fact(_semantic_fact, world_id)
+      when not (is_binary(world_id) and world_id != "") do
+    raise ArgumentError,
+          "ConsolidationBridge.bridge_semantic_fact needs the world the semantic fact belongs to, got: #{inspect(world_id)}"
+  end
+
   def bridge_semantic_fact(semantic_fact, world_id) do
+    # Loaded outside the bridge's rescue, so a world with no copy of the scorer
+    # raises rather than reading as a failed bridge.
+    if kg_signals_enabled?(), do: TripleScorer.loaded!(world_id)
+
+    do_bridge_semantic_fact(semantic_fact, world_id)
+  end
+
+  defp do_bridge_semantic_fact(semantic_fact, world_id) do
     if BeliefStore.ready?() do
       evidence_count = length(semantic_fact.evidence_ids || [])
       count_prior = evidence_count / (evidence_count + 2)
@@ -49,12 +66,12 @@ defmodule Brain.Epistemic.ConsolidationBridge do
         triples = extract_triples(semantic_fact, world_id)
 
         if triples == [] do
-          build_legacy_belief(semantic_fact, count_prior, provenance_base)
+          build_legacy_belief(semantic_fact, count_prior, provenance_base, world_id)
         else
-          build_triple_beliefs(triples, count_prior, provenance_base, semantic_fact)
+          build_triple_beliefs(triples, count_prior, provenance_base, semantic_fact, world_id)
         end
       else
-        build_legacy_belief(semantic_fact, count_prior, provenance_base)
+        build_legacy_belief(semantic_fact, count_prior, provenance_base, world_id)
       end
     else
       {:error, :belief_store_not_ready}
@@ -153,14 +170,21 @@ defmodule Brain.Epistemic.ConsolidationBridge do
     end)
   end
 
-  defp build_triple_beliefs(triples, count_prior, provenance_base, semantic_fact) do
+  defp build_triple_beliefs(triples, count_prior, provenance_base, semantic_fact, world_id) do
     blend_weight = consolidation_blend_weight()
-    model_version = get_model_version()
+    model_version = TripleScorer.current_model_version(world_id)
+    coverage = TripleScorer.relation_coverage(world_id)
 
     belief_ids =
       Enum.flat_map(triples, fn {subject, predicate, object} ->
         {confidence, score_provenance} =
-          compute_blended_confidence(subject, predicate, object, count_prior, blend_weight)
+          compute_blended_confidence(
+            {subject, predicate, object},
+            count_prior,
+            blend_weight,
+            coverage,
+            world_id
+          )
 
         provenance =
           provenance_base ++
@@ -170,14 +194,14 @@ defmodule Brain.Epistemic.ConsolidationBridge do
         belief =
           Belief.new(
             subject,
-            normalize_predicate_for_belief(predicate),
+            normalize_predicate_for_belief(predicate, coverage),
             object,
             source: :consolidated,
             confidence: confidence,
             provenance: provenance
           )
 
-        case BeliefStore.add_belief(belief) do
+        case BeliefStore.add_belief(world_id, belief) do
           {:ok, belief_id} ->
             Logger.debug("ConsolidationBridge: created triple belief",
               semantic_fact_id: semantic_fact.id,
@@ -196,27 +220,20 @@ defmodule Brain.Epistemic.ConsolidationBridge do
       end)
 
     if belief_ids == [] do
-      build_legacy_belief(semantic_fact, count_prior, provenance_base)
+      build_legacy_belief(semantic_fact, count_prior, provenance_base, world_id)
     else
       {:ok, belief_ids}
     end
   end
 
-  defp compute_blended_confidence(subject, predicate, object, count_prior, blend_weight) do
-    case PredicateNormalizer.normalize(predicate) do
+  defp compute_blended_confidence({subject, predicate, object}, count_prior, blend_weight, coverage, world_id) do
+    case PredicateNormalizer.normalize(predicate, coverage) do
       {:ok, canonical, _kind} ->
-        if TripleScorer.ready?() do
-          case TripleScorer.score(to_string(subject), canonical, to_string(object)) do
-            {:ok, structural_score} ->
-              blended = count_prior * blend_weight + structural_score * (1 - blend_weight)
-              {blended, ["kg_score:#{Float.round(structural_score, 3)}"]}
+        {:ok, structural_score} =
+          TripleScorer.score(world_id, to_string(subject), canonical, to_string(object))
 
-            _ ->
-              {count_prior, []}
-          end
-        else
-          {count_prior, []}
-        end
+        blended = count_prior * blend_weight + structural_score * (1 - blend_weight)
+        {blended, ["kg_score:#{Float.round(structural_score, 3)}"]}
 
       {:error, :oov} ->
         {count_prior, []}
@@ -226,7 +243,7 @@ defmodule Brain.Epistemic.ConsolidationBridge do
     end
   end
 
-  defp build_legacy_belief(semantic_fact, count_prior, provenance_base) do
+  defp build_legacy_belief(semantic_fact, count_prior, provenance_base, world_id) do
     belief =
       Belief.new(
         :system,
@@ -237,7 +254,7 @@ defmodule Brain.Epistemic.ConsolidationBridge do
         provenance: provenance_base ++ ["semantic_fact:#{semantic_fact.id}"]
       )
 
-    case BeliefStore.add_belief(belief) do
+    case BeliefStore.add_belief(world_id, belief) do
       {:ok, belief_id} ->
         Logger.debug("ConsolidationBridge: created legacy belief from semantic fact",
           semantic_fact_id: semantic_fact.id,
@@ -268,8 +285,8 @@ defmodule Brain.Epistemic.ConsolidationBridge do
     end
   end
 
-  defp normalize_predicate_for_belief(predicate) when is_binary(predicate) do
-    case PredicateNormalizer.normalize(predicate) do
+  defp normalize_predicate_for_belief(predicate, coverage) when is_binary(predicate) do
+    case PredicateNormalizer.normalize(predicate, coverage) do
       {:ok, canonical, _} -> String.to_atom(String.downcase(canonical))
       _ -> String.to_atom(String.downcase(predicate))
     end
@@ -277,8 +294,8 @@ defmodule Brain.Epistemic.ConsolidationBridge do
     _ -> :consolidated_knowledge
   end
 
-  defp normalize_predicate_for_belief(predicate) when is_atom(predicate), do: predicate
-  defp normalize_predicate_for_belief(_), do: :consolidated_knowledge
+  defp normalize_predicate_for_belief(predicate, _coverage) when is_atom(predicate), do: predicate
+  defp normalize_predicate_for_belief(_, _coverage), do: :consolidated_knowledge
 
   defp kg_signals_enabled? do
     config = Application.get_env(:brain, :kg_signals, [])
@@ -288,12 +305,5 @@ defmodule Brain.Epistemic.ConsolidationBridge do
   defp consolidation_blend_weight do
     config = Application.get_env(:brain, :kg_signals, [])
     Keyword.get(config, :consolidation_blend, 0.6)
-  end
-
-  defp get_model_version do
-    case TripleScorer.current_model_version() do
-      {:ok, version} -> version
-      _ -> nil
-    end
   end
 end
