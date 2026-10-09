@@ -74,6 +74,98 @@ defmodule Brain.Subprocesses.CliSubprocessTest do
     assert String.contains?(result, "Ended conversation")
   end
 
+  test "chat commands in one session use the conversation the session started with",
+       %{subprocess_id: subprocess_id} do
+    %{conversation_id: conversation_id} = CliSubprocess.get_status(subprocess_id)
+    assert {:ok, %{world_id: "default"}} = Brain.get_conversation(conversation_id)
+
+    {:ok, _} = CliSubprocess.execute_command(subprocess_id, "chat Hello there!")
+    {:ok, _} = CliSubprocess.execute_command(subprocess_id, "chat How are you?")
+
+    assert CliSubprocess.get_status(subprocess_id).conversation_id == conversation_id
+
+    {:ok, conversation} = Brain.get_conversation(conversation_id)
+    user_turns = conversation.memory |> Enum.filter(&(&1[:role] == "user")) |> Enum.map(& &1[:content])
+    assert user_turns == ["Hello there!", "How are you?"]
+  end
+
+  test "exiting a session ends its conversation" do
+    {:ok, subprocess_id} = Brain.start_cli_subprocess(world_id: "default")
+    %{conversation_id: conversation_id} = CliSubprocess.get_status(subprocess_id)
+    assert {:ok, _} = Brain.get_conversation(conversation_id)
+
+    assert :ok = Brain.stop_subprocess(subprocess_id)
+
+    assert {:error, _} = Brain.get_conversation(conversation_id)
+  end
+
+  describe "quit and exit" do
+    for command <- ["quit", "exit"] do
+      test "#{command} ends the session's conversation and the subprocess stays stopped" do
+        {:ok, subprocess_id} = Brain.start_cli_subprocess(world_id: "default")
+        %{conversation_id: conversation_id} = CliSubprocess.get_status(subprocess_id)
+        pid = session_pid!(subprocess_id)
+        ref = Process.monitor(pid)
+
+        assert {:ok, "Goodbye!"} = CliSubprocess.execute_command(subprocess_id, unquote(command))
+
+        assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
+        assert {:error, _} = Brain.get_conversation(conversation_id)
+        assert_stays_stopped(subprocess_id)
+      end
+    end
+
+    test "an interrupted session still ends on quit" do
+      {:ok, subprocess_id} = Brain.start_cli_subprocess(world_id: "default")
+      %{conversation_id: conversation_id} = CliSubprocess.get_status(subprocess_id)
+      pid = session_pid!(subprocess_id)
+      ref = Process.monitor(pid)
+
+      CliSubprocess.handle_urgent_interrupt(subprocess_id, "user_request", %{reason: "stop"})
+      assert {:error, "CLI interrupted"} = CliSubprocess.execute_command(subprocess_id, "help")
+
+      assert {:ok, "Goodbye!"} = CliSubprocess.execute_command(subprocess_id, "quit")
+
+      assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
+      assert {:error, _} = Brain.get_conversation(conversation_id)
+      assert_stays_stopped(subprocess_id)
+    end
+
+    test "a session that crashes is restarted" do
+      {:ok, subprocess_id} = Brain.start_cli_subprocess(world_id: "default")
+      pid = session_pid!(subprocess_id)
+      ref = Process.monitor(pid)
+
+      Process.exit(pid, :kill)
+      assert_receive {:DOWN, ^ref, :process, ^pid, :killed}
+
+      restarted =
+        eventually(
+          fn -> Registry.lookup(Brain.SubprocessRegistry, {:cli_subprocess, subprocess_id}) end,
+          &match?([{_pid, _}], &1)
+        )
+
+      [{restarted_pid, _}] = restarted
+      assert restarted_pid != pid
+      on_exit(fn -> DynamicSupervisor.terminate_child(Brain.Subprocesses.Supervisor, restarted_pid) end)
+    end
+  end
+
+  defp session_pid!(subprocess_id) do
+    [{pid, _}] = Registry.lookup(Brain.SubprocessRegistry, {:cli_subprocess, subprocess_id})
+    pid
+  end
+
+  # The supervisor started no replacement, and Brain no longer lists the
+  # session. `which_children/1` returns once the supervisor has handled the
+  # session's exit, and a replacement would register under the same id.
+  defp assert_stays_stopped(subprocess_id) do
+    DynamicSupervisor.which_children(Brain.Subprocesses.Supervisor)
+    assert Registry.lookup(Brain.SubprocessRegistry, {:cli_subprocess, subprocess_id}) == []
+
+    eventually(fn -> Brain.list_subprocesses().cli end, &(subprocess_id not in &1))
+  end
+
   test "handles urgent interrupts", %{subprocess_id: subprocess_id} do
     # Send urgent interrupt
     CliSubprocess.handle_urgent_interrupt(subprocess_id, "user_request", %{reason: "stop"})
