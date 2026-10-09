@@ -204,7 +204,7 @@ defmodule ChatWeb.TrainingStudioLive do
   end
 
   def handle_event("trace", %{"text" => text}, socket) when is_binary(text) and text != "" do
-    case Diagnostics.trace_prediction(text) do
+    case Diagnostics.trace_prediction(text, socket.assigns.current_world_id) do
       {:ok, result} ->
         {:noreply,
          socket
@@ -223,10 +223,12 @@ defmodule ChatWeb.TrainingStudioLive do
   def handle_event("trace", _params, socket), do: {:noreply, socket}
 
   def handle_event("run_pipeline", %{"action" => action} = params, socket) do
+    world = [world_id: socket.assigns.current_world_id]
+
     config =
       case action do
-        "evaluate" -> [task: Map.get(params, "task", "intent")]
-        _ -> []
+        "evaluate" -> [task: Map.get(params, "task", "intent")] ++ world
+        _ -> world
       end
 
     action_atom = String.to_existing_atom(action)
