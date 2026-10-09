@@ -9,7 +9,7 @@ defmodule Mix.Tasks.TrainPoincare do
 
   ## Options
 
-    * `--world` - World ID to scope training (default: "default")
+    * `--world` - required: the world ID to scope training to
     * `--dim` - Embedding dimension (default: 5)
     * `--epochs` - Number of training epochs (default: 50)
     * `--learning-rate` - Learning rate (default: 0.01)
@@ -37,7 +37,9 @@ defmodule Mix.Tasks.TrainPoincare do
 
     Mix.Task.run("app.start")
 
-    world_id = Keyword.get(opts, :world, "default")
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix train_poincare needs --world <id>, the world the embeddings are trained for")
     dim = Keyword.get(opts, :dim, 5)
     epochs = Keyword.get(opts, :epochs, 50)
     lr = Keyword.get(opts, :learning_rate, 0.01)
