@@ -1,0 +1,4840 @@
+[
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      }
+    ],
+    "text": "turn off all bedroom lights every day"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      },
+      {
+        "type": "condition",
+        "value": "come"
+      }
+    ],
+    "text": "turn on all bedroom lights when I come"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "romantic"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      }
+    ],
+    "text": "turn on romantic lights in the kitchen every day"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "romantic"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "condition",
+        "value": "leave"
+      }
+    ],
+    "text": "turn off romantic lights in the kitchen when I leave"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "50"
+      },
+      {
+        "type": "all",
+        "value": "everywhere"
+      }
+    ],
+    "text": "set temperature to 50 everywhere"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "lights"
+      },
+      {
+        "type": "color",
+        "value": "romantic"
+      }
+    ],
+    "text": "make lights romantic"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "turn on all bedroom lights every day at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "green"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "turn off green lights every day at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "turn off all bedroom lights at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "computer"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      },
+      {
+        "type": "value",
+        "value": "5"
+      }
+    ],
+    "text": "is level of the computer in bedroom 5 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "sort",
+        "value": "top"
+      },
+      {
+        "type": "amount",
+        "value": "10"
+      },
+      {
+        "type": "start_year",
+        "value": "2014"
+      }
+    ],
+    "text": "search top 10 songs from 2014"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "romantic"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "turn off romantic lights in the kitchen at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "20"
+      },
+      {
+        "type": "recurrence",
+        "value": "Mondays"
+      }
+    ],
+    "text": "turn heating down to 20 degrees on Mondays"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "5"
+      },
+      {
+        "type": "condition",
+        "value": "leave"
+      }
+    ],
+    "text": "temperature down to 5 degrees when I leave home"
+  },
+  {
+    "expected": [
+      {
+        "type": "sort",
+        "value": "breaking"
+      },
+      {
+        "type": "keyword",
+        "value": "Europe"
+      }
+    ],
+    "text": "give me breaking news from Europe"
+  },
+  {
+    "expected": [
+      {
+        "type": "language",
+        "value": "Spanish"
+      },
+      {
+        "type": "artist",
+        "value": "Enrique Iglesias"
+      }
+    ],
+    "text": "play Spanish songs by Enrique Iglesias"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Prince"
+      },
+      {
+        "type": "start_year",
+        "value": "1980"
+      },
+      {
+        "type": "end_year",
+        "value": "1999"
+      }
+    ],
+    "text": "search what Prince wrote between 1980 and 1999"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bedroom"
+      },
+      {
+        "type": "value",
+        "value": "5"
+      }
+    ],
+    "text": "is level of lamp in bedroom 5 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "sort",
+        "value": "latest"
+      },
+      {
+        "type": "source",
+        "value": "CNN"
+      }
+    ],
+    "text": "latest CNN news"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "decorations"
+      },
+      {
+        "type": "condition",
+        "value": "leave"
+      }
+    ],
+    "text": "make decorations brighter when I leave"
+  },
+  {
+    "expected": [
+      {
+        "type": "genre",
+        "value": "Experimental"
+      },
+      {
+        "type": "service",
+        "value": "Spotify"
+      }
+    ],
+    "text": "play Experimental songs on Spotify"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "color",
+        "value": "red"
+      }
+    ],
+    "text": "turn up all red lights"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "decorations"
+      },
+      {
+        "type": "date_time",
+        "value": "at 11 pm"
+      }
+    ],
+    "text": "turn brighter all the decorations at 11 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "MacBook"
+      },
+      {
+        "type": "value",
+        "value": "5"
+      }
+    ],
+    "text": "is level of my MacBook 5 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "5"
+      },
+      {
+        "type": "condition",
+        "value": "come"
+      }
+    ],
+    "text": "temperature up by 5 degrees when I come"
+  },
+  {
+    "expected": [
+      {
+        "type": "sort",
+        "value": "top"
+      },
+      {
+        "type": "category",
+        "value": "fashion"
+      }
+    ],
+    "text": "top fashion news"
+  },
+  {
+    "expected": [
+      {
+        "type": "source",
+        "value": "BBC"
+      }
+    ],
+    "text": "read me BBC news"
+  },
+  {
+    "expected": [
+      {
+        "type": "merchant",
+        "value": "Hyatt London"
+      }
+    ],
+    "text": "have I spent a lot at Hyatt London?"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "light yellow"
+      },
+      {
+        "type": "room",
+        "value": "bathroom"
+      },
+      {
+        "type": "recurrence",
+        "value": "every morning"
+      },
+      {
+        "type": "date_time",
+        "value": "6:30"
+      }
+    ],
+    "text": "turn light yellow lights in the bathroom every morning at 6:30"
+  },
+  {
+    "expected": [
+      {
+        "type": "album",
+        "value": "Ramones"
+      },
+      {
+        "type": "service",
+        "value": "Spotify"
+      }
+    ],
+    "text": "play album Ramones on Spotify"
+  },
+  {
+    "expected": [
+      {
+        "type": "category",
+        "value": "shopping"
+      },
+      {
+        "type": "date_time",
+        "value": "December"
+      }
+    ],
+    "text": "how much money did I spend on shopping in December"
+  },
+  {
+    "expected": [
+      {
+        "type": "message_type",
+        "value": "text"
+      },
+      {
+        "type": "given_name",
+        "value": "Mike"
+      },
+      {
+        "type": "message_content",
+        "value": "I said happy birthday"
+      }
+    ],
+    "text": "text Mike and tell him I said happy birthday"
+  },
+  {
+    "expected": [
+      {
+        "type": "keyword",
+        "value": "elections"
+      }
+    ],
+    "text": "headlines about elections"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "decorations"
+      },
+      {
+        "type": "date_time",
+        "value": "midnight"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn the decorations down at midnight in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "5"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "temperature down by 5 degrees in the kitchen at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "garage"
+      },
+      {
+        "type": "lock",
+        "value": "windows"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      }
+    ],
+    "text": "open all garage windows at 5 pm every day"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "garage"
+      },
+      {
+        "type": "lock",
+        "value": "windows"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "lock all garage windows at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "outfit",
+        "value": "umbrella"
+      },
+      {
+        "type": "address",
+        "value": "Paris"
+      },
+      {
+        "type": "date_time",
+        "value": "this weekend"
+      }
+    ],
+    "text": "will I need an umbrella in Paris this weekend"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "green"
+      },
+      {
+        "type": "final_value",
+        "value": "50"
+      }
+    ],
+    "text": "set the green lights level to 50"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "lock",
+        "value": "doors"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "open all doors at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "lock",
+        "value": "doors"
+      },
+      {
+        "type": "recurrence",
+        "value": "everyday"
+      }
+    ],
+    "text": "lock all doors everyday"
+  },
+  {
+    "expected": [
+      {
+        "type": "temperature",
+        "value": "chilly"
+      }
+    ],
+    "text": "it's chilly outside right"
+  },
+  {
+    "expected": [
+      {
+        "type": "temperature",
+        "value": "hot"
+      },
+      {
+        "type": "address",
+        "value": "Ibiza"
+      },
+      {
+        "type": "date_time",
+        "value": "next weekend"
+      }
+    ],
+    "text": "tell me if it will be hot in Ibiza next weekend"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "garage"
+      },
+      {
+        "type": "lock",
+        "value": "window"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      }
+    ],
+    "text": "open garage window every day"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "green"
+      },
+      {
+        "type": "condition",
+        "value": "leave"
+      }
+    ],
+    "text": "turn off green lights when I leave"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "5"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "temperature down to 5 degrees at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "sort",
+        "value": "top"
+      },
+      {
+        "type": "start_year",
+        "value": "2016"
+      }
+    ],
+    "text": "play top songs of 2016"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "garage"
+      },
+      {
+        "type": "lock",
+        "value": "window"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      },
+      {
+        "type": "recurrence",
+        "value": "everyday"
+      }
+    ],
+    "text": "lock garage window at 5 pm everyday"
+  },
+  {
+    "expected": [
+      {
+        "type": "recurrence",
+        "value": "every day"
+      }
+    ],
+    "text": "turn down the heating every day"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "front door"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      }
+    ],
+    "text": "unlock the front door at 5 pm every day"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "garage"
+      },
+      {
+        "type": "lock",
+        "value": "windows"
+      },
+      {
+        "type": "recurrence",
+        "value": "everyday"
+      }
+    ],
+    "text": "lock all garage windows everyday"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "lock",
+        "value": "doors"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      }
+    ],
+    "text": "close all doors at 5 pm every day"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "red"
+      },
+      {
+        "type": "date_time",
+        "value": "after 3 hours"
+      }
+    ],
+    "text": "red light off after 3 hours"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "garage"
+      },
+      {
+        "type": "lock",
+        "value": "windows"
+      },
+      {
+        "type": "condition",
+        "value": "leave"
+      }
+    ],
+    "text": "unlock all garage windows when I leave"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "green"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      }
+    ],
+    "text": "turn on green lights every day"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "garage"
+      },
+      {
+        "type": "lock",
+        "value": "window"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "lock garage window at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "5"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "heating up till 5 points in the kitchen at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "outfit",
+        "value": "gloves"
+      },
+      {
+        "type": "address",
+        "value": "Aspen"
+      }
+    ],
+    "text": "should I wear my gloves in Aspen"
+  },
+  {
+    "expected": [
+      {
+        "type": "outfit",
+        "value": "umbrella"
+      }
+    ],
+    "text": "will I need an umbrella"
+  },
+  {
+    "expected": [
+      {
+        "type": "activity",
+        "value": "mushroom hunting"
+      },
+      {
+        "type": "date_time",
+        "value": "Friday"
+      },
+      {
+        "type": "address",
+        "value": "Ottawa"
+      }
+    ],
+    "text": "will it be warm enough for mushroom hunting on Friday in Ottawa"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Shape of My Heart"
+      },
+      {
+        "type": "service",
+        "value": "Google music"
+      }
+    ],
+    "text": "can you open Shape of My Heart in Google music"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "Paris"
+      },
+      {
+        "type": "unit",
+        "value": "Celsius"
+      }
+    ],
+    "text": "weather in Paris in Celsius"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Rihanna"
+      },
+      {
+        "type": "service",
+        "value": "Spotify"
+      }
+    ],
+    "text": "play Rihanna on Spotify"
+  },
+  {
+    "expected": [
+      {
+        "type": "activity",
+        "value": "windsurfing"
+      },
+      {
+        "type": "address",
+        "value": "Phuket"
+      }
+    ],
+    "text": "is it the perfect weather for windsurfing in Phuket"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "garage"
+      },
+      {
+        "type": "lock",
+        "value": "windows"
+      }
+    ],
+    "text": "unlock all garage windows"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      }
+    ],
+    "text": "turn off all lights every day"
+  },
+  {
+    "expected": [
+      {
+        "type": "q",
+        "value": "popular wallpapers"
+      },
+      {
+        "type": "service",
+        "value": "Yahoo"
+      }
+    ],
+    "text": "search for popular wallpapers on Yahoo"
+  },
+  {
+    "expected": [
+      {
+        "type": "temperature",
+        "value": "warm"
+      },
+      {
+        "type": "date_time",
+        "value": "tomorrow"
+      }
+    ],
+    "text": "will it be warm tomorrow"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "lock",
+        "value": "doors"
+      },
+      {
+        "type": "condition",
+        "value": "leave"
+      }
+    ],
+    "text": "open all doors when I leave"
+  },
+  {
+    "expected": [
+      {
+        "type": "sort",
+        "value": "best"
+      },
+      {
+        "type": "artist",
+        "value": "Rihanna"
+      }
+    ],
+    "text": "Show best songs by Rihanna"
+  },
+  {
+    "expected": [
+      {
+        "type": "account",
+        "value": "credit card"
+      }
+    ],
+    "text": "check my credit card balance"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "5"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "heating up by 5 points at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "PC"
+      },
+      {
+        "type": "recurrence",
+        "value": "everyday"
+      },
+      {
+        "type": "date_time",
+        "value": "at 8 pm"
+      }
+    ],
+    "text": "turn my PC screen up everyday at 8 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "language",
+        "value": "Japanese"
+      }
+    ],
+    "text": "search Japanese music"
+  },
+  {
+    "expected": [
+      {
+        "type": "service",
+        "value": "Spotify"
+      }
+    ],
+    "text": "play music on Spotify"
+  },
+  {
+    "expected": [
+      {
+        "type": "sort",
+        "value": "top"
+      }
+    ],
+    "text": "top news"
+  },
+  {
+    "expected": [
+      {
+        "type": "outfit",
+        "value": "umbrella"
+      },
+      {
+        "type": "date_time",
+        "value": "this weekend"
+      }
+    ],
+    "text": "will I need an umbrella this weekend"
+  },
+  {
+    "expected": [
+      {
+        "type": "value",
+        "value": "10"
+      }
+    ],
+    "text": "is the light saturation 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "recurrence",
+        "value": "every day"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "turn on the lights every day at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      }
+    ],
+    "text": "turn on kitchen lights every day"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "condition",
+        "value": "leave"
+      }
+    ],
+    "text": "turn off all appliances when I leave"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "door"
+      },
+      {
+        "type": "recurrence",
+        "value": "Mondays"
+      }
+    ],
+    "text": "close door on Mondays"
+  },
+  {
+    "expected": [
+      {
+        "type": "temperature",
+        "value": "warm"
+      },
+      {
+        "type": "address",
+        "value": "New York"
+      }
+    ],
+    "text": "is there warm in New York"
+  },
+  {
+    "expected": [
+      {
+        "type": "activity",
+        "value": "snowball fighting"
+      },
+      {
+        "type": "date_time",
+        "value": "Friday"
+      }
+    ],
+    "text": "will it be cold enough for snowball fighting on Friday"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "living room"
+      },
+      {
+        "type": "condition",
+        "value": "when I leave home"
+      }
+    ],
+    "text": "turn on heating in the living room when I leave home"
+  },
+  {
+    "expected": [
+      {
+        "type": "q",
+        "value": "Newton laws"
+      }
+    ],
+    "text": "find Newton laws in the web"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "date_time",
+        "value": "tomorrow at 5 am"
+      }
+    ],
+    "text": "temperature up in all rooms tomorrow at 5 am"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "turn off all lights every day at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "activity",
+        "value": "run"
+      }
+    ],
+    "text": "should I go for a run"
+  },
+  {
+    "expected": [
+      {
+        "type": "condition",
+        "value": "cloudy"
+      },
+      {
+        "type": "address",
+        "value": "Berlin"
+      }
+    ],
+    "text": "will it be cloudy in Berlin"
+  },
+  {
+    "expected": [
+      {
+        "type": "condition",
+        "value": "showers"
+      },
+      {
+        "type": "address",
+        "value": "Valencia"
+      }
+    ],
+    "text": "any snow showers in the forecast for Valencia"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "date_time",
+        "value": "in 2 hours"
+      }
+    ],
+    "text": "turn on the TV in 2 hours"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "table lamp"
+      },
+      {
+        "type": "date_time",
+        "value": "at 11 pm"
+      }
+    ],
+    "text": "switch off table lamp  at 11 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "turn on kitchen lights every day at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bathroom"
+      },
+      {
+        "type": "recurrence",
+        "value": "every day"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "unlock bathroom every day at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "door"
+      },
+      {
+        "type": "condition",
+        "value": "leave"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn the closed door when I leave kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "garage"
+      },
+      {
+        "type": "lock",
+        "value": "window"
+      },
+      {
+        "type": "condition",
+        "value": "leave"
+      }
+    ],
+    "text": "open garage window when I leave"
+  },
+  {
+    "expected": [
+      {
+        "type": "condition",
+        "value": "tornadoes"
+      },
+      {
+        "type": "address",
+        "value": "Cleveland"
+      },
+      {
+        "type": "date_time",
+        "value": "November 12"
+      }
+    ],
+    "text": "are there any tornadoes expected in Cleveland on November 12"
+  },
+  {
+    "expected": [
+      {
+        "type": "condition",
+        "value": "rain"
+      },
+      {
+        "type": "address",
+        "value": "Madrid"
+      },
+      {
+        "type": "date_time",
+        "value": "next weekend"
+      }
+    ],
+    "text": "is it supposed to rain in Madrid next weekend"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Home To Mama"
+      },
+      {
+        "type": "artist",
+        "value": "Justin Bieber"
+      },
+      {
+        "type": "service",
+        "value": "Spotify"
+      }
+    ],
+    "text": "play Home To Mama by Justin Bieber song on Spotify"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "6 Words"
+      },
+      {
+        "type": "artist",
+        "value": "Wretch 32"
+      },
+      {
+        "type": "service",
+        "value": "Spotify"
+      }
+    ],
+    "text": "play 6 Words by Wretch 32 on Spotify"
+  },
+  {
+    "expected": [
+      {
+        "type": "category",
+        "value": "deposit"
+      }
+    ],
+    "text": "see my latest deposit"
+  },
+  {
+    "expected": [
+      {
+        "type": "category",
+        "value": "political"
+      }
+    ],
+    "text": "update me with political news"
+  },
+  {
+    "expected": [
+      {
+        "type": "album",
+        "value": "Address"
+      }
+    ],
+    "text": "play song from the album Address"
+  },
+  {
+    "expected": [
+      {
+        "type": "album",
+        "value": "Led Zeppelin two"
+      }
+    ],
+    "text": "play Led Zeppelin two"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "white"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn on white lights in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "color",
+        "value": "yellow"
+      }
+    ],
+    "text": "kitchen yellow lights down"
+  },
+  {
+    "expected": [
+      {
+        "type": "condition",
+        "value": "snow"
+      },
+      {
+        "type": "date_time",
+        "value": "today"
+      }
+    ],
+    "text": "are we getting snow today"
+  },
+  {
+    "expected": [
+      {
+        "type": "condition",
+        "value": "hurricanes"
+      },
+      {
+        "type": "date_time",
+        "value": "next week"
+      }
+    ],
+    "text": "are there hurricanes expected next week"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      },
+      {
+        "type": "change_value",
+        "value": "5"
+      }
+    ],
+    "text": "turn up the heating in bedroom by 5 grad"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "radio"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "change_value",
+        "value": "10"
+      }
+    ],
+    "text": "turn the radio in the kitchen down by 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "change_value",
+        "value": "10"
+      }
+    ],
+    "text": "make TV screen brightness in the kitchen 10 less"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "front door"
+      },
+      {
+        "type": "condition",
+        "value": "leave"
+      }
+    ],
+    "text": "close the front door when I leave"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "door"
+      },
+      {
+        "type": "condition",
+        "value": "leave"
+      }
+    ],
+    "text": "open the door when I leave"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "door"
+      },
+      {
+        "type": "condition",
+        "value": "go out"
+      }
+    ],
+    "text": "close the door when I go out"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "decorations"
+      },
+      {
+        "type": "room",
+        "value": "room"
+      },
+      {
+        "type": "final_value",
+        "value": "40"
+      }
+    ],
+    "text": "can you please make decorations in the room darker till 40 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "decorations"
+      },
+      {
+        "type": "final_value",
+        "value": "10"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "set decorations level to 10 in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      },
+      {
+        "type": "final_value",
+        "value": "5"
+      }
+    ],
+    "text": "volume of the TV in the bedroom should be 5 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "album",
+        "value": "Abbey Road"
+      },
+      {
+        "type": "artist",
+        "value": "The Beatles"
+      }
+    ],
+    "text": "play Abbey Road remastered by The Beatles"
+  },
+  {
+    "expected": [
+      {
+        "type": "album",
+        "value": "Fly by Night"
+      },
+      {
+        "type": "artist",
+        "value": "Rush"
+      }
+    ],
+    "text": "play album Fly by Night by Rush"
+  },
+  {
+    "expected": [
+      {
+        "type": "album",
+        "value": "The marshall mathers"
+      },
+      {
+        "type": "artist",
+        "value": "Eminem"
+      }
+    ],
+    "text": "play album The marshall mathers by Eminem"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "door"
+      },
+      {
+        "type": "date_time",
+        "value": "from 10 pm till 8 am"
+      }
+    ],
+    "text": "close door from 10 pm till 8 am"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "from 10 pm till 8 am"
+      },
+      {
+        "type": "lock",
+        "value": "door"
+      }
+    ],
+    "text": "from 10 pm till 8 am lock the door"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "door"
+      },
+      {
+        "type": "date_time",
+        "value": "10 pm"
+      }
+    ],
+    "text": "lock the door 10 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "door"
+      },
+      {
+        "type": "date_time",
+        "value": "10 pm"
+      }
+    ],
+    "text": "close the door after 10 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "condition",
+        "value": "hurricanes"
+      }
+    ],
+    "text": "are there hurricanes expected"
+  },
+  {
+    "expected": [
+      {
+        "type": "condition",
+        "value": "snow"
+      }
+    ],
+    "text": "is it supposed to snow"
+  },
+  {
+    "expected": [
+      {
+        "type": "condition",
+        "value": "raining"
+      }
+    ],
+    "text": "is it raining"
+  },
+  {
+    "expected": [
+      {
+        "type": "condition",
+        "value": "tornadoes"
+      }
+    ],
+    "text": "any chance of tornadoes"
+  },
+  {
+    "expected": [
+      {
+        "type": "playlist",
+        "value": "summer"
+      }
+    ],
+    "text": "search for a playlist summer"
+  },
+  {
+    "expected": [
+      {
+        "type": "playlist",
+        "value": "my faves"
+      }
+    ],
+    "text": "play my faves playlist"
+  },
+  {
+    "expected": [
+      {
+        "type": "playlist",
+        "value": "late night"
+      }
+    ],
+    "text": "put on my late night playlist"
+  },
+  {
+    "expected": [
+      {
+        "type": "playlist",
+        "value": "Yoga"
+      }
+    ],
+    "text": "add it to the playlist Yoga"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "15"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "lights saturation down by 15 percents in the bedroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "5"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "make hue lower by 5 points in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "15"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "lights saturation up by 15 percents in the bedroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "5"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "make hue higher by 5 points in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bathroom"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "unlock bathroom at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "turn on kitchen lights at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bathroom"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "lock bathroom at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "heating down in the kitchen at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "basement"
+      }
+    ],
+    "text": "turn on all the lights in the basement"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "breakfast room"
+      }
+    ],
+    "text": "turn off all the lights in the breakfast room"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn off all lights in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "turn on all bedroom lights"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bedroom"
+      },
+      {
+        "type": "final_value",
+        "value": "65"
+      }
+    ],
+    "text": "set my bedroom temperature to 65"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "room"
+      },
+      {
+        "type": "final_value",
+        "value": "40"
+      }
+    ],
+    "text": "can you please make lights in the room darker till 40 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "10"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "set lights level to 10 in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "15"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "lights saturation up to 15 percents in the bedroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "door"
+      },
+      {
+        "type": "room",
+        "value": "bathroom"
+      }
+    ],
+    "text": "close door in bathroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "lock",
+        "value": "door"
+      }
+    ],
+    "text": "lock kitchen door"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "door"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "did I lock the door in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "door"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "unlock door in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "lock",
+        "value": "door"
+      }
+    ],
+    "text": "are all the door closed"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "doors"
+      },
+      {
+        "type": "all",
+        "value": "everywhere"
+      }
+    ],
+    "text": "open doors everywhere"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "lock",
+        "value": "doors"
+      }
+    ],
+    "text": "all doors should be unlocked"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "lock",
+        "value": "doors"
+      }
+    ],
+    "text": "all doors should be locked"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "Moscow"
+      },
+      {
+        "type": "date_time",
+        "value": "tomorrow"
+      }
+    ],
+    "text": "weather in Moscow tomorrow"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "San Diego"
+      },
+      {
+        "type": "date_time",
+        "value": "tomorrow"
+      }
+    ],
+    "text": "what's the weather like in San Diego tomorrow"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "today"
+      },
+      {
+        "type": "address",
+        "value": "London"
+      }
+    ],
+    "text": "what is today's weather going to be in London"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "Milan"
+      },
+      {
+        "type": "date_time",
+        "value": "Wednesday"
+      }
+    ],
+    "text": "show me the weather in Milan for Wednesday"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "July 22"
+      },
+      {
+        "type": "address",
+        "value": "Tampa"
+      }
+    ],
+    "text": "I'd like to know the temperature on July 22 in Tampa"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "front door"
+      }
+    ],
+    "text": "front door status"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "front door"
+      }
+    ],
+    "text": "is the front door open"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "front door"
+      }
+    ],
+    "text": "is the front door opened"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "door"
+      }
+    ],
+    "text": "did I lock the door"
+  },
+  {
+    "expected": [
+      {
+        "type": "lock",
+        "value": "front door"
+      }
+    ],
+    "text": "unlock the front door"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "all",
+        "value": "everywhere"
+      }
+    ],
+    "text": "TV sound is disturbing me everywhere in the house"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "all",
+        "value": "everythwere"
+      }
+    ],
+    "text": "did I turn on TV everythwere"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "decorations"
+      }
+    ],
+    "text": "set the level of all decorations"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "all",
+        "value": "everywhere"
+      }
+    ],
+    "text": "heating down everywhere"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "decorations"
+      }
+    ],
+    "text": "dim all the decorations brightness"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "London"
+      }
+    ],
+    "text": "weather in London"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "Nirmal"
+      }
+    ],
+    "text": "weather in Nirmal"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "India"
+      }
+    ],
+    "text": "India weather report"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "London"
+      }
+    ],
+    "text": "I'd like to know the temperature in London"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "Bangkok"
+      }
+    ],
+    "text": "temperature in Bangkok"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "India"
+      }
+    ],
+    "text": "find weather India"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "Moscow"
+      }
+    ],
+    "text": "what's the weather supposed to be in Moscow"
+  },
+  {
+    "expected": [
+      {
+        "type": "address",
+        "value": "Hong Kong"
+      }
+    ],
+    "text": "could you give me the weather forecast for Hong Kong please"
+  },
+  {
+    "expected": [
+      {
+        "type": "genre",
+        "value": "country"
+      }
+    ],
+    "text": "play me some country music"
+  },
+  {
+    "expected": [
+      {
+        "type": "genre",
+        "value": "Secret Love Song"
+      }
+    ],
+    "text": "please play song Secret Love Song"
+  },
+  {
+    "expected": [
+      {
+        "type": "genre",
+        "value": "jazz"
+      }
+    ],
+    "text": "play jazz"
+  },
+  {
+    "expected": [
+      {
+        "type": "genre",
+        "value": "pop"
+      }
+    ],
+    "text": "pop song"
+  },
+  {
+    "expected": [
+      {
+        "type": "genre",
+        "value": "RnB"
+      }
+    ],
+    "text": "play RnB"
+  },
+  {
+    "expected": [
+      {
+        "type": "genre",
+        "value": "rock and roll"
+      }
+    ],
+    "text": "play some rock and roll"
+  },
+  {
+    "expected": [
+      {
+        "type": "genre",
+        "value": "rock"
+      }
+    ],
+    "text": "play some rock music"
+  },
+  {
+    "expected": [
+      {
+        "type": "genre",
+        "value": "rock"
+      }
+    ],
+    "text": "play a rock song"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "party"
+      }
+    ],
+    "text": "party light"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "green"
+      }
+    ],
+    "text": "lower brightness for green lights"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "relaxing"
+      }
+    ],
+    "text": "turn on relaxing lights"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "red"
+      }
+    ],
+    "text": "red saturation up"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "red"
+      }
+    ],
+    "text": "did I turn on the red lights"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "red"
+      }
+    ],
+    "text": "red saturation"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "green"
+      }
+    ],
+    "text": "turn the lights green"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "sleep"
+      }
+    ],
+    "text": "lights in sleep mode"
+  },
+  {
+    "expected": [
+      {
+        "type": "color",
+        "value": "red"
+      }
+    ],
+    "text": "check red lights brightness"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Britney Spears"
+      },
+      {
+        "type": "song",
+        "value": "Me Against the Music"
+      },
+      {
+        "type": "artist",
+        "value": "Madonna"
+      }
+    ],
+    "text": "play Britney Spears Me Against the Music feat Madonna"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Angel"
+      },
+      {
+        "type": "artist",
+        "value": "Shaggy"
+      }
+    ],
+    "text": "search for the song Angel by Shaggy"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Crazy"
+      },
+      {
+        "type": "artist",
+        "value": "Aerosmith"
+      }
+    ],
+    "text": "I want to listen to Crazy performed by Aerosmith"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Poker Face"
+      },
+      {
+        "type": "artist",
+        "value": "Lady Gaga"
+      }
+    ],
+    "text": "play song Poker Face by Lady Gaga"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Do I Wanna Know"
+      },
+      {
+        "type": "artist",
+        "value": "Arctic Monkeys"
+      }
+    ],
+    "text": "play Do I Wanna Know by Arctic Monkeys"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Pots of gold"
+      },
+      {
+        "type": "artist",
+        "value": "Mamas Gun"
+      }
+    ],
+    "text": "play the song Pots of gold by the artist Mamas Gun"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Walking with a Ghost"
+      },
+      {
+        "type": "artist",
+        "value": "Tegan and Sara"
+      }
+    ],
+    "text": "find Walking with a Ghost by Tegan and Sara"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Madonna"
+      },
+      {
+        "type": "song",
+        "value": "Like a Virgin"
+      }
+    ],
+    "text": "play Madonna's Like a Virgin"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Back in time"
+      },
+      {
+        "type": "artist",
+        "value": "Pitbull"
+      }
+    ],
+    "text": "play the song Back in time by Pitbull"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Animals"
+      },
+      {
+        "type": "artist",
+        "value": "Maroon 5"
+      }
+    ],
+    "text": "play Animals by Maroon 5"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "10 pm"
+      }
+    ],
+    "text": "turn down the heat after 10 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "today"
+      }
+    ],
+    "text": "how's the weather today"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "Tuesday"
+      }
+    ],
+    "text": "weather forecast for Tuesday"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "heating down at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "today"
+      }
+    ],
+    "text": "what's the weather today"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "tonight"
+      }
+    ],
+    "text": "temperature tonight"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "at 5 pm"
+      }
+    ],
+    "text": "heating up at 5 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "10 pm"
+      }
+    ],
+    "text": "turn down the heating after 10 pm"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "today"
+      }
+    ],
+    "text": "how is the weather today"
+  },
+  {
+    "expected": [
+      {
+        "type": "date_time",
+        "value": "tomorrow"
+      }
+    ],
+    "text": "what's the weather for tomorrow"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      }
+    ],
+    "text": "set all brightness"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "everywhere"
+      }
+    ],
+    "text": "check the hue everywhere"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "everywhere"
+      }
+    ],
+    "text": "saturation down everywhere"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "everything"
+      }
+    ],
+    "text": "turn on everything"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "everywhere"
+      }
+    ],
+    "text": "set temperature everywhere"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      }
+    ],
+    "text": "too hot in all rooms"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "everywhere"
+      }
+    ],
+    "text": "it's dark everywhere"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "everywhere"
+      }
+    ],
+    "text": "what's the temperature everywhere"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      }
+    ],
+    "text": "set saturation in all rooms"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "everywhere"
+      }
+    ],
+    "text": "turn hue up everywhere"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      }
+    ],
+    "text": "tell me the temperature in all rooms"
+  },
+  {
+    "expected": [
+      {
+        "type": "all",
+        "value": "all"
+      }
+    ],
+    "text": "set all lights brightness"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Hollaback Girl"
+      }
+    ],
+    "text": "Hollaback Girl music"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "It Must Have Been Love"
+      }
+    ],
+    "text": "can you play It Must Have Been Love"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Song of Joy"
+      }
+    ],
+    "text": "play Song of Joy"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Lemonade"
+      }
+    ],
+    "text": "find the song Lemonade"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Grenade"
+      }
+    ],
+    "text": "music Grenade in my library"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "In Da Club"
+      }
+    ],
+    "text": "play song In Da Club"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Live While We are Young"
+      }
+    ],
+    "text": "Live While We are Young song"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Budapest"
+      }
+    ],
+    "text": "play Budapest"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Lost in You"
+      }
+    ],
+    "text": "please play song Lost in You"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Mean Kitty"
+      }
+    ],
+    "text": "play the Mean Kitty song"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "Beauty and a Beat"
+      }
+    ],
+    "text": "can you play the song Beauty and a Beat"
+  },
+  {
+    "expected": [
+      {
+        "type": "song",
+        "value": "r&b"
+      }
+    ],
+    "text": "play r&b music"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "change_value",
+        "value": "50"
+      }
+    ],
+    "text": "turn down the heating by 50 percent"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "radio"
+      },
+      {
+        "type": "change_value",
+        "value": "6"
+      }
+    ],
+    "text": "turn down the radio by 6 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "change_value",
+        "value": "20"
+      }
+    ],
+    "text": "turn heating hotter for 20 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "change_value",
+        "value": "20"
+      }
+    ],
+    "text": "turn down heating for 20 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "change_value",
+        "value": "5"
+      }
+    ],
+    "text": "turn the heating down by 5 degrees"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "speakers"
+      },
+      {
+        "type": "change_value",
+        "value": "5"
+      }
+    ],
+    "text": "turn down the volume of speakers by 5 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "PC"
+      },
+      {
+        "type": "change_value",
+        "value": "20"
+      }
+    ],
+    "text": "make my PC screen brighter for 20 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating temperature"
+      },
+      {
+        "type": "change_value",
+        "value": "7"
+      }
+    ],
+    "text": "turn down the heating temperature by 7 degrees"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "change_value",
+        "value": "15"
+      }
+    ],
+    "text": "turn down TV brightness by 15 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "change_value",
+        "value": "5"
+      }
+    ],
+    "text": "turn heating down for 5 grad"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "change_value",
+        "value": "20"
+      }
+    ],
+    "text": "turn down heating for 20 percent"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heat"
+      },
+      {
+        "type": "change_value",
+        "value": "5"
+      }
+    ],
+    "text": "increase the heat by 5 degrees"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "change_value",
+        "value": "50"
+      }
+    ],
+    "text": "heating 50 lower"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Rolling Stones"
+      }
+    ],
+    "text": "play music by Rolling Stones"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Rush"
+      }
+    ],
+    "text": "play the artist Rush"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Rihanna"
+      }
+    ],
+    "text": "play song from Rihanna"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Maroon 5"
+      }
+    ],
+    "text": "play Maroon 5"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "destiny potato"
+      }
+    ],
+    "text": "play some destiny potato"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Mates of State"
+      }
+    ],
+    "text": "play Mates of State"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Lil Wayne"
+      }
+    ],
+    "text": "find me a song with Lil Wayne"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Nicki Minaj"
+      }
+    ],
+    "text": "play song by Nicki Minaj"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Eminem"
+      }
+    ],
+    "text": "Eminem song"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "George Strait"
+      }
+    ],
+    "text": "let me hear something from George Strait"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Metallica"
+      }
+    ],
+    "text": "play Metallica"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Adele"
+      }
+    ],
+    "text": "find Adele"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Bart Baker"
+      }
+    ],
+    "text": "Bart Baker song"
+  },
+  {
+    "expected": [
+      {
+        "type": "artist",
+        "value": "Adele"
+      }
+    ],
+    "text": "can you play Adele"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "decorations"
+      },
+      {
+        "type": "final_value",
+        "value": "20"
+      }
+    ],
+    "text": "turn decorations shine 20 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "thermostat"
+      },
+      {
+        "type": "final_value",
+        "value": "72"
+      }
+    ],
+    "text": "turn the thermostat down to 72"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "final_value",
+        "value": "40"
+      }
+    ],
+    "text": "turn heating colder until 40 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "20"
+      },
+      {
+        "type": "device",
+        "value": "speakers"
+      }
+    ],
+    "text": "please could you change to 20 the volume of my speakers"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "final_value",
+        "value": "40"
+      }
+    ],
+    "text": "cold heating till 40 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "decorations"
+      },
+      {
+        "type": "final_value",
+        "value": "20"
+      }
+    ],
+    "text": "make decorations shine 20 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "final_value",
+        "value": "40"
+      }
+    ],
+    "text": "turn down heating until 40 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "final_value",
+        "value": "20"
+      }
+    ],
+    "text": "make heating 20 degrees"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "decorations"
+      },
+      {
+        "type": "final_value",
+        "value": "40"
+      }
+    ],
+    "text": "make decorations darker to 40 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV screen"
+      },
+      {
+        "type": "final_value",
+        "value": "40"
+      }
+    ],
+    "text": "darken  TV screen till 40 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "radio"
+      },
+      {
+        "type": "final_value",
+        "value": "9"
+      }
+    ],
+    "text": "how do I adjust the radio volume to 9"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "final_value",
+        "value": "40"
+      }
+    ],
+    "text": "make heating colder until 40 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "computer"
+      },
+      {
+        "type": "final_value",
+        "value": "40"
+      }
+    ],
+    "text": "make computer screen darker till 40 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "final_value",
+        "value": "25"
+      }
+    ],
+    "text": "can you turn the heating down to 25 grad"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV screen"
+      },
+      {
+        "type": "final_value",
+        "value": "40"
+      }
+    ],
+    "text": "darken TV screen till 40 percents please"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "20"
+      }
+    ],
+    "text": "turn lights shine 20 percents brighter"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "10"
+      }
+    ],
+    "text": "turn down lights hue by 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "20"
+      }
+    ],
+    "text": "make lights darker for 20 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "10"
+      }
+    ],
+    "text": "turn down hue by 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "5"
+      }
+    ],
+    "text": "make hue lower by 5 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "20"
+      }
+    ],
+    "text": "make lights 20 percents brighter"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "10"
+      }
+    ],
+    "text": "lights hue up by 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "50"
+      }
+    ],
+    "text": "turn the brightness level down by 50"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "15"
+      }
+    ],
+    "text": "brightness up for 15 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "20"
+      }
+    ],
+    "text": "make lights brighter for 20 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "30"
+      }
+    ],
+    "text": "make hotter by 30 degrees"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "20"
+      }
+    ],
+    "text": "turn lights down for 20 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "10"
+      }
+    ],
+    "text": "turn up lights saturation by 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "9"
+      }
+    ],
+    "text": "turn down the volume by 9 percent"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "50"
+      }
+    ],
+    "text": "lights saturation down by 50 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "change_value",
+        "value": "5"
+      }
+    ],
+    "text": "make light level lower by 5 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn on the TV in the kitchen please"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn up the TV brightness in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heat"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "less heat in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "radio"
+      }
+    ],
+    "text": "check volume level for kitchen radio"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn down heating in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      },
+      {
+        "type": "room",
+        "value": "cloakroom"
+      }
+    ],
+    "text": "turn off heating in the cloakroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "will you turn on the TV in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "speakers"
+      },
+      {
+        "type": "room",
+        "value": "living room"
+      }
+    ],
+    "text": "what's the volume of the speakers in the living room"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "room",
+        "value": "living room"
+      }
+    ],
+    "text": "is TV off in the living room"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "is TV off in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "dishwasher"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "can you turn on dishwasher in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "room",
+        "value": "bathroom"
+      }
+    ],
+    "text": "check for me the volume of the TV in the bathroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn down the TV brightness in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "decorations"
+      }
+    ],
+    "text": "kitchen decorations brightness down"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "radio"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "how can I check the radio volume in the bedroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "radio"
+      },
+      {
+        "type": "room",
+        "value": "bathroom"
+      }
+    ],
+    "text": "I would like to unmute the radio in the bathroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "washing machine"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn on the washing machine in the kitchen for me please"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "TV"
+      }
+    ],
+    "text": "I need to mute the kitchen TV volume could you do that for me"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "what's the TV volume in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "what's the brightness of the TV in the bedroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "water cooker"
+      },
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn on the water cooker in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "5"
+      }
+    ],
+    "text": "lights saturation down till 5 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "10"
+      }
+    ],
+    "text": "brightness down  till 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "23"
+      }
+    ],
+    "text": "lights level down till 23"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "75"
+      }
+    ],
+    "text": "set the temp to 75"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "15"
+      }
+    ],
+    "text": "turn down brightness till 15 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "15"
+      }
+    ],
+    "text": "brightness up to 15 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "10"
+      }
+    ],
+    "text": "brightness up till 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "10"
+      }
+    ],
+    "text": "turn down hue till 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "22"
+      }
+    ],
+    "text": "set temperature to 22 degrees"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "20"
+      }
+    ],
+    "text": "lower the temperature to 20 degrees"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "40"
+      }
+    ],
+    "text": "turn lights darker until 40 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "25"
+      }
+    ],
+    "text": "set the temp to 25 degrees"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "15"
+      }
+    ],
+    "text": "turn down lights brightness till 15 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "68"
+      }
+    ],
+    "text": "decrease the temp to 68"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "10"
+      }
+    ],
+    "text": "turn up saturation to 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "50"
+      }
+    ],
+    "text": "lights saturation up till 50"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "10"
+      }
+    ],
+    "text": "turn up hue till 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "10"
+      }
+    ],
+    "text": "turn up lights brightness till 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "76"
+      }
+    ],
+    "text": "change the temperature to 76"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "10"
+      }
+    ],
+    "text": "turn up lights hue till 10 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "23"
+      }
+    ],
+    "text": "turn the hue up till 23"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "50"
+      }
+    ],
+    "text": "saturation till 50"
+  },
+  {
+    "expected": [
+      {
+        "type": "final_value",
+        "value": "50"
+      }
+    ],
+    "text": "set temperature to 50 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "make bedroom temperature down"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "lights hue down in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "check temperature in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "garage"
+      }
+    ],
+    "text": "is garage open"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "report the temperature in bedroom please"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "temperature in kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "what is the status of kitchen lights"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "is it warm enough in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "tell lights on in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "what's the hue of lights in bedroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "check if lights are on in the bedroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bathroom"
+      }
+    ],
+    "text": "turn on devices in bathroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn up the lightning in kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bathroom"
+      }
+    ],
+    "text": "turn off bathroom lights"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "garage"
+      }
+    ],
+    "text": "turn garage lightning on"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn on kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "what's brightness of bedroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "can you turn on the light in my kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "garage"
+      }
+    ],
+    "text": "turn garage lights on"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn off the kitchen light"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "living room"
+      }
+    ],
+    "text": "what's the temperature in the living room"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "what's the hue of kitchen lights"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "living room"
+      }
+    ],
+    "text": "what is the temperature in the living room"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "it's too bright in kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn off the light in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "what's the temperature in bedroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "how cold is it in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "turn lights on in bedroom"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "so cold in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "living room"
+      }
+    ],
+    "text": "turn the volume up in the living room"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "kitchen hue"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "kitchen lightning off"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "what is the status of the lights in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "text": "lower the bedroom temperature"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "turn off the light in my kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "hallway"
+      }
+    ],
+    "text": "too cold in hallway"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "garage"
+      }
+    ],
+    "text": "turn garage light on"
+  },
+  {
+    "expected": [
+      {
+        "type": "room",
+        "value": "kitchen"
+      }
+    ],
+    "text": "it's too dark in the kitchen"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "electric blanket"
+      }
+    ],
+    "text": "turn on the electric blanket"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "air conditioner"
+      }
+    ],
+    "text": "turn up the temperature of the air in air conditioner"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "decorations"
+      }
+    ],
+    "text": "I want you to check if the decorations are bright enough"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "washing machine"
+      }
+    ],
+    "text": "can you turn off washing machine for me please"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "iPad"
+      }
+    ],
+    "text": "check my iPad volume please"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "coffee machine"
+      }
+    ],
+    "text": "turn off coffee machine"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "computer"
+      }
+    ],
+    "text": "computer screen level up"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "video"
+      }
+    ],
+    "text": "turn off video"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "decorations"
+      }
+    ],
+    "text": "dim the decorations"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      }
+    ],
+    "text": "TV volume down"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "computer"
+      }
+    ],
+    "text": "turn on computer"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      }
+    ],
+    "text": "volume of the TV down"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "computer"
+      }
+    ],
+    "text": "can you turn off computer for me"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "video player"
+      }
+    ],
+    "text": "can you turn off video player"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "refrigerator"
+      }
+    ],
+    "text": "can you turn off refrigerator for me please"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "refrigerator"
+      }
+    ],
+    "text": "turn on the refrigerator"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "computer"
+      }
+    ],
+    "text": "please turn on computer"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      }
+    ],
+    "text": "what's the TV volume"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "computer"
+      }
+    ],
+    "text": "turn on computer brightness"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "pump circuit"
+      }
+    ],
+    "text": "turn off pump circuit"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      }
+    ],
+    "text": "set heating"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "computer"
+      }
+    ],
+    "text": "computer brightness"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      }
+    ],
+    "text": "TV sound is disturbing me"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "table lamp"
+      }
+    ],
+    "text": "check my table lamp saturation"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      }
+    ],
+    "text": "increase TV volume"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "water cooker"
+      }
+    ],
+    "text": "can you turn on water cooker"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      }
+    ],
+    "text": "could you please check the TV volume for me"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "air conditioner"
+      }
+    ],
+    "text": "make air conditioner blow warmer"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      }
+    ],
+    "text": "turn TV screen darker"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "radio"
+      }
+    ],
+    "text": "mute the radio volume please"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "speakers"
+      }
+    ],
+    "text": "the speakers volume is too loud"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "motion sensor"
+      }
+    ],
+    "text": "what is the temperature of motion sensor"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      }
+    ],
+    "text": "turn the TV brightness level down"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "speakers"
+      }
+    ],
+    "text": "turn up the speakers"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "table lamp"
+      }
+    ],
+    "text": "turn off my table lamp"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "laptop"
+      }
+    ],
+    "text": "turn on my laptop"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "TV"
+      }
+    ],
+    "text": "is TV on"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "air conditioner"
+      }
+    ],
+    "text": "decrease the temperature in air conditioner"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "water cooker"
+      }
+    ],
+    "text": "can you turn off water cooker for me please"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "video player"
+      }
+    ],
+    "text": "can you turn on video player"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "heating"
+      }
+    ],
+    "text": "turn heating down"
+  }
+]
