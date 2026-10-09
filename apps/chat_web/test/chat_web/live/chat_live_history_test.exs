@@ -12,11 +12,14 @@ defmodule ChatWeb.ChatLiveHistoryTest do
     :ok
   end
 
+  # The world the test suite runs in, which a new web user starts in.
+  @world_id "default"
+
   test "clicking a conversation loads its message history", %{conn: conn} do
-    {:ok, c1} = Brain.create_conversation()
+    {:ok, c1} = Brain.create_conversation(world_id: @world_id)
     {:ok, %{response: r1}} = Brain.evaluate(c1, "History test message 1")
 
-    {:ok, c2} = Brain.create_conversation()
+    {:ok, c2} = Brain.create_conversation(world_id: @world_id)
     {:ok, _r2} = Brain.evaluate(c2, "History test message 2")
 
     {:ok, view, _html} = live(conn, "/chat")
