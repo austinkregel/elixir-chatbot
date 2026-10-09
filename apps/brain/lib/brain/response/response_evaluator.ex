@@ -65,7 +65,7 @@ defmodule Brain.Response.ResponseEvaluator do
   def evaluate(primitives, response, analysis, opts)
 
   def evaluate(primitives, response, %ChunkAnalysis{} = analysis, opts) when is_list(primitives) do
-    pipeline_opts = [world_id: Keyword.fetch!(opts, :world_id)] ++ Keyword.take(opts, [:side_effects])
+    pipeline_opts = [world_id: world_id!(opts)] ++ Keyword.take(opts, [:side_effects])
     response_analysis = analyze_response(response, pipeline_opts)
 
     speech_act = score_speech_act_alignment(response_analysis, analysis)
@@ -150,6 +150,17 @@ defmodule Brain.Response.ResponseEvaluator do
   end
 
   defp analyze_response(_, _), do: nil
+
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      _ ->
+        raise ArgumentError,
+              "ResponseEvaluator.evaluate needs :world_id, the world the response is analyzed in, got: #{inspect(Keyword.get(opts, :world_id))}"
+    end
+  end
 
   # --- Dimension scorers ---
 
