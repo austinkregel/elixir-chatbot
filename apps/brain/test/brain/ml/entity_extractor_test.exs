@@ -3,16 +3,19 @@ defmodule Brain.ML.EntityExtractorTest do
 
   alias Brain.ML.EntityExtractor
 
-  describe "extract_entities/1" do
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
+  describe "extract_entities/2" do
     test "returns a list of entities" do
-      entities = EntityExtractor.extract_entities("hello world")
+      entities = EntityExtractor.extract_entities("hello world", world_id: @world_id)
       assert is_list(entities)
     end
 
     test "a word with several gazetteer candidates keeps all of them" do
       # "door" is a device, a lock and an emoji name. Extraction reads the one
       # gazetteer, picks a primary type, and keeps every candidate in :types.
-      entities = EntityExtractor.extract_entities("open the door")
+      entities = EntityExtractor.extract_entities("open the door", world_id: @world_id)
       door = Enum.find(entities, &(String.downcase(&1.value) == "door"))
 
       assert door
@@ -28,7 +31,7 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "extracts known entity from entity maps" do
-      entities = EntityExtractor.extract_entities("turn on the kitchen lights")
+      entities = EntityExtractor.extract_entities("turn on the kitchen lights", world_id: @world_id)
 
       assert is_list(entities)
 
@@ -45,7 +48,7 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "extracts numbers as system entities" do
-      entities = EntityExtractor.extract_entities("set temperature to 72 degrees")
+      entities = EntityExtractor.extract_entities("set temperature to 72 degrees", world_id: @world_id)
 
       number_entity =
         Enum.find(entities, fn e ->
@@ -58,7 +61,7 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "extracts relative dates" do
-      entities = EntityExtractor.extract_entities("remind me tomorrow")
+      entities = EntityExtractor.extract_entities("remind me tomorrow", world_id: @world_id)
 
       date_entity =
         Enum.find(entities, fn e ->
@@ -74,7 +77,7 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "extracts day names" do
-      entities = EntityExtractor.extract_entities("schedule for Monday")
+      entities = EntityExtractor.extract_entities("schedule for Monday", world_id: @world_id)
 
       day_entity =
         Enum.find(entities, fn e ->
@@ -93,7 +96,7 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "entity has required fields" do
-      entities = EntityExtractor.extract_entities("set to 50 degrees today")
+      entities = EntityExtractor.extract_entities("set to 50 degrees today", world_id: @world_id)
 
       if entities != [] do
         entity = Enum.at(entities, 0)
@@ -107,19 +110,61 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "handles empty string" do
-      entities = EntityExtractor.extract_entities("")
+      entities = EntityExtractor.extract_entities("", world_id: @world_id)
       assert entities == []
     end
 
     test "handles text with no entities" do
-      entities = EntityExtractor.extract_entities("xyzabc nonsense")
+      entities = EntityExtractor.extract_entities("xyzabc nonsense", world_id: @world_id)
       assert is_list(entities)
+    end
+  end
+
+  describe "the world extraction runs in" do
+    test "raises when no world is named" do
+      assert_raise ArgumentError, ~r/EntityExtractor needs :world_id/, fn ->
+        EntityExtractor.extract_entities("turn on the kitchen lights")
+      end
+
+      assert_raise ArgumentError, ~r/EntityExtractor needs :world_id/, fn ->
+        EntityExtractor.extract_entities("turn on the kitchen lights", min_confidence: 0.3)
+      end
+    end
+
+    test "runs the world's entity model, and every entity's match is the text at its span" do
+      # Gold sentences the world's model was trained on, taken by a fixed
+      # stride so the run stays short. Which spans the model wins against the
+      # gazetteer and the POS hints moves with retraining, so this asserts that
+      # it contributes at all, not where.
+      rows = Brain.ML.EvaluationStore.load_gold_standard("ner", :train)
+
+      texts =
+        rows
+        |> Enum.take_every(max(div(length(rows), 200), 1))
+        |> Enum.map(& &1["text"])
+
+      entities_by_text =
+        Map.new(texts, fn text -> {text, EntityExtractor.extract_entities(text, world_id: @world_id)} end)
+
+      assert Enum.any?(entities_by_text, fn {_text, entities} ->
+               Enum.any?(entities, &(Map.get(&1, :source) == :entity_model))
+             end),
+             "no extraction over #{length(texts)} gold sentences kept an entity from the world's entity model"
+
+      mismatched =
+        for {text, entities} <- entities_by_text,
+            entity <- entities,
+            String.slice(text, entity.start_pos, entity.end_pos - entity.start_pos + 1) != entity.match,
+            do: {text, entity}
+
+      assert mismatched == [],
+             "entities whose match is not the text at their span: #{inspect(Enum.take(mismatched, 5))}"
     end
   end
 
   describe "location extraction" do
     test "extracts location from prepositional context" do
-      entities = EntityExtractor.extract_entities("weather in New York")
+      entities = EntityExtractor.extract_entities("weather in New York", world_id: @world_id)
 
       location =
         Enum.find(entities, fn e ->
@@ -137,7 +182,7 @@ defmodule Brain.ML.EntityExtractorTest do
     test "resolves overlapping entities by keeping longest match" do
       # "new york" and "york" are both cities in the gazetteer; only the
       # longer span may survive.
-      entities = EntityExtractor.extract_entities("I'm in New York")
+      entities = EntityExtractor.extract_entities("I'm in New York", world_id: @world_id)
 
       new_york = Enum.find(entities, &(String.downcase(&1.value) == "new york"))
       assert new_york
@@ -176,7 +221,7 @@ defmodule Brain.ML.EntityExtractorTest do
       assert {:ok, _info} = Gazetteer.lookup("Michael"),
              "Michael should be in the gazetteer from setup"
 
-      entities = EntityExtractor.extract_entities("My name is Michael")
+      entities = EntityExtractor.extract_entities("My name is Michael", world_id: @world_id)
 
       michael_entity =
         Enum.find(entities, fn e ->
@@ -201,7 +246,7 @@ defmodule Brain.ML.EntityExtractorTest do
       assert {:ok, _info} = Gazetteer.lookup("Sarah"),
              "Sarah should be in the gazetteer from setup"
 
-      entities = EntityExtractor.extract_entities("Tell Sarah about the meeting")
+      entities = EntityExtractor.extract_entities("Tell Sarah about the meeting", world_id: @world_id)
 
       sarah_entity =
         Enum.find(entities, fn e ->
@@ -216,7 +261,7 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "extracts multiple person names from text" do
-      entities = EntityExtractor.extract_entities("John and Emily are coming to dinner")
+      entities = EntityExtractor.extract_entities("John and Emily are coming to dinner", world_id: @world_id)
 
       person_names =
         entities
@@ -230,7 +275,7 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "does not extract stoplist words as person names" do
-      entities = EntityExtractor.extract_entities("I will do it in May")
+      entities = EntityExtractor.extract_entities("I will do it in May", world_id: @world_id)
 
       person_entities =
         Enum.filter(entities, fn e ->
@@ -243,7 +288,7 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "extracts person names case-insensitively" do
-      entities = EntityExtractor.extract_entities("DAVID said hello")
+      entities = EntityExtractor.extract_entities("DAVID said hello", world_id: @world_id)
 
       person =
         Enum.find(entities, fn e ->
@@ -258,7 +303,7 @@ defmodule Brain.ML.EntityExtractorTest do
 
   describe "casing-based confidence adjustment" do
     test "reduces confidence when match casing doesn't match entity value" do
-      entities = EntityExtractor.extract_entities("hello friend")
+      entities = EntityExtractor.extract_entities("hello friend", world_id: @world_id)
 
       friend_entity =
         Enum.find(entities, fn e ->
@@ -280,7 +325,7 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "maintains high confidence when casing matches" do
-      entities = EntityExtractor.extract_entities("I'm from Friend")
+      entities = EntityExtractor.extract_entities("I'm from Friend", world_id: @world_id)
 
       friend_entity =
         Enum.find(entities, fn e ->
@@ -336,8 +381,8 @@ defmodule Brain.ML.EntityExtractorTest do
 
     test "respects min_confidence option" do
       text = "hello friend"
-      entities_high = EntityExtractor.extract_entities(text, min_confidence: 0.8)
-      entities_low = EntityExtractor.extract_entities(text, min_confidence: 0.3)
+      entities_high = EntityExtractor.extract_entities(text, world_id: @world_id, min_confidence: 0.8)
+      entities_low = EntityExtractor.extract_entities(text, world_id: @world_id, min_confidence: 0.3)
       assert length(entities_low) >= length(entities_high)
     end
   end
