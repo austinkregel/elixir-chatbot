@@ -1303,7 +1303,9 @@ defmodule Brain do
       |> Enum.filter(fn m ->
         Map.has_key?(m, :entities) or Map.has_key?(m, :context)
       end)
-      |> Enum.take(5)
+      # Memory is chronological; the five most recent turns, still in order.
+      # Active contexts are counted back from the last of them.
+      |> Enum.take(-5)
       |> Enum.map(fn m ->
         case Map.get(m, :context) do
           nil ->
