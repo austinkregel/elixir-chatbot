@@ -151,21 +151,35 @@ defmodule Brain.Analysis.TypeHierarchyTest do
     end
   end
 
-  describe "parent_of/1" do
+  describe "parents_of/1" do
     test "artist's parent is person" do
-      assert TypeHierarchy.parent_of("artist") == "person"
+      assert TypeHierarchy.parents_of("artist") == ["person"]
     end
 
     test "city's parent is location" do
-      assert TypeHierarchy.parent_of("city") == "location"
+      assert TypeHierarchy.parents_of("city") == ["location"]
+    end
+
+    test "a type listed under two parents keeps both" do
+      assert TypeHierarchy.parents_of("color") == ["device", "information"]
+      assert TypeHierarchy.is_a?("color", "device")
+      assert TypeHierarchy.is_a?("color", "information")
+    end
+
+    test "source and sort are parents of their medium-specific kinds" do
+      assert TypeHierarchy.parents_of("news_source") == ["source"]
+      assert TypeHierarchy.parents_of("source") == ["information"]
+      assert TypeHierarchy.parents_of("music_sort") == ["sort"]
+      assert TypeHierarchy.parents_of("sort") == ["selection"]
+      assert TypeHierarchy.parents_of("all") == ["selection"]
     end
 
     test "person has no parent" do
-      assert TypeHierarchy.parent_of("person") == nil
+      assert TypeHierarchy.parents_of("person") == []
     end
 
     test "unknown type has no parent" do
-      assert TypeHierarchy.parent_of("xyzzy") == nil
+      assert TypeHierarchy.parents_of("xyzzy") == []
     end
   end
 end
