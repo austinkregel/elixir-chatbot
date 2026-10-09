@@ -27,4 +27,27 @@ defmodule FourthWall.MathTest do
       assert Math.cosine_similarity([1], []) == 0.0
     end
   end
+
+  describe "cosine_similarity!/2" do
+    test "is the cosine similarity of vectors of the same length" do
+      assert_in_delta Math.cosine_similarity!([1, 2, 3], [1, 2, 3]), 1.0, 1.0e-10
+      assert Math.cosine_similarity!([1, 0, 0], [0, 1, 0]) == 0.0
+      assert_in_delta Math.cosine_similarity!([1, 0], [-1, 0]), -1.0, 1.0e-10
+    end
+
+    test "is 0.0 for empty vectors and a zero-magnitude one" do
+      assert Math.cosine_similarity!([], []) == 0.0
+      assert Math.cosine_similarity!([0.0, 0.0], [1.0, 0.0]) == 0.0
+    end
+
+    test "raises naming both lengths for vectors of different lengths" do
+      assert_raise ArgumentError, ~r/different lengths \(2 and 3\)/, fn ->
+        Math.cosine_similarity!([1, 2], [1, 2, 3])
+      end
+
+      assert_raise ArgumentError, ~r/different lengths \(1 and 0\)/, fn ->
+        Math.cosine_similarity!([1], [])
+      end
+    end
+  end
 end
