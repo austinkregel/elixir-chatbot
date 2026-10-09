@@ -216,7 +216,7 @@ defmodule Brain.Epistemic.ContradictionHandler do
     case get_conflict_context(world_id, node_id) do
       {:knowledge_expansion, new_fact, existing_belief} ->
         if Process.whereis(Brain.Knowledge.ReviewQueue) do
-          ReviewQueue.add_contradiction(new_fact, existing_belief)
+          ReviewQueue.add_contradiction(world_id, new_fact, existing_belief)
 
           Logger.info("Knowledge expansion conflict queued for review",
             node_id: node_id,
