@@ -8,6 +8,13 @@ defmodule World.Application do
 
   @impl true
   def start(_type, _args) do
+    # Worlds get graphs only once the unscoped graphs from before graphs were
+    # per world have been moved into one. Checked before anything starts, so a
+    # database still holding them fails this application's start with the
+    # refusal's own message, naming the graphs and the task that moves them,
+    # rather than with World.Manager's failed start wrapped in the supervisor's.
+    :ok = Atlas.Graph.refuse_unscoped_graphs!()
+
     children = [World.Manager, World.ModelRegistry, World.EntityPromoter]
 
     opts = [strategy: :one_for_one, name: World.Supervisor]
