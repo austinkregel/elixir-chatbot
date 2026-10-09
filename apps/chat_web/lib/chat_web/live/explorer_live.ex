@@ -969,7 +969,7 @@ defmodule ChatWeb.ExplorerLive do
               <div class="flex-1 min-w-0">
                 <div class="text-subheading text-ink">{semantic.representation}</div>
                 <div class="text-caption text-ink-muted mt-space-xs">
-                  Evidence: {length(semantic.evidence_ids)} episodes
+                  <span :if={semantic.action}>Action: {semantic.action} · </span>Evidence: {length(semantic.evidence_ids)} episodes
                 </div>
               </div>
               <.icon
