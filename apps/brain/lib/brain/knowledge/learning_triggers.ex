@@ -13,11 +13,15 @@ defmodule Brain.Knowledge.LearningTriggers do
 
   ## Auto-learning world
 
-  A novelty-triggered session researches for the auto-learning world. Its
-  initial value is the `:auto_learning_world_id` setting of the `:brain`
-  application; `set_auto_learning_world/2` changes it while the node runs (the
-  settings page does). Starting without that setting raises, and a session
-  that triggers while the auto-learning world is not loaded raises naming it.
+  A novelty-triggered session researches for the auto-learning world. It is
+  stored in Atlas as the setting named by `auto_learning_world_setting/0`, so
+  it survives a restart. When no stored value exists yet, the
+  `:auto_learning_world_id` setting of the `:brain` application supplies it and
+  is written to Atlas at start, so the stored value is the one read from then
+  on; `set_auto_learning_world/2` changes and stores it (the settings page
+  does). Starting with neither a stored value nor that application setting
+  raises, and a session that triggers while the auto-learning world is not
+  loaded raises naming it.
   An uncertainty follow-up joins the session it follows up, so it researches
   for that session's world.
   """
@@ -40,6 +44,11 @@ defmodule Brain.Knowledge.LearningTriggers do
   @cleanup_interval_ms 60 * 60 * 1000
   @uncertainty_margin_threshold 0.12
   @uncertainty_entropy_threshold 0.92
+  @auto_learning_world_setting "auto_learning_world_id"
+
+  @doc "The name of the Atlas setting the auto-learning world is stored under."
+  @spec auto_learning_world_setting() :: String.t()
+  def auto_learning_world_setting, do: @auto_learning_world_setting
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -58,7 +67,8 @@ defmodule Brain.Knowledge.LearningTriggers do
   end
 
   @doc """
-  Sets the world auto-triggered learning sessions start in.
+  Sets the world auto-triggered learning sessions start in and stores it in
+  Atlas, so it is still the auto-learning world after a restart.
 
   Returns `{:error, {:world_not_loaded, world_id, reason}}` when no world with
   that id is loaded, and leaves the setting unchanged.
@@ -86,7 +96,7 @@ defmodule Brain.Knowledge.LearningTriggers do
 
     Process.send_after(self(), :cleanup, @cleanup_interval_ms)
 
-    auto_learning_world_id = configured_auto_learning_world!()
+    auto_learning_world_id = stored_auto_learning_world!()
 
     Logger.info("LearningTriggers started", auto_learning_world_id: auto_learning_world_id)
 
@@ -131,6 +141,7 @@ defmodule Brain.Knowledge.LearningTriggers do
   def handle_call({:set_auto_learning_world, world_id}, _from, state) do
     case World.Manager.get(world_id) do
       {:ok, _world} ->
+        Atlas.Settings.put!(@auto_learning_world_setting, world_id)
         Logger.info("LearningTriggers: auto-learning world set", auto_learning_world_id: world_id)
         {:reply, :ok, %{state | auto_learning_world_id: world_id}}
 
@@ -311,6 +322,20 @@ defmodule Brain.Knowledge.LearningTriggers do
     end
   end
 
+  # The stored auto-learning world. With none stored yet, the configured one is
+  # stored, so it is the explicit value from then on.
+  defp stored_auto_learning_world! do
+    case Atlas.Settings.fetch(@auto_learning_world_setting) do
+      {:ok, world_id} ->
+        world_id
+
+      :error ->
+        world_id = configured_auto_learning_world!()
+        Atlas.Settings.put!(@auto_learning_world_setting, world_id)
+        world_id
+    end
+  end
+
   defp configured_auto_learning_world! do
     case Application.fetch_env(:brain, :auto_learning_world_id) do
       {:ok, world_id} when is_binary(world_id) and world_id != "" ->
@@ -322,8 +347,9 @@ defmodule Brain.Knowledge.LearningTriggers do
 
       :error ->
         raise ArgumentError,
-              "config :brain, :auto_learning_world_id is not set: LearningTriggers needs the world " <>
-                "its auto-triggered learning sessions start in"
+              "config :brain, :auto_learning_world_id is not set and no auto-learning world is " <>
+                "stored in Atlas: LearningTriggers needs the world its auto-triggered learning " <>
+                "sessions start in"
     end
   end
 
