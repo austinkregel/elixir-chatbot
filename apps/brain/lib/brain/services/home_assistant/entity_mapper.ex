@@ -24,24 +24,25 @@ defmodule Brain.Services.HomeAssistant.EntityMapper do
   end
 
   @doc """
-  Resolves a Home Assistant entity_id from slot data.
+  Resolves a Home Assistant entity_id from slot data, against the entities
+  of the Home Assistant instance the world is connected to.
 
   Resolution strategy:
   1. If `_ha_entity_id` is directly available in slots (from Gazetteer metadata), use it
   2. If a device slot has a direct entity match, use it
-  3. Query CapabilityRegistry.find_entities_for_area with location/room values
+  3. Query CapabilityRegistry.find_entities_for_area in the world with location/room values
   """
-  def resolve_entity_id(entities) when is_list(entities) do
+  def resolve_entity_id(entities, world_id) when is_list(entities) do
     device = find_entity_by_type(entities, ["device", "appliance", "room", "light", "switch"])
 
     case device do
       %{ha_entity_id: id} when is_binary(id) -> id
-      %{name: name} when is_binary(name) -> resolve_from_registry(name)
+      %{name: name} when is_binary(name) -> resolve_from_registry(name, world_id)
       _ -> nil
     end
   end
 
-  def resolve_entity_id(%{} = slots) do
+  def resolve_entity_id(%{} = slots, world_id) do
     ha_entity_id = Map.get(slots, :_ha_entity_id) || Map.get(slots, "_ha_entity_id")
 
     if ha_entity_id do
@@ -51,30 +52,30 @@ defmodule Brain.Services.HomeAssistant.EntityMapper do
       location = Map.get(slots, :location) || Map.get(slots, "location") ||
                  Map.get(slots, :room) || Map.get(slots, "room")
 
-      resolve_from_slots(device, location)
+      resolve_from_slots(device, location, world_id)
     end
   end
 
-  def resolve_entity_id(_), do: nil
+  def resolve_entity_id(_, _world_id), do: nil
 
-  defp resolve_from_slots(device, location) when is_binary(device) and is_binary(location) do
-    resolve_from_registry("#{location} #{device}") ||
-      resolve_from_registry(device) ||
-      resolve_from_registry(location)
+  defp resolve_from_slots(device, location, world_id) when is_binary(device) and is_binary(location) do
+    resolve_from_registry("#{location} #{device}", world_id) ||
+      resolve_from_registry(device, world_id) ||
+      resolve_from_registry(location, world_id)
   end
 
-  defp resolve_from_slots(device, _location) when is_binary(device) do
-    resolve_from_registry(device)
+  defp resolve_from_slots(device, _location, world_id) when is_binary(device) do
+    resolve_from_registry(device, world_id)
   end
 
-  defp resolve_from_slots(_device, location) when is_binary(location) do
-    resolve_from_registry(location)
+  defp resolve_from_slots(_device, location, world_id) when is_binary(location) do
+    resolve_from_registry(location, world_id)
   end
 
-  defp resolve_from_slots(_, _), do: nil
+  defp resolve_from_slots(_, _, _world_id), do: nil
 
-  defp resolve_from_registry(name) when is_binary(name) do
-    results = CapabilityRegistry.find_entities_for_area(name)
+  defp resolve_from_registry(name, world_id) when is_binary(name) do
+    results = CapabilityRegistry.find_entities_for_area(world_id, name)
 
     case results do
       [first | _] -> first.entity_id
