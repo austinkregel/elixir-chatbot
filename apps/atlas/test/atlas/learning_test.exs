@@ -52,6 +52,18 @@ defmodule Atlas.LearningTest do
       assert updated.status == "completed"
     end
 
+    test "a session created with a given id is stored and updated by that id" do
+      id = Ecto.UUID.generate()
+
+      assert {:ok, session} = Learning.create_session(%{id: id, world_id: @world_id, topic: "Given id"})
+      assert session.id == id
+
+      assert {:ok, updated} = Learning.update_session(id, %{status: "completed", findings_count: 3})
+      assert updated.id == id
+      assert Learning.get_session(id).status == "completed"
+      assert Learning.get_session(id).findings_count == 3
+    end
+
     test "update_session returns error for nonexistent ID" do
       fake_id = Ecto.UUID.generate()
       assert {:error, :not_found} = Learning.update_session(fake_id, %{topic: "x"})
@@ -130,6 +142,17 @@ defmodule Atlas.LearningTest do
       assert updated.status == "completed"
     end
 
+    test "a goal created with a given id is updated by that id", %{session: session} do
+      id = Ecto.UUID.generate()
+
+      assert {:ok, goal} = Learning.create_goal(%{id: id, session_id: session.id, topic: "Given id"})
+      assert goal.id == id
+
+      assert {:ok, updated} = Learning.update_goal_status(id, "completed")
+      assert updated.id == id
+      assert [%{id: ^id, status: "completed"}] = Learning.goals_for_session(session.id)
+    end
+
     test "update_goal_status returns error for nonexistent" do
       assert {:error, :not_found} = Learning.update_goal_status(Ecto.UUID.generate(), "completed")
     end
@@ -164,6 +187,19 @@ defmodule Atlas.LearningTest do
       assert concluded.status == "concluded"
       assert concluded.conclusion == "hypotheses_supported"
       assert concluded.concluded_at != nil
+    end
+
+    test "an investigation created with a given id is concluded by that id", %{session: session} do
+      id = Ecto.UUID.generate()
+
+      assert {:ok, inv} =
+               Learning.create_investigation(%{id: id, session_id: session.id, topic: "Given id"})
+
+      assert inv.id == id
+
+      assert {:ok, concluded} = Learning.conclude_investigation(id, %{conclusion: "inconclusive"})
+      assert concluded.id == id
+      assert [%{id: ^id, status: "concluded"}] = Learning.investigations_for_session(session.id)
     end
 
     test "conclude_investigation returns error for nonexistent" do
@@ -218,6 +254,16 @@ defmodule Atlas.LearningTest do
 
       assert updated.status == "supported"
       assert updated.confidence == 0.9
+    end
+
+    test "a hypothesis created with a given id is updated by that id", %{investigation: inv} do
+      id = Ecto.UUID.generate()
+
+      assert {:ok, hyp} =
+               Learning.create_hypothesis(%{id: id, investigation_id: inv.id, claim: "Given id"})
+
+      assert hyp.id == id
+      assert {:ok, %{id: ^id, status: "supported"}} = Learning.update_hypothesis(id, %{status: "supported"})
     end
 
     test "update_hypothesis returns error for nonexistent" do
