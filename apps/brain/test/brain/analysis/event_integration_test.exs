@@ -76,8 +76,16 @@ defmodule Brain.Analysis.EventIntegrationTest do
   end
 
   describe "Memory integration" do
+    # Episodes are written to a test world of their own, removed afterwards.
+    setup do
+      ensure_started(World.Manager)
+      setup_world_sandbox()
+      {:ok, world} = create_test_world("events")
+      %{world_id: world.id}
+    end
+
     @tag :memory
-    test "events can be stored as episodes" do
+    test "events can be stored as episodes", %{world_id: world_id} do
       event =
         Event.new(%{verb: "play", lemma: "play", tense: :imperative},
           actor: nil,
@@ -90,17 +98,15 @@ defmodule Brain.Analysis.EventIntegrationTest do
         user_input: "Play some jazz"
       }
 
-      if Process.whereis(MemoryStore) do
-        {:ok, episode_id} = MemoryStore.add_event_episode(event, context, world_id: "test_events")
+      {:ok, episode_id} = MemoryStore.add_event_episode(event, context, world_id: world_id)
 
-        assert is_binary(episode_id)
-        {:ok, episodes} = MemoryStore.query_events_by_action("play", 5, world_id: "test_events")
-        assert length(episodes) >= 0
-      end
+      assert is_binary(episode_id)
+      {:ok, episodes} = MemoryStore.query_events_by_action("play", 5, world_id: world_id)
+      assert Enum.any?(episodes, &(&1.id == episode_id))
     end
 
     @tag :memory
-    test "event episodes have correct tags" do
+    test "event episodes have correct tags", %{world_id: world_id} do
       event =
         Event.new(%{verb: "want", lemma: "want", tense: :present},
           actor: %{text: "I", type: "pronoun", token_index: 0},
@@ -110,11 +116,9 @@ defmodule Brain.Analysis.EventIntegrationTest do
 
       context = %{response: "I'd be happy to help with coffee"}
 
-      if Process.whereis(MemoryStore) do
-        {:ok, _} = MemoryStore.add_event_episode(event, context, world_id: "test_events")
-        {:ok, episodes} = MemoryStore.query_events_by_object("coffee", 5, world_id: "test_events")
-        assert is_list(episodes)
-      end
+      {:ok, episode_id} = MemoryStore.add_event_episode(event, context, world_id: world_id)
+      {:ok, episodes} = MemoryStore.query_events_by_object("coffee", 5, world_id: world_id)
+      assert Enum.any?(episodes, &(&1.id == episode_id))
     end
   end
 
