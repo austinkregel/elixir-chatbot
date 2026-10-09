@@ -2,6 +2,7 @@ defmodule Brain.Analysis.Pipeline do
   @moduledoc "Orchestrates the text analysis pipeline.\n\nThe pipeline processes user input through multiple stages:\n1. Semantic chunking (break input into utterances)\n2. Parallel analysis (discourse + speech act classification)\n3. Sequential analysis (slot detection + context resolution)\n4. Internal model building (combine all results)\n\nEach stage builds on the previous, creating a comprehensive\nunderstanding of the user's input.\n"
 
   alias Brain.Analysis.{
+    ActiveContexts,
     InternalModel,
     Chunk,
     ChunkAnalysis,
@@ -39,7 +40,7 @@ defmodule Brain.Analysis.Pipeline do
   alias Brain.Telemetry
   require Logger
 
-  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n- :language - the `Brain.Language` code to analyze in. Absent means the caller\n  named no language, which is English; an unsupported code raises.\n- :lexical_evidence - a `Brain.Analysis.LexicalEvidence` model used in place of\n  the one loaded for the language. Training passes each row's out-of-fold model.\n\nReturns an InternalModel struct with complete analysis.\n"
+  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n- :language - the `Brain.Language` code to analyze in. Absent means the caller\n  named no language, which is English; an unsupported code raises.\n- :lexical_evidence - a `Brain.Analysis.LexicalEvidence` model used in place of\n  the one loaded for the language. Training passes each row's out-of-fold model.\n- :active_contexts - the conversational contexts the turn continues from. Absent\n  means they are derived from `:conversation_history` and the registry's output\n  contexts (`Brain.Analysis.ActiveContexts`); training and evaluation pass a\n  gold row's follow-up context. A name no intent continues from raises.\n\nReturns an InternalModel struct with complete analysis.\n"
   def process(text, opts \\ []) when is_binary(text) do
     side_effects?(opts)
     refuse_stale_classifiers!()
@@ -384,6 +385,7 @@ defmodule Brain.Analysis.Pipeline do
     pass1_analysis =
       ChunkAnalysis.new(chunk.index, chunk.text)
       |> Map.put(:language, language!(opts))
+      |> Map.put(:active_contexts, active_contexts!(opts))
       |> Map.put(:discourse, discourse_result)
       |> Map.put(:speech_act, speech_act_result)
       |> Map.put(:sentiment, sentiment_result)
@@ -1828,6 +1830,18 @@ defmodule Brain.Analysis.Pipeline do
       other ->
         raise ArgumentError,
               "Pipeline option :side_effects must be true or false, got: #{inspect(other)}"
+    end
+  end
+
+  # The contexts the turn continues from: given explicitly (training and
+  # evaluation pass a gold row's follow-up context), or derived from the
+  # conversation's earlier turns.
+  defp active_contexts!(opts) do
+    tables = ActiveContexts.loaded!()
+
+    case Keyword.fetch(opts, :active_contexts) do
+      {:ok, names} -> ActiveContexts.validate!(names, tables)
+      :error -> opts |> Keyword.get(:conversation_history, []) |> ActiveContexts.from_history(tables)
     end
   end
 
