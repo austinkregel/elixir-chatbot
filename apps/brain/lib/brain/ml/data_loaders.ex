@@ -769,21 +769,21 @@ defmodule Brain.ML.DataLoaders do
   defp put_if_present(map, _key, empty) when empty == %{}, do: map
   defp put_if_present(map, key, value), do: Map.put(map, key, value)
 
+  # An intent file is named by its intent. A name with " - " is a contextual
+  # variant that was not collapsed into the intent its action names. Spaces occur
+  # only in Dialogflow display-named files such as "Default Fallback Intent".
   defp extract_intent_name(filename) do
-    filename
-    |> String.replace("_usersays_en.json", "")
-    |> String.replace("_usersays.json", "")
-    |> String.replace(".json", "")
-    |> String.replace(" - ", ".")
-    |> String.replace(" ", ".")
-    |> normalize_intent_name()
-  end
+    name =
+      filename
+      |> String.replace("_usersays_en.json", "")
+      |> String.replace("_usersays.json", "")
+      |> String.replace(".json", "")
 
-  defp normalize_intent_name(name) do
-    name
-    |> String.replace(~r/\s*-\s*context_\w+/, "")
-    |> String.replace(~r/\s*-\s*comment_.*$/, "")
-    |> String.trim()
+    if String.contains?(name, " - ") do
+      raise "DataLoaders: #{inspect(filename)} names a contextual variant; collapse it into the intent its action names"
+    end
+
+    String.replace(name, " ", ".")
   end
 
   defp parse_intent_data(data, intent_name) when is_list(data) do
