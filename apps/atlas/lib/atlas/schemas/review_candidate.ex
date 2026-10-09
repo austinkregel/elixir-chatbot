@@ -5,6 +5,9 @@ defmodule Atlas.Schemas.ReviewCandidate do
   Replaces the file-based ReviewQueue `.term` persistence.
   Review candidates represent findings from autonomous research
   that need human review before being accepted as knowledge.
+
+  A candidate belongs to the world its finding was found for (`world_id`,
+  required).
   """
 
   use Ecto.Schema
@@ -14,6 +17,7 @@ defmodule Atlas.Schemas.ReviewCandidate do
   @primary_key {:id, :string, autogenerate: false}
 
   schema "atlas_review_candidates" do
+    field :world_id, :string
     field :status, :string, default: "pending"
     field :finding, :map, default: %{}
     field :aggregate_confidence, :float
@@ -26,14 +30,14 @@ defmodule Atlas.Schemas.ReviewCandidate do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @required_fields ~w(id status finding aggregate_confidence)a
+  @required_fields ~w(id world_id status finding aggregate_confidence)a
   @optional_fields ~w(corroborating_sources conflicting_findings existing_contradictions reviewer_notes reviewed_at)a
 
   def changeset(candidate, attrs) do
     candidate
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_inclusion(:status, ~w(pending approved rejected auto_approved))
+    |> validate_inclusion(:status, ~w(pending approved rejected deferred auto_approved))
   end
 
   @doc "Query pending review candidates."
