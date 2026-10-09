@@ -5,6 +5,9 @@ defmodule Brain.Analysis.PipelineTest do
   alias Brain.Analysis.Pipeline
   alias Brain.Analysis.InternalModel
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup _context do
     start_test_services()
     :ok
@@ -12,7 +15,7 @@ defmodule Brain.Analysis.PipelineTest do
 
   describe "process/2" do
     test "processes simple greeting" do
-      model = Pipeline.process("Hello there!")
+      model = Pipeline.process("Hello there!", world_id: @world_id)
 
       assert %InternalModel{
                raw_input: "Hello there!",
@@ -27,7 +30,7 @@ defmodule Brain.Analysis.PipelineTest do
     end
 
     test "processes question with addressee detection" do
-      model = Pipeline.process("Can you tell me the weather in New York?")
+      model = Pipeline.process("Can you tell me the weather in New York?", world_id: @world_id)
 
       assert model.overall_strategy in [
                :can_respond,
@@ -41,7 +44,7 @@ defmodule Brain.Analysis.PipelineTest do
     end
 
     test "handles multi-sentence input" do
-      model = Pipeline.process("Hello! What's the news? Also check the weather.")
+      model = Pipeline.process("Hello! What's the news? Also check the weather.", world_id: @world_id)
 
       assert length(model.chunks) >= 2
       assert length(model.analyses) >= 2
@@ -49,7 +52,11 @@ defmodule Brain.Analysis.PipelineTest do
 
     test "detects need for clarification when context missing" do
       model =
-        Pipeline.process("What's the weather like?", skip_entity_extraction: true, entities: [])
+        Pipeline.process("What's the weather like?",
+          world_id: @world_id,
+          skip_entity_extraction: true,
+          entities: []
+        )
 
       assert model.overall_strategy in [
                :can_respond,
@@ -62,7 +69,11 @@ defmodule Brain.Analysis.PipelineTest do
       entities = [%{entity_type: "location", value: "Paris", confidence: 0.9}]
 
       model =
-        Pipeline.process("What's the weather?", entities: entities, skip_entity_extraction: true)
+        Pipeline.process("What's the weather?",
+          world_id: @world_id,
+          entities: entities,
+          skip_entity_extraction: true
+        )
 
       first_analysis = List.first(model.analyses)
       assert first_analysis != nil
@@ -80,6 +91,7 @@ defmodule Brain.Analysis.PipelineTest do
 
       model =
         Pipeline.process("What about tomorrow?",
+          world_id: @world_id,
           conversation_history: history,
           entities: [],
           skip_entity_extraction: true
@@ -87,11 +99,21 @@ defmodule Brain.Analysis.PipelineTest do
 
       assert %InternalModel{} = model
     end
+
+    test "raises when no world is named" do
+      assert_raise ArgumentError, ~r/Pipeline needs :world_id/, fn ->
+        Pipeline.process("Hello there!")
+      end
+
+      assert_raise ArgumentError, ~r/Pipeline needs :world_id/, fn ->
+        Pipeline.process("Hello there!", side_effects: false)
+      end
+    end
   end
 
   describe "analyze_chunk/2" do
     test "analyzes a single chunk" do
-      analysis = Pipeline.analyze_chunk("What time is it?")
+      analysis = Pipeline.analyze_chunk("What time is it?", world_id: @world_id)
 
       assert analysis.chunk_index == 0
       assert analysis.text == "What time is it?"
@@ -100,7 +122,7 @@ defmodule Brain.Analysis.PipelineTest do
     end
 
     test "analyzes imperative command" do
-      analysis = Pipeline.analyze_chunk("Turn on the lights")
+      analysis = Pipeline.analyze_chunk("Turn on the lights", world_id: @world_id)
 
       assert analysis.speech_act.category == :directive or
                analysis.speech_act.is_imperative == true or
@@ -110,17 +132,27 @@ defmodule Brain.Analysis.PipelineTest do
     end
 
     test "analyzes greeting" do
-      analysis = Pipeline.analyze_chunk("Hello!")
+      analysis = Pipeline.analyze_chunk("Hello!", world_id: @world_id)
 
       assert analysis.speech_act.category == :expressive or
                analysis.speech_act.sub_type == :greeting or
                analysis.speech_act.sub_type != :farewell
     end
+
+    test "raises when no world is named" do
+      assert_raise ArgumentError, ~r/Pipeline needs :world_id/, fn ->
+        Pipeline.analyze_chunk("What time is it?")
+      end
+
+      assert_raise ArgumentError, ~r/Pipeline needs :world_id/, fn ->
+        Pipeline.analyze_chunk("What time is it?", side_effects: false)
+      end
+    end
   end
 
   describe "summarize/1" do
     test "provides summary of analysis" do
-      model = Pipeline.process("Hello! How are you?")
+      model = Pipeline.process("Hello! How are you?", world_id: @world_id)
       summary = Pipeline.summarize(model)
 
       assert is_map(summary)
@@ -132,13 +164,13 @@ defmodule Brain.Analysis.PipelineTest do
 
   describe "InternalModel helpers" do
     test "bot_addressed? returns true when bot is addressed" do
-      model = Pipeline.process("Hey bot, what's up?")
+      model = Pipeline.process("Hey bot, what's up?", world_id: @world_id)
 
       assert InternalModel.bot_addressed?(model) == true
     end
 
     test "respondable_analyses filters correctly" do
-      model = Pipeline.process("Hello there!")
+      model = Pipeline.process("Hello there!", world_id: @world_id)
 
       respondable = InternalModel.respondable_analyses(model)
 
@@ -149,7 +181,7 @@ defmodule Brain.Analysis.PipelineTest do
 
   describe "the classified feature vector and the chunk profile" do
     test "every chunk keeps the vector its intent was classified from, and a profile computed from it" do
-      model = Pipeline.process("Hi! Can you play some jazz?", side_effects: false)
+      model = Pipeline.process("Hi! Can you play some jazz?", world_id: @world_id, side_effects: false)
 
       assert length(model.analyses) >= 2
 
@@ -167,7 +199,8 @@ defmodule Brain.Analysis.PipelineTest do
     end
 
     test "a chunk's accumulator keeps the turn's memory context and counts each source once" do
-      model = Pipeline.process("Hello there. What is the weather in Paris?", side_effects: false)
+      model =
+        Pipeline.process("Hello there. What is the weather in Paris?", world_id: @world_id, side_effects: false)
 
       for analysis <- model.analyses do
         sources = Enum.map(analysis.accumulated_context.signals, &elem(&1, 0))
