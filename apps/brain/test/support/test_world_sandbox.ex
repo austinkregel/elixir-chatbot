@@ -3,7 +3,7 @@ defmodule Brain.TestWorldSandbox do
 
   # World.Manager is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Manager}
+  @compile {:no_warn_undefined, [World.Manager, World.Persistence]}
 
   alias World.Manager, as: WorldManager
 
@@ -115,14 +115,18 @@ defmodule Brain.TestWorldSandbox do
     end
   end
 
+  # Removes the test worlds in the sandbox directory, not the directory itself:
+  # the world the suite runs in, which `mix test.models` seeds there, must
+  # survive.
   defp cleanup_test_directory do
-    test_path = Path.join(System.tmp_dir!(), "chat_bot_test_worlds")
+    test_path = World.Persistence.base_path()
 
-    if File.exists?(test_path) do
-      File.rm_rf(test_path)
+    if File.dir?(test_path) do
+      test_path
+      |> File.ls!()
+      |> Enum.filter(&is_test_world?(&1, test_path))
+      |> Enum.each(&File.rm_rf!(Path.join(test_path, &1)))
     end
-  rescue
-    _ -> :ok
   end
 
   @doc "Cleans up orphaned test worlds that were created in priv/training_worlds/.\n\nThis handles edge cases where tests:\n- Created worlds directly via WorldManager instead of create_test_world\n- Failed before cleanup could run\n- Used hardcoded paths that bypassed the test sandbox\n\nA world is considered a test world if:\n- Its ID starts with \"test_world_\"\n- Its config.json contains \"test\": true in metadata\n- It has no config.json (incomplete world from crashed test)\n"
