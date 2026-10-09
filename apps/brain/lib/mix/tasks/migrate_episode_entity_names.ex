@@ -33,7 +33,7 @@ defmodule Mix.Tasks.Migrate.EpisodeEntityNames do
         nil ->
           case Brain.AtlasIntegration.list_memory_worlds() do
             {:ok, ws} -> ws
-            _ -> ["default"]
+            other -> Mix.raise("mix migrate.episode_entity_names could not list the memory worlds: #{inspect(other)}")
           end
 
         w ->
@@ -64,7 +64,7 @@ defmodule Mix.Tasks.Migrate.EpisodeEntityNames do
           if dry_run? do
             Enum.each(needs_backfill, fn {id, ep} ->
               text = ep.state || ep.action || ""
-              names = do_extract(text)
+              names = do_extract(text, world_id)
               Mix.shell().info("  [dry-run] #{id}: #{inspect(names)}")
             end)
 
@@ -72,7 +72,7 @@ defmodule Mix.Tasks.Migrate.EpisodeEntityNames do
           else
             Enum.each(needs_backfill, fn {_id, ep} ->
               text = ep.state || ep.action || ""
-              names = do_extract(text)
+              names = do_extract(text, world_id)
               updated_ep = %{ep | entity_names: names}
               Brain.AtlasIntegration.persist_episode_sync(updated_ep, world_id)
             end)
@@ -87,8 +87,9 @@ defmodule Mix.Tasks.Migrate.EpisodeEntityNames do
     end
   end
 
-  defp do_extract(text) when is_binary(text) and text != "" do
-    case Brain.ML.EntityExtractor.extract_entities(text, skip_disambiguation: true) do
+  # The episode's own world: entities are extracted with that world's model.
+  defp do_extract(text, world_id) when is_binary(text) and text != "" do
+    case Brain.ML.EntityExtractor.extract_entities(text, skip_disambiguation: true, world_id: world_id) do
       entities when is_list(entities) ->
         Enum.map(entities, fn e ->
           Map.get(e, :value) || Map.get(e, :text, "")
@@ -98,9 +99,7 @@ defmodule Mix.Tasks.Migrate.EpisodeEntityNames do
       _ ->
         []
     end
-  rescue
-    _ -> []
   end
 
-  defp do_extract(_), do: []
+  defp do_extract(_, _world_id), do: []
 end
