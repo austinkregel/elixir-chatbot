@@ -142,6 +142,14 @@ defmodule Brain.Analysis.ProcessingTraceTest do
         assert trace.primary_intent != nil
       end
     end
+
+    test "raises without a world" do
+      for opts <- [[], [world_id: nil], [world_id: ""]] do
+        assert_raise ArgumentError, ~r/ProcessingTrace.trace_processing needs :world_id/, fn ->
+          ProcessingTrace.trace_processing("Hello there!", opts)
+        end
+      end
+    end
   end
 
   describe "to_display_map/1" do
