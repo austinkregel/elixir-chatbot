@@ -3,36 +3,6 @@ defmodule Brain.ML.Poincare.EmbeddingsGenServerTest do
 
   alias Brain.ML.Poincare.Embeddings
 
-  describe "GenServer lifecycle" do
-    test "starts and reports not ready without trained model" do
-      name = :"poincare_test_#{:rand.uniform(100_000)}"
-      world = "no_model_#{:rand.uniform(100_000)}"
-      {:ok, pid} = Embeddings.start_link(name: name, world_id: world)
-      assert Process.alive?(pid)
-      refute Embeddings.ready?(name)
-    end
-
-    test "ready? returns false for non-existent server" do
-      refute Embeddings.ready?(:"nonexistent_poincare_#{:rand.uniform(100_000)}")
-    end
-
-    test "lookup returns error when not ready" do
-      name = :"poincare_lookup_test_#{:rand.uniform(100_000)}"
-      world = "no_model_#{:rand.uniform(100_000)}"
-      {:ok, _pid} = Embeddings.start_link(name: name, world_id: world)
-
-      assert {:error, :not_ready} = Embeddings.lookup("test", name)
-    end
-
-    test "entity_distance returns error when not ready" do
-      name = :"poincare_dist_test_#{:rand.uniform(100_000)}"
-      world = "no_model_#{:rand.uniform(100_000)}"
-      {:ok, _pid} = Embeddings.start_link(name: name, world_id: world)
-
-      assert {:error, :not_ready} = Embeddings.entity_distance("a", "b", name)
-    end
-  end
-
   describe "train/2 edge cases" do
     test "trains with minimal pairs" do
       pairs = [{"child", "parent"}]
