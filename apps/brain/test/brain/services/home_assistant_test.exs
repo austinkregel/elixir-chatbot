@@ -51,12 +51,12 @@ defmodule Brain.Services.HomeAssistantTest do
     end
   end
 
-  describe "enrich/3" do
+  describe "enrich/4" do
     test "an unsupported intent is reported, and Home Assistant is not called" do
       credentials = %{url: "http://home-assistant.invalid", access_token: "unused"}
 
       assert {:error, {:unsupported_intent, "smarthome.device.volume.mute"}} =
-               HomeAssistant.enrich("smarthome.device.volume.mute", %{}, credentials)
+               HomeAssistant.enrich("smarthome.device.volume.mute", %{}, credentials, "default")
     end
   end
 end
