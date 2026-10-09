@@ -40,8 +40,9 @@ defmodule Brain.Analysis.Pipeline do
   alias Brain.Telemetry
   require Logger
 
-  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n- :language - the `Brain.Language` code to analyze in. Absent means the caller\n  named no language, which is English; an unsupported code raises.\n- :lexical_evidence - a `Brain.Analysis.LexicalEvidence` model used in place of\n  the one loaded for the language. Training passes each row's out-of-fold model.\n- :active_contexts - the conversational contexts the turn continues from. Absent\n  means they are derived from `:conversation_history` and the registry's output\n  contexts (`Brain.Analysis.ActiveContexts`); training and evaluation pass a\n  gold row's follow-up context. A name no intent continues from raises.\n\nReturns an InternalModel struct with complete analysis.\n"
+  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :world_id - required: the world the text is analyzed in. Brain passes its\n  conversation's world; any other caller names the world it analyzes for.\n  Absent raises.\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n- :language - the `Brain.Language` code to analyze in. Absent means the caller\n  named no language, which is English; an unsupported code raises.\n- :lexical_evidence - a `Brain.Analysis.LexicalEvidence` model used in place of\n  the one loaded for the language. Training passes each row's out-of-fold model.\n- :active_contexts - the conversational contexts the turn continues from. Absent\n  means they are derived from `:conversation_history` and the registry's output\n  contexts (`Brain.Analysis.ActiveContexts`); training and evaluation pass a\n  gold row's follow-up context. A name no intent continues from raises.\n\nReturns an InternalModel struct with complete analysis.\n"
   def process(text, opts \\ []) when is_binary(text) do
+    world_id!(opts)
     side_effects?(opts)
     refuse_stale_classifiers!()
 
@@ -154,8 +155,9 @@ defmodule Brain.Analysis.Pipeline do
     model
   end
 
-  @doc "Processes a single chunk through the analysis pipeline.\n\nUseful for testing or when you already have chunks. Internally runs the\nfull two-pass analysis (pass 1 + cross-chunk aggregation + pass 2) on a\nlist of one chunk so the public contract is identical to the multi-chunk\npath.\n\nTakes the same `:side_effects` option as `process/2`: it defaults to\n`true`, and with `false` the run writes nothing.\n"
+  @doc "Processes a single chunk through the analysis pipeline.\n\nUseful for testing or when you already have chunks. Internally runs the\nfull two-pass analysis (pass 1 + cross-chunk aggregation + pass 2) on a\nlist of one chunk so the public contract is identical to the multi-chunk\npath.\n\nRequires `:world_id` as `process/2` does, and takes the same `:side_effects`\noption as `process/2`: it defaults to\n`true`, and with `false` the run writes nothing.\n"
   def analyze_chunk(chunk_text, opts \\ []) when is_binary(chunk_text) do
+    world_id!(opts)
     side_effects?(opts)
     chunk = Chunk.new(chunk_text, 0, 0, String.length(chunk_text) - 1)
     [analysis] = analyze_chunks([chunk], opts)
@@ -234,14 +236,7 @@ defmodule Brain.Analysis.Pipeline do
         DiscourseAnalyzer.analyze(chunk.text, participants: participants, bot_names: bot_names)
       end)
 
-    basic_entities =
-      try do
-        EntityExtractor.extract_entities(chunk.text)
-      rescue
-        _ -> []
-      catch
-        :exit, _ -> []
-      end
+    basic_entities = EntityExtractor.extract_entities(chunk.text, world_id: world_id!(opts))
 
     if debug_pass1?, do: Logger.info("pipeline:pass1 entities=#{System.monotonic_time(:millisecond) - t0}ms")
 
@@ -603,7 +598,7 @@ defmodule Brain.Analysis.Pipeline do
         rescored_entities,
         intent,
         intent_details,
-        world_id: Keyword.get(opts, :world_id, "default"),
+        world_id: world_id!(opts),
         intent_confidence: intent_confidence,
         side_effects: side_effects?(opts)
       )
@@ -835,13 +830,7 @@ defmodule Brain.Analysis.Pipeline do
         Keyword.get(opts, :entities, [])
 
       true ->
-        try do
-          EntityExtractor.extract_entities(text, opts)
-        rescue
-          _ -> []
-        catch
-          :exit, _ -> []
-        end
+        EntityExtractor.extract_entities(text, opts)
     end
   end
 
@@ -1821,6 +1810,22 @@ defmodule Brain.Analysis.Pipeline do
   # Whether this run may write what it learned. On unless the caller passed
   # `side_effects: false`, as evaluation, training-data generation and
   # measurement callers do.
+  # The world the text is analyzed in. Brain passes its conversation's world;
+  # every other caller names the world it analyzes for. There is no default.
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "Pipeline option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError,
+              "Pipeline needs :world_id, the world the text is analyzed in; Brain passes its conversation's world"
+    end
+  end
+
   defp side_effects?(opts) do
     case Keyword.get(opts, :side_effects, true) do
       value when is_boolean(value) ->
@@ -2160,7 +2165,7 @@ defmodule Brain.Analysis.Pipeline do
         top_k: Map.get(details, :top_k, []),
         extracted_entities: entities,
         slot_fill_summary: slot_result || %{},
-        world_id: Keyword.get(opts, :world_id),
+        world_id: world_id!(opts),
         conversation_id: Keyword.get(opts, :conversation_id),
         annotation: %{
           tags: [:novel_input],
