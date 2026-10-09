@@ -177,13 +177,8 @@ defmodule Brain.ML.KnowledgeGraph.EntityVectorCache do
       :miss ->
         case get_scorer_internals("default") do
           {:ok, model, params, vocab} ->
-            parent =
-              if Code.ensure_loaded?(Brain.Analysis.TypeHierarchy) and
-                   function_exported?(Brain.Analysis.TypeHierarchy, :parent_of, 1) do
-                Brain.Analysis.TypeHierarchy.parent_of(type_name)
-              end
-
-            vector = Embedder.encode_entity_type(type_name, parent, model, params, vocab)
+            parents = Brain.Analysis.TypeHierarchy.parents_of(type_name)
+            vector = Embedder.encode_entity_type(type_name, parents, model, params, vocab)
             maybe_evict(state.table)
             :ets.insert(state.table, {key, vector, System.monotonic_time()})
             {:reply, {:ok, vector}, %{state | misses: state.misses + 1}}
