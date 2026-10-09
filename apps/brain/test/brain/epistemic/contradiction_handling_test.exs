@@ -12,7 +12,7 @@ defmodule Brain.Epistemic.ContradictionHandlingTest do
   setup do
     start_brain_services()
     ensure_epistemic_stores_started()
-    {:ok, conversation_id} = Brain.create_conversation()
+    {:ok, conversation_id} = Brain.create_conversation(world_id: "default")
     user_id = "test_user_#{:rand.uniform(100_000)}"
 
     %{conversation_id: conversation_id, user_id: user_id}
