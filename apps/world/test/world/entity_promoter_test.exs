@@ -112,6 +112,26 @@ defmodule World.EntityPromoterTest do
     end
   end
 
+  describe "the knowledge-graph gate" do
+    test "scores an entity with the triple scorer of the world it was seen in", %{name: name} do
+      Application.put_env(
+        :brain,
+        :kg_signals,
+        Keyword.put(Application.get_env(:brain, :kg_signals), :entity_promoter_kg_gate, true)
+      )
+
+      # A world that holds no triple scorer: the gate reads that world's, and
+      # raises naming it rather than letting the entity through.
+      world_id = "test_promoter_no_scorer_#{System.unique_integer([:positive])}"
+
+      assert_raise RuntimeError, ~r/world #{inspect(world_id)} has no triple scorer/, fn ->
+        EntityPromoter.suggest(world_id, observations(name, config()[:min_occurrences]))
+      end
+
+      assert ReviewQueue.get_pending() == []
+    end
+  end
+
   describe "stats/1" do
     test "starts with nothing suggested" do
       name = :"entity_promoter_test_#{System.unique_integer([:positive])}"
