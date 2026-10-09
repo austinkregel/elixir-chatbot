@@ -4,7 +4,9 @@ defmodule World.EmbedderTest do
   when `World.Manager` creates it. A world with no copy raises naming the
   world: there is no fallback to the trained vocabulary or to another world.
   """
-  use ExUnit.Case, async: false
+  # A rebuild reads the world's episodes from Atlas and writes their
+  # embeddings back, inside this test's sandbox transaction (`World.AtlasCase`).
+  use World.AtlasCase, async: false
   import Brain.TestHelpers
 
   alias Brain.Memory.Store
@@ -13,12 +15,7 @@ defmodule World.EmbedderTest do
   alias World.Embedder
   alias World.Manager, as: WorldManager
 
-  setup tags do
-    # A rebuild reads the world's episodes from Atlas and writes their
-    # embeddings back, inside this test's sandbox transaction.
-    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
-    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
-
+  setup do
     start_world_test_services()
     setup_world_sandbox()
 
@@ -334,6 +331,120 @@ defmodule World.EmbedderTest do
 
       assert {:ok, :kept} = Task.await(resume.())
       assert {:ok, 1.0} = Task.await(compare)
+    end
+  end
+
+  describe "Brain.Memory.Store queries during a rebuild" do
+    test "wait for the rebuild and search the world's memory re-embedded with the rebuilt vocabulary" do
+      {:ok, world} = create_test_world("embedder_store_query_waits")
+
+      # Every word occurs at least twice, so each one is in the rebuilt
+      # vocabulary.
+      [paris_sunny, _paris_rainy] = texts = ["the weather in paris is sunny", "is the weather in paris rainy"]
+
+      [paris_sunny_id, _] =
+        ids =
+        Enum.map(texts, fn text ->
+          {:ok, id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
+          id
+        end)
+
+      episodes = Enum.map(ids, fn id -> elem(Store.get_episode(id, world_id: world.id), 1) end)
+      fact = SemanticFact.new("the weather in paris", VectorIndex.mean_vector(Enum.map(episodes, & &1.embedding)), ids, [])
+      {:ok, fact_id} = Store.add_semantic(fact, world_id: world.id)
+
+      resume = hold_rebuild!(world.id)
+
+      similar = Task.async(fn -> Store.query_similar(paris_sunny, 1, world_id: world.id, rerank: false) end)
+      semantic = Task.async(fn -> Store.query_semantic("the weather in paris", 1, world_id: world.id, rerank: false) end)
+      assert Task.yield(similar, 200) == nil
+      assert Task.yield(semantic, 0) == nil
+
+      assert {:ok, vocabulary_size} = Task.await(resume.())
+
+      assert {:ok, [{%{id: ^paris_sunny_id} = episode, similarity}]} = Task.await(similar)
+      assert length(episode.embedding) == vocabulary_size
+      assert_in_delta similarity, 1.0, 1.0e-9
+
+      assert {:ok, [{%{id: ^fact_id} = stored_fact, fact_similarity}]} = Task.await(semantic)
+      assert length(stored_fact.embedding) == vocabulary_size
+      assert fact_similarity > 0.0
+    end
+
+    test "raise with the failure when the rebuild they wait for fails" do
+      {:ok, world} = create_test_world("embedder_store_query_failed")
+
+      for text <- ["the weather in paris is sunny", "is the weather in paris sunny"] do
+        {:ok, _id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
+      end
+
+      {:ok, embedding} = Embedder.embed(world.id, "the weather in paris")
+      fact = SemanticFact.new("the weather in paris", embedding, [Ecto.UUID.generate()], [])
+      {:ok, _fact_id} = Store.add_semantic(fact, world_id: world.id)
+
+      resume = hold_rebuild!(world.id, fn -> catch_error(Embedder.build_vocabulary(world.id, force: true)) end)
+
+      query =
+        Task.async(fn ->
+          catch_error(Store.query_similar("the weather in paris", 1, world_id: world.id, rerank: false))
+        end)
+
+      assert Task.yield(query, 200) == nil
+
+      assert %RuntimeError{} = Task.await(resume.())
+      assert %RuntimeError{message: message} = Task.await(query)
+      assert message =~ "world #{inspect(world.id)}'s vocabulary rebuild failed"
+    end
+  end
+
+  describe "the speech-act memory voter during a rebuild" do
+    alias Brain.Analysis.SpeechActClassifier
+
+    test "waits for the rebuild, however long it takes, and votes from the world's memory" do
+      {:ok, world} = create_test_world("embedder_speech_act_waits")
+
+      for text <- ["is the weather in paris sunny", "is the weather in paris rainy"] do
+        {:ok, _id} = Store.add_episode(text, "weather", "", ["question"], world_id: world.id)
+      end
+
+      resume = hold_rebuild!(world.id)
+
+      analysis = Task.async(fn -> SpeechActClassifier.analyze("is the weather in paris sunny", world_id: world.id) end)
+
+      # Longer than the half second the vote was once given before it was
+      # dropped.
+      assert Task.yield(analysis, 800) == nil
+
+      assert {:ok, _vocabulary_size} = Task.await(resume.())
+
+      assert %{memory_analysis: %{similar_count: count, category: category}} = Task.await(analysis)
+      assert count > 0
+      assert category != nil
+    end
+
+    test "raises with the failure when the rebuild it waits for fails" do
+      {:ok, world} = create_test_world("embedder_speech_act_failed")
+
+      for text <- ["the weather in paris is sunny", "is the weather in paris sunny"] do
+        {:ok, _id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
+      end
+
+      {:ok, embedding} = Embedder.embed(world.id, "the weather in paris")
+      fact = SemanticFact.new("the weather in paris", embedding, [Ecto.UUID.generate()], [])
+      {:ok, _fact_id} = Store.add_semantic(fact, world_id: world.id)
+
+      resume = hold_rebuild!(world.id, fn -> catch_error(Embedder.build_vocabulary(world.id, force: true)) end)
+
+      analysis =
+        Task.async(fn ->
+          catch_error(SpeechActClassifier.analyze("is the weather in paris sunny", world_id: world.id))
+        end)
+
+      assert Task.yield(analysis, 200) == nil
+
+      assert %RuntimeError{} = Task.await(resume.())
+      assert %RuntimeError{message: message} = Task.await(analysis)
+      assert message =~ "world #{inspect(world.id)}'s vocabulary rebuild failed"
     end
   end
 
