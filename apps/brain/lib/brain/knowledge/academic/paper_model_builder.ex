@@ -1,5 +1,5 @@
 defmodule Brain.Knowledge.Academic.PaperModelBuilder do
-  @moduledoc "Builds a running epistemic model from academic papers.\n\nEach paper's claims become JTMS nodes with justifications.\nCitations create dependency links between papers.\nContradictions are automatically detected and handled.\n\n## Architecture\n\n1. **Paper Ingested** → Extract claims from abstract\n2. **Claims → JTMS Nodes** → High-citation papers become premises\n3. **Claims → BeliefStore** → Stored with academic provenance\n4. **Contradiction Check** → Compare against existing beliefs\n5. **High-Confidence → FactDatabase** → Promoted after corroboration\n\n## Node Types\n\n- `:premise` - Established facts (citation_count > 100)\n- `:assumption` - New claims from recent papers\n- `:derived` - Claims supported by multiple papers\n- `:contradiction` - Conflicting claims between papers\n\n## Example\n\n    {:ok, node_ids} = PaperModelBuilder.ingest_paper(paper)\n    {:ok, all_node_ids} = PaperModelBuilder.ingest_papers(papers)\n"
+  @moduledoc "Builds a running epistemic model from academic papers.\n\nEach paper's claims become JTMS nodes with justifications.\nCitations create dependency links between papers.\nContradictions are automatically detected and handled.\n\n## Architecture\n\n1. **Paper Ingested** → Extract claims from abstract\n2. **Claims → JTMS Nodes** → High-citation papers become premises\n3. **Claims → BeliefStore** → Stored with academic provenance\n4. **Contradiction Check** → Compare against existing beliefs\n5. **High-Confidence → FactDatabase** → Promoted after corroboration\n\n## Node Types\n\n- `:premise` - Established facts (citation_count > 100)\n- `:assumption` - New claims from recent papers\n- `:derived` - Claims supported by multiple papers\n- `:contradiction` - Conflicting claims between papers\n\n## Example\n\n    {:ok, node_ids} = PaperModelBuilder.ingest_paper(paper, world_id)\n    {:ok, all_node_ids} = PaperModelBuilder.ingest_papers(papers, world_id)\n"
 
   alias Brain.LinguisticData
   alias Brain.Epistemic
@@ -15,9 +15,11 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
   @high_confidence_threshold 500
   @contradiction_similarity_threshold 0.7
 
-  @doc "Ingests a single paper into the epistemic model.\n\nCreates JTMS nodes for claims, stores beliefs with academic provenance,\nand checks for contradictions with existing knowledge.\n\n## Returns\n  - {:ok, node_ids} - List of created JTMS node IDs\n  - {:error, reason} - If ingestion failed\n"
-  @spec ingest_paper(Paper.t()) :: {:ok, [String.t()]} | {:error, term()}
-  def ingest_paper(%Paper{} = paper) do
+  @doc "Ingests a single paper into the epistemic model.\n\nCreates JTMS nodes for claims, stores beliefs with academic provenance,\nand checks for contradictions with existing knowledge. The abstract is\nanalyzed in the world `world_id`.\n\n## Returns\n  - {:ok, node_ids} - List of created JTMS node IDs\n  - {:error, reason} - If ingestion failed\n"
+  @spec ingest_paper(Paper.t(), String.t()) :: {:ok, [String.t()]} | {:error, term()}
+  def ingest_paper(%Paper{} = paper, world_id) do
+    world_id!(world_id)
+
     Logger.debug("Ingesting paper into epistemic model",
       paper_id: paper.id,
       title: paper.title,
@@ -25,7 +27,7 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     )
 
     try do
-      claims = extract_claims(paper)
+      claims = extract_claims(paper, world_id)
 
       if claims == [] do
         Logger.debug("No claims extracted from paper", paper_id: paper.id)
@@ -51,12 +53,23 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     end
   end
 
-  @doc "Ingests multiple papers into the epistemic model.\n\nProcesses papers in sequence to properly detect cross-paper contradictions.\n"
-  @spec ingest_papers([Paper.t()]) :: {:ok, [String.t()]}
-  def ingest_papers(papers) when is_list(papers) do
+  # Checked outside the ingestion's rescue, so a missing world raises rather
+  # than coming back as a failed paper.
+  defp world_id!(world_id) when is_binary(world_id) and world_id != "", do: world_id
+
+  defp world_id!(other) do
+    raise ArgumentError,
+          "PaperModelBuilder needs a world id, the world abstracts are analyzed in, got: #{inspect(other)}"
+  end
+
+  @doc "Ingests multiple papers into the epistemic model, analyzing their\nabstracts in the world `world_id`.\n\nProcesses papers in sequence to properly detect cross-paper contradictions.\n"
+  @spec ingest_papers([Paper.t()], String.t()) :: {:ok, [String.t()]}
+  def ingest_papers(papers, world_id) when is_list(papers) do
+    world_id!(world_id)
+
     results =
       papers
-      |> Enum.map(&ingest_paper/1)
+      |> Enum.map(&ingest_paper(&1, world_id))
       |> Enum.reduce({[], []}, fn
         {:ok, node_ids}, {all_nodes, errors} ->
           {all_nodes ++ node_ids, errors}
@@ -79,19 +92,24 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilder do
     end
   end
 
-  @doc "Extracts claims from a paper's abstract using the NLP pipeline.\n\nReturns a list of claim strings extracted from the abstract.\n"
-  @spec extract_claims(Paper.t()) :: [String.t()]
-  def extract_claims(%Paper{abstract: nil}) do
+  @doc "Extracts claims from a paper's abstract using the NLP pipeline, run in\nthe world `world_id`.\n\nReturns a list of claim strings extracted from the abstract.\n"
+  @spec extract_claims(Paper.t(), String.t()) :: [String.t()]
+  def extract_claims(paper, world_id) do
+    world_id!(world_id)
+    do_extract_claims(paper, world_id)
+  end
+
+  defp do_extract_claims(%Paper{abstract: nil}, _world_id) do
     []
   end
 
-  def extract_claims(%Paper{abstract: abstract})
-      when byte_size(abstract) < @min_abstract_length do
+  defp do_extract_claims(%Paper{abstract: abstract}, _world_id)
+       when byte_size(abstract) < @min_abstract_length do
     []
   end
 
-  def extract_claims(%Paper{abstract: abstract}) do
-    case Pipeline.process(abstract, skip_entity_extraction: true) do
+  defp do_extract_claims(%Paper{abstract: abstract}, world_id) do
+    case Pipeline.process(abstract, world_id: world_id, skip_entity_extraction: true) do
       %{analyses: analyses} when is_list(analyses) ->
         analyses
         |> Enum.filter(&is_assertive_claim?/1)
