@@ -320,7 +320,8 @@ defmodule ChatWeb.SessionsLive do
               raw_context: e.raw_context || "",
               confidence: e.confidence || 0.5,
               corroboration_group: e.corroboration_group,
-              extracted_at: e.extracted_at
+              extracted_at: e.extracted_at,
+              world_id: s.world_id
             }
           end)
 
