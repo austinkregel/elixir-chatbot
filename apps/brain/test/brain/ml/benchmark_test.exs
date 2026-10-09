@@ -226,7 +226,7 @@ defmodule Brain.ML.BenchmarkTest do
 
       results =
         Enum.map(questions, fn text ->
-          result = SpeechActClassifier.classify(text)
+          result = SpeechActClassifier.classify(text, world_id: @world_id)
           {text, result.category, result.is_question}
         end)
 
@@ -242,7 +242,7 @@ defmodule Brain.ML.BenchmarkTest do
 
       results =
         Enum.map(commands, fn text ->
-          result = SpeechActClassifier.classify(text)
+          result = SpeechActClassifier.classify(text, world_id: @world_id)
           {text, result.category}
         end)
 
@@ -258,7 +258,7 @@ defmodule Brain.ML.BenchmarkTest do
 
       results =
         Enum.map(greetings, fn text ->
-          result = SpeechActClassifier.classify(text)
+          result = SpeechActClassifier.classify(text, world_id: @world_id)
           {text, result.category}
         end)
 
