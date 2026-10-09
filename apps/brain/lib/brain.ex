@@ -156,7 +156,8 @@ defmodule Brain do
 
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
-    - `:world_id` - The training world to use for this conversation (default: "default")
+    - `:world_id` - required: the world the conversation runs in. Every turn is
+      analyzed in it. Absent raises.
     - `:side_effects` - whether the conversation and its turns write what they
       learn: graph nodes, beliefs, user-model facts, episodes, learner files,
       entity candidates, Gazetteer preferences, Ouro debug and training data,
@@ -167,8 +168,23 @@ defmodule Brain do
   """
   def create_conversation(opts \\ []) do
     server = Keyword.get(opts, :server, __MODULE__)
+    conversation_world!(opts)
     side_effects = conversation_side_effects!(opts)
     GenServer.call(server, {:create_conversation, Keyword.put(opts, :side_effects, side_effects)})
+  end
+
+  # Checked in the caller's process, so a missing world raises there.
+  defp conversation_world!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "Brain.create_conversation option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "Brain.create_conversation needs :world_id, the world the conversation runs in"
+    end
   end
 
   # Checked in the caller's process, so a bad value raises there rather than
@@ -255,8 +271,11 @@ defmodule Brain do
 
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
+    - `:world_id` - required: the world the subprocess's conversations run in.
+      Absent raises.
   """
-  def start_http_subprocess(opts \\ []) do
+  def start_http_subprocess(opts) do
+    subprocess_world!(opts, :start_http_subprocess)
     server = Keyword.get(opts, :server, __MODULE__)
     GenServer.call(server, {:start_http_subprocess, opts})
   end
@@ -266,6 +285,8 @@ defmodule Brain do
 
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
+    - `:world_id` - the world of the conversation the subprocess creates when
+      `conversation_id` is nil; required then.
   """
   def start_conversation_subprocess(conversation_id, opts \\ []) do
     server = Keyword.get(opts, :server, __MODULE__)
@@ -277,10 +298,28 @@ defmodule Brain do
 
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
+    - `:world_id` - required: the world the subprocess's conversations run in.
+      Absent raises.
   """
-  def start_cli_subprocess(opts \\ []) do
+  def start_cli_subprocess(opts) do
+    subprocess_world!(opts, :start_cli_subprocess)
     server = Keyword.get(opts, :server, __MODULE__)
     GenServer.call(server, {:start_cli_subprocess, opts})
+  end
+
+  # Checked in the caller's process, so a missing world raises there rather
+  # than as a failed child start inside the Brain server.
+  defp subprocess_world!(opts, function) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "Brain.#{function} option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "Brain.#{function} needs :world_id, the world the subprocess's conversations run in"
+    end
   end
 
   @doc """
@@ -368,7 +407,7 @@ defmodule Brain do
   @impl true
   def handle_call({:create_conversation, opts}, _from, state) do
     conversation_id = generate_conversation_id()
-    world_id = Keyword.get(opts, :world_id, "default")
+    world_id = Keyword.fetch!(opts, :world_id)
     side_effects = Keyword.get(opts, :side_effects, true)
 
     conversation = %{
@@ -396,11 +435,6 @@ defmodule Brain do
     end
 
     {:reply, {:ok, conversation_id}, updated_state}
-  end
-
-  @impl true
-  def handle_call(:create_conversation, from, state) do
-    handle_call({:create_conversation, []}, from, state)
   end
 
   @impl true
@@ -437,7 +471,7 @@ defmodule Brain do
       |> Enum.map(fn conv ->
         %{
           id: conv.id,
-          world_id: Map.get(conv, :world_id, "default"),
+          world_id: Map.fetch!(conv, :world_id),
           message_count: length(conv.memory),
           created_at: conv.created_at,
           last_activity: conv.last_activity
@@ -768,7 +802,7 @@ defmodule Brain do
 
   defp do_evaluate(conversation_id, conversation, input, opts, state) do
     now = System.system_time(:millisecond)
-    world_id = Map.get(conversation, :world_id, "default")
+    world_id = Map.fetch!(conversation, :world_id)
     side_effects = Map.fetch!(conversation, :side_effects)
 
     opts_with_world =
@@ -924,11 +958,14 @@ defmodule Brain do
 
   defp process_new_message(persona, input, memory, opts) do
     user_id = Keyword.get(opts, :user_id)
-    world_id = Keyword.get(opts, :world_id, "default")
+    world_id = Keyword.fetch!(opts, :world_id)
     Process.put(:current_world_id, world_id)
 
     if Config.enabled?() and
-         SelfKnowledgeAnalyzer.is_self_knowledge_query?(input, side_effects: Keyword.fetch!(opts, :side_effects)) do
+         SelfKnowledgeAnalyzer.is_self_knowledge_query?(input,
+           world_id: world_id,
+           side_effects: Keyword.fetch!(opts, :side_effects)
+         ) do
       Progress.report(opts, :meta_cognitive_query, %{
         query_type: :self_knowledge
       })
@@ -1089,6 +1126,7 @@ defmodule Brain do
 
     analysis_model =
       run_analysis_pipeline(input, [],
+        world_id: Keyword.fetch!(opts, :world_id),
         side_effects: side_effects,
         language: Keyword.fetch!(opts, :language)
       )
@@ -1109,7 +1147,7 @@ defmodule Brain do
           }
         end)
       else
-        EntityExtractor.extract_entities(input)
+        EntityExtractor.extract_entities(input, world_id: Keyword.fetch!(opts, :world_id))
       end
 
     Logger.info("Extracted entities from follow-up", %{
@@ -1429,7 +1467,7 @@ defmodule Brain do
         []
       end
 
-    world_id = Keyword.get(opts, :world_id, "default")
+    world_id = Keyword.fetch!(opts, :world_id)
 
     analysis_intent_confidence = get_analysis_intent_confidence(intent_analysis)
 
@@ -1784,6 +1822,7 @@ defmodule Brain do
       Brain.Response.ContextBuilder.build(analysis_model, opts)
 
     gen_opts = %{
+      world_id: Keyword.fetch!(opts, :world_id),
       user_id: Keyword.get(opts, :user_id),
       conversation_id: Keyword.get(opts, :conversation_id),
       unified_context: unified_context,
@@ -2159,7 +2198,7 @@ defmodule Brain do
     if Process.whereis(Brain.Memory.Store) != nil do
       Enum.each(entries, fn entry ->
         tags = intent_tags(entry.intent)
-        world_id = Map.get(entry, :world_id, "default")
+        world_id = Map.fetch!(entry, :world_id)
 
         WorldContext.add_episode(
           world_id,
