@@ -26,6 +26,25 @@ defmodule Brain.Response.EnricherTest do
       assert result.entities == context.entities
       assert result.custom_key == "preserved"
     end
+
+    test "accepts the world under :world" do
+      result = Enricher.prepare_context("unknown.intent", %{}, %{world: "default"})
+
+      assert result.enrichment_status == :not_configured
+      assert result.available_services == []
+    end
+
+    test "raises when the context names no world" do
+      assert_raise ArgumentError, ~r/Enricher.prepare_context needs :world_id/, fn ->
+        Enricher.prepare_context("unknown.intent", %{}, %{})
+      end
+    end
+
+    test "raises when the world is not a world id" do
+      assert_raise ArgumentError, ~r/Enricher.prepare_context needs :world_id/, fn ->
+        Enricher.prepare_context("unknown.intent", %{}, %{world_id: ""})
+      end
+    end
   end
 
   describe "enrich_response/2" do
