@@ -40,7 +40,8 @@ defmodule Brain.ConversationSideEffectsTest do
   @world_id "default"
 
   setup do
-    {:ok, user_id: "conversation_side_effects_#{System.unique_integer([:positive])}"}
+    # The conversation's user: a web user, whose user model the turns write.
+    {:ok, user_id: Atlas.WebUsers.create!(@world_id).id}
   end
 
   describe "a conversation created with side_effects: false" do
