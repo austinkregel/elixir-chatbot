@@ -31,7 +31,7 @@ defmodule Tasks.Transformer do
           entity_candidates: [map()]
         }
 
-  @doc "Transforms a task file into training data.\n\nAutomatically selects the appropriate converter based on task category.\n\n## Options\n  - `:max_instances` - Maximum instances to process (default: 1000)\n  - `:include_examples` - Include positive/negative examples (default: true)\n  - `:extract_entities` - Run entity extraction on text (default: true)\n"
+  @doc "Transforms a task file into training data.\n\nAutomatically selects the appropriate converter based on task category.\n\n## Options\n  - `:max_instances` - Maximum instances to process (default: 1000)\n  - `:include_examples` - Include positive/negative examples (default: true)\n  - `:extract_entities` - Run entity extraction on text (default: true)\n  - `:world_id` - the world entities are extracted in. Required wherever\n    extraction runs: for training samples unless `:extract_entities` is false,\n    and always for the answer entity candidates of Question Answering tasks.\n    Absent there raises.\n"
   @spec transform_task(String.t(), keyword()) :: {:ok, transform_result()} | {:error, term()}
   def transform_task(file_path, opts \\ []) do
     max_instances = Keyword.get(opts, :max_instances, 1000)
@@ -83,7 +83,7 @@ defmodule Tasks.Transformer do
     {:ok, merged}
   end
 
-  @doc "Converts a text to a training sample with tokenization, POS tagging, and entity extraction.\n"
+  @doc "Converts a text to a training sample with tokenization, POS tagging, and entity extraction.\n\nUnless `:extract_entities` is false, `opts` must carry `:world_id`, the world entities are extracted in.\n"
   @spec text_to_training_sample(String.t(), String.t(), String.t(), keyword()) ::
           training_sample()
   def text_to_training_sample(text, intent, id, opts \\ []) do
@@ -99,7 +99,7 @@ defmodule Tasks.Transformer do
 
     entities =
       if extract_entities do
-        case EntityExtractor.extract_entities(text, skip_disambiguation: true) do
+        case EntityExtractor.extract_entities(text, world_id: world_id!(opts), skip_disambiguation: true) do
           entities when is_list(entities) ->
             Enum.map(entities, fn entity ->
               %{
@@ -131,6 +131,7 @@ defmodule Tasks.Transformer do
   @doc "Converts Question Answering task instances.\n\nInput questions become training utterances for a \"factual_question\" intent.\nAnswers are stored as knowledge facts for retrieval.\n"
   def convert_qa(instances, metadata, _definition, opts) do
     task_id = metadata.task_id
+    world_id = world_id!(opts)
 
     {samples, facts, entities} =
       instances
@@ -162,7 +163,7 @@ defmodule Tasks.Transformer do
         answer_entities =
           outputs
           |> Enum.flat_map(fn output ->
-            extract_entity_candidates(output, task_id)
+            extract_entity_candidates(output, task_id, world_id)
           end)
 
         {[sample | s_acc], facts ++ f_acc, answer_entities ++ e_acc}
@@ -458,8 +459,8 @@ defmodule Tasks.Transformer do
     "unknown"
   end
 
-  defp extract_entity_candidates(text, source) when is_binary(text) do
-    case EntityExtractor.extract_entities(text, skip_disambiguation: true) do
+  defp extract_entity_candidates(text, source, world_id) when is_binary(text) do
+    case EntityExtractor.extract_entities(text, world_id: world_id, skip_disambiguation: true) do
       entities when is_list(entities) ->
         Enum.map(entities, fn entity ->
           %{
@@ -475,8 +476,21 @@ defmodule Tasks.Transformer do
     end
   end
 
-  defp extract_entity_candidates(_, _) do
+  defp extract_entity_candidates(_, _, _world_id) do
     []
+  end
+
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "Tasks.Transformer option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "Tasks.Transformer needs :world_id, the world entities are extracted in"
+    end
   end
 
   defp empty_result do
