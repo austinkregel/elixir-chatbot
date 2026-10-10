@@ -39,6 +39,29 @@ defmodule Brain.ML.EntityTrainerTest do
     end
   end
 
+  describe "fold_models/2" do
+    test "gives each row a fold model trained, with the model's smoothing, on the other folds", %{model: model} do
+      {folds, models} = EntityTrainer.fold_models(@rows, model)
+
+      assert length(folds) == length(@rows)
+      assert Enum.sort(Map.keys(models)) == Enum.to_list(0..4)
+
+      for {_k, fold_model} <- models do
+        assert fold_model.smoothing == model.smoothing
+      end
+
+      # "dim" is in one row only, so that row's fold model never saw it, while
+      # the full model did.
+      dim_row = Enum.find_index(@rows, &(&1["text"] == "dim the lights in the bathroom"))
+      assert Map.has_key?(model.feature_weights, "token:dim")
+      refute Map.has_key?(Map.fetch!(models, Enum.at(folds, dim_row)).feature_weights, "token:dim")
+    end
+
+    test "a model without a smoothing strength raises" do
+      assert_raise ArgumentError, ~r/smoothing/, fn -> EntityTrainer.fold_models(@rows, %{tag_vocabulary: %{}}) end
+    end
+  end
+
   describe "tag/2" do
     test "each tag carries its posterior probability", %{model: model} do
       for {_token, _tag, p} <- EntityTrainer.tag(~w(dim the radio in the kitchen), model) do
