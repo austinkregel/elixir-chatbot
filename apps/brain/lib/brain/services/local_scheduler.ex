@@ -1,13 +1,17 @@
 defmodule Brain.Services.LocalScheduler do
   @moduledoc """
-  Offline-friendly service for alarm, reminder, and calendar management.
-  Provides enrichment data without requiring an external service like Home
-  Assistant.
+  Offline-friendly scheduling driver (`Brain.Services.SchedulingDriver`) for
+  alarms, timers, reminders and calendar items. Provides enrichment data
+  without requiring an external service like Home Assistant.
 
   Alarms, reminders, timers and calendar items belong to a world: each
   stored item is keyed by the world it was set in, and setting, cancelling
-  or checking only ever touches that world's items. `enrich/4` raises
-  `ArgumentError` without a world; none is assumed.
+  or checking only ever touches that world's items. Every operation, and
+  `enrich/4`, raises `ArgumentError` without a world; none is assumed.
+
+  Items are stored, never rung: no alarm, timer, reminder or calendar item
+  fires when it is due, so there is never a ringing alarm to snooze, and
+  `snooze_alarm/3` says so.
 
   Items are stored in Atlas (`Atlas.Scheduler`), so they survive a restart.
   This module is also the supervised process that owns the ETS table the items
@@ -17,9 +21,12 @@ defmodule Brain.Services.LocalScheduler do
   """
 
   @behaviour Brain.Services.Service
+  @behaviour Brain.Services.SchedulingDriver
 
   use GenServer
   require Logger
+
+  alias Brain.Services.SchedulingDriver
 
   @table :local_scheduler_items
 
@@ -44,15 +51,10 @@ defmodule Brain.Services.LocalScheduler do
   @impl true
   def required_credentials, do: []
 
+  # The intents of every scheduling operation (`SchedulingDriver.intents/0`).
+  # The dispatcher routes them by the world's chosen driver, not by this list.
   @impl true
-  def supported_intents do
-    [
-      "alarm.set", "alarm.cancel", "alarm.check",
-      "reminder.set", "reminder.cancel", "reminder.check",
-      "timer.set", "timer.cancel", "timer.check",
-      "calendar.query", "calendar.create"
-    ]
-  end
+  def supported_intents, do: SchedulingDriver.intents()
 
   @impl true
   def provides_fields do
@@ -61,15 +63,17 @@ defmodule Brain.Services.LocalScheduler do
      :next_event, :event_time]
   end
 
-  # Setting, cancelling and creating store or remove items; checking and
-  # querying only read them.
+  # Setting, creating, scheduling and cancelling store or remove items;
+  # checking and querying only read them, and a snooze finds no ringing alarm
+  # and changes nothing.
+  @writing_operations [:set_alarm, :set_timer, :create_reminder, :schedule_event, :cancel_event]
+
   @impl true
   def writes?(intent) do
-    intent_str = to_string(intent)
-
-    Enum.any?(["alarm.set", "alarm.cancel", "reminder.set", "reminder.cancel", "timer.set", "timer.cancel", "calendar.create"], fn action ->
-      String.contains?(intent_str, action)
-    end)
+    case SchedulingDriver.operation(to_string(intent)) do
+      {:ok, operation} -> operation in @writing_operations
+      :error -> false
+    end
   end
 
   @impl true
@@ -80,76 +84,86 @@ defmodule Brain.Services.LocalScheduler do
     end
   end
 
+  # The operation is read from the intent's domain and verb
+  # (`SchedulingDriver.operation/1`); an intent that names no operation is
+  # refused.
   @impl true
-  def enrich(intent, slots, _credentials, world_id) do
+  def enrich(intent, slots, credentials, world_id) do
     world_id = world!(world_id, :enrich)
-    intent_str = to_string(intent)
 
-    cond do
-      String.contains?(intent_str, "alarm.set") ->
-        time = Map.get(slots, :time) || Map.get(slots, "time", "")
-        add_item(world_id, :alarm, %{time: time, status: "set"})
-        {:ok, %{alarm_status: "set", alarm_time: time}}
+    case SchedulingDriver.operation(to_string(intent)) do
+      {:ok, operation} -> apply(__MODULE__, operation, [slots, credentials, world_id])
+      :error -> {:error, :unsupported_intent}
+    end
+  end
 
-      String.contains?(intent_str, "alarm.cancel") ->
-        cancel_items(world_id, :alarm)
-        {:ok, %{alarm_status: "cancelled"}}
+  @impl SchedulingDriver
+  def set_alarm(slots, _credentials, world_id) do
+    world_id = world!(world_id, :set_alarm)
+    time = Map.get(slots, :time) || Map.get(slots, "time", "")
+    add_item(world_id, :alarm, %{time: time, status: "set"})
+    {:ok, %{alarm_status: "set", alarm_time: time}}
+  end
 
-      String.contains?(intent_str, "alarm.check") ->
-        alarms = list_items(world_id, :alarm)
-        case alarms do
-          [] -> {:ok, %{alarm_status: "none set", alarm_time: ""}}
-          [latest | _] -> {:ok, %{alarm_status: latest.status, alarm_time: latest.time}}
-        end
+  # Alarms are stored and never rung, so no alarm is ever ringing to snooze.
+  @impl SchedulingDriver
+  def snooze_alarm(_slots, _credentials, world_id) do
+    _world_id = world!(world_id, :snooze_alarm)
+    {:error, :no_ringing_alarm}
+  end
 
-      String.contains?(intent_str, "reminder.set") ->
-        text = Map.get(slots, :reminder_text) || Map.get(slots, "text", "")
-        time = Map.get(slots, :time) || Map.get(slots, "time", "")
-        add_item(world_id, :reminder, %{text: text, time: time, status: "set"})
-        {:ok, %{reminder_set: true, reminder_text: text, reminder_time: time}}
+  @impl SchedulingDriver
+  def create_reminder(slots, _credentials, world_id) do
+    world_id = world!(world_id, :create_reminder)
+    text = Map.get(slots, :reminder_text) || Map.get(slots, "text", "")
+    time = Map.get(slots, :time) || Map.get(slots, "time", "")
+    add_item(world_id, :reminder, %{text: text, time: time, status: "set"})
+    {:ok, %{reminder_set: true, reminder_text: text, reminder_time: time}}
+  end
 
-      String.contains?(intent_str, "reminder.cancel") ->
-        cancel_items(world_id, :reminder)
-        {:ok, %{reminder_set: false, reminder_text: "", reminder_time: ""}}
+  @impl SchedulingDriver
+  def set_timer(slots, _credentials, world_id) do
+    world_id = world!(world_id, :set_timer)
+    duration = Map.get(slots, :duration) || Map.get(slots, "duration", "")
+    add_item(world_id, :timer, %{duration: duration, status: "running"})
+    {:ok, %{timer_status: "running", duration: duration, time_remaining: duration}}
+  end
 
-      String.contains?(intent_str, "reminder.check") ->
-        reminders = list_items(world_id, :reminder)
-        case reminders do
-          [] -> {:ok, %{reminder_set: false, reminder_text: "", reminder_time: ""}}
-          [latest | _] -> {:ok, %{reminder_set: true, reminder_text: latest.text, reminder_time: latest.time}}
-        end
+  @impl SchedulingDriver
+  def check_timer(_slots, _credentials, world_id) do
+    world_id = world!(world_id, :check_timer)
 
-      String.contains?(intent_str, "timer.set") ->
-        duration = Map.get(slots, :duration) || Map.get(slots, "duration", "")
-        add_item(world_id, :timer, %{duration: duration, status: "running"})
-        {:ok, %{timer_status: "running", duration: duration, time_remaining: duration}}
+    case list_items(world_id, :timer) do
+      [] -> {:ok, %{timer_status: "none", time_remaining: "", duration: ""}}
+      [latest | _] -> {:ok, %{timer_status: latest.status, time_remaining: latest.duration, duration: latest.duration}}
+    end
+  end
 
-      String.contains?(intent_str, "timer.cancel") ->
-        cancel_items(world_id, :timer)
-        {:ok, %{timer_status: "cancelled", time_remaining: ""}}
+  @impl SchedulingDriver
+  def schedule_event(slots, _credentials, world_id) do
+    world_id = world!(world_id, :schedule_event)
+    event = Map.get(slots, :event) || Map.get(slots, "event", "")
+    time = Map.get(slots, :time) || Map.get(slots, "time", "")
+    add_item(world_id, :calendar, %{event: event, time: time})
+    {:ok, %{next_event: event, event_time: time}}
+  end
 
-      String.contains?(intent_str, "timer.check") ->
-        timers = list_items(world_id, :timer)
-        case timers do
-          [] -> {:ok, %{timer_status: "none", time_remaining: "", duration: ""}}
-          [latest | _] -> {:ok, %{timer_status: latest.status, time_remaining: latest.duration, duration: latest.duration}}
-        end
+  # Takes every calendar item of the world off its calendar, as cancelling
+  # does for every kind of item the scheduler stores.
+  @impl SchedulingDriver
+  def cancel_event(_slots, _credentials, world_id) do
+    world_id = world!(world_id, :cancel_event)
+    cancel_items(world_id, :calendar)
+    {:ok, %{next_event: "", event_time: ""}}
+  end
 
-      String.contains?(intent_str, "calendar.create") ->
-        event = Map.get(slots, :event) || Map.get(slots, "event", "")
-        time = Map.get(slots, :time) || Map.get(slots, "time", "")
-        add_item(world_id, :calendar, %{event: event, time: time})
-        {:ok, %{next_event: event, event_time: time}}
+  @impl SchedulingDriver
+  def query_calendar(_slots, _credentials, world_id) do
+    world_id = world!(world_id, :query_calendar)
 
-      String.contains?(intent_str, "calendar.query") ->
-        events = list_items(world_id, :calendar)
-        case events do
-          [] -> {:ok, %{next_event: "No upcoming events", event_time: ""}}
-          [latest | _] -> {:ok, %{next_event: latest.event, event_time: latest.time}}
-        end
-
-      true ->
-        {:error, :unsupported_intent}
+    case list_items(world_id, :calendar) do
+      [] -> {:ok, %{next_event: "No upcoming events", event_time: ""}}
+      [latest | _] -> {:ok, %{next_event: latest.event, event_time: latest.time}}
     end
   end
 
