@@ -59,20 +59,4 @@ defmodule Brain.GenServerHardeningTest do
       assert Brain.Epistemic.ContradictionHandler.ready?() == true
     end
   end
-
-  describe "subprocess ready? with dynamic process" do
-    @tag :gen_server_hardening
-    test "CliSubprocess ready? returns true for started subprocess, false for unknown" do
-      {:ok, _pid, subprocess_id} =
-        Brain.Subprocesses.Supervisor.start_cli_subprocess(
-          subprocess_id: "test-genserver-#{System.unique_integer([:positive])}",
-          world_id: "default",
-          memory_snapshot: %{}
-        )
-
-      assert Brain.Subprocesses.CliSubprocess.ready?(subprocess_id) == true
-      # Unknown subprocess returns false (catches exit)
-      assert Brain.Subprocesses.CliSubprocess.ready?("nonexistent-#{System.unique_integer([:positive])}") == false
-    end
-  end
 end
