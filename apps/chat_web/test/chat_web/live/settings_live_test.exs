@@ -4,6 +4,7 @@ defmodule ChatWeb.SettingsLiveTest do
   import Brain.TestHelpers
 
   alias Brain.Knowledge.LearningTriggers
+  alias Brain.Services.CredentialVault
   alias World.Manager, as: WorldManager
 
   setup do
@@ -137,6 +138,89 @@ defmodule ChatWeb.SettingsLiveTest do
                {:ok, other.id}
       assert html =~ "Auto-triggered learning sessions now start in world #{other.id}"
       assert has_element?(view, ~s(#auto-learning-world option[value="#{other.id}"][selected]))
+    end
+  end
+
+  # The services section, switched to `world`. Selecting a world reloads the
+  # section for it.
+  defp services_in(conn, world) do
+    {:ok, view, _html} = live(conn, "/settings?section=services")
+    view |> form("form[phx-change=switch_world]", %{world_id: world.id}) |> render_change()
+    view
+  end
+
+  defp set_home_assistant_credentials(world) do
+    :ok = CredentialVault.store(:home_assistant, :url, "http://home-assistant.invalid", world: world.id)
+    :ok = CredentialVault.store(:home_assistant, :access_token, "unused", world: world.id)
+  end
+
+  describe "scheduling driver card" do
+    # A world the world selector lists, so the page can be switched to it: it
+    # is created without the test mark, its id starts with `test_`, it is
+    # ephemeral, so nothing of it is on disk, and it is destroyed when the test
+    # ends. Its driver row and any credential row are written inside the
+    # test's sandbox transaction; the credentials the vault holds in memory are
+    # deleted when the test ends.
+    setup do
+      world_id = "test_settings_scheduling_#{System.unique_integer([:positive])}"
+      {:ok, world} = WorldManager.create(world_id, id: world_id, mode: :ephemeral)
+      on_exit(fn -> WorldManager.destroy(world.id) end)
+
+      on_exit(fn ->
+        :ok = CredentialVault.delete(:home_assistant, :url, world: world_id)
+        :ok = CredentialVault.delete(:home_assistant, :access_token, world: world_id)
+      end)
+
+      %{world: world}
+    end
+
+    test "shows the local scheduler a new world starts with, and offers Home Assistant only once its credentials are set",
+         %{conn: conn, world: world} do
+      view = services_in(conn, world)
+
+      assert has_element?(view, "#scheduling-driver-current", "Local Scheduler")
+
+      view |> element("#choose-scheduling-driver") |> render_click()
+
+      assert has_element?(view, ~s(#scheduling-driver-select option[value="local_scheduler"][selected]))
+      refute has_element?(view, ~s(#scheduling-driver-select option[value="local_scheduler"][disabled]))
+      assert has_element?(view, ~s(#scheduling-driver-select option[value="home_assistant"][disabled]))
+      assert render(view) =~ "Home Assistant (needs Url, Access token)"
+    end
+
+    test "choosing Home Assistant with its credentials set stores it as the world's driver",
+         %{conn: conn, world: world} do
+      set_home_assistant_credentials(world)
+      view = services_in(conn, world)
+
+      view |> element("#choose-scheduling-driver") |> render_click()
+      refute has_element?(view, ~s(#scheduling-driver-select option[value="home_assistant"][disabled]))
+
+      html =
+        view
+        |> form("#confirm-scheduling-driver-form", %{driver: "home_assistant"})
+        |> render_submit()
+
+      assert Atlas.WorldServiceDrivers.fetch(world.id, "scheduling") == {:ok, "home_assistant"}
+      assert html =~ "Home Assistant now handles alarms, timers, reminders and calendar items in world #{world.id}"
+      assert has_element?(view, "#scheduling-driver-current", "Home Assistant")
+    end
+
+    test "refuses Home Assistant while its credentials are not set for the world, and stores nothing",
+         %{conn: conn, world: world} do
+      view = services_in(conn, world)
+      view |> element("#choose-scheduling-driver") |> render_click()
+
+      # The option is disabled; the event is sent as a page that ignored that would send it.
+      html = render_submit(view, "set_scheduling_driver", %{"driver" => "home_assistant"})
+
+      assert Atlas.WorldServiceDrivers.fetch(world.id, "scheduling") == {:ok, "local_scheduler"}
+
+      assert html =~
+               "Home Assistant cannot be the scheduling driver of world #{world.id} until its " <>
+                 "Url, Access token credentials are set for that world."
+
+      assert has_element?(view, "#scheduling-driver-current", "Local Scheduler")
     end
   end
 
