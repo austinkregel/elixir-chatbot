@@ -74,7 +74,7 @@ defmodule Brain.Response.Enricher do
             context
             |> Map.put(:enriched_data, enrichment_data)
             |> Map.put(:enrichment_status, :success)
-            |> Map.put(:enrichment_service, get_enrichment_service(intent))
+            |> Map.put(:enrichment_service, get_enrichment_service(intent, context_world!(context)))
             |> Map.put(:available_services, available_services)
 
           {:error, reason} ->
@@ -214,37 +214,28 @@ defmodule Brain.Response.Enricher do
 
   defp get_available_services(nil, _context), do: []
 
+  # The service the dispatcher routes the intent to in this world, when its
+  # credentials are set there. An exact intent match is the dispatcher's own
+  # first choice, and a scheduling intent goes to the world's chosen driver
+  # (`Dispatcher.find_service/2`), so no other service is offered for it.
   defp get_available_services(intent, context) do
     world = context_world!(context)
 
-    exact_matches =
-      Dispatcher.list_services(world: world)
-      |> Enum.filter(fn service ->
-        service.configured and intent in service.supported_intents
-      end)
-      |> Enum.map(& &1.name)
+    case Dispatcher.find_service(intent, world) do
+      nil ->
+        Logger.debug("Enricher: no service found for intent=#{intent}")
+        []
 
-    if exact_matches != [] do
-      exact_matches
-    else
-      case Dispatcher.find_service(intent) do
-        nil ->
-          Logger.debug("Enricher: no service found for intent=#{intent}")
-          []
+      service_module ->
+        result =
+          Dispatcher.list_services(world: world)
+          |> Enum.filter(fn service ->
+            service.configured and service.module == service_module
+          end)
+          |> Enum.map(& &1.name)
 
-        service_module ->
-          all_services = Dispatcher.list_services(world: world)
-
-          result =
-            all_services
-            |> Enum.filter(fn service ->
-              service.configured and service.module == service_module
-            end)
-            |> Enum.map(& &1.name)
-
-          Logger.info("Enricher: found service #{inspect(service_module)} for intent=#{intent}, configured=#{result != []}")
-          result
-      end
+        Logger.info("Enricher: found service #{inspect(service_module)} for intent=#{intent}, configured=#{result != []}")
+        result
     end
   end
 
@@ -261,8 +252,8 @@ defmodule Brain.Response.Enricher do
     end
   end
 
-  defp get_enrichment_service(intent) do
-    case Dispatcher.find_service(intent) do
+  defp get_enrichment_service(intent, world) do
+    case Dispatcher.find_service(intent, world) do
       nil -> nil
       service -> service.name()
     end
