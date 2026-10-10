@@ -22,7 +22,8 @@ defmodule Atlas.Worlds do
     ReviewCandidate,
     SchedulerItem,
     SemanticFact,
-    VerificationCase
+    VerificationCase,
+    WorldServiceDriver
   }
 
   # Every table whose rows belong to one world, with the column that names the
@@ -38,7 +39,8 @@ defmodule Atlas.Worlds do
     {LearningSession, :world_id},
     {IntentReviewCandidate, :world_id},
     {ReviewCandidate, :world_id},
-    {VerificationCase, :world_id}
+    {VerificationCase, :world_id},
+    {WorldServiceDriver, :world_id}
   ]
 
   @doc "The schemas whose rows belong to one world, with the column naming it."
