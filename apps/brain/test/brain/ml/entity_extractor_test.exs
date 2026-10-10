@@ -13,16 +13,35 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "a word with several gazetteer candidates keeps all of them" do
-      # "door" is a device, a lock and an emoji name. Extraction reads the one
-      # gazetteer, picks a primary type, and keeps every candidate in :types.
+      # "door" is a device, a lock and an emoji name. The gazetteer's reading
+      # picks a primary type and keeps every candidate in :types; a decided
+      # span built on any reading of its hypothesis carries them too.
       entities = EntityExtractor.extract_entities("open the door", world_id: @world_id)
       door = Enum.find(entities, &(String.downcase(&1.value) == "door"))
 
       assert door
-      candidate_types = Enum.map(door.types, & &1[:entity_type])
-      assert "device" in candidate_types
-      assert "emoji" in candidate_types
-      assert door.entity_type in candidate_types
+      gazetteer = Enum.find(door.readings, &(&1.source == :gazetteer))
+      assert gazetteer, "the gazetteer's reading of door is kept: #{inspect(door.readings)}"
+
+      if door.resolved and Map.has_key?(door, :types) do
+        candidate_types = Enum.map(door.types, & &1[:entity_type])
+        assert "device" in candidate_types
+        assert "emoji" in candidate_types
+        assert gazetteer.entity_type in candidate_types
+      end
+    end
+
+    test "every source's reading is kept in exactly one span, and every reading names its source" do
+      text = "turn on the kitchen lights at 7 pm in Paris"
+      readings = EntityExtractor.readings(text, world_id: @world_id)
+      spans = EntityExtractor.extract_entities(text, world_id: @world_id, skip_disambiguation: true)
+
+      assert Enum.all?(readings, &(&1.source in [:gazetteer, :system, :location_hint, :pos_tagger_propn, :entity_model]))
+
+      kept = spans |> Enum.flat_map(& &1.readings) |> Enum.map(&{&1.source, &1.entity_type, &1.start_pos, &1.end_pos})
+      assert Enum.sort(kept) == readings |> Enum.map(&{&1.source, &1.entity_type, &1.start_pos, &1.end_pos}) |> Enum.sort()
+
+      assert Enum.all?(spans, &is_boolean(&1.resolved))
     end
 
     test "reports loaded when the gazetteer it reads has loaded" do
@@ -47,17 +66,15 @@ defmodule Brain.ML.EntityExtractorTest do
       end
     end
 
-    test "extracts numbers as system entities" do
+    test "extracts numbers as system readings" do
       entities = EntityExtractor.extract_entities("set temperature to 72 degrees", world_id: @world_id)
 
-      number_entity =
-        Enum.find(entities, fn e ->
-          Map.get(e, :entity_type) == "number"
-        end)
+      span = Enum.find(entities, &(&1.value == "72"))
+      assert span != nil
 
-      assert number_entity != nil
-      assert number_entity.value == "72"
-      assert number_entity.confidence >= 0.8
+      number = Enum.find(span.readings, &(&1.source == :system))
+      assert %{entity_type: "number"} = number
+      assert number.raw_confidence >= 0.8
     end
 
     test "extracts relative dates" do
@@ -179,20 +196,19 @@ defmodule Brain.ML.EntityExtractorTest do
   end
 
   describe "conflict resolution" do
-    test "resolves overlapping entities by keeping longest match" do
-      # "new york" and "york" are both cities in the gazetteer; only the
-      # longer span may survive.
+    test "overlapping readings are one span, which keeps all of them" do
+      # "new york" and "york" are both cities in the gazetteer; whatever the
+      # data decides, they are one span, not two overlapping entities.
       entities = EntityExtractor.extract_entities("I'm in New York", world_id: @world_id)
 
-      new_york = Enum.find(entities, &(String.downcase(&1.value) == "new york"))
+      new_york = Enum.find(entities, &(&1.start_pos <= 7 and &1.end_pos >= 14))
       assert new_york
+      assert Enum.any?(new_york.readings, &(&1.source == :gazetteer and &1.start_pos == 7 and &1.end_pos == 14))
 
-      inside =
-        Enum.filter(entities, fn e ->
-          e != new_york and e.start_pos >= new_york.start_pos and e.end_pos <= new_york.end_pos
-        end)
+      overlapping =
+        for a <- entities, b <- entities, a != b, a.start_pos <= b.end_pos and b.start_pos <= a.end_pos, do: {a, b}
 
-      assert inside == []
+      assert overlapping == []
     end
   end
 
@@ -256,8 +272,17 @@ defmodule Brain.ML.EntityExtractorTest do
       assert sarah_entity != nil, "Should find 'Sarah' as an entity"
       assert String.downcase(sarah_entity.value) == "sarah"
 
-      assert sarah_entity.confidence >= 0.7,
-             "Entity confidence (#{sarah_entity.confidence}) should be >= 0.7 for learning"
+      # The gazetteer's own confidence is what it was; whether the span is a
+      # decided entity is the data's call, and an undecided one says why.
+      gazetteer = Enum.find(sarah_entity.readings, &(&1.source == :gazetteer))
+      assert gazetteer.raw_confidence >= 0.7, "Gazetteer confidence (#{gazetteer.raw_confidence}) should be >= 0.7"
+
+      if sarah_entity.resolved do
+        assert sarah_entity.confidence >= 0.7,
+               "Entity confidence (#{sarah_entity.confidence}) should be >= 0.7 for learning"
+      else
+        assert sarah_entity.unresolved_reason in [:insufficient_evidence, :below_confidence_floor, :no_measured_reading]
+      end
     end
 
     test "extracts multiple person names from text" do
@@ -279,7 +304,7 @@ defmodule Brain.ML.EntityExtractorTest do
 
       person_entities =
         Enum.filter(entities, fn e ->
-          Map.get(e, :entity_type) == "person" and
+          e.resolved and Map.get(e, :entity_type) == "person" and
             String.downcase(Map.get(e, :value, "")) in ["will", "may"]
         end)
 
@@ -379,11 +404,17 @@ defmodule Brain.ML.EntityExtractorTest do
       refute Enum.any?(filtered, &(&1.value == "Friend"))
     end
 
-    test "respects min_confidence option" do
-      text = "hello friend"
-      entities_high = EntityExtractor.extract_entities(text, world_id: @world_id, min_confidence: 0.8)
+    test "respects min_confidence option: a decision below it is withheld, not dropped" do
+      text = "turn on the kitchen lights in Paris"
+      entities_high = EntityExtractor.extract_entities(text, world_id: @world_id, min_confidence: 0.99)
       entities_low = EntityExtractor.extract_entities(text, world_id: @world_id, min_confidence: 0.3)
-      assert length(entities_low) >= length(entities_high)
+
+      assert length(entities_low) == length(entities_high)
+      assert Enum.count(entities_low, & &1.resolved) >= Enum.count(entities_high, & &1.resolved)
+
+      for %{resolved: false, unresolved_reason: :below_confidence_floor} = span <- entities_high do
+        assert span.readings != []
+      end
     end
   end
 end
