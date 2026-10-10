@@ -22,7 +22,7 @@ This is a Phoenix LiveView chatbot application built around **classical NLP tech
 - **Self-learning training worlds**: Isolated environments for entity discovery from large corpora (e.g., scripts, documents) with A/B testing, metrics comparison, and human review workflows.
 - **Autonomous learning**: Comprehension-gated knowledge acquisition, conversation-driven research triggers, auto-approval of high-confidence corroborated findings, runtime intent/entity learning, and incremental TF-IDF model updates -- all with configurable safety caps and kill switches.
 - **Comprehension assessment**: 8-dimension self-interrogation system that gates knowledge acquisition on text understanding. Dimension weights evolve via EMA based on approval/rejection outcomes.
-- **Services & subprocesses**: External service dispatch with credential vault and caching; HTTP, conversation, and CLI subprocess management.
+- **Services & subprocesses**: External service dispatch with credential vault and caching; HTTP and conversation subprocess management.
 - **Telemetry & metrics**: Instrumented telemetry across the pipeline with metrics aggregation and a monitoring dashboard.
 - **Code maintenance tooling**: Automated Credo fixers with AST-based transformations and corruption detection (`mix credo_fix`).
 
@@ -169,7 +169,7 @@ This is an umbrella project with five apps:
 - **Knowledge** (`apps/brain/lib/brain/knowledge/`): learning center, review queue (with auto-approval rules), source reliability, corroboration, research agent (with comprehension gate), learning triggers (conversation-driven auto-research), academic APIs (arXiv, Semantic Scholar, OpenAlex).
 - **Code** (`apps/brain/lib/brain/code/`): code analysis pipeline, AST parsing, symbol extraction, code gazetteer, relationship mapping, multi-language grammar support.
 - **Services** (`apps/brain/lib/brain/services/`): external service dispatch, credential vault, caching layer, weather service.
-- **Subprocesses** (`apps/brain/lib/brain/subprocesses/`): HTTP, conversation, and CLI subprocess management with supervisor.
+- **Subprocesses** (`apps/brain/lib/brain/subprocesses/`): HTTP and conversation subprocess management with supervisor.
 - **Metrics** (`apps/brain/lib/brain/metrics/`): telemetry instrumentation and metrics aggregation.
 - **Fact Database** (`apps/brain/lib/brain/fact_database/`): structured fact storage and retrieval.
 - **World** (`apps/world/lib/world/`): training worlds, entity discovery (POS-based), type inference, document ingestion, per-world model registry, entity auto-promoter, persistence, world metrics.
