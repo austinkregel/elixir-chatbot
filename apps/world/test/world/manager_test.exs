@@ -4,7 +4,7 @@ defmodule World.ManagerTest do
 
   alias Brain.Epistemic.BeliefStore
   alias Brain.Memory.Store, as: MemoryStore
-  alias Brain.Services.LocalScheduler
+  alias Brain.Services.{Dispatcher, LocalScheduler}
   alias World.Manager
 
   setup do
@@ -73,13 +73,43 @@ defmodule World.ManagerTest do
     end
   end
 
+  describe "a world's scheduling driver" do
+    test "is the local scheduler when the world is created" do
+      {:ok, world} = create_test_world("manager_scheduling_created")
+
+      assert Dispatcher.scheduling_driver(world.id) == {:ok, LocalScheduler}
+      assert Atlas.WorldServiceDrivers.fetch(world.id, "scheduling") == {:ok, "local_scheduler"}
+    end
+
+    test "is the local scheduler for a world created again under an id whose driver was changed" do
+      {:ok, world} = create_test_world("manager_scheduling_recreated")
+      Atlas.WorldServiceDrivers.put!(world.id, "scheduling", "home_assistant")
+      :ok = Manager.destroy(world.id)
+
+      {:ok, again} = create_test_world("manager_scheduling_recreated", id: world.id)
+
+      assert Dispatcher.scheduling_driver(again.id) == {:ok, LocalScheduler}
+    end
+
+    test "is kept when the world is destroyed and deleted when it is purged" do
+      {:ok, world} = create_test_world("manager_scheduling_kept")
+      :ok = Manager.destroy(world.id)
+      assert Dispatcher.scheduling_driver(world.id) == {:ok, LocalScheduler}
+
+      {:ok, purged} = create_test_world("manager_scheduling_purged")
+      assert :ok = Manager.purge(purged.id)
+      assert Dispatcher.scheduling_driver(purged.id) == :none
+    end
+  end
+
   # A world with something in each of the places a world keeps data in Atlas
   # through the running processes: an episode in the memory store, a belief, a
-  # scheduler item, and a node in its knowledge graph.
+  # scheduler item, and a node in its knowledge graph. Its scheduling driver
+  # was stored when it was created.
   defp populate!(world_id) do
     {:ok, _id} = MemoryStore.add_episode("the weather in paris is sunny", "weather", "", [], world_id: world_id)
     {:ok, _id} = BeliefStore.add_belief(world_id, :user, :likes, "tea")
-    {:ok, _} = LocalScheduler.enrich("alarm.set", %{time: "7am"}, %{}, world_id)
+    {:ok, _} = LocalScheduler.enrich("timer.set", %{duration: "5 minutes"}, %{}, world_id)
     {:ok, _} = Atlas.Graph.add_node(Atlas.Graph.world_graph("knowledge_graph", world_id), "Thing", %{name: "tea"})
     :ok = Brain.AtlasIntegration.drain()
   end
@@ -102,6 +132,7 @@ defmodule World.ManagerTest do
       assert atlas_rows(world.id)[Atlas.Schemas.Episode] == 1
       assert atlas_rows(world.id)[Atlas.Schemas.Belief] == 1
       assert atlas_rows(world.id)[Atlas.Schemas.SchedulerItem] == 1
+      assert atlas_rows(world.id)[Atlas.Schemas.WorldServiceDriver] == 1
 
       assert :ok = Manager.purge(world.id)
 
@@ -112,7 +143,7 @@ defmodule World.ManagerTest do
 
       # Nothing the running processes held of it is left either.
       assert {:ok, []} = BeliefStore.query_beliefs(world.id)
-      assert {:ok, %{alarm_status: "none set"}} = LocalScheduler.enrich("alarm.check", %{}, %{}, world.id)
+      assert {:ok, %{timer_status: "none"}} = LocalScheduler.enrich("timer.check", %{}, %{}, world.id)
       assert {:ok, []} = MemoryStore.all_episodes(world_id: world.id)
 
       assert Enum.all?(Atlas.Graph.world_graphs(other.id), &Atlas.Graph.graph_exists?/1)
@@ -120,7 +151,8 @@ defmodule World.ManagerTest do
       assert atlas_rows(other.id)[Atlas.Schemas.Episode] == 1
       assert atlas_rows(other.id)[Atlas.Schemas.Belief] == 1
       assert {:ok, [_belief]} = BeliefStore.query_beliefs(other.id)
-      assert {:ok, %{alarm_status: "set"}} = LocalScheduler.enrich("alarm.check", %{}, %{}, other.id)
+      assert {:ok, %{timer_status: "running"}} = LocalScheduler.enrich("timer.check", %{}, %{}, other.id)
+      assert atlas_rows(other.id)[Atlas.Schemas.WorldServiceDriver] == 1
     end
 
     test "is refused for a world the manager does not have" do
