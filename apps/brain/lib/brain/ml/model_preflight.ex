@@ -71,7 +71,8 @@ defmodule Brain.ML.ModelPreflight do
       Enum.flat_map(Brain.Language.supported(), fn code ->
         [
           {:"lexical_evidence_#{code}", validate_language_artifact(Brain.Analysis.LexicalEvidence, code)},
-          {:"speech_act_table_#{code}", validate_language_artifact(Brain.Analysis.SpeechActTable, code)}
+          {:"speech_act_table_#{code}", validate_language_artifact(Brain.Analysis.SpeechActTable, code)},
+          {:"span_reliability_#{code}", validate_language_artifact(Brain.ML.SpanReliability, code)}
         ]
       end)
 
@@ -79,11 +80,13 @@ defmodule Brain.ML.ModelPreflight do
   end
 
   # `read!/1` checks the file holds that language's struct; the entries checked
-  # here are what the feature vector and the speech-act refinement read.
+  # here are what the feature vector, the speech-act refinement and entity
+  # span decisions read.
   defp validate_language_artifact(module, code) do
     case module.read!(code) do
       %Brain.Analysis.LexicalEvidence{intents: [_ | _], scores: scores} when map_size(scores) > 0 -> :ok
       %Brain.Analysis.SpeechActTable{entries: entries} when map_size(entries) > 0 -> :ok
+      %Brain.ML.SpanReliability{pairs: pairs} when map_size(pairs) > 0 -> :ok
       other -> {:error, "#{inspect(module)} #{code}: empty #{inspect(other.__struct__)}"}
     end
   rescue
