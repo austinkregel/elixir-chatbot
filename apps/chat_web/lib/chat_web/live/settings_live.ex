@@ -82,6 +82,8 @@ defmodule ChatWeb.SettingsLive do
       |> assign(:service_credentials, %{})
       |> assign(:service_health_status, %{})
       |> assign(:service_checking, nil)
+      |> assign(:scheduling_driver, nil)
+      |> assign(:scheduling_options, [])
       |> assign(:ha_discovered_entities, [])
       |> assign(:ha_discovering, false)
       |> assign(:response_domains, [])
@@ -314,6 +316,30 @@ defmodule ChatWeb.SettingsLive do
     socket
     |> assign(:services, services)
     |> assign(:service_credentials, service_credentials)
+    |> load_scheduling_driver(world)
+  end
+
+  # The world's scheduling driver, and every driver it could choose with the
+  # credentials each still needs in the world before it can be chosen.
+  defp load_scheduling_driver(socket, world) do
+    driver =
+      case Dispatcher.scheduling_driver(world) do
+        {:ok, driver} -> driver
+        :none -> nil
+      end
+
+    options =
+      Enum.map(Dispatcher.scheduling_drivers(), fn option ->
+        %{
+          name: Atom.to_string(option.name()),
+          display_name: option.display_name(),
+          missing: Dispatcher.missing_credentials(option, world)
+        }
+      end)
+
+    socket
+    |> assign(:scheduling_driver, driver)
+    |> assign(:scheduling_options, options)
   end
 
   defp load_response_systems_data(socket) do
@@ -850,6 +876,32 @@ defmodule ChatWeb.SettingsLive do
       {:noreply, assign(socket, :confirm_error, "Invalid service or credential key")}
   end
 
+  # The driver is one the page offered; any other name raises
+  # (`Dispatcher.scheduling_driver_named!/1`). A driver whose credentials are
+  # not all set in the world is refused, and nothing is stored.
+  def handle_event("set_scheduling_driver", %{"driver" => driver_name}, socket) do
+    world = socket.assigns.current_world_id
+    driver = Dispatcher.scheduling_driver_named!(driver_name)
+
+    case Dispatcher.assign_scheduling_driver(world, driver) do
+      :ok ->
+        {:noreply,
+         socket
+         |> close_confirm()
+         |> load_services_data()
+         |> put_flash(:info, "#{driver.display_name()} now handles alarms, timers, reminders and calendar items in world #{world}")}
+
+      {:error, {:missing_credentials, missing}} ->
+        {:noreply,
+         assign(
+           socket,
+           :confirm_error,
+           "#{driver.display_name()} cannot be the scheduling driver of world #{world} until its " <>
+             "#{Enum.map_join(missing, ", ", &humanize_credential/1)} credentials are set for that world."
+         )}
+    end
+  end
+
   def handle_event("check_service_health", %{"service" => service_name}, socket) do
     world = socket.assigns.current_world_id
     service_atom = String.to_existing_atom(service_name)
@@ -1201,6 +1253,8 @@ defmodule ChatWeb.SettingsLive do
               credentials={@service_credentials}
               health_status={@service_health_status}
               checking={@service_checking}
+              scheduling_driver={@scheduling_driver}
+              scheduling_options={@scheduling_options}
               ha_discovered_entities={@ha_discovered_entities}
               ha_discovering={@ha_discovering}
               current_world_id={@current_world_id}
@@ -2438,6 +2492,75 @@ defmodule ChatWeb.SettingsLive do
           API keys are stored encrypted and never exposed in responses or logs.
           Each world can have its own service credentials.
         </.alert>
+      </.card>
+
+      <!-- Scheduling Driver -->
+      <.card class="p-space-lg" id="scheduling-driver">
+        <h3 class="text-heading text-ink flex items-center gap-space-sm mb-space-sm">
+          <.icon name="hero-clock" class="size-5" /> Scheduling Driver
+        </h3>
+        <p class="text-body text-ink-muted mb-space-lg">
+          Alarms, timers, reminders and calendar items in world
+          <span class="text-ref">{@current_world_id}</span>
+          go to this driver. A driver that needs credentials can be chosen once they are set for this world.
+        </p>
+        <div class="flex flex-wrap items-center gap-space-sm mb-space-lg">
+          <span class="text-label text-ink-muted">Current driver</span>
+          <%= if @scheduling_driver do %>
+            <.badge id="scheduling-driver-current" variant={:info}>{@scheduling_driver.display_name()}</.badge>
+          <% else %>
+            <.badge id="scheduling-driver-current" variant={:error}>None</.badge>
+            <span class="text-body text-ink">
+              <.icon name="hero-exclamation-triangle" class="size-4" />
+              Alarm, timer, reminder and calendar requests in this world fail until a driver is chosen.
+            </span>
+          <% end %>
+        </div>
+        <.btn
+          id="choose-scheduling-driver"
+          type="button"
+          phx-click="open_confirm"
+          phx-value-id="confirm-scheduling-driver"
+          variant={:primary}
+          size={:sm}
+          reach={:shared}
+          target={"scheduling driver of world #{@current_world_id}"}
+          icon="hero-arrows-right-left"
+        >
+          Choose Driver
+        </.btn>
+        <.execute_confirm
+          id="confirm-scheduling-driver"
+          open={@open_confirm == "confirm-scheduling-driver"}
+          reach={:shared}
+          verb="Use driver"
+          target={"scheduling driver of world #{@current_world_id}"}
+          consequence={"Stores the chosen driver for world #{@current_world_id} in Atlas, replacing the one before. The world's alarm, timer, reminder and calendar requests go to it from then on."}
+          on_confirm="set_scheduling_driver"
+          on_cancel="close_confirm"
+          trigger_id="choose-scheduling-driver"
+          error={@confirm_error}
+          class="mt-space-sm"
+        >
+          <:fields>
+            <label for="scheduling-driver-select" class="block mb-space-xs text-label text-ink-muted">Driver</label>
+            <select
+              id="scheduling-driver-select"
+              name="driver"
+              class="w-full h-control-sm px-space-sm rounded-sm border border-border-strong bg-surface-sunk text-body-dense text-ink"
+            >
+              <option
+                :for={option <- @scheduling_options}
+                value={option.name}
+                disabled={option.missing != []}
+                selected={@scheduling_driver != nil and option.name == Atom.to_string(@scheduling_driver.name())}
+              >
+                {option.display_name}{if option.missing != [],
+                  do: " (needs #{Enum.map_join(option.missing, ", ", &humanize_credential/1)})"}
+              </option>
+            </select>
+          </:fields>
+        </.execute_confirm>
       </.card>
 
       <!-- Service Cards -->
