@@ -304,20 +304,6 @@ defmodule Brain do
     GenServer.call(server, {:start_conversation_subprocess, conversation_id, opts})
   end
 
-  @doc """
-  Starts a CLI subprocess.
-
-  ## Options
-    - `:server` - The server to call (default: `#{__MODULE__}`)
-    - `:world_id` - required: the world the subprocess's conversations run in.
-      Absent raises.
-  """
-  def start_cli_subprocess(opts) do
-    subprocess_world!(opts, :start_cli_subprocess)
-    server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, {:start_cli_subprocess, opts})
-  end
-
   # Checked in the caller's process, so a missing world raises there rather
   # than as a failed child start inside the Brain server.
   defp subprocess_world!(opts, function) do
@@ -385,8 +371,7 @@ defmodule Brain do
       pending_requests: %{},
       subprocesses: %{
         http: %{},
-        conversation: %{},
-        cli: %{}
+        conversation: %{}
       }
     }
 
@@ -570,80 +555,26 @@ defmodule Brain do
   end
 
   @impl true
-  def handle_call({:start_cli_subprocess, opts}, _from, state) do
-    memory_snapshot = %{
-      knowledge: state.persona.knowledge || %{},
-      global_memory: state.global_memory
-    }
-
-    # The session tells this server its pid each time it starts, a restart
-    # after a crash included (`{:cli_subprocess_started, id, pid}`).
-    case Brain.Subprocesses.Supervisor.start_cli_subprocess(
-           Keyword.merge(opts, memory_snapshot: memory_snapshot, brain: self())
-         ) do
-      {:ok, pid, subprocess_id} ->
-        # A session ended with `quit` or `exit` stops by itself; the monitor
-        # tells this server, which stops listing it.
-        Process.monitor(pid)
-
-        # `conversation_id`: the session's conversation, once the session has
-        # told this server (`{:cli_session_conversation, id, conversation_id}`).
-        updated_subprocesses = %{
-          state.subprocesses
-          | cli:
-              Map.put(state.subprocesses.cli, subprocess_id, %{
-                pid: pid,
-                conversation_id: nil,
-                started_at: System.system_time(:millisecond)
-              })
-        }
-
-        Logger.info("CLI subprocess started", %{
-          subprocess_id: subprocess_id,
-          pid: pid
-        })
-
-        {:reply, {:ok, subprocess_id}, %{state | subprocesses: updated_subprocesses}}
-
-      {:error, reason} ->
-        Logger.error("Failed to start CLI subprocess", %{reason: reason})
-        {:reply, {:error, reason}, state}
-    end
-  end
-
-  @impl true
-  # The subprocess is stopped outside this server, which replies once it has
-  # stopped: a CLI subprocess ends its conversation with this server as it
-  # stops, which it could not do while this server waited for it to stop.
-  def handle_call({:stop_subprocess, subprocess_id}, from, state) do
-    subprocess_info = find_subprocess_by_id(state.subprocesses, subprocess_id)
-
-    case subprocess_info do
+  def handle_call({:stop_subprocess, subprocess_id}, _from, state) do
+    case find_subprocess_by_id(state.subprocesses, subprocess_id) do
       {type, info} ->
-        server = self()
+        case Brain.Subprocesses.Supervisor.stop_subprocess(info.pid) do
+          :ok ->
+            updated_subprocesses = remove_subprocess(state.subprocesses, type, subprocess_id)
+            Logger.info("Subprocess stopped", %{type: type, subprocess_id: subprocess_id})
+            {:reply, :ok, %{state | subprocesses: updated_subprocesses}}
 
-        Task.start(fn ->
-          result = Brain.Subprocesses.Supervisor.stop_subprocess(info.pid)
-          send(server, {:subprocess_stopped, from, type, subprocess_id, result})
-        end)
+          {:error, reason} ->
+            Logger.error("Failed to stop subprocess", %{
+              subprocess_id: subprocess_id,
+              reason: reason
+            })
 
-        {:noreply, state}
+            {:reply, {:error, reason}, state}
+        end
 
       nil ->
         {:reply, {:error, "Subprocess not found"}, state}
-    end
-  end
-
-  # The conversation a listed CLI session had, while this server still has it:
-  # a session restarted after a crash goes on with it.
-  @impl true
-  def handle_call({:cli_session_conversation, subprocess_id}, _from, state) do
-    with {:ok, %{conversation_id: conversation_id}} when is_binary(conversation_id) <-
-           Map.fetch(state.subprocesses.cli, subprocess_id),
-         true <- Map.has_key?(state.active_conversations, conversation_id) do
-      {:reply, {:ok, conversation_id}, state}
-    else
-      _ -> {:reply, :none, state}
     end
   end
 
@@ -651,8 +582,7 @@ defmodule Brain do
   def handle_call(:list_subprocesses, _from, state) do
     subprocesses = %{
       http: Map.keys(state.subprocesses.http),
-      conversation: Map.keys(state.subprocesses.conversation),
-      cli: Map.keys(state.subprocesses.cli)
+      conversation: Map.keys(state.subprocesses.conversation)
     }
 
     {:reply, subprocesses, state}
@@ -712,37 +642,6 @@ defmodule Brain do
     {:noreply, updated_state}
   end
 
-  # A CLI session this server listed started. On its first start it is the pid
-  # already listed. One the supervisor restarted after a crash has the same id
-  # and a new pid, which replaces the crashed one's, so `stop_subprocess/2`
-  # stops the session that is running, and is monitored as the first was.
-  def handle_cast({:cli_subprocess_started, subprocess_id, pid}, state) do
-    case Map.fetch(state.subprocesses.cli, subprocess_id) do
-      {:ok, %{pid: ^pid}} ->
-        {:noreply, state}
-
-      {:ok, info} ->
-        Process.monitor(pid)
-        Logger.info("CLI subprocess restarted", %{subprocess_id: subprocess_id, pid: pid, previous_pid: info.pid})
-        {:noreply, put_in(state, [:subprocesses, :cli, subprocess_id], %{info | pid: pid})}
-
-      :error ->
-        {:noreply, state}
-    end
-  end
-
-  # A listed CLI session created its conversation; kept so a restart after a
-  # crash can go on with it (`{:cli_session_conversation, id}`).
-  def handle_cast({:cli_session_conversation, subprocess_id, conversation_id}, state) do
-    case Map.fetch(state.subprocesses.cli, subprocess_id) do
-      {:ok, info} ->
-        {:noreply, put_in(state, [:subprocesses, :cli, subprocess_id], %{info | conversation_id: conversation_id})}
-
-      :error ->
-        {:noreply, state}
-    end
-  end
-
   @impl true
   def handle_info(:process_learning_queue, state) do
     if state.learning_queue != [] do
@@ -788,40 +687,6 @@ defmodule Brain do
     end
   end
 
-  # A monitored CLI session stopped. One that stopped normally ended with
-  # `quit` or `exit` and is no longer listed; one stopped by
-  # `stop_subprocess/2` is removed when that reports back.
-  def handle_info({:DOWN, _ref, :process, pid, reason}, state) do
-    case Enum.find(state.subprocesses.cli, fn {_id, info} -> info.pid == pid end) do
-      {subprocess_id, _info} when reason == :normal ->
-        Logger.info("CLI session ended", %{subprocess_id: subprocess_id})
-        {:noreply, %{state | subprocesses: remove_subprocess(state.subprocesses, :cli, subprocess_id)}}
-
-      _ ->
-        {:noreply, state}
-    end
-  end
-
-  # The result of stopping a subprocess for `stop_subprocess/2`.
-  def handle_info({:subprocess_stopped, from, type, subprocess_id, result}, state) do
-    case result do
-      :ok ->
-        updated_subprocesses = remove_subprocess(state.subprocesses, type, subprocess_id)
-        Logger.info("Subprocess stopped", %{type: type, subprocess_id: subprocess_id})
-        GenServer.reply(from, :ok)
-        {:noreply, %{state | subprocesses: updated_subprocesses}}
-
-      {:error, reason} ->
-        Logger.error("Failed to stop subprocess", %{
-          subprocess_id: subprocess_id,
-          reason: reason
-        })
-
-        GenServer.reply(from, {:error, reason})
-        {:noreply, state}
-    end
-  end
-
   defp build_context_snapshot(context) do
     %{
       intent: Map.get(context, :intent),
@@ -852,9 +717,6 @@ defmodule Brain do
       Map.has_key?(subprocesses.conversation, subprocess_id) ->
         {:conversation, Map.get(subprocesses.conversation, subprocess_id)}
 
-      Map.has_key?(subprocesses.cli, subprocess_id) ->
-        {:cli, Map.get(subprocesses.cli, subprocess_id)}
-
       true ->
         nil
     end
@@ -867,9 +729,6 @@ defmodule Brain do
 
       :conversation ->
         %{subprocesses | conversation: Map.delete(subprocesses.conversation, subprocess_id)}
-
-      :cli ->
-        %{subprocesses | cli: Map.delete(subprocesses.cli, subprocess_id)}
     end
   end
 
