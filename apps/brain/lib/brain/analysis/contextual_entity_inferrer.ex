@@ -100,7 +100,14 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
     profile = Map.get(intent_details, :profile)
     all_expected = collect_all_expected_types(top_k, profile)
 
-    Enum.filter(entities, fn entity ->
+    Enum.filter(entities, fn
+      # A span entity extraction could not decide has only the type its
+      # readings share; narrowing it to what the intent expects would decide it
+      # from the intent alone.
+      %{resolved: false} ->
+        false
+
+      entity ->
       entity_type = entity[:entity_type]
 
       entity_type != nil and
