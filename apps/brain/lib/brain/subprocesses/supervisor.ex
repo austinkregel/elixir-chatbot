@@ -1,7 +1,7 @@
 defmodule Brain.Subprocesses.Supervisor do
   @moduledoc """
   Supervisor for managing subprocess GenServers.
-  Provides dynamic supervision of HTTP, Conversation, and CLI subprocesses.
+  Provides dynamic supervision of HTTP and Conversation subprocesses.
 
   Each start function passes `:world_id` through to the subprocess, which
   requires it to create conversations.
@@ -76,36 +76,6 @@ defmodule Brain.Subprocesses.Supervisor do
         Logger.error("Failed to start conversation subprocess", %{
           subprocess_id: subprocess_id,
           conversation_id: conversation_id,
-          reason: reason
-        })
-
-        {:error, reason}
-    end
-  end
-
-  def start_cli_subprocess(opts \\ []) do
-    subprocess_id = Keyword.get(opts, :subprocess_id, generate_id())
-    memory_snapshot = Keyword.get(opts, :memory_snapshot, %{})
-
-    child_spec =
-      {Brain.Subprocesses.CliSubprocess,
-       [
-         subprocess_id: subprocess_id,
-         memory_snapshot: memory_snapshot
-       ] ++ Keyword.take(opts, [:world_id, :brain])}
-
-    case DynamicSupervisor.start_child(__MODULE__, child_spec) do
-      {:ok, pid} ->
-        Logger.info("CLI subprocess started", %{
-          subprocess_id: subprocess_id,
-          pid: pid
-        })
-
-        {:ok, pid, subprocess_id}
-
-      {:error, reason} ->
-        Logger.error("Failed to start CLI subprocess", %{
-          subprocess_id: subprocess_id,
           reason: reason
         })
 
