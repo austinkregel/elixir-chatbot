@@ -11,6 +11,7 @@ defmodule Brain.Analysis.SlotDetector do
   def detect(intent, entities, opts \\ []) when is_binary(intent) and is_list(entities) do
     schemas = load_schemas()
     record? = Keyword.get(opts, :side_effects, true)
+    entities = slot_fillers!(entities)
 
     case Map.get(schemas, intent) do
       nil ->
@@ -272,6 +273,23 @@ defmodule Brain.Analysis.SlotDetector do
     end
   end
 
+  # The entities that can fill a slot. A span entity extraction could not
+  # decide (`resolved: false`, `Brain.ML.SpanReliability`) fills none, whatever
+  # type its readings share. Any other entity must carry a type: one without
+  # raises rather than filling a slot named nil or matching as "".
+  defp slot_fillers!(entities) do
+    Enum.flat_map(entities, fn
+      %{resolved: false} ->
+        []
+
+      %{entity_type: type} = entity when is_binary(type) or (is_atom(type) and not is_nil(type)) ->
+        [entity]
+
+      entity ->
+        raise ArgumentError, "SlotDetector: an entity with no type cannot fill a slot: #{inspect(entity, limit: 8)}"
+    end)
+  end
+
   defp process_schema(schema, intent, entities, record?) do
     required = Map.get(schema, "required", [])
     optional = Map.get(schema, "optional", [])
@@ -335,7 +353,7 @@ defmodule Brain.Analysis.SlotDetector do
 
   defp find_compatible_entity(entities, mapped_entity_types) do
     Enum.find(entities, fn entity ->
-      entity_type = entity[:entity_type] || ""
+      entity_type = to_string(entity.entity_type)
 
       Enum.any?(mapped_entity_types, fn mapped ->
         TypeHierarchy.compatible?(entity_type, mapped)
