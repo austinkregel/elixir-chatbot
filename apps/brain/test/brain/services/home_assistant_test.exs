@@ -51,6 +51,30 @@ defmodule Brain.Services.HomeAssistantTest do
     end
   end
 
+  describe "as a scheduling driver" do
+    test "reads every scheduling operation's intent as an action or a query, so none is unsupported" do
+      for intent <- Brain.Services.SchedulingDriver.intents() do
+        refute HomeAssistant.classify(intent) == :unsupported, intent
+      end
+    end
+
+    test "calls a service for setting, snoozing, creating, scheduling and cancelling, and only reads for checking and querying" do
+      for intent <- ["alarm.set", "alarm.snooze", "timer.set", "reminder.create", "calendar.schedule", "calendar.cancel"] do
+        assert HomeAssistant.writes?(intent), intent
+      end
+
+      for intent <- ["timer.check", "calendar.query"] do
+        refute HomeAssistant.writes?(intent), intent
+      end
+    end
+
+    test "does not claim the scheduling domains as its own; they reach it only as a world's driver" do
+      for domain <- Brain.Services.SchedulingDriver.domains() do
+        refute domain in HomeAssistant.supported_domains(), domain
+      end
+    end
+  end
+
   describe "enrich/4" do
     test "an unsupported intent is reported, and Home Assistant is not called" do
       credentials = %{url: "http://home-assistant.invalid", access_token: "unused"}
