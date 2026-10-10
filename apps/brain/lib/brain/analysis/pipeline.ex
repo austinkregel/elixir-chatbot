@@ -2070,7 +2070,15 @@ defmodule Brain.Analysis.Pipeline do
         # instead of dropping them (empty mappings used to wipe PROPN hints, etc.).
         entities
       else
-        Enum.filter(entities, fn entity ->
+        Enum.filter(entities, fn
+          # A span entity extraction could not decide is kept, so the analysis
+          # shows it, but it is no typed entity of this intent: SlotDetector
+          # fills no slot from it, and its common type (or nil) is not matched
+          # against the schema.
+          %{resolved: false} ->
+            true
+
+          entity ->
           entity_type = entity[:entity_type]
 
           # Keep POS-derived proper-noun spans even when typed `unknown`/`person`
