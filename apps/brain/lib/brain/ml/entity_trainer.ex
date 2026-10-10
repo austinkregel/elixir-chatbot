@@ -93,6 +93,46 @@ defmodule Brain.ML.EntityTrainer do
 
   def train([]), do: raise(ArgumentError, "EntityTrainer: no NER rows to train on")
 
+  @doc """
+  Out-of-fold models for the rows `model` was trained on: `{fold_of_row,
+  models}`, where a row's fold model was trained with `model`'s smoothing on
+  every other fold's rows. Tagging a training row with its fold model shows how
+  the model reads a sentence it was not trained on, which is what
+  `Brain.ML.SpanReliability` measures. Folds are assigned as `train/1`'s
+  cross-validation assigns them.
+  """
+  @spec fold_models([map()], entity_model()) :: {[non_neg_integer()], %{non_neg_integer() => entity_model()}}
+  def fold_models([_ | _] = rows, model) do
+    smoothing =
+      case Map.fetch(model, :smoothing) do
+        {:ok, smoothing} when is_number(smoothing) and smoothing > 0 ->
+          smoothing
+
+        other ->
+          raise ArgumentError,
+                "EntityTrainer: fold models need the trained model's smoothing, got #{inspect(other)}; " <>
+                  "retrain with `mix train --world <id>`"
+      end
+
+    folds = Enum.map(rows, &:erlang.phash2(&1, @folds))
+    sequences = Enum.map(rows, &NerGold.sequence!/1)
+
+    models =
+      Map.new(0..(@folds - 1), fn k ->
+        training =
+          sequences
+          |> Enum.zip(folds)
+          |> Enum.reject(fn {_sequence, fold} -> fold == k end)
+          |> Enum.map(&elem(&1, 0))
+
+        {k, train_sequence_model(training, smoothing)}
+      end)
+
+    {folds, models}
+  end
+
+  def fold_models([], _model), do: raise(ArgumentError, "EntityTrainer: no NER rows to fold")
+
   @doc "Train entity recognition model and save to disk.\n\n## Options\n  - models_path: Override the default models output path\n"
   def train_and_save(opts \\ []) do
     models_path =
