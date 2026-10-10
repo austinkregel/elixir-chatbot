@@ -2,13 +2,13 @@ defmodule Mix.Tasks.Evaluate.Ner do
   alias Brain.Analysis.Pipeline
   alias Brain.ML
   @shortdoc "Evaluate named entity recognition accuracy"
-  @moduledoc "Evaluate NER against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy,\nincluding type normalization and disambiguation.\n\n## Usage\n\n    mix evaluate.ner --world <id>              # Run evaluation\n    mix evaluate.ner --world <id> --save       # Save results\n    mix evaluate.ner --world <id> --verbose    # Show per-type details\n\n## Options\n\n    --world <id>   Required. The world the gold standard is analyzed in.\n    --save         Save results\n    --verbose      Show per-type details\n\n## Gold Standard Format\n\nAccepts either `\"entities\"` or `\"expected\"` as the key for entity annotations:\n\n    [\n      {\n        \"text\": \"What's the weather in London?\",\n        \"entities\": [{\"value\": \"London\", \"type\": \"location\"}]\n      }\n    ]\n"
+  @moduledoc "Evaluate NER against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy,\nincluding type normalization and disambiguation.\n\nTwo scores are reported. The entity-level one matches each gold entity to an\nextracted entity by value. The span-level one (`Brain.ML.NerSpanEvaluation`)\nmatches by extent against the gold spans `Brain.ML.NerGold` places, exact and\nup to hierarchy agreement, counts unresolved spans as abstentions, and breaks\nthe decided entities down by source.\n\n## Usage\n\n    mix evaluate.ner --world <id>              # Run evaluation\n    mix evaluate.ner --world <id> --save       # Save results\n    mix evaluate.ner --world <id> --verbose    # Show per-type details\n\n## Options\n\n    --world <id>   Required. The world the gold standard is analyzed in.\n    --save         Save results\n    --verbose      Show per-type details\n\n## Gold Standard Format\n\nAccepts either `\"entities\"` or `\"expected\"` as the key for entity annotations:\n\n    [\n      {\n        \"text\": \"What's the weather in London?\",\n        \"entities\": [{\"value\": \"London\", \"type\": \"location\"}]\n      }\n    ]\n"
 
   use Mix.Task
 
   require Logger
 
-  alias ML.{Evaluation, EvaluationStore}
+  alias ML.{Evaluation, EvaluationStore, NerGold, NerSpanEvaluation}
 
   @impl Mix.Task
   def run(args) do
@@ -37,7 +37,7 @@ defmodule Mix.Tasks.Evaluate.Ner do
     IO.puts(String.duplicate("=", 60) <> "\n")
 
     start_time = System.monotonic_time(:millisecond)
-    {predictions, actuals, counts} = evaluate_all(gold, world_id)
+    {predictions, actuals, counts, span_results} = evaluate_all(gold, world_id)
     duration_ms = System.monotonic_time(:millisecond) - start_time
 
     total_entities = counts.ok + counts.errored
@@ -51,7 +51,6 @@ defmodule Mix.Tasks.Evaluate.Ner do
     end
 
     result = Evaluation.build_result("ner", predictions, actuals)
-    result = Map.put(result, :diagnostics, counts)
 
     IO.puts("Entity-level Accuracy: #{Float.round(result.accuracy * 100, 1)}%")
     IO.puts("Macro F1:              #{Float.round(result.macro_f1 * 100, 1)}%")
@@ -62,6 +61,9 @@ defmodule Mix.Tasks.Evaluate.Ner do
     end
 
     IO.puts("")
+
+    span_score = report_spans(span_results)
+    result = result |> Map.put(:diagnostics, counts) |> Map.put(:span_level, span_score)
 
     broadcast_result(result, duration_ms)
     Brain.Telemetry.emit_evaluation_complete("ner", %{
@@ -87,10 +89,47 @@ defmodule Mix.Tasks.Evaluate.Ner do
     IO.puts("")
   end
 
+  # Span-level scores against the gold spans, and the same split by source.
+  defp report_spans(span_results) do
+    score =
+      NerSpanEvaluation.score(span_results,
+        canonical: ML.EntityExtractor.load_type_mappings(),
+        hierarchy: Brain.Analysis.TypeHierarchy
+      )
+
+    misaligned =
+      for %{text: text, entities: entities} <- span_results,
+          %{resolved: true} = entity <- entities,
+          String.slice(text, entity.start_pos, entity.end_pos - entity.start_pos + 1) != entity.match,
+          do: {text, entity.match}
+
+    IO.puts("Span-level (#{score.gold} gold spans, #{score.predictions} decided, #{score.abstentions} unresolved)")
+    IO.puts("  exact span+type  P #{pct(score.exact.precision)}  R #{pct(score.exact.recall)}  F1 #{pct(score.exact.f1)}")
+    IO.puts("  agree (refines)  P #{pct(score.agree.precision)}  R #{pct(score.agree.recall)}  F1 #{pct(score.agree.f1)}")
+    IO.puts("  unresolved by reason: #{inspect(score.abstentions_by_reason)}")
+
+    IO.puts("  by source (decided, exact, agree):")
+
+    score.by_source
+    |> Enum.sort_by(fn {source, _} -> inspect(source) end)
+    |> Enum.each(fn {source, s} ->
+      IO.puts("    #{String.pad_trailing(inspect(source), 18)} #{s.predictions}  #{s.exact}  #{s.agree}")
+    end)
+
+    if misaligned != [] do
+      IO.puts("  decided entities whose match is not the text at their span: #{length(misaligned)}, e.g. #{inspect(Enum.take(misaligned, 3))}")
+    end
+
+    IO.puts("")
+    score
+  end
+
+  defp pct(rate), do: "#{Float.round(rate * 100, 1)}%"
+
   defp evaluate_all(gold, world_id) do
     initial_counts = %{ok: 0, errored: 0}
 
-    Enum.reduce(gold, {[], [], initial_counts}, fn example, {preds, acts, counts} ->
+    Enum.reduce(gold, {[], [], initial_counts, []}, fn example, {preds, acts, counts, spans} ->
       text = example["text"]
       expected_entities = example["entities"] || example["expected"] || []
 
@@ -115,8 +154,13 @@ defmodule Mix.Tasks.Evaluate.Ner do
           expected_value = expected["value"]
           expected_type = expected["type"]
 
+          # An unresolved span is an abstention: it predicts no type.
           match =
-            Enum.find(extracted, fn ext ->
+            Enum.find(extracted, fn
+              %{resolved: false} ->
+                false
+
+              ext ->
               ext_value = Map.get(ext, :value) || Map.get(ext, "value")
               normalize_entity_value(ext_value) == normalize_entity_value(expected_value)
             end)
@@ -131,9 +175,11 @@ defmodule Mix.Tasks.Evaluate.Ner do
           {[to_string(predicted_type) | p_acc], [to_string(expected_type) | a_acc]}
         end)
 
-      {Enum.reverse(matched_preds) ++ preds, Enum.reverse(matched_acts) ++ acts, counts}
+      span_result = %{text: text, gold: NerGold.spans!(example), entities: extracted}
+
+      {Enum.reverse(matched_preds) ++ preds, Enum.reverse(matched_acts) ++ acts, counts, [span_result | spans]}
     end)
-    |> then(fn {p, a, counts} -> {Enum.reverse(p), Enum.reverse(a), counts} end)
+    |> then(fn {p, a, counts, spans} -> {Enum.reverse(p), Enum.reverse(a), counts, Enum.reverse(spans)} end)
   end
 
   defp normalize_entity_value(nil), do: ""
