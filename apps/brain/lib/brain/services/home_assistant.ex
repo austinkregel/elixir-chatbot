@@ -12,10 +12,17 @@ defmodule Brain.Services.HomeAssistant do
   - `priv/services/ha_domain_types.json` -- maps HA domains to Brain entity types
 
   The CapabilityRegistry handles discovery and caching.
+
+  It is also a scheduling driver (`Brain.Services.SchedulingDriver`): a world
+  that chooses it has its alarm, timer, reminder and calendar intents sent to
+  its Home Assistant instance. Each operation enriches the intent that names
+  it, exactly as `enrich/4` does for any other intent.
   """
 
   @behaviour Brain.Services.Service
+  @behaviour Brain.Services.SchedulingDriver
 
+  alias Brain.Services.SchedulingDriver
   alias Brain.Services.Cache
   alias Brain.Services.HomeAssistant.{CapabilityRegistry, EntityMapper, StateFormatter}
 
@@ -39,9 +46,11 @@ defmodule Brain.Services.HomeAssistant do
   @impl true
   def supported_intents, do: []
 
+  # The alarm, timer, reminder and calendar domains reach this service only as
+  # a world's scheduling driver (`SchedulingDriver.domains/0`).
   @impl true
   def supported_domains do
-    ["smarthome", "device", "music", "alarm", "calendar", "timer", "reminder"]
+    ["smarthome", "device", "music"]
   end
 
   @impl true
@@ -145,6 +154,37 @@ defmodule Brain.Services.HomeAssistant do
 
     Logger.info("HomeAssistant.enrich result: #{inspect(result)}")
     result
+  end
+
+  @impl SchedulingDriver
+  def set_alarm(slots, credentials, world_id), do: enrich_operation(:set_alarm, slots, credentials, world_id)
+
+  @impl SchedulingDriver
+  def snooze_alarm(slots, credentials, world_id), do: enrich_operation(:snooze_alarm, slots, credentials, world_id)
+
+  @impl SchedulingDriver
+  def set_timer(slots, credentials, world_id), do: enrich_operation(:set_timer, slots, credentials, world_id)
+
+  @impl SchedulingDriver
+  def check_timer(slots, credentials, world_id), do: enrich_operation(:check_timer, slots, credentials, world_id)
+
+  @impl SchedulingDriver
+  def create_reminder(slots, credentials, world_id),
+    do: enrich_operation(:create_reminder, slots, credentials, world_id)
+
+  @impl SchedulingDriver
+  def query_calendar(slots, credentials, world_id),
+    do: enrich_operation(:query_calendar, slots, credentials, world_id)
+
+  @impl SchedulingDriver
+  def schedule_event(slots, credentials, world_id),
+    do: enrich_operation(:schedule_event, slots, credentials, world_id)
+
+  @impl SchedulingDriver
+  def cancel_event(slots, credentials, world_id), do: enrich_operation(:cancel_event, slots, credentials, world_id)
+
+  defp enrich_operation(operation, slots, credentials, world_id) do
+    enrich(SchedulingDriver.intent!(operation), slots, credentials, world_id)
   end
 
   defp handle_action(entity_id, ha_services, slots, url, token, intent, action_suffix, world_id) do
