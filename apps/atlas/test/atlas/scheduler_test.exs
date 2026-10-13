@@ -32,6 +32,46 @@ defmodule Atlas.SchedulerTest do
              ] = items_of(@world_a)
     end
 
+    test "reads back the date an alarm, reminder or calendar item was stored for, and nil for one stored without" do
+      Scheduler.insert_item!(%{world_id: @world_a, kind: "alarm", time: "7am", date: "tomorrow", status: "set"})
+      Process.sleep(1)
+
+      Scheduler.insert_item!(%{
+        world_id: @world_a,
+        kind: "reminder",
+        text: "water plants",
+        time: "noon",
+        date: "Friday",
+        status: "set"
+      })
+
+      Process.sleep(1)
+      Scheduler.insert_item!(%{world_id: @world_a, kind: "calendar", text: "dentist", time: "3pm", date: "March 5"})
+      Process.sleep(1)
+      Scheduler.insert_item!(%{world_id: @world_a, kind: "timer", duration: "5 minutes", status: "running"})
+
+      assert [
+               %SchedulerItem{kind: "alarm", date: "tomorrow"},
+               %SchedulerItem{kind: "reminder", date: "Friday"},
+               %SchedulerItem{kind: "calendar", date: "March 5"},
+               %SchedulerItem{kind: "timer", date: nil}
+             ] = items_of(@world_a)
+    end
+
+    test "the date column is nullable and has no default, so no date is ever assumed" do
+      %{rows: [[nullable, default]]} =
+        Atlas.Repo.query!(
+          """
+          SELECT is_nullable, column_default FROM information_schema.columns
+          WHERE table_schema = current_schema() AND table_name = 'atlas_scheduler_items' AND column_name = 'date'
+          """,
+          []
+        )
+
+      assert nullable == "YES"
+      assert default == nil
+    end
+
     test "keeps an empty field as the empty string it was given" do
       Scheduler.insert_item!(%{world_id: @world_a, kind: "alarm", time: "", status: "set"})
 
