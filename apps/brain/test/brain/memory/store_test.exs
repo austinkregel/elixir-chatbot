@@ -287,6 +287,20 @@ defmodule Brain.Memory.StoreTest do
       assert is_list(episode.entity_names)
     end
 
+    test "an episode's entity_names hold no span entity extraction could not decide" do
+      for {text, undecided} <- undecided_span_cases(@world_id, 3) do
+        {:ok, id} = Store.add_episode(text, "conversation", "", [], world_id: @world_id)
+        {:ok, episode} = Store.get_episode(id, world_id: @world_id)
+
+        names = MapSet.new(episode.entity_names, &String.downcase/1)
+
+        for span <- undecided do
+          refute MapSet.member?(names, String.downcase(span.value)),
+                 "#{inspect(span.value)} of #{inspect(text)} became an episode entity name: #{inspect(episode.entity_names)}"
+        end
+      end
+    end
+
     test "add_episode_direct preserves pre-populated entity_names" do
       episode = Episode.new(
         "hello world",
