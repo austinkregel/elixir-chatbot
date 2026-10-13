@@ -239,31 +239,15 @@ defmodule Brain.Response.Synthesizer do
     Enum.random(hedges) <> String.downcase(String.first(response)) <> String.slice(response, 1..-1//1)
   end
 
-  # Try to build a response using enriched_response_frames if enrichment succeeded
+  # Try to build a response using enriched_response_frames if enrichment
+  # succeeded. A failed enrichment, a service that is not set up among them,
+  # is answered before synthesis (`DiscoursePlanner.enrichment_error_primitive/2`).
   defp try_enriched_response(domain_config, entities, context, confidence) do
     enriched_data = Map.get(context, :enriched_data, %{})
-    enrichment_status = Map.get(context, :enrichment_status)
 
     enriched_frames = Map.get(domain_config, "enriched_response_frames", %{})
 
     cond do
-      # Check for enrichment failure - use error templates
-      enrichment_status == :failed and Map.has_key?(enriched_frames, "service_error") ->
-        frames = get_in(enriched_frames, ["service_error", "templates"]) || []
-        select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence)
-
-      # Service not configured - use honest "not available" templates instead of "Let me check..."
-      Map.has_key?(enriched_frames, "service_not_configured") ->
-        frame_config = enriched_frames["service_not_configured"]
-        condition = Map.get(frame_config, "condition")
-
-        if condition && Brain.Response.ConditionEvaluator.evaluate(condition, context) do
-          frames = Map.get(frame_config, "templates", [])
-          select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence)
-        else
-          :not_enriched
-        end
-
       # No enriched data available
       enriched_data == %{} or enriched_data == nil ->
         :not_enriched
@@ -287,7 +271,6 @@ defmodule Brain.Response.Synthesizer do
   defp find_matching_enriched_frame(enriched_frames, entities, enriched_data) do
     # Sort frames by specificity (more required fields = more specific)
     enriched_frames
-    |> Enum.reject(fn {key, _} -> key == "service_error" or key == "service_not_configured" end)
     |> Enum.sort_by(fn {_, config} ->
       required = Map.get(config, "requires_enrichment", [])
       -length(required)  # Negative for descending order (most specific first)
@@ -399,6 +382,161 @@ defmodule Brain.Response.Synthesizer do
 
     if pool == [], do: raise("No clarification data in primitives.json")
     Enum.random(pool)
+  end
+
+  @doc """
+  The reply to a service's error, from the content of the primitive planned
+  for it (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`).
+
+  A `:missing_slots` reply asks for the first missing slot with the intent's
+  own clarification prompt (`SlotDetector.get_clarification_prompt/2`). Any
+  other reply is one of primitives.json's `service_replies` templates for
+  the content's `reply`, with its placeholders filled: `$service` is the
+  content's `service_name`; for an `item_kind`, primitives.json's
+  `service_items` entry for the kind gives `$item_noun` and `$item_plural`,
+  and `$candidates` lists each of the content's `candidates` and
+  `$description` describes the content's `criteria`, as the kind's
+  `description` segments describe an item, each segment kept only when the
+  item gives its field a non-blank value.
+
+  Raises when there are no templates for the reply or no `service_items`
+  entry for the kind, when a template names a placeholder the content does
+  not fill, or when an item gives none of its kind's description fields a
+  value, since it could not be told apart.
+  """
+  @spec synthesize_service_reply(map()) :: {:ok, String.t()}
+  def synthesize_service_reply(%{reply: :missing_slots, missing_slots: [slot | _], intent: intent})
+      when is_binary(intent) do
+    {:ok, SlotDetector.get_clarification_prompt(slot, intent)}
+  end
+
+  def synthesize_service_reply(%{reply: reply} = content) when is_atom(reply) do
+    templates =
+      case get_in(@primitives, ["service_replies", Atom.to_string(reply)]) do
+        [_ | _] = templates ->
+          templates
+
+        other ->
+          raise ArgumentError,
+                "primitives.json has no service_replies templates for #{inspect(reply)}, got: #{inspect(other)}"
+      end
+
+    values =
+      %{}
+      |> maybe_put_value("service", content, :service_name, & &1)
+      |> put_item_values(content)
+
+    {:ok, fill_service_template!(Enum.random(templates), values)}
+  end
+
+  defp put_item_values(values, %{item_kind: item_kind} = content) when is_atom(item_kind) do
+    items = Map.fetch!(@primitives, "service_items")
+    kind = service_item_kind!(items, item_kind)
+
+    values
+    |> Map.merge(%{"item_noun" => Map.fetch!(kind, "singular"), "item_plural" => Map.fetch!(kind, "plural")})
+    |> maybe_put_value("candidates", content, :candidates, fn candidates ->
+      candidates
+      |> Enum.map(&describe_service_item!(&1, kind, item_kind))
+      |> join_candidates(items)
+    end)
+    |> maybe_put_value("description", content, :criteria, &describe_service_item!(&1, kind, item_kind))
+  end
+
+  defp put_item_values(values, _content), do: values
+
+  @doc """
+  The slots naming a scheduled item of `item_kind`: each of the kind's
+  `description` segments in primitives.json's `service_items` names the slot
+  its field is given in, and a field the item leaves blank names none. A
+  reply that picks one of a clarification's candidates is completed with
+  these slots (`Brain.Analysis.FollowupDetector`).
+  """
+  @spec service_item_slots(atom(), map()) :: %{String.t() => String.t()}
+  def service_item_slots(item_kind, item) when is_atom(item_kind) and is_map(item) do
+    @primitives
+    |> Map.fetch!("service_items")
+    |> service_item_kind!(item_kind)
+    |> Map.fetch!("description")
+    |> Enum.flat_map(fn %{"field" => field, "slot" => slot} ->
+      case item_field(item, field) do
+        value when is_binary(value) -> if String.trim(value) == "", do: [], else: [{slot, value}]
+        _ -> []
+      end
+    end)
+    |> Map.new()
+  end
+
+  defp item_field(item, field), do: Enum.find_value(item, fn {key, value} -> if to_string(key) == field, do: value end)
+
+  defp service_item_kind!(items, item_kind) do
+    case get_in(items, ["kinds", Atom.to_string(item_kind)]) do
+      %{"singular" => _, "plural" => _, "description" => [_ | _]} = kind ->
+        kind
+
+      other ->
+        raise ArgumentError,
+              "primitives.json's service_items has no complete entry for the item kind #{inspect(item_kind)}, got: #{inspect(other)}"
+    end
+  end
+
+  defp maybe_put_value(values, name, content, key, describe) do
+    case Map.fetch(content, key) do
+      {:ok, value} -> Map.put(values, name, describe.(value))
+      :error -> values
+    end
+  end
+
+  # An item as its kind's description segments describe it; a segment whose
+  # field the item leaves blank is left out.
+  defp describe_service_item!(item, kind, item_kind) when is_map(item) do
+    kind
+    |> Map.fetch!("description")
+    |> Enum.flat_map(fn %{"field" => field, "text" => text} ->
+      case item_field(item, field) do
+        value when is_binary(value) ->
+          if String.trim(value) == "", do: [], else: [String.replace(text, "$value", value)]
+
+        nil ->
+          []
+
+        other ->
+          raise ArgumentError,
+                "the #{item_kind} item's #{field} must be a string to be described, got: #{inspect(other)}"
+      end
+    end)
+    |> case do
+      [] ->
+        raise ArgumentError,
+              "the #{item_kind} item #{inspect(item)} gives none of the fields it is described by a value"
+
+      segments ->
+        Enum.join(segments, " ")
+    end
+  end
+
+  defp join_candidates([only], _items), do: only
+
+  defp join_candidates(descriptions, items) do
+    {last, rest} = List.pop_at(descriptions, -1)
+
+    Enum.join(rest, Map.fetch!(items, "candidate_separator")) <>
+      Map.fetch!(items, "candidate_conjunction") <> last
+  end
+
+  # Every placeholder the template names must be filled.
+  defp fill_service_template!(template, values) do
+    Regex.replace(~r/\$([a-z_]+)/, template, fn placeholder, name ->
+      case Map.fetch(values, name) do
+        {:ok, value} ->
+          value
+
+        :error ->
+          raise ArgumentError,
+                "the service clarification #{inspect(template)} names #{placeholder}, which nothing fills; " <>
+                  "filled: #{inspect(Map.keys(values))}"
+      end
+    end)
   end
 
   @doc "Gets a transition phrase for adding additional information.\n"
