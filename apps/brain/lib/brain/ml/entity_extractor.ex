@@ -6,7 +6,7 @@ defmodule Brain.ML.EntityExtractor do
   require Logger
 
   alias ML.{EntityModel, EntityTrainer, Gazetteer, SpanReliability, Tokenizer, POSTagger}
-  alias Analysis.{EntityDisambiguator, EntityTypeScorer, TypeHierarchy}
+  alias Analysis.{EntityDisambiguator, EntityTypeScorer, SlotTypePreferences, TypeHierarchy}
   alias Brain.Telemetry
 
   @type_mappings_path "evaluation/ner/type_mappings.json"
@@ -108,7 +108,7 @@ defmodule Brain.ML.EntityExtractor do
     gaz_context = Keyword.take(opts, [:domain, :intent, :world_id])
     tags = required_pos_tags(tokens)
 
-    extract_gazetteer_entities(tokens, tags, text, gaz_context) ++
+    extract_gazetteer_entities(tokens, tags, text, gaz_context, language!(opts)) ++
       extract_system_entities(tokens, text) ++
       extract_location_hints(tokens, tags) ++
       extract_proper_noun_hints(tokens, tags) ++
@@ -369,7 +369,7 @@ defmodule Brain.ML.EntityExtractor do
     end
   end
 
-  defp extract_gazetteer_entities(tokens, tags, text, gaz_context) do
+  defp extract_gazetteer_entities(tokens, tags, text, gaz_context, language) do
     token_texts =
       Enum.map(tokens, fn t ->
         t.text
@@ -378,7 +378,8 @@ defmodule Brain.ML.EntityExtractor do
         |> String.trim()
       end)
 
-    expected_types = EntityTypeScorer.expected_types(gaz_context[:intent])
+    scoring = [language: language]
+    expected_types = EntityTypeScorer.expected_types(gaz_context[:intent], scoring)
 
     Gazetteer.lookup_spans(token_texts, gaz_context)
     |> Enum.sort_by(fn {start_idx, _end_idx, _info} -> start_idx end)
@@ -407,10 +408,13 @@ defmodule Brain.ML.EntityExtractor do
           types: candidates,
           source: :gazetteer,
           # The head word's tag -- the last word of an English noun phrase.
-          tag: Enum.at(tags, end_idx)
+          tag: Enum.at(tags, end_idx),
+          # The tag of the word before the span, as the slot type preferences
+          # were learned from it.
+          preceding_tag: if(start_idx == 0, do: SlotTypePreferences.sentence_start(), else: Enum.at(tags, start_idx - 1))
         }
         |> EntityTypeScorer.mark_position(text)
-        |> EntityTypeScorer.apply_to(expected_types)
+        |> EntityTypeScorer.apply_to(expected_types, scoring)
 
       selected =
         Enum.find(candidates, &(&1[:entity_type] == scored.entity_type and &1[:value] == scored.value)) ||
