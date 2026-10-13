@@ -19,10 +19,5 @@
   "player.add_favorite": null,
   "player.add_playlist": null,
   "set": ["trigger", "start"],
-  "snooze": ["turn_off"],
-  "cancel": ["turn_off", "cancel", "delete_event"],
-  "query": null,
-  "schedule": ["create_event"],
-  "create": ["trigger"],
   "check": null
 }
