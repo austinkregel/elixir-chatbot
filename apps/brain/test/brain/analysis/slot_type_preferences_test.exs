@@ -146,6 +146,45 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
     end
   end
 
+  describe "intent_evidence/3" do
+    test "is the log of a label's mass under the intent over its mass across every utterance" do
+      model = fit(@flat)
+      evidence = SlotTypePreferences.intent_evidence(model, "weather.query", ~w(address room location))
+
+      for_intent = SlotTypePreferences.distribution(model, {:intent, "weather.query"})
+      overall = SlotTypePreferences.distribution(model, :global)
+
+      assert_in_delta evidence["address"], :math.log(for_intent["address"] / overall["address"]), 1.0e-12
+
+      # A label's mass includes every label that refines it.
+      location = fn d -> d["location"] + d["room"] + d["address"] + d["city"] end
+      assert_in_delta evidence["location"], :math.log(location.(for_intent) / location.(overall)), 1.0e-12
+
+      # Weather names addresses more often than utterances do overall, rooms less.
+      assert evidence["address"] > 0
+      assert evidence["room"] < 0
+    end
+
+    test "the global distribution sums to one and is the same for every intent" do
+      overall = SlotTypePreferences.distribution(fit(@flat), :global)
+      assert_in_delta overall |> Map.values() |> Enum.sum(), 1.0, 1.0e-12
+      # Room and address are each seen 4 times of 12, device 4 times.
+      assert_in_delta overall["room"], overall["address"], 1.0e-12
+    end
+
+    test "a label outside the universe raises, as does an intent with no domain" do
+      model = fit(@flat)
+
+      assert_raise ArgumentError, ~r/"song" is not in the en model's universe/, fn ->
+        SlotTypePreferences.intent_evidence(model, "weather.query", ["song"])
+      end
+
+      assert_raise ArgumentError, ~r/no domain declared/, fn ->
+        SlotTypePreferences.intent_evidence(model, "zzz.query", ["room"])
+      end
+    end
+  end
+
   describe "preceding-tag likelihood" do
     test "is learned per type and for an ordinary word" do
       model = fit(@flat)
