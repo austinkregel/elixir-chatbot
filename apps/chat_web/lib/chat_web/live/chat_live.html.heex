@@ -1439,6 +1439,12 @@
                         <span class="text-ink-muted">{resp.reason}</span>
                       </div>
                     <% end %>
+                    <%= if resp[:enrichment_error] do %>
+                      <div class="flex justify-between gap-space-sm">
+                        <span class="font-semibold">Service error answered:</span>
+                        <span class="text-term text-ink break-all">{inspect(resp.enrichment_error)}</span>
+                      </div>
+                    <% end %>
                   </div>
                 </.card_body>
               </.card>
