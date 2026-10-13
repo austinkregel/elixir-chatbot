@@ -289,6 +289,107 @@ defmodule Tasks.TransformerTest do
     end
   end
 
+  describe "text_to_training_sample/4 with extracted entities" do
+    test "annotates each extracted entity with its type and the tokens it spans" do
+      text = "What is the weather in Paris tomorrow?"
+      positioned = Brain.ML.Tokenizer.tokenize(text)
+
+      extracted =
+        Brain.ML.EntityExtractor.extract_entities(text, world_id: @world_id, skip_disambiguation: true)
+
+      assert extracted != [], "extraction decided no entity of #{inspect(text)} in world #{@world_id}"
+
+      sample = Transformer.text_to_training_sample(text, "weather.query", "test-id-7", world_id: @world_id)
+
+      assert sample.tokens == Enum.map(positioned, & &1.text)
+      assert length(sample.entities) == length(extracted)
+
+      for {annotation, entity} <- Enum.zip(sample.entities, extracted) do
+        assert annotation["text"] == entity.value
+        assert annotation["type"] == entity.entity_type
+        assert Enum.at(positioned, annotation["start"]).start_pos == entity.start_pos
+        assert Enum.at(positioned, annotation["end"]).end_pos == entity.end_pos
+      end
+    end
+  end
+
+  # Decided entities as Brain.ML.EntityExtractor.extract_entities/2 returns
+  # them, built here so the tests are about the transformer.
+  @decided %{
+    entity_type: "city",
+    value: "New York",
+    match: "New York",
+    start_pos: 11,
+    end_pos: 18,
+    confidence: 0.83,
+    source: :gazetteer,
+    resolved: true
+  }
+
+  describe "entity_annotation!/2" do
+    test "gives the entity's type and the indexes of the first and last token it spans" do
+      tokens = Brain.ML.Tokenizer.tokenize("Weather in New York today")
+
+      assert Transformer.entity_annotation!(@decided, tokens) == %{
+               "text" => "New York",
+               "type" => "city",
+               "start" => 2,
+               "end" => 3
+             }
+    end
+
+    test "an entity missing a key a decided entity carries raises, naming it" do
+      tokens = Brain.ML.Tokenizer.tokenize("Weather in New York today")
+
+      for key <- [:value, :entity_type, :start_pos, :end_pos] do
+        assert_raise ArgumentError, ~r/has no #{inspect(key)}/, fn ->
+          Transformer.entity_annotation!(Map.delete(@decided, key), tokens)
+        end
+      end
+    end
+
+    test "a type under :entity or positions under :start and :end are not read" do
+      tokens = Brain.ML.Tokenizer.tokenize("Weather in New York today")
+      legacy_type = @decided |> Map.delete(:entity_type) |> Map.put(:entity, "city")
+      legacy_positions = @decided |> Map.drop([:start_pos, :end_pos]) |> Map.merge(%{start: 2, end: 3})
+
+      assert_raise ArgumentError, ~r/has no :entity_type/, fn ->
+        Transformer.entity_annotation!(legacy_type, tokens)
+      end
+
+      assert_raise ArgumentError, ~r/has no :start_pos/, fn ->
+        Transformer.entity_annotation!(legacy_positions, tokens)
+      end
+    end
+
+    test "a span that does not begin and end on token boundaries raises" do
+      tokens = Brain.ML.Tokenizer.tokenize("Weather in New York today")
+
+      assert_raise ArgumentError, ~r/token boundaries/, fn ->
+        Transformer.entity_annotation!(%{@decided | start_pos: 12}, tokens)
+      end
+    end
+  end
+
+  describe "entity_candidate!/2" do
+    test "gives the entity's value, type and confidence, and the task it came from" do
+      assert Transformer.entity_candidate!(@decided, "task_1") == %{
+               value: "New York",
+               inferred_type: "city",
+               confidence: 0.83,
+               source: "task_1"
+             }
+    end
+
+    test "an entity missing a key a decided entity carries raises, naming it" do
+      for key <- [:value, :entity_type, :confidence] do
+        assert_raise ArgumentError, ~r/has no #{inspect(key)}/, fn ->
+          Transformer.entity_candidate!(Map.delete(@decided, key), "task_1")
+        end
+      end
+    end
+  end
+
   describe "transform_tasks/2" do
     test "transforms multiple task files" do
       files = [
