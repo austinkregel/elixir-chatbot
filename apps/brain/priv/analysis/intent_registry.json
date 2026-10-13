@@ -11,6 +11,9 @@
     "entity_mappings": {
       "contact": [
         "person"
+      ],
+      "message": [
+        "message_content"
       ]
     },
     "input_contexts": [
@@ -164,6 +167,18 @@
     "description": "Music playback request",
     "domain": "music",
     "entity_mappings": {
+      "amount": [
+        "number"
+      ],
+      "end_year": [
+        "year"
+      ],
+      "genre": [
+        "genre"
+      ],
+      "language": [
+        "language"
+      ],
       "music_album": [
         "music_album"
       ],
@@ -181,6 +196,12 @@
       ],
       "song": [
         "song"
+      ],
+      "start_year": [
+        "year"
+      ],
+      "year": [
+        "year"
       ]
     },
     "input_contexts": [
@@ -199,7 +220,13 @@
       "music_album",
       "playlist",
       "music_service",
-      "music_sort"
+      "music_sort",
+      "genre",
+      "language",
+      "start_year",
+      "end_year",
+      "year",
+      "amount"
     ],
     "output_contexts": [
       {
@@ -372,7 +399,7 @@
         "all"
       ],
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "color": [
         "color"
@@ -381,7 +408,7 @@
         "lights"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -516,7 +543,7 @@
         "lights"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -544,13 +571,13 @@
         "all"
       ],
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "device": [
         "device"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -592,13 +619,13 @@
         "all"
       ],
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "device": [
         "device"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -700,13 +727,13 @@
         "all"
       ],
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "device": [
         "heating"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -780,16 +807,16 @@
         "music_album"
       ],
       "artist": [
-        "sys.music_artist"
+        "music_artist"
       ],
       "genre": [
-        "sys.music_genre"
+        "genre"
       ],
       "playlist": [
         "playlist"
       ],
       "year": [
-        "sys.number"
+        "year"
       ]
     },
     "input_contexts": [
@@ -862,7 +889,7 @@
         "room"
       ],
       "value": [
-        "sys.number"
+        "number"
       ]
     },
     "input_contexts": [],
@@ -1111,7 +1138,7 @@
         "all"
       ],
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "color": [
         "color"
@@ -1120,7 +1147,7 @@
         "lights"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -1164,7 +1191,7 @@
         "category"
       ],
       "date_time": [
-        "sys.date_time"
+        "date_time"
       ],
       "merchant": [
         "merchant"
@@ -1209,13 +1236,13 @@
     "domain": "smarthome",
     "entity_mappings": {
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "device": [
         "device_volume"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -1302,10 +1329,10 @@
         "activity"
       ],
       "address": [
-        "sys.location"
+        "location"
       ],
       "date_time": [
-        "sys.date_time"
+        "date_time"
       ]
     },
     "input_contexts": [
@@ -1533,10 +1560,10 @@
         "topic"
       ],
       "date_time": [
-        "sys.date_time"
+        "date_time"
       ],
       "keyword": [
-        "sys.any"
+        "keyword"
       ],
       "sort": [
         "news_sort"
@@ -1604,7 +1631,7 @@
         "room"
       ],
       "value": [
-        "sys.number"
+        "number"
       ]
     },
     "input_contexts": [],
@@ -1765,7 +1792,7 @@
     "domain": "smalltalk",
     "entity_mappings": {
       "age": [
-        "sys.number"
+        "number"
       ]
     },
     "input_contexts": [],
@@ -1810,7 +1837,7 @@
     "domain": "web",
     "entity_mappings": {
       "q": [
-        "sys.any"
+        "q"
       ],
       "service": [
         "search_engine"
@@ -1872,13 +1899,13 @@
         "all"
       ],
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "device": [
         "heating"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -1977,10 +2004,10 @@
     "domain": "weather",
     "entity_mappings": {
       "address": [
-        "sys.location"
+        "location"
       ],
       "date_time": [
-        "sys.date_time"
+        "date_time"
       ],
       "outfit": [
         "outfit"
@@ -2181,7 +2208,7 @@
         "category"
       ],
       "date_time": [
-        "sys.date_time"
+        "date_time"
       ]
     },
     "input_contexts": [
@@ -2539,7 +2566,7 @@
         "device"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -2627,10 +2654,10 @@
     "domain": "weather",
     "entity_mappings": {
       "address": [
-        "sys.location"
+        "location"
       ],
       "date_time": [
-        "sys.date_time"
+        "date_time"
       ],
       "temperature": [
         "temperature"
@@ -2686,7 +2713,7 @@
         "room"
       ],
       "value": [
-        "sys.number"
+        "number"
       ]
     },
     "input_contexts": [],
@@ -2726,13 +2753,13 @@
         "all"
       ],
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "device": [
         "heating"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -2878,13 +2905,13 @@
     "domain": "smarthome",
     "entity_mappings": {
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "device": [
         "device_volume"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -2994,7 +3021,7 @@
         "device_volume"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -3293,7 +3320,7 @@
         "all"
       ],
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "color": [
         "color"
@@ -3302,7 +3329,7 @@
         "lights"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -3453,7 +3480,7 @@
         "all"
       ],
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "color": [
         "color"
@@ -3462,7 +3489,7 @@
         "lights"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -3832,13 +3859,13 @@
     "domain": "smarthome",
     "entity_mappings": {
       "change_value": [
-        "sys.number"
+        "number"
       ],
       "device": [
         "device_volume"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -3977,7 +4004,7 @@
         "room"
       ],
       "value": [
-        "sys.number"
+        "number"
       ]
     },
     "input_contexts": [],
@@ -4292,7 +4319,7 @@
         "lights"
       ],
       "final_value": [
-        "sys.number"
+        "number"
       ],
       "room": [
         "room"
@@ -4377,6 +4404,9 @@
     "description": "Weather condition query",
     "domain": "weather",
     "entity_mappings": {
+      "condition": [
+        "weather_condition"
+      ],
       "date": [
         "date",
         "relative_date"
@@ -4397,6 +4427,7 @@
       }
     ],
     "optional": [
+      "condition",
       "date",
       "time"
     ],
@@ -4417,7 +4448,7 @@
     "domain": "music",
     "entity_mappings": {
       "playlist": [
-        "sys.any"
+        "playlist"
       ]
     },
     "input_contexts": [
@@ -4612,19 +4643,19 @@
         "music_album"
       ],
       "amount": [
-        "sys.number"
+        "number"
       ],
       "artist": [
-        "sys.music_artist"
+        "music_artist"
       ],
       "end_year": [
-        "sys.number"
+        "year"
       ],
       "genre": [
-        "sys.music_genre"
+        "genre"
       ],
       "language": [
-        "sys.language"
+        "language"
       ],
       "playlist": [
         "playlist"
@@ -4639,7 +4670,7 @@
         "music_sort"
       ],
       "start_year": [
-        "sys.number"
+        "year"
       ]
     },
     "input_contexts": [
