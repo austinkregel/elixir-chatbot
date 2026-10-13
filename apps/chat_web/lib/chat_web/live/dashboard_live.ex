@@ -52,6 +52,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:readiness_details, load_readiness_details(world_id))
       |> assign(:training_worlds_status, load_training_worlds_status())
       |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+      |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
       |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:services_status, load_services_status(world_id))
@@ -109,6 +110,7 @@ defmodule ChatWeb.DashboardLive do
         |> assign(:readiness_details, load_readiness_details(world_id))
         |> assign(:training_worlds_status, load_training_worlds_status())
         |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+        |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
         |> assign(:world_models_status, load_world_models_status(world_id))
         |> assign(:code_analysis_status, load_code_analysis_status())
         |> assign(:services_status, load_services_status(world_id))
@@ -153,6 +155,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:readiness_details, load_readiness_details(world_id))
       |> assign(:training_worlds_status, load_training_worlds_status())
       |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+      |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
       |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:code_analysis_status, load_code_analysis_status())
       |> assign(:services_status, load_services_status(world_id))
@@ -199,6 +202,7 @@ defmodule ChatWeb.DashboardLive do
   defp reload_world_data(socket, world_id) do
     socket
     |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+    |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
     |> assign(:world_models_status, load_world_models_status(world_id))
     |> assign(:readiness_details, load_readiness_details(world_id))
     |> assign(:services_status, load_services_status(world_id))
@@ -240,6 +244,12 @@ defmodule ChatWeb.DashboardLive do
 
   defp load_services_status(world_id) do
     SystemStatus.get_services_status(world_id)
+  end
+
+  # The world's semantic facts as responses draw on them, counted since the
+  # brain started.
+  defp load_semantic_fact_metrics(world_id) do
+    Brain.Metrics.Aggregator.get_semantic_fact_metrics(world_id)
   end
 
   defp load_epistemic_metrics do
