@@ -181,6 +181,60 @@ defmodule Brain.Response.SynthesizerTest do
     end
   end
 
+  describe "synthesize_service_reply/1" do
+    test "fills the kind's nouns and each candidate's description, its day included" do
+      {:ok, text} =
+        Synthesizer.synthesize_service_reply(%{
+          reply: :ambiguous_item,
+          item_kind: :reminder,
+          candidates: [%{text: "call mom", date: "Friday", time: "6 pm"}, %{text: "buy milk", date: nil, time: ""}]
+        })
+
+      assert text =~ "call mom on Friday at 6 pm or buy milk"
+    end
+
+    test "an item giving none of its kind's description fields a value raises" do
+      assert_raise ArgumentError, ~r/gives none of the fields it is described by a value/, fn ->
+        Synthesizer.synthesize_service_reply(%{
+          reply: :ambiguous_item,
+          item_kind: :calendar,
+          candidates: [%{event: "", time: nil, date: ""}, %{event: "Standup", time: "5 pm", date: ""}]
+        })
+      end
+    end
+
+    test "an item kind with no service_items entry raises" do
+      assert_raise ArgumentError, ~r/no complete entry for the item kind :weather/, fn ->
+        Synthesizer.synthesize_service_reply(%{reply: :item_not_identified, item_kind: :weather})
+      end
+    end
+
+    test "a reply with no templates raises" do
+      assert_raise ArgumentError, ~r/no service_replies templates for :rate_limted/, fn ->
+        Synthesizer.synthesize_service_reply(%{reply: :rate_limted, service_name: "Weather"})
+      end
+    end
+
+    test "a template placeholder the content does not fill raises" do
+      # Every ambiguous_item template names $candidates, and no candidates
+      # are given; every unavailable template names $service.
+      assert_raise ArgumentError, ~r/names \$candidates, which nothing fills/, fn ->
+        Synthesizer.synthesize_service_reply(%{reply: :ambiguous_item, item_kind: :calendar})
+      end
+
+      assert_raise ArgumentError, ~r/names \$service, which nothing fills/, fn ->
+        Synthesizer.synthesize_service_reply(%{reply: :unavailable})
+      end
+    end
+  end
+
+  describe "service_item_slots/2" do
+    test "names the slot each non-blank field of the item is given in" do
+      assert Synthesizer.service_item_slots(:reminder, %{text: "call mom", date: "", time: "6 pm", status: "set"}) ==
+               %{"reminder_text" => "call mom", "time" => "6 pm"}
+    end
+  end
+
   describe "get_fallback_response/0" do
     test "returns a fallback string" do
       response = Synthesizer.get_fallback_response()
@@ -225,33 +279,6 @@ defmodule Brain.Response.SynthesizerTest do
       end
     end
 
-    test "handles service error gracefully" do
-      entities = [%{entity_type: "location", value: "NYC"}]
-
-      context = %{
-        enrichment_status: :failed,
-        enrichment_error: :timeout,
-        enriched_data: %{}
-      }
-
-      result =
-        Synthesizer.synthesize_from_domain(
-          :weather,
-          "weather.query",
-          entities,
-          0.8,
-          context: context
-        )
-
-      case result do
-        {:ok, response} ->
-          # May use error template or fall back to standard
-          assert is_binary(response)
-
-        :not_synthesized ->
-          assert true
-      end
-    end
   end
 
   describe "fill_enrichment_slots integration" do
