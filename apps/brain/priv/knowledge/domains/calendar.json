@@ -15,12 +15,204 @@
     ]
   },
   "enriched_response_frames": {
-    "with_events": {
-      "condition": "enriched:next_event",
+    "scheduled_with_event_date_and_time": {
+      "when": {"event_count": null, "cancelled_count": null},
+      "requires_enrichment": ["next_event", "event_date", "event_time"],
+      "templates": [
+        "Added to your calendar: $next_event, $event_date at $event_time.",
+        "Event created: $next_event, $event_date at $event_time."
+      ]
+    },
+    "scheduled_with_event_and_time": {
+      "when": {"event_count": null, "cancelled_count": null},
       "requires_enrichment": ["next_event", "event_time"],
       "templates": [
-        "Your next event is $next_event at $event_time.",
-        "Coming up: $next_event at $event_time."
+        "Added to your calendar: $next_event at $event_time.",
+        "Event created: $next_event at $event_time."
+      ]
+    },
+    "scheduled_with_event_and_date": {
+      "when": {"event_count": null, "cancelled_count": null},
+      "requires_enrichment": ["next_event", "event_date"],
+      "templates": [
+        "Added to your calendar: $next_event, $event_date.",
+        "Event created: $next_event, $event_date."
+      ]
+    },
+    "scheduled_with_event": {
+      "when": {"event_count": null, "cancelled_count": null},
+      "requires_enrichment": ["next_event"],
+      "templates": [
+        "Added to your calendar: $next_event.",
+        "Event created: $next_event."
+      ]
+    },
+    "scheduled_with_date_and_time": {
+      "when": {"event_count": null, "cancelled_count": null},
+      "requires_enrichment": ["event_date", "event_time"],
+      "templates": [
+        "Added an event to your calendar for $event_date at $event_time.",
+        "Event created for $event_date at $event_time."
+      ]
+    },
+    "scheduled_with_time": {
+      "when": {"event_count": null, "cancelled_count": null},
+      "requires_enrichment": ["event_time"],
+      "templates": [
+        "Added an event to your calendar for $event_time.",
+        "Event created for $event_time."
+      ]
+    },
+    "scheduled_with_date": {
+      "when": {"event_count": null, "cancelled_count": null},
+      "requires_enrichment": ["event_date"],
+      "templates": [
+        "Added an event to your calendar for $event_date.",
+        "Event created for $event_date."
+      ]
+    },
+    "scheduled": {
+      "when": {"event_count": null, "cancelled_count": null},
+      "requires_enrichment": [],
+      "templates": [
+        "Added an event to your calendar.",
+        "Event created."
+      ]
+    },
+    "none_found": {
+      "when": {"event_count": 0},
+      "requires_enrichment": [],
+      "templates": [
+        "You have no events on your calendar.",
+        "There's nothing on your calendar."
+      ]
+    },
+    "found_with_event_date_and_time": {
+      "when": {"event_count": {"min": 1}},
+      "requires_enrichment": ["next_event", "event_date", "event_time"],
+      "templates": [
+        "On your calendar: $next_event, $event_date at $event_time.",
+        "Your calendar has $next_event, $event_date at $event_time."
+      ]
+    },
+    "found_with_event_and_time": {
+      "when": {"event_count": {"min": 1}},
+      "requires_enrichment": ["next_event", "event_time"],
+      "templates": [
+        "On your calendar: $next_event at $event_time.",
+        "Your calendar has $next_event at $event_time."
+      ]
+    },
+    "found_with_event_and_date": {
+      "when": {"event_count": {"min": 1}},
+      "requires_enrichment": ["next_event", "event_date"],
+      "templates": [
+        "On your calendar: $next_event, $event_date.",
+        "Your calendar has $next_event, $event_date."
+      ]
+    },
+    "found_with_event": {
+      "when": {"event_count": {"min": 1}},
+      "requires_enrichment": ["next_event"],
+      "templates": [
+        "On your calendar: $next_event.",
+        "Your calendar has $next_event."
+      ]
+    },
+    "found_with_date_and_time": {
+      "when": {"event_count": {"min": 1}},
+      "requires_enrichment": ["event_date", "event_time"],
+      "templates": [
+        "Your calendar has an event $event_date at $event_time.",
+        "There's an event on your calendar for $event_date at $event_time."
+      ]
+    },
+    "found_with_time": {
+      "when": {"event_count": {"min": 1}},
+      "requires_enrichment": ["event_time"],
+      "templates": [
+        "Your calendar has an event at $event_time.",
+        "There's an event on your calendar for $event_time."
+      ]
+    },
+    "found_with_date": {
+      "when": {"event_count": {"min": 1}},
+      "requires_enrichment": ["event_date"],
+      "templates": [
+        "Your calendar has an event $event_date.",
+        "There's an event on your calendar for $event_date."
+      ]
+    },
+    "found": {
+      "when": {"event_count": {"min": 1}},
+      "requires_enrichment": [],
+      "templates": [
+        "Your calendar has an event, with no name, day or time given.",
+        "There's an event on your calendar, with no name, day or time given."
+      ]
+    },
+    "cancelled_with_event_date_and_time": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": ["cancelled_event", "event_date", "event_time"],
+      "templates": [
+        "Removed from your calendar: $cancelled_event, $event_date at $event_time.",
+        "Cancelled $cancelled_event, $event_date at $event_time."
+      ]
+    },
+    "cancelled_with_event_and_time": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": ["cancelled_event", "event_time"],
+      "templates": [
+        "Removed from your calendar: $cancelled_event at $event_time.",
+        "Cancelled $cancelled_event at $event_time."
+      ]
+    },
+    "cancelled_with_event_and_date": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": ["cancelled_event", "event_date"],
+      "templates": [
+        "Removed from your calendar: $cancelled_event, $event_date.",
+        "Cancelled $cancelled_event, $event_date."
+      ]
+    },
+    "cancelled_with_event": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": ["cancelled_event"],
+      "templates": [
+        "Removed from your calendar: $cancelled_event.",
+        "Cancelled $cancelled_event."
+      ]
+    },
+    "cancelled_with_date_and_time": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": ["event_date", "event_time"],
+      "templates": [
+        "Removed the event $event_date at $event_time from your calendar.",
+        "Cancelled the event $event_date at $event_time."
+      ]
+    },
+    "cancelled_with_time": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": ["event_time"],
+      "templates": [
+        "Removed the event at $event_time from your calendar.",
+        "Cancelled the event at $event_time."
+      ]
+    },
+    "cancelled_with_date": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": ["event_date"],
+      "templates": [
+        "Removed the event $event_date from your calendar.",
+        "Cancelled the event $event_date."
+      ]
+    },
+    "cancelled": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": [],
+      "templates": [
+        "Removed the event from your calendar.",
+        "Cancelled the event."
       ]
     }
   },
@@ -35,9 +227,10 @@
   },
   "enrichment_service": "scheduling",
   "enrichment_fields": {
-    "next_event": {"description": "The event scheduled, or the event set last that a query found; \"No upcoming events\" when a query finds none", "source": "scheduling"},
+    "next_event": {"description": "The event scheduled, or the event set last that a query found, as given; \"\" when none was given or a query finds none", "source": "scheduling"},
     "event_time": {"description": "The time of the event scheduled, found or cancelled, as given; \"\" when none was given or a query finds none", "source": "scheduling"},
     "event_date": {"description": "The date of the event scheduled, found or cancelled, as given; \"\" when none was given or a query finds none; null for an event stored without one", "source": "scheduling"},
+    "event_count": {"description": "How many events a query found", "source": "scheduling"},
     "cancelled_event": {"description": "The event a cancel removed", "source": "scheduling"},
     "cancelled_count": {"description": "How many events a cancel removed: always 1, since a cancel removes exactly one", "source": "scheduling"}
   }
