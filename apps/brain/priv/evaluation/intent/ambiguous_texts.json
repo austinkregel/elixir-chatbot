@@ -222,12 +222,12 @@
     "text": "less",
     "sources": [
       "smarthome.device.brightness.down_usersays_en.json",
-      "smarthome.device.volume_usersays_en.json",
+      "smarthome.device.volume.down_usersays_en.json",
       "smarthome.lights.brightness.down_usersays_en.json"
     ],
     "candidates": [
       "smarthome.device.brightness.down",
-      "smarthome.device.volume"
+      "smarthome.device.volume.down"
     ]
   },
   {
