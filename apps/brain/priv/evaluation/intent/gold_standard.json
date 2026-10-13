@@ -916,6 +916,12 @@
     "text": "Any new emails"
   },
   {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "Any reminders for this afternoon"
+  },
+  {
     "intent": "weather.condition",
     "labeled_by": "dialogflow",
     "source_file": "weather.condition_usersays_en.json",
@@ -2247,6 +2253,12 @@
     "text": "can you be my friend"
   },
   {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Can you cancel the reminder about the team lunch"
+  },
+  {
     "intent": "smalltalk.agent.talk_to_me",
     "labeled_by": "dialogflow",
     "source_file": "smalltalk.agent.talk_to_me_usersays_en.json",
@@ -2279,6 +2291,12 @@
     "followup_variant": "context_close",
     "source_file": "smarthome.locks.close_usersays_en.json",
     "text": "can you close them for me"
+  },
+  {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Can you delete my 8 o'clock alarm"
   },
   {
     "intent": "meta.privacy_probe",
@@ -3071,10 +3089,52 @@
     "text": "Can't Feel My Face on Google Music"
   },
   {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Cancel all timers"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Cancel my 10 minute timer"
+  },
+  {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Cancel my alarm"
+  },
+  {
     "intent": "calendar.cancel",
     "labeled_by": "materialized",
     "source_file": "calendar.cancel_usersays_en.json",
     "text": "Cancel my meeting with John"
+  },
+  {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Cancel my reminder"
+  },
+  {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Cancel the 6am alarm"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Cancel the countdown"
+  },
+  {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Cancel the medication reminder"
   },
   {
     "intent": "calendar.cancel",
@@ -3083,10 +3143,22 @@
     "text": "Cancel the meeting"
   },
   {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Cancel the reminder for 3pm"
+  },
+  {
     "intent": "calendar.cancel",
     "labeled_by": "materialized",
     "source_file": "calendar.cancel_usersays_en.json",
     "text": "Cancel the team sync"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Cancel the timer"
   },
   {
     "intent": "calendar.cancel",
@@ -3504,6 +3576,12 @@
     "text": "check my account"
   },
   {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "Check my alarms"
+  },
+  {
     "intent": "calendar.query",
     "labeled_by": "materialized",
     "source_file": "calendar.query_usersays_en.json",
@@ -3550,6 +3628,12 @@
     "labeled_by": "dialogflow",
     "source_file": "smarthome.device.brightness.check_usersays_en.json",
     "text": "check my laptop brightness"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "Check my reminders"
   },
   {
     "intent": "account.balance.check",
@@ -3798,10 +3882,28 @@
     "text": "Clean up the image"
   },
   {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Clear all my reminders"
+  },
+  {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Clear my alarms"
+  },
+  {
     "intent": "calendar.cancel",
     "labeled_by": "materialized",
     "source_file": "calendar.cancel_usersays_en.json",
     "text": "Clear my schedule for Friday"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Clear the 5 minute timer"
   },
   {
     "intent": "smalltalk.agent.clever",
@@ -4460,6 +4562,18 @@
     "text": "Definition of ubiquitous"
   },
   {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Delete my reminders for tomorrow"
+  },
+  {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Delete the alarm I set for 7:30"
+  },
+  {
     "intent": "calendar.cancel",
     "labeled_by": "materialized",
     "source_file": "calendar.cancel_usersays_en.json",
@@ -4470,6 +4584,18 @@
     "labeled_by": "materialized",
     "source_file": "calendar.cancel_usersays_en.json",
     "text": "Delete the calendar event"
+  },
+  {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Delete the reminder to call mom"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Delete the timer"
   },
   {
     "intent": "account.earning.check",
@@ -4596,6 +4722,18 @@
     "labeled_by": "dialogflow",
     "source_file": "account.spending.check_usersays_en.json",
     "text": "Did I pay for something at Amazon?"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "Did I set a reminder to call the bank"
+  },
+  {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "Did I set an alarm"
   },
   {
     "intent": "smarthome.device.switch.check.off",
@@ -4782,6 +4920,12 @@
     "text": "dim the table lamp"
   },
   {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Disable my morning alarm"
+  },
+  {
     "intent": "todo.list",
     "labeled_by": "materialized",
     "source_file": "todo.list_usersays_en.json",
@@ -4842,6 +4986,12 @@
     "text": "Do a deep dive analysis"
   },
   {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "Do I have an alarm for 6am"
+  },
+  {
     "intent": "communication.email",
     "labeled_by": "materialized",
     "source_file": "communication.email_usersays_en.json",
@@ -4852,6 +5002,12 @@
     "labeled_by": "materialized",
     "source_file": "calendar.query_usersays_en.json",
     "text": "Do I have any meetings today"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "Do I have any reminders today"
   },
   {
     "intent": "smalltalk.user.looks_like",
@@ -5197,6 +5353,12 @@
     "text": "down one more time"
   },
   {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Drop the reminder to buy milk"
+  },
+  {
     "intent": "smarthome.heating.down",
     "labeled_by": "dialogflow",
     "source_file": "smarthome.heating.down_usersays_en.json",
@@ -5219,6 +5381,12 @@
     "labeled_by": "dialogflow",
     "source_file": "music.play_usersays_en.json",
     "text": "Eminem song"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "End the timer now"
   },
   {
     "intent": "display.enhance",
@@ -5769,6 +5937,12 @@
     "text": "forecast in Tokyo"
   },
   {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Forget the reminder about paying rent"
+  },
+  {
     "intent": "smalltalk.dialog.sorry",
     "labeled_by": "dialogflow",
     "source_file": "smalltalk.dialog.sorry_usersays_en.json",
@@ -5837,6 +6011,24 @@
     "labeled_by": "dialogflow",
     "source_file": "smalltalk.agent.be_clever_usersays_en.json",
     "text": "get qualified"
+  },
+  {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Get rid of the 5:45 alarm"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Get rid of the egg timer"
+  },
+  {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Get rid of the reminder to pick up the dry cleaning"
   },
   {
     "intent": "status.report",
@@ -6440,6 +6632,18 @@
     "labeled_by": "dialogflow",
     "source_file": "smalltalk.greetings.goodmorning_usersays_en.json",
     "text": "have a nice morning"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "Have I got a reminder about Jake's birthday"
+  },
+  {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "Have I got any alarms tomorrow"
   },
   {
     "intent": "smarthome.locks.check.lock",
@@ -8020,6 +8224,24 @@
     "labeled_by": "dialogflow",
     "source_file": "smarthome.device.volume.mute.implicit_usersays_en.json",
     "text": "I don't like hearing TV sound from kitchen"
+  },
+  {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "I don't need that reminder anymore"
+  },
+  {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "I don't need the alarm tomorrow"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "I don't need the timer anymore"
   },
   {
     "intent": "smalltalk.agent.real",
@@ -10400,6 +10622,12 @@
     "text": "is level of the computer in bedroom 5 points"
   },
   {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "Is my alarm set for tomorrow"
+  },
+  {
     "intent": "smarthome.device.brightness.check.implicit",
     "labeled_by": "dialogflow",
     "source_file": "smarthome.device.brightness.check.implicit_usersays_en.json",
@@ -10458,6 +10686,12 @@
     "labeled_by": "dialogflow",
     "source_file": "smalltalk.dialog.what_do_you_mean_usersays_en.json",
     "text": "is that what you mean"
+  },
+  {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "Is the 7am alarm still on"
   },
   {
     "intent": "smarthome.locks.check.lock",
@@ -10578,6 +10812,18 @@
     "labeled_by": "dialogflow",
     "source_file": "weather.activity_usersays_en.json",
     "text": "is the weather nice enough to go surfing"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "Is there a reminder for the meeting"
+  },
+  {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "Is there an alarm set for Monday morning"
   },
   {
     "intent": "weather.temperature",
@@ -11362,6 +11608,18 @@
     "text": "kidding"
   },
   {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Kill the alarm for 9:15"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Kill the timer"
+  },
+  {
     "intent": "smarthome.device.volume.check",
     "labeled_by": "dialogflow",
     "followup_context": "volume_check",
@@ -12054,6 +12312,18 @@
     "labeled_by": "materialized",
     "source_file": "code.find_usage_usersays_en.json",
     "text": "list all callers of get_user"
+  },
+  {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "List all my alarms"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "List my reminders"
   },
   {
     "intent": "todo.list",
@@ -13414,6 +13684,18 @@
     "text": "never mind bye"
   },
   {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Never mind the reminder to email Sarah"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Never mind the timer"
+  },
+  {
     "intent": "todo.add",
     "labeled_by": "materialized",
     "source_file": "todo.add_usersays_en.json",
@@ -13579,6 +13861,12 @@
     "followup_variant": "context_heating - comment_change final grad",
     "source_file": "smarthome.heating.set_usersays_en.json",
     "text": "no 25 degrees"
+  },
+  {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "No alarm tomorrow, cancel it"
   },
   {
     "intent": "smalltalk.appraisal.bad",
@@ -16090,6 +16378,12 @@
     "text": "pleasant"
   },
   {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Please cancel all my alarms"
+  },
+  {
     "intent": "smarthome.heating.set",
     "labeled_by": "dialogflow",
     "source_file": "smarthome.heating.set_usersays_en.json",
@@ -16529,6 +16823,12 @@
     "text": "read me BBC news"
   },
   {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "Read me my reminders"
+  },
+  {
     "intent": "communication.email",
     "labeled_by": "materialized",
     "source_file": "communication.email_usersays_en.json",
@@ -16759,16 +17059,40 @@
     "text": "Remove my 2pm appointment"
   },
   {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Remove my wake up alarm"
+  },
+  {
     "intent": "calendar.cancel",
     "labeled_by": "materialized",
     "source_file": "calendar.cancel_usersays_en.json",
     "text": "Remove the 3pm appointment"
   },
   {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Remove the 9am reminder"
+  },
+  {
     "intent": "calendar.cancel",
     "labeled_by": "materialized",
     "source_file": "calendar.cancel_usersays_en.json",
     "text": "Remove the event from my calendar"
+  },
+  {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Remove the reminder about the dentist"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Remove the workout timer"
   },
   {
     "candidates": [
@@ -18285,10 +18609,22 @@
     "text": "show me headlines"
   },
   {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "Show me my alarms"
+  },
+  {
     "intent": "calendar.query",
     "labeled_by": "materialized",
     "source_file": "calendar.query_usersays_en.json",
     "text": "Show me my appointments"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "Show me my reminders"
   },
   {
     "intent": "news.search",
@@ -19255,6 +19591,12 @@
     "text": "stop playing"
   },
   {
+    "intent": "reminder.cancel",
+    "labeled_by": "materialized",
+    "source_file": "reminder.cancel_usersays_en.json",
+    "text": "Stop reminding me to water the plants"
+  },
+  {
     "intent": "alarm.snooze",
     "labeled_by": "materialized",
     "source_file": "alarm.snooze_usersays_en.json",
@@ -19265,6 +19607,18 @@
     "labeled_by": "dialogflow",
     "source_file": "music.player.stop_usersays_en.json",
     "text": "stop the music"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Stop the pasta timer"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Stop the timer"
   },
   {
     "intent": "smalltalk.appraisal.good",
@@ -19379,6 +19733,12 @@
     "followup_variant": "context_device_switch - comment_turn on devices",
     "source_file": "smarthome.device.switch.on_usersays_en.json",
     "text": "switch it on"
+  },
+  {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Switch off the alarm for Saturday"
   },
   {
     "intent": "smarthome.device.switch.off",
@@ -19498,6 +19858,12 @@
     "labeled_by": "materialized",
     "source_file": "status.report_usersays_en.json",
     "text": "System status"
+  },
+  {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Take off the alarm I set for noon"
   },
   {
     "intent": "smalltalk.agent.talk_to_me",
@@ -19754,6 +20120,12 @@
     "labeled_by": "dialogflow",
     "source_file": "weather.query_usersays_en.json",
     "text": "tell me the weather in Rome in Fahrenheit"
+  },
+  {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "Tell me what alarms are set"
   },
   {
     "intent": "meta.self_knowledge",
@@ -22276,6 +22648,12 @@
     "text": "turn off mute mode for kitchen TV"
   },
   {
+    "intent": "alarm.cancel",
+    "labeled_by": "materialized",
+    "source_file": "alarm.cancel_usersays_en.json",
+    "text": "Turn off my alarm for tomorrow morning"
+  },
+  {
     "intent": "smarthome.device.switch.off",
     "labeled_by": "dialogflow",
     "source_file": "smarthome.device.switch.off_usersays_en.json",
@@ -22448,6 +22826,12 @@
     "labeled_by": "dialogflow",
     "source_file": "smarthome.device.volume.unmute_usersays_en.json",
     "text": "turn off the mute mode"
+  },
+  {
+    "intent": "timer.cancel",
+    "labeled_by": "materialized",
+    "source_file": "timer.cancel_usersays_en.json",
+    "text": "Turn off the timer"
   },
   {
     "intent": "smarthome.device.switch.off",
@@ -24871,6 +25255,18 @@
     "text": "what about your hobby"
   },
   {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "What alarms do I have set"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "What are my reminders"
+  },
+  {
     "intent": "payment.due_date",
     "labeled_by": "dialogflow",
     "source_file": "payment.due_date_usersays_en.json",
@@ -24995,6 +25391,12 @@
     "labeled_by": "dialogflow",
     "source_file": "smalltalk.user.looks_like_usersays_en.json",
     "text": "what do I look like"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "What do I need to be reminded about this week"
   },
   {
     "intent": "todo.list",
@@ -25603,6 +26005,12 @@
     "text": "what parameters does calculate_tax take"
   },
   {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "What reminders do I have for tomorrow"
+  },
+  {
     "intent": "smarthome.heating.check",
     "labeled_by": "dialogflow",
     "source_file": "smarthome.heating.check_usersays_en.json",
@@ -25633,6 +26041,12 @@
     "text": "What tasks do I have"
   },
   {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "What time did I set the alarm for"
+  },
+  {
     "intent": "time.query",
     "labeled_by": "materialized",
     "source_file": "time.query_usersays_en.json",
@@ -25657,6 +26071,12 @@
     "text": "What time is it now"
   },
   {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "What time is my alarm"
+  },
+  {
     "intent": "code.signature",
     "labeled_by": "materialized",
     "source_file": "code.signature_usersays_en.json",
@@ -25667,6 +26087,12 @@
     "labeled_by": "materialized",
     "source_file": "code.find_usage_usersays_en.json",
     "text": "what uses the PaymentProcessor class"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "What was the reminder I set for 5pm"
   },
   {
     "intent": "weather.query",
@@ -26329,10 +26755,22 @@
     "text": "when do you have birthday"
   },
   {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "When is my alarm going off"
+  },
+  {
     "intent": "calendar.query",
     "labeled_by": "materialized",
     "source_file": "calendar.query_usersays_en.json",
     "text": "When is my next meeting"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "When is my reminder to take medicine"
   },
   {
     "intent": "payment.due_date",
@@ -26515,10 +26953,22 @@
     "text": "where's your house"
   },
   {
+    "intent": "alarm.check",
+    "labeled_by": "materialized",
+    "source_file": "alarm.check_usersays_en.json",
+    "text": "Which alarms are on"
+  },
+  {
     "intent": "code.find_usage",
     "labeled_by": "materialized",
     "source_file": "code.find_usage_usersays_en.json",
     "text": "which functions call save_to_database"
+  },
+  {
+    "intent": "reminder.check",
+    "labeled_by": "materialized",
+    "source_file": "reminder.check_usersays_en.json",
+    "text": "Which reminders are still pending"
   },
   {
     "intent": "smarthome.device.switch.on",
