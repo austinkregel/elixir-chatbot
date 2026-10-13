@@ -396,7 +396,7 @@
       </div>
     </section>
 
-<!-- Top Row: Health Cards + Subprocess (1/3) | System Readiness & Performance (2/3 stacked) -->
+<!-- Top Row: Health Cards (1/3) | System Readiness & Performance (2/3 stacked) -->
     <div class="flex flex-col 2xl:flex-row gap-space-xl">
       <!-- Left Column - 1/3 width on ultra-wide -->
       <div class="2xl:w-1/3 flex flex-col gap-space-lg">
@@ -488,64 +488,6 @@
                 <div class="p-space-xs rounded-md bg-surface-sunk">
                   <.icon name="hero-cube-transparent" class="size-4 text-ink-muted" />
                 </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-<!-- Subprocess Supervisor -->
-        <section class="panel overflow-hidden">
-          <div class="p-space-lg border-b border-border">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-space-md">
-                <div class="p-space-sm rounded-md bg-surface-sunk">
-                  <.icon name="hero-rectangle-group" class="size-5 text-ink-muted" />
-                </div>
-                <div>
-                  <h2 class="text-heading text-ink">Subprocess Supervisor</h2>
-                  <p class="text-caption text-ink-muted">Child process overview</p>
-                </div>
-              </div>
-              <.badge
-                variant={
-                  if @genserver_status.subprocess_supervisor.running, do: :success, else: :error
-                }
-                size={:sm}
-              >
-                <%= if @genserver_status.subprocess_supervisor.running do %>
-                  <.icon name="hero-check-circle" class="size-3" /> Running
-                <% else %>
-                  <.icon name="hero-x-circle" class="size-3" /> Not Running
-                <% end %>
-              </.badge>
-            </div>
-          </div>
-
-          <div class="p-space-lg">
-            <div class="flex items-center justify-between gap-space-sm">
-              <div class="text-center flex-1">
-                <div class="text-heading tabular-nums text-ink">
-                  {@genserver_status.subprocess_supervisor.active_children}
-                </div>
-                <div class="text-caption text-ink-muted">Active</div>
-              </div>
-              <div class="text-center flex-1">
-                <div class="text-heading tabular-nums text-ink">
-                  {@genserver_status.subprocess_supervisor.workers}
-                </div>
-                <div class="text-caption text-ink-muted">Workers</div>
-              </div>
-              <div class="text-center flex-1">
-                <div class="text-heading tabular-nums text-ink">
-                  {@genserver_status.subprocess_supervisor.supervisors}
-                </div>
-                <div class="text-caption text-ink-muted">Supervisors</div>
-              </div>
-              <div class="text-center flex-1">
-                <div class="text-heading tabular-nums text-ink">
-                  {@genserver_status.subprocess_supervisor.specs}
-                </div>
-                <div class="text-caption text-ink-muted">Specs</div>
               </div>
             </div>
           </div>
