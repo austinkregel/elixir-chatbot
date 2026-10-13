@@ -58,6 +58,80 @@ defmodule Brain.ML.EntityExtractorTest do
     end
   end
 
+  describe "extract_candidates/2 and disambiguate/3" do
+    @text "turn on the kitchen lights at 7 pm in Paris"
+
+    test "extract/2 is the candidates, disambiguated, under the confidence floor" do
+      candidates = EntityExtractor.extract_candidates(@text, world_id: @world_id)
+      extracted = EntityExtractor.extract(@text, world_id: @world_id)
+
+      assert extracted.candidates == candidates
+      floor = Application.fetch_env!(:brain, :ml)[:entity_confidence_threshold]
+
+      # With no context, disambiguation returns the decided spans as they are.
+      assert EntityExtractor.disambiguate(candidates, %{}, []) == candidates.entities
+      assert extracted.entities == Enum.filter(candidates.entities, &(&1.confidence >= floor))
+      assert Enum.all?(candidates.unresolved_spans, &(&1 in extracted.unresolved_spans))
+    end
+
+    test "disambiguating again with a profile keeps every span at its offsets" do
+      candidates = EntityExtractor.extract_candidates(@text, world_id: @world_id)
+      profile = %Brain.Analysis.ChunkProfile{domain: :smarthome}
+
+      again = EntityExtractor.disambiguate(candidates, %{profile: profile}, [])
+
+      assert Enum.map(again, &{&1.start_pos, &1.end_pos}) == Enum.map(candidates.entities, &{&1.start_pos, &1.end_pos})
+      assert EntityExtractor.put_types(candidates.entities, again) |> length() == length(candidates.entities)
+    end
+
+    test "an unknown context key raises" do
+      candidates = EntityExtractor.extract_candidates(@text, world_id: @world_id)
+      assert_raise ArgumentError, ~r/unknown context keys \[:intent\]/, fn -> EntityExtractor.disambiguate(candidates, %{intent: "x"}, []) end
+    end
+  end
+
+  describe "resolve_with_intent/3" do
+    # Gold sentences whose extraction left a span undecided for insufficient
+    # evidence, each with its gold intent.
+    setup do
+      intents = "intent" |> Brain.ML.EvaluationStore.load_gold_standard(:train) |> Brain.Analysis.SlotTypePreferences.intents_by_text!()
+
+      cases =
+        "ner"
+        |> Brain.ML.EvaluationStore.load_gold_standard(:train)
+        |> Enum.filter(&Map.has_key?(intents, &1["text"]))
+        |> Enum.take_every(5)
+        |> Enum.map(fn row -> {row["text"], Map.fetch!(intents, row["text"]), EntityExtractor.extract(row["text"], world_id: @world_id)} end)
+        |> Enum.filter(fn {_text, _intent, result} -> Enum.any?(result.unresolved_spans, &(&1.unresolved_reason == :insufficient_evidence)) end)
+
+      %{cases: cases}
+    end
+
+    test "every span is resolved or stays unresolved, and says which and why", %{cases: cases} do
+      assert cases != [], "no gold sentence left a span undecided for insufficient evidence, so nothing here is exercised"
+      floor = Application.fetch_env!(:brain, :ml)[:entity_confidence_threshold]
+
+      for {text, intent, %{unresolved_spans: spans}} <- cases do
+        result = EntityExtractor.resolve_with_intent(spans, intent, [])
+
+        assert length(result.entities) + length(result.unresolved_spans) == length(spans), text
+        assert length(result.outcomes) == length(spans)
+        assert Enum.all?(result.unresolved_spans, &(&1 in spans))
+
+        for entity <- result.entities do
+          assert %{resolved: true, decision: %{resolved_by: {:intent, ^intent}, evidence: evidence}} = entity
+          assert map_size(evidence) > 0
+          assert entity.confidence >= floor
+        end
+
+        for %{outcome: outcome} = o <- result.outcomes, outcome in [:resolved, :undecided, :below_confidence_floor] do
+          assert is_number(o.score)
+          assert is_map(o.evidence)
+        end
+      end
+    end
+  end
+
   describe "extract/2 keeps undecided spans apart from the entities" do
     # Gold sentences taken by a fixed stride, so the run stays short. Which of
     # their spans the data leaves undecided moves with retraining, so the test
