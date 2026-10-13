@@ -771,6 +771,8 @@ defmodule ChatWeb.ChatLive do
       :speech_act_complete -> "💬"
       :sentiment_complete -> "😊"
       :entities_extracted -> "🏷"
+      :entities_retyped -> "🏷"
+      :unresolved_spans_resolved -> "🏷"
       :events_extracted -> "📅"
       :intent_determined -> "🎯"
       :entities_filtered -> "🔍"
@@ -843,6 +845,13 @@ defmodule ChatWeb.ChatLive do
           0 -> "#{count} entity(ies)"
           unresolved -> "#{count} entity(ies), #{unresolved} unresolved span(s)"
         end
+
+      :entities_retyped ->
+        "#{length(Map.fetch!(step, :changes))} retyped with the #{Map.fetch!(step, :profile_domain)} profile"
+
+      :unresolved_spans_resolved ->
+        outcomes = Map.fetch!(step, :outcomes)
+        "#{Map.fetch!(step, :resolved_count)} of #{length(outcomes)} unresolved span(s) resolved by intent"
 
       :events_extracted ->
         count = step[:event_count] || step["event_count"] || 0
@@ -1399,6 +1408,21 @@ defmodule ChatWeb.ChatLive do
             # The spans extraction could not decide: no entities, shown so
             # what was left undecided, and why, can be checked.
             |> Map.put(:unresolved_spans, Map.fetch!(payload, :unresolved_spans))
+
+          # Pass 2's attempt on each unresolved span, once the intent is
+          # known: which it resolved, and why or why not.
+          :unresolved_spans_resolved ->
+            Map.put(chunk, :span_resolution, %{
+              intent: Map.fetch!(payload, :intent),
+              outcomes: Map.fetch!(payload, :outcomes)
+            })
+
+          # The entities whose type pass 2 changed with the chunk's profile.
+          :entities_retyped ->
+            Map.put(chunk, :retyped, %{
+              profile_domain: Map.fetch!(payload, :profile_domain),
+              changes: Map.fetch!(payload, :changes)
+            })
 
           :intent_determined ->
             chunk
