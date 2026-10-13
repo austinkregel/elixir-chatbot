@@ -12,7 +12,6 @@ defmodule Brain.Application do
       {Phoenix.PubSub, [name: Brain.PubSub]},
       {Task.Supervisor, [name: Brain.AtlasTaskSupervisor]},
       Brain.Metrics.Aggregator,
-      {Registry, [keys: :unique, name: Brain.SubprocessRegistry]},
       Brain.Services.CredentialVault,
       Brain.Services.Cache,
       Brain.Services.LocalScheduler,
@@ -68,11 +67,7 @@ defmodule Brain.Application do
       Brain.Knowledge.LearningCenter,
       Brain.Knowledge.LearningTriggers,
       Brain.Analysis.TypeHierarchy,
-      {Brain, Application.get_env(:brain, :artifact_path, "priv/static/demo.echo.json")},
-      # After Brain, so it stops before Brain does (children stop in reverse
-      # order): a CLI session ends its Brain conversation as it stops, which
-      # needs Brain still running.
-      Brain.Subprocesses.Supervisor
+      {Brain, Application.get_env(:brain, :artifact_path, "priv/static/demo.echo.json")}
     ]
 
     # Models load in the children that own them: Brain.ML.Gazetteer reads its
