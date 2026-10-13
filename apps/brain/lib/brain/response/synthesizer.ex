@@ -258,9 +258,8 @@ defmodule Brain.Response.Synthesizer do
           nil ->
             :not_enriched
 
-          {_frame_key, frame_config} ->
-            frames = Map.get(frame_config, "templates", [])
-            select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence)
+          {frame_key, frame_config} ->
+            select_and_fill_enriched_frame(frame_key, frame_config, entities, enriched_data, domain_config, confidence)
         end
 
       true ->
@@ -268,59 +267,183 @@ defmodule Brain.Response.Synthesizer do
     end
   end
 
+  # An enriched frame fires only when the enrichment and the entities give it
+  # everything its templates say:
+  #
+  #   * every field its "requires_enrichment" names carries a sayable value
+  #     (`sayable?/1`). A boolean is never sayable, since it would read as
+  #     "true" or "false": a frame that requires one raises, and is to test it
+  #     under "when" and word it in its templates instead;
+  #   * every field its "when" names holds the value given there: a string,
+  #     number or boolean equal to the field's value, {"min": n, "max": m}
+  #     (either bound alone, both inclusive) around a number, or null for a
+  #     field the enrichment does not carry or carries as nil. A field the
+  #     enrichment does not carry meets no other condition. Null tells apart
+  #     what different operations return: a reminder created carries no
+  #     reminder_count, the reminders a check found do;
+  #   * every other `$placeholder` its templates name is filled by an entity of
+  #     that type with a non-blank value.
+  #
+  # So a frame for "nothing was found" is chosen by the value that says so (a
+  # count of 0), never by a field merely being present. Of the frames that
+  # fire, the most specific is chosen: the one with the most required fields
+  # and "when" conditions together.
   defp find_matching_enriched_frame(enriched_frames, entities, enriched_data) do
-    # Sort frames by specificity (more required fields = more specific)
     enriched_frames
-    |> Enum.sort_by(fn {_, config} ->
-      required = Map.get(config, "requires_enrichment", [])
-      -length(required)  # Negative for descending order (most specific first)
+    |> Enum.sort_by(fn {_key, config} ->
+      -(length(required_enrichment(config)) + map_size(frame_conditions(config)))
     end)
-    |> Enum.find(fn {_key, config} ->
-      required = Map.get(config, "requires_enrichment", [])
-      has_all_required_enrichment?(required, enriched_data) and has_required_entities?(config, entities)
+    |> Enum.find(fn {frame_key, config} ->
+      required = required_enrichment(config)
+
+      Enum.all?(required, &required_field_sayable?(frame_key, &1, enriched_data)) and
+        Enum.all?(frame_conditions(config), fn {field, expected} ->
+          condition_holds?(frame_key, field, fetch_enriched(enriched_data, field), expected)
+        end) and
+        config
+        |> frame_templates(frame_key)
+        |> Enum.flat_map(&template_placeholders/1)
+        |> Enum.reject(&(&1 in required))
+        |> Enum.all?(&(entity_value(entities, &1) != nil))
     end)
   end
 
-  defp has_all_required_enrichment?(required_fields, enriched_data) do
-    Enum.all?(required_fields, fn field ->
-      field_key = safe_field_atom(field)
-      field_str = to_string(field)
-      Map.has_key?(enriched_data, field_key) or Map.has_key?(enriched_data, field_str)
+  defp required_enrichment(config) do
+    case Map.get(config, "requires_enrichment", []) do
+      fields when is_list(fields) -> Enum.map(fields, &to_string/1)
+      other -> raise ArgumentError, "an enriched frame's requires_enrichment must be a list of fields, got: #{inspect(other)}"
+    end
+  end
+
+  defp frame_conditions(config) do
+    case Map.get(config, "when", %{}) do
+      conditions when is_map(conditions) -> conditions
+      other -> raise ArgumentError, "an enriched frame's \"when\" must map fields to values, got: #{inspect(other)}"
+    end
+  end
+
+  defp frame_templates(config, frame_key) do
+    case Map.get(config, "templates") do
+      [_ | _] = templates -> templates
+      other -> raise ArgumentError, "the enriched frame #{inspect(frame_key)} has no templates, got: #{inspect(other)}"
+    end
+  end
+
+  defp required_field_sayable?(frame_key, field, enriched_data) do
+    case fetch_enriched(enriched_data, field) do
+      {:ok, value} when is_boolean(value) ->
+        raise ArgumentError,
+              "the enriched frame #{inspect(frame_key)} requires #{field}, which holds the boolean #{value}; " <>
+                "a boolean is never said as text: test it under \"when\" and word it in the templates"
+
+      {:ok, value} ->
+        sayable?(value)
+
+      :error ->
+        false
+    end
+  end
+
+  # A value worth saying: a non-blank string, a number, an atom other than
+  # nil and the booleans, or a non-empty list of those. `nil`, `""`, `[]`, a
+  # map, and a list holding any of them are not.
+  defp sayable?(value) when is_list(value), do: value != [] and Enum.all?(value, &sayable_item?/1)
+  defp sayable?(value), do: sayable_item?(value)
+
+  defp sayable_item?(value) when is_binary(value), do: String.trim(value) != ""
+  defp sayable_item?(value) when is_number(value), do: true
+  defp sayable_item?(value) when is_boolean(value) or is_nil(value), do: false
+  defp sayable_item?(value) when is_atom(value), do: true
+  defp sayable_item?(_value), do: false
+
+  defp condition_holds?(_frame_key, _field, :error, nil), do: true
+  defp condition_holds?(_frame_key, _field, :error, _expected), do: false
+  defp condition_holds?(_frame_key, _field, {:ok, value}, nil), do: value == nil
+
+  defp condition_holds?(frame_key, field, {:ok, value}, %{} = bounds) do
+    case {Map.keys(bounds) -- ["min", "max"], value} do
+      {[], value} when bounds != %{} and is_number(value) ->
+        Enum.all?(bounds, fn
+          {"min", min} when is_number(min) -> value >= min
+          {"max", max} when is_number(max) -> value <= max
+          {bound, other} -> raise ArgumentError, "the enriched frame #{inspect(frame_key)} bounds #{field} with #{bound} #{inspect(other)}, which is not a number"
+        end)
+
+      _other ->
+        raise ArgumentError,
+              "the enriched frame #{inspect(frame_key)} bounds #{field} with #{inspect(bounds)}; bounds are " <>
+                "\"min\" and/or \"max\" around a number, and #{field} holds #{inspect(value)}"
+    end
+  end
+
+  defp condition_holds?(_frame_key, _field, {:ok, value}, expected)
+       when is_binary(expected) or is_number(expected) or is_boolean(expected),
+       do: value == expected
+
+  defp condition_holds?(frame_key, field, _value, expected) do
+    raise ArgumentError,
+          "the enriched frame #{inspect(frame_key)} tests #{field} against #{inspect(expected)}; " <>
+            "a condition is a string, number, boolean or null, or {\"min\": n, \"max\": m}"
+  end
+
+  # The enrichment's value for `field`, kept under its name as a string or an atom.
+  defp fetch_enriched(enriched_data, field) do
+    case Map.fetch(enriched_data, field) do
+      {:ok, value} ->
+        {:ok, value}
+
+      :error ->
+        Enum.find_value(enriched_data, :error, fn {key, value} ->
+          if is_atom(key) and Atom.to_string(key) == field, do: {:ok, value}
+        end)
+    end
+  end
+
+  @template_placeholder ~r/\$([a-z_][a-z0-9_]*)/
+
+  defp template_placeholders(template) do
+    @template_placeholder |> Regex.scan(template) |> Enum.map(fn [_whole, name] -> name end)
+  end
+
+  # The non-blank value of the first entity of `type`, or nil.
+  defp entity_value(entities, type) do
+    Enum.find_value(entities, fn entity ->
+      entity_type = to_string(entity[:entity_type] || entity["entity_type"] || "")
+      value = entity[:value] || entity["value"]
+
+      if entity_type == type and is_binary(value) and String.trim(value) != "", do: value
     end)
   end
 
-  defp safe_field_atom(field) when is_atom(field), do: field
-  defp safe_field_atom(field) when is_binary(field) do
-    String.to_existing_atom(field)
-  rescue
-    ArgumentError -> field
-  end
+  # Each `$placeholder` is filled whole, so `$alarm_time` is never read as
+  # `$alarm` followed by "_time": a required field from the enrichment, any
+  # other name from the entity of that type (`find_matching_enriched_frame/3`
+  # chose the frame because both are there). A template naming a field the
+  # enrichment carries but the frame does not require raises, since that field
+  # was never checked for a value worth saying.
+  defp select_and_fill_enriched_frame(frame_key, frame_config, entities, enriched_data, domain_config, confidence) do
+    required = required_enrichment(frame_config)
+    template = frame_config |> frame_templates(frame_key) |> Enum.random()
 
-  defp has_required_entities?(_config, _entities) do
-    # For now, assume entities are available if we got this far
-    # Could be enhanced to check specific entity requirements
-    true
-  end
-
-  defp select_and_fill_enriched_frame([], _entities, _enriched_data, _domain_config, _confidence) do
-    :not_enriched
-  end
-
-  defp select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence) do
-    frame = Enum.random(frames)
-
-    # Fill both entity slots and enrichment placeholders
     filled_response =
-      frame
-      |> fill_entity_slots(entities)
-      |> fill_enrichment_slots(enriched_data)
+      Regex.replace(@template_placeholder, template, fn _whole, name ->
+        cond do
+          name in required ->
+            {:ok, value} = fetch_enriched(enriched_data, name)
+            format_value(value)
+
+          fetch_enriched(enriched_data, name) != :error ->
+            raise ArgumentError,
+                  "the enriched frame #{inspect(frame_key)}'s template #{inspect(template)} names $#{name}, " <>
+                    "which the frame does not require"
+
+          true ->
+            entity_value(entities, name)
+        end
+      end)
 
     final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
     {:ok, final_response}
-  end
-
-  defp fill_enrichment_slots(text, enriched_data) when is_binary(text) do
-    Brain.Response.Formatting.substitute_placeholders(text, enriched_data)
   end
 
   @doc "Synthesizes a clarification request when required slots are missing.\n"
@@ -687,7 +810,7 @@ defmodule Brain.Response.Synthesizer do
   # slot it is merely an alias for before the entity that is that slot's own type
   # got there: smarthome aliases "room" to $device, so "$device in the $room"
   # could come out as "the kitchen in the kitchen".
-  defp fill_entity_slots(frame, entities, slot_type_aliases \\ %{}) do
+  defp fill_entity_slots(frame, entities, slot_type_aliases) do
     reverse_alias_map = build_reverse_alias_map(slot_type_aliases)
 
     typed =
