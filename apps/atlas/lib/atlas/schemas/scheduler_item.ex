@@ -5,10 +5,13 @@ defmodule Atlas.Schemas.SchedulerItem do
 
   Which fields an item carries depends on its kind:
 
-  - `"alarm"`: `time`, `status`
-  - `"reminder"`: `text`, `time`, `status`
+  - `"alarm"`: `time`, `date`, `status`
+  - `"reminder"`: `text`, `time`, `date`, `status`
   - `"timer"`: `duration`, `status`
-  - `"calendar"`: `text` (the event), `time`
+  - `"calendar"`: `text` (the event), `time`, `date`
+
+  `date` is the day the item is for, as it was given. An item stored before
+  dates were stored has none (`nil`), as does every timer.
 
   `inserted_at` is when the item was set.
   """
@@ -26,6 +29,7 @@ defmodule Atlas.Schemas.SchedulerItem do
     field :world_id, :string
     field :kind, :string
     field :time, :string
+    field :date, :string
     field :text, :string
     field :duration, :string
     field :status, :string
@@ -41,7 +45,7 @@ defmodule Atlas.Schemas.SchedulerItem do
   @doc false
   def changeset(item, attrs) do
     item
-    |> cast(attrs, [:world_id, :kind, :time, :text, :duration, :status], empty_values: [])
+    |> cast(attrs, [:world_id, :kind, :time, :date, :text, :duration, :status], empty_values: [])
     |> validate_required([:world_id, :kind])
     |> validate_change(:world_id, &not_blank/2)
     |> validate_inclusion(:kind, @kinds)
