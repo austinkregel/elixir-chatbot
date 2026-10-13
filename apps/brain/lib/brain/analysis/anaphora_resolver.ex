@@ -91,6 +91,15 @@ defmodule Brain.Analysis.AnaphoraResolver do
     end)
   end
 
+  @doc """
+  The entities of `history` a reference can resolve to, each as
+  `{entity, recency_score, turns_ago}`. A turn whose entities are kept as
+  type => value gives one entity per type, typed by `:entity_type`; a turn
+  whose entities are a list gives them as they are.
+  """
+  @spec candidates(list() | term()) :: [{map(), float(), pos_integer()}]
+  def candidates(history), do: extract_candidate_entities(history)
+
   defp extract_candidate_entities(history) when is_list(history) do
     history
     |> Enum.with_index(1)
@@ -115,9 +124,13 @@ defmodule Brain.Analysis.AnaphoraResolver do
       list when is_list(list) ->
         list
 
+      # A turn's entities kept as type => value. Each becomes an entity in the
+      # shape extraction gives one, typed by `:entity_type`, which ranking reads
+      # here and the pipeline reads when it merges the referent into the turn's
+      # entities.
       map when is_map(map) ->
         Enum.map(map, fn {type, value} ->
-          %{entity: type, value: value}
+          %{entity_type: type, value: value}
         end)
 
       _ ->
