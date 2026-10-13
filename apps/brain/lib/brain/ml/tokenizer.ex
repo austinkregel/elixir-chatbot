@@ -37,6 +37,27 @@ defmodule Brain.ML.Tokenizer do
   end
 
   @doc """
+  The token indexes `{first, last}` (inclusive) of the span `start_pos..end_pos`
+  (graphemes, inclusive) in `tokens`, a `tokenize/1` result: the token that
+  begins at `start_pos` and the token that ends at `end_pos`. A span that does
+  not begin and end on token boundaries raises.
+  """
+  @spec token_range!([token()], non_neg_integer(), non_neg_integer()) :: {non_neg_integer(), non_neg_integer()}
+  def token_range!(tokens, start_pos, end_pos)
+      when is_list(tokens) and is_integer(start_pos) and is_integer(end_pos) do
+    first = Enum.find_index(tokens, &(&1.start_pos == start_pos))
+    last = Enum.find_index(tokens, &(&1.end_pos == end_pos))
+
+    if is_nil(first) or is_nil(last) or last < first do
+      raise ArgumentError,
+            "Tokenizer: the span #{start_pos}..#{end_pos} does not begin and end on token boundaries of " <>
+              inspect(Enum.map(tokens, &{&1.text, &1.start_pos, &1.end_pos}), limit: 40)
+    end
+
+    {first, last}
+  end
+
+  @doc """
   Tokenize text into lemmatized (base-form) words using WordNet morphological data.
 
   Applies the Lexicon's lemma/1 to each normalized token, reducing
