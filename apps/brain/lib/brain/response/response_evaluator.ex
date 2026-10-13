@@ -120,11 +120,23 @@ defmodule Brain.Response.ResponseEvaluator do
       overall: overall,
       weakest_dimension: weakest,
       converged: overall >= @convergence_threshold,
-      silence_preferred: overall < @silence_threshold
+      silence_preferred: silence_preferred?(overall, primitives)
     }
   end
 
   def evaluate(_, _, _, _), do: %Score{converged: true, overall: 0.5}
+
+  @doc """
+  Whether a response scored `overall` is better left unsaid: when it scores
+  under the silence threshold, unless it answers a service's error
+  (`Brain.Response.SurfaceRealizer.service_reply?/1`). Such a reply tells the
+  user what they asked for was not done, or asks what is needed to do it, so
+  it is never withheld however it scores.
+  """
+  @spec silence_preferred?(float(), [Brain.Response.Primitive.t()]) :: boolean()
+  def silence_preferred?(overall, primitives) when is_number(overall) and is_list(primitives) do
+    overall < @silence_threshold and not Enum.any?(primitives, &Brain.Response.SurfaceRealizer.service_reply?/1)
+  end
 
   @doc "Maps a weak dimension to the pipeline stage that should be re-run."
   def dimension_to_stage(:speech_act_alignment), do: :discourse_planner
