@@ -917,7 +917,7 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Any reminders for this afternoon"
   },
@@ -2254,7 +2254,7 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Can you cancel the reminder about the team lunch"
   },
@@ -2294,7 +2294,7 @@
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Can you delete my 8 o'clock alarm"
   },
@@ -3090,19 +3090,19 @@
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Cancel all timers"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Cancel my 10 minute timer"
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Cancel my alarm"
   },
@@ -3114,25 +3114,25 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Cancel my reminder"
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Cancel the 6am alarm"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Cancel the countdown"
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Cancel the medication reminder"
   },
@@ -3144,7 +3144,7 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Cancel the reminder for 3pm"
   },
@@ -3156,7 +3156,7 @@
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Cancel the timer"
   },
@@ -3577,7 +3577,7 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Check my alarms"
   },
@@ -3631,7 +3631,7 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Check my reminders"
   },
@@ -3883,13 +3883,13 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Clear all my reminders"
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Clear my alarms"
   },
@@ -3901,7 +3901,7 @@
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Clear the 5 minute timer"
   },
@@ -4563,13 +4563,13 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Delete my reminders for tomorrow"
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Delete the alarm I set for 7:30"
   },
@@ -4587,13 +4587,13 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Delete the reminder to call mom"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Delete the timer"
   },
@@ -4725,13 +4725,13 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Did I set a reminder to call the bank"
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Did I set an alarm"
   },
@@ -4921,7 +4921,7 @@
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Disable my morning alarm"
   },
@@ -4987,7 +4987,7 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Do I have an alarm for 6am"
   },
@@ -5005,7 +5005,7 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Do I have any reminders today"
   },
@@ -5354,7 +5354,7 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Drop the reminder to buy milk"
   },
@@ -5384,7 +5384,7 @@
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "End the timer now"
   },
@@ -5938,7 +5938,7 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Forget the reminder about paying rent"
   },
@@ -6014,19 +6014,19 @@
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Get rid of the 5:45 alarm"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Get rid of the egg timer"
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Get rid of the reminder to pick up the dry cleaning"
   },
@@ -6635,13 +6635,13 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Have I got a reminder about Jake's birthday"
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Have I got any alarms tomorrow"
   },
@@ -8227,19 +8227,19 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "I don't need that reminder anymore"
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "I don't need the alarm tomorrow"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "I don't need the timer anymore"
   },
@@ -10623,7 +10623,7 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Is my alarm set for tomorrow"
   },
@@ -10689,7 +10689,7 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Is the 7am alarm still on"
   },
@@ -10815,13 +10815,13 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Is there a reminder for the meeting"
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Is there an alarm set for Monday morning"
   },
@@ -11609,13 +11609,13 @@
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Kill the alarm for 9:15"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Kill the timer"
   },
@@ -12315,13 +12315,13 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "List all my alarms"
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "List my reminders"
   },
@@ -13685,13 +13685,13 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Never mind the reminder to email Sarah"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Never mind the timer"
   },
@@ -13864,7 +13864,7 @@
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "No alarm tomorrow, cancel it"
   },
@@ -16379,7 +16379,7 @@
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Please cancel all my alarms"
   },
@@ -16824,7 +16824,7 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Read me my reminders"
   },
@@ -17060,7 +17060,7 @@
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Remove my wake up alarm"
   },
@@ -17072,7 +17072,7 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Remove the 9am reminder"
   },
@@ -17084,13 +17084,13 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Remove the reminder about the dentist"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Remove the workout timer"
   },
@@ -18610,7 +18610,7 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Show me my alarms"
   },
@@ -18622,7 +18622,7 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Show me my reminders"
   },
@@ -19592,7 +19592,7 @@
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Stop reminding me to water the plants"
   },
@@ -19610,13 +19610,13 @@
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Stop the pasta timer"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Stop the timer"
   },
@@ -19736,7 +19736,7 @@
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Switch off the alarm for Saturday"
   },
@@ -19861,7 +19861,7 @@
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Take off the alarm I set for noon"
   },
@@ -20123,7 +20123,7 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Tell me what alarms are set"
   },
@@ -22649,7 +22649,7 @@
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Turn off my alarm for tomorrow morning"
   },
@@ -22829,7 +22829,7 @@
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Turn off the timer"
   },
@@ -25256,13 +25256,13 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "What alarms do I have set"
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "What are my reminders"
   },
@@ -25394,7 +25394,7 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "What do I need to be reminded about this week"
   },
@@ -26006,7 +26006,7 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "What reminders do I have for tomorrow"
   },
@@ -26042,7 +26042,7 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "What time did I set the alarm for"
   },
@@ -26072,7 +26072,7 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "What time is my alarm"
   },
@@ -26090,7 +26090,7 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "What was the reminder I set for 5pm"
   },
@@ -26756,7 +26756,7 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "When is my alarm going off"
   },
@@ -26768,7 +26768,7 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "When is my reminder to take medicine"
   },
@@ -26954,7 +26954,7 @@
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Which alarms are on"
   },
@@ -26966,7 +26966,7 @@
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Which reminders are still pending"
   },
