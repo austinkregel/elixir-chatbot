@@ -435,6 +435,48 @@
     "required": [],
     "speech_act": "request"
   },
+  "reminder.cancel": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Cancel a reminder",
+    "domain": "reminder",
+    "entity_mappings": {
+      "time": [
+        "time"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "reminder_context"
+      }
+    ],
+    "optional": [
+      "time"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
+  "reminder.check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Check which reminders are set",
+    "domain": "reminder",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "reminder_context"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
+  },
   "smalltalk.agent.residence": {
     "category": "expressive",
     "clarification_templates": {},
@@ -1332,6 +1374,30 @@
     "output_contexts": [],
     "required": [],
     "speech_act": "request_information"
+  },
+  "timer.cancel": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Cancel a running timer",
+    "domain": "timer",
+    "entity_mappings": {
+      "duration": [
+        "duration"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "timer_context"
+      }
+    ],
+    "optional": [
+      "duration"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
   },
   "smarthome.heating.up.implicit": {
     "category": "assertive",
@@ -2264,6 +2330,48 @@
     ],
     "required": [],
     "speech_act": "request"
+  },
+  "alarm.cancel": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Cancel an alarm",
+    "domain": "alarm",
+    "entity_mappings": {
+      "time": [
+        "time"
+      ]
+    },
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "alarm_context"
+      }
+    ],
+    "optional": [
+      "time"
+    ],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request"
+  },
+  "alarm.check": {
+    "category": "directive",
+    "clarification_templates": {},
+    "defaults": {},
+    "description": "Check which alarms are set",
+    "domain": "alarm",
+    "entity_mappings": {},
+    "input_contexts": [
+      {
+        "lifespan": 2,
+        "name": "alarm_context"
+      }
+    ],
+    "optional": [],
+    "output_contexts": [],
+    "required": [],
+    "speech_act": "request_information"
   },
   "smarthome.switch": {
     "category": "directive",
