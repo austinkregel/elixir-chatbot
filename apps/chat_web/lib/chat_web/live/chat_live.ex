@@ -838,7 +838,11 @@ defmodule ChatWeb.ChatLive do
 
       :entities_extracted ->
         count = step[:entity_count] || step["entity_count"] || 0
-        "#{count} entity(ies)"
+
+        case length(Map.fetch!(step, :unresolved_spans)) do
+          0 -> "#{count} entity(ies)"
+          unresolved -> "#{count} entity(ies), #{unresolved} unresolved span(s)"
+        end
 
       :events_extracted ->
         count = step[:event_count] || step["event_count"] || 0
@@ -1232,8 +1236,8 @@ defmodule ChatWeb.ChatLive do
             recurring_pattern_id: Map.fetch!(payload, :recurring_pattern_id)
           })
 
-        # A refined response can use the pattern on each pass; each user of
-        # it is listed once.
+        # A turn reports its response's use of the pattern once, however many
+        # passes refined it; every use reported is listed.
         :semantic_fact_used ->
           used = %{
             semantic_fact_id: Map.fetch!(payload, :semantic_fact_id),
@@ -1242,7 +1246,7 @@ defmodule ChatWeb.ChatLive do
           }
 
           used_so_far = get_in(details, [:memory, :semantic_facts_used]) || []
-          merge_memory_details(details, %{semantic_facts_used: Enum.uniq(used_so_far ++ [used])})
+          merge_memory_details(details, %{semantic_facts_used: used_so_far ++ [used]})
 
         :response_generated ->
           Map.put(details, :response, %{
@@ -1388,6 +1392,9 @@ defmodule ChatWeb.ChatLive do
               :entity_count,
               Map.get(payload, :entity_count) || Map.get(payload, "entity_count")
             )
+            # The spans extraction could not decide: no entities, shown so
+            # what was left undecided, and why, can be checked.
+            |> Map.put(:unresolved_spans, Map.fetch!(payload, :unresolved_spans))
 
           :intent_determined ->
             chunk
