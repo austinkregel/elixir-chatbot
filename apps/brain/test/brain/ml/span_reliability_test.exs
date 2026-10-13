@@ -214,6 +214,98 @@ defmodule Brain.ML.SpanReliabilityTest do
     end
   end
 
+  describe "redecide/4" do
+    setup do
+      model = SpanReliability.fit(examples(), Keyword.put(@opts, :prior_strength, 1))
+      # Thresholds the readings of "Mike" alone (the model's artist, 23/45) do
+      # not reach: logit(23/45) is about 0.044. The redecision thresholds are
+      # the same here, so what decides a span again is the evidence.
+      {:ok, model: %{model | min_score: 1.0, min_margin: 0.0, redecision: %{min_score: 1.0, min_margin: 0.0}}}
+    end
+
+    defp undecided(model) do
+      readings = [reading(:entity_model, "artist", 0, 3, %{model_only: true})]
+      [span] = SpanReliability.decide(readings, model, text: "Mike", canonical: @canonical, hierarchy: Hierarchy)
+      span
+    end
+
+    test "an unresolved span keeps its readings as the sources gave them", %{model: model} do
+      span = undecided(model)
+      assert %{resolved: false, unresolved_reason: :insufficient_evidence} = span
+      assert [%{source: :entity_model, entity_type: "artist", model_only: true}] = span.raw_readings
+    end
+
+    test "evidence that lifts the hypothesis over the thresholds decides it, with the readings' keys", %{model: model} do
+      span = undecided(model)
+      p = model.pairs[{:entity_model, "artist"}].reliability
+
+      assert {:decided, entity} = SpanReliability.redecide(span, %{"artist" => 2.0}, model, Hierarchy)
+
+      assert %{resolved: true, entity_type: "artist", source: :entity_model, model_only: true} = entity
+
+      assert_in_delta entity.decision.score, :math.log(p / (1 - p)) + 2.0, 1.0e-6
+      assert entity.decision.margin == :infinity
+      assert entity.decision.evidence == %{"artist" => 2.0}
+      assert_in_delta entity.confidence, 1 / (1 + :math.exp(-entity.decision.score)), 1.0e-6
+      assert entity.readings == span.readings
+    end
+
+    test "evidence that does not reach the thresholds leaves the span undecided", %{model: model} do
+      span = undecided(model)
+
+      assert {:undecided, %Lattice{best: %{label: {0, 3, "artist"}, score: score}}} =
+               SpanReliability.redecide(span, %{"artist" => -1.0}, model, Hierarchy)
+
+      assert score < model.min_score
+    end
+
+    test "evidence can change which hypothesis leads", %{model: model} do
+      # number and final_value at one extent; final_value refines number.
+      readings = [reading(:system, "number", 7, 7), reading(:entity_model, "final_value", 7, 7)]
+      model = %{model | min_margin: 5.0, redecision: %{min_score: 1.0, min_margin: 5.0}}
+      [span] = SpanReliability.decide(readings, model, text: "set to 5", canonical: @canonical, hierarchy: Hierarchy)
+      assert span.unresolved_reason == :insufficient_evidence
+
+      assert {:decided, entity} = SpanReliability.redecide(span, %{"number" => 6.0, "final_value" => -1.0}, model, Hierarchy)
+
+      assert entity.entity_type == "number"
+      assert entity.decision.margin >= 5.0
+    end
+
+    test "decides with the redecision thresholds, not the first decision's", %{model: model} do
+      span = undecided(model)
+      # Evidence of 2.0 decides "Mike" at a redecision min_score of 1.0 ...
+      assert {:decided, _} = SpanReliability.redecide(span, %{"artist" => 2.0}, model, Hierarchy)
+      # ... but not at 3.0, whatever the first decision's thresholds are.
+      strict = %{model | min_score: -10.0, redecision: %{min_score: 3.0, min_margin: 0.0}}
+      assert {:undecided, _} = SpanReliability.redecide(span, %{"artist" => 2.0}, strict, Hierarchy)
+      # Thresholds that decide nothing again.
+      never = %{model | redecision: %{min_score: :infinity, min_margin: :infinity}}
+      assert {:undecided, _} = SpanReliability.redecide(span, %{"artist" => 50.0}, never, Hierarchy)
+    end
+
+    test "a model without redecision thresholds cannot decide again", %{model: model} do
+      assert_raise ArgumentError, ~r/no redecision thresholds/, fn ->
+        SpanReliability.redecide(undecided(model), %{"artist" => 2.0}, %{model | redecision: nil}, Hierarchy)
+      end
+    end
+
+    test "every hypothesis label needs evidence", %{model: model} do
+      assert_raise ArgumentError, ~r/no evidence for \["artist"\]/, fn ->
+        SpanReliability.redecide(undecided(model), %{"person" => 3.0}, model, Hierarchy)
+      end
+    end
+
+    test "only a span left for insufficient evidence can be decided again", %{model: model} do
+      [unmeasured] = SpanReliability.decide([reading(:gazetteer, "emoji", 0, 7)], model, text: "umbrella", canonical: @canonical, hierarchy: Hierarchy)
+      assert_raise ArgumentError, ~r/only a span decide\/3 left unresolved/, fn -> SpanReliability.redecide(unmeasured, %{}, model, Hierarchy) end
+
+      [decided] = SpanReliability.decide([reading(:system, "number", 7, 7)], %{model | min_score: -5.0}, text: "set to 5", canonical: @canonical, hierarchy: Hierarchy)
+      withheld = SpanReliability.withhold(decided, :below_confidence_floor, "set to 5", Hierarchy)
+      assert_raise ArgumentError, ~r/only a span decide\/3 left unresolved/, fn -> SpanReliability.redecide(withheld, %{"number" => 1.0}, model, Hierarchy) end
+    end
+  end
+
   describe "common_type/2" do
     test "the most specific type every reading is or descends from" do
       assert SpanReliability.common_type(["music_artist", "given_name"], Hierarchy) == "person"
@@ -253,6 +345,40 @@ defmodule Brain.ML.SpanReliabilityTest do
           text: "50", canonical: @canonical, hierarchy: Hierarchy)
 
       assert %{resolved: true, entity_type: "final_value", source: :good} = span
+    end
+
+    test "select_redecision/3 chooses thresholds that keep evidence that decides right and leave evidence that does not" do
+      # Two sources the data trusts about equally read every row differently,
+      # and the first decision's min_score is out of their reach, so no row is
+      # decided by its readings. The evidence names the gold label strongly on
+      # 40 rows, and the wrong one weakly on 10.
+      tied =
+        for i <- 1..50 do
+          type = if rem(i, 2) == 0, do: "artist", else: "final_value"
+          %{key: {:row, i}, gold: [gold(type, 0, 3)], readings: [reading(:a, "artist", 0, 3), reading(:b, "final_value", 0, 3)]}
+        end
+
+      evidence = fn _training ->
+        fn %{key: {:row, i}, gold: [%{type: right}]}, labels ->
+          {to_right, to_other} = if i <= 40, do: {3.0, -3.0}, else: {-0.5, 0.5}
+          Map.new(labels, &{&1, if(&1 == right, do: to_right, else: to_other)})
+        end
+      end
+
+      model = tied |> SpanReliability.fit(Keyword.put(@opts, :prior_strength, 1)) |> Map.merge(%{min_score: 5.0, min_margin: 0.0})
+      model = SpanReliability.select_redecision(model, tied, canonical: @canonical, hierarchy: Hierarchy, evidence: evidence)
+
+      %{min_score: min_score, min_margin: min_margin, cross_validation: cv} = model.redecision
+      assert cv.none.f1 == 0.0
+      assert cv.first_thresholds.decided == 0
+      assert %{decided: 40, correct: 40} = cv.chosen
+      assert cv.chosen.f1 > cv.first_thresholds.f1
+      assert cv.points == 50
+      assert min_score > 0.5 or min_margin > 1.0
+
+      [span] = SpanReliability.decide(hd(tied).readings, model, text: "Rush", canonical: @canonical, hierarchy: Hierarchy)
+      assert {:decided, %{entity_type: "artist"}} = SpanReliability.redecide(span, %{"artist" => 3.0, "final_value" => -3.0}, model, Hierarchy)
+      assert {:undecided, _} = SpanReliability.redecide(span, %{"artist" => 0.5, "final_value" => -0.5}, model, Hierarchy)
     end
 
     test "the prior strength is not the caller's to pass" do
