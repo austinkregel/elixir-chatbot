@@ -423,6 +423,7 @@
       }
     ],
     "optional": [
+      "reminder_text",
       "time",
       "date"
     ],
@@ -442,6 +443,9 @@
     "description": "Cancel a reminder",
     "domain": "reminder",
     "entity_mappings": {
+      "date": [
+        "date"
+      ],
       "time": [
         "time"
       ]
@@ -453,7 +457,9 @@
       }
     ],
     "optional": [
-      "time"
+      "reminder_text",
+      "time",
+      "date"
     ],
     "output_contexts": [],
     "required": [],
@@ -465,14 +471,20 @@
     "defaults": {},
     "description": "Check which reminders are set",
     "domain": "reminder",
-    "entity_mappings": {},
+    "entity_mappings": {
+      "date": [
+        "date"
+      ]
+    },
     "input_contexts": [
       {
         "lifespan": 2,
         "name": "reminder_context"
       }
     ],
-    "optional": [],
+    "optional": [
+      "date"
+    ],
     "output_contexts": [],
     "required": [],
     "speech_act": "request_information"
@@ -2308,6 +2320,9 @@
     "description": "Set an alarm",
     "domain": "alarm",
     "entity_mappings": {
+      "date": [
+        "date"
+      ],
       "time": [
         "time"
       ]
@@ -2320,6 +2335,7 @@
     ],
     "optional": [
       "time",
+      "date",
       "recurring"
     ],
     "output_contexts": [
@@ -2338,6 +2354,9 @@
     "description": "Cancel an alarm",
     "domain": "alarm",
     "entity_mappings": {
+      "date": [
+        "date"
+      ],
       "time": [
         "time"
       ]
@@ -2349,7 +2368,8 @@
       }
     ],
     "optional": [
-      "time"
+      "time",
+      "date"
     ],
     "output_contexts": [],
     "required": [],
@@ -2361,14 +2381,20 @@
     "defaults": {},
     "description": "Check which alarms are set",
     "domain": "alarm",
-    "entity_mappings": {},
+    "entity_mappings": {
+      "date": [
+        "date"
+      ]
+    },
     "input_contexts": [
       {
         "lifespan": 2,
         "name": "alarm_context"
       }
     ],
-    "optional": [],
+    "optional": [
+      "date"
+    ],
     "output_contexts": [],
     "required": [],
     "speech_act": "request_information"
@@ -2923,6 +2949,9 @@
       "date": [
         "date"
       ],
+      "event": [
+        "event"
+      ],
       "person": [
         "person"
       ],
@@ -2941,6 +2970,7 @@
       }
     ],
     "optional": [
+      "event",
       "date",
       "time",
       "person"
