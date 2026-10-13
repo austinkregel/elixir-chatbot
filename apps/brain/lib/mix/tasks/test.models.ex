@@ -65,6 +65,13 @@ defmodule Mix.Tasks.Test.Models do
   `mix train_span_reliability`. Boot loads it and every entity extraction
   decides its spans with it.
 
+  ## Slot type preferences
+
+  Each supported language's `slot_type_preferences.<language>.term`, written
+  by `mix train_slot_type_preferences`. Boot loads it; the entity types an
+  intent expects are weighed with it and every gazetteer reading is scored
+  with its preceding-tag likelihoods.
+
   The text micro-classifiers in the same directory are not promoted: the factory
   trains them from test fixtures and writes them there, which is why the test
   suite needs a writable models directory of its own rather than pointing at priv.
@@ -149,12 +156,18 @@ defmodule Mix.Tasks.Test.Models do
   end
 
   # Each supported language's lexical evidence model and speech-act table, which
-  # `mix gen_micro_data` trains, and span reliability model, which
-  # `mix train_span_reliability` trains; boot requires all three.
+  # `mix gen_micro_data` trains, span reliability model, which
+  # `mix train_span_reliability` trains, and slot type preferences, which
+  # `mix train_slot_type_preferences` trains; boot requires all four.
   defp models do
     @models ++
       Enum.flat_map(Brain.Language.supported(), fn code ->
-        ["lexical_evidence.#{code}.term", "speech_act_table.#{code}.term", "span_reliability.#{code}.term"]
+        [
+          "lexical_evidence.#{code}.term",
+          "speech_act_table.#{code}.term",
+          "span_reliability.#{code}.term",
+          "slot_type_preferences.#{code}.term"
+        ]
       end)
   end
 
