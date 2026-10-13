@@ -38,22 +38,6 @@
         "The $device_name is $device_status at $brightness brightness.",
         "Currently, the $device_name is set to $brightness."
       ]
-    },
-    "service_not_configured": {
-      "condition": "service_missing",
-      "requires_enrichment": [],
-      "templates": [
-        "I'd need a smart home connection to control devices. You can set one up in settings.",
-        "Device control isn't configured yet."
-      ]
-    },
-    "service_error": {
-      "condition": "service_error",
-      "requires_enrichment": [],
-      "templates": [
-        "I had trouble reaching the device. It might be offline.",
-        "Couldn't connect to the device right now."
-      ]
     }
   },
   "entity_verbalizations": {
