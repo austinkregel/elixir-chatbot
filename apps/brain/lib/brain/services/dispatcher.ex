@@ -53,10 +53,10 @@ defmodule Brain.Services.Dispatcher do
 
   # The drivers a world can choose for its alarms, timers, reminders and
   # calendar items. Each implements `Brain.Services.SchedulingDriver` and is
-  # chosen by its service `name/0`.
+  # chosen by its service `name/0`. A world whose stored driver name is not
+  # one of these raises (`scheduling_driver_named!/1`).
   @scheduling_drivers [
-    Brain.Services.LocalScheduler,
-    Brain.Services.HomeAssistant
+    Brain.Services.LocalScheduler
   ]
 
   # Build intent -> service lookup dynamically to handle module compilation order
