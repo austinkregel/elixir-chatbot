@@ -18,12 +18,140 @@
     ]
   },
   "enriched_response_frames": {
-    "with_reminder_status": {
-      "condition": "enriched:reminder_set",
-      "requires_enrichment": ["reminder_set", "reminder_text", "reminder_time"],
+    "set_with_text_date_and_time": {
+      "when": {"reminder_set": true, "reminder_count": null},
+      "requires_enrichment": ["reminder_text", "reminder_date", "reminder_time"],
       "templates": [
-        "You have a reminder $reminder_set: \"$reminder_text\" at $reminder_time.",
-        "Reminder $reminder_set for $reminder_time: $reminder_text."
+        "Reminder set for $reminder_date at $reminder_time: $reminder_text.",
+        "Your reminder for $reminder_date at $reminder_time is set: $reminder_text."
+      ]
+    },
+    "set_with_text_and_time": {
+      "when": {"reminder_set": true, "reminder_count": null},
+      "requires_enrichment": ["reminder_text", "reminder_time"],
+      "templates": [
+        "Reminder set for $reminder_time: $reminder_text.",
+        "Your reminder for $reminder_time is set: $reminder_text."
+      ]
+    },
+    "set_with_text_and_date": {
+      "when": {"reminder_set": true, "reminder_count": null},
+      "requires_enrichment": ["reminder_text", "reminder_date"],
+      "templates": [
+        "Reminder set for $reminder_date: $reminder_text.",
+        "Your reminder for $reminder_date is set: $reminder_text."
+      ]
+    },
+    "set_with_text": {
+      "when": {"reminder_set": true, "reminder_count": null},
+      "requires_enrichment": ["reminder_text"],
+      "templates": [
+        "Reminder set: $reminder_text.",
+        "Your reminder is set: $reminder_text."
+      ]
+    },
+    "set_with_date_and_time": {
+      "when": {"reminder_set": true, "reminder_count": null},
+      "requires_enrichment": ["reminder_date", "reminder_time"],
+      "templates": [
+        "Reminder set for $reminder_date at $reminder_time.",
+        "Your reminder for $reminder_date at $reminder_time is set."
+      ]
+    },
+    "set_with_time": {
+      "when": {"reminder_set": true, "reminder_count": null},
+      "requires_enrichment": ["reminder_time"],
+      "templates": [
+        "Reminder set for $reminder_time.",
+        "Your reminder for $reminder_time is set."
+      ]
+    },
+    "set_with_date": {
+      "when": {"reminder_set": true, "reminder_count": null},
+      "requires_enrichment": ["reminder_date"],
+      "templates": [
+        "Reminder set for $reminder_date.",
+        "Your reminder for $reminder_date is set."
+      ]
+    },
+    "set": {
+      "when": {"reminder_set": true, "reminder_count": null},
+      "requires_enrichment": [],
+      "templates": [
+        "Reminder set.",
+        "Your reminder is set."
+      ]
+    },
+    "none_found": {
+      "when": {"reminder_count": 0},
+      "requires_enrichment": [],
+      "templates": [
+        "You have no reminders.",
+        "There are no reminders set."
+      ]
+    },
+    "found_one_with_text": {
+      "when": {"reminder_count": 1},
+      "requires_enrichment": ["reminder_texts"],
+      "templates": [
+        "You have one reminder: $reminder_texts.",
+        "There's one reminder set: $reminder_texts."
+      ]
+    },
+    "found_one": {
+      "when": {"reminder_count": 1},
+      "requires_enrichment": [],
+      "templates": [
+        "You have one reminder.",
+        "There's one reminder set."
+      ]
+    },
+    "found_several_with_texts": {
+      "when": {"reminder_count": {"min": 2}},
+      "requires_enrichment": ["reminder_count", "reminder_texts"],
+      "templates": [
+        "You have $reminder_count reminders: $reminder_texts.",
+        "There are $reminder_count reminders set: $reminder_texts."
+      ]
+    },
+    "found_several": {
+      "when": {"reminder_count": {"min": 2}},
+      "requires_enrichment": ["reminder_count"],
+      "templates": [
+        "You have $reminder_count reminders.",
+        "There are $reminder_count reminders set."
+      ]
+    },
+    "cancelled_one_with_text": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": ["reminder_texts"],
+      "templates": [
+        "Cancelled your reminder: $reminder_texts.",
+        "Your reminder is cancelled: $reminder_texts."
+      ]
+    },
+    "cancelled_one": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": [],
+      "templates": [
+        "Cancelled your reminder.",
+        "Your reminder is cancelled."
+      ]
+    },
+    "cancelled_several_with_texts": {
+      "when": {"cancelled_count": {"min": 2}},
+      "requires_enrichment": ["cancelled_count", "reminder_texts"],
+      "templates": [
+        "Cancelled $cancelled_count reminders: $reminder_texts.",
+        "Your $cancelled_count reminders are cancelled: $reminder_texts."
+      ]
+    },
+    "cancelled_several": {
+      "when": {"cancelled_count": {"min": 2}},
+      "requires_enrichment": ["cancelled_count"],
+      "templates": [
+        "Cancelled $cancelled_count reminders.",
+        "Your $cancelled_count reminders are cancelled."
       ]
     }
   },
