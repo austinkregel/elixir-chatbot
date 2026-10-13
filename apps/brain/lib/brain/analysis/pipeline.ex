@@ -330,7 +330,10 @@ defmodule Brain.Analysis.Pipeline do
           intent: speech_act_intent
         ]
 
-    entities = extract_entities(resolved_text, entity_opts)
+    # Only decided spans are entities. The spans extraction could not decide
+    # travel apart, on the analysis's `unresolved_spans`, so no stage that acts
+    # on entities sees one.
+    %{entities: entities, unresolved_spans: unresolved_spans} = extract_entities(resolved_text, entity_opts)
     entities = merge_anaphora_entities(entities, anaphora_entities)
 
     if debug_pass1?, do: Logger.info("pipeline:pass1 extract_entities=#{System.monotonic_time(:millisecond) - t0}ms")
@@ -338,7 +341,8 @@ defmodule Brain.Analysis.Pipeline do
     Progress.report(opts, :entities_extracted, %{
       chunk_index: chunk.index,
       entity_count: length(entities),
-      entities: entities |> Enum.take(25) |> Enum.map(&entity_to_dev_map/1)
+      entities: entities |> Enum.take(25) |> Enum.map(&entity_to_dev_map/1),
+      unresolved_spans: Enum.map(unresolved_spans, &unresolved_span_to_dev_map/1)
     })
 
     entities = EntityGraphEnricher.enrich(entities, world_id!(opts))
@@ -387,6 +391,7 @@ defmodule Brain.Analysis.Pipeline do
       |> Map.put(:speech_act, speech_act_result)
       |> Map.put(:sentiment, sentiment_result)
       |> Map.put(:entities, entities)
+      |> Map.put(:unresolved_spans, unresolved_spans)
       |> ChunkAnalysis.with_events(events)
       |> Map.put(:event_frames, event_frames)
       |> Map.put(:srl_frames, srl_frames)
@@ -591,7 +596,10 @@ defmodule Brain.Analysis.Pipeline do
     })
 
     # Now that the intent is known, weigh each entity's candidate readings
-    # against the entity types its slot schema expects.
+    # against the entity types its slot schema expects. The spans extraction
+    # could not decide are on `pass1.unresolved_spans`, with their readings and
+    # candidates, and carried unchanged into this analysis; nothing here acts
+    # on them.
     rescored_entities = Brain.Analysis.EntityTypeScorer.rescore(pass1.entities, intent)
 
     {entities_after_inference, intent, intent_details} =
@@ -823,16 +831,19 @@ defmodule Brain.Analysis.Pipeline do
     {lattice, feature_vector}
   end
 
+  # `%{entities: decided, unresolved_spans: undecided}`. When extraction is
+  # skipped, or the caller passed its entities, no extraction ran, so no span
+  # was left undecided.
   defp extract_entities(text, opts) do
     cond do
       Keyword.get(opts, :skip_entity_extraction, false) ->
-        []
+        %{entities: [], unresolved_spans: []}
 
       Keyword.has_key?(opts, :entities) ->
-        Keyword.get(opts, :entities, [])
+        %{entities: Keyword.fetch!(opts, :entities), unresolved_spans: []}
 
       true ->
-        EntityExtractor.extract_entities(text, opts)
+        EntityExtractor.extract(text, opts)
     end
   end
 
@@ -854,6 +865,34 @@ defmodule Brain.Analysis.Pipeline do
 
   defp entity_to_dev_map(other) do
     %{value: inspect(other)}
+  end
+
+  # What the inspector shows of a span extraction could not decide: its text
+  # and extent, why it was left undecided, the type its readings share (nil
+  # when none), the types its measured readings supported, and every reading
+  # with its source, the source's own confidence and the reliability the data
+  # gives that source for that type (nil when unmeasured).
+  defp unresolved_span_to_dev_map(%{resolved: false, readings: readings, candidates: %Lattice{} = candidates} = span) do
+    %{
+      value: span.value,
+      start_pos: span.start_pos,
+      end_pos: span.end_pos,
+      reason: Map.fetch!(span, :unresolved_reason),
+      common_type: span.entity_type,
+      candidate_types:
+        Enum.map(candidates.candidates, fn %LatticeCandidate{label: {_start_pos, _end_pos, type}, score: score} ->
+          %{type: type, score: score}
+        end),
+      readings:
+        Enum.map(readings, fn reading ->
+          %{
+            source: reading.source,
+            entity_type: reading.entity_type,
+            raw_confidence: reading.raw_confidence,
+            reliability: reading.reliability
+          }
+        end)
+    }
   end
 
   defp extract_events(pos_result, entities, opts) do
@@ -2070,15 +2109,7 @@ defmodule Brain.Analysis.Pipeline do
         # instead of dropping them (empty mappings used to wipe PROPN hints, etc.).
         entities
       else
-        Enum.filter(entities, fn
-          # A span entity extraction could not decide is kept, so the analysis
-          # shows it, but it is no typed entity of this intent: SlotDetector
-          # fills no slot from it, and its common type (or nil) is not matched
-          # against the schema.
-          %{resolved: false} ->
-            true
-
-          entity ->
+        Enum.filter(entities, fn entity ->
           entity_type = entity[:entity_type]
 
           # Keep POS-derived proper-noun spans even when typed `unknown`/`person`
