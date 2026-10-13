@@ -1,8 +1,8 @@
 defmodule Brain.Services.LocalScheduler do
   @moduledoc """
-  Offline-friendly scheduling driver (`Brain.Services.SchedulingDriver`) for
-  alarms, timers, reminders and calendar items. Provides enrichment data
-  without requiring an external service like Home Assistant.
+  The scheduling driver (`Brain.Services.SchedulingDriver`) for alarms,
+  timers, reminders and calendar items, kept in this installation's own
+  store and needing no credentials.
 
   Alarms, reminders, timers and calendar items belong to a world: each
   stored item is keyed by the world it was set in, and setting, cancelling
@@ -13,11 +13,51 @@ defmodule Brain.Services.LocalScheduler do
   fires when it is due, so there is never a ringing alarm to snooze, and
   `snooze_alarm/3` says so.
 
+  ## Checking
+
+  `check_alarms/3` and `check_reminders/3` report every alarm or reminder the
+  world has, in the order they were set, with how many there are.
+  `check_timer/3` reports the timer set last.
+
+  ## Cancelling: which items a cancel matches
+
+  A cancel identifies items by the fields stored for their kind, each read
+  from one slot:
+
+  | Kind     | Field      | Slot             |
+  | -------- | ---------- | ---------------- |
+  | alarm    | time       | `:time`          |
+  | reminder | text       | `:reminder_text` |
+  | reminder | time       | `:time`          |
+  | timer    | duration   | `:duration`      |
+  | calendar | event      | `:event`         |
+  | calendar | time       | `:time`          |
+
+  A slot that is absent, `nil` or blank names nothing. An item matches when
+  every slot that names something equals the item's field, compared with case
+  and runs of whitespace ignored (`"7 AM"` matches `"7 am"`); there is no
+  partial or fuzzy match. A slot holding anything but a string raises.
+
+  - `cancel_alarm/3`, `cancel_reminder/3` and `cancel_timer/3` remove every
+    matching item of their kind in the world. Slots that identify one item
+    remove that one; no identifying slot matches every item of the kind, so
+    "cancel my alarms" removes them all.
+  - `cancel_event/3` removes exactly one calendar item and never more. With
+    no identifying slot it is `{:error, :event_not_identified}`; when several
+    items match it is `{:error, {:ambiguous, :calendar, events}}`, naming
+    each, and nothing is removed. Either is the response layer's cue to ask
+    which event is meant.
+
+  When nothing matches, every cancel is
+  `{:error, {:no_matching_items, kind, criteria}}`, with the slot values it
+  matched on, and nothing is removed.
+
   Items are stored in Atlas (`Atlas.Scheduler`), so they survive a restart.
   This module is also the supervised process that owns the ETS table the items
   are read from: it loads every stored item when it starts, and every set or
-  cancel goes through it, writing Atlas first and the table after. Reads go
-  straight to the table.
+  cancel goes through it, writing Atlas first and the table after. A cancel
+  finds the items it removes inside that same call, so no other write can come
+  between matching and removing. Reads go straight to the table.
   """
 
   @behaviour Brain.Services.Service
@@ -33,6 +73,15 @@ defmodule Brain.Services.LocalScheduler do
   # The kind stored in Atlas for each item type, and back.
   @kinds %{alarm: "alarm", reminder: "reminder", timer: "timer", calendar: "calendar"}
   @types Map.new(@kinds, fn {type, kind} -> {kind, type} end)
+
+  # The fields a cancel identifies an item of each type by, each with the slot
+  # that names it (see "Cancelling" above).
+  @identifying_slots %{
+    alarm: [time: :time],
+    reminder: [text: :reminder_text, time: :time],
+    timer: [duration: :duration],
+    calendar: [event: :event, time: :time]
+  }
 
   @doc "Starts the scheduler, which loads every stored item into its table."
   def start_link(opts \\ []) do
@@ -58,15 +107,25 @@ defmodule Brain.Services.LocalScheduler do
 
   @impl true
   def provides_fields do
-    [:alarm_status, :alarm_time, :reminder_set, :reminder_text,
-     :reminder_time, :timer_status, :time_remaining, :duration,
-     :next_event, :event_time]
+    [:alarm_status, :alarm_time, :alarm_times, :alarm_count, :reminder_set, :reminder_text,
+     :reminder_time, :reminder_texts, :reminder_times, :reminder_count, :timer_status,
+     :time_remaining, :duration, :timer_durations, :next_event, :event_time,
+     :cancelled_event, :cancelled_count]
   end
 
   # Setting, creating, scheduling and cancelling store or remove items;
   # checking and querying only read them, and a snooze finds no ringing alarm
   # and changes nothing.
-  @writing_operations [:set_alarm, :set_timer, :create_reminder, :schedule_event, :cancel_event]
+  @writing_operations [
+    :set_alarm,
+    :cancel_alarm,
+    :set_timer,
+    :cancel_timer,
+    :create_reminder,
+    :cancel_reminder,
+    :schedule_event,
+    :cancel_event
+  ]
 
   @impl true
   def writes?(intent) do
@@ -113,12 +172,63 @@ defmodule Brain.Services.LocalScheduler do
   end
 
   @impl SchedulingDriver
+  def cancel_alarm(slots, _credentials, world_id) do
+    world_id = world!(world_id, :cancel_alarm)
+
+    with {:ok, cancelled} <- cancel_matching(world_id, :alarm, slots, :all) do
+      {:ok, %{alarm_status: "cancelled", alarm_times: Enum.map(cancelled, & &1.time), cancelled_count: length(cancelled)}}
+    end
+  end
+
+  @impl SchedulingDriver
+  def check_alarms(_slots, _credentials, world_id) do
+    world_id = world!(world_id, :check_alarms)
+    alarms = world_id |> list_items(:alarm) |> Enum.reverse()
+
+    {:ok,
+     %{
+       alarm_status: if(alarms == [], do: "none", else: "set"),
+       alarm_times: Enum.map(alarms, & &1.time),
+       alarm_count: length(alarms)
+     }}
+  end
+
+  @impl SchedulingDriver
   def create_reminder(slots, _credentials, world_id) do
     world_id = world!(world_id, :create_reminder)
     text = Map.get(slots, :reminder_text) || Map.get(slots, "text", "")
     time = Map.get(slots, :time) || Map.get(slots, "time", "")
     add_item(world_id, :reminder, %{text: text, time: time, status: "set"})
     {:ok, %{reminder_set: true, reminder_text: text, reminder_time: time}}
+  end
+
+  @impl SchedulingDriver
+  def cancel_reminder(slots, _credentials, world_id) do
+    world_id = world!(world_id, :cancel_reminder)
+
+    with {:ok, cancelled} <- cancel_matching(world_id, :reminder, slots, :all) do
+      {:ok,
+       %{
+         reminder_set: false,
+         reminder_texts: Enum.map(cancelled, & &1.text),
+         reminder_times: Enum.map(cancelled, & &1.time),
+         cancelled_count: length(cancelled)
+       }}
+    end
+  end
+
+  @impl SchedulingDriver
+  def check_reminders(_slots, _credentials, world_id) do
+    world_id = world!(world_id, :check_reminders)
+    reminders = world_id |> list_items(:reminder) |> Enum.reverse()
+
+    {:ok,
+     %{
+       reminder_set: reminders != [],
+       reminder_texts: Enum.map(reminders, & &1.text),
+       reminder_times: Enum.map(reminders, & &1.time),
+       reminder_count: length(reminders)
+     }}
   end
 
   @impl SchedulingDriver
@@ -140,6 +250,20 @@ defmodule Brain.Services.LocalScheduler do
   end
 
   @impl SchedulingDriver
+  def cancel_timer(slots, _credentials, world_id) do
+    world_id = world!(world_id, :cancel_timer)
+
+    with {:ok, cancelled} <- cancel_matching(world_id, :timer, slots, :all) do
+      {:ok,
+       %{
+         timer_status: "cancelled",
+         timer_durations: Enum.map(cancelled, & &1.duration),
+         cancelled_count: length(cancelled)
+       }}
+    end
+  end
+
+  @impl SchedulingDriver
   def schedule_event(slots, _credentials, world_id) do
     world_id = world!(world_id, :schedule_event)
     event = Map.get(slots, :event) || Map.get(slots, "event", "")
@@ -148,13 +272,15 @@ defmodule Brain.Services.LocalScheduler do
     {:ok, %{next_event: event, event_time: time}}
   end
 
-  # Takes every calendar item of the world off its calendar, as cancelling
-  # does for every kind of item the scheduler stores.
+  # Takes the one calendar item the slots identify off the world's calendar,
+  # and never more than one (see "Cancelling" above).
   @impl SchedulingDriver
-  def cancel_event(_slots, _credentials, world_id) do
+  def cancel_event(slots, _credentials, world_id) do
     world_id = world!(world_id, :cancel_event)
-    cancel_items(world_id, :calendar)
-    {:ok, %{next_event: "", event_time: ""}}
+
+    with {:ok, [cancelled]} <- cancel_matching(world_id, :calendar, slots, :one) do
+      {:ok, %{cancelled_event: cancelled.event, event_time: cancelled.time, cancelled_count: 1}}
+    end
   end
 
   @impl SchedulingDriver
@@ -206,6 +332,34 @@ defmodule Brain.Services.LocalScheduler do
     {:reply, :ok, state}
   end
 
+  # Matching and removing happen in this one call, so no other write comes
+  # between them. `:all` removes every match; `:one` removes a match only
+  # when it is the only one.
+  def handle_call({:cancel_matching, world_id, type, criteria, mode}, _from, state) do
+    matches =
+      world_id
+      |> entries(type)
+      |> Enum.filter(fn {_id, data} -> matches?(data, criteria) end)
+      |> Enum.sort_by(fn {_id, data} -> data.created end, {:asc, DateTime})
+
+    reply =
+      case {mode, matches} do
+        {_mode, []} ->
+          {:error, {:no_matching_items, type, criteria}}
+
+        {:one, [_first, _second | _rest]} ->
+          {:error, {:ambiguous, type, Enum.map(matches, fn {_id, data} -> Map.delete(data, :created) end)}}
+
+        {_mode, matches} ->
+          ids = Enum.map(matches, &elem(&1, 0))
+          Atlas.Scheduler.delete_items_by_id!(world_id, Map.fetch!(@kinds, type), ids)
+          Enum.each(ids, &:ets.delete(state.table, {world_id, &1}))
+          {:ok, Enum.map(matches, &elem(&1, 1))}
+      end
+
+    {:reply, reply, state}
+  end
+
   # Every stored item belongs to the world it was set in; there is no default.
   defp world!(world_id, _function) when is_binary(world_id) and world_id != "", do: world_id
 
@@ -222,15 +376,69 @@ defmodule Brain.Services.LocalScheduler do
     :ok = GenServer.call(running!(), {:cancel, world_id, type})
   end
 
+  # Removes the world's items of `type` that the slots identify, in `mode`
+  # (`handle_call/3`). `:one` with no identifying slot is refused before the
+  # scheduler is asked, since it could only match every item.
+  defp cancel_matching(world_id, type, slots, mode) do
+    case {mode, criteria!(type, slots)} do
+      {:one, criteria} when criteria == %{} -> {:error, :event_not_identified}
+      {mode, criteria} -> GenServer.call(running!(), {:cancel_matching, world_id, type, criteria, mode})
+    end
+  end
+
+  # The field values the slots name for an item of `type`, compared as
+  # `normalize/1` leaves them.
+  defp criteria!(type, slots) do
+    @identifying_slots
+    |> Map.fetch!(type)
+    |> Enum.reduce(%{}, fn {field, slot}, acc ->
+      case Map.get(slots, slot) do
+        nil ->
+          acc
+
+        value when is_binary(value) ->
+          case normalize(value) do
+            "" -> acc
+            normalized -> Map.put(acc, field, normalized)
+          end
+
+        other ->
+          raise ArgumentError,
+                "LocalScheduler: the #{inspect(slot)} slot identifies #{type} items by their #{field} and " <>
+                  "must be a string, got: #{inspect(other)}"
+      end
+    end)
+  end
+
+  # An item stored without the field (`nil`) matches no value given for it.
+  defp matches?(data, criteria) do
+    Enum.all?(criteria, fn {field, value} ->
+      case Map.fetch!(data, field) do
+        nil -> false
+        stored -> normalize(stored) == value
+      end
+    end)
+  end
+
+  # Case and runs of whitespace are ignored when an item is matched.
+  defp normalize(text), do: text |> String.split() |> Enum.join(" ") |> String.downcase()
+
   # The world's items of one type, most recently created first. Every item is
   # stored with its `:created` time.
   defp list_items(world_id, type) do
     running!()
 
+    world_id
+    |> entries(type)
+    |> Enum.map(fn {_id, data} -> data end)
+    |> Enum.sort_by(& &1.created, {:desc, DateTime})
+  end
+
+  # Each of the world's items of one type, with its stored id.
+  defp entries(world_id, type) do
     @table
     |> :ets.match_object({{world_id, :_}, type, :_})
-    |> Enum.map(fn {_key, _type, data} -> data end)
-    |> Enum.sort_by(& &1.created, {:desc, DateTime})
+    |> Enum.map(fn {{_world_id, id}, _type, data} -> {id, data} end)
   end
 
   defp running! do
