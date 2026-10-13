@@ -27,28 +27,10 @@ defmodule Brain.Learner do
       if discourse || speech_act do
         opts
       else
-        discourse_result =
-          try do
-            DiscourseAnalyzer.analyze(input, [])
-          rescue
-            _ -> nil
-          catch
-            _ -> nil
-          end
-
-        speech_act_result =
-          try do
-            SpeechActClassifier.classify(input, world_id: opts[:world_id])
-          rescue
-            _ -> nil
-          catch
-            _ -> nil
-          end
-
         opts ++
           [
-            discourse: discourse_result,
-            speech_act: speech_act_result
+            discourse: DiscourseAnalyzer.analyze(input, []),
+            speech_act: SpeechActClassifier.classify(input, world_id: opts[:world_id])
           ]
       end
 
@@ -56,15 +38,7 @@ defmodule Brain.Learner do
 
     if entities != [] do
       extracted_data = %{
-        "entities" =>
-          Enum.map(entities, fn entity ->
-            %{
-              "name" => Map.get(entity, :value, ""),
-              "type" => Map.get(entity, :entity, "unknown"),
-              "properties" => %{},
-              "confidence" => Map.get(entity, :confidence, 0.9)
-            }
-          end),
+        "entities" => Enum.map(entities, &learned_entity!/1),
         "relationships" => [],
         "facts" => [],
         "context" => input
@@ -238,6 +212,34 @@ defmodule Brain.Learner do
   # :entity_type (EntityExtractor and Brain's chunk-entity normalization both
   # build that key). An entity without it is a caller bug and raises.
   defp entity_type!(entity), do: Map.fetch!(entity, :entity_type)
+
+  @doc """
+  What is learned from one decided entity of
+  `Brain.ML.EntityExtractor.extract_entities/2`: its `:value` as the name, its
+  `:entity_type` as the type, and its `:confidence`. A decided entity carries
+  all three; an entity missing any of them raises.
+  """
+  @spec learned_entity!(map()) :: map()
+  def learned_entity!(entity) when is_map(entity) do
+    %{
+      "name" => decided_field!(entity, :value),
+      "type" => decided_field!(entity, :entity_type),
+      "properties" => %{},
+      "confidence" => decided_field!(entity, :confidence)
+    }
+  end
+
+  defp decided_field!(entity, key) do
+    case entity do
+      %{^key => value} when not is_nil(value) ->
+        value
+
+      _ ->
+        raise ArgumentError,
+              "Learner: a decided entity of EntityExtractor.extract_entities/2 carries :value, :entity_type " <>
+                "and :confidence; this one has no #{inspect(key)}: #{inspect(entity, limit: 8)}"
+    end
+  end
 
   defp get_entity_field(entity, keys) when is_list(keys) do
     Enum.find_value(keys, fn key ->
