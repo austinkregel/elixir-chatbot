@@ -226,7 +226,7 @@ defmodule Brain.ML.TrainingData.Diagnostics do
        confidence: sa.intent_confidence,
        strategy: model.overall_strategy,
        classifier_raw: classifier_raw,
-       entities: Enum.map(a.entities, fn e -> %{entity: e[:entity], type: e[:entity_type], value: e[:value]} end),
+       entities: Enum.map(a.entities, fn e -> %{type: Map.fetch!(e, :entity_type), value: Map.fetch!(e, :value)} end),
        missing_context: a.missing_context,
        neighbors: neighbors
      }}
