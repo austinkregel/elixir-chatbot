@@ -14,7 +14,7 @@ defmodule Brain.Response.GenerativeResponseTest do
       entities = [%{entity_type: "location", value: "New York"}]
 
       case Synthesizer.synthesize("weather.query", entities, confidence: 0.8) do
-        {:ok, response} ->
+        {:ok, response, nil} ->
           assert is_binary(response)
           assert String.length(response) > 0
           assert String.contains?(response, "New York")
@@ -28,7 +28,7 @@ defmodule Brain.Response.GenerativeResponseTest do
       entities = []
 
       case Synthesizer.synthesize("weather.query", entities, confidence: 0.8) do
-        {:ok, response} ->
+        {:ok, response, nil} ->
           assert is_binary(response)
           response_lower = String.downcase(response)
 
@@ -48,7 +48,7 @@ defmodule Brain.Response.GenerativeResponseTest do
       entities = [%{entity_type: "music_artist", value: "The Beatles"}]
 
       case Synthesizer.synthesize("music.play", entities, confidence: 0.8) do
-        {:ok, response} ->
+        {:ok, response, nil} ->
           assert is_binary(response)
           assert String.contains?(response, "Beatles")
 
@@ -64,7 +64,7 @@ defmodule Brain.Response.GenerativeResponseTest do
       ]
 
       case Synthesizer.synthesize("smarthome.lights.switch.on", entities, confidence: 0.9) do
-        {:ok, response} ->
+        {:ok, response, nil} ->
           assert is_binary(response)
 
           assert String.contains?(String.downcase(response), "light") or
@@ -83,7 +83,7 @@ defmodule Brain.Response.GenerativeResponseTest do
         %{entity_type: "device", value: "lights"}
       ]
 
-      assert {:ok, response} = Synthesizer.synthesize("smarthome.device.switch", entities, confidence: 0.5)
+      assert {:ok, response, nil} = Synthesizer.synthesize("smarthome.device.switch", entities, confidence: 0.5)
       assert response =~ "lights"
       assert response =~ "kitchen"
       refute response =~ "kitchen in the kitchen"
@@ -98,7 +98,7 @@ defmodule Brain.Response.GenerativeResponseTest do
       result2 = Synthesizer.synthesize("weather.query", entities2, confidence: 0.8)
 
       case {result1, result2} do
-        {{:ok, response1}, {:ok, response2}} ->
+        {{:ok, response1, nil}, {:ok, response2, nil}} ->
           assert String.contains?(response1, "Paris")
           assert String.contains?(response2, "Tokyo")
           assert response1 != response2
