@@ -27,7 +27,7 @@ defmodule World.Manager do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc "Creates a new training world.\n\nA new world schedules its alarms, timers, reminders and calendar items with\nthe local scheduler: `Brain.Services.LocalScheduler` is stored as its\nscheduling driver (`Brain.Services.Dispatcher.assign_scheduling_driver/2`),\nreplacing any driver stored before under the same id. Another driver can be\nchosen for it in Settings.\n\n## Options\n  - `:mode` - :ephemeral (default) or :persistent\n  - `:base` - ID of the world this one was seeded from, recorded as metadata;\n    nothing is read through it at runtime (nil = none)\n  - `:config` - Custom configuration map\n  - `:metadata` - Additional metadata\n"
+  @doc "Creates a new training world.\n\nA new world schedules its alarms, timers, reminders and calendar items with\nthe local scheduler: `Brain.Services.LocalScheduler` is stored as its\nscheduling driver (`Brain.Services.Dispatcher.assign_scheduling_driver/2`),\nreplacing any driver stored before under the same id.\n\n## Options\n  - `:mode` - :ephemeral (default) or :persistent\n  - `:base` - ID of the world this one was seeded from, recorded as metadata;\n    nothing is read through it at runtime (nil = none)\n  - `:config` - Custom configuration map\n  - `:metadata` - Additional metadata\n"
   def create(name, opts \\ []) when is_binary(name) do
     refuse_unscoped_graphs_in_caller!()
 
