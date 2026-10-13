@@ -25,7 +25,9 @@ defmodule Mix.Tasks.TrainSpanReliability do
   ## Why the application is not started
 
   Boot loads this task's artifact and fails without it, so the task starts only
-  what extraction reads: the lexicon, the gazetteer (which reads reviewed
+  what extraction reads: the lexicon, the slot type preferences the gazetteer
+  readings are scored with (train them first with
+  `mix train_slot_type_preferences`), the gazetteer (which reads reviewed
   entities from Atlas) and the type hierarchy.
 
   ## Options
@@ -47,6 +49,7 @@ defmodule Mix.Tasks.TrainSpanReliability do
   @extraction_children [
     Brain.ML.Lexicon,
     Brain.ML.POSTagger.LexicalFeatures,
+    Brain.Analysis.SlotTypePreferences.Loader,
     Brain.Lexicon.Loader,
     Brain.Lexicon.UserDefined,
     Brain.ML.InformalExpansions,
