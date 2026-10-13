@@ -13,16 +13,13 @@ defmodule Brain.Services.HomeAssistant do
 
   The CapabilityRegistry handles discovery and caching.
 
-  It is also a scheduling driver (`Brain.Services.SchedulingDriver`): a world
-  that chooses it has its alarm, timer, reminder and calendar intents sent to
-  its Home Assistant instance. Each operation enriches the intent that names
-  it, exactly as `enrich/4` does for any other intent.
+  Home Assistant does no scheduling: alarms, timers, reminders and calendar
+  items go to a world's scheduling driver (`Brain.Services.SchedulingDriver`),
+  and this service is not one.
   """
 
   @behaviour Brain.Services.Service
-  @behaviour Brain.Services.SchedulingDriver
 
-  alias Brain.Services.SchedulingDriver
   alias Brain.Services.Cache
   alias Brain.Services.HomeAssistant.{CapabilityRegistry, EntityMapper, StateFormatter}
 
@@ -46,8 +43,6 @@ defmodule Brain.Services.HomeAssistant do
   @impl true
   def supported_intents, do: []
 
-  # The alarm, timer, reminder and calendar domains reach this service only as
-  # a world's scheduling driver (`SchedulingDriver.domains/0`).
   @impl true
   def supported_domains do
     ["smarthome", "device", "music"]
@@ -156,37 +151,6 @@ defmodule Brain.Services.HomeAssistant do
     result
   end
 
-  @impl SchedulingDriver
-  def set_alarm(slots, credentials, world_id), do: enrich_operation(:set_alarm, slots, credentials, world_id)
-
-  @impl SchedulingDriver
-  def snooze_alarm(slots, credentials, world_id), do: enrich_operation(:snooze_alarm, slots, credentials, world_id)
-
-  @impl SchedulingDriver
-  def set_timer(slots, credentials, world_id), do: enrich_operation(:set_timer, slots, credentials, world_id)
-
-  @impl SchedulingDriver
-  def check_timer(slots, credentials, world_id), do: enrich_operation(:check_timer, slots, credentials, world_id)
-
-  @impl SchedulingDriver
-  def create_reminder(slots, credentials, world_id),
-    do: enrich_operation(:create_reminder, slots, credentials, world_id)
-
-  @impl SchedulingDriver
-  def query_calendar(slots, credentials, world_id),
-    do: enrich_operation(:query_calendar, slots, credentials, world_id)
-
-  @impl SchedulingDriver
-  def schedule_event(slots, credentials, world_id),
-    do: enrich_operation(:schedule_event, slots, credentials, world_id)
-
-  @impl SchedulingDriver
-  def cancel_event(slots, credentials, world_id), do: enrich_operation(:cancel_event, slots, credentials, world_id)
-
-  defp enrich_operation(operation, slots, credentials, world_id) do
-    enrich(SchedulingDriver.intent!(operation), slots, credentials, world_id)
-  end
-
   defp handle_action(entity_id, ha_services, slots, url, token, intent, action_suffix, world_id) do
     ha_domain = determine_ha_domain(entity_id, intent)
     ha_service = pick_service_with_polarity(ha_domain, ha_services, slots, action_suffix, world_id)
@@ -260,10 +224,6 @@ defmodule Brain.Services.HomeAssistant do
       String.starts_with?(intent_str, "smarthome.") -> "homeassistant"
       String.starts_with?(intent_str, "device.") -> "homeassistant"
       String.starts_with?(intent_str, "music.") -> "media_player"
-      String.starts_with?(intent_str, "alarm.") -> "automation"
-      String.starts_with?(intent_str, "calendar.") -> "calendar"
-      String.starts_with?(intent_str, "timer.") -> "timer"
-      String.starts_with?(intent_str, "reminder.") -> "automation"
       true -> "homeassistant"
     end
   end
