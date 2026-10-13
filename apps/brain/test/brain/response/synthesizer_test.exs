@@ -15,8 +15,9 @@ defmodule Brain.Response.SynthesizerTest do
 
       result = Synthesizer.synthesize("weather.query", entities, confidence: 0.8)
 
-      # Should either synthesize or return :not_synthesized
-      assert result == :not_synthesized or match?({:ok, _}, result)
+      # Should either synthesize or return :not_synthesized; with no recurring
+      # pattern passed, none is adapted from.
+      assert result == :not_synthesized or match?({:ok, _, nil}, result)
     end
   end
 
@@ -60,20 +61,21 @@ defmodule Brain.Response.SynthesizerTest do
       {:ok, pattern: pattern, episode: {episode, 0.95}}
     end
 
-    test "adapts the recurring pattern's reply ahead of a more similar single episode, and reports it",
+    test "adapts the recurring pattern's reply ahead of a more similar single episode, and hands the pattern back",
          %{pattern: pattern, episode: episode} do
-      assert {:ok, "It's usually sunny in Lyon."} =
+      assert {:ok, "It's usually sunny in Lyon.", ^pattern} =
                Synthesizer.synthesize(@intent, @entities,
                  recurring_pattern: pattern,
                  similar_episodes: [episode]
                )
 
-      fact_id = pattern.fact.id
-      assert_receive {:used, %{semantic_fact_id: ^fact_id, used_by: :synthesizer, world_id: "test_synthesizer"}}
+      # The caller that settles on the turn's response reports the use, not
+      # each synthesis.
+      refute_receive {:used, _}, 50
     end
 
     test "adapts the most similar single episode when the turn has no recurring pattern", %{episode: episode} do
-      assert {:ok, "Bring a coat to Lyon."} =
+      assert {:ok, "Bring a coat to Lyon.", nil} =
                Synthesizer.synthesize(@intent, @entities, recurring_pattern: nil, similar_episodes: [episode])
 
       refute_receive {:used, _}, 50
@@ -82,7 +84,7 @@ defmodule Brain.Response.SynthesizerTest do
     test "answers a contradiction before it draws on the pattern", %{pattern: pattern} do
       context = %{epistemic_context: %{status: :contradicted, beliefs: [%{object: "rainy"}]}}
 
-      assert {:ok, response} =
+      assert {:ok, response, nil} =
                Synthesizer.synthesize(@intent, @entities, recurring_pattern: pattern, context: context)
 
       refute response == "It's usually sunny in Lyon."
