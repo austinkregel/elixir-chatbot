@@ -521,6 +521,9 @@ defmodule Brain do
       entities: Map.get(context, :entities, []),
       slots: Map.get(context, :slots, %{}),
       missing_slots: Map.get(context, :missing_slots, []),
+      # Candidates a reply to a service's error asked the user to pick from
+      # (`FollowupDetector.awaiting_answer/1`).
+      pending_clarification: Map.get(context, :pending_clarification),
       speech_act: Map.get(context, :speech_act),
       timestamp: System.system_time(:millisecond)
     }
@@ -914,41 +917,111 @@ defmodule Brain do
       used_pipeline: best_analysis != nil
     })
 
-    carried = FollowupDetector.get_carried_context(input, previous_context)
-    merged_context = FollowupDetector.merge_with_previous(carried, entities)
+    pending_answer =
+      case Map.get(previous_context, :pending_clarification) do
+        %{} = pending -> FollowupDetector.resolve_pending(input, pending)
+        nil -> :unrelated
+      end
 
-    Logger.info("Merged context", %{
-      intent: merged_context.intent,
-      all_filled: merged_context.all_required_filled,
-      missing: merged_context.missing_slots
-    })
+    case pending_answer do
+      {:resolved, candidate} ->
+        # The reply picked one of the candidates a reply to a service's error
+        # listed: the request is made again for that one.
+        slots = FollowupDetector.complete_pending(previous_context, candidate)
+        completed = %{intent: previous_context.intent, entities: entities, slots: slots}
+        complete_followup(completed, persona, side_effects, opts)
 
-    if merged_context.all_required_filled do
-      response =
-        generate_intent_response(merged_context, persona, side_effects, Keyword.fetch!(opts, :world_id))
+      {:narrowed, candidates} ->
+        # The reply named some of the candidates but not one: the question is
+        # asked again with those.
+        %{item_kind: kind} = previous_context.pending_clarification
+        reason = {:ambiguous, kind, candidates}
 
-      context = %{
-        intent: merged_context.intent,
-        entities: merged_context.entities,
-        slots: merged_context.slots,
-        missing_slots: [],
-        speech_act: Map.get(merged_context, :speech_act)
-      }
+        {:ok, prompt} =
+          reason
+          |> Brain.Response.DiscoursePlanner.enrichment_error_primitive(%{intent: previous_context.intent})
+          |> Map.fetch!(:content)
+          |> Brain.Response.Synthesizer.synthesize_service_reply()
 
-      {response, :followup_completed, context}
-    else
-      prompt = generate_followup_clarification(merged_context)
+        context = %{
+          intent: previous_context.intent,
+          entities: entities,
+          slots: previous_context.slots,
+          missing_slots: [],
+          pending_clarification: %{item_kind: kind, candidates: candidates}
+        }
 
-      context = %{
-        intent: merged_context.intent,
-        entities: merged_context.entities,
-        slots: merged_context.slots,
-        missing_slots: merged_context.missing_slots,
-        speech_act: Map.get(merged_context, :speech_act)
-      }
+        report_followup_response(opts, :followup_needs_more, previous_context.intent, entities, reason)
+        {prompt, :followup_needs_more, context}
 
-      {prompt, :followup_needs_more, context}
+      :unrelated ->
+        carried = FollowupDetector.get_carried_context(input, previous_context)
+        merged_context = FollowupDetector.merge_with_previous(carried, entities)
+
+        Logger.info("Merged context", %{
+          intent: merged_context.intent,
+          all_filled: merged_context.all_required_filled,
+          missing: merged_context.missing_slots
+        })
+
+        if merged_context.all_required_filled do
+          complete_followup(merged_context, persona, side_effects, opts)
+        else
+          prompt = generate_followup_clarification(merged_context)
+
+          context = %{
+            intent: merged_context.intent,
+            entities: merged_context.entities,
+            slots: merged_context.slots,
+            missing_slots: merged_context.missing_slots,
+            speech_act: Map.get(merged_context, :speech_act)
+          }
+
+          report_followup_response(opts, :followup_needs_more, merged_context.intent, entities, nil)
+          {prompt, :followup_needs_more, context}
+        end
     end
+  end
+
+  # The follow-up gave what the request needed: the request is made with the
+  # slots it has now. A service error answering it may ask again
+  # (`FollowupDetector.awaiting_answer/1`).
+  defp complete_followup(completed, persona, side_effects, opts) do
+    world_id = Keyword.fetch!(opts, :world_id)
+    {response, enrichment} = generate_intent_response(completed, persona, side_effects, world_id)
+
+    context =
+      Map.merge(
+        %{
+          intent: completed.intent,
+          entities: completed.entities,
+          slots: completed.slots,
+          missing_slots: [],
+          speech_act: Map.get(completed, :speech_act)
+        },
+        FollowupDetector.awaiting_answer(enrichment)
+      )
+
+    report_followup_response(
+      opts,
+      :followup_completed,
+      completed.intent,
+      completed.entities,
+      Map.get(enrichment, :enrichment_error)
+    )
+
+    {response, :followup_completed, context}
+  end
+
+  defp report_followup_response(opts, response_type, intent, entities, enrichment_error) do
+    Progress.report(opts, :response_generated, %{
+      response_type: response_type,
+      strategy: :followup,
+      method: :followup,
+      intent: intent,
+      entities_count: length(entities),
+      enrichment_error: enrichment_error
+    })
   end
 
   defp extract_context_from_analysis(analysis_model) do
@@ -1059,15 +1132,21 @@ defmodule Brain do
     %{}
   end
 
+  # The response to the request the follow-up completed, with the failure of
+  # its service when it returned an error (`Generator.generate/4`'s
+  # `{:service_reply, enrichment}`), or `%{}`.
   defp generate_intent_response(context, _persona, side_effects, world_id) do
     intent = context.intent
     entities = slots_to_entities(context.slots)
 
-    {:ok, response, _type} =
-      Generator.generate(intent, entities, nil, side_effects: side_effects, world_id: world_id)
-    response
+    case Generator.generate(intent, entities, nil, side_effects: side_effects, world_id: world_id) do
+      {:ok, response, {:service_reply, enrichment}} -> {response, enrichment}
+      {:ok, response, _type} -> {response, %{}}
+    end
   end
 
+  # Each slot as the entity that fills it; the generator reads a slot back
+  # from an entity's `:entity_type` (`Generator.generate/4`).
   defp slots_to_entities(slots) when is_map(slots) do
     Enum.map(slots, fn {k, v} ->
       value =
@@ -1076,7 +1155,7 @@ defmodule Brain do
           val -> val
         end
 
-      %{entity: k, value: value}
+      %{entity_type: to_string(k), value: value}
     end)
   end
 
@@ -1385,7 +1464,7 @@ defmodule Brain do
       track_stance(conversation_id, intent, best_analysis, opts)
     end
 
-    {response, response_type} =
+    {response, response_type, enrichment} =
       generate_analysis_response_with_type(intent, entities, analysis_model, persona, input, opts)
 
     Progress.report(opts, :response_generated, %{
@@ -1394,10 +1473,15 @@ defmodule Brain do
       method: method,
       intent: intent,
       entities_count: length(entities),
-      response_path: build_response_path(method, response_type, intent, entities)
+      response_path: build_response_path(method, response_type, intent, entities),
+      # The service error the response answers, when the turn's service
+      # returned one (`Brain.Response.DiscoursePlanner`).
+      enrichment_error: enrichment.enrichment_error
     })
 
-    {response, method, context}
+    # A reply that asked the user something about the service's error waits
+    # for the answer in the conversation's context.
+    {response, method, Map.merge(context, FollowupDetector.awaiting_answer(enrichment))}
   end
 
   defp get_analysis_intent_confidence(nil), do: 0.0
@@ -1594,20 +1678,23 @@ defmodule Brain do
       progress: Keyword.get(opts, :progress)
     }
 
-    case Generator.generate_via_synthesis(analysis_model, intent, entities, query_text, gen_opts) do
-      {{:ouro_dry_run, _messages} = response, :ouro_dry_run} ->
-        {response, :ouro_dry_run}
+    {response, method} =
+      case Generator.generate_via_synthesis(analysis_model, intent, entities, query_text, gen_opts) do
+        {{:ouro_dry_run, _messages} = response, :ouro_dry_run} ->
+          {response, :ouro_dry_run}
 
-      {response, method} when is_binary(response) ->
-        {response, method}
+        {response, method} when is_binary(response) ->
+          {response, method}
 
-      {nil, :silence_preferred} ->
-        {nil, :silence_preferred}
+        {nil, :silence_preferred} ->
+          {nil, :silence_preferred}
 
-      {:error, reason} ->
-        Logger.warning("Synthesis failed, falling back: #{inspect(reason)}")
-        {Brain.Response.Synthesizer.get_cannot_respond_response(), :synthesis_fallback}
-    end
+        {:error, reason} ->
+          Logger.warning("Synthesis failed, falling back: #{inspect(reason)}")
+          {Brain.Response.Synthesizer.get_cannot_respond_response(), :synthesis_fallback}
+      end
+
+    {response, method, unified_context.enrichment}
   end
 
   defp simple_fallback_response(_persona, _input) do
