@@ -12,10 +12,28 @@ defmodule Brain.Corpus.Provenance do
 
   Every consumer reads the kind from here, so there is one answer to what
   "augmented" covers.
+
+  ## Authored examples
+
+  Intent examples written by hand as examples of their intent, which have no
+  Dialogflow export to come from, are kept outside the export in
+  `priv/training/authored_intents/` (`authored_dir/0`), in the export's
+  usersays format. Their kind is `"authored"`, read from the directory they
+  are in rather than from an id. They were never in the export, so they are
+  not among the kinds written back into it (`written_back/0`).
   """
 
   # Ordered most genuine first. The integer is the comparison key, not an id.
-  @ranks %{"dialogflow" => 0, "materialized" => 1, "augmented" => 2}
+  # An authored example is written as an example of its intent; a materialized
+  # row is a gold text that had no source, written back into the export.
+  @ranks %{"dialogflow" => 0, "authored" => 1, "materialized" => 2, "augmented" => 3}
+
+  # The id prefix each synthetic writer marks the rows it writes back into the
+  # export with, and the kind it marks.
+  @written_back_prefixes %{"orphan-" => "materialized", "augmented-" => "augmented"}
+
+  @authored "authored"
+  @authored_dir "training/authored_intents"
 
   @synthetic_id ~r/^[a-z]+-[0-9a-f]{8}$/
 
@@ -32,6 +50,22 @@ defmodule Brain.Corpus.Provenance do
   def rank!(kind), do: Map.fetch!(@ranks, kind)
 
   @doc """
+  The kinds a synthetic writer marks on the rows it writes back into the
+  export, most genuine first: the rows of the export that did not come from
+  Dialogflow.
+  """
+  @spec written_back() :: [String.t()]
+  def written_back, do: @written_back_prefixes |> Map.values() |> Enum.sort_by(&rank!/1)
+
+  @doc "The kind of every hand-written intent example in `authored_dir/0`."
+  @spec authored() :: String.t()
+  def authored, do: @authored
+
+  @doc "Where the hand-written intent examples are kept, one usersays file per intent."
+  @spec authored_dir() :: Path.t()
+  def authored_dir, do: Brain.priv_path(@authored_dir)
+
+  @doc """
   The kind of a usersays row's `id`.
 
   A missing id means Dialogflow rather than unknown: the synthetic writers always
@@ -44,10 +78,18 @@ defmodule Brain.Corpus.Provenance do
   @spec of_id!(term(), Path.t()) :: String.t()
   def of_id!(nil, _path), do: "dialogflow"
 
-  def of_id!("orphan-" <> _, _path), do: "materialized"
-  def of_id!("augmented-" <> _, _path), do: "augmented"
-
   def of_id!(id, path) when is_binary(id) do
+    case Enum.find(@written_back_prefixes, fn {prefix, _kind} -> String.starts_with?(id, prefix) end) do
+      {_prefix, kind} -> kind
+      nil -> unmarked_id!(id, path)
+    end
+  end
+
+  def of_id!(other, path) do
+    raise "#{path} has a non-string id #{inspect(other)}"
+  end
+
+  defp unmarked_id!(id, path) do
     if Regex.match?(@synthetic_id, id) do
       raise """
       unrecognised synthetic id prefix in #{path}
@@ -61,10 +103,6 @@ defmodule Brain.Corpus.Provenance do
     else
       "dialogflow"
     end
-  end
-
-  def of_id!(other, path) do
-    raise "#{path} has a non-string id #{inspect(other)}"
   end
 
   @doc """
