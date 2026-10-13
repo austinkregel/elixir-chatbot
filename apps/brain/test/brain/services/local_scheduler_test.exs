@@ -191,19 +191,20 @@ defmodule Brain.Services.LocalSchedulerTest do
       assert {:ok, %{timer_status: "running"}} =
                LocalScheduler.enrich("timer.set", %{duration: "10 minutes"}, %{}, world_a)
 
-      assert {:ok, %{timer_status: "running", duration: "10 minutes", time_remaining: "10 minutes"}} =
-               LocalScheduler.enrich("timer.check", %{}, %{}, world_a)
+      # The duration it was set with, which is not how much of it is left.
+      assert LocalScheduler.enrich("timer.check", %{}, %{}, world_a) ==
+               {:ok, %{timer_status: "running", duration: "10 minutes"}}
     end
 
     test "a scheduled event is read only in the world it was scheduled in", %{world_a: world_a, world_b: world_b} do
       assert {:ok, %{next_event: "dentist", event_time: "Tuesday"}} =
                LocalScheduler.enrich("calendar.schedule", %{event: "dentist", time: "Tuesday"}, %{}, world_a)
 
-      assert {:ok, %{next_event: "dentist", event_time: "Tuesday"}} =
+      assert {:ok, %{next_event: "dentist", event_time: "Tuesday", event_count: 1}} =
                LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
 
-      assert {:ok, %{next_event: "No upcoming events", event_time: ""}} =
-               LocalScheduler.enrich("calendar.query", %{}, %{}, world_b)
+      assert LocalScheduler.enrich("calendar.query", %{}, %{}, world_b) ==
+               {:ok, %{next_event: "", event_time: "", event_date: "", event_count: 0}}
     end
 
     test "cancelling in one world takes the event off its calendar and leaves another world's",
@@ -214,7 +215,7 @@ defmodule Brain.Services.LocalSchedulerTest do
       assert {:ok, %{cancelled_event: "dentist", event_time: "Tuesday", cancelled_count: 1}} =
                LocalScheduler.enrich("calendar.cancel", %{event: "dentist"}, %{}, world_a)
 
-      assert {:ok, %{next_event: "No upcoming events"}} = LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
+      assert {:ok, %{event_count: 0}} = LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
 
       assert {:ok, %{next_event: "dentist", event_time: "Tuesday"}} =
                LocalScheduler.enrich("calendar.query", %{}, %{}, world_b)
@@ -506,13 +507,13 @@ defmodule Brain.Services.LocalSchedulerTest do
       assert {:ok, %{reminder_texts: ["call home"], reminder_dates: ["Friday"], reminder_count: 1}} =
                LocalScheduler.enrich("reminder.check", %{date: "friday"}, %{}, world_a)
 
-      assert {:ok, %{next_event: "dentist", event_date: "Friday"}} =
+      assert {:ok, %{next_event: "dentist", event_date: "Friday", event_count: 1}} =
                LocalScheduler.enrich("calendar.query", %{date: "Friday"}, %{}, world_a)
 
-      assert {:ok, %{next_event: "standup", event_date: "Monday"}} =
+      assert {:ok, %{next_event: "standup", event_date: "Monday", event_count: 2}} =
                LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
 
-      assert {:ok, %{next_event: "No upcoming events", event_date: ""}} =
+      assert {:ok, %{next_event: "", event_date: "", event_count: 0}} =
                LocalScheduler.enrich("calendar.query", %{date: "Sunday"}, %{}, world_a)
     end
 
@@ -607,7 +608,7 @@ defmodule Brain.Services.LocalSchedulerTest do
       :ok = Supervisor.terminate_child(Brain.Supervisor, LocalScheduler)
       {:ok, _restarted} = Supervisor.restart_child(Brain.Supervisor, LocalScheduler)
 
-      assert {:ok, %{next_event: "No upcoming events"}} = LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
+      assert {:ok, %{event_count: 0}} = LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
       assert {:ok, %{alarm_times: ["7am"], alarm_count: 1}} = LocalScheduler.enrich("alarm.check", %{}, %{}, world_a)
     end
   end
@@ -660,8 +661,7 @@ defmodule Brain.Services.LocalSchedulerTest do
 
       assert {:ok, %{timer_status: "none"}} = LocalScheduler.enrich("timer.check", %{}, %{}, world_a)
 
-      assert {:ok, %{next_event: "No upcoming events"}} =
-               LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
+      assert {:ok, %{event_count: 0}} = LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
 
       assert {:ok, %{timer_status: "running", duration: "8 minutes"}} =
                LocalScheduler.enrich("timer.check", %{}, %{}, world_b)
