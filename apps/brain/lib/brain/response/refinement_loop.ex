@@ -17,8 +17,14 @@ defmodule Brain.Response.RefinementLoop do
       -> SurfaceRealizer.realize(primitives, opts)
       -> ResponseEvaluator.evaluate(primitives, response, analysis)
       -> if not converged: refine weakest stage and repeat
+
+  The turn's response is settled here: the best pass, or none when silence is
+  preferred. So this is where the response's use of the turn's recurring
+  pattern is reported (`Brain.Memory.RecurringPattern.report_use/2`), once,
+  for the pass whose response is returned, however many passes drew on it.
   """
 
+  alias Brain.Memory.RecurringPattern
   alias Brain.Response.{DiscoursePlanner, ContentSpecifier, SurfaceRealizer, ResponseEvaluator}
   alias Brain.Response.ResponseEvaluator.Score
   alias Brain.Analysis.{InternalModel, ChunkPriority}
@@ -40,6 +46,12 @@ defmodule Brain.Response.RefinementLoop do
     - `:max_iterations` - override default iteration limit
     - `:side_effects` - `false` keeps realization and evaluation from writing
       (Ouro decompressor training data, the analysis of the response)
+    - `:progress` - the turn's progress reporting (`Brain.Analysis.Progress`),
+      which the use of the recurring pattern is reported to
+
+  The returned response's use of the turn's recurring pattern is reported
+  once; a turn whose silence is preferred returns no response and reports
+  none.
   """
   def generate(%InternalModel{} = model, opts) do
     world_id!(opts)
@@ -55,8 +67,10 @@ defmodule Brain.Response.RefinementLoop do
       result = iterate(initial_plan, primary_analysis, opts, 1, max_iter, nil)
 
       case result do
-        {:ok, {:ouro_dry_run, _messages} = response, primitives, _score, iterations} ->
+        {:ok, {:ouro_dry_run, _messages} = response, primitives, _score, iterations, recurring_pattern_use} ->
           Logger.info("RefinementLoop: dry_run_ouro=true, returning ChatML messages without evaluation")
+          :ok = RecurringPattern.report_use(recurring_pattern_use, opts)
+
           {:ok, response, %{
             score: nil,
             iterations: iterations,
@@ -64,7 +78,7 @@ defmodule Brain.Response.RefinementLoop do
             method: :ouro_dry_run
           }}
 
-        {:ok, response, primitives, score, iterations} ->
+        {:ok, response, primitives, score, iterations, recurring_pattern_use} ->
           if score != nil and score.silence_preferred do
             Logger.info("RefinementLoop: silence preferred (score=#{Float.round(score.overall, 2)})")
             {:ok, nil, %{
@@ -74,6 +88,8 @@ defmodule Brain.Response.RefinementLoop do
               method: :silence_preferred
             }}
           else
+            :ok = RecurringPattern.report_use(recurring_pattern_use, opts)
+
             {:ok, response, %{
               score: score,
               iterations: iterations,
@@ -92,7 +108,8 @@ defmodule Brain.Response.RefinementLoop do
   @doc """
   Runs a single pass of the synthesis pipeline without iteration.
   Useful for testing individual stages. Takes the same options as `generate/2`;
-  `:world_id` is required.
+  `:world_id` is required. The response's use of the turn's recurring pattern
+  is reported, as `generate/2` reports it.
   """
   def single_pass(%InternalModel{} = model, opts) do
     world_id!(opts)
@@ -103,8 +120,9 @@ defmodule Brain.Response.RefinementLoop do
     realize_opts = realize_opts_for_analysis(opts, primary)
 
     case SurfaceRealizer.realize(specified, realize_opts) do
-      {:ok, rendered, response} ->
+      {:ok, rendered, response, recurring_pattern_use} ->
         score = ResponseEvaluator.evaluate(rendered, response, primary, opts)
+        :ok = RecurringPattern.report_use(recurring_pattern_use, opts)
         {:ok, response, %{score: score, primitives: rendered, iterations: 1}}
 
       {:error, reason} ->
@@ -117,17 +135,24 @@ defmodule Brain.Response.RefinementLoop do
     realize_opts = realize_opts_for_analysis(opts, analysis)
 
     case SurfaceRealizer.realize(specified, realize_opts) do
-      {:ok, rendered, {:ouro_dry_run, _messages} = response} ->
-        {:ok, response, rendered, nil, iteration}
+      {:ok, rendered, {:ouro_dry_run, _messages} = response, recurring_pattern_use} ->
+        {:ok, response, rendered, nil, iteration, recurring_pattern_use}
 
-      {:ok, rendered, response} ->
+      {:ok, rendered, response, recurring_pattern_use} ->
         score = ResponseEvaluator.evaluate(rendered, response, analysis, opts)
 
-        current = %{response: response, primitives: rendered, score: score, iteration: iteration}
+        current = %{
+          response: response,
+          primitives: rendered,
+          score: score,
+          iteration: iteration,
+          recurring_pattern_use: recurring_pattern_use
+        }
+
         best = pick_best(best_so_far, current)
 
         if score.converged or iteration >= max_iter do
-          {:ok, best.response, best.primitives, best.score, iteration}
+          {:ok, best.response, best.primitives, best.score, iteration, best.recurring_pattern_use}
         else
           Logger.debug("RefinementLoop iteration #{iteration}: overall=#{Float.round(score.overall, 2)}, weakest=#{score.weakest_dimension}")
 
@@ -138,7 +163,9 @@ defmodule Brain.Response.RefinementLoop do
       {:error, reason} ->
         if best_so_far do
           Logger.warning("RefinementLoop: realization failed at iteration #{iteration}, using best so far")
-          {:ok, best_so_far.response, best_so_far.primitives, best_so_far.score, iteration}
+
+          {:ok, best_so_far.response, best_so_far.primitives, best_so_far.score, iteration,
+           best_so_far.recurring_pattern_use}
         else
           {:error, reason}
         end
