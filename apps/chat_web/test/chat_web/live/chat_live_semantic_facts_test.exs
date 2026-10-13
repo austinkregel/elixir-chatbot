@@ -55,15 +55,13 @@ defmodule ChatWeb.ChatLiveSemanticFactsTest do
     render_click(view, "set_dev_tab", %{"message_id" => message_id, "tab" => "memory"})
   end
 
-  test "lists the retrieved facts, marks the recurring pattern, and names each user of it once", %{conn: conn} do
+  test "lists the retrieved facts, marks the recurring pattern, and names the use the turn reported", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/chat")
     message_id = "msg_semantic_facts"
 
     send(view.pid, {:analysis_progress, retrieved(message_id)})
-    # A refined response uses the pattern on each pass.
+    # A turn reports its response's use of the pattern once.
     send(view.pid, {:analysis_progress, used(message_id, :synthesizer)})
-    send(view.pid, {:analysis_progress, used(message_id, :synthesizer)})
-    send(view.pid, {:analysis_progress, used(message_id, :realization_packet)})
     # The episode query arriving after the facts keeps them.
     send(view.pid, {:analysis_progress, progress(message_id, :memory_query, %{match_count: 0, top_similarity: 0.0, matches: []})})
 
@@ -76,12 +74,26 @@ defmodule ChatWeb.ChatLiveSemanticFactsTest do
     assert pattern =~ "recurring pattern"
     assert pattern =~ "It&#39;s usually sunny there."
     assert length(String.split(pattern, "used by synthesizer")) == 2
-    assert pattern =~ "used by realization packet"
+    refute pattern =~ "used by realization packet"
 
     stated = view |> element("#semantic-fact-#{@stated_id}") |> render()
     assert stated =~ "paris weather"
     refute stated =~ "recurring pattern"
     refute stated =~ "used by"
+  end
+
+  test "lists every use reported, without merging them", %{conn: conn} do
+    {:ok, view, _html} = live(conn, "/chat")
+    message_id = "msg_semantic_facts_reported_twice"
+
+    send(view.pid, {:analysis_progress, retrieved(message_id)})
+    send(view.pid, {:analysis_progress, used(message_id, :realization_packet)})
+    send(view.pid, {:analysis_progress, used(message_id, :realization_packet)})
+
+    open_memory_tab(view, message_id)
+
+    pattern = view |> element("#semantic-fact-#{@pattern_id}") |> render()
+    assert length(String.split(pattern, "used by realization packet")) == 3
   end
 
   test "says so when no semantic facts were retrieved", %{conn: conn} do
