@@ -19,9 +19,15 @@ defmodule Brain.Memory.RecurringPattern do
     * `Brain.Response.RealizationPacket` names the pattern in the realization
       prompt ahead of the similar past interactions.
 
-  Both report the use (`used/3`), and `retrieved/4` reports what was
-  retrieved: each is a telemetry event and a step of the turn's progress, which
-  the chat's developer panel shows.
+  Neither reports the use itself: a refined turn synthesizes and builds a
+  packet on each pass, and only the pass the turn settles on is its response.
+  They hand back how the response drew on the pattern (`t:pattern_use/0`), and the
+  caller that settles on the turn's response reports it once (`used/3`,
+  `report_use/2`): `Brain.Response.RefinementLoop` for a refined turn,
+  `Brain.Response.Generator` for a response it composes directly.
+  `retrieved/4` reports what was retrieved. Each is a telemetry event and a
+  step of the turn's progress, which the chat's developer panel shows;
+  `Brain.Metrics.Aggregator` counts the events per world.
   """
 
   alias Brain.Analysis.Progress
@@ -39,6 +45,12 @@ defmodule Brain.Memory.RecurringPattern do
           reply_count: pos_integer(),
           evidence_count: pos_integer()
         }
+
+  @typedoc "Who built a response from the pattern."
+  @type used_by :: :synthesizer | :realization_packet
+
+  @typedoc "How a response drew on the turn's recurring pattern: the pattern, and who used it."
+  @type pattern_use :: {t(), used_by()}
 
   # How similar a memory must be to the turn for a response to be adapted from
   # it: a pattern here, a single episode in the synthesizer.
@@ -137,15 +149,26 @@ defmodule Brain.Memory.RecurringPattern do
   end
 
   @doc """
-  Reports that a response was built from `pattern`, by `used_by` (the module
-  that used it, `:synthesizer` or `:realization_packet`).
+  Reports how the turn's response drew on its recurring pattern: `use` as a
+  realizer handed it back (`t:pattern_use/0`), or `nil` for a response that drew on
+  none, which reports nothing. Called once per turn, by the caller that
+  settles on the turn's response; see `used/3`.
+  """
+  @spec report_use(pattern_use() | nil, keyword()) :: :ok
+  def report_use(nil, opts) when is_list(opts), do: :ok
+  def report_use({%__MODULE__{} = pattern, used_by}, opts), do: used(pattern, used_by, opts)
+
+  @doc """
+  Reports that the turn's response was built from `pattern`, by `used_by`
+  (the module that used it, `:synthesizer` or `:realization_packet`).
 
   Emits `[:chat_bot, :memory, :semantic_fact, :used]`
   (`Brain.Telemetry.emit_semantic_fact_used/2`), and, when `opts` carries the
-  turn's `:progress`, the `:semantic_fact_used` progress step. A turn whose
-  response is refined over several passes reports each pass that used it.
+  turn's `:progress`, the `:semantic_fact_used` progress step. A turn reports
+  this once, for the response it settles on, however many passes of a refined
+  turn drew on the pattern.
   """
-  @spec used(t(), :synthesizer | :realization_packet, keyword()) :: :ok
+  @spec used(t(), used_by(), keyword()) :: :ok
   def used(%__MODULE__{} = pattern, used_by, opts) when used_by in [:synthesizer, :realization_packet] and is_list(opts) do
     Brain.Telemetry.emit_semantic_fact_used(pattern, used_by)
 
