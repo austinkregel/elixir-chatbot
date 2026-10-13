@@ -30,6 +30,8 @@ defmodule Mix.Tasks.Corpus.Prune do
   ## What it refuses to do
 
   * prune `dialogflow` rows — those are the corpus, not contamination in it
+  * prune `authored` rows — those were never in the export
+    (`Brain.Corpus.Provenance.written_back/0` names the kinds that were)
   * run when no row carries the requested provenance
   * empty a usersays file, which would silently delete an intent
   * write when a file does not survive `Brain.Corpus.Export.round_trips?/2`
@@ -99,9 +101,10 @@ defmodule Mix.Tasks.Corpus.Prune do
         Mix.raise("""
         corpus.prune: refusing to prune #{inspect(kind)}
 
-        Those rows are the corpus. This task removes text that was written back
-        into the export by something other than Dialogflow; removing the export's
-        own utterances is not a pruning decision.
+        This task removes text that was written back into the export by something
+        other than Dialogflow: #{Enum.join(prunable(), ", ")}. Dialogflow rows are
+        the export's own utterances, and authored rows were never in the export;
+        removing either is not a pruning decision.
         """)
 
       true ->
@@ -109,7 +112,9 @@ defmodule Mix.Tasks.Corpus.Prune do
     end
   end
 
-  defp prunable, do: Provenance.kinds() -- ["dialogflow"]
+  # The kinds written back into the export. Authored examples were never in the
+  # export, so pruning the export's copies cannot remove them.
+  defp prunable, do: Provenance.written_back()
 
   # -- planning ---------------------------------------------------------------
 
