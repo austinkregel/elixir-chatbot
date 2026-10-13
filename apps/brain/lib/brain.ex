@@ -1,5 +1,5 @@
 defmodule Brain do
-  @moduledoc "The Brain GenServer manages the AI personality, subprocesses, and global memory.\nThis is the core component that orchestrates all chat bot functionality.\n"
+  @moduledoc "The Brain GenServer manages the AI personality, conversations, and global memory.\nThis is the core component that orchestrates all chat bot functionality.\n"
 
   # World.Context and World.Manager are in a sibling umbrella app that depends on :brain.
   # They are available at runtime but not at compile time.
@@ -278,70 +278,6 @@ defmodule Brain do
   end
 
   @doc """
-  Starts an HTTP subprocess.
-
-  ## Options
-    - `:server` - The server to call (default: `#{__MODULE__}`)
-    - `:world_id` - required: the world the subprocess's conversations run in.
-      Absent raises.
-  """
-  def start_http_subprocess(opts) do
-    subprocess_world!(opts, :start_http_subprocess)
-    server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, {:start_http_subprocess, opts})
-  end
-
-  @doc """
-  Starts a conversation subprocess.
-
-  ## Options
-    - `:server` - The server to call (default: `#{__MODULE__}`)
-    - `:world_id` - the world of the conversation the subprocess creates when
-      `conversation_id` is nil; required then.
-  """
-  def start_conversation_subprocess(conversation_id, opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, {:start_conversation_subprocess, conversation_id, opts})
-  end
-
-  # Checked in the caller's process, so a missing world raises there rather
-  # than as a failed child start inside the Brain server.
-  defp subprocess_world!(opts, function) do
-    case Keyword.fetch(opts, :world_id) do
-      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
-        world_id
-
-      {:ok, other} ->
-        raise ArgumentError, "Brain.#{function} option :world_id must be a world id, got: #{inspect(other)}"
-
-      :error ->
-        raise ArgumentError, "Brain.#{function} needs :world_id, the world the subprocess's conversations run in"
-    end
-  end
-
-  @doc """
-  Stops a subprocess.
-
-  ## Options
-    - `:server` - The server to call (default: `#{__MODULE__}`)
-  """
-  def stop_subprocess(subprocess_id, opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, {:stop_subprocess, subprocess_id})
-  end
-
-  @doc """
-  Lists all subprocesses.
-
-  ## Options
-    - `:server` - The server to call (default: `#{__MODULE__}`)
-  """
-  def list_subprocesses(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, :list_subprocesses)
-  end
-
-  @doc """
   Resets the Brain state. Useful for testing.
 
   ## Options
@@ -368,11 +304,7 @@ defmodule Brain do
       global_memory: memory,
       learning_queue: [],
       is_shutting_down: false,
-      pending_requests: %{},
-      subprocesses: %{
-        http: %{},
-        conversation: %{}
-      }
+      pending_requests: %{}
     }
 
     Logger.info("Brain initialized", %{
@@ -482,110 +414,6 @@ defmodule Brain do
       nil -> {:reply, {:error, "Conversation not found"}, state}
       conversation -> {:reply, {:ok, conversation}, state}
     end
-  end
-
-  @impl true
-  def handle_call({:start_http_subprocess, opts}, _from, state) do
-    memory_snapshot = %{
-      knowledge: state.persona.knowledge || %{},
-      global_memory: state.global_memory
-    }
-
-    case Brain.Subprocesses.Supervisor.start_http_subprocess(
-           Keyword.put(opts, :memory_snapshot, memory_snapshot)
-         ) do
-      {:ok, pid, subprocess_id} ->
-        updated_subprocesses = %{
-          state.subprocesses
-          | http:
-              Map.put(state.subprocesses.http, subprocess_id, %{
-                pid: pid,
-                started_at: System.system_time(:millisecond)
-              })
-        }
-
-        Logger.info("HTTP subprocess started", %{
-          subprocess_id: subprocess_id,
-          pid: pid
-        })
-
-        {:reply, {:ok, subprocess_id}, %{state | subprocesses: updated_subprocesses}}
-
-      {:error, reason} ->
-        Logger.error("Failed to start HTTP subprocess", %{reason: reason})
-        {:reply, {:error, reason}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:start_conversation_subprocess, conversation_id, opts}, _from, state) do
-    memory_snapshot = %{
-      knowledge: state.persona.knowledge || %{},
-      global_memory: state.global_memory
-    }
-
-    case Brain.Subprocesses.Supervisor.start_conversation_subprocess(
-           opts
-           |> Keyword.put(:conversation_id, conversation_id)
-           |> Keyword.put(:memory_snapshot, memory_snapshot)
-         ) do
-      {:ok, pid, subprocess_id} ->
-        updated_subprocesses = %{
-          state.subprocesses
-          | conversation:
-              Map.put(state.subprocesses.conversation, subprocess_id, %{
-                pid: pid,
-                conversation_id: conversation_id,
-                started_at: System.system_time(:millisecond)
-              })
-        }
-
-        Logger.info("Conversation subprocess started", %{
-          subprocess_id: subprocess_id,
-          conversation_id: conversation_id,
-          pid: pid
-        })
-
-        {:reply, {:ok, subprocess_id}, %{state | subprocesses: updated_subprocesses}}
-
-      {:error, reason} ->
-        Logger.error("Failed to start conversation subprocess", %{reason: reason})
-        {:reply, {:error, reason}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:stop_subprocess, subprocess_id}, _from, state) do
-    case find_subprocess_by_id(state.subprocesses, subprocess_id) do
-      {type, info} ->
-        case Brain.Subprocesses.Supervisor.stop_subprocess(info.pid) do
-          :ok ->
-            updated_subprocesses = remove_subprocess(state.subprocesses, type, subprocess_id)
-            Logger.info("Subprocess stopped", %{type: type, subprocess_id: subprocess_id})
-            {:reply, :ok, %{state | subprocesses: updated_subprocesses}}
-
-          {:error, reason} ->
-            Logger.error("Failed to stop subprocess", %{
-              subprocess_id: subprocess_id,
-              reason: reason
-            })
-
-            {:reply, {:error, reason}, state}
-        end
-
-      nil ->
-        {:reply, {:error, "Subprocess not found"}, state}
-    end
-  end
-
-  @impl true
-  def handle_call(:list_subprocesses, _from, state) do
-    subprocesses = %{
-      http: Map.keys(state.subprocesses.http),
-      conversation: Map.keys(state.subprocesses.conversation)
-    }
-
-    {:reply, subprocesses, state}
   end
 
   @impl true
@@ -706,29 +534,6 @@ defmodule Brain do
       Map.put(result, :analysis_model, Map.get(context, :analysis_model))
     else
       result
-    end
-  end
-
-  defp find_subprocess_by_id(subprocesses, subprocess_id) do
-    cond do
-      Map.has_key?(subprocesses.http, subprocess_id) ->
-        {:http, Map.get(subprocesses.http, subprocess_id)}
-
-      Map.has_key?(subprocesses.conversation, subprocess_id) ->
-        {:conversation, Map.get(subprocesses.conversation, subprocess_id)}
-
-      true ->
-        nil
-    end
-  end
-
-  defp remove_subprocess(subprocesses, type, subprocess_id) do
-    case type do
-      :http ->
-        %{subprocesses | http: Map.delete(subprocesses.http, subprocess_id)}
-
-      :conversation ->
-        %{subprocesses | conversation: Map.delete(subprocesses.conversation, subprocess_id)}
     end
   end
 
