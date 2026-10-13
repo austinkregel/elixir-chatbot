@@ -83,7 +83,7 @@ defmodule World.ManagerTest do
 
     test "is the local scheduler for a world created again under an id whose driver was changed" do
       {:ok, world} = create_test_world("manager_scheduling_recreated")
-      Atlas.WorldServiceDrivers.put!(world.id, "scheduling", "home_assistant")
+      Atlas.WorldServiceDrivers.put!(world.id, "scheduling", "test_other_driver")
       :ok = Manager.destroy(world.id)
 
       {:ok, again} = create_test_world("manager_scheduling_recreated", id: world.id)
