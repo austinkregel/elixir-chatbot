@@ -95,7 +95,7 @@ defmodule Brain.Memory.RecurringPatternTest do
     end
   end
 
-  describe "retrieved/4 and used/3" do
+  describe "retrieved/4, used/3 and report_use/2" do
     setup do
       test_pid = self()
       handler = "recurring-pattern-test-#{System.unique_integer([:positive])}"
@@ -140,7 +140,7 @@ defmodule Brain.Memory.RecurringPatternTest do
              ] = step.semantic_facts
     end
 
-    test "report a response built from the pattern, and by whom", %{world_id: world_id, progress: progress} do
+    test "report the turn's response built from the pattern, and by whom", %{world_id: world_id, progress: progress} do
       fact = fact_over(["It's sunny there."], world_id)
       pattern = RecurringPattern.find([{fact, 0.9}], world_id)
 
@@ -164,6 +164,29 @@ defmodule Brain.Memory.RecurringPatternTest do
 
       assert_receive {:telemetry, [:chat_bot, :memory, :semantic_fact, :used], _measurements, %{used_by: :realization_packet}}
       refute_receive {:analysis_progress, _}, 50
+    end
+
+    test "report a response's use of the pattern as a realizer hands it back, once",
+         %{world_id: world_id, progress: progress} do
+      fact = fact_over(["It's sunny there."], world_id)
+      pattern = RecurringPattern.find([{fact, 0.9}], world_id)
+      fact_id = fact.id
+
+      :ok = RecurringPattern.report_use({pattern, :realization_packet}, progress: progress)
+
+      assert_receive {:telemetry, [:chat_bot, :memory, :semantic_fact, :used], _measurements,
+                      %{semantic_fact_id: ^fact_id, used_by: :realization_packet}}
+
+      assert_receive {:analysis_progress, %{step: :semantic_fact_used, used_by: :realization_packet}}
+      refute_receive {:telemetry, [:chat_bot, :memory, :semantic_fact, :used], _, _}, 50
+      refute_receive {:analysis_progress, %{step: :semantic_fact_used}}, 50
+    end
+
+    test "report nothing for a response that drew on no pattern", %{progress: progress} do
+      :ok = RecurringPattern.report_use(nil, progress: progress)
+
+      refute_receive {:telemetry, [:chat_bot, :memory, :semantic_fact, :used], _, _}, 50
+      refute_receive {:analysis_progress, %{step: :semantic_fact_used}}, 50
     end
   end
 end
