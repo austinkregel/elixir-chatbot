@@ -15,8 +15,8 @@ defmodule Brain.Services.HomeAssistantTest do
   describe "classify/1" do
     test "a verb mapped to services is an action" do
       assert {:action, "switch", ["turn_on", "turn_off", "toggle"]} = HomeAssistant.classify("smarthome.switch")
-      assert {:action, "cancel", _} = HomeAssistant.classify("calendar.cancel")
-      assert {:action, "create", _} = HomeAssistant.classify("reminder.create")
+      assert {:action, "set", _} = HomeAssistant.classify("smarthome.device.brightness.set")
+      assert {:action, "player.stop", ["media_stop"]} = HomeAssistant.classify("music.player.stop")
     end
 
     test "a two-segment verb is preferred over its last segment" do
@@ -27,7 +27,7 @@ defmodule Brain.Services.HomeAssistantTest do
     test "a verb mapped to null is a query" do
       assert :query = HomeAssistant.classify("smarthome.device_check")
       assert :query = HomeAssistant.classify("music.search")
-      assert :query = HomeAssistant.classify("timer.check")
+      assert :query = HomeAssistant.classify("smarthome.heating.check")
     end
 
     test "a query verb anywhere in the name wins over an action verb" do
@@ -51,26 +51,34 @@ defmodule Brain.Services.HomeAssistantTest do
     end
   end
 
-  describe "as a scheduling driver" do
-    test "reads every scheduling operation's intent as an action or a query, so none is unsupported" do
+  describe "does no scheduling" do
+    test "is not a scheduling driver, and no world can choose it as one" do
+      refute HomeAssistant in Brain.Services.Dispatcher.scheduling_drivers()
+
+      assert_raise ArgumentError, ~r/no scheduling driver is named "home_assistant"/, fn ->
+        Brain.Services.Dispatcher.scheduling_driver_named!("home_assistant")
+      end
+    end
+
+    test "performs none of the scheduling operations" do
+      Code.ensure_loaded!(HomeAssistant)
+
       for intent <- Brain.Services.SchedulingDriver.intents() do
-        refute HomeAssistant.classify(intent) == :unsupported, intent
+        {:ok, operation} = Brain.Services.SchedulingDriver.operation(intent)
+        refute function_exported?(HomeAssistant, operation, 3), "#{intent}: #{operation}/3"
       end
     end
 
-    test "calls a service for setting, snoozing, creating, scheduling and cancelling, and only reads for checking and querying" do
-      for intent <- ["alarm.set", "alarm.snooze", "timer.set", "reminder.create", "calendar.schedule", "calendar.cancel"] do
-        assert HomeAssistant.writes?(intent), intent
-      end
-
-      for intent <- ["timer.check", "calendar.query"] do
-        refute HomeAssistant.writes?(intent), intent
-      end
-    end
-
-    test "does not claim the scheduling domains as its own; they reach it only as a world's driver" do
+    test "does not claim the scheduling domains as its own" do
       for domain <- Brain.Services.SchedulingDriver.domains() do
         refute domain in HomeAssistant.supported_domains(), domain
+      end
+    end
+
+    test "has no verb that only a scheduling intent used, so such an intent is unsupported" do
+      for intent <- ["alarm.snooze", "calendar.cancel", "calendar.query", "calendar.schedule", "reminder.create"] do
+        assert :unsupported = HomeAssistant.classify(intent), intent
+        refute HomeAssistant.writes?(intent), intent
       end
     end
   end
