@@ -10,6 +10,7 @@ defmodule Brain.Response.SurfaceRealizer do
   If Ouro is not loaded, the system raises -- there is no template fallback.
   """
 
+  alias Brain.Memory.RecurringPattern
   alias Brain.Response.{Primitive, DecompressorCollector, OuroRealizer,
                          ResponseSystemRouter, PhraseLatticeRealizer, LatticeScorer}
 
@@ -23,7 +24,19 @@ defmodule Brain.Response.SurfaceRealizer do
       collects for training belongs to that world. Absent raises.
     - `:analysis` - ChunkAnalysis for Ouro realization packet context
     - `:unified_context` - rich context map from ContextBuilder
+
+  Returns `{:ok, rendered, text, recurring_pattern_use}` or
+  `{:error, reason}`. `recurring_pattern_use` is how the text drew on the
+  turn's recurring pattern (`t:Brain.Memory.RecurringPattern.pattern_use/0`): the
+  synthesizer adapted it from the pattern, or the realization packet Ouro
+  realized it from named the pattern; `nil` when the text drew on none.
+  Realizing reports nothing: a refined turn realizes on each pass, and the
+  caller that settles on the turn's response reports the use
+  (`Brain.Memory.RecurringPattern.used/3`).
   """
+  @spec realize([Primitive.t()], keyword()) ::
+          {:ok, [Primitive.t()], String.t() | {:ouro_dry_run, list()}, RecurringPattern.pattern_use() | nil}
+          | {:error, term()}
   def realize(primitives, opts) when is_list(primitives) do
     world_id!(opts)
     analysis = Keyword.get(opts, :analysis)
@@ -34,7 +47,7 @@ defmodule Brain.Response.SurfaceRealizer do
     case system do
       :lattice ->
         case try_lattice_realization(primitives, analysis, domain_config, opts) do
-          {:ok, _, _} = result -> result
+          {:ok, rendered, text} -> {:ok, rendered, text, nil}
           _ -> try_synthesizer_fallback(primitives, analysis, opts)
         end
 
@@ -46,7 +59,7 @@ defmodule Brain.Response.SurfaceRealizer do
 
       :template ->
         case try_enriched_fallback(primitives, :template_configured, opts) do
-          {:ok, _, _} = result -> result
+          {:ok, _, _, _} = result -> result
           {:error, _} -> try_synthesizer_fallback(primitives, analysis, opts)
         end
     end
@@ -129,11 +142,11 @@ defmodule Brain.Response.SurfaceRealizer do
 
   defp try_ouro_or_fallback(primitives, analysis, opts) do
     case try_ouro_realization(primitives, analysis, opts) do
-      {:ok, :ouro_dry_run, %{messages: messages}} ->
+      {:ok, :ouro_dry_run, %{messages: messages, recurring_pattern: recurring_pattern}} ->
         Logger.info("SurfaceRealizer: dry_run_ouro=true, returning ChatML messages without rendering")
-        {:ok, primitives, {:ouro_dry_run, messages}}
+        {:ok, primitives, {:ouro_dry_run, messages}, recurring_pattern_use(recurring_pattern, :realization_packet)}
 
-      {:ok, text, _metadata} ->
+      {:ok, text, %{recurring_pattern: recurring_pattern}} ->
         Logger.info("SurfaceRealizer: Ouro realized #{length(primitives)} primitives")
 
         rendered =
@@ -148,7 +161,7 @@ defmodule Brain.Response.SurfaceRealizer do
           collect_pairs(primitives, world_id!(opts))
         end
 
-        {:ok, rendered, text}
+        {:ok, rendered, text, recurring_pattern_use(recurring_pattern, :realization_packet)}
 
       {:error, reason} ->
         Logger.warning("SurfaceRealizer: Ouro realization failed: #{inspect(reason)}, trying enriched fallback")
@@ -171,7 +184,7 @@ defmodule Brain.Response.SurfaceRealizer do
           p |> Primitive.render(text) |> Map.put(:source, :enriched_fallback)
         end)
 
-      {:ok, rendered, text}
+      {:ok, rendered, text, nil}
     else
       {:error, original_reason}
     end
@@ -191,8 +204,7 @@ defmodule Brain.Response.SurfaceRealizer do
       confidence: (analysis && Map.get(analysis, :confidence)) || 0.5,
       context: unified_context,
       recurring_pattern: get_in(unified_context, [:memory, :recurring_pattern]),
-      similar_episodes: get_in(unified_context, [:memory, :similar_episodes]) || [],
-      progress: Keyword.get(opts, :progress)
+      similar_episodes: get_in(unified_context, [:memory, :similar_episodes]) || []
     ]
   end
 
@@ -201,7 +213,7 @@ defmodule Brain.Response.SurfaceRealizer do
     entities = if analysis, do: Map.get(analysis, :entities, []), else: []
 
     case Brain.Response.Synthesizer.synthesize(intent, entities, synthesizer_opts(analysis, opts)) do
-      {:ok, text} when is_binary(text) and text != "" ->
+      {:ok, text, recurring_pattern} when is_binary(text) and text != "" ->
         Logger.info("SurfaceRealizer: template fallback via Synthesizer for #{inspect(intent)}")
 
         rendered =
@@ -209,12 +221,15 @@ defmodule Brain.Response.SurfaceRealizer do
             p |> Primitive.render(text) |> Map.put(:source, :synthesizer_template)
           end)
 
-        {:ok, rendered, text}
+        {:ok, rendered, text, recurring_pattern_use(recurring_pattern, :synthesizer)}
 
       _ ->
         {:error, :synthesizer_fallback_failed}
     end
   end
+
+  defp recurring_pattern_use(nil, _used_by), do: nil
+  defp recurring_pattern_use(%RecurringPattern{} = pattern, used_by), do: {pattern, used_by}
 
   defp build_enriched_placeholder_text(%Primitive{content: content}) do
     available = Map.get(content, :available_placeholders, [])
