@@ -72,7 +72,8 @@ defmodule Brain.ML.ModelPreflight do
         [
           {:"lexical_evidence_#{code}", validate_language_artifact(Brain.Analysis.LexicalEvidence, code)},
           {:"speech_act_table_#{code}", validate_language_artifact(Brain.Analysis.SpeechActTable, code)},
-          {:"span_reliability_#{code}", validate_language_artifact(Brain.ML.SpanReliability, code)}
+          {:"span_reliability_#{code}", validate_language_artifact(Brain.ML.SpanReliability, code)},
+          {:"slot_type_preferences_#{code}", validate_language_artifact(Brain.Analysis.SlotTypePreferences, code)}
         ]
       end)
 
@@ -80,13 +81,14 @@ defmodule Brain.ML.ModelPreflight do
   end
 
   # `read!/1` checks the file holds that language's struct; the entries checked
-  # here are what the feature vector, the speech-act refinement and entity
-  # span decisions read.
+  # here are what the feature vector, the speech-act refinement, entity span
+  # decisions and slot-type weighting read.
   defp validate_language_artifact(module, code) do
     case module.read!(code) do
       %Brain.Analysis.LexicalEvidence{intents: [_ | _], scores: scores} when map_size(scores) > 0 -> :ok
       %Brain.Analysis.SpeechActTable{entries: entries} when map_size(entries) > 0 -> :ok
       %Brain.ML.SpanReliability{pairs: pairs} when map_size(pairs) > 0 -> :ok
+      %Brain.Analysis.SlotTypePreferences{slot_counts: %{global: global}} when map_size(global) > 0 -> :ok
       other -> {:error, "#{inspect(module)} #{code}: empty #{inspect(other.__struct__)}"}
     end
   rescue
