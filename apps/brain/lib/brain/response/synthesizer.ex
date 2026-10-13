@@ -79,8 +79,12 @@ defmodule Brain.Response.Synthesizer do
   from the most similar single episode at least
   `Brain.Memory.RecurringPattern.similarity_threshold/0` similar, its outcome
   filled in the same way. The pattern comes first because its reply was given
-  across several matching messages, a single episode's only once. A response
-  built from the pattern is reported (`Brain.Memory.RecurringPattern.used/3`).
+  across several matching messages, a single episode's only once.
+
+  Synthesizing reports nothing: a response is synthesized on each pass of a
+  refined turn, and only the one the turn settles on is its response. The
+  pattern a response was adapted from is returned, for the caller that settles
+  on the response to report (`Brain.Memory.RecurringPattern.used/3`).
 
   ## Parameters
   - `intent` - The classified intent (e.g., "weather.query")
@@ -91,11 +95,14 @@ defmodule Brain.Response.Synthesizer do
     - `:similar_episodes` - Similar past interactions from memory
     - `:recurring_pattern` - The turn's recurring pattern
       (`Brain.Memory.RecurringPattern.find/2`), or `nil`
-    - `:progress` - The turn's progress reporting (`Brain.Analysis.Progress`)
 
   ## Returns
-  `{:ok, response}` or `:not_synthesized`
+  `{:ok, response, recurring_pattern}`, where `recurring_pattern` is the
+  `%Brain.Memory.RecurringPattern{}` the response was adapted from, or `nil`
+  for a response built from anything else; or `:not_synthesized`
   """
+  @spec synthesize(String.t() | nil, list(), keyword()) ::
+          {:ok, String.t(), RecurringPattern.t() | nil} | :not_synthesized
   def synthesize(intent, entities, opts \\ []) do
     profile = Keyword.get(opts, :profile)
     domain = if profile, do: profile.domain, else: infer_domain(intent)
@@ -112,27 +119,32 @@ defmodule Brain.Response.Synthesizer do
 
     case handle_epistemic_context(epistemic_context, entities, confidence) do
       {:ok, response} ->
-        {:ok, response}
+        {:ok, response, nil}
 
       :continue ->
-        case adapt_from_memory(recurring_pattern, similar_episodes, entities, opts) do
-          {:ok, response} ->
-            {:ok, response}
+        case adapt_from_memory(recurring_pattern, similar_episodes, entities) do
+          {:ok, response, adapted_from} ->
+            {:ok, response, adapted_from}
 
           :no_adaptation ->
-            synthesize_from_domain(domain, intent, entities, confidence, opts)
+            case synthesize_from_domain(domain, intent, entities, confidence, opts) do
+              {:ok, response} -> {:ok, response, nil}
+              :not_synthesized -> :not_synthesized
+            end
         end
     end
   end
 
   # A recurring pattern outranks any single episode.
-  defp adapt_from_memory(%RecurringPattern{} = pattern, _similar_episodes, entities, opts) do
-    :ok = RecurringPattern.used(pattern, :synthesizer, opts)
-    {:ok, adapt_response_pattern(pattern.reply, entities)}
+  defp adapt_from_memory(%RecurringPattern{} = pattern, _similar_episodes, entities) do
+    {:ok, adapt_response_pattern(pattern.reply, entities), pattern}
   end
 
-  defp adapt_from_memory(nil, similar_episodes, entities, _opts) do
-    adapt_from_episodes(similar_episodes, entities)
+  defp adapt_from_memory(nil, similar_episodes, entities) do
+    case adapt_from_episodes(similar_episodes, entities) do
+      {:ok, response} -> {:ok, response, nil}
+      :no_adaptation -> :no_adaptation
+    end
   end
 
   @doc "Synthesizes a response using domain knowledge and entity slots.\n"
