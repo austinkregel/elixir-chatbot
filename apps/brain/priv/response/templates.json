@@ -55,6 +55,24 @@
       }
     ]
   },
+  "alarm.cancel": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Canceling the alarm."
+      }
+    ]
+  },
+  "alarm.check": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Let me check your alarms."
+      }
+    ]
+  },
   "alarm.set": {
     "templates": [
       {
@@ -483,6 +501,24 @@
         "condition": null,
         "source": "custom",
         "text": "Good question. Let me check."
+      }
+    ]
+  },
+  "reminder.cancel": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Canceling the reminder."
+      }
+    ]
+  },
+  "reminder.check": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Let me check your reminders."
       }
     ]
   },
@@ -3614,6 +3650,15 @@
         "condition": null,
         "source": "custom",
         "text": "Let me check the time for you."
+      }
+    ]
+  },
+  "timer.cancel": {
+    "templates": [
+      {
+        "condition": null,
+        "source": "custom",
+        "text": "Canceling the timer."
       }
     ]
   },
