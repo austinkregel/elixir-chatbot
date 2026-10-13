@@ -115,6 +115,96 @@ defmodule Brain.Analysis.FollowupDetectorDataTest do
     end
   end
 
+  describe "a reply to a service's clarifying question" do
+    @dentist %{event: "Dentist", date: "Friday", time: "3 pm"}
+    @dentist_monday %{event: "Dentist", date: "Monday", time: "3 pm"}
+    @standup %{event: "Standup", date: "", time: "5 pm"}
+
+    defp ambiguous(candidates) do
+      %{
+        enrichment_status: :failed,
+        enrichment_error: {:ambiguous, :calendar, candidates},
+        enrichment_service: :local_scheduler,
+        intent: "calendar.cancel",
+        slots: %{time: "3 pm"}
+      }
+    end
+
+    defp pending_context(candidates) do
+      recent_context(FollowupDetector.awaiting_answer(ambiguous(candidates)))
+    end
+
+    test "an ambiguous cancel waits for one of its candidates, with the request it was asked with" do
+      assert FollowupDetector.awaiting_answer(ambiguous([@dentist, @standup])) == %{
+               intent: "calendar.cancel",
+               slots: %{"time" => "3 pm"},
+               missing_slots: [],
+               pending_clarification: %{item_kind: :calendar, candidates: [@dentist, @standup]}
+             }
+    end
+
+    test "a question a slot answers waits for that slot" do
+      enrichment = %{
+        enrichment_status: :failed,
+        enrichment_error: :location_not_found,
+        enrichment_service: :weather,
+        intent: "weather.query",
+        slots: %{location: "Atlantis", date: "today"}
+      }
+
+      assert FollowupDetector.awaiting_answer(enrichment) == %{
+               intent: "weather.query",
+               slots: %{"date" => "today"},
+               missing_slots: ["location"]
+             }
+    end
+
+    test "a reply that asked nothing waits for nothing" do
+      assert FollowupDetector.awaiting_answer(%{
+               enrichment_status: :failed,
+               enrichment_error: :rate_limited,
+               enrichment_service: :weather,
+               intent: "weather.query",
+               slots: %{}
+             }) == %{}
+
+      assert FollowupDetector.awaiting_answer(%{enrichment_status: :success}) == %{}
+    end
+
+    test "naming a candidate's field resolves to it, and completes the request with its slots" do
+      context = pending_context([@dentist, @standup])
+
+      assert FollowupDetector.resolve_pending("the dentist one", context.pending_clarification) ==
+               {:resolved, @dentist}
+
+      assert FollowupDetector.is_followup?("the dentist one", context)
+
+      assert FollowupDetector.complete_pending(context, @dentist) ==
+               %{"event" => "Dentist", "date" => "Friday", "time" => "3 pm"}
+    end
+
+    test "the candidate naming the most fields wins" do
+      pending = %{item_kind: :calendar, candidates: [@dentist, @dentist_monday]}
+
+      assert FollowupDetector.resolve_pending("dentist on monday", pending) == {:resolved, @dentist_monday}
+    end
+
+    test "naming some of the candidates narrows them" do
+      pending = %{item_kind: :calendar, candidates: [@dentist, @dentist_monday, @standup]}
+
+      assert FollowupDetector.resolve_pending("the dentist", pending) == {:narrowed, [@dentist, @dentist_monday]}
+    end
+
+    test "a reply naming none of them, or all of them, is unrelated" do
+      context = pending_context([@dentist, @dentist_monday])
+
+      assert FollowupDetector.resolve_pending("what's the weather in paris", context.pending_clarification) ==
+               :unrelated
+
+      assert FollowupDetector.resolve_pending("the dentist", context.pending_clarification) == :unrelated
+    end
+  end
+
   # Edge cases
   describe "edge cases" do
     test "handles empty input" do
