@@ -174,13 +174,10 @@ defmodule Brain.SystemStatus do
       end)
       |> Map.new()
 
-    subprocess_status = get_subprocess_supervisor_status()
-
     elapsed = System.monotonic_time(:millisecond) - started_at
 
     %{
       categories: categories,
-      subprocess_supervisor: subprocess_status,
       checked_at: DateTime.utc_now(),
       check_duration_ms: elapsed
     }
@@ -1386,38 +1383,6 @@ defmodule Brain.SystemStatus do
 
   defp estimate_window_count(rate_per_minute) do
     round(rate_per_minute * 5)
-  end
-
-  defp get_subprocess_supervisor_status do
-    supervisor = Brain.Subprocesses.Supervisor
-    pid = Process.whereis(supervisor)
-
-    if pid do
-      children =
-        try do
-          DynamicSupervisor.count_children(supervisor)
-        catch
-          :exit, _ -> %{active: 0, specs: 0, supervisors: 0, workers: 0}
-        end
-
-      %{
-        running: true,
-        pid: pid,
-        active_children: children[:active] || 0,
-        specs: children[:specs] || 0,
-        workers: children[:workers] || 0,
-        supervisors: children[:supervisors] || 0
-      }
-    else
-      %{
-        running: false,
-        pid: nil,
-        active_children: 0,
-        specs: 0,
-        workers: 0,
-        supervisors: 0
-      }
-    end
   end
 
   defp get_supervisor_info do
