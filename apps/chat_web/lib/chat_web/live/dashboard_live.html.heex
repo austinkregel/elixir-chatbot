@@ -825,9 +825,39 @@
               </div>
               <div>
                 <h2 class="text-heading text-ink">Performance Metrics</h2>
-                <p class="text-caption text-ink-muted">Response times and throughput</p>
+                <p id="telemetry-window" class="text-caption text-ink-muted">
+                  <%= if window = @telemetry_health.window do %>
+                    Response times counted since {format_window_time(window.started_at)}; rate over the last five minutes
+                  <% else %>
+                    Response times and throughput; nothing counted yet
+                  <% end %>
+                </p>
               </div>
             </div>
+          </div>
+
+          <div
+            id="telemetry-missed-events"
+            class={[
+              "px-space-lg pt-space-md text-caption",
+              if(@telemetry_health.missed.total > 0, do: "text-ochre", else: "text-ink-muted")
+            ]}
+          >
+            <%= if @telemetry_health.missed.total > 0 do %>
+              <div class="inline-flex items-center gap-space-2xs font-semibold">
+                <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
+                <span class="tabular-nums">{@telemetry_health.missed.total}</span> telemetry event(s) not counted
+              </div>
+              <ul class="mt-space-2xs space-y-space-2xs">
+                <%= for {source, reasons} <- Enum.sort(@telemetry_health.missed.by_source), {reason, count} <- Enum.sort(reasons) do %>
+                  <li>
+                    <span class="tabular-nums">{count}</span> from {source}: {missed_reason_label(reason)}
+                  </li>
+                <% end %>
+              </ul>
+            <% else %>
+              No telemetry event missed
+            <% end %>
           </div>
 
           <div class="p-space-lg">
@@ -855,9 +885,9 @@
                           </span>
                         </div>
                         <div class="flex justify-between items-center">
-                          <span class="text-caption text-ink-muted">P95</span>
+                          <span class="text-caption text-ink-muted">P95 at most</span>
                           <span class="text-value text-ink">
-                            {format_ms(data[:p95_ms] || data.avg_ms)}
+                            {format_ms(data.p95_ms)}
                           </span>
                         </div>
                         <div class="h-px bg-border"></div>
