@@ -231,10 +231,10 @@ defmodule Brain.Services.DispatcherTest do
 
   # The alarm, timer, reminder and calendar domains go to the scheduling
   # driver each world has chosen. Three worlds: one on the local scheduler,
-  # one on Home Assistant with its credentials set, and one with no driver.
-  # The driver rows and credential rows are written inside this test's
-  # sandbox transaction; the credentials the vault holds in memory are
-  # deleted when the test ends.
+  # one whose stored driver name is Home Assistant's, from before Home
+  # Assistant stopped being a driver, and one with no driver. The driver rows
+  # are written inside this test's sandbox transaction; the Home Assistant
+  # credentials the vault holds in memory are deleted when the test ends.
   describe "scheduling routing by the world's driver" do
     setup tags do
       owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
@@ -242,45 +242,28 @@ defmodule Brain.Services.DispatcherTest do
 
       suffix = System.unique_integer([:positive])
       local_world = "test_dispatch_local_#{suffix}"
-      ha_world = "test_dispatch_home_assistant_#{suffix}"
+      stale_world = "test_dispatch_stale_driver_#{suffix}"
       no_driver_world = "test_dispatch_no_driver_#{suffix}"
 
       on_exit(fn ->
         LocalScheduler.clear_world(local_world)
-        :ok = CredentialVault.delete(:home_assistant, :url, world: ha_world)
-        :ok = CredentialVault.delete(:home_assistant, :access_token, world: ha_world)
+        LocalScheduler.clear_world(stale_world)
+        :ok = CredentialVault.delete(:home_assistant, :url, world: stale_world)
+        :ok = CredentialVault.delete(:home_assistant, :access_token, world: stale_world)
       end)
 
       :ok = Dispatcher.assign_scheduling_driver(local_world, LocalScheduler)
+      Atlas.WorldServiceDrivers.put!(stale_world, "scheduling", "home_assistant")
 
-      :ok = CredentialVault.store(:home_assistant, :url, "http://home-assistant.invalid", world: ha_world)
-      :ok = CredentialVault.store(:home_assistant, :access_token, "unused", world: ha_world)
-      :ok = Dispatcher.assign_scheduling_driver(ha_world, HomeAssistant)
-
-      %{local_world: local_world, ha_world: ha_world, no_driver_world: no_driver_world}
+      %{local_world: local_world, stale_world: stale_world, no_driver_world: no_driver_world}
     end
 
-    test "the same intent goes to each world's own driver", %{local_world: local_world, ha_world: ha_world} do
+    test "every scheduling intent goes to the local scheduler, the only driver", %{local_world: local_world} do
+      assert Dispatcher.scheduling_drivers() == [LocalScheduler]
+
       for intent <- SchedulingDriver.intents() do
         assert Dispatcher.find_service(intent, local_world) == LocalScheduler, intent
-        assert Dispatcher.find_service(intent, ha_world) == HomeAssistant, intent
       end
-    end
-
-    test "dispatching the same intent reaches a different driver in each world", %{
-      local_world: local_world,
-      ha_world: ha_world
-    } do
-      # With side effects off, Home Assistant refuses a snooze, which calls a
-      # service; the local scheduler, which never rings an alarm, reports
-      # that there is none to snooze.
-      context = %{side_effects: false}
-
-      assert {:error, :no_ringing_alarm} =
-               Dispatcher.dispatch("alarm.snooze", %{}, Map.put(context, :world_id, local_world))
-
-      assert {:error, :side_effects_off} =
-               Dispatcher.dispatch("alarm.snooze", %{}, Map.put(context, :world_id, ha_world))
     end
 
     test "dispatching to the local driver performs the operation the intent names", %{local_world: local_world} do
@@ -289,6 +272,60 @@ defmodule Brain.Services.DispatcherTest do
 
       assert {:ok, %{timer_status: "running", duration: "6 minutes"}} =
                Dispatcher.dispatch("timer.check", %{}, %{world_id: local_world})
+    end
+
+    test "the restored cancel and check operations are dispatched to the local driver", %{local_world: local_world} do
+      context = %{world_id: local_world}
+
+      {:ok, _} = Dispatcher.dispatch("alarm.set", %{time: "6am"}, context)
+      {:ok, _} = Dispatcher.dispatch("reminder.create", %{reminder_text: "feed the cat", time: "8pm"}, context)
+      {:ok, _} = Dispatcher.dispatch("timer.set", %{duration: "3 minutes"}, context)
+
+      assert {:ok, %{alarm_times: ["6am"], alarm_count: 1}} = Dispatcher.dispatch("alarm.check", %{}, context)
+      assert {:ok, %{reminder_texts: ["feed the cat"], reminder_count: 1}} = Dispatcher.dispatch("reminder.check", %{}, context)
+
+      assert {:ok, %{alarm_status: "cancelled", cancelled_count: 1}} = Dispatcher.dispatch("alarm.cancel", %{}, context)
+      assert {:ok, %{reminder_set: false, cancelled_count: 1}} = Dispatcher.dispatch("reminder.cancel", %{}, context)
+      assert {:ok, %{timer_status: "cancelled", cancelled_count: 1}} = Dispatcher.dispatch("timer.cancel", %{}, context)
+
+      assert {:ok, %{alarm_count: 0}} = Dispatcher.dispatch("alarm.check", %{}, context)
+      assert {:ok, %{reminder_count: 0}} = Dispatcher.dispatch("reminder.check", %{}, context)
+      assert {:ok, %{timer_status: "none"}} = Dispatcher.dispatch("timer.check", %{}, context)
+    end
+
+    test "with side effects off, a cancel is refused and a check still runs", %{local_world: local_world} do
+      {:ok, _} = Dispatcher.dispatch("alarm.set", %{time: "6am"}, %{world_id: local_world})
+      context = %{world_id: local_world, side_effects: false}
+
+      for intent <- ["alarm.cancel", "reminder.cancel", "timer.cancel", "calendar.cancel"] do
+        assert {:error, :side_effects_off} = Dispatcher.dispatch(intent, %{}, context), intent
+      end
+
+      assert {:ok, %{alarm_times: ["6am"]}} = Dispatcher.dispatch("alarm.check", %{}, context)
+      assert {:ok, %{reminder_count: 0}} = Dispatcher.dispatch("reminder.check", %{}, context)
+    end
+
+    test "Home Assistant is not a driver: it cannot be chosen, even with its credentials set, and a world " <>
+           "whose stored driver is Home Assistant's raises",
+         %{stale_world: stale_world} do
+      :ok = CredentialVault.store(:home_assistant, :url, "http://home-assistant.invalid", world: stale_world)
+      :ok = CredentialVault.store(:home_assistant, :access_token, "unused", world: stale_world)
+
+      assert_raise ArgumentError, ~r/is not a scheduling driver/, fn ->
+        Dispatcher.assign_scheduling_driver(stale_world, HomeAssistant)
+      end
+
+      assert_raise ArgumentError, ~r/no scheduling driver is named "home_assistant"/, fn ->
+        Dispatcher.scheduling_driver_named!("home_assistant")
+      end
+
+      for intent <- ["alarm.set", "timer.check"] do
+        assert_raise ArgumentError, ~r/no scheduling driver is named "home_assistant"/, fn ->
+          Dispatcher.find_service(intent, stale_world)
+        end
+      end
+
+      assert Atlas.WorldServiceDrivers.fetch(stale_world, "scheduling") == {:ok, "home_assistant"}
     end
 
     test "a world with no driver raises, naming the world and the capability", %{no_driver_world: world} do
@@ -311,21 +348,16 @@ defmodule Brain.Services.DispatcherTest do
       assert Dispatcher.dispatch("alarm.set.recurring", %{}, %{world_id: local_world}) == :no_handler
     end
 
-    test "Home Assistant cannot be chosen until its credentials are set for the world, and nothing is stored",
-         %{no_driver_world: world} do
-      assert {:error, {:missing_credentials, [:url, :access_token]}} =
-               Dispatcher.assign_scheduling_driver(world, HomeAssistant)
-
-      assert Dispatcher.scheduling_driver(world) == :none
-      assert Dispatcher.missing_credentials(HomeAssistant, world) == [:url, :access_token]
+    test "the local scheduler needs no credentials, so any world can choose it", %{no_driver_world: world} do
       assert Dispatcher.missing_credentials(LocalScheduler, world) == []
+      :ok = Dispatcher.assign_scheduling_driver(world, LocalScheduler)
+      assert Dispatcher.scheduling_driver(world) == {:ok, LocalScheduler}
     end
 
-    test "choosing again replaces the world's driver", %{ha_world: ha_world} do
-      assert Dispatcher.scheduling_driver(ha_world) == {:ok, HomeAssistant}
-      :ok = Dispatcher.assign_scheduling_driver(ha_world, LocalScheduler)
-      assert Dispatcher.scheduling_driver(ha_world) == {:ok, LocalScheduler}
-      assert Dispatcher.find_service("alarm.set", ha_world) == LocalScheduler
+    test "choosing again replaces the world's stored driver", %{stale_world: stale_world} do
+      :ok = Dispatcher.assign_scheduling_driver(stale_world, LocalScheduler)
+      assert Dispatcher.scheduling_driver(stale_world) == {:ok, LocalScheduler}
+      assert Dispatcher.find_service("alarm.set", stale_world) == LocalScheduler
     end
 
     test "only a scheduling driver can be chosen, and only by a driver's name", %{no_driver_world: world} do
@@ -338,7 +370,6 @@ defmodule Brain.Services.DispatcherTest do
       end
 
       assert Dispatcher.scheduling_driver_named!("local_scheduler") == LocalScheduler
-      assert Dispatcher.scheduling_driver_named!("home_assistant") == HomeAssistant
     end
 
     test "a stored driver name that is no scheduling driver's raises", %{no_driver_world: world} do
@@ -363,13 +394,15 @@ defmodule Brain.Services.DispatcherTest do
   end
 
   describe "service_schemas/0 scheduling domains" do
-    test "each scheduling domain carries the slot schema of the drivers that declare one" do
+    test "a scheduling domain carries a slot schema only from a driver that declares one, and the local " <>
+           "scheduler declares none, so the intent registry alone gives those intents their slots" do
+      Code.ensure_loaded!(LocalScheduler)
+      refute function_exported?(LocalScheduler, :slot_schema, 0)
+
       schemas = Dispatcher.service_schemas()
 
       for domain <- SchedulingDriver.domains() do
-        assert schemas[domain] == HomeAssistant.slot_schema(), domain
-        assert "time" in schemas[domain]["optional"], domain
-        assert "duration" in schemas[domain]["entity_mappings"]["duration"], domain
+        refute Map.has_key?(schemas, domain), domain
       end
     end
   end
