@@ -11812,7 +11812,7 @@
   {
     "candidates": [
       "smarthome.device.brightness.down",
-      "smarthome.device.volume"
+      "smarthome.device.volume.down"
     ],
     "intent": "smarthome.device.brightness.down",
     "labeled_by": "dialogflow",
