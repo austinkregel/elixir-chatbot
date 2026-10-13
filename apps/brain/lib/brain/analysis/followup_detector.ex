@@ -15,6 +15,9 @@ defmodule Brain.Analysis.FollowupDetector do
       context_expired?(previous_context) ->
         false
 
+      answers_pending_clarification?(text, previous_context) ->
+        true
+
       has_missing_slots?(previous_context) and looks_like_slot_filler?(text, previous_context) ->
         true
 
@@ -26,6 +29,117 @@ defmodule Brain.Analysis.FollowupDetector do
 
       true ->
         false
+    end
+  end
+
+  @doc """
+  What the conversation waits for after a turn whose service returned an
+  error, read from the turn's enrichment (`Brain.Response.ContextBuilder`):
+  the context fields to carry into the turn's snapshot, or `%{}` when the
+  reply asked nothing.
+
+  The reply planned for the error
+  (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`) decides:
+
+  - a clarification listing candidates (`:ambiguous_item`) waits for the user
+    to pick one: `:pending_clarification` holds the item kind and the
+    candidates, with the intent and slots the service was asked with;
+  - a clarification naming the slots that answer it (`missing_slots`) waits
+    for those slots, as a turn missing required slots does: the intent, the
+    slots asked with less those, and `:missing_slots`;
+  - any other reply waits for nothing.
+  """
+  @spec awaiting_answer(map()) :: map()
+  def awaiting_answer(%{enrichment_status: :failed, enrichment_error: reason} = enrichment) do
+    intent = Map.get(enrichment, :intent)
+    slots = Map.new(Map.get(enrichment, :slots) || %{}, fn {slot, value} -> {to_string(slot), value} end)
+
+    planned =
+      Brain.Response.DiscoursePlanner.enrichment_error_primitive(reason, %{
+        service: Map.get(enrichment, :enrichment_service),
+        intent: intent
+      })
+
+    case planned do
+      %{type: :follow_up, content: %{reply: :ambiguous_item, item_kind: kind, candidates: candidates}} ->
+        %{
+          intent: intent,
+          slots: slots,
+          missing_slots: [],
+          pending_clarification: %{item_kind: kind, candidates: candidates}
+        }
+
+      %{type: :follow_up, content: %{missing_slots: [_ | _] = missing}} ->
+        %{intent: intent, slots: Map.drop(slots, missing), missing_slots: missing}
+
+      _ ->
+        %{}
+    end
+  end
+
+  def awaiting_answer(_enrichment), do: %{}
+
+  @doc """
+  Reads a reply against the candidates a clarification listed
+  (`awaiting_answer/1`'s `:pending_clarification`).
+
+  A candidate is described by its fields (`Brain.Response.Synthesizer.service_item_slots/2`);
+  a field counts when every token of its value is among the reply's tokens
+  (`Brain.ML.Tokenizer.tokenize_normalized/1`), and the candidates with the
+  most fields counted are the ones the reply names. One is
+  `{:resolved, candidate}`; fewer than were listed is `{:narrowed, candidates}`;
+  none, or all of them, is `:unrelated`: the reply does not tell them apart.
+  Only whole field values are recognized; a reply naming a candidate by part
+  of its name, by position ("the first one") or by anything but its stored
+  values is `:unrelated`.
+  """
+  @spec resolve_pending(String.t(), map()) :: {:resolved, map()} | {:narrowed, [map()]} | :unrelated
+  def resolve_pending(text, %{item_kind: kind, candidates: candidates}) when is_binary(text) do
+    reply_tokens = text |> Brain.ML.Tokenizer.tokenize_normalized() |> MapSet.new()
+
+    scored =
+      Enum.map(candidates, fn candidate ->
+        named =
+          kind
+          |> Brain.Response.Synthesizer.service_item_slots(candidate)
+          |> Enum.count(fn {_slot, value} ->
+            value_tokens = value |> Brain.ML.Tokenizer.tokenize_normalized() |> MapSet.new()
+            MapSet.size(value_tokens) > 0 and MapSet.subset?(value_tokens, reply_tokens)
+          end)
+
+        {candidate, named}
+      end)
+
+    best = scored |> Enum.map(&elem(&1, 1)) |> Enum.max(fn -> 0 end)
+    named = for {candidate, ^best} <- scored, best > 0, do: candidate
+
+    cond do
+      named == [] -> :unrelated
+      length(named) == 1 -> {:resolved, hd(named)}
+      length(named) < length(candidates) -> {:narrowed, named}
+      true -> :unrelated
+    end
+  end
+
+  @doc """
+  The slots that complete the pending request with the candidate the reply
+  picked: the slots it was asked with, and the candidate's own
+  (`Brain.Response.Synthesizer.service_item_slots/2`) over them.
+  """
+  @spec complete_pending(map(), map()) :: map()
+  def complete_pending(previous_context, candidate) do
+    %{item_kind: kind} = Map.fetch!(previous_context, :pending_clarification)
+
+    Map.merge(
+      Map.get(previous_context, :slots) || %{},
+      Brain.Response.Synthesizer.service_item_slots(kind, candidate)
+    )
+  end
+
+  defp answers_pending_clarification?(text, previous_context) do
+    case Map.get(previous_context, :pending_clarification) do
+      %{} = pending -> resolve_pending(text, pending) != :unrelated
+      nil -> false
     end
   end
 
