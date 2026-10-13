@@ -1,7 +1,7 @@
 {
   "description": "Maps system entity types to canonical gold standard types. Derived from NER evaluation confusion matrix analysis. System extracts correct entities but uses more specific subtypes.",
   "note": "Keys are system entity types and values are the gold standard's labels; both are lowercase with underscores, matching analysis/entity_types.json. A system type with no entry is compared as itself.",
-  "version": 4,
+  "version": 5,
   "system_to_canonical": {
     "sys_date": "date_time",
     "relative_date": "date_time",
@@ -18,6 +18,8 @@
     "music_sort": "sort",
     "heating": "device",
     "lights": "device",
+    "device_volume": "device",
+    "topic": "category",
     "locks_status": "lock",
     "unit_temperature": "unit",
     "place_name": "address",
