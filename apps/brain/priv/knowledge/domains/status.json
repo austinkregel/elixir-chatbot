@@ -38,14 +38,6 @@
         "Diagnostic complete. Health: $health_status ($health_score). Categories: $categories_summary. Models: $ml_models_summary. Services: $services_summary.",
         "System diagnostic results — $health_status ($health_score). Breakdown: $categories_summary. ML status: $ml_models_summary. External services: $services_summary."
       ]
-    },
-    "service_error": {
-      "condition": "enrichment_failed",
-      "templates": [
-        "I'm having trouble gathering system status right now. The monitoring subsystem may be initializing.",
-        "System status check encountered an issue. Some services may still be starting up.",
-        "I couldn't complete the status check right now. Please try again in a moment."
-      ]
     }
   },
   "entity_verbalizations": {
