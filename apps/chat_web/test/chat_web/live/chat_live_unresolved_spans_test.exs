@@ -103,6 +103,98 @@ defmodule ChatWeb.ChatLiveUnresolvedSpansTest do
     assert html =~ "shared type: person"
   end
 
+  # As `Brain.Analysis.Pipeline` reports pass 2's attempt on the chunk's
+  # unresolved spans once the intent is known.
+  defp resolution(message_id, outcomes, resolved_count) do
+    progress(message_id, :unresolved_spans_resolved, %{
+      intent: "music.play",
+      resolved_count: resolved_count,
+      outcomes: outcomes
+    })
+  end
+
+  @resolved %{
+    value: "Prince",
+    start_pos: 9,
+    end_pos: 14,
+    outcome: :resolved,
+    entity_type: "music_artist",
+    score: 1.9,
+    margin: 0.8,
+    evidence: [%{type: "artist", log_ratio: 1.4}, %{type: "person", log_ratio: -0.6}]
+  }
+
+  test "shows which unresolved spans pass 2 resolved, as what, and the intent's evidence", %{conn: conn} do
+    {:ok, view, _html} = live(conn, "/chat")
+    message_id = "msg_span_resolved"
+
+    send(view.pid, {:analysis_progress, extracted(message_id, [@prince])})
+    send(view.pid, {:analysis_progress, resolution(message_id, [@resolved], 1)})
+
+    open_entities_tab(view, message_id)
+
+    html = view |> element("#span-outcome-0-9") |> render()
+    assert html =~ "Pass 2 (music.play)"
+    assert html =~ "resolved by intent"
+    assert html =~ "music_artist"
+    assert html =~ "Intent evidence"
+    assert html =~ "artist"
+    assert html =~ "intent log-ratio"
+  end
+
+  test "shows a span pass 2 left undecided, and one it did not weigh again with why", %{conn: conn} do
+    {:ok, view, _html} = live(conn, "/chat")
+    message_id = "msg_span_undecided"
+    other = %{@prince | start_pos: 20, end_pos: 24, value: "Paris"}
+
+    outcomes = [
+      %{@resolved | outcome: :undecided} |> Map.delete(:entity_type) |> Map.put(:best_type, "artist") |> Map.put(:margin, :infinity),
+      %{value: "Paris", start_pos: 20, end_pos: 24, outcome: :not_redecided, reason: :no_measured_reading}
+    ]
+
+    send(view.pid, {:analysis_progress, extracted(message_id, [@prince, other])})
+    send(view.pid, {:analysis_progress, resolution(message_id, outcomes, 0)})
+
+    open_entities_tab(view, message_id)
+
+    undecided = view |> element("#span-outcome-0-9") |> render()
+    assert undecided =~ "still undecided, leading type"
+    assert undecided =~ "no competitor"
+
+    not_weighed = view |> element("#span-outcome-0-20") |> render()
+    assert not_weighed =~ "not weighed again: no_measured_reading"
+  end
+
+  test "shows the entities pass 2 retyped with the chunk's profile", %{conn: conn} do
+    {:ok, view, _html} = live(conn, "/chat")
+    message_id = "msg_retyped"
+
+    send(view.pid, {:analysis_progress, extracted(message_id, [])})
+
+    send(
+      view.pid,
+      {:analysis_progress,
+       progress(message_id, :entities_retyped, %{
+         profile_domain: :smarthome,
+         changes: [%{value: "Paris", start_pos: 20, end_pos: 24, from: "location", to: "room", disambiguation_source: :context_analysis}]
+       })}
+    )
+
+    open_entities_tab(view, message_id)
+
+    html = view |> element("#retyped-entities-0") |> render()
+    assert html =~ "Retyped with the smarthome profile"
+    assert html =~ "location"
+    assert html =~ "room"
+  end
+
+  test "the pass 2 steps say how many spans were resolved and entities retyped" do
+    assert ChatLive.stage_detail(resolution("m", [@resolved], 1)) == "1 of 1 unresolved span(s) resolved by intent"
+
+    assert ChatLive.stage_detail(progress("m", :entities_retyped, %{profile_domain: :music, changes: []})) ==
+             "0 retyped with the music profile"
+  end
+
   test "the extraction step counts the undecided spans beside the entities" do
     assert ChatLive.stage_detail(extracted("m", [@prince])) == "1 entity(ies), 1 unresolved span(s)"
     assert ChatLive.stage_detail(extracted("m", [])) == "1 entity(ies)"
