@@ -47,7 +47,7 @@ defmodule Brain.MixProject do
       {:jason, "~> 1.2"},
       {:req, "~> 0.5"},
       {:floki, "~> 0.36"},
-      {:bandit, "~> 1.0"},
+      {:plug_crypto, "~> 2.0"},
       # S3/MinIO model store for containerized training
       {:ex_aws, "~> 2.5"},
       {:ex_aws_s3, "~> 2.5"},
