@@ -9,6 +9,8 @@ defmodule Brain.Metrics.Aggregator do
   @window_duration_ms 5 * 60 * 1000
   @aggregation_interval_ms 10_000
   @max_raw_points 1000
+  # Who builds a response from a recurring pattern (`Brain.Memory.RecurringPattern.used_by/0`).
+  @semantic_fact_users [:synthesizer, :realization_packet]
 
   @doc """
   Starts the Metrics.Aggregator GenServer.
@@ -290,6 +292,65 @@ defmodule Brain.Metrics.Aggregator do
       :error, :badarg ->
         %{counts: %{}, percentages: %{}, total: 0}
     end
+  end
+
+  @doc """
+  The semantic-fact metrics of `world_id`: what the
+  `[:chat_bot, :memory, :semantic_fact, :retrieved | :used]` events
+  (`Brain.Memory.RecurringPattern`) counted for that world since the
+  aggregator started. Like every metric here they are held in memory and
+  start over when the aggregator does. Reads ETS directly; raises when the
+  aggregator is not running.
+
+  Returns a map with:
+  - `:retrievals` - turns that retrieved the world's semantic facts
+  - `:facts_retrieved` - semantic facts retrieved across those turns
+  - `:patterns_found` - those turns with a recurring pattern among the facts
+  - `:pattern_found_rate` - `:patterns_found` as a percentage of
+    `:retrievals`; `nil` before the first retrieval
+  - `:used` - turns whose response was built from the recurring pattern, by
+    who built it: `%{synthesizer: count, realization_packet: count}`
+  - `:used_total` - those turns, by either
+  - `:retrieved_similarity` - how similar the retrieved facts were to their
+    turns, as `%{from: float, to: float, count: count}` buckets a tenth wide,
+    ascending, the buckets that counted any only; the top bucket, from 0.9,
+    holds a similarity of 1.0
+  - `:used_similarity` - the same for the patterns responses were built from
+  """
+  @spec get_semantic_fact_metrics(String.t()) :: map()
+  def get_semantic_fact_metrics(world_id) when is_binary(world_id) do
+    counters =
+      @raw_data_table
+      |> :ets.match({{:counter, {:semantic_facts, world_id}, :"$1"}, :"$2"})
+      |> Map.new(fn [field, count] -> {field, count} end)
+
+    retrievals = Map.get(counters, :retrievals, 0)
+    patterns_found = Map.get(counters, :patterns_found, 0)
+    used = Map.new(@semantic_fact_users, &{&1, Map.get(counters, {:used, &1}, 0)})
+
+    %{
+      retrievals: retrievals,
+      facts_retrieved: Map.get(counters, :facts_retrieved, 0),
+      patterns_found: patterns_found,
+      pattern_found_rate: if(retrievals > 0, do: Float.round(patterns_found / retrievals * 100, 1)),
+      used: used,
+      used_total: used |> Map.values() |> Enum.sum(),
+      retrieved_similarity: similarity_buckets(counters, :retrieved_similarity),
+      used_similarity: similarity_buckets(counters, :used_similarity)
+    }
+  end
+
+  defp similarity_buckets(counters, distribution) do
+    for {{^distribution, bucket}, count} <- Enum.sort(counters) do
+      %{from: bucket / 10, to: (bucket + 1) / 10, count: count}
+    end
+  end
+
+  # The tenth of the similarity range a similarity falls in: 0 for [0.0, 0.1),
+  # 9 for [0.9, 1.0]. A cosine similarity can be negative, down to -10 for
+  # [-1.0, -0.9).
+  defp similarity_bucket(similarity) when is_number(similarity) do
+    (similarity * 10) |> :math.floor() |> trunc() |> min(9)
   end
 
   defp get_counter_value(key, field) do
@@ -781,6 +842,26 @@ defmodule Brain.Metrics.Aggregator do
   def handle_cast({:record_semantic_retrieval, result_count}, state) do
     increment_counter(:semantic_retrieval, :total)
     if result_count > 0, do: increment_counter(:semantic_retrieval, :hits)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_semantic_facts_retrieved, world_id, similarities, recurring_pattern_id}, state)
+      when is_binary(world_id) and is_list(similarities) do
+    key = {:semantic_facts, world_id}
+    increment_counter(key, :retrievals)
+    increment_counter(key, :facts_retrieved, length(similarities))
+    if recurring_pattern_id != nil, do: increment_counter(key, :patterns_found)
+    Enum.each(similarities, &increment_counter(key, {:retrieved_similarity, similarity_bucket(&1)}))
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:record_semantic_fact_used, world_id, used_by, similarity}, state)
+      when is_binary(world_id) and used_by in @semantic_fact_users do
+    key = {:semantic_facts, world_id}
+    increment_counter(key, {:used, used_by})
+    increment_counter(key, {:used_similarity, similarity_bucket(similarity)})
     {:noreply, state}
   end
 
