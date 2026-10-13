@@ -45,6 +45,88 @@
       </div>
     </section>
 
+    <!-- Semantic Facts in Responses -->
+    <section id="semantic-fact-metrics" class="panel overflow-hidden">
+      <div class="p-space-lg border-b border-border">
+        <div class="flex items-center gap-space-md">
+          <div class="p-space-sm rounded-md bg-surface-sunk">
+            <.icon name="hero-circle-stack" class="size-5 text-ink-muted" />
+          </div>
+          <div>
+            <h2 class="text-heading text-ink">Semantic Facts in Responses</h2>
+            <p class="text-caption text-ink-muted">
+              Retrievals, recurring patterns found and used in this world, since the brain started
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="p-space-lg space-y-space-lg">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-space-md">
+          <div class="rounded-md border border-border bg-surface-sunk p-space-md">
+            <div id="semantic-fact-retrievals" class="text-heading tabular-nums text-ink">
+              {@semantic_fact_metrics.retrievals}
+            </div>
+            <div class="text-caption text-ink-muted">Turns retrieving facts</div>
+            <div class="text-caption text-ink-muted mt-space-2xs">
+              {@semantic_fact_metrics.facts_retrieved} fact(s) retrieved
+            </div>
+          </div>
+          <div class="rounded-md border border-border bg-surface-sunk p-space-md">
+            <div id="semantic-fact-patterns-found" class="text-heading tabular-nums text-ink">
+              {@semantic_fact_metrics.patterns_found}
+            </div>
+            <div class="text-caption text-ink-muted">Recurring pattern found</div>
+            <div class="text-caption text-ink-muted mt-space-2xs">
+              <%= if @semantic_fact_metrics.pattern_found_rate do %>
+                {@semantic_fact_metrics.pattern_found_rate}% of retrievals
+              <% else %>
+                no retrievals yet
+              <% end %>
+            </div>
+          </div>
+          <div class="rounded-md border border-border bg-surface-sunk p-space-md">
+            <div id="semantic-fact-used-synthesizer" class="text-heading tabular-nums text-ink">
+              {@semantic_fact_metrics.used.synthesizer}
+            </div>
+            <div class="text-caption text-ink-muted">Used by synthesizer</div>
+          </div>
+          <div class="rounded-md border border-border bg-surface-sunk p-space-md">
+            <div id="semantic-fact-used-realization-packet" class="text-heading tabular-nums text-ink">
+              {@semantic_fact_metrics.used.realization_packet}
+            </div>
+            <div class="text-caption text-ink-muted">Used by realization packet</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
+          <%= for {distribution, label} <- [{:retrieved_similarity, "Similarity of retrieved facts"}, {:used_similarity, "Similarity of patterns used"}] do %>
+            <div id={"semantic-fact-#{distribution}"} class="rounded-md border border-border bg-surface-sunk p-space-md">
+              <div class="text-caption font-semibold text-ink mb-space-sm">{label}</div>
+              <% buckets = Map.fetch!(@semantic_fact_metrics, distribution) %>
+              <%= if buckets == [] do %>
+                <p class="text-caption text-ink-muted">None counted yet</p>
+              <% else %>
+                <% top = buckets |> Enum.map(& &1.count) |> Enum.max() %>
+                <div class="space-y-space-2xs">
+                  <%= for bucket <- buckets do %>
+                    <div class="flex items-center gap-space-sm text-caption">
+                      <span class="w-20 tabular-nums text-ink-muted">
+                        {:erlang.float_to_binary(bucket.from, decimals: 1)}–{:erlang.float_to_binary(bucket.to, decimals: 1)}
+                      </span>
+                      <div class="flex-1 h-2 rounded-sm bg-surface">
+                        <div class="h-2 rounded-sm bg-progress-fill" style={"width: #{round(bucket.count / top * 100)}%"}></div>
+                      </div>
+                      <span class="w-10 text-right tabular-nums text-ink">{bucket.count}</span>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </section>
+
     <!-- Model Evaluation Summary -->
     <section :if={@evaluation_summary != %{}} class="panel overflow-hidden">
       <div class="p-space-lg border-b border-border">
