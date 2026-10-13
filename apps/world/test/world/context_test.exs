@@ -17,7 +17,6 @@ defmodule World.ContextTest do
     # Ensure PubSub is started first
     ensure_pubsub_started()
 
-    ensure_started({Registry, keys: :unique, name: Brain.SubprocessRegistry})
     ensure_started(Brain.ML.Gazetteer)
     ensure_started(Brain.Memory.Store)
     ensure_started(Brain.Memory.Embedder)
