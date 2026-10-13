@@ -318,9 +318,17 @@ defmodule Brain.Response.ContextBuilder do
     enriched = Enricher.prepare_context(intent, slots, base_context)
     entity_familiarity = EntityGraphEnricher.familiarity_score(entities)
 
+    # A failed enrichment's error is what the response answers
+    # (`Brain.Response.DiscoursePlanner`), so it is carried as the service
+    # returned it, with the service that returned it and the intent and slots
+    # it was asked with, which a reply to a clarifying question completes.
     %{
       enriched_data: Map.get(enriched, :enriched_data, %{}),
       enrichment_status: Map.get(enriched, :enrichment_status, :not_configured),
+      enrichment_error: Map.get(enriched, :enrichment_error),
+      enrichment_service: Map.get(enriched, :enrichment_service),
+      intent: intent,
+      slots: slots,
       entity_familiarity: entity_familiarity,
       graph_enrichment: Map.get(enriched, :graph_enrichment, %{})
     }
