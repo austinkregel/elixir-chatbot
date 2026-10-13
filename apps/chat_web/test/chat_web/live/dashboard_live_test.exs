@@ -101,8 +101,8 @@ defmodule ChatWeb.DashboardLiveTest do
 
     test "shows when the current window started, and starting a new one keeps the ended window's counts",
          %{conn: conn, world: world} do
-      :ok = Atlas.SemanticFactMetrics.increment!(world.id, %{"retrievals" => 3, "patterns_found" => 2})
-      [%{window: first}] = Atlas.SemanticFactMetrics.windows(world.id, 1)
+      count_semantic_facts!(world, [{"retrievals", :sum, 3}, {"patterns_found", :sum, 2}])
+      [%{window: first}] = semantic_fact_windows(world, 1)
 
       view = dashboard_in(conn, world)
 
@@ -117,7 +117,7 @@ defmodule ChatWeb.DashboardLiveTest do
       view |> element("#semantic-fact-window-confirm-confirm") |> render_click()
 
       refute has_element?(view, "#semantic-fact-window-confirm")
-      assert [%{window: second, counts: new_counts}, %{window: ended}] = Atlas.SemanticFactMetrics.windows(world.id, 5)
+      assert [%{window: second, values: new_counts}, %{window: ended}] = semantic_fact_windows(world, 5)
       assert new_counts == %{}
       assert ended.id == first.id
 
@@ -134,14 +134,40 @@ defmodule ChatWeb.DashboardLiveTest do
     end
 
     test "cancelling leaves the window as it was", %{conn: conn, world: world} do
-      :ok = Atlas.SemanticFactMetrics.increment!(world.id, %{"retrievals" => 1})
+      count_semantic_facts!(world, [{"retrievals", :sum, 1}])
       view = dashboard_in(conn, world)
 
       view |> element("#semantic-fact-start-window") |> render_click()
       view |> element("#semantic-fact-window-confirm-cancel") |> render_click()
 
       refute has_element?(view, "#semantic-fact-window-confirm")
-      assert [%{counts: %{"retrievals" => 1}}] = Atlas.SemanticFactMetrics.windows(world.id, 5)
+      assert [%{values: %{"retrievals" => 1}}] = semantic_fact_windows(world, 5)
+    end
+
+    defp count_semantic_facts!(world, values) do
+      :ok = Atlas.Metrics.write!([%{scope: {:world, world.id}, family: "semantic_facts", values: values}])
+    end
+
+    defp semantic_fact_windows(world, limit), do: Atlas.Metrics.windows({:world, world.id}, "semantic_facts", limit)
+  end
+
+  describe "telemetry health" do
+    test "shows the telemetry events the aggregator did not count, by who sent them and why", %{conn: conn} do
+      # Counted in the node's telemetry window, inside the test's transaction.
+      :ok =
+        Atlas.Metrics.write!([
+          %{
+            scope: :node,
+            family: "telemetry",
+            values: [{"missed:chatbot-semantic-fact-used:aggregator_not_running", :sum, 2}]
+          }
+        ])
+
+      {:ok, view, _html} = live(conn, "/dashboard")
+      missed = view |> element("#telemetry-missed-events") |> render()
+
+      assert missed =~ "telemetry event(s) not counted"
+      assert missed =~ ~r/>\s*2\s*<\/span> from chatbot-semantic-fact-used: the aggregator was not running/
     end
   end
 
