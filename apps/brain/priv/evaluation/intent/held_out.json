@@ -5892,91 +5892,91 @@
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Delete the alarm I set for 7:30"
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "I don't need the alarm tomorrow"
   },
   {
     "intent": "alarm.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.cancel_usersays_en.json",
     "text": "Disable my morning alarm"
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "When is my alarm going off"
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Do I have an alarm for 6am"
   },
   {
     "intent": "alarm.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "alarm.check_usersays_en.json",
     "text": "Have I got any alarms tomorrow"
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Forget the reminder about paying rent"
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Remove the 9am reminder"
   },
   {
     "intent": "reminder.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.cancel_usersays_en.json",
     "text": "Clear all my reminders"
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Read me my reminders"
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Any reminders for this afternoon"
   },
   {
     "intent": "reminder.check",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "reminder.check_usersays_en.json",
     "text": "Did I set a reminder to call the bank"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Kill the timer"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Clear the 5 minute timer"
   },
   {
     "intent": "timer.cancel",
-    "labeled_by": "materialized",
+    "labeled_by": "authored",
     "source_file": "timer.cancel_usersays_en.json",
     "text": "Never mind the timer"
   }
