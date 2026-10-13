@@ -35,10 +35,14 @@ defmodule Brain.Services.LocalScheduler do
 
   `check_alarms/3` and `check_reminders/3` report the alarms or reminders the
   world has, in the order they were set, with how many there are.
-  `query_calendar/3` reports the calendar item set last. Each of the three
-  narrows its items to the day the `:date` slot names, matched as above; with
-  no `:date`, it reports all of them. No other slot narrows a check.
-  `check_timer/3` reports the timer set last.
+  `query_calendar/3` reports the calendar item set last, with how many there
+  are. Each of the three narrows its items to the day the `:date` slot names,
+  matched as above; with no `:date`, it reports all of them. No other slot
+  narrows a check. When a check finds nothing, its count is 0 and the fields of
+  the item it would report are `""`: no text stands in for "nothing found".
+  `check_timer/3` reports the timer set last, with the duration it was set
+  with. A duration is stored as the text it arrived as, so how much of it is
+  left is not known.
 
   ## Cancelling: which items a cancel matches
 
@@ -140,8 +144,8 @@ defmodule Brain.Services.LocalScheduler do
   def provides_fields do
     [:alarm_status, :alarm_time, :alarm_date, :alarm_times, :alarm_dates, :alarm_count, :reminder_set,
      :reminder_text, :reminder_time, :reminder_date, :reminder_texts, :reminder_times, :reminder_dates,
-     :reminder_count, :timer_status, :time_remaining, :duration, :timer_durations, :next_event,
-     :event_time, :event_date, :cancelled_event, :cancelled_count]
+     :reminder_count, :timer_status, :duration, :timer_durations, :next_event, :event_time,
+     :event_date, :event_count, :cancelled_event, :cancelled_count]
   end
 
   # Setting, creating, scheduling and cancelling store or remove items;
@@ -278,7 +282,7 @@ defmodule Brain.Services.LocalScheduler do
     world_id = world!(world_id, :set_timer)
     duration = Map.get(slots, :duration) || Map.get(slots, "duration", "")
     add_item(world_id, :timer, %{duration: duration, status: "running"})
-    {:ok, %{timer_status: "running", duration: duration, time_remaining: duration}}
+    {:ok, %{timer_status: "running", duration: duration}}
   end
 
   @impl SchedulingDriver
@@ -286,8 +290,8 @@ defmodule Brain.Services.LocalScheduler do
     world_id = world!(world_id, :check_timer)
 
     case list_items(world_id, :timer) do
-      [] -> {:ok, %{timer_status: "none", time_remaining: "", duration: ""}}
-      [latest | _] -> {:ok, %{timer_status: latest.status, time_remaining: latest.duration, duration: latest.duration}}
+      [] -> {:ok, %{timer_status: "none", duration: ""}}
+      [latest | _] -> {:ok, %{timer_status: latest.status, duration: latest.duration}}
     end
   end
 
@@ -337,8 +341,11 @@ defmodule Brain.Services.LocalScheduler do
     world_id = world!(world_id, :query_calendar)
 
     case world_id |> list_items(:calendar) |> on_day(:calendar, slots) do
-      [] -> {:ok, %{next_event: "No upcoming events", event_time: "", event_date: ""}}
-      [latest | _] -> {:ok, %{next_event: latest.event, event_time: latest.time, event_date: latest.date}}
+      [] ->
+        {:ok, %{next_event: "", event_time: "", event_date: "", event_count: 0}}
+
+      [latest | _] = events ->
+        {:ok, %{next_event: latest.event, event_time: latest.time, event_date: latest.date, event_count: length(events)}}
     end
   end
 
