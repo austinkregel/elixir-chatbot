@@ -46,6 +46,8 @@ defmodule Atlas.WorldsTest do
 
     Atlas.Scheduler.insert_item!(%{world_id: world_id, kind: "alarm", time: "7am", status: "set"})
     Atlas.WorldServiceDrivers.put!(world_id, "scheduling", "local_scheduler")
+    # One window with one counter in it.
+    :ok = Atlas.SemanticFactMetrics.increment!(world_id, %{"retrievals" => 1})
 
     %Atlas.Schemas.IntentReviewCandidate{}
     |> Atlas.Schemas.IntentReviewCandidate.changeset(%{
@@ -119,6 +121,12 @@ defmodule Atlas.WorldsTest do
       assert count(Atlas.Schemas.ReviewCandidate, :world_id, other) == 1
       assert count(Atlas.Schemas.WorldServiceDriver, :world_id, world) == 0
       assert count(Atlas.Schemas.WorldServiceDriver, :world_id, other) == 1
+      assert count(Atlas.Schemas.SemanticFactMetricCount, :world_id, world) == 0
+      assert count(Atlas.Schemas.SemanticFactMetricCount, :world_id, other) == 1
+      assert count(Atlas.Schemas.SemanticFactMetricWindow, :world_id, world) == 0
+      assert count(Atlas.Schemas.SemanticFactMetricWindow, :world_id, other) == 1
+      assert Atlas.SemanticFactMetrics.windows(world, 10) == []
+      assert [%{counts: %{"retrievals" => 1}}] = Atlas.SemanticFactMetrics.windows(other, 10)
 
       refute Enum.any?(Graph.world_graphs(world), &Graph.graph_exists?/1)
       assert Enum.all?(Graph.world_graphs(other), &Graph.graph_exists?/1)
