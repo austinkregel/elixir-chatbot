@@ -116,12 +116,15 @@ defmodule Brain.Services.SchedulingDomainFieldsTest do
         end
       end
 
+      # The fields a frame requires, and those its "when" tests for a value; a
+      # field tested for null is one the frame's operation does not return.
       test "every enriched frame's fields arrive together from some operation" do
         results = dispatched_results(@driver)
 
         for domain <- SchedulingDriver.domains(),
             {frame, config} <- Map.fetch!(domain_file(domain), "enriched_response_frames") do
-          required = Map.fetch!(config, "requires_enrichment")
+          tested = for {field, expected} <- Map.get(config, "when", %{}), expected != nil, do: field
+          required = Enum.uniq(Map.fetch!(config, "requires_enrichment") ++ tested)
 
           assert Enum.any?(results, fn
                    {intent, {:ok, fields}} ->
@@ -131,7 +134,7 @@ defmodule Brain.Services.SchedulingDomainFieldsTest do
                    _other ->
                      false
                  end),
-                 "#{domain}.json's #{frame} frame requires #{inspect(required)}, which no #{domain} " <>
+                 "#{domain}.json's #{frame} frame requires or tests #{inspect(required)}, which no #{domain} " <>
                    "operation of #{inspect(@driver)} returns together"
         end
       end
