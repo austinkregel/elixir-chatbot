@@ -98,6 +98,26 @@ defmodule Brain.ML.TokenizerTest do
     end
   end
 
+  describe "token_range!/3" do
+    test "names the first and last token a span covers" do
+      tokens = Tokenizer.tokenize("Weather in New York today")
+
+      # "New York" is graphemes 11..18.
+      assert Tokenizer.token_range!(tokens, 11, 18) == {2, 3}
+      assert Tokenizer.token_range!(tokens, 0, 6) == {0, 0}
+    end
+
+    test "a span that does not begin and end on token boundaries raises" do
+      tokens = Tokenizer.tokenize("Weather in New York today")
+
+      for {start_pos, end_pos} <- [{12, 18}, {11, 17}, {20, 10}] do
+        assert_raise ArgumentError, ~r/does not begin and end on token boundaries/, fn ->
+          Tokenizer.token_range!(tokens, start_pos, end_pos)
+        end
+      end
+    end
+  end
+
   describe "tokenize_normalized/1" do
     test "returns lowercase normalized tokens" do
       words = Tokenizer.tokenize_normalized("Hello WORLD")
