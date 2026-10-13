@@ -99,7 +99,7 @@ defmodule Mix.Tasks.Evaluate.Ner do
 
     misaligned =
       for %{text: text, entities: entities} <- span_results,
-          %{resolved: true} = entity <- entities,
+          entity <- entities,
           String.slice(text, entity.start_pos, entity.end_pos - entity.start_pos + 1) != entity.match,
           do: {text, entity.match}
 
@@ -133,20 +133,22 @@ defmodule Mix.Tasks.Evaluate.Ner do
       text = example["text"]
       expected_entities = example["entities"] || example["expected"] || []
 
-      {extracted, counts} =
+      # The unresolved spans are abstentions: they predict no type, so they are
+      # kept apart from the entities and only counted.
+      {extracted, unresolved_spans, counts} =
         try do
           analysis = Pipeline.analyze_chunk(text, side_effects: false, world_id: world_id)
           # The pipeline emits system types; map them onto the gold standard's labels.
-          extracted = ML.EntityExtractor.normalize_entity_types(analysis.entities || [])
-          {extracted, %{counts | ok: counts.ok + 1}}
+          extracted = ML.EntityExtractor.normalize_entity_types(analysis.entities)
+          {extracted, analysis.unresolved_spans, %{counts | ok: counts.ok + 1}}
         rescue
           e ->
             Logger.warning("NER pipeline crashed on #{inspect(text)}: #{Exception.message(e)}")
-            {[], %{counts | errored: counts.errored + 1}}
+            {[], [], %{counts | errored: counts.errored + 1}}
         catch
           :exit, reason ->
             Logger.warning("NER pipeline exited on #{inspect(text)}: #{inspect(reason)}")
-            {[], %{counts | errored: counts.errored + 1}}
+            {[], [], %{counts | errored: counts.errored + 1}}
         end
 
       {matched_preds, matched_acts} =
@@ -154,13 +156,8 @@ defmodule Mix.Tasks.Evaluate.Ner do
           expected_value = expected["value"]
           expected_type = expected["type"]
 
-          # An unresolved span is an abstention: it predicts no type.
           match =
-            Enum.find(extracted, fn
-              %{resolved: false} ->
-                false
-
-              ext ->
+            Enum.find(extracted, fn ext ->
               ext_value = Map.get(ext, :value) || Map.get(ext, "value")
               normalize_entity_value(ext_value) == normalize_entity_value(expected_value)
             end)
@@ -175,7 +172,7 @@ defmodule Mix.Tasks.Evaluate.Ner do
           {[to_string(predicted_type) | p_acc], [to_string(expected_type) | a_acc]}
         end)
 
-      span_result = %{text: text, gold: NerGold.spans!(example), entities: extracted}
+      span_result = %{text: text, gold: NerGold.spans!(example), entities: extracted, unresolved_spans: unresolved_spans}
 
       {Enum.reverse(matched_preds) ++ preds, Enum.reverse(matched_acts) ++ acts, counts, [span_result | spans]}
     end)
