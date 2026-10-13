@@ -117,6 +117,28 @@ defmodule Brain.LearnerDataTest do
     end
   end
 
+  describe "learn_from_input/3 learns what extraction decided" do
+    test "each learned entity has the extracted entity's value, type and confidence" do
+      input = "I live in Seattle"
+
+      # The learner is given the discourse and speech act, so it extracts with
+      # exactly these options.
+      opts = [
+        world_id: @world_id,
+        discourse: Brain.Analysis.DiscourseAnalyzer.analyze(input, []),
+        speech_act: Brain.Analysis.SpeechActClassifier.classify(input, world_id: @world_id)
+      ]
+
+      extracted = Brain.ML.EntityExtractor.extract_entities(input, opts)
+      assert extracted != [], "extraction decided no entity of #{inspect(input)} in world #{@world_id}"
+
+      {:ok, data} = Learner.learn_from_input(@test_persona, input, opts)
+
+      assert Enum.map(data["entities"], &{&1["name"], &1["type"], &1["confidence"]}) ==
+               Enum.map(extracted, &{&1.value, &1.entity_type, &1.confidence})
+    end
+  end
+
   describe "spans entity extraction could not decide" do
     test "learn_from_input/3 learns no entity from one" do
       for {text, undecided} <- undecided_span_cases(@world_id, 3) do
