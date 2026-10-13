@@ -210,4 +210,43 @@ defmodule Brain.Analysis.PipelineTest do
       end
     end
   end
+
+  describe "spans entity extraction could not decide" do
+    # Gold sentences with a span the data leaves undecided before any context
+    # is weighed, so the pipeline's extraction leaves it undecided too.
+    setup do
+      %{cases: undecided_span_cases(@world_id, 3)}
+    end
+
+    test "travel on the analysis's unresolved_spans, never among its entities or slots", %{cases: cases} do
+      for {text, undecided} <- cases do
+        analysis = Pipeline.analyze_chunk(text, world_id: @world_id, side_effects: false)
+
+        assert Enum.all?(analysis.unresolved_spans, &match?(%{resolved: false}, &1))
+        refute Enum.any?(analysis.entities, &match?(%{resolved: false}, &1))
+
+        entity_values = MapSet.new(analysis.entities, &String.downcase(to_string(&1[:value])))
+        slot_values = analysis.slots.filled_slots |> Map.values() |> Enum.map(&String.downcase(inspect(&1)))
+
+        for span <- undecided do
+          assert Enum.any?(analysis.unresolved_spans, &(&1.start_pos == span.start_pos and &1.end_pos == span.end_pos)),
+                 "#{inspect(span.value)} of #{inspect(text)} is not on the analysis's unresolved_spans"
+
+          refute MapSet.member?(entity_values, String.downcase(span.value)),
+                 "#{inspect(span.value)} of #{inspect(text)} reached the entities"
+
+          refute Enum.any?(slot_values, &String.contains?(&1, inspect(String.downcase(span.value)))),
+                 "#{inspect(span.value)} of #{inspect(text)} filled a slot: #{inspect(analysis.slots.filled_slots)}"
+        end
+      end
+    end
+
+    test "reach the second pass's analysis", %{cases: cases} do
+      {text, undecided} = hd(cases)
+      analysis = Pipeline.analyze_chunk(text, world_id: @world_id, side_effects: false)
+
+      assert analysis.pass == 2
+      assert Enum.all?(undecided, fn span -> Enum.any?(analysis.unresolved_spans, &(&1.start_pos == span.start_pos)) end)
+    end
+  end
 end
