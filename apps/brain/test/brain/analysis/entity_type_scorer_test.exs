@@ -383,7 +383,7 @@ defmodule Brain.Analysis.EntityTypeScorerTest do
     |> Map.keys()
     |> Enum.filter(fn intent ->
       types = EntityTypeScorer.expected_types(intent)
-      wanted in types and unwanted not in types
+      Map.has_key?(types, wanted) and not Map.has_key?(types, unwanted)
     end)
     |> Enum.sort()
   end
