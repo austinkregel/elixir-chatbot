@@ -2,10 +2,17 @@ defmodule Brain.Telemetry do
   @moduledoc """
   Telemetry event definitions and handlers for the ChatBot application.
 
-  All telemetry is designed to be async and non-blocking:
-  - Handlers use GenServer.cast (fire-and-forget) to send metrics
-  - Heavy processing happens in the Metrics.Aggregator, not in handlers
-  - ETS is used for fast concurrent reads
+  Every handler `attach_handlers/0` attaches does one thing: it hands the
+  event to `Brain.Metrics.Aggregator.submit/2`, which sends it to the
+  aggregator without waiting. The aggregator reads the event and counts it,
+  in Atlas where the count must survive a restart.
+
+  A handler never raises, so `:telemetry` never detaches it (a handler that
+  raises is detached for good). When the aggregator is not running, as
+  while its supervisor restarts it, the event cannot be counted: the
+  handler logs it as an error and counts it as missed
+  (`Brain.Metrics.Aggregator.get_missed_events/0`), and counts the next
+  event as usual once the aggregator is back.
 
   ## Events
 
@@ -46,7 +53,8 @@ defmodule Brain.Telemetry do
 
   ## Evaluation Events
 
-  - `[:chat_bot, :evaluation, :complete]` - Evaluation task completed (accuracy, F1, per-task results)
+  - `[:chat_bot, :evaluation, :complete]` - Evaluation task completed (accuracy, F1, per-task results).
+    No handler counts it: `Brain.ML.EvaluationStore` keeps each result in Atlas.
 
   ## Analysis Events
 
@@ -149,264 +157,125 @@ defmodule Brain.Telemetry do
   # Public API - Attach Handlers
   # ============================================================================
 
+  # Every handler `attach_handlers/0` attaches: its id, the event it is
+  # attached to, and the kind of event `Brain.Metrics.Aggregator` reads it as.
+  # `detach_handlers/0` detaches the same list, so no handler is left behind.
+  @handlers [
+    # Spans: how long each took, and the ones that raised
+    {"chatbot-brain-evaluate-stop", @brain_evaluate ++ [:stop], {:span_stop, :brain_evaluate}},
+    {"chatbot-brain-evaluate-exception", @brain_evaluate ++ [:exception], {:span_exception, :brain_evaluate}},
+    {"chatbot-pipeline-process-stop", @pipeline_process ++ [:stop], {:span_stop, :pipeline_process}},
+    {"chatbot-pipeline-process-exception", @pipeline_process ++ [:exception], {:span_exception, :pipeline_process}},
+    {"chatbot-memory-query-stop", @memory_query ++ [:stop], {:span_stop, :memory_query}},
+    {"chatbot-memory-embed-stop", @memory_embed ++ [:stop], {:span_stop, :memory_embed}},
+    {"chatbot-response-generate-stop", @response_generate ++ [:stop], {:span_stop, :response_generate}},
+    {"chatbot-response-template-lookup-stop", @response_template_lookup ++ [:stop],
+     {:span_stop, :response_template_lookup}},
+    {"chatbot-fact-database-query-stop", @fact_database_query ++ [:stop], {:span_stop, :fact_database_query}},
+    {"chatbot-gazetteer-lookup-stop", @gazetteer_lookup ++ [:stop], {:span_stop, :gazetteer_lookup}},
+    {"chatbot-entity-extract-stop", @entity_extract ++ [:stop], {:span_stop, :entity_extract}},
+    {"chatbot-knowledge-research-stop", @knowledge_research ++ [:stop], {:span_stop, :knowledge_research}},
+    {"chatbot-knowledge-research-exception", @knowledge_research ++ [:exception],
+     {:span_exception, :knowledge_research}},
+    {"chatbot-knowledge-corroborate-stop", @knowledge_corroborate ++ [:stop], {:span_stop, :knowledge_corroborate}},
+    {"chatbot-knowledge-corroborate-exception", @knowledge_corroborate ++ [:exception],
+     {:span_exception, :knowledge_corroborate}},
+    {"chatbot-knowledge-review-stop", @knowledge_review ++ [:stop], {:span_stop, :knowledge_review}},
+    {"chatbot-jtms-justify-stop", @jtms_justify ++ [:stop], {:span_stop, :jtms_justify}},
+    {"chatbot-jtms-justify-exception", @jtms_justify ++ [:exception], {:span_exception, :jtms_justify}},
+    {"chatbot-belief-operation-stop", @belief_operation ++ [:stop], {:span_stop, :belief_operation}},
+    {"chatbot-belief-operation-exception", @belief_operation ++ [:exception], {:span_exception, :belief_operation}},
+    {"chatbot-racing-analysis-stop", @racing_analysis ++ [:stop], {:span_stop, :racing_analysis}},
+    {"chatbot-racing-analysis-exception", @racing_analysis ++ [:exception], {:span_exception, :racing_analysis}},
+    {"chatbot-code-parse-stop", @code_parse ++ [:stop], {:span_stop, :code_parse}},
+    {"chatbot-code-parse-exception", @code_parse ++ [:exception], {:span_exception, :code_parse}},
+    {"chatbot-code-extract-stop", @code_extract ++ [:stop], {:span_stop, :code_extract}},
+    {"chatbot-code-extract-exception", @code_extract ++ [:exception], {:span_exception, :code_extract}},
+    {"chatbot-code-pipeline-stop", @code_pipeline ++ [:stop], {:span_stop, :code_pipeline}},
+    {"chatbot-code-pipeline-exception", @code_pipeline ++ [:exception], {:span_exception, :code_pipeline}},
+    {"chatbot-code-gazetteer-lookup-stop", @code_gazetteer_lookup ++ [:stop], {:span_stop, :code_gazetteer_lookup}},
+    {"chatbot-code-gazetteer-add-stop", @code_gazetteer_add ++ [:stop], {:span_stop, :code_gazetteer_add}},
+    {"chatbot-service-dispatch-exception", @service_dispatch ++ [:exception], {:span_exception, :service_dispatch}},
+    {"chatbot-service-enrichment-stop", @service_enrichment ++ [:stop], {:span_stop, :service_enrichment}},
+    {"chatbot-service-enrichment-exception", @service_enrichment ++ [:exception],
+     {:span_exception, :service_enrichment}},
+
+    # Semantic facts: retrieved for a turn, and the recurring pattern used
+    {"chatbot-semantic-fact-retrieved", @semantic_fact_retrieved, :semantic_facts_retrieved},
+    {"chatbot-semantic-fact-used", @semantic_fact_used, :semantic_fact_used},
+
+    # ML training and model loading
+    {"chatbot-ml-train-start", @ml_train ++ [:start], :training_start},
+    {"chatbot-ml-train-stop", @ml_train ++ [:stop], :training_stop},
+    {"chatbot-ml-train-exception", @ml_train ++ [:exception], :training_exception},
+    {"chatbot-model-load-stop", @model_load ++ [:stop], :model_load},
+
+    # Message queue sampling and error events
+    {"chatbot-message-queue", @message_queue, :message_queue},
+    {"chatbot-error", @error_event, :error},
+
+    # Learning/Training World events
+    {"chatbot-learning-entity-discovered", @learning_entity_discovered, {:learning, :entity_discovered}},
+    {"chatbot-learning-entity-promoted", @learning_entity_promoted, {:learning, :entity_promoted}},
+    {"chatbot-learning-ambiguity", @learning_ambiguity, {:learning, :ambiguity_detected}},
+    {"chatbot-learning-document", @learning_document_processed, {:learning, :document_processed}},
+    {"chatbot-learning-batch", @learning_batch_complete, {:learning, :batch_complete}},
+    {"chatbot-learning-world-created", @learning_world_created, {:learning, :world_created}},
+    {"chatbot-learning-world-destroyed", @learning_world_destroyed, {:learning, :world_destroyed}},
+
+    # Epistemic, racing analyzer, code analysis and consistency events
+    {"chatbot-fact-verification-stop", @epistemic_fact_verification ++ [:stop], :fact_verification},
+    {"chatbot-racing-early-exit", @racing_early_exit, :racing_early_exit},
+    {"chatbot-code-file-processed", @code_file_processed, :code_file_processed},
+    {"chatbot-consistency-disagreement", @consistency_disagreement, :consistency_disagreement},
+
+    # External services
+    {"chatbot-service-dispatch-stop", @service_dispatch ++ [:stop], :service_dispatch},
+    {"chatbot-service-cache-hit", @service_cache_hit, {:service_cache, :hit}},
+    {"chatbot-service-cache-miss", @service_cache_miss, {:service_cache, :miss}},
+    {"chatbot-service-health-check-stop", @service_health_check ++ [:stop], :service_health_check},
+    {"chatbot-service-credential", @service_credential_operation, :service_credential},
+
+    # KG signals and novelty
+    {"chatbot-kg-signal-scored", [:brain, :kg_signal, :scored], {:kg_signal, :scored}},
+    {"chatbot-kg-signal-cache-hit", [:brain, :kg_signal, :cache_hit], {:kg_signal, :cache_hit}},
+    {"chatbot-kg-signal-cache-miss", [:brain, :kg_signal, :cache_miss], {:kg_signal, :cache_miss}},
+    {"chatbot-kg-signal-cache-invalidated", [:brain, :kg_signal, :cache_invalidated],
+     {:kg_signal, :cache_invalidated}},
+    {"chatbot-kg-signal-srl-batch", [:brain, :kg_signal, :srl_batch], {:kg_signal, :srl_batch}},
+    {"chatbot-novelty-downweighted", [:brain, :novelty, :downweighted], {:kg_signal, :novelty_downweighted}},
+    {"chatbot-novelty-state-change", [:brain, :novelty, :state_change_detected], {:kg_signal, :novelty_state_change}}
+  ]
+
+  @handler_ids Enum.map(@handlers, &elem(&1, 0))
+
+  @doc "The id of every handler `attach_handlers/0` attaches."
+  @spec handler_ids() :: [String.t()]
+  def handler_ids, do: @handler_ids
+
   @doc """
   Attaches all telemetry handlers. Call this during application startup.
+  A handler attached already is left as it is, so calling it again attaches
+  only the ones that are not.
   """
   def attach_handlers do
-    handlers = [
-      # Brain evaluate handlers
-      {"chatbot-brain-evaluate-stop", @brain_evaluate ++ [:stop], &__MODULE__.handle_span_stop/4,
-       %{metric: :brain_evaluate}},
-      {"chatbot-brain-evaluate-exception", @brain_evaluate ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :brain_evaluate}},
+    :ok = Brain.Metrics.Aggregator.ensure_missed_counters()
 
-      # Pipeline process handlers
-      {"chatbot-pipeline-process-stop", @pipeline_process ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :pipeline_process}},
-      {"chatbot-pipeline-process-exception", @pipeline_process ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :pipeline_process}},
-
-      # Memory query handlers
-      {"chatbot-memory-query-stop", @memory_query ++ [:stop], &__MODULE__.handle_span_stop/4,
-       %{metric: :memory_query}},
-
-      # Semantic facts: retrieved for a turn, and the recurring pattern used
-      {"chatbot-semantic-fact-retrieved", @semantic_fact_retrieved,
-       &__MODULE__.handle_semantic_facts_retrieved/4, %{}},
-      {"chatbot-semantic-fact-used", @semantic_fact_used, &__MODULE__.handle_semantic_fact_used/4,
-       %{}},
-
-      # Response generation
-      {"chatbot-response-generate-stop", @response_generate ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :response_generate}},
-      {"chatbot-response-template-lookup-stop", @response_template_lookup ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :response_template_lookup}},
-
-      # Fact database
-      {"chatbot-fact-database-query-stop", @fact_database_query ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :fact_database_query}},
-
-      # Memory embed handlers
-      {"chatbot-memory-embed-stop", @memory_embed ++ [:stop], &__MODULE__.handle_span_stop/4,
-       %{metric: :memory_embed}},
-
-      # Gazetteer lookup handlers
-      {"chatbot-gazetteer-lookup-stop", @gazetteer_lookup ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :gazetteer_lookup}},
-
-      # Entity extraction handlers
-      {"chatbot-entity-extract-stop", @entity_extract ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :entity_extract}},
-
-      # ML Training handlers
-      {"chatbot-ml-train-start", @ml_train ++ [:start], &__MODULE__.handle_training_start/4, %{}},
-      {"chatbot-ml-train-stop", @ml_train ++ [:stop], &__MODULE__.handle_training_stop/4, %{}},
-      {"chatbot-ml-train-exception", @ml_train ++ [:exception],
-       &__MODULE__.handle_training_exception/4, %{}},
-
-      # Model load handlers
-      {"chatbot-model-load-stop", @model_load ++ [:stop], &__MODULE__.handle_model_load/4, %{}},
-
-      # Message queue sampling
-      {"chatbot-message-queue", @message_queue, &__MODULE__.handle_message_queue/4, %{}},
-
-      # Error events
-      {"chatbot-error", @error_event, &__MODULE__.handle_error/4, %{}},
-
-      # Learning/Training World events
-      {"chatbot-learning-entity-discovered", @learning_entity_discovered,
-       &__MODULE__.handle_learning_event/4, %{event: :entity_discovered}},
-      {"chatbot-learning-entity-promoted", @learning_entity_promoted,
-       &__MODULE__.handle_learning_event/4, %{event: :entity_promoted}},
-      {"chatbot-learning-ambiguity", @learning_ambiguity, &__MODULE__.handle_learning_event/4,
-       %{event: :ambiguity_detected}},
-      {"chatbot-learning-document", @learning_document_processed,
-       &__MODULE__.handle_learning_event/4, %{event: :document_processed}},
-      {"chatbot-learning-batch", @learning_batch_complete, &__MODULE__.handle_learning_event/4,
-       %{event: :batch_complete}},
-      {"chatbot-learning-world-created", @learning_world_created,
-       &__MODULE__.handle_learning_event/4, %{event: :world_created}},
-      {"chatbot-learning-world-destroyed", @learning_world_destroyed,
-       &__MODULE__.handle_learning_event/4, %{event: :world_destroyed}},
-
-      # Knowledge Expansion handlers
-      {"chatbot-knowledge-research-stop", @knowledge_research ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :knowledge_research}},
-      {"chatbot-knowledge-research-exception", @knowledge_research ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :knowledge_research}},
-      {"chatbot-knowledge-corroborate-stop", @knowledge_corroborate ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :knowledge_corroborate}},
-      {"chatbot-knowledge-corroborate-exception", @knowledge_corroborate ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :knowledge_corroborate}},
-      {"chatbot-knowledge-review-stop", @knowledge_review ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :knowledge_review}},
-
-      # Epistemic System handlers
-      {"chatbot-jtms-justify-stop", @jtms_justify ++ [:stop], &__MODULE__.handle_span_stop/4,
-       %{metric: :jtms_justify}},
-      {"chatbot-jtms-justify-exception", @jtms_justify ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :jtms_justify}},
-      {"chatbot-belief-operation-stop", @belief_operation ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :belief_operation}},
-      {"chatbot-belief-operation-exception", @belief_operation ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :belief_operation}},
-      {"chatbot-fact-verification-stop", @epistemic_fact_verification ++ [:stop],
-       &__MODULE__.handle_fact_verification/4, %{}},
-
-      # Racing Analyzer handlers
-      {"chatbot-racing-analysis-stop", @racing_analysis ++ [:stop], &__MODULE__.handle_span_stop/4,
-       %{metric: :racing_analysis}},
-      {"chatbot-racing-analysis-exception", @racing_analysis ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :racing_analysis}},
-      {"chatbot-racing-early-exit", @racing_early_exit, &__MODULE__.handle_racing_early_exit/4, %{}},
-
-      # Code Analysis handlers
-      {"chatbot-code-parse-stop", @code_parse ++ [:stop], &__MODULE__.handle_span_stop/4,
-       %{metric: :code_parse}},
-      {"chatbot-code-parse-exception", @code_parse ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :code_parse}},
-      {"chatbot-code-extract-stop", @code_extract ++ [:stop], &__MODULE__.handle_span_stop/4,
-       %{metric: :code_extract}},
-      {"chatbot-code-extract-exception", @code_extract ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :code_extract}},
-      {"chatbot-code-pipeline-stop", @code_pipeline ++ [:stop], &__MODULE__.handle_span_stop/4,
-       %{metric: :code_pipeline}},
-      {"chatbot-code-pipeline-exception", @code_pipeline ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :code_pipeline}},
-      {"chatbot-code-gazetteer-lookup-stop", @code_gazetteer_lookup ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :code_gazetteer_lookup}},
-      {"chatbot-code-gazetteer-add-stop", @code_gazetteer_add ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :code_gazetteer_add}},
-      {"chatbot-code-file-processed", @code_file_processed,
-       &__MODULE__.handle_code_file_processed/4, %{}},
-
-      # Evaluation handlers
-      {"chatbot-evaluation-complete", @evaluation_complete,
-       &__MODULE__.handle_evaluation_complete/4, %{}},
-
-      # Consistency handlers
-      {"chatbot-consistency-disagreement", @consistency_disagreement,
-       &__MODULE__.handle_consistency_disagreement/4, %{}},
-
-      # External Services handlers
-      {"chatbot-service-dispatch-stop", @service_dispatch ++ [:stop],
-       &__MODULE__.handle_service_dispatch/4, %{}},
-      {"chatbot-service-dispatch-exception", @service_dispatch ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :service_dispatch}},
-      {"chatbot-service-enrichment-stop", @service_enrichment ++ [:stop],
-       &__MODULE__.handle_span_stop/4, %{metric: :service_enrichment}},
-      {"chatbot-service-enrichment-exception", @service_enrichment ++ [:exception],
-       &__MODULE__.handle_span_exception/4, %{metric: :service_enrichment}},
-      {"chatbot-service-cache-hit", @service_cache_hit,
-       &__MODULE__.handle_service_cache/4, %{type: :hit}},
-      {"chatbot-service-cache-miss", @service_cache_miss,
-       &__MODULE__.handle_service_cache/4, %{type: :miss}},
-      {"chatbot-service-health-check-stop", @service_health_check ++ [:stop],
-       &__MODULE__.handle_service_health_check/4, %{}},
-      {"chatbot-service-credential", @service_credential_operation,
-       &__MODULE__.handle_service_credential/4, %{}},
-
-      # KG Signal handlers
-      {"chatbot-kg-signal-scored", [:brain, :kg_signal, :scored],
-       &__MODULE__.handle_kg_signal/4, %{event: :scored}},
-      {"chatbot-kg-signal-cache-hit", [:brain, :kg_signal, :cache_hit],
-       &__MODULE__.handle_kg_signal/4, %{event: :cache_hit}},
-      {"chatbot-kg-signal-cache-miss", [:brain, :kg_signal, :cache_miss],
-       &__MODULE__.handle_kg_signal/4, %{event: :cache_miss}},
-      {"chatbot-kg-signal-cache-invalidated", [:brain, :kg_signal, :cache_invalidated],
-       &__MODULE__.handle_kg_signal/4, %{event: :cache_invalidated}},
-      {"chatbot-kg-signal-srl-batch", [:brain, :kg_signal, :srl_batch],
-       &__MODULE__.handle_kg_signal/4, %{event: :srl_batch}},
-      {"chatbot-novelty-downweighted", [:brain, :novelty, :downweighted],
-       &__MODULE__.handle_kg_signal/4, %{event: :novelty_downweighted}},
-      {"chatbot-novelty-state-change", [:brain, :novelty, :state_change_detected],
-       &__MODULE__.handle_kg_signal/4, %{event: :novelty_state_change}}
-    ]
-
-    Enum.each(handlers, fn {id, event, handler, config} ->
-      :telemetry.attach(id, event, handler, config)
+    Enum.each(@handlers, fn {id, event, kind} ->
+      case :telemetry.attach(id, event, &__MODULE__.handle_event/4, %{handler_id: id, kind: kind}) do
+        :ok -> :ok
+        {:error, :already_exists} -> :ok
+      end
     end)
 
     :ok
   end
 
   @doc """
-  Detaches all telemetry handlers. Useful for testing.
+  Detaches every handler `attach_handlers/0` attaches. Useful for testing.
   """
   def detach_handlers do
-    handler_ids = [
-      "chatbot-brain-evaluate-stop",
-      "chatbot-brain-evaluate-exception",
-      "chatbot-pipeline-process-stop",
-      "chatbot-pipeline-process-exception",
-      "chatbot-memory-query-stop",
-      "chatbot-semantic-fact-retrieved",
-      "chatbot-semantic-fact-used",
-      "chatbot-memory-embed-stop",
-      "chatbot-response-generate-stop",
-      "chatbot-response-template-lookup-stop",
-      "chatbot-fact-database-query-stop",
-      "chatbot-gazetteer-lookup-stop",
-      "chatbot-entity-extract-stop",
-      "chatbot-ml-train-start",
-      "chatbot-ml-train-stop",
-      "chatbot-ml-train-exception",
-      "chatbot-model-load-stop",
-      "chatbot-message-queue",
-      "chatbot-error",
-      # Learning events
-      "chatbot-learning-entity-discovered",
-      "chatbot-learning-entity-promoted",
-      "chatbot-learning-ambiguity",
-      "chatbot-learning-document",
-      "chatbot-learning-batch",
-      "chatbot-learning-world-created",
-      "chatbot-learning-world-destroyed",
-      # Knowledge Expansion events
-      "chatbot-knowledge-research-stop",
-      "chatbot-knowledge-research-exception",
-      "chatbot-knowledge-corroborate-stop",
-      "chatbot-knowledge-corroborate-exception",
-      "chatbot-knowledge-review-stop",
-      # Epistemic events
-      "chatbot-fact-verification-stop",
-      "chatbot-jtms-justify-stop",
-      "chatbot-jtms-justify-exception",
-      "chatbot-belief-operation-stop",
-      "chatbot-belief-operation-exception",
-      # Racing analyzer events
-      "chatbot-racing-analysis-stop",
-      "chatbot-racing-analysis-exception",
-      "chatbot-racing-early-exit",
-      # Code analysis events
-      "chatbot-code-parse-stop",
-      "chatbot-code-parse-exception",
-      "chatbot-code-extract-stop",
-      "chatbot-code-extract-exception",
-      "chatbot-code-pipeline-stop",
-      "chatbot-code-pipeline-exception",
-      "chatbot-code-gazetteer-lookup-stop",
-      "chatbot-code-gazetteer-add-stop",
-      "chatbot-code-file-processed",
-      # Evaluation events
-      "chatbot-evaluation-complete",
-      # Consistency events
-      "chatbot-consistency-disagreement",
-      # External services events
-      "chatbot-service-dispatch-stop",
-      "chatbot-service-dispatch-exception",
-      "chatbot-service-enrichment-stop",
-      "chatbot-service-enrichment-exception",
-      "chatbot-service-cache-hit",
-      "chatbot-service-cache-miss",
-      "chatbot-service-health-check-stop",
-      "chatbot-service-credential"
-    ]
-
-    Enum.each(handler_ids, fn id ->
-      :telemetry.detach(id)
-    end)
-
+    Enum.each(@handler_ids, &:telemetry.detach/1)
     :ok
   end
 
@@ -818,270 +687,15 @@ defmodule Brain.Telemetry do
   end
 
   # ============================================================================
-  # Handler Functions (Must be fast - use cast only)
-  # These are public so telemetry can call them efficiently as module functions
+  # The handler
   # ============================================================================
 
   @doc false
-  def handle_span_stop(_event, measurements, metadata, config) do
-    duration_ms = native_to_ms(measurements[:duration])
-    metric = config[:metric]
-
-    # Fire-and-forget cast to aggregator
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_duration, metric, duration_ms, metadata}
-      )
-    end
+  # The one handler every event is attached to. It reads nothing out of the
+  # event, so a malformed event cannot make it raise; the aggregator reads
+  # the event and records a malformed one as missed. When the aggregator is
+  # not running, `submit/2` logs the event and counts it as missed.
+  def handle_event(_event, measurements, metadata, %{handler_id: handler_id, kind: kind}) do
+    Brain.Metrics.Aggregator.submit(handler_id, {:telemetry, kind, measurements, metadata, DateTime.utc_now()})
   end
-
-  @doc false
-  def handle_span_exception(_event, measurements, metadata, config) do
-    duration_ms = native_to_ms(measurements[:duration])
-    metric = config[:metric]
-
-    # Fire-and-forget cast to aggregator
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_error, metric, duration_ms, metadata}
-      )
-    end
-  end
-
-  @doc false
-  def handle_semantic_facts_retrieved(_event, _measurements, metadata, _config) do
-    GenServer.cast(
-      semantic_fact_aggregator!(:retrieved),
-      {:record_semantic_facts_retrieved, Map.fetch!(metadata, :world_id), Map.fetch!(metadata, :similarities),
-       Map.fetch!(metadata, :recurring_pattern_id)}
-    )
-  end
-
-  @doc false
-  def handle_semantic_fact_used(_event, measurements, metadata, _config) do
-    GenServer.cast(
-      semantic_fact_aggregator!(:used),
-      {:record_semantic_fact_used, Map.fetch!(metadata, :world_id), Map.fetch!(metadata, :used_by),
-       Map.fetch!(measurements, :similarity)}
-    )
-  end
-
-  # The semantic-fact events are measured per world; one the aggregator does
-  # not count is a gap in that measurement, so its absence raises.
-  defp semantic_fact_aggregator!(event) do
-    Process.whereis(Brain.Metrics.Aggregator) ||
-      raise "Brain.Telemetry: the semantic fact #{event} event cannot be counted: " <>
-              "Brain.Metrics.Aggregator is not running"
-  end
-
-  @doc false
-  def handle_message_queue(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_queue_size, metadata[:genserver], measurements[:queue_length]}
-      )
-    end
-  end
-
-  @doc false
-  def handle_error(_event, _measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_error_event, metadata[:error_type], metadata[:details]}
-      )
-    end
-  end
-
-  @doc false
-  def handle_training_start(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_training_start, metadata[:model], measurements[:sequence_count], metadata}
-      )
-    end
-  end
-
-  @doc false
-  def handle_training_stop(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_training_stop, metadata[:model], measurements, metadata}
-      )
-    end
-  end
-
-  @doc false
-  def handle_training_exception(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_training_exception, metadata[:model], measurements, metadata}
-      )
-    end
-  end
-
-  @doc false
-  def handle_model_load(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_model_load, metadata[:model], measurements[:duration_ms], metadata}
-      )
-    end
-  end
-
-  @doc false
-  def handle_learning_event(_event, measurements, metadata, config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_learning_event, config[:event], measurements, metadata}
-      )
-    end
-  end
-
-  @doc false
-  def handle_racing_early_exit(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_racing_early_exit, metadata[:analyzer], measurements[:confidence],
-         measurements[:duration_ms]}
-      )
-    end
-  end
-
-  @doc false
-  def handle_code_file_processed(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_code_file_processed, metadata[:file_path], metadata[:language],
-         measurements[:symbols_count], measurements[:relations_count], measurements[:duration_ms]}
-      )
-    end
-  end
-
-  # ============================================================================
-  # Evaluation Handlers
-  # ============================================================================
-
-  @doc false
-  def handle_evaluation_complete(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_evaluation_complete, metadata[:task], measurements}
-      )
-    end
-  end
-
-  # ============================================================================
-  # External Services Handlers
-  # ============================================================================
-
-  @doc false
-  def handle_service_dispatch(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      # Duration is already in milliseconds from emit_service_dispatch
-      duration_ms = measurements[:duration] || 0
-
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_service_dispatch, metadata[:service], metadata[:intent], metadata[:status],
-         duration_ms}
-      )
-    end
-  end
-
-  @doc false
-  def handle_service_cache(_event, measurements, metadata, config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_service_cache, config[:type], metadata[:service], measurements[:count]}
-      )
-    end
-  end
-
-  @doc false
-  def handle_service_health_check(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      # Duration is already in milliseconds from the emit function
-      duration_ms = measurements[:duration] || 0
-
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_service_health_check, metadata[:service], metadata[:status], duration_ms}
-      )
-    end
-  end
-
-  @doc false
-  def handle_service_credential(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_service_credential, metadata[:operation], metadata[:service],
-         measurements[:count]}
-      )
-    end
-  end
-
-  @doc false
-  def handle_consistency_disagreement(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_consistency_disagreement, Map.merge(measurements, metadata)}
-      )
-    end
-  end
-
-  # ============================================================================
-  # Epistemic System Handlers
-  # ============================================================================
-
-  @doc false
-  def handle_fact_verification(_event, measurements, metadata, _config) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      duration_ms = measurements[:duration] || 0
-
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_fact_verification, metadata[:status], metadata[:subject],
-         metadata[:beliefs_count] || 0, duration_ms}
-      )
-    end
-  end
-
-  # ============================================================================
-  # KG Signal Handlers
-  # ============================================================================
-
-  @doc false
-  def handle_kg_signal(_event, measurements, _metadata, %{event: event_type}) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(
-        Brain.Metrics.Aggregator,
-        {:record_kg_signal, event_type, measurements}
-      )
-    end
-  end
-
-  # ============================================================================
-  # Helpers
-  # ============================================================================
-
-  defp native_to_ms(duration) when is_integer(duration) do
-    System.convert_time_unit(duration, :native, :millisecond)
-  end
-
-  defp native_to_ms(_), do: 0
 end
