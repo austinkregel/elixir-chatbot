@@ -332,8 +332,11 @@ defmodule Brain.Analysis.Pipeline do
 
     # Only decided spans are entities. The spans extraction could not decide
     # travel apart, on the analysis's `unresolved_spans`, so no stage that acts
-    # on entities sees one.
-    %{entities: entities, unresolved_spans: unresolved_spans} = extract_entities(resolved_text, entity_opts)
+    # on entities sees one. The candidates are kept for pass 2, which
+    # disambiguates them again once the chunk's profile is known.
+    %{entities: entities, unresolved_spans: unresolved_spans, candidates: entity_candidates} =
+      extract_entities(resolved_text, entity_opts)
+
     entities = merge_anaphora_entities(entities, anaphora_entities)
 
     if debug_pass1?, do: Logger.info("pipeline:pass1 extract_entities=#{System.monotonic_time(:millisecond) - t0}ms")
@@ -423,6 +426,7 @@ defmodule Brain.Analysis.Pipeline do
     pass1_analysis
     |> Map.put(:intent, prelim_intent)
     |> Map.put(:pass, 1)
+    |> Map.put(:_entity_candidates, entity_candidates)
     |> Map.put(
       :_prelim_intent,
       %{
@@ -530,6 +534,7 @@ defmodule Brain.Analysis.Pipeline do
 
     pass1
     |> Map.delete(:_prelim_intent)
+    |> Map.delete(:_entity_candidates)
     |> Map.put(:speech_act, refined_speech_act)
     |> Map.put(:intent, intent)
     |> Map.put(:slots, default_empty_slots())
@@ -595,13 +600,23 @@ defmodule Brain.Analysis.Pipeline do
       pass: 2
     })
 
-    # Now that the intent is known, weigh each entity's candidate readings
-    # against the entity types its slot schema expects. The spans extraction
-    # could not decide are on `pass1.unresolved_spans`, with their readings and
-    # candidates, and carried unchanged into this analysis; nothing here acts
-    # on them.
+    # The chunk's profile is known now: the entities are disambiguated again
+    # with it, and take only the types that gives them.
+    retyped_entities = retype_with_profile(pass1, refined_speech_act, chunk_profile, opts)
+
+    # The intent is known now too: each span extraction could not decide is
+    # weighed again with what the intent says about its readings' types. A
+    # span that evidence decides is an entity from here on; the rest stay on
+    # the analysis's `unresolved_spans`.
+    %{entities: intent_resolved, unresolved_spans: unresolved_spans} =
+      resolve_spans_with_intent(pass1, intent, opts)
+
+    # Then each entity's candidate readings are weighed against the entity
+    # types the intent's slot schema expects.
     rescored_entities =
-      Brain.Analysis.EntityTypeScorer.rescore(pass1.entities, intent, language: Map.fetch!(pass1, :language))
+      Brain.Analysis.EntityTypeScorer.rescore(retyped_entities ++ intent_resolved, intent,
+        language: Map.fetch!(pass1, :language)
+      )
 
     {entities_after_inference, intent, intent_details} =
       Brain.Analysis.ContextualEntityInferrer.infer(
@@ -702,9 +717,11 @@ defmodule Brain.Analysis.Pipeline do
     analysis =
       pass1
       |> Map.delete(:_prelim_intent)
+      |> Map.delete(:_entity_candidates)
       |> Map.put(:speech_act, refined_speech_act)
       |> Map.put(:intent, intent)
       |> Map.put(:entities, relevant_entities)
+      |> Map.put(:unresolved_spans, unresolved_spans)
       |> Map.put(:slots, resolved_slots)
       |> Map.put(:missing_context, resolved_slots.missing_required)
       |> Map.put(:fact_verification, fact_result.verification)
@@ -832,20 +849,100 @@ defmodule Brain.Analysis.Pipeline do
     {lattice, feature_vector}
   end
 
-  # `%{entities: decided, unresolved_spans: undecided}`. When extraction is
-  # skipped, or the caller passed its entities, no extraction ran, so no span
-  # was left undecided.
+  # `%{entities: decided, unresolved_spans: undecided, candidates: candidates}`.
+  # When extraction is skipped, or the caller passed its entities, no
+  # extraction ran: no span was left undecided, and there are no candidates to
+  # disambiguate again (`candidates: nil`).
   defp extract_entities(text, opts) do
     cond do
       Keyword.get(opts, :skip_entity_extraction, false) ->
-        %{entities: [], unresolved_spans: []}
+        %{entities: [], unresolved_spans: [], candidates: nil}
 
       Keyword.has_key?(opts, :entities) ->
-        %{entities: Keyword.fetch!(opts, :entities), unresolved_spans: []}
+        %{entities: Keyword.fetch!(opts, :entities), unresolved_spans: [], candidates: nil}
 
       true ->
         EntityExtractor.extract(text, opts)
     end
+  end
+
+  # Pass 1's entities with the types disambiguation gives their candidates
+  # once the chunk's profile is known (`EntityExtractor.disambiguate/3`, with
+  # the refined speech act). Only the type fields are written back, matched by
+  # offsets (`EntityExtractor.put_types/2`): pass 1's values, confidences and
+  # graph enrichment stay. With no candidates -- no extraction ran -- the
+  # entities are pass 1's.
+  defp retype_with_profile(pass1, speech_act, %ChunkProfile{} = profile, opts) do
+    case Map.fetch!(pass1, :_entity_candidates) do
+      nil ->
+        pass1.entities
+
+      candidates ->
+        retyped =
+          EntityExtractor.disambiguate(
+            candidates,
+            %{discourse: pass1.discourse, speech_act: speech_act, profile: profile},
+            opts
+          )
+
+        entities = EntityExtractor.put_types(pass1.entities, retyped)
+
+        Progress.report(opts, :entities_retyped, %{
+          chunk_index: pass1.chunk_index,
+          profile_domain: profile.domain,
+          changes:
+            pass1.entities
+            |> Enum.zip(entities)
+            |> Enum.filter(fn {before, now} -> Map.get(before, :entity_type) != Map.get(now, :entity_type) end)
+            |> Enum.map(fn {before, now} ->
+              %{
+                value: Map.get(now, :value),
+                start_pos: Map.get(now, :start_pos),
+                end_pos: Map.get(now, :end_pos),
+                from: Map.get(before, :entity_type),
+                to: Map.get(now, :entity_type),
+                disambiguation_source: Map.get(now, :disambiguation_source)
+              }
+            end)
+        })
+
+        entities
+    end
+  end
+
+  # The spans pass 1 left unresolved, decided again with what the intent says
+  # about their readings' types (`EntityExtractor.resolve_with_intent/3`). The
+  # spans it decides are entities, enriched from the graph as pass 1's were;
+  # what became of every span, and why, is reported.
+  defp resolve_spans_with_intent(pass1, intent, opts) do
+    %{entities: resolved, unresolved_spans: rest, outcomes: outcomes} =
+      EntityExtractor.resolve_with_intent(
+        pass1.unresolved_spans,
+        intent,
+        opts |> Keyword.take([:min_confidence]) |> Keyword.put(:language, Map.fetch!(pass1, :language))
+      )
+
+    Progress.report(opts, :unresolved_spans_resolved, %{
+      chunk_index: pass1.chunk_index,
+      intent: intent,
+      resolved_count: length(resolved),
+      outcomes: Enum.map(outcomes, &span_outcome_to_dev_map/1)
+    })
+
+    resolved = if resolved == [], do: [], else: EntityGraphEnricher.enrich(resolved, world_id!(opts))
+    %{entities: resolved, unresolved_spans: rest}
+  end
+
+  # What the inspector shows of pass 2's attempt on an unresolved span: the
+  # outcome, the type it decided or led with, its score and margin in summed
+  # log-odds, and what the intent said about each hypothesis label.
+  defp span_outcome_to_dev_map(outcome) do
+    outcome
+    |> Map.update(:evidence, [], fn evidence ->
+      evidence
+      |> Enum.sort_by(fn {type, log_ratio} -> {-log_ratio, type} end)
+      |> Enum.map(fn {type, log_ratio} -> %{type: type, log_ratio: log_ratio} end)
+    end)
   end
 
   defp entity_to_dev_map(entity) when is_map(entity) do
