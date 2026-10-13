@@ -13,7 +13,8 @@ defmodule Brain.Telemetry do
   - `[:chat_bot, :pipeline, :process, :start | :stop | :exception]` - Pipeline processing
   - `[:chat_bot, :memory, :query, :start | :stop]` - Memory queries
   - `[:chat_bot, :memory, :semantic_fact, :retrieved]` - Semantic facts retrieved for a turn, and the recurring pattern found among them (`Brain.Memory.RecurringPattern`)
-  - `[:chat_bot, :memory, :semantic_fact, :used]` - A response built from a recurring pattern, by the synthesizer or the realization packet
+  - `[:chat_bot, :memory, :semantic_fact, :used]` - A turn's response built from its recurring pattern, by the synthesizer or the realization packet; once per turn
+    (both counted per world by `Brain.Metrics.Aggregator.get_semantic_fact_metrics/1`)
   - `[:chat_bot, :memory, :embed, :start | :stop]` - Embedding operations
   - `[:chat_bot, :gazetteer, :lookup, :start | :stop]` - Gazetteer lookups
   - `[:chat_bot, :ml, :train, :start | :stop | :exception]` - ML model training
@@ -168,6 +169,12 @@ defmodule Brain.Telemetry do
       # Memory query handlers
       {"chatbot-memory-query-stop", @memory_query ++ [:stop], &__MODULE__.handle_span_stop/4,
        %{metric: :memory_query}},
+
+      # Semantic facts: retrieved for a turn, and the recurring pattern used
+      {"chatbot-semantic-fact-retrieved", @semantic_fact_retrieved,
+       &__MODULE__.handle_semantic_facts_retrieved/4, %{}},
+      {"chatbot-semantic-fact-used", @semantic_fact_used, &__MODULE__.handle_semantic_fact_used/4,
+       %{}},
 
       # Response generation
       {"chatbot-response-generate-stop", @response_generate ++ [:stop],
@@ -333,6 +340,8 @@ defmodule Brain.Telemetry do
       "chatbot-pipeline-process-stop",
       "chatbot-pipeline-process-exception",
       "chatbot-memory-query-stop",
+      "chatbot-semantic-fact-retrieved",
+      "chatbot-semantic-fact-used",
       "chatbot-memory-embed-stop",
       "chatbot-response-generate-stop",
       "chatbot-response-template-lookup-stop",
@@ -839,6 +848,32 @@ defmodule Brain.Telemetry do
         {:record_error, metric, duration_ms, metadata}
       )
     end
+  end
+
+  @doc false
+  def handle_semantic_facts_retrieved(_event, _measurements, metadata, _config) do
+    GenServer.cast(
+      semantic_fact_aggregator!(:retrieved),
+      {:record_semantic_facts_retrieved, Map.fetch!(metadata, :world_id), Map.fetch!(metadata, :similarities),
+       Map.fetch!(metadata, :recurring_pattern_id)}
+    )
+  end
+
+  @doc false
+  def handle_semantic_fact_used(_event, measurements, metadata, _config) do
+    GenServer.cast(
+      semantic_fact_aggregator!(:used),
+      {:record_semantic_fact_used, Map.fetch!(metadata, :world_id), Map.fetch!(metadata, :used_by),
+       Map.fetch!(measurements, :similarity)}
+    )
+  end
+
+  # The semantic-fact events are measured per world; one the aggregator does
+  # not count is a gap in that measurement, so its absence raises.
+  defp semantic_fact_aggregator!(event) do
+    Process.whereis(Brain.Metrics.Aggregator) ||
+      raise "Brain.Telemetry: the semantic fact #{event} event cannot be counted: " <>
+              "Brain.Metrics.Aggregator is not running"
   end
 
   @doc false
