@@ -21,6 +21,8 @@ defmodule Brain.Test.AtlasSandbox do
     Brain.Lexicon.UserDefined,
     Brain.Knowledge.LearningTriggers,
     Brain.Services.LocalScheduler,
+    # Writes each world's semantic-fact metric counts.
+    Brain.Metrics.Aggregator,
     # Creates each world's graphs when it creates or loads the world.
     World.Manager
   ]
