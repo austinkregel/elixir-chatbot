@@ -792,4 +792,43 @@ this is typically a no-op, but some tests call it directly as a safety check.
       dot / (mag1 * mag2)
     end
   end
+
+  @doc """
+  Up to `limit` NER gold training sentences, taken by a fixed stride, in which
+  entity extraction in `world_id` leaves a span undecided before any context
+  is weighed, as `{text, spans}`: the undecided spans whose text no decided
+  entity of the sentence shares. Any extraction of the sentence -- with
+  discourse, speech act or intent -- leaves them undecided too, so a test can
+  follow them through whatever runs on the sentence. Raises when no sentence
+  has one, since a test built on them would then exercise nothing.
+  """
+  def undecided_span_cases(world_id, limit) when is_binary(world_id) and is_integer(limit) and limit > 0 do
+    rows = Brain.ML.EvaluationStore.load_gold_standard("ner", :train)
+
+    cases =
+      rows
+      |> Enum.take_every(max(div(length(rows), 200), 1))
+      |> Enum.map(& &1["text"])
+      |> Enum.flat_map(fn text ->
+        %{entities: entities, unresolved_spans: unresolved} =
+          Brain.ML.EntityExtractor.extract(text, world_id: world_id, skip_disambiguation: true)
+
+        decided_values = MapSet.new(entities, &String.downcase(&1.value))
+
+        undecided =
+          Enum.filter(unresolved, fn span ->
+            span.unresolved_reason in [:insufficient_evidence, :no_measured_reading] and
+              not MapSet.member?(decided_values, String.downcase(span.value))
+          end)
+
+        if undecided == [], do: [], else: [{text, undecided}]
+      end)
+      |> Enum.take(limit)
+
+    if cases == [] do
+      raise "no NER gold sentence leaves a span undecided in world #{inspect(world_id)}; nothing would be exercised"
+    end
+
+    cases
+  end
 end
