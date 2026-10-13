@@ -4,6 +4,10 @@ defmodule Atlas.WorldServiceDriversTest do
   its world and capability only, choosing again replaces it, a world has at
   most one row per capability, and a row without a world or driver, or for an
   unknown capability, is refused.
+
+  The store keeps whatever driver name it is given; which names are drivers
+  is decided by `Brain.Services.Dispatcher`, so `"test_other_driver"` stands
+  for any second name.
   """
   use Atlas.DataCase, async: false
 
@@ -23,20 +27,20 @@ defmodule Atlas.WorldServiceDriversTest do
 
     test "choosing again replaces the driver and leaves one row" do
       WorldServiceDrivers.put!(@world_a, "scheduling", "local_scheduler")
-      WorldServiceDrivers.put!(@world_a, "scheduling", "home_assistant")
+      WorldServiceDrivers.put!(@world_a, "scheduling", "test_other_driver")
 
-      assert WorldServiceDrivers.fetch(@world_a, "scheduling") == {:ok, "home_assistant"}
+      assert WorldServiceDrivers.fetch(@world_a, "scheduling") == {:ok, "test_other_driver"}
 
-      assert [%WorldServiceDriver{driver: "home_assistant"}] =
+      assert [%WorldServiceDriver{driver: "test_other_driver"}] =
                Repo.all(from(d in WorldServiceDriver, where: d.world_id == ^@world_a))
     end
 
     test "one world's choice leaves another world's" do
       WorldServiceDrivers.put!(@world_a, "scheduling", "local_scheduler")
-      WorldServiceDrivers.put!(@world_b, "scheduling", "home_assistant")
+      WorldServiceDrivers.put!(@world_b, "scheduling", "test_other_driver")
 
       assert WorldServiceDrivers.fetch(@world_a, "scheduling") == {:ok, "local_scheduler"}
-      assert WorldServiceDrivers.fetch(@world_b, "scheduling") == {:ok, "home_assistant"}
+      assert WorldServiceDrivers.fetch(@world_b, "scheduling") == {:ok, "test_other_driver"}
     end
 
     test "refuses a row without a world, with a blank world or driver, or for an unknown capability" do
@@ -66,7 +70,7 @@ defmodule Atlas.WorldServiceDriversTest do
       Repo.insert!(WorldServiceDriver.changeset(%WorldServiceDriver{}, attrs))
 
       assert {:error, changeset} =
-               Repo.insert(WorldServiceDriver.changeset(%WorldServiceDriver{}, %{attrs | driver: "home_assistant"}))
+               Repo.insert(WorldServiceDriver.changeset(%WorldServiceDriver{}, %{attrs | driver: "test_other_driver"}))
 
       assert {"has already been taken", _} = changeset.errors[:world_id]
       assert WorldServiceDrivers.fetch(@world_a, "scheduling") == {:ok, "local_scheduler"}
