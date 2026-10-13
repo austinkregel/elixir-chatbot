@@ -48,37 +48,68 @@
     <!-- Semantic Facts in Responses -->
     <section id="semantic-fact-metrics" class="panel overflow-hidden">
       <div class="p-space-lg border-b border-border">
-        <div class="flex items-center gap-space-md">
-          <div class="p-space-sm rounded-md bg-surface-sunk">
-            <.icon name="hero-circle-stack" class="size-5 text-ink-muted" />
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-space-md">
+          <div class="flex items-center gap-space-md">
+            <div class="p-space-sm rounded-md bg-surface-sunk">
+              <.icon name="hero-circle-stack" class="size-5 text-ink-muted" />
+            </div>
+            <div>
+              <h2 class="text-heading text-ink">Semantic Facts in Responses</h2>
+              <p id="semantic-fact-window" class="text-caption text-ink-muted">
+                <%= if @semantic_fact_metrics.current.window do %>
+                  Retrievals, recurring patterns found and used in this world, since
+                  {format_window_time(@semantic_fact_metrics.current.window.started_at)}
+                <% else %>
+                  Nothing counted in this world yet
+                <% end %>
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 class="text-heading text-ink">Semantic Facts in Responses</h2>
-            <p class="text-caption text-ink-muted">
-              Retrievals, recurring patterns found and used in this world, since the brain started
-            </p>
-          </div>
+          <.btn
+            id="semantic-fact-start-window"
+            type="button"
+            phx-click="open_semantic_fact_window_confirm"
+            variant={:outline}
+            size={:sm}
+            reach={:shared}
+            target={"semantic fact metrics of world #{@current_world_id}"}
+            icon="hero-flag"
+          >
+            Start New Window
+          </.btn>
         </div>
+        <.execute_confirm
+          id="semantic-fact-window-confirm"
+          open={@semantic_fact_window_confirm_open}
+          reach={:shared}
+          verb="Start new window"
+          target={"semantic fact metrics of world #{@current_world_id}"}
+          consequence={"Ends the current measurement window of world #{@current_world_id} in Atlas, keeping its counts to compare with, and counts from now on in a new window that starts at zero."}
+          on_confirm="start_semantic_fact_window"
+          on_cancel="close_semantic_fact_window_confirm"
+          trigger_id="semantic-fact-start-window"
+          class="mt-space-sm"
+        />
       </div>
       <div class="p-space-lg space-y-space-lg">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-space-md">
           <div class="rounded-md border border-border bg-surface-sunk p-space-md">
             <div id="semantic-fact-retrievals" class="text-heading tabular-nums text-ink">
-              {@semantic_fact_metrics.retrievals}
+              {@semantic_fact_metrics.current.retrievals}
             </div>
             <div class="text-caption text-ink-muted">Turns retrieving facts</div>
             <div class="text-caption text-ink-muted mt-space-2xs">
-              {@semantic_fact_metrics.facts_retrieved} fact(s) retrieved
+              {@semantic_fact_metrics.current.facts_retrieved} fact(s) retrieved
             </div>
           </div>
           <div class="rounded-md border border-border bg-surface-sunk p-space-md">
             <div id="semantic-fact-patterns-found" class="text-heading tabular-nums text-ink">
-              {@semantic_fact_metrics.patterns_found}
+              {@semantic_fact_metrics.current.patterns_found}
             </div>
             <div class="text-caption text-ink-muted">Recurring pattern found</div>
             <div class="text-caption text-ink-muted mt-space-2xs">
-              <%= if @semantic_fact_metrics.pattern_found_rate do %>
-                {@semantic_fact_metrics.pattern_found_rate}% of retrievals
+              <%= if @semantic_fact_metrics.current.pattern_found_rate do %>
+                {@semantic_fact_metrics.current.pattern_found_rate}% of retrievals
               <% else %>
                 no retrievals yet
               <% end %>
@@ -86,23 +117,35 @@
           </div>
           <div class="rounded-md border border-border bg-surface-sunk p-space-md">
             <div id="semantic-fact-used-synthesizer" class="text-heading tabular-nums text-ink">
-              {@semantic_fact_metrics.used.synthesizer}
+              {@semantic_fact_metrics.current.used.synthesizer}
             </div>
             <div class="text-caption text-ink-muted">Used by synthesizer</div>
           </div>
           <div class="rounded-md border border-border bg-surface-sunk p-space-md">
             <div id="semantic-fact-used-realization-packet" class="text-heading tabular-nums text-ink">
-              {@semantic_fact_metrics.used.realization_packet}
+              {@semantic_fact_metrics.current.used.realization_packet}
             </div>
             <div class="text-caption text-ink-muted">Used by realization packet</div>
           </div>
         </div>
 
+        <%= if previous = @semantic_fact_metrics.previous do %>
+          <div id="semantic-fact-previous-window" class="rounded-md border border-border p-space-md text-caption text-ink-muted">
+            <span class="font-semibold text-ink">Previous window</span>
+            {format_window_time(previous.window.started_at)} to {format_window_time(previous.window.ended_at)}:
+            <span class="tabular-nums text-ink">{previous.retrievals}</span> turn(s) retrieving facts
+            (<span class="tabular-nums">{previous.facts_retrieved}</span> fact(s)),
+            <span class="tabular-nums text-ink">{previous.patterns_found}</span> recurring pattern(s) found<%= if previous.pattern_found_rate do %> ({previous.pattern_found_rate}% of retrievals)<% end %>,
+            used by synthesizer <span class="tabular-nums text-ink">{previous.used.synthesizer}</span>,
+            by realization packet <span class="tabular-nums text-ink">{previous.used.realization_packet}</span>
+          </div>
+        <% end %>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
           <%= for {distribution, label} <- [{:retrieved_similarity, "Similarity of retrieved facts"}, {:used_similarity, "Similarity of patterns used"}] do %>
             <div id={"semantic-fact-#{distribution}"} class="rounded-md border border-border bg-surface-sunk p-space-md">
               <div class="text-caption font-semibold text-ink mb-space-sm">{label}</div>
-              <% buckets = Map.fetch!(@semantic_fact_metrics, distribution) %>
+              <% buckets = Map.fetch!(@semantic_fact_metrics.current, distribution) %>
               <%= if buckets == [] do %>
                 <p class="text-caption text-ink-muted">None counted yet</p>
               <% else %>
