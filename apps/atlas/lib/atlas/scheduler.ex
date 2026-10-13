@@ -39,4 +39,32 @@ defmodule Atlas.Scheduler do
 
     count
   end
+
+  @doc """
+  Deletes the world's items of one kind whose ids are given, and returns how
+  many were deleted. Every id must name an item of that world and kind: when
+  one does not, nothing is deleted and this raises, naming the ids.
+  """
+  @spec delete_items_by_id!(String.t(), String.t(), [Ecto.UUID.t()]) :: pos_integer()
+  def delete_items_by_id!(world_id, kind, [_ | _] = ids) when is_binary(world_id) and is_binary(kind) do
+    ids = Enum.uniq(ids)
+
+    {:ok, count} =
+      Repo.transaction(fn ->
+        {count, _} =
+          SchedulerItem
+          |> where([i], i.world_id == ^world_id and i.kind == ^kind and i.id in ^ids)
+          |> Repo.delete_all()
+
+        if count != length(ids) do
+          raise ArgumentError,
+                "Atlas.Scheduler.delete_items_by_id!: only #{count} of the ids #{inspect(ids)} name a " <>
+                  "#{inspect(kind)} item of world #{inspect(world_id)}, so none was deleted"
+        end
+
+        count
+      end)
+
+    count
+  end
 end
