@@ -12,7 +12,7 @@ defmodule Mix.Tasks.World.AssignLocalSchedulingTest do
   import Brain.TestHelpers
   import Ecto.Query, only: [from: 2]
 
-  alias Brain.Services.{Dispatcher, HomeAssistant, LocalScheduler}
+  alias Brain.Services.{Dispatcher, LocalScheduler}
   alias Mix.Tasks.World.AssignLocalScheduling
   alias World.Manager, as: WorldManager
 
@@ -42,22 +42,31 @@ defmodule Mix.Tasks.World.AssignLocalSchedulingTest do
     {:ok, without} = create_test_world("assign_scheduling_none", mode: :persistent)
     {:ok, chosen} = create_test_world("assign_scheduling_chosen", mode: :persistent)
 
-    # A world persisted before drivers were stored has no row; a world whose
-    # driver was chosen has its own.
+    # A world persisted before drivers were stored has no row; a world created
+    # since has the driver it was created with.
     without_id = without.id
     Atlas.Repo.delete_all(from(d in Atlas.Schemas.WorldServiceDriver, where: d.world_id == ^without_id))
 
-    Atlas.WorldServiceDrivers.put!(chosen.id, "scheduling", "home_assistant")
     assert Dispatcher.scheduling_driver(without.id) == :none
+    assert Dispatcher.scheduling_driver(chosen.id) == {:ok, LocalScheduler}
 
     AssignLocalScheduling.run([])
 
     assert Dispatcher.scheduling_driver(without.id) == {:ok, LocalScheduler}
-    assert Dispatcher.scheduling_driver(chosen.id) == {:ok, HomeAssistant}
+    assert Dispatcher.scheduling_driver(chosen.id) == {:ok, LocalScheduler}
 
     assigned = "  #{without.id}: assigned Brain.Services.LocalScheduler"
-    kept = "  #{chosen.id}: keeps Brain.Services.HomeAssistant"
+    kept = "  #{chosen.id}: keeps Brain.Services.LocalScheduler"
     assert_received {:mix_shell, :info, [^assigned]}
     assert_received {:mix_shell, :info, [^kept]}
+  end
+
+  test "raises on a world whose stored driver name is no scheduling driver's" do
+    {:ok, stale} = create_test_world("assign_scheduling_stale", mode: :persistent)
+    Atlas.WorldServiceDrivers.put!(stale.id, "scheduling", "home_assistant")
+
+    assert_raise ArgumentError, ~r/no scheduling driver is named "home_assistant"/, fn ->
+      AssignLocalScheduling.run([])
+    end
   end
 end
