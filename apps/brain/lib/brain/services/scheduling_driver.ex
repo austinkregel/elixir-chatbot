@@ -75,7 +75,7 @@ defmodule Brain.Services.SchedulingDriver do
   @doc "Cancels the alarms the slots identify."
   @callback cancel_alarm(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
-  @doc "Reports every alarm that is set."
+  @doc "Reports the alarms that are set: those for the day the slots name, or every one when they name none."
   @callback check_alarms(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
   @doc "Starts a timer."
@@ -93,10 +93,10 @@ defmodule Brain.Services.SchedulingDriver do
   @doc "Cancels the reminders the slots identify."
   @callback cancel_reminder(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
-  @doc "Reports every reminder that is set."
+  @doc "Reports the reminders that are set: those for the day the slots name, or every one when they name none."
   @callback check_reminders(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
-  @doc "Reports the calendar's events."
+  @doc "Reports the calendar's events: those for the day the slots name, or all of them when they name none."
   @callback query_calendar(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
   @doc "Puts an event on the calendar."
