@@ -31,21 +31,26 @@ defmodule Brain.Services.LocalSchedulerTest do
   end
 
   describe "supported_intents/0" do
-    test "is every intent the classifier emits in the scheduling domains, and nothing else" do
+    test "is every scheduling operation's intent, and nothing else" do
       assert LocalScheduler.supported_intents() ==
                Enum.sort([
                  "alarm.set",
                  "alarm.snooze",
+                 "alarm.cancel",
+                 "alarm.check",
                  "timer.set",
                  "timer.check",
+                 "timer.cancel",
                  "reminder.create",
+                 "reminder.cancel",
+                 "reminder.check",
                  "calendar.query",
                  "calendar.schedule",
                  "calendar.cancel"
                ])
     end
 
-    test "each is an intent in the intent registry" do
+    test "each is an intent in the intent registry, and every registry intent of a scheduling domain is one" do
       registry =
         "analysis/intent_registry.json"
         |> Brain.priv_path()
@@ -54,6 +59,22 @@ defmodule Brain.Services.LocalSchedulerTest do
 
       for intent <- LocalScheduler.supported_intents() do
         assert Map.has_key?(registry, intent), "#{intent} is not in the intent registry"
+      end
+
+      for {intent, _schema} <- registry, SchedulingDriver.domain?(intent) do
+        assert intent in LocalScheduler.supported_intents(), "registry intent #{intent} names no scheduling operation"
+      end
+    end
+
+    test "each has gold-standard examples, some held out and the rest for training" do
+      gold = Brain.ML.EvaluationStore.load_gold_standard("intent")
+      held_out = Brain.ML.EvaluationStore.load_gold_standard("intent", :held_out)
+      training = Brain.ML.EvaluationStore.load_gold_standard("intent", :train)
+
+      for intent <- LocalScheduler.supported_intents() do
+        assert Enum.count(gold, &(&1["intent"] == intent)) >= 10, "#{intent} has fewer than 10 examples"
+        assert Enum.any?(held_out, &(&1["intent"] == intent)), "#{intent} has no held-out example"
+        assert Enum.any?(training, &(&1["intent"] == intent)), "#{intent} has no training example"
       end
     end
   end
@@ -155,16 +176,17 @@ defmodule Brain.Services.LocalSchedulerTest do
                LocalScheduler.enrich("calendar.query", %{}, %{}, world_b)
     end
 
-    test "cancelling in one world takes its events off its calendar and leaves another world's",
+    test "cancelling in one world takes the event off its calendar and leaves another world's",
          %{world_a: world_a, world_b: world_b} do
       LocalScheduler.enrich("calendar.schedule", %{event: "dentist", time: "Tuesday"}, %{}, world_a)
-      LocalScheduler.enrich("calendar.schedule", %{event: "standup", time: "Monday"}, %{}, world_b)
+      LocalScheduler.enrich("calendar.schedule", %{event: "dentist", time: "Tuesday"}, %{}, world_b)
 
-      assert {:ok, %{next_event: "", event_time: ""}} = LocalScheduler.enrich("calendar.cancel", %{}, %{}, world_a)
+      assert {:ok, %{cancelled_event: "dentist", event_time: "Tuesday", cancelled_count: 1}} =
+               LocalScheduler.enrich("calendar.cancel", %{event: "dentist"}, %{}, world_a)
 
       assert {:ok, %{next_event: "No upcoming events"}} = LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
 
-      assert {:ok, %{next_event: "standup", event_time: "Monday"}} =
+      assert {:ok, %{next_event: "dentist", event_time: "Tuesday"}} =
                LocalScheduler.enrich("calendar.query", %{}, %{}, world_b)
     end
 
@@ -187,17 +209,192 @@ defmodule Brain.Services.LocalSchedulerTest do
     end
   end
 
+  describe "checking alarms and reminders" do
+    test "reports every alarm the world has, in the order they were set", %{world_a: world_a, world_b: world_b} do
+      assert {:ok, %{alarm_status: "none", alarm_times: [], alarm_count: 0}} =
+               LocalScheduler.enrich("alarm.check", %{}, %{}, world_a)
+
+      LocalScheduler.enrich("alarm.set", %{time: "6am"}, %{}, world_a)
+      Process.sleep(2)
+      LocalScheduler.enrich("alarm.set", %{time: "9pm"}, %{}, world_a)
+      LocalScheduler.enrich("alarm.set", %{time: "noon"}, %{}, world_b)
+
+      assert {:ok, %{alarm_status: "set", alarm_times: ["6am", "9pm"], alarm_count: 2}} =
+               LocalScheduler.enrich("alarm.check", %{}, %{}, world_a)
+    end
+
+    test "reports every reminder the world has, in the order they were set", %{world_a: world_a, world_b: world_b} do
+      assert {:ok, %{reminder_set: false, reminder_texts: [], reminder_count: 0}} =
+               LocalScheduler.enrich("reminder.check", %{}, %{}, world_a)
+
+      LocalScheduler.enrich("reminder.create", %{reminder_text: "water plants", time: "noon"}, %{}, world_a)
+      Process.sleep(2)
+      LocalScheduler.enrich("reminder.create", %{reminder_text: "call home", time: "6pm"}, %{}, world_a)
+      LocalScheduler.enrich("reminder.create", %{reminder_text: "pay rent", time: "Friday"}, %{}, world_b)
+
+      assert {:ok,
+              %{
+                reminder_set: true,
+                reminder_texts: ["water plants", "call home"],
+                reminder_times: ["noon", "6pm"],
+                reminder_count: 2
+              }} = LocalScheduler.enrich("reminder.check", %{}, %{}, world_a)
+    end
+  end
+
+  describe "cancelling alarms, reminders and timers" do
+    test "slots that identify one alarm cancel that one, matched without regard to case or spacing",
+         %{world_a: world_a, world_b: world_b} do
+      LocalScheduler.enrich("alarm.set", %{time: "6 am"}, %{}, world_a)
+      LocalScheduler.enrich("alarm.set", %{time: "7 am"}, %{}, world_a)
+      LocalScheduler.enrich("alarm.set", %{time: "6 am"}, %{}, world_b)
+
+      assert {:ok, %{alarm_status: "cancelled", alarm_times: ["6 am"], cancelled_count: 1}} =
+               LocalScheduler.enrich("alarm.cancel", %{time: " 6  AM "}, %{}, world_a)
+
+      assert [%Atlas.Schemas.SchedulerItem{time: "7 am"}] = stored(world_a, "alarm")
+      assert [%Atlas.Schemas.SchedulerItem{time: "6 am"}] = stored(world_b, "alarm")
+    end
+
+    test "with no identifying slot, every alarm of the world is cancelled", %{world_a: world_a, world_b: world_b} do
+      LocalScheduler.enrich("alarm.set", %{time: "6am"}, %{}, world_a)
+      LocalScheduler.enrich("alarm.set", %{time: "7am"}, %{}, world_a)
+      LocalScheduler.enrich("alarm.set", %{time: "8am"}, %{}, world_b)
+
+      assert {:ok, %{alarm_status: "cancelled", cancelled_count: 2}} =
+               LocalScheduler.enrich("alarm.cancel", %{time: ""}, %{}, world_a)
+
+      assert stored(world_a, "alarm") == []
+      assert [%Atlas.Schemas.SchedulerItem{time: "8am"}] = stored(world_b, "alarm")
+    end
+
+    test "when nothing matches, the error names the kind and what was matched on, and nothing is removed",
+         %{world_a: world_a} do
+      LocalScheduler.enrich("alarm.set", %{time: "6am"}, %{}, world_a)
+
+      assert {:error, {:no_matching_items, :alarm, %{time: "9am"}}} =
+               LocalScheduler.enrich("alarm.cancel", %{time: "9am"}, %{}, world_a)
+
+      assert {:error, {:no_matching_items, :timer, %{}}} = LocalScheduler.enrich("timer.cancel", %{}, %{}, world_a)
+
+      assert [%Atlas.Schemas.SchedulerItem{time: "6am"}] = stored(world_a, "alarm")
+    end
+
+    test "a reminder is identified by its text, its time, or both", %{world_a: world_a} do
+      LocalScheduler.enrich("reminder.create", %{reminder_text: "water plants", time: "noon"}, %{}, world_a)
+      LocalScheduler.enrich("reminder.create", %{reminder_text: "call home", time: "6pm"}, %{}, world_a)
+      LocalScheduler.enrich("reminder.create", %{reminder_text: "pay rent", time: "6pm"}, %{}, world_a)
+
+      assert {:ok, %{reminder_texts: ["water plants"], cancelled_count: 1}} =
+               LocalScheduler.enrich("reminder.cancel", %{reminder_text: "Water Plants"}, %{}, world_a)
+
+      assert {:error, {:no_matching_items, :reminder, %{text: "call home", time: "noon"}}} =
+               LocalScheduler.enrich("reminder.cancel", %{reminder_text: "call home", time: "noon"}, %{}, world_a)
+
+      assert {:ok, %{reminder_texts: ["pay rent"], reminder_times: ["6pm"], cancelled_count: 1}} =
+               LocalScheduler.enrich("reminder.cancel", %{reminder_text: "pay rent", time: "6pm"}, %{}, world_a)
+
+      assert {:ok, %{reminder_texts: ["call home"], reminder_count: 1}} =
+               LocalScheduler.enrich("reminder.check", %{}, %{}, world_a)
+    end
+
+    test "a timer is identified by its duration, and no slot cancels every timer", %{world_a: world_a} do
+      LocalScheduler.enrich("timer.set", %{duration: "5 minutes"}, %{}, world_a)
+      LocalScheduler.enrich("timer.set", %{duration: "10 minutes"}, %{}, world_a)
+      LocalScheduler.enrich("timer.set", %{duration: "20 minutes"}, %{}, world_a)
+
+      assert {:ok, %{timer_status: "cancelled", timer_durations: ["10 minutes"], cancelled_count: 1}} =
+               LocalScheduler.enrich("timer.cancel", %{duration: "10 minutes"}, %{}, world_a)
+
+      assert length(stored(world_a, "timer")) == 2
+
+      assert {:ok, %{timer_status: "cancelled", cancelled_count: 2}} =
+               LocalScheduler.enrich("timer.cancel", %{}, %{}, world_a)
+
+      assert {:ok, %{timer_status: "none"}} = LocalScheduler.enrich("timer.check", %{}, %{}, world_a)
+    end
+
+    test "a slot that is not a string raises, naming the slot", %{world_a: world_a} do
+      LocalScheduler.enrich("alarm.set", %{time: "6am"}, %{}, world_a)
+
+      assert_raise ArgumentError, ~r/the :time slot identifies alarm items by their time and must be a string/, fn ->
+        LocalScheduler.cancel_alarm(%{time: ~T[06:00:00]}, %{}, world_a)
+      end
+
+      assert [%Atlas.Schemas.SchedulerItem{time: "6am"}] = stored(world_a, "alarm")
+    end
+  end
+
+  describe "cancelling a calendar event" do
+    test "with no slot that identifies an event, nothing is removed and the error asks which",
+         %{world_a: world_a} do
+      LocalScheduler.enrich("calendar.schedule", %{event: "dentist", time: "Tuesday"}, %{}, world_a)
+      LocalScheduler.enrich("calendar.schedule", %{event: "standup", time: "Monday"}, %{}, world_a)
+
+      assert {:error, :event_not_identified} = LocalScheduler.enrich("calendar.cancel", %{}, %{}, world_a)
+
+      assert {:error, :event_not_identified} =
+               LocalScheduler.enrich("calendar.cancel", %{event: "  ", person: "John"}, %{}, world_a)
+
+      assert length(stored(world_a, "calendar")) == 2
+    end
+
+    test "removes only the event the slots identify", %{world_a: world_a} do
+      LocalScheduler.enrich("calendar.schedule", %{event: "dentist", time: "Tuesday"}, %{}, world_a)
+      LocalScheduler.enrich("calendar.schedule", %{event: "standup", time: "Monday"}, %{}, world_a)
+
+      assert {:ok, %{cancelled_event: "standup", event_time: "Monday"}} =
+               LocalScheduler.enrich("calendar.cancel", %{time: "monday"}, %{}, world_a)
+
+      assert [%Atlas.Schemas.SchedulerItem{text: "dentist", time: "Tuesday"}] = stored(world_a, "calendar")
+    end
+
+    test "when several events match, nothing is removed and the error names each", %{world_a: world_a} do
+      LocalScheduler.enrich("calendar.schedule", %{event: "standup", time: "Monday"}, %{}, world_a)
+      LocalScheduler.enrich("calendar.schedule", %{event: "standup", time: "Thursday"}, %{}, world_a)
+
+      assert {:error, {:ambiguous, :calendar, events}} =
+               LocalScheduler.enrich("calendar.cancel", %{event: "standup"}, %{}, world_a)
+
+      assert Enum.sort_by(events, & &1.time) == [
+               %{event: "standup", time: "Monday"},
+               %{event: "standup", time: "Thursday"}
+             ]
+
+      assert length(stored(world_a, "calendar")) == 2
+
+      assert {:ok, %{cancelled_event: "standup", event_time: "Thursday"}} =
+               LocalScheduler.enrich("calendar.cancel", %{event: "standup", time: "Thursday"}, %{}, world_a)
+    end
+
+    test "when no event matches, nothing is removed", %{world_a: world_a} do
+      LocalScheduler.enrich("calendar.schedule", %{event: "dentist", time: "Tuesday"}, %{}, world_a)
+
+      assert {:error, {:no_matching_items, :calendar, %{event: "lunch"}}} =
+               LocalScheduler.enrich("calendar.cancel", %{event: "lunch"}, %{}, world_a)
+
+      assert [%Atlas.Schemas.SchedulerItem{text: "dentist"}] = stored(world_a, "calendar")
+    end
+  end
+
   describe "writes?/1" do
     test "is true for setting, creating, scheduling and cancelling, and false for reading and snoozing" do
-      assert LocalScheduler.writes?("alarm.set")
-      assert LocalScheduler.writes?("timer.set")
-      assert LocalScheduler.writes?("reminder.create")
-      assert LocalScheduler.writes?("calendar.schedule")
-      assert LocalScheduler.writes?("calendar.cancel")
+      for intent <- [
+            "alarm.set",
+            "alarm.cancel",
+            "timer.set",
+            "timer.cancel",
+            "reminder.create",
+            "reminder.cancel",
+            "calendar.schedule",
+            "calendar.cancel"
+          ] do
+        assert LocalScheduler.writes?(intent), intent
+      end
 
-      refute LocalScheduler.writes?("timer.check")
-      refute LocalScheduler.writes?("calendar.query")
-      refute LocalScheduler.writes?("alarm.snooze")
+      for intent <- ["alarm.check", "timer.check", "reminder.check", "calendar.query", "alarm.snooze"] do
+        refute LocalScheduler.writes?(intent), intent
+      end
     end
 
     test "is decided by the operation the intent names, not by a part of its name" do
@@ -233,14 +430,20 @@ defmodule Brain.Services.LocalSchedulerTest do
                LocalScheduler.enrich("calendar.query", %{}, %{}, world_b)
     end
 
-    test "keeps a cancellation", %{world_a: world_a} do
+    test "keeps a cancellation, and the items a targeted cancel left", %{world_a: world_a} do
       LocalScheduler.enrich("calendar.schedule", %{event: "dentist", time: "Tuesday"}, %{}, world_a)
-      LocalScheduler.enrich("calendar.cancel", %{}, %{}, world_a)
+      {:ok, _} = LocalScheduler.enrich("calendar.cancel", %{event: "dentist"}, %{}, world_a)
+
+      LocalScheduler.enrich("alarm.set", %{time: "6am"}, %{}, world_a)
+      Process.sleep(2)
+      LocalScheduler.enrich("alarm.set", %{time: "7am"}, %{}, world_a)
+      {:ok, _} = LocalScheduler.enrich("alarm.cancel", %{time: "6am"}, %{}, world_a)
 
       :ok = Supervisor.terminate_child(Brain.Supervisor, LocalScheduler)
       {:ok, _restarted} = Supervisor.restart_child(Brain.Supervisor, LocalScheduler)
 
       assert {:ok, %{next_event: "No upcoming events"}} = LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
+      assert {:ok, %{alarm_times: ["7am"], alarm_count: 1}} = LocalScheduler.enrich("alarm.check", %{}, %{}, world_a)
     end
   end
 
