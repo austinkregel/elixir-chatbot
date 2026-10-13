@@ -1,5 +1,5 @@
 defmodule Brain.Metrics.Aggregator do
-  @moduledoc "Non-blocking metrics aggregator for telemetry events.\n\nDesign principles for zero latency impact:\n1. All writes via `cast` - never blocks the caller\n2. ETS for reads - dashboard reads directly from ETS, never calls GenServer\n3. Atomic counters - uses `:ets.update_counter/3` for thread-safe increments\n4. Periodic aggregation - heavy computation happens on a timer, not per-event\n5. Bounded memory - sliding window with automatic expiration\n\n## Usage\n\n    # Recording metrics (fire-and-forget via telemetry handlers)\n    GenServer.cast(Aggregator, {:record_duration, :brain_evaluate, 150, %{}})\n\n    # Reading metrics (direct ETS read, non-blocking)\n    Brain.Metrics.Aggregator.get_metrics()\n"
+  @moduledoc "Non-blocking metrics aggregator for telemetry events.\n\nDesign principles for zero latency impact:\n1. All writes via `cast` - never blocks the caller\n2. ETS for reads - dashboard reads directly from ETS, never calls GenServer\n3. Atomic counters - uses `:ets.update_counter/3` for thread-safe increments\n4. Periodic aggregation - heavy computation happens on a timer, not per-event\n5. Bounded memory - sliding window with automatic expiration\n\nThe one exception to ETS is the per-world semantic-fact metrics\n(`get_semantic_fact_metrics/1`): they are kept in Atlas so they survive a\nrestart. The aggregator writes them while handling the cast, off the caller's\npath; a write that fails raises in the aggregator, which crashes it, and the\nsupervisor restarts it, so a lost count is never silent.\n\n## Usage\n\n    # Recording metrics (fire-and-forget via telemetry handlers)\n    GenServer.cast(Aggregator, {:record_duration, :brain_evaluate, 150, %{}})\n\n    # Reading metrics (direct ETS read, non-blocking)\n    Brain.Metrics.Aggregator.get_metrics()\n"
 
   use GenServer
   require Logger
@@ -295,14 +295,22 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   @doc """
-  The semantic-fact metrics of `world_id`: what the
-  `[:chat_bot, :memory, :semantic_fact, :retrieved | :used]` events
-  (`Brain.Memory.RecurringPattern`) counted for that world since the
-  aggregator started. Like every metric here they are held in memory and
-  start over when the aggregator does. Reads ETS directly; raises when the
-  aggregator is not running.
+  The semantic-fact metrics of `world_id` in its current measurement window:
+  what the `[:chat_bot, :memory, :semantic_fact, :retrieved | :used]` events
+  (`Brain.Memory.RecurringPattern`) counted for that world since the window
+  started.
+
+  Unlike the other metrics here, these are kept in Atlas
+  (`Atlas.SemanticFactMetrics`), so they survive a restart and can be compared
+  across a retrain: `start_semantic_fact_window/1` ends the window and starts
+  a new one, and `get_previous_semantic_fact_metrics/1` reads the window it
+  ended. Read from Atlas on every call; there is no copy in memory to diverge.
+  Raises when Atlas cannot be read.
 
   Returns a map with:
+  - `:window` - `%{started_at: DateTime.t(), ended_at: DateTime.t() | nil}`,
+    the window counted; `nil` for a world nothing was counted for and no
+    window was started for
   - `:retrievals` - turns that retrieved the world's semantic facts
   - `:facts_retrieved` - semantic facts retrieved across those turns
   - `:patterns_found` - those turns with a recurring pattern among the facts
@@ -319,16 +327,50 @@ defmodule Brain.Metrics.Aggregator do
   """
   @spec get_semantic_fact_metrics(String.t()) :: map()
   def get_semantic_fact_metrics(world_id) when is_binary(world_id) do
-    counters =
-      @raw_data_table
-      |> :ets.match({{:counter, {:semantic_facts, world_id}, :"$1"}, :"$2"})
-      |> Map.new(fn [field, count] -> {field, count} end)
+    case Atlas.SemanticFactMetrics.windows(world_id, 1) do
+      [current] -> semantic_fact_metrics(current)
+      [] -> semantic_fact_metrics(nil, %{})
+    end
+  end
 
+  @doc """
+  The semantic-fact metrics of `world_id` in the window before its current
+  one, the window `start_semantic_fact_window/1` last ended, in the shape
+  `get_semantic_fact_metrics/1` returns; `nil` when no window was ended.
+  """
+  @spec get_previous_semantic_fact_metrics(String.t()) :: map() | nil
+  def get_previous_semantic_fact_metrics(world_id) when is_binary(world_id) do
+    case Atlas.SemanticFactMetrics.windows(world_id, 2) do
+      [_current, previous] -> semantic_fact_metrics(previous)
+      _no_previous -> nil
+    end
+  end
+
+  @doc """
+  Ends the current semantic-fact measurement window of `world_id`, keeping its
+  counts, and starts a new one; returns the new window's
+  `%{started_at: DateTime.t(), ended_at: nil}`.
+
+  Made by the aggregator, after every event it was sent before this call, so
+  those events count in the window they happened in. Raises when the window
+  cannot be started.
+  """
+  @spec start_semantic_fact_window(String.t()) :: %{started_at: DateTime.t(), ended_at: nil}
+  def start_semantic_fact_window(world_id) when is_binary(world_id) do
+    GenServer.call(__MODULE__, {:start_semantic_fact_window, world_id}, 15_000)
+  end
+
+  defp semantic_fact_metrics(%{window: window, counts: counts}) do
+    semantic_fact_metrics(window, Map.new(counts, fn {counter, count} -> {decode_semantic_fact_counter(counter), count} end))
+  end
+
+  defp semantic_fact_metrics(window, counters) do
     retrievals = Map.get(counters, :retrievals, 0)
     patterns_found = Map.get(counters, :patterns_found, 0)
     used = Map.new(@semantic_fact_users, &{&1, Map.get(counters, {:used, &1}, 0)})
 
     %{
+      window: window && %{started_at: window.started_at, ended_at: window.ended_at},
       retrievals: retrievals,
       facts_retrieved: Map.get(counters, :facts_retrieved, 0),
       patterns_found: patterns_found,
@@ -344,6 +386,62 @@ defmodule Brain.Metrics.Aggregator do
     for {{^distribution, bucket}, count} <- Enum.sort(counters) do
       %{from: bucket / 10, to: (bucket + 1) / 10, count: count}
     end
+  end
+
+  # The name each semantic-fact counter is stored under in Atlas, and back.
+  # `"used:synthesizer"` counts the uses by the synthesizer,
+  # `"retrieved_similarity:8"` the retrieved facts in bucket 8.
+  @semantic_fact_scalar_counters [:retrievals, :facts_retrieved, :patterns_found]
+  @semantic_fact_distributions [:retrieved_similarity, :used_similarity]
+
+  defp encode_semantic_fact_counter(counter) when counter in @semantic_fact_scalar_counters,
+    do: Atom.to_string(counter)
+
+  defp encode_semantic_fact_counter({:used, used_by}) when used_by in @semantic_fact_users,
+    do: "used:#{used_by}"
+
+  defp encode_semantic_fact_counter({distribution, bucket})
+       when distribution in @semantic_fact_distributions and is_integer(bucket),
+       do: "#{distribution}:#{bucket}"
+
+  for counter <- @semantic_fact_scalar_counters do
+    defp decode_semantic_fact_counter(unquote(Atom.to_string(counter))), do: unquote(counter)
+  end
+
+  for used_by <- @semantic_fact_users do
+    defp decode_semantic_fact_counter(unquote("used:#{used_by}")), do: {:used, unquote(used_by)}
+  end
+
+  for distribution <- @semantic_fact_distributions do
+    defp decode_semantic_fact_counter(unquote("#{distribution}:") <> bucket) do
+      case Integer.parse(bucket) do
+        {bucket, ""} -> {unquote(distribution), bucket}
+        _ -> raise_unknown_semantic_fact_counter(unquote("#{distribution}:") <> bucket)
+      end
+    end
+  end
+
+  defp decode_semantic_fact_counter(counter), do: raise_unknown_semantic_fact_counter(counter)
+
+  defp raise_unknown_semantic_fact_counter(counter) do
+    raise ArgumentError,
+          "Brain.Metrics.Aggregator: Atlas holds a semantic fact counter #{inspect(counter)} " <>
+            "that is not one the aggregator counts"
+  end
+
+  # Adds the counts of one event to the world's current window in Atlas.
+  # Several counters of an event can be the same one (two retrieved facts in
+  # one similarity bucket), so they are summed first; an amount of zero (a
+  # turn that retrieved no facts) adds nothing.
+  defp count_semantic_facts!(world_id, counters) do
+    counts =
+      counters
+      |> Enum.reduce(%{}, fn {counter, amount}, acc ->
+        Map.update(acc, encode_semantic_fact_counter(counter), amount, &(&1 + amount))
+      end)
+      |> Map.reject(fn {_counter, amount} -> amount == 0 end)
+
+    :ok = Atlas.SemanticFactMetrics.increment!(world_id, counts)
   end
 
   # The tenth of the similarity range a similarity falls in: 0 for [0.0, 0.1),
@@ -391,7 +489,7 @@ defmodule Brain.Metrics.Aggregator do
     end
   end
 
-  @doc "Resets all metrics. Useful for testing.\n"
+  @doc "Resets the metrics held in memory. Useful for testing. The semantic-fact\ncounts in Atlas are left as they are (`start_semantic_fact_window/1`).\n"
   def reset do
     GenServer.call(__MODULE__, :reset, 5_000)
   end
@@ -848,20 +946,26 @@ defmodule Brain.Metrics.Aggregator do
   @impl true
   def handle_cast({:record_semantic_facts_retrieved, world_id, similarities, recurring_pattern_id}, state)
       when is_binary(world_id) and is_list(similarities) do
-    key = {:semantic_facts, world_id}
-    increment_counter(key, :retrievals)
-    increment_counter(key, :facts_retrieved, length(similarities))
-    if recurring_pattern_id != nil, do: increment_counter(key, :patterns_found)
-    Enum.each(similarities, &increment_counter(key, {:retrieved_similarity, similarity_bucket(&1)}))
+    count_semantic_facts!(
+      world_id,
+      [
+        {:retrievals, 1},
+        {:facts_retrieved, length(similarities)},
+        {:patterns_found, if(recurring_pattern_id != nil, do: 1, else: 0)}
+      ] ++ Enum.map(similarities, &{{:retrieved_similarity, similarity_bucket(&1)}, 1})
+    )
+
     {:noreply, state}
   end
 
   @impl true
   def handle_cast({:record_semantic_fact_used, world_id, used_by, similarity}, state)
       when is_binary(world_id) and used_by in @semantic_fact_users do
-    key = {:semantic_facts, world_id}
-    increment_counter(key, {:used, used_by})
-    increment_counter(key, {:used_similarity, similarity_bucket(similarity)})
+    count_semantic_facts!(world_id, [
+      {{:used, used_by}, 1},
+      {{:used_similarity, similarity_bucket(similarity)}, 1}
+    ])
+
     {:noreply, state}
   end
 
@@ -896,6 +1000,12 @@ defmodule Brain.Metrics.Aggregator do
   @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
+  end
+
+  @impl true
+  def handle_call({:start_semantic_fact_window, world_id}, _from, state) do
+    window = Atlas.SemanticFactMetrics.start_window!(world_id)
+    {:reply, %{started_at: window.started_at, ended_at: window.ended_at}, state}
   end
 
   @impl true
