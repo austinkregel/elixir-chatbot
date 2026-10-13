@@ -529,9 +529,10 @@ defmodule Brain.SystemStatus do
       |> Enum.map(fn service_info ->
         service_name = service_info.name
 
-        # Get metrics for this service from aggregator
+        # Get metrics for this service from aggregator, which names each
+        # service as it is stored in Atlas: as a string.
         metrics = Aggregator.get_service_metrics()
-        service_metrics = get_in(metrics, [:by_service, service_name]) || %{}
+        service_metrics = get_in(metrics, [:by_service, to_string(service_name)]) || %{}
 
         Map.merge(service_info, %{
           total_dispatches: Map.get(service_metrics, :total_dispatches, 0),
