@@ -72,4 +72,32 @@ defmodule Atlas.SchedulerTest do
       assert [%SchedulerItem{kind: "timer", duration: "10 minutes"}] = items_of(@world_b)
     end
   end
+
+  describe "delete_items_by_id!/3" do
+    test "deletes only the items named, and keeps the world's others" do
+      five = Scheduler.insert_item!(%{world_id: @world_a, kind: "timer", duration: "5 minutes", status: "running"})
+      Scheduler.insert_item!(%{world_id: @world_a, kind: "timer", duration: "9 minutes", status: "running"})
+
+      assert Scheduler.delete_items_by_id!(@world_a, "timer", [five.id]) == 1
+
+      assert [%SchedulerItem{kind: "timer", duration: "9 minutes"}] = items_of(@world_a)
+    end
+
+    test "deletes nothing and raises when an id names another world's item or another kind" do
+      own = Scheduler.insert_item!(%{world_id: @world_a, kind: "alarm", time: "7am", status: "set"})
+      other_world = Scheduler.insert_item!(%{world_id: @world_b, kind: "alarm", time: "8am", status: "set"})
+      other_kind = Scheduler.insert_item!(%{world_id: @world_a, kind: "reminder", text: "call home", status: "set"})
+
+      assert_raise ArgumentError, ~r/only 1 of the ids/, fn ->
+        Scheduler.delete_items_by_id!(@world_a, "alarm", [own.id, other_world.id])
+      end
+
+      assert_raise ArgumentError, ~r/only 1 of the ids/, fn ->
+        Scheduler.delete_items_by_id!(@world_a, "alarm", [own.id, other_kind.id])
+      end
+
+      assert length(items_of(@world_a)) == 2
+      assert [%SchedulerItem{time: "8am"}] = items_of(@world_b)
+    end
+  end
 end
