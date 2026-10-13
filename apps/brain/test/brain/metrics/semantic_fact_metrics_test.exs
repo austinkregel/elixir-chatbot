@@ -11,23 +11,12 @@ defmodule Brain.Metrics.SemanticFactMetricsTest do
   stretch of responses with the next. Every count a test makes is written
   inside its sandbox transaction and rolled back with it.
   """
-  use ExUnit.Case, async: false
-  import Brain.TestHelpers
+  use Brain.MetricsCase, async: false
 
   alias Brain.Memory.RecurringPattern
   alias Brain.Memory.Types.SemanticFact
-  alias Brain.Metrics.Aggregator
 
-  setup tags do
-    {:ok, _apps} = Application.ensure_all_started(:telemetry)
-    # Running already when the application is up; started here otherwise.
-    {:ok, _apps} = Application.ensure_all_started(:atlas)
-    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
-    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
-    ensure_started(Aggregator)
-    assert Process.whereis(Aggregator)
-    :ok = Brain.Telemetry.attach_handlers()
-
+  setup do
     unique = System.unique_integer([:positive])
     {:ok, world_id: "test_semantic_fact_metrics_#{unique}", other_world_id: "test_semantic_fact_metrics_other_#{unique}"}
   end
@@ -50,10 +39,8 @@ defmodule Brain.Metrics.SemanticFactMetricsTest do
     if used_by, do: :ok = RecurringPattern.used(pattern, used_by, [])
   end
 
-  # The aggregator handles its messages in order, so once it answers a call
-  # made after the events, it has counted them.
   defp counted(world_id) do
-    _state = :sys.get_state(Aggregator)
+    :ok = counted()
     Aggregator.get_semantic_fact_metrics(world_id)
   end
 
@@ -139,7 +126,7 @@ defmodule Brain.Metrics.SemanticFactMetricsTest do
     assert before_restart.used == %{synthesizer: 1, realization_packet: 0}
     assert %DateTime{} = before_restart.window.started_at
 
-    restart_aggregator!()
+    _restarted = restart_aggregator!()
 
     assert Aggregator.get_semantic_fact_metrics(world_id) == before_restart
 
@@ -180,31 +167,5 @@ defmodule Brain.Metrics.SemanticFactMetricsTest do
     # The other world's window goes on.
     assert counted(other_world_id).retrievals == 1
     assert Aggregator.get_previous_semantic_fact_metrics(other_world_id) == nil
-  end
-
-  # Stops the aggregator, and waits for its supervisor to start it again: its
-  # in-memory tables start over, so whatever it reads afterwards it reads from
-  # Atlas.
-  defp restart_aggregator! do
-    old = Process.whereis(Aggregator)
-    ref = Process.monitor(old)
-    :ok = GenServer.stop(old)
-    assert_receive {:DOWN, ^ref, :process, ^old, _reason}
-    restarted_aggregator!(old, 100)
-  end
-
-  defp restarted_aggregator!(old, 0) do
-    flunk("Brain.Metrics.Aggregator (was #{inspect(old)}) was not started again after it stopped")
-  end
-
-  defp restarted_aggregator!(old, attempts) do
-    case Process.whereis(Aggregator) do
-      pid when is_pid(pid) and pid != old ->
-        pid
-
-      _not_yet ->
-        Process.sleep(10)
-        restarted_aggregator!(old, attempts - 1)
-    end
   end
 end
