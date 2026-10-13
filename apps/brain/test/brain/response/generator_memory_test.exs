@@ -3,7 +3,7 @@ defmodule Brain.Response.GeneratorMemoryTest do
   The Generator builds its own context: it retrieves the world's semantic
   facts with the turn's similar episodes, finds the recurring pattern among
   them, and the synthesizer answers from that pattern ahead of any single
-  episode.
+  episode. The response's use of the pattern is reported once.
   """
   use ExUnit.Case, async: false
   import Brain.TestHelpers
@@ -78,6 +78,7 @@ defmodule Brain.Response.GeneratorMemoryTest do
 
     assert_receive {[:chat_bot, :memory, :semantic_fact, :retrieved], %{world_id: ^world_id, recurring_pattern_id: ^fact_id}}
     assert_receive {[:chat_bot, :memory, :semantic_fact, :used], %{semantic_fact_id: ^fact_id, used_by: :synthesizer}}
+    refute_receive {[:chat_bot, :memory, :semantic_fact, :used], _}, 50
   end
 
   test "answers from the single episode when the world has no semantic fact", %{world_id: world_id} do
