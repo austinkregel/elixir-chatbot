@@ -42,9 +42,10 @@ defmodule Brain.Response.RealizationPacketTest do
       content
     end
 
-    test "names the recurring pattern ahead of the similar past interactions, and reports it",
+    test "names the recurring pattern ahead of the similar past interactions, without reporting it",
          %{pattern: pattern, episode: episode} do
-      content = user_message(%{memory: %{recurring_pattern: pattern, similar_episodes: [episode]}})
+      unified_context = %{memory: %{recurring_pattern: pattern, similar_episodes: [episode]}}
+      content = user_message(unified_context)
 
       assert content =~
                "A recurring pattern from past conversations (3 similar messages, similarity 0.8): " <>
@@ -55,15 +56,21 @@ defmodule Brain.Response.RealizationPacketTest do
       {episodes_at, _} = :binary.match(content, "Similar past interactions")
       assert pattern_at < episodes_at
 
-      fact_id = pattern.fact.id
-      assert_receive {:used, %{semantic_fact_id: ^fact_id, used_by: :realization_packet}}
+      # The pattern the packet names is handed back for the realizer whose
+      # response the turn settles on to report; a packet is built on each pass.
+      assert RealizationPacket.recurring_pattern(unified_context) == pattern
+      refute_receive {:used, _}, 50
     end
 
     test "names no pattern for a turn that has none", %{episode: episode} do
-      content = user_message(%{memory: %{recurring_pattern: nil, similar_episodes: [episode]}})
+      unified_context = %{memory: %{recurring_pattern: nil, similar_episodes: [episode]}}
+      content = user_message(unified_context)
 
       refute content =~ "recurring pattern"
       assert content =~ "Similar past interactions"
+      assert RealizationPacket.recurring_pattern(unified_context) == nil
+      assert RealizationPacket.recurring_pattern(%{}) == nil
+      assert RealizationPacket.recurring_pattern(nil) == nil
       refute_receive {:used, _}, 50
     end
   end
