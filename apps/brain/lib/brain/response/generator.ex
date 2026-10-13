@@ -12,7 +12,7 @@ defmodule Brain.Response.Generator do
   alias Memory.{RecurringPattern, Store}
   alias Brain.Code.QueryHandler
 
-  @doc "Generate a response for the given intent and entities.\n\n`opts` must carry `:world_id`, the world whose memory and code index the response draws on; absent raises. It may carry `:side_effects`; with `false`, a service call that would change state (a device action) is refused during enrichment.\n\nUses a generative pipeline:\n1. Retrieve similar episodes from memory\n2. Synthesize response from domain knowledge and primitives\n3. Fall back to templates if synthesis doesn't produce a result\n4. Run the (now no-op) refinement hook and the quality improver\n\nReturns:\n- {:ok, response, :synthesized} for generated responses\n- {:ok, response, :memory_adapted} for memory-adapted responses\n- {:ok, response, :template} for template-based responses\n- {:ok, response, :fallback} for fallback responses\n"
+  @doc "Generate a response for the given intent and entities.\n\n`opts` must carry `:world_id`, the world whose memory and code index the response draws on; absent raises. It may carry `:side_effects`; with `false`, a service call that would change state (a device action) is refused during enrichment.\n\nUses a generative pipeline:\n1. Retrieve similar episodes from memory\n2. Synthesize response from domain knowledge and primitives\n3. Fall back to templates if synthesis doesn't produce a result\n4. Run the (now no-op) refinement hook and the quality improver\n\nReturns:\n- {:ok, response, :synthesized} for generated responses\n- {:ok, response, :memory_adapted} for memory-adapted responses\n- {:ok, response, :template} for template-based responses\n- {:ok, response, :fallback} for fallback responses\n- {:ok, response, {:service_reply, enrichment}} when the service the intent was dispatched to returned an error: the response answers it (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`), and an error with no planned response raises. `enrichment` holds the failure as `Brain.Response.ContextBuilder` carries one: `:enrichment_status`, `:enrichment_error`, `:enrichment_service`, and the `:intent` and `:slots` the service was asked with\n"
   def generate(intent, entities, query_text, opts) do
     generate_with_events(intent, entities, query_text, [], opts)
   end
@@ -36,15 +36,43 @@ defmodule Brain.Response.Generator do
       # Prepare context with enrichment data (before pipeline, for template conditions)
       context = Enricher.prepare_context(intent, slots, context)
 
-      {result, recurring_pattern_use} = run_generative_pipeline(intent, entities, query_text, context)
-      result = maybe_enrich_response(result, context)
-      result = maybe_improve_response(result, query_text, intent, entities)
+      case context do
+        %{enrichment_status: :failed} ->
+          service_reply(intent, slots, context)
 
-      # The response is settled: a synthesized one is never rewritten by the
-      # improver, so the pattern it was adapted from is reported once, here.
-      :ok = RecurringPattern.report_use(recurring_pattern_use, opts)
-      result
+        _ ->
+          {result, recurring_pattern_use} = run_generative_pipeline(intent, entities, query_text, context)
+          result = maybe_enrich_response(result, context)
+          result = maybe_improve_response(result, query_text, intent, entities)
+
+          # The response is settled: a synthesized one is never rewritten by the
+          # improver, so the pattern it was adapted from is reported once, here.
+          :ok = RecurringPattern.report_use(recurring_pattern_use, opts)
+          result
+      end
     end)
+  end
+
+  # The service the intent was dispatched to returned an error: the response
+  # answers it, as the synthesis pipeline does (`DiscoursePlanner`), and an
+  # error with no planned response raises there.
+  defp service_reply(intent, slots, context) do
+    enrichment = %{
+      enrichment_status: :failed,
+      enrichment_error: Map.fetch!(context, :enrichment_error),
+      enrichment_service: Map.fetch!(context, :enrichment_service),
+      intent: intent,
+      slots: Map.drop(slots, [:_query_text, :_ha_entity_id])
+    }
+
+    %Response.Primitive{content: content} =
+      Response.DiscoursePlanner.enrichment_error_primitive(enrichment.enrichment_error, %{
+        service: enrichment.enrichment_service,
+        intent: intent
+      })
+
+    {:ok, text} = Synthesizer.synthesize_service_reply(content)
+    {:ok, text, {:service_reply, enrichment}}
   end
 
   defp build_slot_map_for_enrichment(entities) when is_list(entities) do
