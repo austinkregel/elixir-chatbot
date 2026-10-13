@@ -11,13 +11,23 @@ defmodule Brain.ML.EntityExtractor do
 
   @type_mappings_path "evaluation/ner/type_mappings.json"
 
+  # A decided entity: the reading `Brain.ML.SpanReliability.decide/3` trusted
+  # most for the span, with the keys of the other readings of its hypothesis
+  # (a gazetteer reading's `:types`, `:metadata`, `:tag`, ...). Disambiguation
+  # and type scoring add their own keys beside these.
   @type entity_match :: %{
-          entity: String.t(),
-          value: String.t(),
-          match: String.t(),
-          start_pos: integer(),
-          end_pos: integer(),
-          confidence: float()
+          required(:entity_type) => String.t(),
+          required(:value) => String.t(),
+          required(:match) => String.t(),
+          required(:start_pos) => non_neg_integer(),
+          required(:end_pos) => non_neg_integer(),
+          required(:confidence) => float(),
+          required(:source) => atom(),
+          required(:resolved) => true,
+          required(:readings) => [map()],
+          required(:candidates) => Brain.Lattice.t(),
+          required(:decision) => map(),
+          optional(atom()) => term()
         }
 
   @type entity_map :: %{String.t() => %{entity_type: String.t(), value: String.t()}}
@@ -25,11 +35,22 @@ defmodule Brain.ML.EntityExtractor do
   @doc "Returns true when the gazetteer extraction reads from has loaded.\n"
   def is_loaded?, do: Gazetteer.loaded?()
 
-  @doc "Extract entities from text using gazetteer lookups and pattern matching.\n\nReturns `%{entities: entities, unresolved_spans: spans}`, each in text order.\n`entities` holds only the spans the data decided (`resolved: true`), with their\npositions, combined confidence and `:readings`. `unresolved_spans` holds the\nspans it could not decide (`resolved: false`): each keeps its `:readings` (every\nsource's reading, with the source's reliability), its `:candidates` (the\n`Brain.Lattice` of hypotheses its measured readings supported), its\n`:unresolved_reason`, and as `:entity_type` the type its readings share, or nil.\nAn unresolved span is no entity, so it never appears among the entities.\n\n## Options\n\n- `:discourse` - Discourse analysis result for disambiguation context\n- `:speech_act` - Speech act classification result for disambiguation context\n- `:skip_disambiguation` - If true, skip the disambiguation step (default: false)\n- `:world_id` - required: the world whose entities are extracted. Absent raises.\n- `:language` - the `Brain.Language` code whose span reliabilities decide the spans.\n  Absent means English; an unsupported code raises.\n- `:min_confidence` - a decided span whose combined confidence is below it is\n  withheld: returned among the unresolved spans, with\n  `unresolved_reason: :below_confidence_floor` (default: the configured entity\n  confidence threshold).\n"
-  @spec extract(String.t(), keyword()) :: %{entities: [map()], unresolved_spans: [map()]}
+  @doc "Extract entities from text using gazetteer lookups and pattern matching.\n\nReturns `%{entities: entities, unresolved_spans: spans, candidates: candidates}`,\nthe first two in text order. `entities` holds only the spans the data decided\n(`resolved: true`), with their positions, combined confidence and `:readings`.\n`unresolved_spans` holds the spans it could not decide (`resolved: false`): each\nkeeps its `:readings` (every source's reading, with the source's reliability),\nits `:candidates` (the `Brain.Lattice` of hypotheses its measured readings\nsupported), its `:unresolved_reason`, and as `:entity_type` the type its readings\nshare, or nil. An unresolved span is no entity, so it never appears among the\nentities. `candidates` is `extract_candidates/2`'s result, which `disambiguate/3`\ncan disambiguate again in a context known later.\n\nExtraction is `extract_candidates/2`, then `disambiguate/3` with the\n`:discourse` and `:speech_act` given, then the confidence floor.\n\n## Options\n\n- `:discourse` - Discourse analysis result for disambiguation context\n- `:speech_act` - Speech act classification result for disambiguation context\n- `:skip_disambiguation` - If true, skip the disambiguation step (default: false)\n- `:world_id` - required: the world whose entities are extracted. Absent raises.\n- `:language` - the `Brain.Language` code whose span reliabilities decide the spans.\n  Absent means English; an unsupported code raises.\n- `:min_confidence` - a decided span whose combined confidence is below it is\n  withheld: returned among the unresolved spans, with\n  `unresolved_reason: :below_confidence_floor` (default: the configured entity\n  confidence threshold).\n"
+  @spec extract(String.t(), keyword()) :: %{entities: [map()], unresolved_spans: [map()], candidates: map()}
   def extract(text, opts) when is_list(opts) do
     Telemetry.span(:entity_extract, %{text_length: String.length(text || "")}, fn ->
-      do_extract(text, opts)
+      candidates = extract_candidates(text, opts)
+
+      disambiguated =
+        disambiguate(candidates, %{discourse: Keyword.get(opts, :discourse), speech_act: Keyword.get(opts, :speech_act)}, opts)
+
+      {kept, withheld} = apply_confidence_floor(disambiguated, min_confidence(opts), text)
+
+      %{
+        entities: kept,
+        unresolved_spans: Enum.sort_by(candidates.unresolved_spans ++ withheld, &{&1.start_pos, &1.end_pos}),
+        candidates: candidates
+      }
     end)
   end
 
@@ -44,13 +65,19 @@ defmodule Brain.ML.EntityExtractor do
     extract_entities(text, [])
   end
 
-  defp do_extract(text, opts) do
+  @doc """
+  The spans of `text` the data decided, before disambiguation and before the
+  confidence floor: `%{text: text, tokens: tokens, world_id: world_id, entities:
+  decided, unresolved_spans: undecided}`. `entities` are the decided spans
+  (adjacent ones of compatible types merged) and `unresolved_spans` the spans
+  `Brain.ML.SpanReliability.decide/3` could not decide. Takes `extract/2`'s
+  `:world_id` and `:language`.
+  """
+  @spec extract_candidates(String.t(), keyword()) :: map()
+  def extract_candidates(text, opts) when is_binary(text) and is_list(opts) do
     debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
     t0 = if debug?, do: System.monotonic_time(:millisecond)
 
-    discourse = Keyword.get(opts, :discourse)
-    speech_act = Keyword.get(opts, :speech_act)
-    skip_disambiguation = Keyword.get(opts, :skip_disambiguation, false)
     world_id = world_id!(opts)
     reliability = SpanReliability.loaded!(language!(opts))
     tokens = Tokenizer.tokenize(text)
@@ -72,21 +99,204 @@ defmodule Brain.ML.EntityExtractor do
 
     if debug?, do: Logger.info("    extractor:decide+merge=#{System.monotonic_time(:millisecond) - t0}ms (#{length(entities)} decided, #{length(unresolved)} unresolved)")
 
-    disambiguated_entities =
-      if skip_disambiguation or (is_nil(discourse) and is_nil(speech_act)) do
+    %{text: text, tokens: tokens, world_id: world_id, entities: entities, unresolved_spans: unresolved}
+  end
+
+  @doc """
+  Disambiguates the decided spans of `extract_candidates/2`'s result in
+  `context`, a map that may hold `:discourse`, `:speech_act` and `:profile`
+  (the chunk's `Brain.Analysis.ChunkProfile`, whose domain ranks the slot types
+  an ambiguous entity is weighed against). Returns every decided span,
+  disambiguated, before the confidence floor. With none of the three, or with
+  `skip_disambiguation: true` in `opts`, the spans are returned as decided.
+  """
+  @spec disambiguate(map(), map(), keyword()) :: [map()]
+  def disambiguate(%{text: text, tokens: tokens, world_id: world_id, entities: entities}, context, opts)
+      when is_map(context) and is_list(opts) do
+    debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
+    t0 = if debug?, do: System.monotonic_time(:millisecond)
+
+    case Map.keys(context) -- [:discourse, :speech_act, :profile] do
+      [] -> :ok
+      other -> raise ArgumentError, "EntityExtractor.disambiguate/3: unknown context keys #{inspect(other)}"
+    end
+
+    discourse = Map.get(context, :discourse)
+    speech_act = Map.get(context, :speech_act)
+    profile = Map.get(context, :profile)
+
+    disambiguated =
+      if Keyword.get(opts, :skip_disambiguation, false) or (is_nil(discourse) and is_nil(speech_act) and is_nil(profile)) do
         entities
       else
-        disambiguate_entities(entities, tokens, discourse, speech_act, text, world_id)
+        disambiguate_entities(entities, tokens, %{discourse: discourse, speech_act: speech_act, profile: profile}, text, world_id)
       end
 
     if debug?, do: Logger.info("    extractor:disambiguate=#{System.monotonic_time(:millisecond) - t0}ms")
 
-    min_confidence = Keyword.get(opts, :min_confidence) || get_min_confidence_threshold()
-
-    {kept, withheld} = apply_confidence_floor(disambiguated_entities, min_confidence, text)
-
-    %{entities: kept, unresolved_spans: Enum.sort_by(unresolved ++ withheld, &{&1.start_pos, &1.end_pos})}
+    disambiguated
   end
+
+  # The type an entity holds, and the record of how it was chosen: what
+  # `put_types/2` carries from one disambiguation onto another's entities.
+  @type_fields [
+    :entity_type,
+    :entity,
+    :types,
+    :type_posteriors,
+    :p_ordinary,
+    :disambiguation_source,
+    :disambiguation_reason,
+    :disambiguation_confidence
+  ]
+
+  @doc """
+  Gives each of `entities` the type fields of the entity of `retyped` with the
+  same `:start_pos` and `:end_pos` -- its `:entity_type` and the record of how
+  disambiguation chose it (#{Enum.map_join(@type_fields, ", ", &"`#{inspect(&1)}`")}),
+  each set as `retyped` has it or removed when it has none -- and nothing else:
+  values, confidences and every other key stay as they are. An entity without
+  a position (one anaphora resolution supplied) is left as it is. A positioned
+  entity with no entity, or more than one, at its offsets in `retyped` raises.
+  """
+  @spec put_types([map()], [map()]) :: [map()]
+  def put_types(entities, retyped) when is_list(entities) and is_list(retyped) do
+    Enum.map(entities, fn
+      %{start_pos: start_pos, end_pos: end_pos} = entity when is_integer(start_pos) and is_integer(end_pos) ->
+        case Enum.filter(retyped, &(Map.get(&1, :start_pos) == start_pos and Map.get(&1, :end_pos) == end_pos)) do
+          [source] ->
+            entity
+            |> Map.drop(@type_fields)
+            |> Map.merge(Map.take(source, @type_fields))
+
+          found ->
+            raise ArgumentError,
+                  "EntityExtractor.put_types/2: #{length(found)} retyped entities at #{start_pos}..#{end_pos} " <>
+                    "for #{inspect(Map.get(entity, :value))}; exactly one was expected"
+        end
+
+      entity ->
+        entity
+    end)
+  end
+
+  @doc """
+  Decides again, now that the turn's intent is known, the spans `extract/2`
+  left unresolved. A span left for `:insufficient_evidence` is decided again
+  by `Brain.ML.SpanReliability.redecide/4`, with what the intent says about
+  each of its hypothesis labels (`Brain.Analysis.SlotTypePreferences.intent_evidence/3`)
+  as one more piece of evidence and the same learned thresholds. Nothing else
+  decides it: no span is resolved because a source or the intent always wins.
+
+  Returns `%{entities: entities, unresolved_spans: spans, outcomes: outcomes}`:
+  the spans the intent's evidence decided, as decided entities whose
+  `:decision` records `resolved_by: {:intent, intent}` and the evidence; every
+  other span, unchanged; and one outcome per given span, in text order, saying
+  what became of it and why:
+
+  - `%{outcome: :resolved, entity_type, score, margin, evidence}`;
+  - `%{outcome: :undecided, best_type, score, margin, evidence}` -- the
+    evidence did not lift the span over the thresholds;
+  - `%{outcome: :below_confidence_floor, entity_type, score, margin, evidence}`
+    -- decided, but with a confidence below the floor `extract/2` applies, so
+    the span stays unresolved as it was;
+  - `%{outcome: :not_redecided, reason}` -- `:no_measured_reading` (no
+    hypothesis to weigh), `:below_confidence_floor` (decided before, withheld
+    by the floor), `:no_intent`, or `:intent_without_domain` (an intent whose
+    prefix `Brain.Lexicon.IntentDomains` does not declare, for which the slot
+    type preferences hold no distribution).
+
+  Each outcome also carries the span's `:value`, `:start_pos` and `:end_pos`.
+
+  Options: `:language`, `:min_confidence` as for `extract/2`;
+  `:span_reliability` and `:preferences`, models used in place of the ones
+  loaded for the language.
+  """
+  @spec resolve_with_intent([map()], String.t() | atom() | nil, keyword()) :: %{
+          entities: [map()],
+          unresolved_spans: [map()],
+          outcomes: [map()]
+        }
+  def resolve_with_intent(spans, intent, opts) when is_list(spans) and is_list(opts) do
+    language = language!(opts)
+    intent = if is_nil(intent), do: nil, else: to_string(intent)
+
+    results =
+      spans
+      |> Enum.sort_by(&{&1.start_pos, &1.end_pos})
+      |> Enum.map(&resolve_span(&1, intent, language, opts))
+
+    %{
+      entities: for({:entity, entity, _outcome} <- results, do: entity),
+      unresolved_spans: for({:span, span, _outcome} <- results, do: span),
+      outcomes: Enum.map(results, &elem(&1, 2))
+    }
+  end
+
+  defp resolve_span(%{unresolved_reason: :insufficient_evidence} = span, intent, language, opts) do
+    cond do
+      intent in [nil, ""] ->
+        {:span, span, outcome(span, %{outcome: :not_redecided, reason: :no_intent})}
+
+      not Brain.Lexicon.IntentDomains.declared?(intent |> String.split(".") |> hd()) ->
+        {:span, span, outcome(span, %{outcome: :not_redecided, reason: :intent_without_domain})}
+
+      true ->
+        redecide_span(span, intent, language, opts)
+    end
+  end
+
+  defp resolve_span(%{unresolved_reason: reason} = span, _intent, _language, _opts)
+       when reason in [:no_measured_reading, :below_confidence_floor] do
+    {:span, span, outcome(span, %{outcome: :not_redecided, reason: reason})}
+  end
+
+  defp resolve_span(span, _intent, _language, _opts) do
+    raise ArgumentError, "EntityExtractor.resolve_with_intent/3: not an unresolved span: #{inspect(span, limit: 8)}"
+  end
+
+  defp redecide_span(span, intent, language, opts) do
+    reliability =
+      case Keyword.fetch(opts, :span_reliability) do
+        {:ok, %SpanReliability{} = model} -> model
+        {:ok, other} -> raise ArgumentError, "EntityExtractor: :span_reliability must be a SpanReliability model, got #{inspect(other, limit: 3)}"
+        :error -> SpanReliability.loaded!(language)
+      end
+
+    preferences =
+      case Keyword.fetch(opts, :preferences) do
+        {:ok, %SlotTypePreferences{} = model} -> model
+        {:ok, other} -> raise ArgumentError, "EntityExtractor: :preferences must be a SlotTypePreferences model, got #{inspect(other, limit: 3)}"
+        :error -> SlotTypePreferences.loaded!(language)
+      end
+
+    labels = span.readings |> Enum.filter(& &1.measured) |> Enum.map(& &1.canonical) |> Enum.uniq()
+    evidence = SlotTypePreferences.intent_evidence(preferences, intent, labels)
+
+    case SpanReliability.redecide(span, evidence, reliability, TypeHierarchy) do
+      {:decided, entity} ->
+        entity = %{entity | decision: Map.put(entity.decision, :resolved_by, {:intent, intent})}
+        decided = %{entity_type: entity.entity_type, score: entity.decision.score, margin: entity.decision.margin, evidence: evidence}
+
+        # The floor `extract/2` applies to every entity applies here too; a
+        # decision under it is not acted on, and the span stays as it was.
+        if entity.confidence >= min_confidence(opts) do
+          {:entity, entity, outcome(span, Map.put(decided, :outcome, :resolved))}
+        else
+          {:span, span, outcome(span, Map.put(decided, :outcome, :below_confidence_floor))}
+        end
+
+      {:undecided, %Brain.Lattice{best: %{label: {_s, _e, best}} = top} = lattice} ->
+        margin = if lattice.second, do: top.score - lattice.second.score, else: :infinity
+
+        {:span, span,
+         outcome(span, %{outcome: :undecided, best_type: best, score: top.score, margin: margin, evidence: evidence})}
+    end
+  end
+
+  defp outcome(span, fields), do: Map.merge(%{value: span.value, start_pos: span.start_pos, end_pos: span.end_pos}, fields)
+
+  defp min_confidence(opts), do: Keyword.get(opts, :min_confidence) || get_min_confidence_threshold()
 
   @doc """
   Every source's reading of `text`, before any span is decided: the gazetteer,
@@ -947,7 +1157,9 @@ defmodule Brain.ML.EntityExtractor do
       (codepoint >= 7680 and codepoint <= 7935)
   end
 
-  defp disambiguate_entities(entities, tokens, discourse, speech_act, original_text, world_id) do
+  # The profile, when one is known, is the chunk's: the disambiguator ranks the
+  # slot types of its domain, and `context_type/1` reads its domain.
+  defp disambiguate_entities(entities, tokens, %{discourse: discourse, speech_act: speech_act, profile: profile}, original_text, world_id) do
     debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
     t0 = if debug?, do: System.monotonic_time(:millisecond)
 
@@ -956,6 +1168,7 @@ defmodule Brain.ML.EntityExtractor do
     context = %{
       discourse: discourse,
       speech_act: speech_act,
+      profile: profile,
       intent: classified_intent,
       original_text: original_text,
       world_id: world_id
