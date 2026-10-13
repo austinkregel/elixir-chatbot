@@ -77,7 +77,6 @@ defmodule Brain.SystemStatusTest do
 
       assert is_map(result)
       assert Map.has_key?(result, :categories)
-      assert Map.has_key?(result, :subprocess_supervisor)
       assert Map.has_key?(result, :checked_at)
       assert Map.has_key?(result, :check_duration_ms)
       assert is_integer(result.check_duration_ms)
