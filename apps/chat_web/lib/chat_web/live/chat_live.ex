@@ -1117,9 +1117,11 @@ defmodule ChatWeb.ChatLive do
   # made, not a fault, so every strategy is ink and its name says which.
   # The strategies are the pipeline's
   # (`Brain.Analysis.InternalModel.response_strategy/0`), the response gate's
-  # `:response_optional` and `:response_deferred`, and ProcessingTrace's
-  # `:low_confidence`; `nil` is a strategy that was not reported.
+  # `:response_optional` and `:response_deferred`, ProcessingTrace's
+  # `:low_confidence`, and `:followup` for a turn that answered the previous
+  # turn's question; `nil` is a strategy that was not reported.
   @strategy_badge_variants %{
+    followup: :success,
     can_respond: :success,
     hedged_response: :success,
     needs_clarification: :success,
@@ -1263,7 +1265,9 @@ defmodule ChatWeb.ChatLive do
               Map.get(payload, :prompts_count) || Map.get(payload, "prompts_count") || 0,
             response_path: Map.get(payload, :response_path) || Map.get(payload, "response_path"),
             reason: Map.get(payload, :reason) || Map.get(payload, "reason"),
-            source: Map.get(payload, :source) || Map.get(payload, "source")
+            source: Map.get(payload, :source) || Map.get(payload, "source"),
+            enrichment_error:
+              Map.get(payload, :enrichment_error) || Map.get(payload, "enrichment_error")
           })
 
         :followup_detected ->
