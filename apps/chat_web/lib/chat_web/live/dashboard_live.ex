@@ -62,6 +62,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:response_timing, load_response_timing())
       |> assign(:atlas_stats, load_atlas_stats())
       |> assign(:evaluation_summary, load_evaluation_summary())
+      |> assign(:telemetry_health, load_telemetry_health())
       |> assign(:kg_signals_status, load_kg_signals_status(world_id))
       |> assign(:last_updated, DateTime.utc_now())
       |> assign(:expanded_categories, MapSet.new(@default_expanded))
@@ -121,6 +122,7 @@ defmodule ChatWeb.DashboardLive do
         |> assign(:response_timing, load_response_timing())
         |> assign(:atlas_stats, load_atlas_stats())
         |> assign(:evaluation_summary, load_evaluation_summary())
+        |> assign(:telemetry_health, load_telemetry_health())
         |> assign(:kg_signals_status, load_kg_signals_status(world_id))
         |> assign(:last_updated, DateTime.utc_now())
 
@@ -166,6 +168,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:response_timing, load_response_timing())
       |> assign(:atlas_stats, load_atlas_stats())
       |> assign(:evaluation_summary, load_evaluation_summary())
+      |> assign(:telemetry_health, load_telemetry_health())
       |> assign(:last_updated, DateTime.utc_now())
 
     {:noreply, socket}
@@ -378,19 +381,10 @@ defmodule ChatWeb.DashboardLive do
       }
   end
 
+  # The latest evaluation of each task, read from Brain.ML.EvaluationStore,
+  # which keeps every evaluation result in Atlas: the one record of them,
+  # whether the evaluation ran in this node or in a mix task of its own.
   defp load_evaluation_summary do
-    aggregator_data = Brain.Metrics.Aggregator.get_evaluation_metrics()
-
-    if aggregator_data == %{} do
-      load_evaluation_from_store()
-    else
-      aggregator_data
-    end
-  rescue
-    _ -> %{}
-  end
-
-  defp load_evaluation_from_store do
     ~w(intent ner sentiment speech_act)
     |> Enum.reduce(%{}, fn task, acc ->
       case Brain.ML.EvaluationStore.latest(task) do
@@ -408,8 +402,15 @@ defmodule ChatWeb.DashboardLive do
           })
       end
     end)
-  rescue
-    _ -> %{}
+  end
+
+  # The events the metrics aggregator did not count, and the node-wide
+  # window its Atlas-kept metrics are counted in.
+  defp load_telemetry_health do
+    %{
+      missed: Brain.Metrics.Aggregator.get_missed_events(),
+      window: Brain.Metrics.Aggregator.get_telemetry_window()
+    }
   end
 
   # The triple scorer shown is the world's own copy; a world that holds none
@@ -585,6 +586,17 @@ defmodule ChatWeb.DashboardLive do
   def status_icon(other) do
     raise ArgumentError,
           "ChatWeb.DashboardLive.status_icon/1: no icon for epistemic status #{inspect(other)}"
+  end
+
+  # Why the metrics aggregator did not count an event
+  # (Brain.Metrics.Aggregator.get_missed_events/0).
+  def missed_reason_label(:aggregator_not_running), do: "the aggregator was not running"
+  def missed_reason_label(:atlas_write_failed), do: "Atlas could not take the write"
+  def missed_reason_label(:malformed_event), do: "the event lacked what it is counted by"
+  def missed_reason_label(:aggregator_stopped), do: "it was waiting when the aggregator stopped"
+
+  def missed_reason_label(other) do
+    raise ArgumentError, "ChatWeb.DashboardLive.missed_reason_label/1: no label for #{inspect(other)}"
   end
 
   def reason_label(:no_subject), do: "No Subject"
@@ -943,6 +955,22 @@ defmodule ChatWeb.DashboardLive do
 
   def model_name(:speech_act_classifier) do
     "Speech Act Classifier"
+  end
+
+  # Training runs are read back from Atlas with their model named as a string.
+  for model <- [
+        :pos_model,
+        :entity_model,
+        :classifier,
+        :gazetteer,
+        :intent_classifier,
+        :entity_extractor,
+        :pos_tagger,
+        :entity_trainer,
+        :sentiment_classifier,
+        :speech_act_classifier
+      ] do
+    def model_name(unquote(Atom.to_string(model))), do: model_name(unquote(model))
   end
 
   def model_name(other) do
