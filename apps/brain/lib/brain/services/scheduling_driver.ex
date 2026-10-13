@@ -15,25 +15,34 @@ defmodule Brain.Services.SchedulingDriver do
 
   ## Operations
 
-  The operations are the intents the classifier emits in these domains
-  (`priv/analysis/intent_registry.json`). An intent names its operation by its
+  The operations are the intents of these domains in
+  `priv/analysis/intent_registry.json`. An intent names its operation by its
   domain and its verb, the segment after the domain; `operation/1` reads both
   and looks the pair up, so no other intent maps to an operation.
 
-  | Intent              | Operation          |
-  | ------------------- | ------------------ |
-  | `alarm.set`         | `set_alarm/3`      |
-  | `alarm.snooze`      | `snooze_alarm/3`   |
-  | `timer.set`         | `set_timer/3`      |
-  | `timer.check`       | `check_timer/3`    |
-  | `reminder.create`   | `create_reminder/3`|
-  | `calendar.query`    | `query_calendar/3` |
-  | `calendar.schedule` | `schedule_event/3` |
-  | `calendar.cancel`   | `cancel_event/3`   |
+  | Intent              | Operation            |
+  | ------------------- | -------------------- |
+  | `alarm.set`         | `set_alarm/3`        |
+  | `alarm.snooze`      | `snooze_alarm/3`     |
+  | `alarm.cancel`      | `cancel_alarm/3`     |
+  | `alarm.check`       | `check_alarms/3`     |
+  | `timer.set`         | `set_timer/3`        |
+  | `timer.check`       | `check_timer/3`      |
+  | `timer.cancel`      | `cancel_timer/3`     |
+  | `reminder.create`   | `create_reminder/3`  |
+  | `reminder.cancel`   | `cancel_reminder/3`  |
+  | `reminder.check`    | `check_reminders/3`  |
+  | `calendar.query`    | `query_calendar/3`   |
+  | `calendar.schedule` | `schedule_event/3`   |
+  | `calendar.cancel`   | `cancel_event/3`     |
 
   Every operation takes the slots, the driver's credentials read from the
   world, and the world, and returns what `Brain.Services.Service.enrich/4`
   returns.
+
+  `Brain.Services.LocalScheduler` is the only driver. A driver is the point
+  where another scheduling backend is added: a module that implements this
+  behaviour and is listed in `Brain.Services.Dispatcher`'s drivers.
   """
 
   alias Brain.Services.Service
@@ -45,9 +54,14 @@ defmodule Brain.Services.SchedulingDriver do
   @type operation ::
           :set_alarm
           | :snooze_alarm
+          | :cancel_alarm
+          | :check_alarms
           | :set_timer
           | :check_timer
+          | :cancel_timer
           | :create_reminder
+          | :cancel_reminder
+          | :check_reminders
           | :query_calendar
           | :schedule_event
           | :cancel_event
@@ -58,14 +72,29 @@ defmodule Brain.Services.SchedulingDriver do
   @doc "Snoozes the alarm that is ringing."
   @callback snooze_alarm(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
+  @doc "Cancels the alarms the slots identify."
+  @callback cancel_alarm(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
+
+  @doc "Reports every alarm that is set."
+  @callback check_alarms(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
+
   @doc "Starts a timer."
   @callback set_timer(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
   @doc "Reports the timer that is running."
   @callback check_timer(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
+  @doc "Cancels the timers the slots identify."
+  @callback cancel_timer(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
+
   @doc "Creates a reminder."
   @callback create_reminder(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
+
+  @doc "Cancels the reminders the slots identify."
+  @callback cancel_reminder(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
+
+  @doc "Reports every reminder that is set."
+  @callback check_reminders(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
   @doc "Reports the calendar's events."
   @callback query_calendar(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
@@ -73,7 +102,7 @@ defmodule Brain.Services.SchedulingDriver do
   @doc "Puts an event on the calendar."
   @callback schedule_event(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
-  @doc "Takes an event off the calendar."
+  @doc "Takes the event the slots identify off the calendar."
   @callback cancel_event(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
   @capability "scheduling"
@@ -81,9 +110,14 @@ defmodule Brain.Services.SchedulingDriver do
   @operations %{
     {"alarm", "set"} => :set_alarm,
     {"alarm", "snooze"} => :snooze_alarm,
+    {"alarm", "cancel"} => :cancel_alarm,
+    {"alarm", "check"} => :check_alarms,
     {"timer", "set"} => :set_timer,
     {"timer", "check"} => :check_timer,
+    {"timer", "cancel"} => :cancel_timer,
     {"reminder", "create"} => :create_reminder,
+    {"reminder", "cancel"} => :cancel_reminder,
+    {"reminder", "check"} => :check_reminders,
     {"calendar", "query"} => :query_calendar,
     {"calendar", "schedule"} => :schedule_event,
     {"calendar", "cancel"} => :cancel_event
