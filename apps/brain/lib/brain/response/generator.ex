@@ -36,9 +36,14 @@ defmodule Brain.Response.Generator do
       # Prepare context with enrichment data (before pipeline, for template conditions)
       context = Enricher.prepare_context(intent, slots, context)
 
-      result = run_generative_pipeline(intent, entities, query_text, context)
+      {result, recurring_pattern_use} = run_generative_pipeline(intent, entities, query_text, context)
       result = maybe_enrich_response(result, context)
-      maybe_improve_response(result, query_text, intent, entities)
+      result = maybe_improve_response(result, query_text, intent, entities)
+
+      # The response is settled: a synthesized one is never rewritten by the
+      # improver, so the pattern it was adapted from is reported once, here.
+      :ok = RecurringPattern.report_use(recurring_pattern_use, opts)
+      result
     end)
   end
 
@@ -322,6 +327,8 @@ defmodule Brain.Response.Generator do
     _ -> []
   end
 
+  # The response and how it drew on the turn's recurring pattern
+  # (`Brain.Memory.RecurringPattern.pattern_use/0`, `nil` for none).
   defp run_generative_pipeline(intent, entities, query_text, context) do
     case Synthesizer.synthesize(intent, entities,
            confidence: context.confidence,
@@ -329,32 +336,35 @@ defmodule Brain.Response.Generator do
            recurring_pattern: context.recurring_pattern,
            context: context
          ) do
-      {:ok, response} ->
-        {:ok, response, :synthesized}
+      {:ok, response, recurring_pattern} ->
+        {{:ok, response, :synthesized}, synthesizer_use(recurring_pattern)}
 
       :not_synthesized ->
         case try_memory_augmented(intent, entities, context.world_id) do
           {:ok, response} ->
-            {:ok, response, :memory_adapted}
+            {{:ok, response, :memory_adapted}, nil}
 
           :not_handled ->
             case try_template_response(intent, entities, context) do
               {:ok, response} ->
-                {:ok, response, :template}
+                {{:ok, response, :template}, nil}
 
               :not_handled ->
                 case try_special_handlers(intent, entities, query_text, context.world_id) do
                   {:ok, response} ->
-                    {:ok, response, :special_handler}
+                    {{:ok, response, :special_handler}, nil}
 
                   :not_handled ->
                     response = Synthesizer.get_fallback_response()
-                    {:ok, response, :fallback}
+                    {{:ok, response, :fallback}, nil}
                 end
             end
         end
     end
   end
+
+  defp synthesizer_use(nil), do: nil
+  defp synthesizer_use(%RecurringPattern{} = pattern), do: {pattern, :synthesizer}
 
   defp maybe_improve_response({:ok, response, type}, query_text, intent, entities) do
     if type in [:synthesized, :special_handler] or is_nil(query_text) do
@@ -440,7 +450,9 @@ defmodule Brain.Response.Generator do
            recurring_pattern: context.recurring_pattern,
            context: context
          ) do
-      {:ok, response} ->
+      {:ok, response, recurring_pattern} ->
+        :ok = RecurringPattern.report_use(synthesizer_use(recurring_pattern), opts)
+
         path =
           path ++
             [
@@ -545,8 +557,9 @@ defmodule Brain.Response.Generator do
     full_context = entities |> build_template_context(context) |> Map.put(:world_id, world_id)
     confidence = Map.get(context, :confidence, 0.7)
 
+    # No recurring pattern is passed, so none is adapted from.
     case Synthesizer.synthesize(intent, entities, confidence: confidence, context: context) do
-      {:ok, response} ->
+      {:ok, response, nil} ->
         {:ok, response, :synthesized}
 
       :not_synthesized ->
