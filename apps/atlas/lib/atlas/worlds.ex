@@ -19,11 +19,12 @@ defmodule Atlas.Worlds do
     IntentReviewCandidate,
     KnowledgeEntry,
     LearningSession,
+    MetricRecord,
+    MetricValue,
+    MetricWindow,
     ReviewCandidate,
     SchedulerItem,
     SemanticFact,
-    SemanticFactMetricCount,
-    SemanticFactMetricWindow,
     VerificationCase,
     WorldServiceDriver
   }
@@ -31,8 +32,9 @@ defmodule Atlas.Worlds do
   # Every table whose rows belong to one world, with the column that names the
   # world. A learning session's goals, investigations, hypotheses and evidence
   # are deleted with it by their foreign keys (`on_delete: :delete_all`). A
-  # semantic-fact metric window's counts would go with it the same way; they
-  # name their world too, and are deleted first.
+  # world's metric windows' values and records would go with them the same
+  # way; they name their world too, and are deleted first. Metrics of the whole
+  # node name no world and are not any world's to purge.
   @world_tables [
     {Episode, :world_id},
     {SemanticFact, :world_id},
@@ -45,8 +47,9 @@ defmodule Atlas.Worlds do
     {ReviewCandidate, :world_id},
     {VerificationCase, :world_id},
     {WorldServiceDriver, :world_id},
-    {SemanticFactMetricCount, :world_id},
-    {SemanticFactMetricWindow, :world_id}
+    {MetricValue, :world_id},
+    {MetricRecord, :world_id},
+    {MetricWindow, :world_id}
   ]
 
   @doc "The schemas whose rows belong to one world, with the column naming it."
