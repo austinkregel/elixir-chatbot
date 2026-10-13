@@ -117,6 +117,21 @@ defmodule Brain.LearnerDataTest do
     end
   end
 
+  describe "spans entity extraction could not decide" do
+    test "learn_from_input/3 learns no entity from one" do
+      for {text, undecided} <- undecided_span_cases(@world_id, 3) do
+        {:ok, data} = Learner.learn_from_input(@test_persona, text, world_id: @world_id)
+
+        learned = data |> Map.get("entities", []) |> MapSet.new(&String.downcase(&1["name"]))
+
+        for span <- undecided do
+          refute MapSet.member?(learned, String.downcase(span.value)),
+                 "#{inspect(span.value)} of #{inspect(text)} was learned as an entity: #{inspect(data["entities"])}"
+        end
+      end
+    end
+  end
+
   # Edge cases
   describe "edge cases" do
     test "handles unicode input" do
