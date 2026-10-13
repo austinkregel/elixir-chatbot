@@ -11,19 +11,23 @@ defmodule Brain.ML.NerSpanEvaluation do
     entity's or refines it in `Brain.Analysis.TypeHierarchy` (a `number` for a
     gold `final_value`), as `Brain.ML.SpanReliability` counts agreement.
 
-  A span extraction left unresolved (`resolved: false`) is an abstention, not
-  a prediction: it costs recall, never precision, and is counted on its own.
-  Every other entity is a prediction, including entities a later stage of the
+  A span extraction left unresolved is an abstention, not a prediction: it
+  costs recall, never precision, and is counted on its own. Unresolved spans
+  come apart from the entities (`Brain.ML.EntityExtractor.extract/2`'s
+  `:unresolved_spans`, a `Brain.Analysis.ChunkAnalysis`'s `unresolved_spans`).
+  Every entity is a prediction, including entities a later stage of the
   pipeline added.
 
   The per-source breakdown attributes each prediction to its `:source` (the
   reading a decided span was built from), and counts abstentions by reason.
   """
 
-  @type row_result :: %{gold: [map()], entities: [map()]}
+  @type row_result :: %{gold: [map()], entities: [map()], unresolved_spans: [map()]}
 
   @doc """
-  Scores `results`, one `%{gold: spans, entities: entities}` per row.
+  Scores `results`, one `%{gold: spans, entities: entities, unresolved_spans:
+  spans}` per row. Every unresolved span names its `:unresolved_reason`; one
+  without raises.
 
   Options: `:canonical` (runtime type => gold label) and `:hierarchy` (a module
   with `is_a?/2`), both required. Returns `%{exact: prf, agree: prf,
@@ -35,20 +39,17 @@ defmodule Brain.ML.NerSpanEvaluation do
     canonical = Keyword.fetch!(opts, :canonical)
     hierarchy = Keyword.fetch!(opts, :hierarchy)
 
-    judged =
+    predictions =
       Enum.flat_map(results, fn %{gold: gold, entities: entities} ->
-        Enum.map(entities, fn
-          %{resolved: false} = span ->
-            {:abstained, Map.get(span, :unresolved_reason)}
+        Enum.map(entities, &{Map.get(&1, :source), judge(&1, gold, canonical, hierarchy)})
+      end)
 
-          entity ->
-            {:predicted, Map.get(entity, :source), judge(entity, gold, canonical, hierarchy)}
-        end)
+    abstentions =
+      Enum.flat_map(results, fn %{unresolved_spans: spans} ->
+        Enum.map(spans, &unresolved_reason!/1)
       end)
 
     gold_total = results |> Enum.map(&length(&1.gold)) |> Enum.sum()
-    predictions = for {:predicted, source, verdict} <- judged, do: {source, verdict}
-    abstentions = for {:abstained, reason} <- judged, do: reason
 
     %{
       gold: gold_total,
@@ -81,6 +82,12 @@ defmodule Brain.ML.NerSpanEvaluation do
       %{type: gold_type} -> if hierarchy.is_a?(gold_type, label), do: :refined, else: :miss
       nil -> :miss
     end
+  end
+
+  defp unresolved_reason!(%{unresolved_reason: reason}) when is_atom(reason) and not is_nil(reason), do: reason
+
+  defp unresolved_reason!(span) do
+    raise ArgumentError, "NerSpanEvaluation: an unresolved span names no reason: #{inspect(span, limit: 8)}"
   end
 
   defp type!(type, _entity) when is_binary(type), do: type
