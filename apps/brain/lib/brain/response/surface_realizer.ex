@@ -25,6 +25,14 @@ defmodule Brain.Response.SurfaceRealizer do
     - `:analysis` - ChunkAnalysis for Ouro realization packet context
     - `:unified_context` - rich context map from ContextBuilder
 
+  A plan holding a primitive planned for a service's error
+  (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`) is worded
+  from that reply's templates
+  (`Brain.Response.Synthesizer.synthesize_service_reply/1`), whatever system
+  the domain is realized by, since the reply states exactly what was not done
+  and names the items the service found; every primitive of the plan is
+  rendered with that text, with source `:service_reply`.
+
   Returns `{:ok, rendered, text, recurring_pattern_use}` or
   `{:error, reason}`. `recurring_pattern_use` is how the text drew on the
   turn's recurring pattern (`t:Brain.Memory.RecurringPattern.pattern_use/0`): the
@@ -39,6 +47,33 @@ defmodule Brain.Response.SurfaceRealizer do
           | {:error, term()}
   def realize(primitives, opts) when is_list(primitives) do
     world_id!(opts)
+
+    case Enum.find(primitives, &service_reply?/1) do
+      nil -> realize_by_system(primitives, opts)
+      reply -> realize_service_reply(primitives, reply)
+    end
+  end
+
+  @doc """
+  Whether the primitive answers a service's error
+  (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`).
+  """
+  @spec service_reply?(Primitive.t()) :: boolean()
+  def service_reply?(%Primitive{content: %{enrichment_error: _}}), do: true
+  def service_reply?(_), do: false
+
+  defp realize_service_reply(primitives, %Primitive{content: content}) do
+    {:ok, text} = Brain.Response.Synthesizer.synthesize_service_reply(content)
+
+    rendered =
+      Enum.map(primitives, fn p ->
+        p |> Primitive.render(text) |> Map.put(:source, :service_reply)
+      end)
+
+    {:ok, rendered, text, nil}
+  end
+
+  defp realize_by_system(primitives, opts) do
     analysis = Keyword.get(opts, :analysis)
     domain = extract_domain(analysis)
 
