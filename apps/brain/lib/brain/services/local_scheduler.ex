@@ -13,30 +13,53 @@ defmodule Brain.Services.LocalScheduler do
   fires when it is due, so there is never a ringing alarm to snooze, and
   `snooze_alarm/3` says so.
 
+  ## What is stored
+
+  Each item keeps the slot values it was set with, as the text they arrived
+  as: an alarm its `:time` and `:date`, a reminder its `:reminder_text`,
+  `:time` and `:date`, a timer its `:duration`, and a calendar item its
+  `:event`, `:time` and `:date`. A slot that was not given is stored as `""`.
+  Nothing is parsed or resolved: a `:date` of `"tomorrow"` is stored as
+  `"tomorrow"`, not as the day it named when it was set, and is matched later
+  as that text. Items stored before dates were stored have no date (`nil`).
+
+  ## Matching a slot to an item
+
+  A slot that is absent, `nil` or blank names nothing. An item matches when
+  every slot that names something equals the item's field, compared with case
+  and runs of whitespace ignored (`"7 AM"` matches `"7 am"`); there is no
+  partial or fuzzy match. An item whose field is `nil` (a date never stored)
+  matches no value. A slot holding anything but a string raises.
+
   ## Checking
 
-  `check_alarms/3` and `check_reminders/3` report every alarm or reminder the
+  `check_alarms/3` and `check_reminders/3` report the alarms or reminders the
   world has, in the order they were set, with how many there are.
+  `query_calendar/3` reports the calendar item set last. Each of the three
+  narrows its items to the day the `:date` slot names, matched as above; with
+  no `:date`, it reports all of them. No other slot narrows a check.
   `check_timer/3` reports the timer set last.
 
   ## Cancelling: which items a cancel matches
 
   A cancel identifies items by the fields stored for their kind, each read
-  from one slot:
+  from one slot, matched as above:
 
   | Kind     | Field      | Slot             |
   | -------- | ---------- | ---------------- |
   | alarm    | time       | `:time`          |
+  | alarm    | date       | `:date`          |
   | reminder | text       | `:reminder_text` |
   | reminder | time       | `:time`          |
+  | reminder | date       | `:date`          |
   | timer    | duration   | `:duration`      |
   | calendar | event      | `:event`         |
   | calendar | time       | `:time`          |
+  | calendar | date       | `:date`          |
 
-  A slot that is absent, `nil` or blank names nothing. An item matches when
-  every slot that names something equals the item's field, compared with case
-  and runs of whitespace ignored (`"7 AM"` matches `"7 am"`); there is no
-  partial or fuzzy match. A slot holding anything but a string raises.
+  So "delete my reminders for tomorrow" (`:date` `"tomorrow"`) removes the
+  reminders stored with the date `"tomorrow"`, and leaves those for another
+  day or with no date.
 
   - `cancel_alarm/3`, `cancel_reminder/3` and `cancel_timer/3` remove every
     matching item of their kind in the world. Slots that identify one item
@@ -77,10 +100,18 @@ defmodule Brain.Services.LocalScheduler do
   # The fields a cancel identifies an item of each type by, each with the slot
   # that names it (see "Cancelling" above).
   @identifying_slots %{
-    alarm: [time: :time],
-    reminder: [text: :reminder_text, time: :time],
+    alarm: [time: :time, date: :date],
+    reminder: [text: :reminder_text, time: :time, date: :date],
     timer: [duration: :duration],
-    calendar: [event: :event, time: :time]
+    calendar: [event: :event, time: :time, date: :date]
+  }
+
+  # The field a check narrows the items of each type to, with the slot that
+  # names it (see "Checking" above).
+  @day_slots %{
+    alarm: [date: :date],
+    reminder: [date: :date],
+    calendar: [date: :date]
   }
 
   @doc "Starts the scheduler, which loads every stored item into its table."
@@ -107,10 +138,10 @@ defmodule Brain.Services.LocalScheduler do
 
   @impl true
   def provides_fields do
-    [:alarm_status, :alarm_time, :alarm_times, :alarm_count, :reminder_set, :reminder_text,
-     :reminder_time, :reminder_texts, :reminder_times, :reminder_count, :timer_status,
-     :time_remaining, :duration, :timer_durations, :next_event, :event_time,
-     :cancelled_event, :cancelled_count]
+    [:alarm_status, :alarm_time, :alarm_date, :alarm_times, :alarm_dates, :alarm_count, :reminder_set,
+     :reminder_text, :reminder_time, :reminder_date, :reminder_texts, :reminder_times, :reminder_dates,
+     :reminder_count, :timer_status, :time_remaining, :duration, :timer_durations, :next_event,
+     :event_time, :event_date, :cancelled_event, :cancelled_count]
   end
 
   # Setting, creating, scheduling and cancelling store or remove items;
@@ -160,8 +191,9 @@ defmodule Brain.Services.LocalScheduler do
   def set_alarm(slots, _credentials, world_id) do
     world_id = world!(world_id, :set_alarm)
     time = Map.get(slots, :time) || Map.get(slots, "time", "")
-    add_item(world_id, :alarm, %{time: time, status: "set"})
-    {:ok, %{alarm_status: "set", alarm_time: time}}
+    date = Map.get(slots, :date) || Map.get(slots, "date", "")
+    add_item(world_id, :alarm, %{time: time, date: date, status: "set"})
+    {:ok, %{alarm_status: "set", alarm_time: time, alarm_date: date}}
   end
 
   # Alarms are stored and never rung, so no alarm is ever ringing to snooze.
@@ -176,19 +208,26 @@ defmodule Brain.Services.LocalScheduler do
     world_id = world!(world_id, :cancel_alarm)
 
     with {:ok, cancelled} <- cancel_matching(world_id, :alarm, slots, :all) do
-      {:ok, %{alarm_status: "cancelled", alarm_times: Enum.map(cancelled, & &1.time), cancelled_count: length(cancelled)}}
+      {:ok,
+       %{
+         alarm_status: "cancelled",
+         alarm_times: Enum.map(cancelled, & &1.time),
+         alarm_dates: Enum.map(cancelled, & &1.date),
+         cancelled_count: length(cancelled)
+       }}
     end
   end
 
   @impl SchedulingDriver
-  def check_alarms(_slots, _credentials, world_id) do
+  def check_alarms(slots, _credentials, world_id) do
     world_id = world!(world_id, :check_alarms)
-    alarms = world_id |> list_items(:alarm) |> Enum.reverse()
+    alarms = world_id |> list_items(:alarm) |> Enum.reverse() |> on_day(:alarm, slots)
 
     {:ok,
      %{
        alarm_status: if(alarms == [], do: "none", else: "set"),
        alarm_times: Enum.map(alarms, & &1.time),
+       alarm_dates: Enum.map(alarms, & &1.date),
        alarm_count: length(alarms)
      }}
   end
@@ -196,10 +235,11 @@ defmodule Brain.Services.LocalScheduler do
   @impl SchedulingDriver
   def create_reminder(slots, _credentials, world_id) do
     world_id = world!(world_id, :create_reminder)
-    text = Map.get(slots, :reminder_text) || Map.get(slots, "text", "")
+    text = Map.get(slots, :reminder_text) || Map.get(slots, "reminder_text", "")
     time = Map.get(slots, :time) || Map.get(slots, "time", "")
-    add_item(world_id, :reminder, %{text: text, time: time, status: "set"})
-    {:ok, %{reminder_set: true, reminder_text: text, reminder_time: time}}
+    date = Map.get(slots, :date) || Map.get(slots, "date", "")
+    add_item(world_id, :reminder, %{text: text, time: time, date: date, status: "set"})
+    {:ok, %{reminder_set: true, reminder_text: text, reminder_time: time, reminder_date: date}}
   end
 
   @impl SchedulingDriver
@@ -212,21 +252,23 @@ defmodule Brain.Services.LocalScheduler do
          reminder_set: false,
          reminder_texts: Enum.map(cancelled, & &1.text),
          reminder_times: Enum.map(cancelled, & &1.time),
+         reminder_dates: Enum.map(cancelled, & &1.date),
          cancelled_count: length(cancelled)
        }}
     end
   end
 
   @impl SchedulingDriver
-  def check_reminders(_slots, _credentials, world_id) do
+  def check_reminders(slots, _credentials, world_id) do
     world_id = world!(world_id, :check_reminders)
-    reminders = world_id |> list_items(:reminder) |> Enum.reverse()
+    reminders = world_id |> list_items(:reminder) |> Enum.reverse() |> on_day(:reminder, slots)
 
     {:ok,
      %{
        reminder_set: reminders != [],
        reminder_texts: Enum.map(reminders, & &1.text),
        reminder_times: Enum.map(reminders, & &1.time),
+       reminder_dates: Enum.map(reminders, & &1.date),
        reminder_count: length(reminders)
      }}
   end
@@ -268,8 +310,9 @@ defmodule Brain.Services.LocalScheduler do
     world_id = world!(world_id, :schedule_event)
     event = Map.get(slots, :event) || Map.get(slots, "event", "")
     time = Map.get(slots, :time) || Map.get(slots, "time", "")
-    add_item(world_id, :calendar, %{event: event, time: time})
-    {:ok, %{next_event: event, event_time: time}}
+    date = Map.get(slots, :date) || Map.get(slots, "date", "")
+    add_item(world_id, :calendar, %{event: event, time: time, date: date})
+    {:ok, %{next_event: event, event_time: time, event_date: date}}
   end
 
   # Takes the one calendar item the slots identify off the world's calendar,
@@ -279,17 +322,23 @@ defmodule Brain.Services.LocalScheduler do
     world_id = world!(world_id, :cancel_event)
 
     with {:ok, [cancelled]} <- cancel_matching(world_id, :calendar, slots, :one) do
-      {:ok, %{cancelled_event: cancelled.event, event_time: cancelled.time, cancelled_count: 1}}
+      {:ok,
+       %{
+         cancelled_event: cancelled.event,
+         event_time: cancelled.time,
+         event_date: cancelled.date,
+         cancelled_count: 1
+       }}
     end
   end
 
   @impl SchedulingDriver
-  def query_calendar(_slots, _credentials, world_id) do
+  def query_calendar(slots, _credentials, world_id) do
     world_id = world!(world_id, :query_calendar)
 
-    case list_items(world_id, :calendar) do
-      [] -> {:ok, %{next_event: "No upcoming events", event_time: ""}}
-      [latest | _] -> {:ok, %{next_event: latest.event, event_time: latest.time}}
+    case world_id |> list_items(:calendar) |> on_day(:calendar, slots) do
+      [] -> {:ok, %{next_event: "No upcoming events", event_time: "", event_date: ""}}
+      [latest | _] -> {:ok, %{next_event: latest.event, event_time: latest.time, event_date: latest.date}}
     end
   end
 
@@ -380,18 +429,23 @@ defmodule Brain.Services.LocalScheduler do
   # (`handle_call/3`). `:one` with no identifying slot is refused before the
   # scheduler is asked, since it could only match every item.
   defp cancel_matching(world_id, type, slots, mode) do
-    case {mode, criteria!(type, slots)} do
+    case {mode, criteria!(Map.fetch!(@identifying_slots, type), type, slots)} do
       {:one, criteria} when criteria == %{} -> {:error, :event_not_identified}
       {mode, criteria} -> GenServer.call(running!(), {:cancel_matching, world_id, type, criteria, mode})
     end
   end
 
-  # The field values the slots name for an item of `type`, compared as
-  # `normalize/1` leaves them.
-  defp criteria!(type, slots) do
-    @identifying_slots
-    |> Map.fetch!(type)
-    |> Enum.reduce(%{}, fn {field, slot}, acc ->
+  # The items, of `type`, that are for the day the slots name; all of them
+  # when no slot names a day (see "Checking" above).
+  defp on_day(items, type, slots) do
+    criteria = criteria!(Map.fetch!(@day_slots, type), type, slots)
+    Enum.filter(items, &matches?(&1, criteria))
+  end
+
+  # The values the slots name for `fields`, each a field of an item of `type`
+  # with the slot that names it, compared as `normalize/1` leaves them.
+  defp criteria!(fields, type, slots) do
+    Enum.reduce(fields, %{}, fn {field, slot}, acc ->
       case Map.get(slots, slot) do
         nil ->
           acc
@@ -453,8 +507,8 @@ defmodule Brain.Services.LocalScheduler do
   end
 
   # A calendar item's event is stored as the item's text.
-  defp row_attrs(world_id, :calendar, %{event: event, time: time}),
-    do: %{world_id: world_id, kind: @kinds.calendar, text: event, time: time}
+  defp row_attrs(world_id, :calendar, %{event: event, time: time, date: date}),
+    do: %{world_id: world_id, kind: @kinds.calendar, text: event, time: time, date: date}
 
   defp row_attrs(world_id, type, data),
     do: Map.merge(data, %{world_id: world_id, kind: Map.fetch!(@kinds, type)})
@@ -464,13 +518,15 @@ defmodule Brain.Services.LocalScheduler do
     {{item.world_id, item.id}, type, data(type, item)}
   end
 
-  defp data(:alarm, item), do: %{time: item.time, status: item.status, created: item.inserted_at}
+  defp data(:alarm, item),
+    do: %{time: item.time, date: item.date, status: item.status, created: item.inserted_at}
 
   defp data(:reminder, item),
-    do: %{text: item.text, time: item.time, status: item.status, created: item.inserted_at}
+    do: %{text: item.text, time: item.time, date: item.date, status: item.status, created: item.inserted_at}
 
   defp data(:timer, item),
     do: %{duration: item.duration, status: item.status, created: item.inserted_at}
 
-  defp data(:calendar, item), do: %{event: item.text, time: item.time, created: item.inserted_at}
+  defp data(:calendar, item),
+    do: %{event: item.text, time: item.time, date: item.date, created: item.inserted_at}
 end
