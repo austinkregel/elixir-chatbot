@@ -46,22 +46,6 @@
         "The media player is $player_state at volume $volume.",
         "Volume is at $volume and the player is $player_state."
       ]
-    },
-    "service_not_configured": {
-      "condition": "service_missing",
-      "requires_enrichment": [],
-      "templates": [
-        "I'd need a media player connection to play music. You can set one up in settings.",
-        "Music playback isn't configured yet."
-      ]
-    },
-    "service_error": {
-      "condition": "service_error",
-      "requires_enrichment": [],
-      "templates": [
-        "I had trouble reaching the media player. It might be offline.",
-        "Couldn't connect to the media player right now."
-      ]
     }
   },
   "entity_verbalizations": {
