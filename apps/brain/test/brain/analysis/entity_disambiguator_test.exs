@@ -459,6 +459,11 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
 
       assert result[:entity_type] == "location",
              "Expected location but got #{result[:entity_type]}"
+
+      # Decided by scoring the room against the location the weather data
+      # prefers, not by TypeInferrer's patterns.
+      assert result[:disambiguation_source] == :context_analysis
+      assert result.type_posteriors["location"] > result.type_posteriors["room"]
     end
 
     test "keeps room type when domain is :smarthome", %{world_id: world_id} do
