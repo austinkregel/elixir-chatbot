@@ -359,7 +359,7 @@ defmodule Brain.Analysis.Pipeline do
 
     if debug_pass1?, do: Logger.info("pipeline:pass1 pos_tags=#{System.monotonic_time(:millisecond) - t0}ms")
 
-    events = extract_events(pos_result, entities, opts)
+    events = extract_events(pos_result, resolved_text, entities, opts)
 
     Progress.report(opts, :events_extracted, %{
       chunk_index: chunk.index,
@@ -895,7 +895,10 @@ defmodule Brain.Analysis.Pipeline do
     }
   end
 
-  defp extract_events(pos_result, entities, opts) do
+  # `entities` are extracted from `text`, and `pos_result`'s tokens are the
+  # texts of its `Tokenizer.tokenize/1` tokens, so each entity's positions
+  # name the tokens it spans.
+  defp extract_events(pos_result, text, entities, opts) do
     if Keyword.get(opts, :skip_event_extraction, false) do
       []
     else
@@ -903,7 +906,7 @@ defmodule Brain.Analysis.Pipeline do
 
       analysis_input = %{
         pos_tags: pos_tags,
-        entities: entities,
+        entities: EventExtractor.token_entities(entities, Tokenizer.tokenize(text)),
         tokens: tokens
       }
 
