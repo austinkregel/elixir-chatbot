@@ -36,6 +36,20 @@ defmodule Brain.Response.ContentSpecifier do
 
   def specify(primitives, _analysis, _opts) when is_list(primitives), do: primitives
 
+  # A primitive planned for a service's error already says what it answers
+  # (`DiscoursePlanner.enrichment_error_primitive/2`); what the planner set is
+  # kept, and the analysis only adds what the planner left unset.
+  defp specify_primitive(%Primitive{content: %{enrichment_error: _} = planned} = p, analysis, _opts) do
+    from_analysis = %{
+      intent: analysis.intent,
+      action: analysis.intent,
+      missing_slots: get_missing_slots(analysis.slots),
+      partial_understanding: summarize_partial(analysis)
+    }
+
+    %{p | content: Map.merge(from_analysis, Map.reject(planned, fn {_key, value} -> is_nil(value) end))}
+  end
+
   defp specify_primitive(%Primitive{type: :content, variant: :factual} = p, analysis, opts) do
     facts = retrieve_facts(analysis, opts)
 
