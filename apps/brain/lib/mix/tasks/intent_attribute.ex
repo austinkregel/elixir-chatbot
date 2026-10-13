@@ -145,10 +145,10 @@ defmodule Mix.Tasks.Intent.Attribute do
       # by more than 0.1.
       variable: "speech_act.intent_confidence",
       rows: length(genuine),
-      excluded: %{
-        materialized: Enum.count(rows, &(&1.provenance == "materialized")),
-        augmented: Enum.count(rows, &(&1.provenance == "augmented"))
-      },
+      excluded:
+        Map.new(Brain.Corpus.Provenance.kinds() -- ["dialogflow"], fn kind ->
+          {kind, Enum.count(rows, &(&1.provenance == kind))}
+        end),
       bands: fitted
     }
 
