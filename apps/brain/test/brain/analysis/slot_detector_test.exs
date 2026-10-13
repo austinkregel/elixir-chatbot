@@ -386,30 +386,28 @@ defmodule Brain.Analysis.SlotDetectorTest do
     end
   end
 
-  describe "spans entity extraction could not decide" do
-    test "an unresolved span fills no slot, even when its common type matches the slot" do
-      unresolved = %{entity_type: "location", value: "Ibiza", confidence: 0.0, resolved: false, unresolved_reason: :insufficient_evidence}
-
-      result = SlotDetector.detect("weather.query", [unresolved])
-
-      assert SlotResult.get_slot_value(result, "location") == nil
-      assert "location" in result.missing_required
-    end
-
-    test "an unresolved span with no type is skipped, not slotted as nil or \"\"" do
-      unresolved = %{entity_type: nil, value: "Prince", confidence: 0.0, resolved: false, unresolved_reason: :insufficient_evidence}
-      decided = %{entity_type: "location", value: "Ibiza", confidence: 0.9, resolved: true}
-
-      result = SlotDetector.detect("weather.query", [unresolved, decided])
-      assert SlotResult.get_slot_value(result, "location") == "Ibiza"
-
-      unknown = SlotDetector.detect("zzz_no_such_domain.intent", [unresolved])
-      refute Map.has_key?(unknown.filled_slots, nil)
-    end
-
+  # Entities are the spans extraction decided; the spans it could not decide
+  # never reach SlotDetector (`Brain.ML.EntityExtractor.extract/2` keeps them
+  # in `:unresolved_spans`). An entity is typed, or detection raises.
+  describe "an entity with no type" do
     test "a decided entity with no type raises" do
       assert_raise ArgumentError, ~r/no type cannot fill a slot/, fn ->
         SlotDetector.detect("weather.query", [%{entity_type: nil, value: "x", confidence: 0.9}])
+      end
+    end
+
+    test "raises beside typed entities, rather than slotting as nil or \"\"" do
+      typeless = %{entity_type: nil, value: "Prince", confidence: 0.9, resolved: true}
+      decided = %{entity_type: "location", value: "Ibiza", confidence: 0.9, resolved: true}
+
+      assert_raise ArgumentError, ~r/no type cannot fill a slot/, fn ->
+        SlotDetector.detect("weather.query", [decided, typeless])
+      end
+    end
+
+    test "raises for an intent with no schema too" do
+      assert_raise ArgumentError, ~r/no type cannot fill a slot/, fn ->
+        SlotDetector.detect("zzz_no_such_domain.intent", [%{entity_type: nil, value: "Prince", confidence: 0.9}])
       end
     end
   end
