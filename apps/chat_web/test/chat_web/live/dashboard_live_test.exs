@@ -73,6 +73,78 @@ defmodule ChatWeb.DashboardLiveTest do
     end
   end
 
+  describe "semantic fact measurement window" do
+    # A world the world selector lists, so the page can be switched to it: it
+    # is created without the test mark, its id starts with `test_`, it is
+    # ephemeral, so nothing of it is on disk, and it is destroyed when the test
+    # ends. Its metric rows are written inside the test's sandbox transaction.
+    setup do
+      world_id = "test_dashboard_semantic_window_#{System.unique_integer([:positive])}"
+      {:ok, world} = World.Manager.create(world_id, id: world_id, mode: :ephemeral)
+      on_exit(fn -> World.Manager.destroy(world.id) end)
+      %{world: world}
+    end
+
+    defp dashboard_in(conn, world) do
+      {:ok, view, _html} = live(conn, "/dashboard")
+      view |> form("form[phx-change=switch_world]", %{world_id: world.id}) |> render_change()
+      view
+    end
+
+    test "says when nothing was counted in the world, and shows no previous window", %{conn: conn, world: world} do
+      view = dashboard_in(conn, world)
+
+      assert view |> element("#semantic-fact-window") |> render() =~ "Nothing counted in this world yet"
+      refute render(view) =~ "since the brain started"
+      refute has_element?(view, "#semantic-fact-previous-window")
+    end
+
+    test "shows when the current window started, and starting a new one keeps the ended window's counts",
+         %{conn: conn, world: world} do
+      :ok = Atlas.SemanticFactMetrics.increment!(world.id, %{"retrievals" => 3, "patterns_found" => 2})
+      [%{window: first}] = Atlas.SemanticFactMetrics.windows(world.id, 1)
+
+      view = dashboard_in(conn, world)
+
+      assert view |> element("#semantic-fact-window") |> render() =~
+               ChatWeb.DashboardLive.format_window_time(first.started_at)
+
+      assert view |> element("#semantic-fact-retrievals") |> render() =~ "3"
+      refute has_element?(view, "#semantic-fact-previous-window")
+
+      view |> element("#semantic-fact-start-window") |> render_click()
+      assert has_element?(view, "#semantic-fact-window-confirm")
+      view |> element("#semantic-fact-window-confirm-confirm") |> render_click()
+
+      refute has_element?(view, "#semantic-fact-window-confirm")
+      assert [%{window: second, counts: new_counts}, %{window: ended}] = Atlas.SemanticFactMetrics.windows(world.id, 5)
+      assert new_counts == %{}
+      assert ended.id == first.id
+
+      assert view |> element("#semantic-fact-window") |> render() =~
+               ChatWeb.DashboardLive.format_window_time(second.started_at)
+
+      assert view |> element("#semantic-fact-retrievals") |> render() =~ ~r/>\s*0\s*</
+
+      previous = view |> element("#semantic-fact-previous-window") |> render()
+      assert previous =~ ChatWeb.DashboardLive.format_window_time(first.started_at)
+      assert previous =~ ChatWeb.DashboardLive.format_window_time(ended.ended_at)
+      assert previous =~ ~r/>\s*3\s*<\/span> turn\(s\) retrieving facts/
+      assert previous =~ ~r/>\s*2\s*<\/span> recurring pattern\(s\) found/
+    end
+
+    test "cancelling leaves the window as it was", %{conn: conn, world: world} do
+      :ok = Atlas.SemanticFactMetrics.increment!(world.id, %{"retrievals" => 1})
+      view = dashboard_in(conn, world)
+
+      view |> element("#semantic-fact-start-window") |> render_click()
+      view |> element("#semantic-fact-window-confirm-cancel") |> render_click()
+
+      refute has_element?(view, "#semantic-fact-window-confirm")
+      assert [%{counts: %{"retrievals" => 1}}] = Atlas.SemanticFactMetrics.windows(world.id, 5)
+    end
+  end
+
   describe "auto-refresh toggle" do
     test "can toggle auto-refresh off", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/dashboard")
