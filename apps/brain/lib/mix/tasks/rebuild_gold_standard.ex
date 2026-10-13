@@ -10,10 +10,17 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       mix rebuild_gold_standard --save          # write it
       mix rebuild_gold_standard --save --verbose
       mix rebuild_gold_standard --save --output /tmp/gold_standard.json
+      mix rebuild_gold_standard --check         # fail unless the files match
 
   `--output` writes the gold standard to another path, with its
   `ambiguous_texts.json` beside it, so a rebuild can be compared with the
   committed file without replacing it.
+
+  `--check` rebuilds in memory and compares the result byte for byte with the
+  committed `gold_standard.json` and its `ambiguous_texts.json`. It writes
+  nothing, and raises naming the rows that differ when either file is not
+  exactly what the sources rebuild to. With `--output`, it compares with the
+  files at that path instead.
 
   No model is consulted. Every label comes from the files, so the corpus can be
   regenerated from them alone. Not every row in the export came from
@@ -40,8 +47,9 @@ defmodule Mix.Tasks.RebuildGoldStandard do
   (the context it continues from) and `followupVariant` (the variant it came
   from). They are written to the entry as `followup_context` and
   `followup_variant`, so an utterance that needs a preceding turn is never mixed
-  with one that stands alone. When the same text occurs both ways, the follow-up
-  occurrence is kept.
+  with one that stands alone. When the same text occurs both ways under the
+  row's intent, the follow-up occurrence is kept; ties go to the first variant
+  name, then the first context name.
 
   Dialogflow intents marked `fallbackIntent: true` are excluded: that flag means
   "nothing matched", so the phrases are not examples of an intent. The `events`
@@ -53,7 +61,24 @@ defmodule Mix.Tasks.RebuildGoldStandard do
   Each entry carries `labeled_by` and `source_file`. A text that more than one
   intent claims, after the transformations above, is written with
   `status: "needs_review"` and a `candidates` list; it is never resolved by
-  guessing. Ambiguous texts are also written to `ambiguous_texts.json`.
+  guessing. Its `intent` is the first candidate, and its `source_file` and
+  follow-up fields describe that candidate's own occurrences, never another
+  candidate's: a row filed under one intent that carried another intent's
+  follow-up context would tell `Brain.Analysis.ActiveContexts` that the intent
+  follows a turn it does not. Ambiguous texts are also written to
+  `ambiguous_texts.json`.
+
+  Source files are ordered by the intent name they are filed under, so an
+  intent's file comes before its sub-intents' (`smarthome.device.volume`
+  before `smarthome.device.volume.check`). Sorting the whole filename would let
+  the `_usersays_en.json` suffix decide instead, since `.` sorts before `_`.
+  `source_file` is the first of these.
+
+  Rows are sorted by normalized text. The output is the same bytes on every
+  run: each gold row's keys are written in the order `candidates`, `intent`,
+  `labeled_by`, `followup_context`, `followup_variant`, `source_file`,
+  `status`, `text` (absent keys omitted), and each ambiguous text's as `text`,
+  `sources`, `candidates`. A key outside those lists raises.
 
   ## `labeled_by`
 
@@ -92,9 +117,13 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
   @requirements ["app.config"]
 
-  @switches [save: :boolean, verbose: :boolean, output: :string]
+  @switches [save: :boolean, verbose: :boolean, output: :string, check: :boolean]
 
   @usersays_suffix "_usersays_en.json"
+
+  # The order each gold row's keys are written in, and each ambiguous text's.
+  @entry_keys ~w(candidates intent labeled_by followup_context followup_variant source_file status text)
+  @conflict_keys ~w(text sources candidates)
 
   @impl Mix.Task
   def run(args) do
@@ -106,8 +135,13 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       do: Mix.raise("rebuild_gold_standard: unexpected arguments #{inspect(positional)}")
 
     save? = opts[:save] || false
+    check? = opts[:check] || false
     verbose? = opts[:verbose] || false
-    output = output_path!(opts[:output], save?)
+
+    if save? and check?,
+      do: Mix.raise("rebuild_gold_standard: --check compares without writing; it cannot be combined with --save")
+
+    output = output_path!(opts[:output], save? or check?)
 
     banner("REBUILD INTENT GOLD STANDARD (from the export and the authored examples)")
 
@@ -124,11 +158,16 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
     report(entries, conflicts, verbose?)
 
-    if save? do
-      write_output!(entries, output)
-      write_conflict_report!(conflicts, output)
-    else
-      Mix.shell().info("\n  Dry run. Pass --save to write.\n")
+    cond do
+      save? ->
+        write_output!(entries, output)
+        write_conflict_report!(conflicts, output)
+
+      check? ->
+        check!(entries, conflicts, output)
+
+      true ->
+        Mix.shell().info("\n  Dry run. Pass --save to write.\n")
     end
   end
 
@@ -141,7 +180,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       Mix.raise("rebuild_gold_standard: no Dialogflow export at #{dir}")
     end
 
-    files = Path.wildcard(Path.join(dir, "*" <> @usersays_suffix))
+    files = Export.usersays_files(dir)
 
     if files == [] do
       Mix.raise("rebuild_gold_standard: no *#{@usersays_suffix} files under #{dir}")
@@ -306,13 +345,25 @@ defmodule Mix.Tasks.RebuildGoldStandard do
     end
   end
 
-  # The follow-up occurrence of a text, if any; ties go to the first variant name.
+  # The follow-up occurrence of a text, if any; ties go to the first variant
+  # name, then the first context name, so the choice never depends on the order
+  # the files were read in.
   defp followup_of(occurrences) do
     occurrences
     |> Enum.map(& &1.followup)
     |> Enum.reject(&is_nil/1)
-    |> Enum.sort_by(& &1["followup_variant"])
+    |> Enum.sort_by(&{&1["followup_variant"], &1["followup_context"]})
     |> List.first(%{})
+  end
+
+  # The distinct files of `occurrences`, ordered by the intent name each is
+  # filed under rather than by the whole filename, whose suffix would put
+  # `x.check_usersays_en.json` before `x_usersays_en.json`.
+  defp sources_of(occurrences) do
+    occurrences
+    |> Enum.map(& &1.source_file)
+    |> Enum.uniq()
+    |> Enum.sort_by(&Path.basename(&1, @usersays_suffix))
   end
 
   # -- building ---------------------------------------------------------------
@@ -323,7 +374,17 @@ defmodule Mix.Tasks.RebuildGoldStandard do
     |> Provenance.most_genuine()
   end
 
-  defp build_entries(phrases) do
+  @doc """
+  The gold rows and the ambiguous texts that `phrases` rebuild to.
+
+  Each phrase is a map of `:text`, `:norm`, `:label`, `:source_file`,
+  `:provenance` and `:followup` (`nil`, or the `followup_context` /
+  `followup_variant` pair). Rows come back sorted by `:norm`, one per
+  normalized text, as string-keyed maps; ambiguous texts as maps of `"text"`,
+  `"sources"` and `"candidates"`, in the same order.
+  """
+  @spec build_entries([map()]) :: {[map()], [map()]}
+  def build_entries(phrases) do
     grouped = Enum.group_by(phrases, & &1.norm)
 
     {entries, conflicts} =
@@ -332,21 +393,25 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       |> Enum.map_reduce([], fn {_norm, occurrences}, conflicts ->
         labels = occurrences |> Enum.map(& &1.label) |> Enum.uniq() |> Enum.sort()
         first = hd(occurrences)
-        sources = occurrences |> Enum.map(& &1.source_file) |> Enum.uniq() |> Enum.sort()
+        intent = hd(labels)
+
+        # The row is filed under `intent`, so its file and follow-up are read
+        # from that intent's occurrences only.
+        own = Enum.filter(occurrences, &(&1.label == intent))
+
+        entry =
+          Map.merge(
+            %{
+              "text" => first.text,
+              "intent" => intent,
+              "labeled_by" => resolve_provenance(occurrences),
+              "source_file" => hd(sources_of(own))
+            },
+            followup_of(own)
+          )
 
         case labels do
-          [label] ->
-            entry =
-              Map.merge(
-                %{
-                  "text" => first.text,
-                  "intent" => label,
-                  "labeled_by" => resolve_provenance(occurrences),
-                  "source_file" => hd(sources)
-                },
-                followup_of(occurrences)
-              )
-
+          [_label] ->
             {entry, conflicts}
 
           _many ->
@@ -355,20 +420,11 @@ defmodule Mix.Tasks.RebuildGoldStandard do
             # needs_review with every candidate kept, never resolved by guessing
             # -- resolving it by asking a model is precisely what produced the
             # corpus this task is repairing.
-            entry =
-              Map.merge(
-                %{
-                  "text" => first.text,
-                  "intent" => hd(labels),
-                  "labeled_by" => resolve_provenance(occurrences),
-                  "source_file" => hd(sources),
-                  "status" => "needs_review",
-                  "candidates" => labels
-                },
-                followup_of(occurrences)
-              )
+            entry = Map.merge(entry, %{"status" => "needs_review", "candidates" => labels})
 
-            {entry, [%{text: first.text, candidates: labels, sources: sources} | conflicts]}
+            conflict = %{"text" => first.text, "sources" => sources_of(occurrences), "candidates" => labels}
+
+            {entry, [conflict | conflicts]}
         end
       end)
 
@@ -399,7 +455,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       Mix.shell().info("\n  Ambiguous after the lights -> device fold:")
 
       Enum.each(conflicts, fn c ->
-        Mix.shell().info("    #{String.pad_trailing(String.slice(c.text, 0, 44), 46)} #{inspect(c.candidates)}")
+        Mix.shell().info("    #{String.pad_trailing(String.slice(c["text"], 0, 44), 46)} #{inspect(c["candidates"])}")
       end)
     end
   end
@@ -471,13 +527,16 @@ defmodule Mix.Tasks.RebuildGoldStandard do
   # -- output -----------------------------------------------------------------
 
   # The gold standard's own path unless `--output` names another. `--output`
-  # only says where `--save` writes, so it is refused without `--save`.
-  defp output_path!(nil, _save?), do: EvaluationStore.gold_standard_path("intent")
+  # only says where `--save` writes or what `--check` compares with, so it is
+  # refused without one of them.
+  defp output_path!(nil, _writes_or_checks?), do: EvaluationStore.gold_standard_path("intent")
 
   defp output_path!(path, true), do: Path.expand(path)
 
   defp output_path!(path, false) do
-    Mix.raise("rebuild_gold_standard: --output #{path} says where --save writes; pass --save with it")
+    Mix.raise(
+      "rebuild_gold_standard: --output #{path} says where --save writes or what --check compares with; pass one of them"
+    )
   end
 
   defp write_output!(entries, path) do
@@ -488,15 +547,95 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       Mix.shell().info("\n  Backed up to #{backup}")
     end
 
-    File.write!(path, Jason.encode!(entries, pretty: true) <> "\n")
+    File.write!(path, encode_entries!(entries))
     Mix.shell().info("  Wrote #{length(entries)} entries to #{path}")
   end
 
   defp write_conflict_report!(conflicts, output) do
-    path = output |> Path.dirname() |> Path.join("ambiguous_texts.json")
+    path = conflict_path(output)
 
-    File.write!(path, Jason.encode!(conflicts, pretty: true) <> "\n")
+    File.write!(path, encode_conflicts!(conflicts))
     Mix.shell().info("  Wrote #{length(conflicts)} ambiguous texts to #{path}\n")
+  end
+
+  defp conflict_path(output), do: output |> Path.dirname() |> Path.join("ambiguous_texts.json")
+
+  @doc "The bytes of `gold_standard.json` for `entries`, each row's keys in the documented order."
+  @spec encode_entries!([map()]) :: String.t()
+  def encode_entries!(entries), do: encode_ordered!(entries, @entry_keys)
+
+  @doc "The bytes of `ambiguous_texts.json` for `conflicts`, each one's keys in the documented order."
+  @spec encode_conflicts!([map()]) :: String.t()
+  def encode_conflicts!(conflicts), do: encode_ordered!(conflicts, @conflict_keys)
+
+  # A map's key order is the runtime's, not the file's, so every row is written
+  # as an ordered object. A key the order does not name raises rather than being
+  # dropped or appended wherever it happens to land.
+  defp encode_ordered!(rows, keys) do
+    rows
+    |> Enum.map(fn row ->
+      case Map.keys(row) -- keys do
+        [] ->
+          keys
+          |> Enum.filter(&Map.has_key?(row, &1))
+          |> Enum.map(&{&1, Map.fetch!(row, &1)})
+          |> Jason.OrderedObject.new()
+
+        unknown ->
+          raise ArgumentError,
+                "rebuild_gold_standard: row #{inspect(row)} has keys #{inspect(unknown)} outside the written order #{inspect(keys)}"
+      end
+    end)
+    |> Jason.encode!(pretty: true)
+    |> Kernel.<>("\n")
+  end
+
+  # Compares what the sources rebuild to with the files at `output`, byte for
+  # byte, and raises naming the rows that differ.
+  defp check!(entries, conflicts, output) do
+    mismatches =
+      [
+        {output, encode_entries!(entries)},
+        {conflict_path(output), encode_conflicts!(conflicts)}
+      ]
+      |> Enum.reject(fn {path, rebuilt} -> File.exists?(path) and File.read!(path) == rebuilt end)
+      |> Enum.map(fn {path, rebuilt} -> describe_mismatch(path, rebuilt) end)
+
+    if mismatches != [] do
+      Mix.raise("""
+      rebuild_gold_standard: the committed files are not what the sources rebuild to.
+
+      #{Enum.join(mismatches, "\n\n")}
+
+      Either the sources or the committed files changed without the other. Run
+      `mix rebuild_gold_standard --save --output PATH`, review the diff against the
+      committed file, and update whichever side is wrong.
+      """)
+    end
+
+    Mix.shell().info("\n  #{output} and #{conflict_path(output)} match the rebuild byte for byte.\n")
+  end
+
+  defp describe_mismatch(path, rebuilt) do
+    if File.exists?(path) do
+      committed = path |> File.read!() |> Jason.decode!()
+      ours = Jason.decode!(rebuilt)
+      only_committed = committed -- ours
+      only_rebuilt = ours -- committed
+
+      rows =
+        Enum.map(only_committed, &"  - #{Jason.encode!(&1)}") ++
+          Enum.map(only_rebuilt, &"  + #{Jason.encode!(&1)}")
+
+      detail =
+        if rows == [],
+          do: "  the same rows, in a different order or with different key order or formatting",
+          else: Enum.join(rows, "\n")
+
+      "#{path} (- committed only, + rebuild only):\n#{detail}"
+    else
+      "#{path} does not exist"
+    end
   end
 
   defp banner(title) do
