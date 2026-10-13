@@ -25,20 +25,6 @@
         "The timer is $timer_status with $time_remaining remaining.",
         "Timer: $timer_status -- $time_remaining left."
       ]
-    },
-    "service_not_configured": {
-      "condition": "service_missing",
-      "requires_enrichment": [],
-      "templates": [
-        "I'd need a smart home connection to manage timers."
-      ]
-    },
-    "service_error": {
-      "condition": "service_error",
-      "requires_enrichment": [],
-      "templates": [
-        "I had trouble with the timer. The system might be unavailable."
-      ]
     }
   },
   "entity_verbalizations": {
@@ -49,10 +35,12 @@
     "required": [],
     "optional": ["duration"]
   },
-  "enrichment_service": "home_assistant",
+  "enrichment_service": "scheduling",
   "enrichment_fields": {
-    "timer_status": {"description": "Timer state (running/paused/idle)", "source": "home_assistant"},
-    "time_remaining": {"description": "Remaining time on timer", "source": "home_assistant"},
-    "duration": {"description": "Timer duration", "source": "home_assistant"}
+    "timer_status": {"description": "\"running\" for a timer set, or the timer a check found; \"none\" when a check finds none; \"cancelled\" after a cancel", "source": "scheduling"},
+    "time_remaining": {"description": "The duration the timer was set with, as given; timers do not count down, so it is never less; \"\" when a check finds none", "source": "scheduling"},
+    "duration": {"description": "The duration the timer was set with, as given; \"\" when a check finds none", "source": "scheduling"},
+    "timer_durations": {"description": "The duration of each timer a cancel removed, oldest first", "source": "scheduling"},
+    "cancelled_count": {"description": "How many timers a cancel removed", "source": "scheduling"}
   }
 }
