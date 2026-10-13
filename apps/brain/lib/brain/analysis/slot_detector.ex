@@ -273,17 +273,15 @@ defmodule Brain.Analysis.SlotDetector do
     end
   end
 
-  # The entities that can fill a slot. A span entity extraction could not
-  # decide (`resolved: false`, `Brain.ML.SpanReliability`) fills none, whatever
-  # type its readings share. Any other entity must carry a type: one without
-  # raises rather than filling a slot named nil or matching as "".
+  # The entities that can fill a slot. Entities are decided spans only: the
+  # spans entity extraction could not decide travel apart from them
+  # (`Brain.ML.EntityExtractor.extract/2`), so none reaches a slot. Every
+  # entity must carry a type: one without raises rather than filling a slot
+  # named nil or matching as "".
   defp slot_fillers!(entities) do
-    Enum.flat_map(entities, fn
-      %{resolved: false} ->
-        []
-
+    Enum.map(entities, fn
       %{entity_type: type} = entity when is_binary(type) or (is_atom(type) and not is_nil(type)) ->
-        [entity]
+        entity
 
       entity ->
         raise ArgumentError, "SlotDetector: an entity with no type cannot fill a slot: #{inspect(entity, limit: 8)}"
