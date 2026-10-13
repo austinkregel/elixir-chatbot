@@ -66,6 +66,7 @@ defmodule ChatWeb.DashboardLive do
       |> assign(:last_updated, DateTime.utc_now())
       |> assign(:expanded_categories, MapSet.new(@default_expanded))
       |> assign(:auto_refresh, true)
+      |> assign(:semantic_fact_window_confirm_open, false)
 
     {:noreply, socket}
   end
@@ -184,6 +185,31 @@ defmodule ChatWeb.DashboardLive do
     {:noreply, assign(socket, :expanded_categories, new_expanded)}
   end
 
+  def handle_event("open_semantic_fact_window_confirm", _params, socket) do
+    {:noreply, assign(socket, :semantic_fact_window_confirm_open, true)}
+  end
+
+  def handle_event("close_semantic_fact_window_confirm", _params, socket) do
+    {:noreply, assign(socket, :semantic_fact_window_confirm_open, false)}
+  end
+
+  # Ends the world's semantic-fact measurement window, keeping its counts, and
+  # starts a new one. A failure raises: the window is the baseline a retrain
+  # is compared against, so it is never reported as started when it was not.
+  def handle_event("start_semantic_fact_window", _params, socket) do
+    world_id = socket.assigns.current_world_id
+    window = Brain.Metrics.Aggregator.start_semantic_fact_window(world_id)
+
+    {:noreply,
+     socket
+     |> assign(:semantic_fact_window_confirm_open, false)
+     |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
+     |> put_flash(
+       :info,
+       "Started a new semantic fact measurement window for world #{world_id} at #{format_window_time(window.started_at)}"
+     )}
+  end
+
   def handle_event("reload_training_worlds", _params, socket) do
     case Manager.reload_persisted_worlds() do
       {:ok, loaded} ->
@@ -203,6 +229,7 @@ defmodule ChatWeb.DashboardLive do
     socket
     |> assign(:world_memory_stats, load_world_memory_stats(world_id))
     |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
+    |> assign(:semantic_fact_window_confirm_open, false)
     |> assign(:world_models_status, load_world_models_status(world_id))
     |> assign(:readiness_details, load_readiness_details(world_id))
     |> assign(:services_status, load_services_status(world_id))
@@ -246,10 +273,13 @@ defmodule ChatWeb.DashboardLive do
     SystemStatus.get_services_status(world_id)
   end
 
-  # The world's semantic facts as responses draw on them, counted since the
-  # brain started.
+  # The world's semantic facts as responses draw on them, counted in its
+  # current measurement window, and in the window before it for comparison.
   defp load_semantic_fact_metrics(world_id) do
-    Brain.Metrics.Aggregator.get_semantic_fact_metrics(world_id)
+    %{
+      current: Brain.Metrics.Aggregator.get_semantic_fact_metrics(world_id),
+      previous: Brain.Metrics.Aggregator.get_previous_semantic_fact_metrics(world_id)
+    }
   end
 
   defp load_epistemic_metrics do
@@ -650,6 +680,11 @@ defmodule ChatWeb.DashboardLive do
 
   def format_datetime(%DateTime{} = dt) do
     Calendar.strftime(dt, "%H:%M:%S")
+  end
+
+  # A measurement window's start or end, to the second, in UTC.
+  def format_window_time(%DateTime{} = dt) do
+    Calendar.strftime(dt, "%Y-%m-%d %H:%M:%S UTC")
   end
 
   # An evaluation metric is a 0..1 rate shown as a percentage in ink. Its size
