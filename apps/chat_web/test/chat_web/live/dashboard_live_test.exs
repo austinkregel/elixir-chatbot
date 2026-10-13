@@ -30,6 +30,18 @@ defmodule ChatWeb.DashboardLiveTest do
       assert html =~ "Knowledge Categories"
     end
 
+    test "shows the selected world's semantic facts in responses", %{conn: conn} do
+      {:ok, view, html} = live(conn, "/dashboard")
+
+      assert html =~ "Semantic Facts in Responses"
+      assert has_element?(view, "#semantic-fact-retrievals")
+      assert has_element?(view, "#semantic-fact-patterns-found")
+      assert has_element?(view, "#semantic-fact-used-synthesizer")
+      assert has_element?(view, "#semantic-fact-used-realization-packet")
+      assert has_element?(view, "#semantic-fact-retrieved_similarity")
+      assert has_element?(view, "#semantic-fact-used_similarity")
+    end
+
     test "shows world models section", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/dashboard")
 
