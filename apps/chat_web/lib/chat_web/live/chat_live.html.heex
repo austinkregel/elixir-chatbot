@@ -869,6 +869,77 @@
                       <% end %>
                     </div>
 
+<!-- Unresolved Spans: spans the data could not decide; no entities -->
+                    <% unresolved_spans = chunk[:unresolved_spans] || [] %>
+                    <div id={"unresolved-spans-#{idx}"} class="mb-space-md">
+                      <div class="text-caption font-semibold text-ink mb-space-sm">
+                        Unresolved Spans
+                      </div>
+                      <%= if unresolved_spans == [] do %>
+                        <div class="text-caption text-ink-muted italic p-space-sm bg-surface-sunk rounded-sm">
+                          No span was left undecided
+                        </div>
+                      <% else %>
+                        <div class="space-y-space-xs">
+                          <%= for span <- unresolved_spans do %>
+                            <div
+                              id={"unresolved-span-#{idx}-#{span.start_pos}"}
+                              class="p-space-sm bg-surface-sunk rounded-sm text-caption"
+                            >
+                              <div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-xs">
+                                <span class="font-semibold text-ink truncate">"{span.value}"</span>
+                                <span class="text-ref text-ink-muted">
+                                  {span.start_pos}–{span.end_pos}
+                                </span>
+                              </div>
+                              <div class="flex flex-wrap gap-space-xs mb-space-xs">
+                                <span class="px-space-xs py-space-2xs bg-surface border border-border rounded-sm text-caption text-ink">
+                                  reason: {span.reason}
+                                </span>
+                                <span class="px-space-xs py-space-2xs bg-surface border border-border rounded-sm text-caption text-ink-muted">
+                                  shared type: {span.common_type || "none"}
+                                </span>
+                              </div>
+                              <div class="mb-space-xs">
+                                <span class="text-ink-muted">Candidate types:</span>
+                                <%= if span.candidate_types == [] do %>
+                                  <span class="text-ink-muted italic">none measured</span>
+                                <% else %>
+                                  <div class="flex flex-wrap gap-space-sm">
+                                    <%= for candidate <- span.candidate_types do %>
+                                      <span class="inline-flex items-center gap-space-xs">
+                                        <span class="text-term text-ink">{candidate.type}</span>
+                                        <.score_display value={candidate.score} kind={:raw_score} source="summed log-odds" />
+                                      </span>
+                                    <% end %>
+                                  </div>
+                                <% end %>
+                              </div>
+                              <div class="space-y-space-2xs">
+                                <span class="text-ink-muted">Readings:</span>
+                                <%= for reading <- span.readings do %>
+                                  <div class="flex flex-wrap items-center gap-space-sm p-space-xs bg-surface rounded-sm">
+                                    <.badge variant={:info} size={:xs}>{reading.source}</.badge>
+                                    <span class="text-term text-ink">{reading.entity_type}</span>
+                                    <.entity_confidence
+                                      :if={reading.raw_confidence}
+                                      source={reading.source}
+                                      confidence={reading.raw_confidence}
+                                    />
+                                    <%= if reading.reliability do %>
+                                      <.score_display value={reading.reliability} kind={:raw_score} source="span reliability" />
+                                    <% else %>
+                                      <span class="text-ink-muted italic">unmeasured</span>
+                                    <% end %>
+                                  </div>
+                                <% end %>
+                              </div>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+
 <!-- Slot Filling -->
                     <% slots = chunk[:slots_detected] || %{} %>
                     <div class="pt-space-md border-t border-border">
