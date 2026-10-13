@@ -6,6 +6,12 @@ defmodule Brain.ML.EntityExtractorTest do
   # The world the test suite runs in, seeded by `mix test.models`.
   @world_id "default"
 
+  # Every span of `text`, decided or not, in text order.
+  defp all_spans(text, opts \\ []) do
+    %{entities: entities, unresolved_spans: unresolved} = EntityExtractor.extract(text, [world_id: @world_id] ++ opts)
+    Enum.sort_by(entities ++ unresolved, & &1.start_pos)
+  end
+
   describe "extract_entities/2" do
     test "returns a list of entities" do
       entities = EntityExtractor.extract_entities("hello world", world_id: @world_id)
@@ -16,8 +22,7 @@ defmodule Brain.ML.EntityExtractorTest do
       # "door" is a device, a lock and an emoji name. The gazetteer's reading
       # picks a primary type and keeps every candidate in :types; a decided
       # span built on any reading of its hypothesis carries them too.
-      entities = EntityExtractor.extract_entities("open the door", world_id: @world_id)
-      door = Enum.find(entities, &(String.downcase(&1.value) == "door"))
+      door = Enum.find(all_spans("open the door"), &(String.downcase(&1.value) == "door"))
 
       assert door
       gazetteer = Enum.find(door.readings, &(&1.source == :gazetteer))
@@ -34,7 +39,7 @@ defmodule Brain.ML.EntityExtractorTest do
     test "every source's reading is kept in exactly one span, and every reading names its source" do
       text = "turn on the kitchen lights at 7 pm in Paris"
       readings = EntityExtractor.readings(text, world_id: @world_id)
-      spans = EntityExtractor.extract_entities(text, world_id: @world_id, skip_disambiguation: true)
+      spans = all_spans(text, skip_disambiguation: true)
 
       assert Enum.all?(readings, &(&1.source in [:gazetteer, :system, :location_hint, :pos_tagger_propn, :entity_model]))
 
@@ -42,6 +47,57 @@ defmodule Brain.ML.EntityExtractorTest do
       assert Enum.sort(kept) == readings |> Enum.map(&{&1.source, &1.entity_type, &1.start_pos, &1.end_pos}) |> Enum.sort()
 
       assert Enum.all?(spans, &is_boolean(&1.resolved))
+    end
+
+    test "returns the decided entities, and the same as extract/2's" do
+      text = "turn on the kitchen lights at 7 pm in Paris"
+      entities = EntityExtractor.extract_entities(text, world_id: @world_id)
+
+      assert entities == EntityExtractor.extract(text, world_id: @world_id).entities
+      assert Enum.all?(entities, &match?(%{resolved: true}, &1))
+    end
+  end
+
+  describe "extract/2 keeps undecided spans apart from the entities" do
+    # Gold sentences taken by a fixed stride, so the run stays short. Which of
+    # their spans the data leaves undecided moves with retraining, so the test
+    # asserts that some are, not which.
+    setup do
+      rows = Brain.ML.EvaluationStore.load_gold_standard("ner", :train)
+      texts = rows |> Enum.take_every(max(div(length(rows), 200), 1)) |> Enum.map(& &1["text"])
+      %{results: Map.new(texts, &{&1, EntityExtractor.extract(&1, world_id: @world_id)})}
+    end
+
+    test "the entities are decided spans only, and every undecided span is in :unresolved_spans", %{results: results} do
+      assert Enum.any?(results, fn {_text, %{unresolved_spans: spans}} -> spans != [] end),
+             "no extraction over #{map_size(results)} gold sentences left a span undecided, so nothing here is exercised"
+
+      for {text, %{entities: entities, unresolved_spans: unresolved}} <- results do
+        assert Enum.all?(entities, &match?(%{resolved: true}, &1)), "an undecided span among the entities of #{inspect(text)}"
+        assert Enum.all?(unresolved, &match?(%{resolved: false}, &1)), "a decided span among the unresolved of #{inspect(text)}"
+        assert EntityExtractor.extract_entities(text, world_id: @world_id) == entities
+      end
+    end
+
+    test "an undecided span keeps its readings, its candidates and why it was left undecided", %{results: results} do
+      for {_text, %{unresolved_spans: unresolved}} <- results, span <- unresolved do
+        assert span.readings != []
+        assert Enum.all?(span.readings, &is_atom(&1.source))
+        assert %Brain.Lattice{} = span.candidates
+        assert span.unresolved_reason in [:no_measured_reading, :insufficient_evidence, :below_confidence_floor]
+        assert span.confidence == 0.0
+      end
+    end
+
+    test "no undecided span overlaps an entity", %{results: results} do
+      overlapping =
+        for {text, %{entities: entities, unresolved_spans: unresolved}} <- results,
+            span <- unresolved,
+            entity <- entities,
+            span.start_pos <= entity.end_pos and entity.start_pos <= span.end_pos,
+            do: {text, span.value, entity.value}
+
+      assert overlapping == []
     end
 
     test "reports loaded when the gazetteer it reads has loaded" do
@@ -67,9 +123,7 @@ defmodule Brain.ML.EntityExtractorTest do
     end
 
     test "extracts numbers as system readings" do
-      entities = EntityExtractor.extract_entities("set temperature to 72 degrees", world_id: @world_id)
-
-      span = Enum.find(entities, &(&1.value == "72"))
+      span = Enum.find(all_spans("set temperature to 72 degrees"), &(&1.value == "72"))
       assert span != nil
 
       number = Enum.find(span.readings, &(&1.source == :system))
@@ -199,7 +253,7 @@ defmodule Brain.ML.EntityExtractorTest do
     test "overlapping readings are one span, which keeps all of them" do
       # "new york" and "york" are both cities in the gazetteer; whatever the
       # data decides, they are one span, not two overlapping entities.
-      entities = EntityExtractor.extract_entities("I'm in New York", world_id: @world_id)
+      entities = all_spans("I'm in New York")
 
       new_york = Enum.find(entities, &(&1.start_pos <= 7 and &1.end_pos >= 14))
       assert new_york
@@ -262,10 +316,8 @@ defmodule Brain.ML.EntityExtractorTest do
       assert {:ok, _info} = Gazetteer.lookup("Sarah"),
              "Sarah should be in the gazetteer from setup"
 
-      entities = EntityExtractor.extract_entities("Tell Sarah about the meeting", world_id: @world_id)
-
       sarah_entity =
-        Enum.find(entities, fn e ->
+        Enum.find(all_spans("Tell Sarah about the meeting"), fn e ->
           String.downcase(Map.get(e, :value, "")) == "sarah"
         end)
 
@@ -304,7 +356,7 @@ defmodule Brain.ML.EntityExtractorTest do
 
       person_entities =
         Enum.filter(entities, fn e ->
-          e.resolved and Map.get(e, :entity_type) == "person" and
+          Map.get(e, :entity_type) == "person" and
             String.downcase(Map.get(e, :value, "")) in ["will", "may"]
         end)
 
@@ -406,13 +458,15 @@ defmodule Brain.ML.EntityExtractorTest do
 
     test "respects min_confidence option: a decision below it is withheld, not dropped" do
       text = "turn on the kitchen lights in Paris"
-      entities_high = EntityExtractor.extract_entities(text, world_id: @world_id, min_confidence: 0.99)
-      entities_low = EntityExtractor.extract_entities(text, world_id: @world_id, min_confidence: 0.3)
+      high = EntityExtractor.extract(text, world_id: @world_id, min_confidence: 0.99)
+      low = EntityExtractor.extract(text, world_id: @world_id, min_confidence: 0.3)
 
-      assert length(entities_low) == length(entities_high)
-      assert Enum.count(entities_low, & &1.resolved) >= Enum.count(entities_high, & &1.resolved)
+      assert length(low.entities) + length(low.unresolved_spans) == length(high.entities) + length(high.unresolved_spans)
+      assert length(low.entities) >= length(high.entities)
+      assert Enum.all?(high.entities, &(&1.confidence >= 0.99))
 
-      for %{resolved: false, unresolved_reason: :below_confidence_floor} = span <- entities_high do
+      for %{unresolved_reason: :below_confidence_floor} = span <- high.unresolved_spans do
+        assert %{resolved: false} = span
         assert span.readings != []
       end
     end
