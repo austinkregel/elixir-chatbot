@@ -26,20 +26,6 @@
         "Your alarm is $alarm_status for $alarm_time.",
         "You have an alarm $alarm_status at $alarm_time."
       ]
-    },
-    "service_not_configured": {
-      "condition": "service_missing",
-      "requires_enrichment": [],
-      "templates": [
-        "I'd need a smart home connection to manage alarms."
-      ]
-    },
-    "service_error": {
-      "condition": "service_error",
-      "requires_enrichment": [],
-      "templates": [
-        "I had trouble setting that alarm. The system might be unavailable."
-      ]
     }
   },
   "entity_verbalizations": {
@@ -50,9 +36,14 @@
     "required": [],
     "optional": ["time"]
   },
-  "enrichment_service": "home_assistant",
+  "enrichment_service": "scheduling",
   "enrichment_fields": {
-    "alarm_status": {"description": "Alarm state (set/not set)", "source": "home_assistant"},
-    "alarm_time": {"description": "Next alarm time", "source": "home_assistant"}
+    "alarm_status": {"description": "\"set\" for an alarm set, or when a check finds alarms; \"none\" when a check finds none; \"cancelled\" after a cancel", "source": "scheduling"},
+    "alarm_time": {"description": "The time an alarm was set for, as given; \"\" when none was given", "source": "scheduling"},
+    "alarm_date": {"description": "The date an alarm was set for, as given; \"\" when none was given", "source": "scheduling"},
+    "alarm_times": {"description": "The time of each alarm a check found or a cancel removed, oldest first", "source": "scheduling"},
+    "alarm_dates": {"description": "The date of each alarm a check found or a cancel removed, oldest first; null for an alarm stored without one", "source": "scheduling"},
+    "alarm_count": {"description": "How many alarms a check found", "source": "scheduling"},
+    "cancelled_count": {"description": "How many alarms a cancel removed", "source": "scheduling"}
   }
 }
