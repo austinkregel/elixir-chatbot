@@ -58,22 +58,6 @@
         "The thermostat is set to $mode at $target_temp. Current temperature is $current_temp.",
         "It's currently $current_temp inside, with the target set to $target_temp in $mode mode."
       ]
-    },
-    "service_not_configured": {
-      "condition": "service_missing",
-      "requires_enrichment": [],
-      "templates": [
-        "I'd need a smart home connection to check that. You can set one up in settings.",
-        "Smart home integration isn't configured yet."
-      ]
-    },
-    "service_error": {
-      "condition": "service_error",
-      "requires_enrichment": [],
-      "templates": [
-        "I had trouble reaching the smart home system. It might be offline.",
-        "Couldn't connect to the smart home system right now."
-      ]
     }
   },
   "entity_verbalizations": {
