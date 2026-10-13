@@ -1,24 +1,33 @@
 defmodule Mix.Tasks.RebuildGoldStandard do
-  @shortdoc "Rebuild the intent gold standard from Dialogflow anchoring only"
+  @shortdoc "Rebuild the intent gold standard from the export and the authored examples"
 
   @moduledoc """
-  Rebuilds `priv/evaluation/intent/gold_standard.json` from `data/intents/`,
-  using the export as the sole authority.
+  Rebuilds `priv/evaluation/intent/gold_standard.json` from `data/intents/`
+  and the hand-written examples in `priv/training/authored_intents/`, using
+  those files as the sole authority.
 
       mix rebuild_gold_standard                 # dry run, prints the summary
       mix rebuild_gold_standard --save          # write it
       mix rebuild_gold_standard --save --verbose
+      mix rebuild_gold_standard --save --output /tmp/gold_standard.json
 
-  No model is consulted. Every label comes from the export, so the corpus can be
-  regenerated from `data/intents/` alone. Not every row in that export came from
+  `--output` writes the gold standard to another path, with its
+  `ambiguous_texts.json` beside it, so a rebuild can be compared with the
+  committed file without replacing it.
+
+  No model is consulted. Every label comes from the files, so the corpus can be
+  regenerated from them alone. Not every row in the export came from
   Dialogflow — see `labeled_by` below.
 
   ## Where labels come from
 
-  The source is `data/intents/*_usersays_en.json`, and the label is the filename
-  stem — the same key `.claude/corpus/build_corpus.py` uses. The paired metadata
-  file's `"name"` field is not read, because a usersays file can exist without
-  one.
+  The sources are `data/intents/*_usersays_en.json` and
+  `priv/training/authored_intents/*_usersays_en.json`
+  (`Brain.Corpus.Provenance.authored_dir/0`), and the label is the filename
+  stem — the same key `.claude/corpus/build_corpus.py` uses for the export. The
+  export's paired metadata file's `"name"` field is not read, because a usersays
+  file can exist without one. `data/intents/` is not tracked; the authored
+  examples are.
 
   One transformation is applied to the stem: `smarthome.lights.X` becomes
   `smarthome.device.X`, lights being a kind of device. A stem containing `" - "`
@@ -61,6 +70,9 @@ defmodule Mix.Tasks.RebuildGoldStandard do
     * `augmented-` -> `"augmented"`
     * a UUID, or no id at all -> `"dialogflow"`
 
+  Every row of the authored examples is `"authored"`, read from the directory
+  rather than an id; an authored row that carries an id aborts the run.
+
   Where the same normalised text occurs more than once the most genuine origin
   wins, so a text counts as synthetic only when it exists nowhere outside a
   synthetic writer. An id shaped like a synthetic marker with an unknown prefix
@@ -80,7 +92,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
   @requirements ["app.config"]
 
-  @switches [save: :boolean, verbose: :boolean]
+  @switches [save: :boolean, verbose: :boolean, output: :string]
 
   @usersays_suffix "_usersays_en.json"
 
@@ -95,19 +107,26 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
     save? = opts[:save] || false
     verbose? = opts[:verbose] || false
+    output = output_path!(opts[:output], save?)
 
-    banner("REBUILD INTENT GOLD STANDARD (from the export only)")
+    banner("REBUILD INTENT GOLD STANDARD (from the export and the authored examples)")
 
-    phrases = load_dialogflow!()
-    Mix.shell().info("  #{length(phrases)} usersays phrases across #{count_files(phrases)} intent files")
+    export = load_dialogflow!()
+    Mix.shell().info("  #{length(export)} usersays phrases across #{count_files(export)} intent files")
+
+    authored = load_authored!()
+    Mix.shell().info("  #{length(authored)} authored phrases across #{count_files(authored)} intent files")
+
+    phrases = export ++ authored
+    validate_labels!(phrases)
 
     {entries, conflicts} = build_entries(phrases)
 
     report(entries, conflicts, verbose?)
 
     if save? do
-      write_output!(entries)
-      write_conflict_report!(conflicts)
+      write_output!(entries, output)
+      write_conflict_report!(conflicts, output)
     else
       Mix.shell().info("\n  Dry run. Pass --save to write.\n")
     end
@@ -130,30 +149,62 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
     fallbacks = fallback_intents(dir)
 
-    phrases =
-      files
-      |> Enum.reject(fn path -> Path.basename(path, @usersays_suffix) in fallbacks end)
-      |> Enum.flat_map(fn path ->
-        label = path |> Path.basename(@usersays_suffix) |> Label.canonical()
-        source = Path.basename(path)
+    files
+    |> Enum.reject(fn path -> Path.basename(path, @usersays_suffix) in fallbacks end)
+    |> Enum.flat_map(fn path -> phrases_of!(path, &Provenance.of_entry!(&1, path)) end)
+  end
 
-        path
-        |> read_phrases!()
-        |> Enum.map(fn phrase ->
-          %{
-            text: phrase.text,
-            norm: Export.normalise(phrase.text),
-            label: label,
-            source_file: source,
-            provenance: phrase.provenance,
-            followup: phrase.followup
-          }
-        end)
-      end)
+  # The hand-written intent examples (`Brain.Corpus.Provenance.authored_dir/0`),
+  # in the export's usersays format, every one labeled "authored". An authored
+  # row carries no id: its provenance is the directory it is in, and an id
+  # could claim another.
+  defp load_authored! do
+    dir = Provenance.authored_dir()
 
-    validate_labels!(phrases)
+    unless File.dir?(dir) do
+      Mix.raise("rebuild_gold_standard: no authored intent examples at #{dir}")
+    end
 
-    phrases
+    files = Export.usersays_files(dir)
+
+    if files == [] do
+      Mix.raise("rebuild_gold_standard: no *#{@usersays_suffix} files under #{dir}")
+    end
+
+    Enum.flat_map(files, fn path -> phrases_of!(path, &authored_provenance!(&1, path)) end)
+  end
+
+  defp authored_provenance!(entry, path) do
+    case Map.fetch(entry, "id") do
+      :error ->
+        Provenance.authored()
+
+      {:ok, id} ->
+        Mix.raise(
+          "rebuild_gold_standard: #{path} has a row with id #{inspect(id)}; an authored example " <>
+            "carries no id, since its provenance is the directory it is in"
+        )
+    end
+  end
+
+  # Every phrase of one usersays file, filed under the file's label, with the
+  # provenance `provenance_of` reads from each entry.
+  defp phrases_of!(path, provenance_of) do
+    label = path |> Path.basename(@usersays_suffix) |> Label.canonical()
+    source = Path.basename(path)
+
+    path
+    |> read_phrases!(provenance_of)
+    |> Enum.map(fn phrase ->
+      %{
+        text: phrase.text,
+        norm: Export.normalise(phrase.text),
+        label: label,
+        source_file: source,
+        provenance: phrase.provenance,
+        followup: phrase.followup
+      }
+    end)
   end
 
   # Dialogflow's own `fallbackIntent: true` marks the no-match case. It is the
@@ -206,8 +257,8 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       An intent label must be a dotted lowercase identifier of at least two
       parts: a domain and something it does.
 
-      Rename the intent in data/intents/, or delete its export files if they are
-      leftovers, then run this again.
+      Rename the intent's file in data/intents/ or in #{Provenance.authored_dir()},
+      or delete its files if they are leftovers, then run this again.
       """)
     end
   end
@@ -219,7 +270,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       Enum.all?(parts, fn part -> part != "" and Regex.match?(~r/^[a-z0-9_]+$/, part) end)
   end
 
-  defp read_phrases!(path) do
+  defp read_phrases!(path, provenance_of) do
     entries =
       case path |> File.read!() |> Jason.decode() do
         {:ok, list} when is_list(list) ->
@@ -236,7 +287,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
         |> Map.get("data", [])
         |> Enum.map_join(fn segment -> Map.get(segment, "text", "") end)
 
-      %{text: text, provenance: Provenance.of_entry!(entry, path), followup: followup!(entry, path)}
+      %{text: text, provenance: provenance_of.(entry), followup: followup!(entry, path)}
     end)
     |> Enum.reject(&(String.trim(&1.text) == ""))
   end
@@ -369,7 +420,7 @@ defmodule Mix.Tasks.RebuildGoldStandard do
       )
     end)
 
-    synthetic = total - Map.get(counts, "dialogflow", 0)
+    synthetic = Provenance.written_back() |> Enum.map(&Map.get(counts, &1, 0)) |> Enum.sum()
 
     if synthetic > 0 do
       Mix.shell().info("")
@@ -419,9 +470,17 @@ defmodule Mix.Tasks.RebuildGoldStandard do
 
   # -- output -----------------------------------------------------------------
 
-  defp write_output!(entries) do
-    path = EvaluationStore.gold_standard_path("intent")
+  # The gold standard's own path unless `--output` names another. `--output`
+  # only says where `--save` writes, so it is refused without `--save`.
+  defp output_path!(nil, _save?), do: EvaluationStore.gold_standard_path("intent")
 
+  defp output_path!(path, true), do: Path.expand(path)
+
+  defp output_path!(path, false) do
+    Mix.raise("rebuild_gold_standard: --output #{path} says where --save writes; pass --save with it")
+  end
+
+  defp write_output!(entries, path) do
     if File.exists?(path) do
       stamp = DateTime.utc_now() |> DateTime.to_iso8601() |> String.replace(":", "-")
       backup = "#{path}.#{stamp}.bak"
@@ -433,11 +492,8 @@ defmodule Mix.Tasks.RebuildGoldStandard do
     Mix.shell().info("  Wrote #{length(entries)} entries to #{path}")
   end
 
-  defp write_conflict_report!(conflicts) do
-    path =
-      EvaluationStore.gold_standard_path("intent")
-      |> Path.dirname()
-      |> Path.join("ambiguous_texts.json")
+  defp write_conflict_report!(conflicts, output) do
+    path = output |> Path.dirname() |> Path.join("ambiguous_texts.json")
 
     File.write!(path, Jason.encode!(conflicts, pretty: true) <> "\n")
     Mix.shell().info("  Wrote #{length(conflicts)} ambiguous texts to #{path}\n")
