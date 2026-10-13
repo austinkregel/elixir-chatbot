@@ -86,6 +86,19 @@ defmodule Brain.Analysis.AnaphoraResolverDataTest do
     end
   end
 
+  describe "a turn's entities kept as type => value" do
+    # How Brain keeps an earlier turn's entities in the history it passes the
+    # pipeline. The referent is an entity typed by `:entity_type`, which the
+    # pipeline reads when it merges the referent into the turn's entities.
+    test "give candidate referents typed by :entity_type" do
+      history = [%{entities: %{"device" => "lamp"}, timestamp: DateTime.utc_now()}]
+
+      assert [{referent, recency, 1}] = AnaphoraResolver.candidates(history)
+      assert referent == %{entity_type: "device", value: "lamp"}
+      assert recency == 1.0
+    end
+  end
+
   @edge_cases [
     {"", [], "empty input"},
     {"   ", [], "whitespace only"},
