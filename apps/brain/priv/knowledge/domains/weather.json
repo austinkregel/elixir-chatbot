@@ -43,22 +43,6 @@
         "Here's the forecast for $location: $forecast",
         "The upcoming weather for $location: $forecast"
       ]
-    },
-    "service_not_configured": {
-      "condition": "slot_filled:location AND NOT service_available:weather",
-      "templates": [
-        "I can tell you about the weather in $location once my weather service is configured.",
-        "Weather information for $location isn't available right now - the weather service needs to be set up.",
-        "I'd check the weather for $location, but the weather service isn't configured yet."
-      ]
-    },
-    "service_error": {
-      "condition": "enrichment_failed",
-      "templates": [
-        "I'm having trouble getting weather information right now. Please try again in a moment.",
-        "The weather service isn't responding at the moment. Try again shortly.",
-        "I couldn't reach the weather service. Please try again later."
-      ]
     }
   },
   "entity_verbalizations": {
