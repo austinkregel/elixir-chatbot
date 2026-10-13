@@ -600,7 +600,8 @@ defmodule Brain.Analysis.Pipeline do
     # could not decide are on `pass1.unresolved_spans`, with their readings and
     # candidates, and carried unchanged into this analysis; nothing here acts
     # on them.
-    rescored_entities = Brain.Analysis.EntityTypeScorer.rescore(pass1.entities, intent)
+    rescored_entities =
+      Brain.Analysis.EntityTypeScorer.rescore(pass1.entities, intent, language: Map.fetch!(pass1, :language))
 
     {entities_after_inference, intent, intent_details} =
       Brain.Analysis.ContextualEntityInferrer.infer(
@@ -1369,14 +1370,15 @@ defmodule Brain.Analysis.Pipeline do
   @doc false
   defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile, world_id) do
     # The entity types the intent registry's slot schemas expect: every intent
-    # in the profile's domain, or else the intent's own.
+    # in the profile's domain, or else the intent's own. Only which types are
+    # listed counts here, not their learned weights.
     expected_types =
       case profile do
         %ChunkProfile{domain: domain} when domain != :unknown ->
           domain |> SlotDetector.entity_types_for_domain() |> MapSet.to_list()
 
         _ ->
-          Brain.Analysis.EntityTypeScorer.expected_types(intent) || []
+          intent |> Brain.Analysis.EntityTypeScorer.expected_types() |> Kernel.||(%{}) |> Map.keys()
       end
 
     graph_entity_types =
