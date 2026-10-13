@@ -869,6 +869,34 @@
                       <% end %>
                     </div>
 
+<!-- Retyped in pass 2: entities whose type the chunk's profile changed -->
+                    <%= if retyped = chunk[:retyped] do %>
+                      <div id={"retyped-entities-#{idx}"} class="mb-space-md">
+                        <div class="text-caption font-semibold text-ink mb-space-sm">
+                          Retyped with the {retyped.profile_domain} profile
+                        </div>
+                        <%= if retyped.changes == [] do %>
+                          <div class="text-caption text-ink-muted italic p-space-sm bg-surface-sunk rounded-sm">
+                            No entity changed type
+                          </div>
+                        <% else %>
+                          <div class="space-y-space-xs">
+                            <%= for change <- retyped.changes do %>
+                              <div class="flex flex-wrap items-center gap-space-sm p-space-sm bg-surface-sunk rounded-sm text-caption">
+                                <span class="font-semibold text-ink truncate">"{change.value}"</span>
+                                <span class="text-term text-ink-muted">{change.from}</span>
+                                <span class="text-ink-muted">→</span>
+                                <span class="text-term text-ink">{change.to}</span>
+                                <%= if change.disambiguation_source do %>
+                                  <.badge variant={:info} size={:xs}>{change.disambiguation_source}</.badge>
+                                <% end %>
+                              </div>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% end %>
+
 <!-- Unresolved Spans: spans the data could not decide; no entities -->
                     <% unresolved_spans = chunk[:unresolved_spans] || [] %>
                     <div id={"unresolved-spans-#{idx}"} class="mb-space-md">
@@ -934,6 +962,57 @@
                                   </div>
                                 <% end %>
                               </div>
+<!-- Pass 2: the span weighed again once the intent is known -->
+                              <% resolution = chunk[:span_resolution]
+
+                              outcome =
+                                resolution &&
+                                  Enum.find(resolution.outcomes, &(&1.start_pos == span.start_pos and &1.end_pos == span.end_pos)) %>
+                              <%= if outcome do %>
+                                <div
+                                  id={"span-outcome-#{idx}-#{span.start_pos}"}
+                                  class="mt-space-xs pt-space-xs border-t border-border space-y-space-2xs"
+                                >
+                                  <div class="flex flex-wrap items-center gap-space-sm">
+                                    <span class="text-ink-muted">Pass 2 ({resolution.intent || "no intent"}):</span>
+                                    <%= case outcome.outcome do %>
+                                      <% :resolved -> %>
+                                        <.badge variant={:info} size={:xs}>resolved by intent</.badge>
+                                        <span class="text-term text-ink">{outcome.entity_type}</span>
+                                      <% :undecided -> %>
+                                        <span class="text-ink">still undecided, leading type</span>
+                                        <span class="text-term text-ink">{outcome.best_type}</span>
+                                      <% :below_confidence_floor -> %>
+                                        <span class="text-ink">decided as</span>
+                                        <span class="text-term text-ink">{outcome.entity_type}</span>
+                                        <span class="text-ink">but below the confidence floor</span>
+                                      <% :not_redecided -> %>
+                                        <span class="text-ink">not weighed again: {outcome.reason}</span>
+                                    <% end %>
+                                  </div>
+                                  <%= if outcome.outcome != :not_redecided do %>
+                                    <div class="flex flex-wrap items-center gap-space-sm">
+                                      <span class="text-ink-muted">score</span>
+                                      <.score_display value={outcome.score} kind={:raw_score} source="summed log-odds with intent" />
+                                      <span class="text-ink-muted">margin</span>
+                                      <%= if outcome.margin == :infinity do %>
+                                        <span class="text-ink">no competitor</span>
+                                      <% else %>
+                                        <.score_display value={outcome.margin} kind={:raw_score} source="log-odds lead" />
+                                      <% end %>
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-space-sm">
+                                      <span class="text-ink-muted">Intent evidence:</span>
+                                      <%= for evidence <- outcome.evidence do %>
+                                        <span class="inline-flex items-center gap-space-xs">
+                                          <span class="text-term text-ink">{evidence.type}</span>
+                                          <.score_display value={evidence.log_ratio} kind={:raw_score} source="intent log-ratio" />
+                                        </span>
+                                      <% end %>
+                                    </div>
+                                  <% end %>
+                                </div>
+                              <% end %>
                             </div>
                           <% end %>
                         </div>
