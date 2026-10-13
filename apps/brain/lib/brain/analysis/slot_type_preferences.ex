@@ -41,7 +41,20 @@ defmodule Brain.Analysis.SlotTypePreferences do
 
   so a child type the data rarely shows for the intent receives part of what
   its family receives there. A domain on its own (a `ChunkProfile.domain`)
-  uses `Pd` where an intent uses `Pi`.
+  uses `Pd` where an intent uses `Pi`, and every utterance together (`:global`)
+  uses `P0`.
+
+  ## What an intent says about a span's label
+
+  For a label `L`, the mass `M(L)` of a distribution is the probability of `L`
+  and of every label that refines it. An intent's evidence about `L` is
+
+      log( M_intent(L) / M_global(L) )
+
+  how much likelier a gold span of the intent's utterances is to agree with
+  `L` than a gold span of any utterance. Read as a likelihood ratio, it is what
+  the intent adds, in log-odds, to evidence about the span that is
+  independent of the intent (`Brain.ML.SpanReliability.redecide/4`).
 
   ## Weights for the types a schema lists
 
@@ -107,7 +120,7 @@ defmodule Brain.Analysis.SlotTypePreferences do
   ]
   defstruct @enforce_keys ++ [:cross_validation]
 
-  @type context :: {:intent, String.t()} | {:domain, String.t()}
+  @type context :: {:intent, String.t()} | {:domain, String.t()} | :global
 
   @type t :: %__MODULE__{
           language: String.t(),
@@ -314,12 +327,42 @@ defmodule Brain.Analysis.SlotTypePreferences do
   # -- reading the model -------------------------------------------------------
 
   @doc """
-  The probability of each label of the universe for an intent or a domain
-  (see the moduledoc). Raises for a domain `Brain.Lexicon.IntentDomains` does
-  not declare and for an intent whose prefix it does not map.
+  The probability of each label of the universe for an intent, a domain, or
+  every utterance together (`:global`; see the moduledoc). Raises for a domain
+  `Brain.Lexicon.IntentDomains` does not declare and for an intent whose prefix
+  it does not map.
   """
   @spec distribution(t(), context()) :: %{String.t() => float()}
   def distribution(%__MODULE__{} = model, context), do: slot_distribution(model, context, :full)
+
+  @doc """
+  What `intent` says about each of `labels`, gold labels of the model's
+  universe: `log(M_intent(L) / M_global(L))` (see the moduledoc). Positive
+  when the intent's utterances name `L`, or a label refining it, more often
+  than utterances do overall; negative when less. A label outside the universe
+  raises, as does an intent `distribution/2` refuses.
+  """
+  @spec intent_evidence(t(), String.t(), [String.t()]) :: %{String.t() => float()}
+  def intent_evidence(%__MODULE__{} = model, intent, labels) when is_binary(intent) and is_list(labels) do
+    for_intent = distribution(model, {:intent, intent})
+    overall = distribution(model, :global)
+
+    Map.new(labels, fn label ->
+      below =
+        case Map.fetch(model.descendants, label) do
+          {:ok, below} ->
+            below
+
+          :error ->
+            raise ArgumentError,
+                  "SlotTypePreferences: #{inspect(label)} is not in the #{model.language} model's universe. " <>
+                    "Retrain it with `mix train_slot_type_preferences`."
+        end
+
+      mass = fn distribution -> below |> Enum.map(&Map.fetch!(distribution, &1)) |> Enum.sum() end
+      {label, :math.log(mass.(for_intent) / mass.(overall))}
+    end)
+  end
 
   @doc """
   The weight of each listed type for an intent or a domain: the probability
@@ -637,8 +680,10 @@ defmodule Brain.Analysis.SlotTypePreferences do
     model |> level(:domain, domain, global_level(model)) |> with_hierarchy(model, depth)
   end
 
+  defp slot_distribution(model, :global, depth), do: model |> global_level() |> with_hierarchy(model, depth)
+
   defp slot_distribution(_model, context, _depth) do
-    raise ArgumentError, "SlotTypePreferences: a context is {:intent, name} or {:domain, name}, got #{inspect(context)}"
+    raise ArgumentError, "SlotTypePreferences: a context is {:intent, name}, {:domain, name} or :global, got #{inspect(context)}"
   end
 
   defp global_level(%__MODULE__{universe: universe, slot_counts: %{global: counts}, smoothing: %{global: k}}) do
