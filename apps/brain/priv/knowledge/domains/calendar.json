@@ -22,20 +22,6 @@
         "Your next event is $next_event at $event_time.",
         "Coming up: $next_event at $event_time."
       ]
-    },
-    "service_not_configured": {
-      "condition": "service_missing",
-      "requires_enrichment": [],
-      "templates": [
-        "I'd need a calendar integration to check that."
-      ]
-    },
-    "service_error": {
-      "condition": "service_error",
-      "requires_enrichment": [],
-      "templates": [
-        "I had trouble accessing the calendar right now."
-      ]
     }
   },
   "entity_verbalizations": {
@@ -47,9 +33,12 @@
     "required": [],
     "optional": ["event", "time", "date"]
   },
-  "enrichment_service": "home_assistant",
+  "enrichment_service": "scheduling",
   "enrichment_fields": {
-    "next_event": {"description": "Next calendar event title", "source": "home_assistant"},
-    "event_time": {"description": "Event date/time", "source": "home_assistant"}
+    "next_event": {"description": "The event scheduled, or the event set last that a query found; \"No upcoming events\" when a query finds none", "source": "scheduling"},
+    "event_time": {"description": "The time of the event scheduled, found or cancelled, as given; \"\" when none was given or a query finds none", "source": "scheduling"},
+    "event_date": {"description": "The date of the event scheduled, found or cancelled, as given; \"\" when none was given or a query finds none; null for an event stored without one", "source": "scheduling"},
+    "cancelled_event": {"description": "The event a cancel removed", "source": "scheduling"},
+    "cancelled_count": {"description": "How many events a cancel removed: always 1, since a cancel removes exactly one", "source": "scheduling"}
   }
 }
