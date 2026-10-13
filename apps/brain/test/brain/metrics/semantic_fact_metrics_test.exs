@@ -5,6 +5,11 @@ defmodule Brain.Metrics.SemanticFactMetricsTest do
   response from it, and how similar the retrieved facts and used patterns were.
   The events reach it through the handlers `Brain.Telemetry.attach_handlers/0`
   attaches, as they do in the running application.
+
+  The counts are kept in Atlas, in measurement windows, so they survive the
+  aggregator restarting, and a new window can be started to compare one
+  stretch of responses with the next. Every count a test makes is written
+  inside its sandbox transaction and rolled back with it.
   """
   use ExUnit.Case, async: false
   import Brain.TestHelpers
@@ -13,9 +18,12 @@ defmodule Brain.Metrics.SemanticFactMetricsTest do
   alias Brain.Memory.Types.SemanticFact
   alias Brain.Metrics.Aggregator
 
-  setup do
+  setup tags do
     {:ok, _apps} = Application.ensure_all_started(:telemetry)
     # Running already when the application is up; started here otherwise.
+    {:ok, _apps} = Application.ensure_all_started(:atlas)
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
     ensure_started(Aggregator)
     assert Process.whereis(Aggregator)
     :ok = Brain.Telemetry.attach_handlers()
@@ -107,8 +115,9 @@ defmodule Brain.Metrics.SemanticFactMetricsTest do
            ]
   end
 
-  test "a world nothing was counted for has no rate and no distribution", %{world_id: world_id} do
+  test "a world nothing was counted for has no window, no rate and no distribution", %{world_id: world_id} do
     assert counted(world_id) == %{
+             window: nil,
              retrievals: 0,
              facts_retrieved: 0,
              patterns_found: 0,
@@ -118,5 +127,84 @@ defmodule Brain.Metrics.SemanticFactMetricsTest do
              retrieved_similarity: [],
              used_similarity: []
            }
+
+    assert Aggregator.get_previous_semantic_fact_metrics(world_id) == nil
+  end
+
+  test "the counts survive the aggregator restarting, and later events add to them", %{world_id: world_id} do
+    sunny = SemanticFact.new("is it sunny in paris", [], ["ep1", "ep2"], [])
+    turn(world_id, [{sunny, 0.82}], pattern(sunny, 0.82, world_id), :synthesizer)
+    before_restart = counted(world_id)
+    assert before_restart.retrievals == 1
+    assert before_restart.used == %{synthesizer: 1, realization_packet: 0}
+    assert %DateTime{} = before_restart.window.started_at
+
+    restart_aggregator!()
+
+    assert Aggregator.get_semantic_fact_metrics(world_id) == before_restart
+
+    turn(world_id, [{sunny, 0.85}], pattern(sunny, 0.85, world_id), :realization_packet)
+    after_restart = counted(world_id)
+
+    assert after_restart.window == before_restart.window
+    assert after_restart.retrievals == 2
+    assert after_restart.patterns_found == 2
+    assert after_restart.used == %{synthesizer: 1, realization_packet: 1}
+    assert after_restart.retrieved_similarity == [%{from: 0.8, to: 0.9, count: 2}]
+  end
+
+  test "starting a new window keeps the ended window's counts, and every event sent before it counts in it",
+       %{world_id: world_id, other_world_id: other_world_id} do
+    sunny = SemanticFact.new("is it sunny in paris", [], ["ep1", "ep2"], [])
+    turn(world_id, [{sunny, 0.82}], pattern(sunny, 0.82, world_id), :synthesizer)
+    turn(other_world_id, [{sunny, 0.82}], nil, nil)
+
+    # Sent straight after the events, without waiting for them to be counted.
+    window = Aggregator.start_semantic_fact_window(world_id)
+
+    previous = Aggregator.get_previous_semantic_fact_metrics(world_id)
+    assert previous.retrievals == 1
+    assert previous.used == %{synthesizer: 1, realization_packet: 0}
+    assert previous.window.ended_at == window.started_at
+
+    current = Aggregator.get_semantic_fact_metrics(world_id)
+    assert current.window == window
+    assert window.ended_at == nil
+    assert current.retrievals == 0
+    assert current.used_total == 0
+
+    turn(world_id, [{sunny, 0.91}], nil, nil)
+    assert counted(world_id).retrievals == 1
+    assert Aggregator.get_previous_semantic_fact_metrics(world_id).retrievals == 1
+
+    # The other world's window goes on.
+    assert counted(other_world_id).retrievals == 1
+    assert Aggregator.get_previous_semantic_fact_metrics(other_world_id) == nil
+  end
+
+  # Stops the aggregator, and waits for its supervisor to start it again: its
+  # in-memory tables start over, so whatever it reads afterwards it reads from
+  # Atlas.
+  defp restart_aggregator! do
+    old = Process.whereis(Aggregator)
+    ref = Process.monitor(old)
+    :ok = GenServer.stop(old)
+    assert_receive {:DOWN, ^ref, :process, ^old, _reason}
+    restarted_aggregator!(old, 100)
+  end
+
+  defp restarted_aggregator!(old, 0) do
+    flunk("Brain.Metrics.Aggregator (was #{inspect(old)}) was not started again after it stopped")
+  end
+
+  defp restarted_aggregator!(old, attempts) do
+    case Process.whereis(Aggregator) do
+      pid when is_pid(pid) and pid != old ->
+        pid
+
+      _not_yet ->
+        Process.sleep(10)
+        restarted_aggregator!(old, attempts - 1)
+    end
   end
 end
