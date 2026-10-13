@@ -19,12 +19,108 @@
     ]
   },
   "enriched_response_frames": {
-    "with_alarm_status": {
-      "condition": "enriched:alarm_status",
-      "requires_enrichment": ["alarm_status", "alarm_time"],
+    "set_with_date_and_time": {
+      "when": {"alarm_status": "set", "alarm_count": null},
+      "requires_enrichment": ["alarm_date", "alarm_time"],
       "templates": [
-        "Your alarm is $alarm_status for $alarm_time.",
-        "You have an alarm $alarm_status at $alarm_time."
+        "Your alarm is set for $alarm_date at $alarm_time.",
+        "Alarm set for $alarm_date at $alarm_time."
+      ]
+    },
+    "set_with_time": {
+      "when": {"alarm_status": "set", "alarm_count": null},
+      "requires_enrichment": ["alarm_time"],
+      "templates": [
+        "Your alarm is set for $alarm_time.",
+        "Alarm set for $alarm_time."
+      ]
+    },
+    "set_with_date": {
+      "when": {"alarm_status": "set", "alarm_count": null},
+      "requires_enrichment": ["alarm_date"],
+      "templates": [
+        "Your alarm is set for $alarm_date.",
+        "Alarm set for $alarm_date."
+      ]
+    },
+    "set": {
+      "when": {"alarm_status": "set", "alarm_count": null},
+      "requires_enrichment": [],
+      "templates": [
+        "Your alarm is set.",
+        "Alarm set."
+      ]
+    },
+    "none_found": {
+      "when": {"alarm_count": 0},
+      "requires_enrichment": [],
+      "templates": [
+        "You have no alarms set.",
+        "There are no alarms set."
+      ]
+    },
+    "found_one_with_time": {
+      "when": {"alarm_count": 1},
+      "requires_enrichment": ["alarm_times"],
+      "templates": [
+        "You have one alarm, set for $alarm_times.",
+        "There's one alarm set, for $alarm_times."
+      ]
+    },
+    "found_one": {
+      "when": {"alarm_count": 1},
+      "requires_enrichment": [],
+      "templates": [
+        "You have one alarm set.",
+        "There's one alarm set."
+      ]
+    },
+    "found_several_with_times": {
+      "when": {"alarm_count": {"min": 2}},
+      "requires_enrichment": ["alarm_count", "alarm_times"],
+      "templates": [
+        "You have $alarm_count alarms, set for $alarm_times.",
+        "There are $alarm_count alarms set, for $alarm_times."
+      ]
+    },
+    "found_several": {
+      "when": {"alarm_count": {"min": 2}},
+      "requires_enrichment": ["alarm_count"],
+      "templates": [
+        "You have $alarm_count alarms set.",
+        "There are $alarm_count alarms set."
+      ]
+    },
+    "cancelled_one_with_time": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": ["alarm_times"],
+      "templates": [
+        "Your $alarm_times alarm is cancelled.",
+        "Cancelled your $alarm_times alarm."
+      ]
+    },
+    "cancelled_one": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": [],
+      "templates": [
+        "Your alarm is cancelled.",
+        "Cancelled your alarm."
+      ]
+    },
+    "cancelled_several_with_times": {
+      "when": {"cancelled_count": {"min": 2}},
+      "requires_enrichment": ["cancelled_count", "alarm_times"],
+      "templates": [
+        "Cancelled $cancelled_count alarms, set for $alarm_times.",
+        "Your $cancelled_count alarms, set for $alarm_times, are cancelled."
+      ]
+    },
+    "cancelled_several": {
+      "when": {"cancelled_count": {"min": 2}},
+      "requires_enrichment": ["cancelled_count"],
+      "templates": [
+        "Cancelled $cancelled_count alarms.",
+        "Your $cancelled_count alarms are cancelled."
       ]
     }
   },
