@@ -50,6 +50,107 @@
       "I'd like to help - what specifically are you looking for?"
     ]
   },
+  "service_replies": {
+    "ambiguous_item": [
+      "Which one: $candidates?",
+      "Which $item_noun do you mean: $candidates?"
+    ],
+    "item_not_identified": [
+      "Which $item_noun do you mean?",
+      "Which $item_noun should I cancel?"
+    ],
+    "location_not_found": [
+      "I couldn't find that location. Which place did you mean?",
+      "I don't know that place. Could you name the location another way?"
+    ],
+    "no_matching_items": [
+      "Nothing matched $description.",
+      "I couldn't find any $item_plural matching $description."
+    ],
+    "no_items": [
+      "You don't have any $item_plural.",
+      "There aren't any $item_plural to cancel."
+    ],
+    "no_ringing_alarm": [
+      "No alarm is ringing right now, so there's nothing to snooze.",
+      "There's no ringing alarm to snooze."
+    ],
+    "side_effects_off": [
+      "I didn't carry that out: this conversation runs with side effects turned off, so nothing gets changed.",
+      "That would change something, and side effects are turned off for this conversation, so I left it alone."
+    ],
+    "rate_limited": [
+      "$service is limiting requests right now. Try again in a little while.",
+      "I've asked $service too often just now. Give it a moment and try again."
+    ],
+    "unavailable": [
+      "I couldn't reach $service right now.",
+      "$service isn't responding at the moment. Try again shortly."
+    ],
+    "service_failed": [
+      "$service ran into a problem, so I couldn't do that.",
+      "Something went wrong on $service's side, so that didn't happen."
+    ],
+    "device_not_found": [
+      "$service couldn't find that device.",
+      "I couldn't find that device in $service."
+    ],
+    "not_configured": [
+      "$service isn't set up yet, so I couldn't do that. You can set it up in Settings.",
+      "I'd need $service to be set up for that. It can be configured in Settings."
+    ],
+    "invalid_credentials": [
+      "$service didn't accept its credentials, so I couldn't do that. They may need updating in Settings.",
+      "The credentials for $service were rejected; check them in Settings."
+    ],
+    "disabled": [
+      "$service is turned off, so I couldn't do that.",
+      "That needs $service, which is disabled right now."
+    ],
+    "unsupported": [
+      "$service can't do that.",
+      "That isn't something $service can handle."
+    ]
+  },
+  "service_items": {
+    "candidate_separator": ", ",
+    "candidate_conjunction": " or ",
+    "kinds": {
+      "calendar": {
+        "singular": "event",
+        "plural": "events",
+        "description": [
+          {"field": "event", "slot": "event", "text": "$value"},
+          {"field": "date", "slot": "date", "text": "on $value"},
+          {"field": "time", "slot": "time", "text": "at $value"}
+        ]
+      },
+      "reminder": {
+        "singular": "reminder",
+        "plural": "reminders",
+        "description": [
+          {"field": "text", "slot": "reminder_text", "text": "$value"},
+          {"field": "date", "slot": "date", "text": "on $value"},
+          {"field": "time", "slot": "time", "text": "at $value"}
+        ]
+      },
+      "alarm": {
+        "singular": "alarm",
+        "plural": "alarms",
+        "description": [
+          {"field": "time", "slot": "time", "text": "$value"},
+          {"field": "date", "slot": "date", "text": "on $value"}
+        ]
+      },
+      "timer": {
+        "singular": "timer",
+        "plural": "timers",
+        "description": [
+          {"field": "duration", "slot": "duration", "text": "$value"}
+        ]
+      }
+    }
+  },
   "transition_phrases": {
     "additional_info": [
       "Also,",
