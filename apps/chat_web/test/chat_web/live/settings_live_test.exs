@@ -2,6 +2,7 @@ defmodule ChatWeb.SettingsLiveTest do
   use ChatWeb.ConnCase, async: false
   import Phoenix.LiveViewTest
   import Brain.TestHelpers
+  import Ecto.Query, only: [from: 2]
 
   alias Brain.Knowledge.LearningTriggers
   alias Brain.Services.CredentialVault
@@ -174,7 +175,7 @@ defmodule ChatWeb.SettingsLiveTest do
       %{world: world}
     end
 
-    test "shows the local scheduler a new world starts with, and offers Home Assistant only once its credentials are set",
+    test "shows the local scheduler a new world starts with, and offers only the local scheduler",
          %{conn: conn, world: world} do
       view = services_in(conn, world)
 
@@ -184,42 +185,35 @@ defmodule ChatWeb.SettingsLiveTest do
 
       assert has_element?(view, ~s(#scheduling-driver-select option[value="local_scheduler"][selected]))
       refute has_element?(view, ~s(#scheduling-driver-select option[value="local_scheduler"][disabled]))
-      assert has_element?(view, ~s(#scheduling-driver-select option[value="home_assistant"][disabled]))
-      assert render(view) =~ "Home Assistant (needs Url, Access token)"
+      refute has_element?(view, ~s(#scheduling-driver-select option[value="home_assistant"]))
     end
 
-    test "choosing Home Assistant with its credentials set stores it as the world's driver",
+    test "does not offer Home Assistant as a driver, even with its credentials set for the world",
          %{conn: conn, world: world} do
       set_home_assistant_credentials(world)
       view = services_in(conn, world)
 
       view |> element("#choose-scheduling-driver") |> render_click()
-      refute has_element?(view, ~s(#scheduling-driver-select option[value="home_assistant"][disabled]))
+
+      assert has_element?(view, ~s(#scheduling-driver-select option[value="local_scheduler"]))
+      refute has_element?(view, ~s(#scheduling-driver-select option[value="home_assistant"]))
+    end
+
+    test "choosing the local scheduler stores it for a world that has no driver", %{conn: conn, world: world} do
+      world_id = world.id
+      Atlas.Repo.delete_all(from(d in Atlas.Schemas.WorldServiceDriver, where: d.world_id == ^world_id))
+      view = services_in(conn, world)
+
+      assert has_element?(view, "#scheduling-driver-current", "None")
+      view |> element("#choose-scheduling-driver") |> render_click()
 
       html =
         view
-        |> form("#confirm-scheduling-driver-form", %{driver: "home_assistant"})
+        |> form("#confirm-scheduling-driver-form", %{driver: "local_scheduler"})
         |> render_submit()
 
-      assert Atlas.WorldServiceDrivers.fetch(world.id, "scheduling") == {:ok, "home_assistant"}
-      assert html =~ "Home Assistant now handles alarms, timers, reminders and calendar items in world #{world.id}"
-      assert has_element?(view, "#scheduling-driver-current", "Home Assistant")
-    end
-
-    test "refuses Home Assistant while its credentials are not set for the world, and stores nothing",
-         %{conn: conn, world: world} do
-      view = services_in(conn, world)
-      view |> element("#choose-scheduling-driver") |> render_click()
-
-      # The option is disabled; the event is sent as a page that ignored that would send it.
-      html = render_submit(view, "set_scheduling_driver", %{"driver" => "home_assistant"})
-
       assert Atlas.WorldServiceDrivers.fetch(world.id, "scheduling") == {:ok, "local_scheduler"}
-
-      assert html =~
-               "Home Assistant cannot be the scheduling driver of world #{world.id} until its " <>
-                 "Url, Access token credentials are set for that world."
-
+      assert html =~ "Local Scheduler now handles alarms, timers, reminders and calendar items in world #{world.id}"
       assert has_element?(view, "#scheduling-driver-current", "Local Scheduler")
     end
   end
