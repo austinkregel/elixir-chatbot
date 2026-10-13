@@ -18,12 +18,60 @@
     ]
   },
   "enriched_response_frames": {
-    "with_timer_status": {
-      "condition": "enriched:timer_status",
-      "requires_enrichment": ["timer_status", "time_remaining"],
+    "running_with_duration": {
+      "when": {"timer_status": "running"},
+      "requires_enrichment": ["duration"],
       "templates": [
-        "The timer is $timer_status with $time_remaining remaining.",
-        "Timer: $timer_status -- $time_remaining left."
+        "There's a timer running, set for $duration.",
+        "A timer is running, set for $duration."
+      ]
+    },
+    "running": {
+      "when": {"timer_status": "running"},
+      "requires_enrichment": [],
+      "templates": [
+        "There's a timer running.",
+        "A timer is running."
+      ]
+    },
+    "none_found": {
+      "when": {"timer_status": "none"},
+      "requires_enrichment": [],
+      "templates": [
+        "There's no timer running.",
+        "No timer is running."
+      ]
+    },
+    "cancelled_one_with_duration": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": ["timer_durations"],
+      "templates": [
+        "Cancelled the timer set for $timer_durations.",
+        "The timer set for $timer_durations is cancelled."
+      ]
+    },
+    "cancelled_one": {
+      "when": {"cancelled_count": 1},
+      "requires_enrichment": [],
+      "templates": [
+        "Cancelled the timer.",
+        "The timer is cancelled."
+      ]
+    },
+    "cancelled_several_with_durations": {
+      "when": {"cancelled_count": {"min": 2}},
+      "requires_enrichment": ["cancelled_count", "timer_durations"],
+      "templates": [
+        "Cancelled $cancelled_count timers, set for $timer_durations.",
+        "The $cancelled_count timers set for $timer_durations are cancelled."
+      ]
+    },
+    "cancelled_several": {
+      "when": {"cancelled_count": {"min": 2}},
+      "requires_enrichment": ["cancelled_count"],
+      "templates": [
+        "Cancelled $cancelled_count timers.",
+        "The $cancelled_count timers are cancelled."
       ]
     }
   },
@@ -38,8 +86,7 @@
   "enrichment_service": "scheduling",
   "enrichment_fields": {
     "timer_status": {"description": "\"running\" for a timer set, or the timer a check found; \"none\" when a check finds none; \"cancelled\" after a cancel", "source": "scheduling"},
-    "time_remaining": {"description": "The duration the timer was set with, as given; timers do not count down, so it is never less; \"\" when a check finds none", "source": "scheduling"},
-    "duration": {"description": "The duration the timer was set with, as given; \"\" when a check finds none", "source": "scheduling"},
+    "duration": {"description": "The duration the timer was set with, as given, not how much of it is left; \"\" when none was given or a check finds none", "source": "scheduling"},
     "timer_durations": {"description": "The duration of each timer a cancel removed, oldest first", "source": "scheduling"},
     "cancelled_count": {"description": "How many timers a cancel removed", "source": "scheduling"}
   }
