@@ -11,11 +11,21 @@ defmodule Brain.Analysis.FreeTextCapture do
 
   ## The data
 
-  Free-text spans are annotated in the hand-written intent examples
-  (`Brain.Corpus.Provenance.authored_dir/0`) as the Dialogflow export marks an
-  any-text parameter: a `data` segment with `"meta": "@sys.any"` whose `"alias"`
-  names the slot. The segments concatenate to the utterance, so the intent gold
-  standard rebuilds from the files unchanged.
+  Free-text spans are annotated as the Dialogflow export marks an any-text
+  parameter: a `data` segment with `"meta": "@sys.any"` whose `"alias"` names
+  the slot. They are read from two directories of usersays files, each
+  annotation in one place:
+
+  - the hand-written intent examples (`Brain.Corpus.Provenance.authored_dir/0`),
+    whose segments concatenate to the utterance, so the intent gold standard
+    rebuilds from the files unchanged;
+  - the hand-written entity annotations
+    (`Brain.Corpus.Provenance.authored_entities_dir/0`), which annotate intent
+    gold rows that come from elsewhere (the Dialogflow export) and which
+    `mix rebuild_ner_gold` reads too, a free-text span naming no entity there.
+
+  One intent's slot annotated in both directories raises: its rows would be
+  examples twice, and the two could disagree.
 
   An intent file with one such segment is annotated in full: each of its rows
   marks the span it holds, and a row with none says the utterance names no value
@@ -116,6 +126,10 @@ defmodule Brain.Analysis.FreeTextCapture do
           report: map()
         }
 
+  @doc "The `meta` of a usersays segment that annotates a free-text span."
+  @spec any_text() :: String.t()
+  def any_text, do: @any_text
+
   @doc "The candidate models, in the order ties go."
   @spec kinds() :: [atom()]
   def kinds, do: @kinds
@@ -127,19 +141,20 @@ defmodule Brain.Analysis.FreeTextCapture do
   # -- examples -----------------------------------------------------------------
 
   @doc """
-  The annotated examples: one per row of every annotated intent file in `dir`
-  and free-text slot of that file, as
+  The annotated examples: one per row of every annotated intent file in
+  `dirs` and free-text slot of that file, as
   `%{text, intent, slot, tokens, tags, span, split}`. `span` is the slot's
   `{first, last}` token indexes, or `nil` when the row names no value for it;
   `split` is `:train` or `:held_out`.
 
-  Options, all required but `:dir`:
+  Options, all required but `:dirs`:
 
   - `:registry` -- the intent registry (`Brain.Analysis.SlotDetector.registry/0`)
   - `:gold` -- the intent gold standard's rows
   - `:held_out` -- its held-out rows
   - `:tagger` -- a function from token texts to their UD tags
-  - `:dir` -- the directory of usersays files (default `Provenance.authored_dir/0`)
+  - `:dirs` -- the directories of usersays files (default
+    `Provenance.authored_dir/0` and `Provenance.authored_entities_dir/0`)
   """
   @spec examples!(keyword()) :: [map()]
   def examples!(opts) do
@@ -147,20 +162,28 @@ defmodule Brain.Analysis.FreeTextCapture do
     tag = Keyword.fetch!(opts, :tagger)
     gold = opts |> Keyword.fetch!(:gold) |> MapSet.new(&{&1["text"], &1["intent"]})
     held = opts |> Keyword.fetch!(:held_out) |> MapSet.new(&{&1["text"], &1["intent"]})
-    dir = Keyword.get(opts, :dir, Provenance.authored_dir())
+    dirs = Keyword.get(opts, :dirs, [Provenance.authored_dir(), Provenance.authored_entities_dir()])
 
-    examples =
-      for path <- Export.usersays_files(dir),
+    annotated =
+      for dir <- dirs,
+          path <- Export.usersays_files(dir),
           entries <- [decode!(path)],
           intent <- [path |> Export.label_of() |> Label.canonical()],
           slot <- free_text_slots(entries),
-          entry <- entries do
+          do: {intent, slot, path, entries}
+
+    for {{intent, slot}, [_, _ | _] = paths} <- Enum.group_by(annotated, &{elem(&1, 0), elem(&1, 1)}, &elem(&1, 2)) do
+      raise ArgumentError, "FreeTextCapture: #{slot} of #{intent} is annotated in more than one file: #{Enum.join(paths, ", ")}"
+    end
+
+    examples =
+      for {intent, slot, path, entries} <- annotated, entry <- entries do
         declared!(registry, intent, slot, path)
         example!(entry, intent, slot, path, tag, gold, held)
       end
 
     case examples do
-      [] -> raise ArgumentError, "FreeTextCapture: no usersays file under #{dir} annotates a free-text slot (#{@any_text})"
+      [] -> raise ArgumentError, "FreeTextCapture: no usersays file under #{Enum.join(dirs, ", ")} annotates a free-text slot (#{@any_text})"
       examples -> examples
     end
   end
