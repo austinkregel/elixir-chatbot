@@ -31,6 +31,10 @@ defmodule Brain.Analysis.EntityTypeScorerContextTest do
     hierarchy: 0.0,
     tag_global: 1,
     tag_type: 1,
+    word_global: 1,
+    word_type: 1,
+    numeric_global: 1,
+    numeric_type: 1,
     ordinary_global: 1,
     ordinary_domain: 1,
     ordinary_intent: 1
@@ -40,7 +44,7 @@ defmodule Brain.Analysis.EntityTypeScorerContextTest do
     %{
       key: key,
       intent: intent,
-      spans: Enum.map(types, &%{type: &1, preceding_tag: "VERB"}),
+      spans: Enum.map(types, &%{type: &1, preceding_tag: "VERB", preceding_word: "play", numeric: false}),
       ordinary: ["NOUN"],
       gazetteer: gazetteer
     }
