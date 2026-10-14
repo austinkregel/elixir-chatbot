@@ -289,6 +289,49 @@
       </div>
     </section>
 
+    <!-- Activity counted by the metrics aggregator -->
+    <section id="telemetry-activity" class="panel overflow-hidden">
+      <div class="p-space-lg border-b border-border">
+        <div class="flex items-center gap-space-md">
+          <div class="p-space-sm rounded-md bg-surface-sunk">
+            <.icon name="hero-chart-pie" class="size-5 text-ink-muted" />
+          </div>
+          <div>
+            <h2 class="text-heading text-ink">Activity</h2>
+            <p class="text-caption text-ink-muted">
+              <%= if window = @telemetry_health.window do %>
+                Counted since {format_window_time(window.started_at)}
+              <% else %>
+                Nothing counted yet
+              <% end %>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="p-space-lg grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-space-md">
+        <%= for group <- activity_groups(@activity_metrics) do %>
+          <div id={"activity-#{group.id}"} class="rounded-md bg-surface-sunk border border-border p-space-md">
+            <div class="text-label text-ink-muted mb-space-xs">{group.label}</div>
+            <div class="text-heading tabular-nums text-ink">{group.total}</div>
+            <%= if group.rows == [] do %>
+              <div class="text-caption text-ink-muted mt-space-2xs">None counted</div>
+            <% else %>
+              <ul class="mt-space-sm space-y-space-2xs text-caption">
+                <%= for row <- group.rows do %>
+                  <li class="flex justify-between gap-space-sm">
+                    <span class="text-ink-muted truncate" title={row.name}>{row.name}</span>
+                    <span class="tabular-nums text-ink">
+                      {row.count}<span :if={row.detail} class="text-ink-muted"> · {row.detail}</span>
+                    </span>
+                  </li>
+                <% end %>
+              </ul>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </section>
+
 <!-- Atlas Database Status -->
     <section class="panel overflow-hidden">
       <div class="p-space-lg border-b border-border">
