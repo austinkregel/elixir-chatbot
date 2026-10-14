@@ -167,7 +167,7 @@ defmodule Mix.Tasks.TrainMicro do
           )
       end
 
-    map_values = intent_map |> Map.values() |> Enum.reject(&(&1 == "unknown")) |> MapSet.new()
+    map_values = intent_map |> Map.values() |> MapSet.new()
     missing = MapSet.difference(map_values, model_labels)
 
     if MapSet.size(missing) > 0 do
