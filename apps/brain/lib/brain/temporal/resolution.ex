@@ -5,7 +5,10 @@ defmodule Brain.Temporal.Resolution do
 
   - `said`: the text resolved, as it was said.
   - `turn_time`: the moment of the turn it was said in, in UTC.
-  - `time_zone`: the zone its days and clock times were read in.
+  - `time_zone`: the name of the zone its days and clock times were read in
+    (`Brain.Temporal.Zone`).
+  - `utc_offset`: the zone's offset from UTC at `starts_at`, in seconds east
+    of UTC: the offset its start was read with.
   - `starts_at`, `ends_at`: when the time it names begins and ends, in UTC.
     A day or a period ("tomorrow", "next week") runs from the start of its
     first day to the start of the day after its last, so `ends_at` is
@@ -22,13 +25,14 @@ defmodule Brain.Temporal.Resolution do
     else.
   """
 
-  @enforce_keys [:said, :turn_time, :time_zone, :starts_at, :ends_at, :clock, :day_said, :length]
+  @enforce_keys [:said, :turn_time, :time_zone, :utc_offset, :starts_at, :ends_at, :clock, :day_said, :length]
   defstruct @enforce_keys
 
   @type t :: %__MODULE__{
           said: String.t(),
           turn_time: DateTime.t(),
           time_zone: String.t(),
+          utc_offset: integer(),
           starts_at: DateTime.t(),
           ends_at: DateTime.t() | nil,
           clock: Time.t() | nil,
