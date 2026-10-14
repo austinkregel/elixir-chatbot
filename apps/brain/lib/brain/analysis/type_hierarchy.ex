@@ -142,17 +142,14 @@ defmodule Brain.Analysis.TypeHierarchy do
   end
 
   @doc """
-  Returns all known entity type names (both parent and child types).
+  Every entity type `entity_types.json` declares, sorted: each type its
+  hierarchy lists as a parent, including a root listed with no kinds under it
+  (`"event": []`), and each type listed under one.
   """
   def all_types do
-    case safe_ets_lookup(:_all_parents) do
-      [{:_all_parents, parent_map}] ->
-        children = Map.keys(parent_map)
-        parents = parent_map |> Map.values() |> List.flatten()
-        Enum.uniq(children ++ parents) |> Enum.sort()
-
-      _ ->
-        []
+    case safe_ets_lookup(:_all_types) do
+      [{:_all_types, types}] -> types
+      _ -> []
     end
   end
 
@@ -318,6 +315,7 @@ defmodule Brain.Analysis.TypeHierarchy do
     end)
 
     :ets.insert(@ets_table, {:_all_parents, parent_map})
+    :ets.insert(@ets_table, {:_all_types, (Map.keys(merged) ++ Map.keys(parent_map)) |> Enum.uniq() |> Enum.sort()})
     :ets.insert(@ets_table, {:_config, config})
 
     total_types = Enum.reduce(merged, 0, fn {_p, children}, acc -> acc + length(children) end)
