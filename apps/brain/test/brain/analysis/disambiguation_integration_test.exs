@@ -115,7 +115,8 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       assert austin_entity != nil,
              "Expected to find Austin entity, got: #{inspect(entities)}"
 
-      entity_type = austin_entity[:entity] || austin_entity[:entity_type]
+      entity_type = Map.fetch!(austin_entity, :entity_type)
+      refute Map.has_key?(austin_entity, :entity)
 
       # "ambiguous_name_location" used to be accepted here. It was never a
       # reading of anything -- it was the *filename* of
@@ -154,7 +155,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
         end)
 
       if austin do
-        entity_type = austin[:entity] || austin[:entity_type]
+        entity_type = Map.fetch!(austin, :entity_type)
         disambiguation_source = austin[:disambiguation_source]
 
         cond do
@@ -467,7 +468,8 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       # filename-derived junk type, which made the assertion accept anything.
       assert austin, "Austin was not extracted from the introduction: #{inspect(entities)}"
 
-      entity_type = austin[:entity] || austin[:entity_type]
+      entity_type = Map.fetch!(austin, :entity_type)
+      refute Map.has_key?(austin, :entity)
 
       assert entity_type == "person",
              "Expected Austin to be disambiguated as a person in an introduction, got: " <>
