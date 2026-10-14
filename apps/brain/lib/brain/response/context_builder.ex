@@ -38,7 +38,9 @@ defmodule Brain.Response.ContextBuilder do
   - ContextAccumulator signals (combined confidence, conflict, hedging)
 
   `opts` must carry `:world_id`, the world whose memory and service credentials
-  are read; absent raises.
+  are read; absent raises. `:turn_time`, the moment of the turn (a
+  `DateTime`), goes with the enrichment request; an intent of a scheduling
+  domain cannot be dispatched without it.
   """
   def build(%InternalModel{} = model, opts) do
     world_id =
@@ -308,12 +310,19 @@ defmodule Brain.Response.ContextBuilder do
     intent = primary.intent
     slots = extract_slot_values(primary.slots)
 
-    base_context = %{
-      entities: entities,
-      intent: intent,
-      side_effects: Keyword.get(opts, :side_effects, true),
-      world_id: world_id
-    }
+    # The turn's time, when the caller gives it, goes with the request: a
+    # scheduling intent's dates and times are read against it, and dispatching
+    # one without it raises (`Brain.Services.Dispatcher.dispatch/3`).
+    base_context =
+      Map.merge(
+        %{
+          entities: entities,
+          intent: intent,
+          side_effects: Keyword.get(opts, :side_effects, true),
+          world_id: world_id
+        },
+        Map.new(Keyword.take(opts, [:turn_time]))
+      )
 
     enriched = Enricher.prepare_context(intent, slots, base_context)
     entity_familiarity = EntityGraphEnricher.familiarity_score(entities)
