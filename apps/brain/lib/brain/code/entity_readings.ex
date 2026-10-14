@@ -8,7 +8,10 @@ defmodule Brain.Code.EntityReadings do
 
   - the name or qualified name of a symbol of the world's analyzed code
     (`Brain.Code.CodeGazetteer.symbols_named/2`), read as the type its kind
-    maps to;
+    maps to. The keywords, builtins and types a language's grammar file
+    names (`Brain.Code.CodeGazetteer.load_language_keywords/2`, recorded with
+    `metadata.source` `:language_definition`) are part of the language, not
+    definitions in the world's code, so their names are read as none of them;
   - the path of one of the world's analyzed files, or a run of its trailing
     path segments (`Brain.Code.CodeGazetteer.file_names/1`);
   - a language the code parser supports (`Brain.Code.Parser.supported_languages/0`),
@@ -21,39 +24,78 @@ defmodule Brain.Code.EntityReadings do
   entity; `file` and `language` are the types of a file's and a language's
   mention. A symbol of a kind the table does not list raises.
 
-  Each reading has `source: :code_gazetteer`, the span's extent and its text,
-  and the gazetteer records behind it (`:code_symbols`, `:code_files` or
-  `:code_language`). The code gazetteer matches names exactly and holds no
-  confidence of its own, so a reading carries none. Like every source's,
-  these readings are decided by `Brain.ML.SpanReliability`.
+  Each reading has the span's extent and its text, and the gazetteer records
+  behind it (`:code_symbols`, `:code_files` or `:code_language`). The code
+  gazetteer matches names exactly and holds no confidence of its own, so a
+  reading carries none. Like every source's, these readings are decided by
+  `Brain.ML.SpanReliability`.
+
+  ## Names that are ordinary words
+
+  A name can also be an ordinary English word: a function `render`, a module
+  `Session`, the language Go. Such a name is still read, but whether a
+  mention of it is the code or the word is for the context to decide, so its
+  readings come from a source of their own, `:code_gazetteer_ordinary_word`,
+  whose reliability for each type `Brain.ML.SpanReliability` learns apart
+  from that of every other name (`:code_gazetteer`), and a span it leaves
+  undecided can be decided again once the turn's intent is known. A name is
+  an ordinary word as the gazetteer's loaders tell one
+  (`Brain.ML.DataLoaders.ordinary_word?/2`): the owned lexicon records more
+  uses of it as an ordinary word than as any entity type.
   """
 
   alias Brain.Analysis.TypeHierarchy
   alias Brain.Code.{CodeGazetteer, LanguageGrammar, Parser}
 
   @source :code_gazetteer
+  @ordinary_word_source :code_gazetteer_ordinary_word
+
+  # Where a grammar file's keywords, builtins and types are recorded as from.
+  @language_definition :language_definition
 
   @doc """
   Every reading of `text` in `world_id`, in text order. `tokens` are
   `Brain.ML.Tokenizer.tokenize/1`'s tokens of `text`, whose `:start_pos` and
-  `:end_pos` index its graphemes.
+  `:end_pos` index its graphemes. `ordinary_word?` tells whether a name, as
+  written, is an ordinary word (`Brain.ML.DataLoaders.ordinary_word?/2` at
+  runtime); it is asked once per name read.
   """
-  @spec readings(String.t(), [map()], String.t()) :: [map()]
-  def readings(text, tokens, world_id) when is_binary(text) and is_list(tokens) and is_binary(world_id) do
+  @spec readings(String.t(), [map()], String.t(), (String.t() -> boolean())) :: [map()]
+  def readings(text, tokens, world_id, ordinary_word?)
+      when is_binary(text) and is_list(tokens) and is_binary(world_id) and is_function(ordinary_word?, 1) do
     types = types!()
     spans = spans(text, tokens)
     symbols = CodeGazetteer.symbols_named(world_id, Enum.map(spans, &elem(&1, 2)))
     files = CodeGazetteer.file_names(world_id)
     languages = language_names()
 
-    Enum.flat_map(spans, fn {start_pos, end_pos, key, surface} ->
-      extent = %{start_pos: start_pos, end_pos: end_pos, value: surface, match: surface}
+    read =
+      Enum.flat_map(spans, fn {start_pos, end_pos, key, surface} ->
+        extent = %{start_pos: start_pos, end_pos: end_pos, value: surface, match: surface}
 
-      symbol_readings(Map.get(symbols, key, []), types.kinds, extent) ++
-        file_readings(Map.get(files, key), types.file, extent) ++
-        language_readings(Map.get(languages, key), types.language, extent)
+        symbol_readings(symbols |> Map.get(key, []) |> Enum.reject(&language_definition?/1), types.kinds, extent) ++
+          file_readings(Map.get(files, key), types.file, extent) ++
+          language_readings(Map.get(languages, key), types.language, extent)
+      end)
+
+    ordinary = read |> Enum.map(& &1.value) |> Enum.uniq() |> Map.new(&{&1, ordinary_word!(ordinary_word?, &1)})
+
+    Enum.map(read, fn reading ->
+      Map.put(reading, :source, if(Map.fetch!(ordinary, reading.value), do: @ordinary_word_source, else: @source))
     end)
   end
+
+  defp ordinary_word!(ordinary_word?, name) do
+    case ordinary_word?.(name) do
+      answer when is_boolean(answer) ->
+        answer
+
+      other ->
+        raise ArgumentError, "Brain.Code.EntityReadings: ordinary_word? answered #{inspect(other)} for #{inspect(name)}; it answers true or false"
+    end
+  end
+
+  defp language_definition?(symbol), do: match?(%{metadata: %{source: @language_definition}}, symbol)
 
   @doc """
   The types `config.code_entity_types` declares: `%{kinds: %{kind => type |
@@ -93,7 +135,7 @@ defmodule Brain.Code.EntityReadings do
 
   defp reading(type, extent, records) do
     extent
-    |> Map.merge(%{entity_type: type, source: @source})
+    |> Map.put(:entity_type, type)
     |> Map.merge(records)
   end
 
