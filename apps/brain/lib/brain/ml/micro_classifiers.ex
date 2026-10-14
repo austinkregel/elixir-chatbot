@@ -567,7 +567,10 @@ defmodule Brain.ML.MicroClassifiers do
   defp load_model(name) do
     model_path = model_file_path(name)
     Brain.ML.ModelStore.ensure_local("micro/#{name}.term", model_path)
+    Brain.Telemetry.measure_model_load("micro.#{name}", fn -> read_model(name, model_path) end)
+  end
 
+  defp read_model(name, model_path) do
     case File.read(model_path) do
       {:ok, binary} ->
         model =
