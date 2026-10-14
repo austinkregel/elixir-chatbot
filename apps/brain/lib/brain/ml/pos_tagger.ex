@@ -212,11 +212,13 @@ defmodule Brain.ML.POSTagger do
           {:ok, model}
 
         _ ->
-          with {:ok, binary} <- read(model_path),
-               {:ok, model} <- decode(binary, model_path) do
-            :persistent_term.put(key, {{mtime, size}, model})
-            {:ok, model}
-          end
+          Brain.Telemetry.measure_model_load("pos_tagger", fn ->
+            with {:ok, binary} <- read(model_path),
+                 {:ok, model} <- decode(binary, model_path) do
+              :persistent_term.put(key, {{mtime, size}, model})
+              {:ok, model}
+            end
+          end)
       end
     end
   end
