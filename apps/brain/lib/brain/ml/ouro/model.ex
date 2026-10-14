@@ -276,6 +276,7 @@ defmodule Brain.ML.Ouro.Model do
          {:ok, tokenizer} <- Brain.ML.Ouro.Tokenizer.load(repo),
          generation_config <- load_generation_config(repo) do
       elapsed = System.monotonic_time(:millisecond) - start
+      Brain.Telemetry.emit_model_load("ouro", elapsed, true)
       seq_len = ouro_sequence_length()
 
       serving =
@@ -290,11 +291,14 @@ defmodule Brain.ML.Ouro.Model do
       %{state | serving: serving, tokenizer: tokenizer, ready: true}
     else
       {:error, reason} ->
+        Brain.Telemetry.emit_model_load("ouro", System.monotonic_time(:millisecond) - start, false)
         Logger.warning("Ouro: failed to load model: #{inspect(reason)}")
         state
     end
   rescue
     e ->
+      # The load or the compile after it raised; the time is not known here.
+      Brain.Telemetry.emit_model_load("ouro", nil, false)
       Logger.warning("Ouro: load crashed: #{Exception.message(e)}")
       state
   end
