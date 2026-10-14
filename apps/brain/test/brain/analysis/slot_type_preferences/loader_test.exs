@@ -34,8 +34,20 @@ defmodule Brain.Analysis.SlotTypePreferences.LoaderTest do
 
   defp model(listed) do
     examples = [
-      %{key: 1, intent: "weather.query", spans: [%{type: "location", preceding_tag: "ADP"}], ordinary: ["NOUN"]},
-      %{key: 2, intent: "smarthome.device.switch.on", spans: [%{type: "room", preceding_tag: "DET"}], ordinary: ["VERB"]}
+      %{
+        key: 1,
+        intent: "weather.query",
+        spans: [%{type: "location", preceding_tag: "ADP"}],
+        ordinary: ["NOUN"],
+        gazetteer: [:entity, :ordinary]
+      },
+      %{
+        key: 2,
+        intent: "smarthome.device.switch.on",
+        spans: [%{type: "room", preceding_tag: "DET"}],
+        ordinary: ["VERB"],
+        gazetteer: [:entity]
+      }
     ]
 
     SlotTypePreferences.fit(examples,
@@ -43,10 +55,23 @@ defmodule Brain.Analysis.SlotTypePreferences.LoaderTest do
       canonical: %{},
       hierarchy: Hierarchy,
       listed: listed,
+      reading_types: ["location"],
       tag_vocabulary: ["ADP", "DET", "NOUN", "VERB", :sentence_start],
-      smoothing: %{global: 1, domain: 1, intent: 1, hierarchy: 0.0, tag_global: 1, tag_type: 1}
+      smoothing: %{
+        global: 1,
+        domain: 1,
+        intent: 1,
+        hierarchy: 0.0,
+        tag_global: 1,
+        tag_type: 1,
+        ordinary_global: 1,
+        ordinary_domain: 1,
+        ordinary_intent: 1
+      }
     )
   end
+
+  defp write_raw!(dir, term), do: File.write!(Path.join(dir, "slot_type_preferences.en.term"), :erlang.term_to_binary(term))
 
   test "boot fails without the artifact, naming the file and the task that writes it", %{dir: dir} do
     file = Path.join(dir, "slot_type_preferences.en.term")
@@ -63,9 +88,36 @@ defmodule Brain.Analysis.SlotTypePreferences.LoaderTest do
   end
 
   test "boot fails when the file does not hold a model for the language", %{dir: dir} do
-    File.write!(Path.join(dir, "slot_type_preferences.en.term"), :erlang.term_to_binary(%{not: :a_model}))
+    write_raw!(dir, %{not: :a_model})
 
     assert_raise RuntimeError, ~r/does not hold a en model/, fn -> Loader.load!() end
+  end
+
+  test "boot fails on a model trained before the ordinary-word counts were learned", %{dir: dir} do
+    write_raw!(dir, Map.delete(model(SlotTypePreferences.listed_types()), :ordinary_counts))
+
+    error = assert_raise RuntimeError, fn -> Loader.load!() end
+    assert error.message =~ "has no [:ordinary_counts]"
+    assert error.message =~ "mix train_slot_type_preferences"
+  end
+
+  test "boot fails on a model whose smoothing lacks the ordinary-word pseudo-counts", %{dir: dir} do
+    full = model(SlotTypePreferences.listed_types())
+
+    for key <- [:ordinary_global, :ordinary_domain, :ordinary_intent] do
+      write_raw!(dir, %{full | smoothing: Map.delete(full.smoothing, key)})
+
+      error = assert_raise RuntimeError, fn -> Loader.load!() end
+      assert error.message =~ "smoothing #{inspect(key)} is invalid"
+      assert error.message =~ "mix train_slot_type_preferences"
+    end
+  end
+
+  test "boot fails on malformed ordinary-word counts", %{dir: dir} do
+    full = model(SlotTypePreferences.listed_types())
+    write_raw!(dir, %{full | ordinary_counts: %{global: 3}})
+
+    assert_raise RuntimeError, ~r/malformed ordinary_counts.*mix train_slot_type_preferences/, fn -> Loader.load!() end
   end
 
   test "installs a model that covers every listed type" do
