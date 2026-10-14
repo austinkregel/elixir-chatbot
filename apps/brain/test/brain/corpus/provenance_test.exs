@@ -1,8 +1,9 @@
 defmodule Brain.Corpus.ProvenanceTest do
   use ExUnit.Case, async: true
 
+  alias Brain.Analysis.TypeHierarchy
   alias Brain.Corpus.{Export, Label, Provenance}
-  alias Brain.ML.EvaluationStore
+  alias Brain.ML.{EvaluationStore, NerGold}
 
   describe "kinds" do
     test "every kind, most genuine first" do
@@ -101,6 +102,74 @@ defmodule Brain.Corpus.ProvenanceTest do
         assert row in gold
         refute row in training
       end
+    end
+  end
+
+  # The NER gold standard's authored rows are rebuilt from the tracked
+  # annotations (`mix rebuild_ner_gold`); every other row has no tracked source
+  # and is kept as it stands. These check that the committed file is exactly
+  # what a rebuild makes of it, so no rebuild can drop, relabel or move a row.
+  describe "the authored entity annotations and the NER gold standard" do
+    alias Mix.Tasks.RebuildNerGold
+
+    setup do
+      path = EvaluationStore.gold_standard_path("ner")
+      %{path: path, content: File.read!(path), authored: RebuildNerGold.authored_rows!()}
+    end
+
+    test "the committed NER gold standard is what the annotations rebuild to, byte for byte", %{path: path, content: content, authored: authored} do
+      assert authored != []
+      assert RebuildNerGold.rebuild!(content, path, authored) == content
+    end
+
+    test "every annotation's entities are placed in its text, typed under the code root", %{authored: authored} do
+      for row <- authored, span <- NerGold.spans!(row) do
+        assert TypeHierarchy.is_a?(span.type, "code"), "#{inspect(row["text"])}: #{span.type} is not a code type"
+      end
+    end
+
+    test "every annotation is of a text the intent gold standard files under the annotation's intent", %{authored: authored} do
+      gold = EvaluationStore.load_gold_standard("intent")
+
+      for row <- authored do
+        assert Enum.any?(gold, &(Export.normalise(&1["text"]) == Export.normalise(row["text"]) and String.starts_with?(&1["intent"], "code."))),
+               "#{inspect(row["text"])} is no code intent gold row"
+      end
+    end
+
+    test "the held-out authored rows are gold rows kept out of training, and every entity-type set keeps training rows",
+         %{authored: authored} do
+      held = Enum.filter(EvaluationStore.load_gold_standard("ner", :held_out), &(&1["labeled_by"] == Provenance.authored()))
+      training = EvaluationStore.load_gold_standard("ner", :train)
+      assert held != []
+
+      for row <- held do
+        assert row in authored
+        refute row in training
+      end
+
+      type_set = fn row -> row["expected"] |> Enum.map(& &1["type"]) |> Enum.uniq() |> Enum.sort() end
+      held_sets = held |> Enum.map(type_set) |> MapSet.new()
+      training_sets = for row <- training, row["labeled_by"] == Provenance.authored(), into: MapSet.new(), do: type_set.(row)
+
+      assert MapSet.subset?(held_sets, training_sets), "a held-out entity-type set has no authored training row"
+    end
+
+    @tag :tmp_dir
+    test "an annotation of a text the intent gold standard does not hold, or of a type its slot does not list, raises",
+         %{tmp_dir: dir} do
+      write = fn data ->
+        File.write!(Path.join(dir, "code.explain_usersays_en.json"), Jason.encode!([%{"data" => data}]))
+      end
+
+      write.([%{"text" => "explain the "}, %{"alias" => "symbol", "meta" => "@function", "text" => "frobnicate"}])
+      assert_raise Mix.Error, ~r/is not the text of an intent gold row filed under code.explain/, fn -> RebuildNerGold.authored_rows!(dir) end
+
+      write.([%{"text" => "describe the function "}, %{"alias" => "symbol", "meta" => "@variable", "text" => "send_email"}])
+      assert_raise Mix.Error, ~r/slot "symbol" of code.explain lists .* not "variable"/, fn -> RebuildNerGold.authored_rows!(dir) end
+
+      write.([%{"text" => "describe the function "}, %{"alias" => "symbol", "meta" => "@function", "text" => "send_email"}])
+      assert [%{"expected" => [%{"type" => "function", "value" => "send_email"}], "labeled_by" => "authored"}] = RebuildNerGold.authored_rows!(dir)
     end
   end
 end
