@@ -41,6 +41,18 @@ defmodule Brain.Lexicon.ClosedClassTest do
     refute ClosedClass.total_quantifier?("the")
   end
 
+  test "the words written capitalized wherever they stand are exactly those declared, ignoring case", %{data: data} do
+    declared = data["capitalized"]
+
+    for word <- ClosedClass.words() do
+      assert ClosedClass.capitalized?(word) == (word in declared), word
+    end
+
+    assert ClosedClass.capitalized?("I")
+    refute ClosedClass.capitalized?("it")
+    refute ClosedClass.capitalized?("Paris")
+  end
+
   test "open-class words are not members, and membership ignores case" do
     refute ClosedClass.member?("light")
     assert ClosedClass.classes("light") == []
