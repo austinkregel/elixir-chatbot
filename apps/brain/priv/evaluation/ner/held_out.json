@@ -4836,5 +4836,160 @@
       }
     ],
     "text": "turn heating down"
+  },
+  {
+    "expected": [
+      {
+        "type": "class",
+        "value": "Cache"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "API for Cache class"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "send_email"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "describe the function send_email"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "explain this code"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "utils"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "find all imports of utils"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "cache_manager"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "give me an overview of cache_manager"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "connect"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "how many arguments does connect take"
+  },
+  {
+    "expected": [
+      {
+        "type": "method",
+        "value": "save_to_database"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "method signature of save_to_database"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "authenticate"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "show callers of authenticate"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "process_order"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "show me the signature of process_order"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Router"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "summarize the Router module"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Brain.ML.Trainer"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "tell me about Brain.ML.Trainer"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "process_payment"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "walk me through process_payment"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "send_email"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what arguments does send_email accept"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Config"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what is the Config module for"
+  },
+  {
+    "expected": [
+      {
+        "type": "file",
+        "value": "main.py"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what's happening in main.py"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "parse_json"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "where is the function parse_json referenced"
   }
 ]
