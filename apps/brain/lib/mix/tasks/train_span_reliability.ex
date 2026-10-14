@@ -105,7 +105,7 @@ defmodule Mix.Tasks.TrainSpanReliability do
 
     print_report(model, report)
 
-    model = select_redecision(model, rows, examples, canonical)
+    model = select_redecision(model, rows, examples, canonical, world_id)
     print_redecision(model)
 
     SpanReliability.save!(model)
@@ -118,20 +118,24 @@ defmodule Mix.Tasks.TrainSpanReliability do
   # says (`SlotTypePreferences.intent_evidence/3`), so only the training rows
   # joined to an intent training row take part, and each fold's preferences
   # are fitted, with the loaded model's smoothing, on every training row but
-  # that fold's.
-  defp select_redecision(model, rows, examples, canonical) do
+  # that fold's, the rows read with the world's gazetteer.
+  defp select_redecision(model, rows, examples, canonical, world_id) do
     alias Brain.Analysis.SlotTypePreferences
     alias Mix.Tasks.TrainSlotTypePreferences
 
     intents = "intent" |> EvaluationStore.load_gold_standard(:train) |> SlotTypePreferences.intents_by_text!()
     tag = TrainSlotTypePreferences.tagger!()
-    preference_examples = Map.new(rows, &{&1["text"], SlotTypePreferences.example!(&1, Map.get(intents, &1["text"]), tag)})
+    gazetteer = TrainSlotTypePreferences.gazetteer!(world_id)
+
+    preference_examples =
+      Map.new(rows, &{&1["text"], SlotTypePreferences.example!(&1, Map.get(intents, &1["text"]), tag, gazetteer)})
 
     fit_opts = [
       language: @gold_language,
       canonical: canonical,
       hierarchy: Brain.Analysis.TypeHierarchy,
       listed: SlotTypePreferences.listed_types(),
+      reading_types: TrainSlotTypePreferences.reading_types(world_id),
       tag_vocabulary: TrainSlotTypePreferences.tag_vocabulary(),
       smoothing: SlotTypePreferences.loaded!(@gold_language).smoothing
     ]
