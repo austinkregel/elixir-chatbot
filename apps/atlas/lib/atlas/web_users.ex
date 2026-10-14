@@ -26,6 +26,13 @@ defmodule Atlas.WebUsers do
   @spec get!(Ecto.UUID.t()) :: WebUser.t()
   def get!(id) when is_binary(id), do: Repo.get!(WebUser, id)
 
+  @doc """
+  The PubSub topic of the user's open pages: what is said there reaches every
+  page the user has open (`ChatWeb.WorldContext` subscribes each one).
+  """
+  @spec topic(Ecto.UUID.t()) :: String.t()
+  def topic(id) when is_binary(id), do: "web_user:#{id}"
+
   @doc "Stores `world_id` as the user's selected world. Raises on a blank world."
   @spec select_world!(WebUser.t(), String.t()) :: WebUser.t()
   def select_world!(%WebUser{} = user, world_id) when is_binary(world_id) do
