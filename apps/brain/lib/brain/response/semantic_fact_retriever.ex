@@ -137,9 +137,7 @@ defmodule Brain.Response.SemanticFactRetriever do
   end
 
   defp record_semantic_retrieval(result_count) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(Brain.Metrics.Aggregator, {:record_semantic_retrieval, result_count})
-    end
+    :ok = Brain.Metrics.Aggregator.record_semantic_retrieval(result_count)
   end
 
   defp ensure_index(state, world_id) do
