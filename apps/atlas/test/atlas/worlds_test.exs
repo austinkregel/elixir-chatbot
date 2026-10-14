@@ -44,7 +44,13 @@ defmodule Atlas.WorldsTest do
     |> Atlas.Schemas.Credential.changeset(%{world: world_id, service: "weather", key: "api_key", encrypted_value: "v"})
     |> Repo.insert!()
 
-    Atlas.Scheduler.insert_item!(%{world_id: world_id, kind: "alarm", time: "7am", status: "set"})
+    Atlas.Scheduler.insert_item!(%{
+      world_id: world_id,
+      kind: "alarm",
+      time: "7am",
+      status: "set",
+      resolution: "recorded_before_resolution"
+    })
     Atlas.WorldServiceDrivers.put!(world_id, "scheduling", "local_scheduler")
     # One metric window with one value and one record in it.
     :ok =
