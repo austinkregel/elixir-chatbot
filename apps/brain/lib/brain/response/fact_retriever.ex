@@ -85,9 +85,7 @@ defmodule Brain.Response.FactRetriever do
   end
 
   defp record_fact_retrieval(result_count) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(Brain.Metrics.Aggregator, {:record_fact_retrieval, result_count})
-    end
+    :ok = Brain.Metrics.Aggregator.record_fact_retrieval(result_count)
   end
 
   @doc """
