@@ -1,122 +1,127 @@
 defmodule Brain.Analysis.AnaphoraResolverDataTest do
-  @moduledoc "Data-driven tests for AnaphoraResolver covering pronoun and demonstrative resolution.\n"
-  alias Brain.ML.Gazetteer
+  @moduledoc """
+  AnaphoraResolver: which words are references (the part-of-speech tag and the
+  closed-class UD features), how a reference is ranked against the entities of
+  a chronological history, and the referent it resolves to.
+
+  Reads the part-of-speech model, so the lexicon, the tagger's lexical
+  features and the type hierarchy must be running.
+  """
   use ExUnit.Case, async: false
-  import Brain.TestHelpers
 
   alias Brain.Analysis.AnaphoraResolver
 
-  setup do
-    ensure_pubsub_started()
-    # The gazetteer loads its sources when it starts; test_helper checks it.
-    ensure_started(Gazetteer)
+  defp turn(entities), do: %{entities: entities, intent: nil, timestamp: 0}
+  defp entity(type, value, confidence), do: %{entity_type: type, value: value, confidence: confidence}
 
-    :ok
+  describe "references/1" do
+    test "a third-person personal pronoun or a demonstrative the tagger tags PRON is a reference" do
+      assert [{1, "it", "Neut"}] = AnaphoraResolver.references("turn it off")
+      assert [{0, "she", "Fem"}] = AnaphoraResolver.references("she said hello")
+      assert [{0, "he", "Masc"}] = AnaphoraResolver.references("he is coming")
+      assert [{1, "them", "Prs"}] = AnaphoraResolver.references("turn them on")
+      assert [{1, "that", "Dem"}] = AnaphoraResolver.references("play that again")
+    end
+
+    test "first- and second-person pronouns, and words that are not pronouns, are not references" do
+      assert AnaphoraResolver.references("I like coffee") == []
+      assert AnaphoraResolver.references("we should go") == []
+      assert AnaphoraResolver.references("can you help me") == []
+      assert AnaphoraResolver.references("Paris is beautiful") == []
+      assert AnaphoraResolver.references("") == []
+      assert AnaphoraResolver.references("   ") == []
+    end
+
+    test "a reflexive is not a reference" do
+      assert %{"PronType" => "Prs", "Person" => "3", "Reflex" => "Yes"} = Brain.Lexicon.ClosedClass.features("itself")
+      refute Enum.any?(AnaphoraResolver.references("the lamp turned itself off"), fn {_, token, _} -> token == "itself" end)
+    end
+
+    test "the index is the token's among Tokenizer.tokenize/1's tokens" do
+      text = "ok, turn it off."
+      [{idx, "it", "Neut"}] = AnaphoraResolver.references(text)
+      assert Enum.at(Brain.ML.Tokenizer.tokenize_words(text), idx) == "it"
+    end
   end
 
-  @anaphora_test_cases [
-    {"it is working", [], "no history"},
-    {"play it", [], "pronoun with empty history"},
-    {"turn it off",
-     [%{entities: [%{value: "lamp", type: "device"}], timestamp: DateTime.utc_now()}],
-     "device pronoun with history"},
-    {"she said hello",
-     [%{entities: [%{value: "Alice", type: "person"}], timestamp: DateTime.utc_now()}],
-     "person pronoun with history"},
-    {"he is coming",
-     [%{entities: [%{value: "Bob", type: "person"}], timestamp: DateTime.utc_now()}],
-     "person pronoun he"},
-    {"what about that",
-     [%{entities: [%{value: "weather", type: "topic"}], timestamp: DateTime.utc_now()}],
-     "demonstrative that"},
-    {"this one please",
-     [%{entities: [%{value: "song", type: "song"}], timestamp: DateTime.utc_now()}],
-     "demonstrative this"},
-    {"Paris is beautiful", [], "proper noun not anaphoric"},
-    {"I like coffee", [], "first person pronoun"},
-    {"we should go", [], "first person plural"}
-  ]
+  describe "candidates/1" do
+    test "the history is chronological: its last turn is 1 turn ago and the most recent" do
+      history = [
+        turn([entity("device", "lamp", 0.9)]),
+        turn([entity("device", "fan", 0.8)])
+      ]
 
-  describe "resolve/2 - data driven" do
-    for {input, history, description} <- @anaphora_test_cases do
-      @input input
-      @history history
-      @description description
+      assert [{fan, recency_fan, 1}, {lamp, recency_lamp, 2}] = AnaphoraResolver.candidates(history)
+      assert fan.value == "fan"
+      assert lamp.value == "lamp"
+      assert recency_fan == 1.0
+      assert recency_lamp < recency_fan
+    end
 
-      test "returns valid result for: #{description}" do
-        result = AnaphoraResolver.resolve(@input, @history)
-        assert match?({:resolved, _}, result) or match?({:no_anaphora, _}, result)
+    test "a turn whose entities are not a list of entities raises" do
+      assert_raise ArgumentError, ~r/:entities must be a list of entities/, fn ->
+        AnaphoraResolver.candidates([%{entities: %{"device" => "lamp"}}])
+      end
 
-        case result do
-          {:resolved, resolutions} ->
-            assert is_list(resolutions)
+      assert_raise ArgumentError, ~r/needs a string :entity_type, a :value and a numeric :confidence/, fn ->
+        AnaphoraResolver.candidates([turn([%{entity_type: "device", value: "lamp"}])])
+      end
 
-          {:no_anaphora, list} ->
-            assert list == []
-        end
+      assert_raise ArgumentError, ~r/needs a string :entity_type/, fn ->
+        AnaphoraResolver.candidates([turn([%{type: "device", value: "lamp", confidence: 0.9}])])
       end
     end
   end
 
-  @substitution_test_cases [
-    {"play it", [%{entities: [%{value: "Jazz", type: "song"}], timestamp: DateTime.utc_now()}],
-     "substitutes pronoun"},
-    {"turn it on",
-     [%{entities: [%{value: "lamp", type: "device"}], timestamp: DateTime.utc_now()}],
-     "substitutes device pronoun"},
-    {"hello world", [], "no substitution needed"}
-  ]
+  describe "resolve/2" do
+    test "the most recent compatible entity is the referent" do
+      history = [
+        turn([entity("device", "lamp", 0.9)]),
+        turn([entity("device", "fan", 0.9)])
+      ]
 
-  describe "resolve_and_substitute/2 - data driven" do
-    for {input, history, description} <- @substitution_test_cases do
-      @input input
-      @history history
-      @description description
-
-      test "returns valid result for: #{description}" do
-        result = AnaphoraResolver.resolve_and_substitute(@input, @history)
-        assert is_tuple(result)
-        assert tuple_size(result) == 3
-
-        {status, substituted, entities} = result
-        assert status == :ok
-        assert is_binary(substituted)
-        assert is_list(entities)
-      end
+      assert {:resolved, [{1, "it", referent}]} = AnaphoraResolver.resolve("turn it off", history)
+      assert referent.value == "fan"
     end
-  end
 
-  describe "a turn's entities kept as type => value" do
-    # How Brain keeps an earlier turn's entities in the history it passes the
-    # pipeline. The referent is an entity typed by `:entity_type`, which the
-    # pipeline reads when it merges the referent into the turn's entities.
-    test "give candidate referents typed by :entity_type" do
-      history = [%{entities: %{"device" => "lamp"}, timestamp: DateTime.utc_now()}]
+    test "the referent's confidence is the resolution's score times the entity's own" do
+      [{_, recency, 1}] = AnaphoraResolver.candidates([turn([entity("device", "lamp", 0.9)])])
+      {:resolved, [{_, _, high}]} = AnaphoraResolver.resolve("turn it off", [turn([entity("device", "lamp", 0.9)])])
+      {:resolved, [{_, _, low}]} = AnaphoraResolver.resolve("turn it off", [turn([entity("device", "lamp", 0.3)])])
 
-      assert [{referent, recency, 1}] = AnaphoraResolver.candidates(history)
-      assert referent == %{entity_type: "device", value: "lamp"}
+      assert high == %{entity_type: "device", value: "lamp", confidence: high.confidence, source: :anaphora_resolution}
+      # The same resolution, so the same score: the confidences differ by the
+      # entities' own.
+      assert_in_delta high.confidence / 0.9, low.confidence / 0.3, 1.0e-9
+      assert high.confidence <= 0.9
       assert recency == 1.0
+
+      # A referent from an older turn resolves with a lower score, so with a
+      # lower confidence than the same entity's from the last turn.
+      {:resolved, [{_, _, older}]} =
+        AnaphoraResolver.resolve("turn it off", [turn([entity("device", "lamp", 0.9)]), turn([])])
+
+      assert older.value == "lamp"
+      assert older.confidence < high.confidence
+    end
+
+    test "nothing to resolve to, or no reference, is no anaphora" do
+      assert AnaphoraResolver.resolve("turn it off", []) == {:no_anaphora, []}
+      assert AnaphoraResolver.resolve("I like coffee", [turn([entity("device", "lamp", 0.9)])]) == {:no_anaphora, []}
     end
   end
 
-  @edge_cases [
-    {"", [], "empty input"},
-    {"   ", [], "whitespace only"},
-    {"a b c", [], "short tokens"},
-    {String.duplicate("word ", 50), [], "long input"},
-    {"日本語テスト", [], "unicode input"}
-  ]
+  describe "resolve_and_substitute/2" do
+    test "replaces each resolved reference with its referent's value and leaves the rest of the text as it is" do
+      history = [turn([entity("device", "lamp", 0.9)])]
 
-  describe "edge cases - data driven" do
-    for {input, history, description} <- @edge_cases do
-      @input input
-      @history history
-      @description description
+      assert {:ok, "ok, turn lamp off.", [%{value: "lamp", source: :anaphora_resolution}]} =
+               AnaphoraResolver.resolve_and_substitute("ok, turn it off.", history)
+    end
 
-      test "handles #{description} without crashing" do
-        result = AnaphoraResolver.resolve(@input, @history)
-        assert match?({_, _}, result)
-      end
+    test "text with nothing resolved comes back unchanged" do
+      assert AnaphoraResolver.resolve_and_substitute("hello world", []) == {:ok, "hello world", []}
+      assert AnaphoraResolver.resolve_and_substitute("日本語テスト", []) == {:ok, "日本語テスト", []}
     end
   end
 end
