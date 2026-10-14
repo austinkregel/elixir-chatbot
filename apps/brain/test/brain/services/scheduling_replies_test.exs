@@ -9,6 +9,14 @@ defmodule Brain.Services.SchedulingRepliesTest do
   # driver returned when the intent was dispatched. Each test works in a fresh
   # `test_` world that has chosen `LocalScheduler`.
 
+  # An acknowledgment that continues a reply's sentence asks the POS tagger
+  # whether the reply's first word is a proper noun
+  # (`Synthesizer.join_after/2`); the tagger reads WordNet through its
+  # lexical features.
+  setup_all do
+    Brain.TestHelpers.start_pos_tagger!()
+  end
+
   setup tags do
     owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
     on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
@@ -88,6 +96,23 @@ defmodule Brain.Services.SchedulingRepliesTest do
 
       for text <- replies("timer.check", %{}, fields, 0.5) do
         assert text in ["There's a timer running, set for 5 minutes.", "A timer is running, set for 5 minutes."]
+      end
+    end
+
+    test "an acknowledgment that ends a sentence leaves the reply's capital, and one that continues it lowercases it",
+         %{world: world} do
+      slots = %{date: "tomorrow"}
+      fields = dispatch!("alarm.set", slots, world)
+
+      for text <- replies("alarm.set", slots, fields, 0.95) do
+        assert text in [
+                 "Your alarm is set for tomorrow.",
+                 "Alarm set for tomorrow.",
+                 "Sure, your alarm is set for tomorrow.",
+                 "Sure, alarm set for tomorrow.",
+                 "Done. Your alarm is set for tomorrow.",
+                 "Done. Alarm set for tomorrow."
+               ]
       end
     end
 
