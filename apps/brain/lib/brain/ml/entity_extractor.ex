@@ -332,7 +332,7 @@ defmodule Brain.ML.EntityExtractor do
       extract_location_hints(tokens, tags) ++
       extract_proper_noun_hints(tokens, tags) ++
       extract_model_entities(text, tokens, entity_model!(opts, world_id)) ++
-      Brain.Code.EntityReadings.readings(text, tokens, world_id)
+      Brain.Code.EntityReadings.readings(text, tokens, world_id, &ML.DataLoaders.ordinary_word?/1)
   end
 
   defp entity_model!(opts, world_id) do
