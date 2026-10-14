@@ -33,7 +33,7 @@ defmodule Brain.Services.HomeAssistant.EntityMapper do
   3. Query CapabilityRegistry.find_entities_for_area in the world with location/room values
   """
   def resolve_entity_id(entities, world_id) when is_list(entities) do
-    device = find_entity_by_type(entities, ["device", "appliance", "room", "light", "switch"])
+    device = find_entity_by_type(entities, ["device", "room", "light", "switch"])
 
     case device do
       %{ha_entity_id: id} when is_binary(id) -> id
