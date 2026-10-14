@@ -1488,7 +1488,10 @@ defmodule Brain.Analysis.Pipeline do
           domain |> SlotDetector.entity_types_for_domain() |> MapSet.to_list()
 
         _ ->
-          intent |> Brain.Analysis.EntityTypeScorer.expected_types() |> Kernel.||(%{}) |> Map.keys()
+          case Brain.Analysis.EntityTypeScorer.expected_types(intent) do
+            nil -> []
+            expected -> Brain.Analysis.EntityTypeScorer.Expected.types(expected)
+          end
       end
 
     graph_entity_types =
