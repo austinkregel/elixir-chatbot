@@ -413,7 +413,10 @@ defmodule Brain.Services.Dispatcher do
       service ->
         case get_credentials(service, world) do
           {:ok, credentials} ->
-            service.health_check(credentials)
+            started = System.monotonic_time(:millisecond)
+            status = service.health_check(credentials)
+            Brain.Telemetry.emit_service_health_check(service_name, status, System.monotonic_time(:millisecond) - started)
+            status
 
           {:error, _} = error ->
             error
