@@ -19,17 +19,50 @@ defmodule Atlas.Scheduler do
   end
 
   @doc """
-  Stores an item. `attrs` names its `:world_id`, `:kind` and `:resolution`
-  and the fields its kind carries, with the resolved fields when it is
-  resolved (`Atlas.Schemas.SchedulerItem`). Raises on a missing or blank
-  world, an unknown kind or resolution, a resolved item without its turn,
-  zone or start, or resolved fields on an item that is not resolved.
+  Stores an item. `attrs` names its `:world_id`, `:kind`, `:resolution` and
+  `:fire_state` and the fields its kind carries, with the resolved fields
+  when it is resolved and the firing fields its fire state carries
+  (`Atlas.Schemas.SchedulerItem`). Raises on a missing or blank world, an
+  unknown kind, resolution or fire state, a resolved item without its turn,
+  zone, offset or start, resolved fields on an item that is not resolved, a
+  fire state without the firing fields it carries or with others, or an
+  owner who is no web user.
   """
   @spec insert_item!(map()) :: SchedulerItem.t()
   def insert_item!(attrs) when is_map(attrs) do
     %SchedulerItem{}
     |> SchedulerItem.changeset(attrs)
     |> Repo.insert!()
+  end
+
+  @doc """
+  Changes the stored item `id`, with the same checks as `insert_item!/1`, and
+  returns it as stored. Raises when no item has that id.
+  """
+  @spec update_item!(Ecto.UUID.t(), map()) :: SchedulerItem.t()
+  def update_item!(id, attrs) when is_binary(id) and is_map(attrs) do
+    SchedulerItem
+    |> Repo.get!(id)
+    |> SchedulerItem.changeset(attrs)
+    |> Repo.update!()
+  end
+
+  @doc "When the soonest pending item is due, or `nil` when no item is pending."
+  @spec next_due_at() :: DateTime.t() | nil
+  def next_due_at do
+    SchedulerItem
+    |> where([i], i.fire_state == "pending")
+    |> select([i], min(i.due_at))
+    |> Repo.one()
+  end
+
+  @doc "Every pending item due at or before `instant`, soonest first."
+  @spec due_items(DateTime.t()) :: [SchedulerItem.t()]
+  def due_items(%DateTime{} = instant) do
+    SchedulerItem
+    |> where([i], i.fire_state == "pending" and i.due_at <= ^instant)
+    |> order_by([i], asc: i.due_at, asc: i.inserted_at)
+    |> Repo.all()
   end
 
   @doc "Deletes the world's items of one kind. Returns how many were deleted."
