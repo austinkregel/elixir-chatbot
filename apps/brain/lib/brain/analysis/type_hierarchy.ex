@@ -41,8 +41,10 @@ defmodule Brain.Analysis.TypeHierarchy do
   @doc """
   Check if `child_type` IS-A `parent_type`.
 
-  Returns true if there is a direct IS-A relationship in the hierarchy.
-  Falls back to WordNet hypernym chains when no static or Atlas edge exists.
+  Returns true if `child_type` sits under `parent_type`, directly or through
+  intermediate types, in the hierarchy of `entity_types.json`. Nothing else
+  relates two types: a type the file does not declare is related to nothing
+  but itself.
 
   ## Examples
 
@@ -54,9 +56,7 @@ defmodule Brain.Analysis.TypeHierarchy do
   def is_a?(child_type, parent_type) when is_binary(child_type) and is_binary(parent_type) do
     children = specializations(parent_type)
 
-    child_type in children or
-      Enum.any?(children, &is_a?(child_type, &1)) or
-      wordnet_is_a?(child_type, parent_type)
+    child_type in children or Enum.any?(children, &is_a?(child_type, &1))
   end
 
   @doc """
@@ -388,28 +388,6 @@ defmodule Brain.Analysis.TypeHierarchy do
   rescue
     e ->
       Logger.warning("TypeHierarchy: Atlas sync failed: #{Exception.message(e)}")
-  end
-
-  @wordnet_type_roots %{
-    "person" => ~w(person individual someone somebody mortal human),
-    "location" => ~w(location place area region),
-    "organization" => ~w(organization institution establishment),
-    "artifact" => ~w(artifact artefact),
-    "event" => ~w(event happening occurrence),
-    "concept" => ~w(concept conception idea abstraction),
-    "animal" => ~w(animal animate_being beast brute creature fauna),
-    "plant" => ~w(plant flora plant_life),
-    "food" => ~w(food nutrient),
-    "substance" => ~w(substance matter)
-  }
-
-  defp wordnet_is_a?(child_type, parent_type) do
-    chain = Brain.Lexicon.hypernym_chain(child_type, :noun, max_depth: 10)
-    root_words = Map.get(@wordnet_type_roots, parent_type, [parent_type])
-
-    Enum.any?(chain, fn word ->
-      word in root_words or word == parent_type
-    end)
   end
 
   defp safe_ets_lookup(key) do
