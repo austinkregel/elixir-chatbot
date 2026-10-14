@@ -46,6 +46,9 @@ defmodule ChatWeb.Router do
       # own routes here as they land.
       live "/verify", VerifyLive
 
+      # Times read in the browser's zone, and the scheduler's items firing.
+      live "/scheduler", SchedulerLive
+
       # Every design token and shared component state, in light and dark.
       live "/design", DesignLive
     end
