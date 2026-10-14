@@ -130,10 +130,8 @@ defmodule Brain.Memory.Embedder do
 
     state =
       if File.exists?(embedder_path) do
-        case File.read(embedder_path) do
-          {:ok, binary} ->
-            model = :erlang.binary_to_term(binary)
-
+        case Brain.Telemetry.measure_model_load("embedder", fn -> read_embedder(embedder_path) end) do
+          {:ok, model} ->
             Logger.info("Embedder vocabulary auto-loaded from #{embedder_path}")
 
             %{
@@ -298,6 +296,13 @@ defmodule Brain.Memory.Embedder do
     }
 
     {:reply, {:ok, model}, state}
+  end
+
+  # A file that is not a term raises, as it did before its load was measured.
+  defp read_embedder(path) do
+    with {:ok, binary} <- File.read(path) do
+      {:ok, :erlang.binary_to_term(binary)}
+    end
   end
 
   defp tokenize_with_progress(texts, _state) do
