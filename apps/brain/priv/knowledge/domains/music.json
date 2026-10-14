@@ -46,6 +46,20 @@
         "The media player is $player_state at volume $volume.",
         "Volume is at $volume and the player is $player_state."
       ]
+    },
+    "with_now_playing_and_volume": {
+      "requires_enrichment": ["now_playing", "artist", "volume", "player_state"],
+      "templates": [
+        "Currently playing $now_playing by $artist; the media player is $player_state at volume $volume.",
+        "Now playing: $now_playing by $artist, with the player $player_state at volume $volume."
+      ]
+    },
+    "with_now_playing_detailed_and_volume": {
+      "requires_enrichment": ["now_playing", "artist", "album", "volume", "player_state"],
+      "templates": [
+        "Currently playing $now_playing by $artist from the album $album; the media player is $player_state at volume $volume.",
+        "Now playing: $now_playing by $artist ($album), with the player $player_state at volume $volume."
+      ]
     }
   },
   "entity_verbalizations": {
