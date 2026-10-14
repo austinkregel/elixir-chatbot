@@ -21,21 +21,36 @@ defmodule Brain.Services.SchedulingRepliesTest do
     owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
     on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
 
+    # The scheduler's clock stands at its configured start until a test moves
+    # it (`Brain.Test.ManualClock`).
+    Brain.Test.ManualClock.reset!()
+    on_exit(&Brain.Test.ManualClock.reset!/0)
+
     world = "test_scheduling_replies_#{System.unique_integer([:positive])}"
     on_exit(fn -> LocalScheduler.clear_world(world) end)
 
     assert :ok = Dispatcher.assign_scheduling_driver(world, LocalScheduler)
+    Process.put(:scheduling_replies_web_user, Atlas.WebUsers.create!(world).id)
     %{world: world}
   end
 
   defp intent_domain(intent), do: intent |> String.split(".", parts: 2) |> hd()
 
-  # The turn intents are dispatched in, a Monday morning, unless a test says
-  # otherwise.
+  # The turn intents are dispatched in, a Monday morning read in UTC, unless a
+  # test says otherwise, said by the test's web user.
   @turn_time ~U[2026-10-12 09:00:00Z]
 
+  defp turn(world, turn_time) do
+    %{
+      world_id: world,
+      turn_time: turn_time,
+      time_zone: Brain.Temporal.Zone.utc(),
+      web_user_id: Process.get(:scheduling_replies_web_user)
+    }
+  end
+
   defp dispatch!(intent, slots, world, turn_time \\ @turn_time) do
-    assert {:ok, fields} = Dispatcher.dispatch(intent, slots, %{world_id: world, turn_time: turn_time})
+    assert {:ok, fields} = Dispatcher.dispatch(intent, slots, turn(world, turn_time))
     fields
   end
 
@@ -175,9 +190,11 @@ defmodule Brain.Services.SchedulingRepliesTest do
 
   # Every scheduling operation, each with what it finds or does: checks with
   # nothing stored; items set with every slot and with none; checks that find
-  # one item and then two (one of them described by nothing); cancels that
-  # remove one item and then several; and a snooze, which finds no ringing
-  # alarm. A calendar cancel removes exactly one event, so it is named.
+  # one item and then two (one of them described by nothing); the items with a
+  # time of day coming due (`:due`) and checked again, the alarm ringing and
+  # the reminder gone off; snoozes of the ringing alarm with no length said,
+  # with one, and with none ringing; and cancels that remove one item and then
+  # several. A calendar cancel removes exactly one event, so it is named.
   @steps [
     {:none_found, "alarm.check", %{}},
     {:none_found, "reminder.check", %{}},
@@ -207,6 +224,11 @@ defmodule Brain.Services.SchedulingRepliesTest do
     {:found, "reminder.check", %{}},
     {:found, "timer.check", %{}},
     {:found, "calendar.query", %{}},
+    :due,
+    {:ringing, "alarm.check", %{}},
+    {:gone_off, "reminder.check", %{}},
+    {:missing_duration, "alarm.snooze", %{}},
+    {:snoozed, "alarm.snooze", %{duration: "5 minutes"}},
     {:no_ringing_alarm, "alarm.snooze", %{}},
     {:cancelled, "alarm.cancel", %{}},
     {:cancelled, "reminder.cancel", %{}},
@@ -260,39 +282,58 @@ defmodule Brain.Services.SchedulingRepliesTest do
     end
   end
 
+  # When the items set with `@slots` have come due: 7 am on the Tuesday after
+  # the turn.
+  @all_due ~U[2026-10-13 07:00:00Z]
+
   test "the steps dispatch every scheduling operation" do
-    assert @steps |> Enum.map(&elem(&1, 1)) |> Enum.uniq() |> Enum.sort() == SchedulingDriver.intents()
+    assert @steps |> Enum.reject(&(&1 == :due)) |> Enum.map(&elem(&1, 1)) |> Enum.uniq() |> Enum.sort() ==
+             SchedulingDriver.intents()
   end
 
   test "every reply to every scheduling operation and outcome is worded from a frame written for it, and reads whole",
        %{world: world} do
-    for {outcome, intent, slots, turn_time} <- Enum.map(@steps, &Tuple.insert_at(&1, 3, @turn_time)) ++ @later_steps do
-      case {outcome, Dispatcher.dispatch(intent, slots, %{world_id: world, turn_time: turn_time})} do
-        # Alarms are stored and never rung (`Brain.Services.LocalScheduler`);
-        # the error is answered as a service reply, not from a domain frame.
-        {:no_ringing_alarm, result} ->
-          assert result == {:error, :no_ringing_alarm}
+    steps = Enum.map(@steps, fn step -> if step == :due, do: :due, else: Tuple.insert_at(step, 3, @turn_time) end)
 
-        {_outcome, {:ok, fields}} ->
-          config = domain_file(intent_domain(intent))
-          sentences = enriched_sentences(config, fields)
-          acknowledgments = Map.fetch!(config, "acknowledgment_prefixes")
+    for step <- steps ++ @later_steps do
+      case step do
+        # The scheduler's clock reaches the items' time, and they fire.
+        :due ->
+          Brain.Test.ManualClock.set!(@all_due)
+          :ok = LocalScheduler.wake()
 
-          for text <- replies(intent, %{}, fields, 0.95) do
-            context = "#{intent} (#{outcome}) returned #{inspect(fields)} and was answered #{inspect(text)}"
-
-            assert without_acknowledgment(text, acknowledgments) in sentences,
-                   "#{context}, which no enriched frame of #{intent_domain(intent)}.json words"
-
-            refute text =~ "$", "#{context}, with a placeholder left in"
-            refute text =~ "  ", "#{context}, with a doubled space"
-            refute text =~ " .", "#{context}, with a space before a period"
-            refute text =~ ~r/\b(true|false)\b/i, "#{context}, with a boolean printed"
-          end
-
-        {_outcome, other} ->
-          flunk("#{intent} (#{outcome}) returned #{inspect(other)}")
+        {outcome, intent, slots, turn_time} ->
+          assert_reply(outcome, intent, Dispatcher.dispatch(intent, slots, turn(world, turn_time)))
       end
+    end
+  end
+
+  defp assert_reply(outcome, intent, result) do
+    case {outcome, result} do
+      # A snooze with no alarm ringing, or with no length said, is answered as
+      # a service reply, not from a domain frame.
+      {error, result} when error in [:no_ringing_alarm, :missing_duration] ->
+        assert result == {:error, error}
+
+      {_outcome, {:ok, fields}} ->
+        config = domain_file(intent_domain(intent))
+        sentences = enriched_sentences(config, fields)
+        acknowledgments = Map.fetch!(config, "acknowledgment_prefixes")
+
+        for text <- replies(intent, %{}, fields, 0.95) do
+          context = "#{intent} (#{outcome}) returned #{inspect(fields)} and was answered #{inspect(text)}"
+
+          assert without_acknowledgment(text, acknowledgments) in sentences,
+                 "#{context}, which no enriched frame of #{intent_domain(intent)}.json words"
+
+          refute text =~ "$", "#{context}, with a placeholder left in"
+          refute text =~ "  ", "#{context}, with a doubled space"
+          refute text =~ " .", "#{context}, with a space before a period"
+          refute text =~ ~r/\b(true|false)\b/i, "#{context}, with a boolean printed"
+        end
+
+      {_outcome, other} ->
+        flunk("#{intent} (#{outcome}) returned #{inspect(other)}")
     end
   end
 end
