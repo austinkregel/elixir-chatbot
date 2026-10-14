@@ -635,7 +635,10 @@ defmodule Brain.Analysis.Pipeline do
       entities_after_inference
       |> filter_entities_by_intent(intent)
       |> maybe_retype_pos_music_artists(pass1.text)
-      |> Brain.ML.EntityExtractor.refine_entity_types(to_string(intent))
+      |> Brain.ML.EntityExtractor.refine_entity_types(to_string(intent),
+        text: entity_text(pass1),
+        language: Map.fetch!(pass1, :language)
+      )
 
     if debug_pass2?, do: Logger.info("  pass2:entity_filter+refine=#{System.monotonic_time(:millisecond) - t0}ms")
 
@@ -852,6 +855,17 @@ defmodule Brain.Analysis.Pipeline do
       end
 
     {lattice, feature_vector}
+  end
+
+  # The text pass 1's entity positions index: the text extraction read (the
+  # chunk with its anaphora substituted), or, when no extraction ran
+  # (`extract_entities/2`), the chunk's text, which the caller's entities
+  # index.
+  defp entity_text(pass1) do
+    case Map.fetch!(pass1, :_entity_candidates) do
+      %{text: text} when is_binary(text) -> text
+      nil -> pass1.text
+    end
   end
 
   # `%{entities: decided, unresolved_spans: undecided, candidates: candidates}`.
