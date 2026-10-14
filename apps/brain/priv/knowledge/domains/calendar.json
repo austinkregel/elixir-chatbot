@@ -88,67 +88,59 @@
       ]
     },
     "found_with_event_date_and_time": {
-      "when": {"event_count": {"min": 1}},
-      "requires_enrichment": ["last_set_event", "event_date", "event_time"],
+      "when": {"event_count": {"min": 1}, "upcoming_count": {"min": 1}},
+      "requires_enrichment": ["next_event", "event_date", "event_time"],
       "templates": [
-        "On your calendar: $last_set_event, $event_date at $event_time.",
-        "Your calendar has $last_set_event, $event_date at $event_time."
+        "Next on your calendar: $next_event, $event_date at $event_time.",
+        "Coming up on your calendar: $next_event, $event_date at $event_time."
       ]
     },
     "found_with_event_and_time": {
-      "when": {"event_count": {"min": 1}},
-      "requires_enrichment": ["last_set_event", "event_time"],
+      "when": {"event_count": {"min": 1}, "upcoming_count": {"min": 1}},
+      "requires_enrichment": ["next_event", "event_time"],
       "templates": [
-        "On your calendar: $last_set_event at $event_time.",
-        "Your calendar has $last_set_event at $event_time."
+        "Next on your calendar: $next_event at $event_time.",
+        "Coming up on your calendar: $next_event at $event_time."
       ]
     },
     "found_with_event_and_date": {
-      "when": {"event_count": {"min": 1}},
-      "requires_enrichment": ["last_set_event", "event_date"],
+      "when": {"event_count": {"min": 1}, "upcoming_count": {"min": 1}},
+      "requires_enrichment": ["next_event", "event_date"],
       "templates": [
-        "On your calendar: $last_set_event, $event_date.",
-        "Your calendar has $last_set_event, $event_date."
-      ]
-    },
-    "found_with_event": {
-      "when": {"event_count": {"min": 1}},
-      "requires_enrichment": ["last_set_event"],
-      "templates": [
-        "On your calendar: $last_set_event.",
-        "Your calendar has $last_set_event."
+        "Next on your calendar: $next_event, $event_date.",
+        "Coming up on your calendar: $next_event, $event_date."
       ]
     },
     "found_with_date_and_time": {
-      "when": {"event_count": {"min": 1}},
+      "when": {"event_count": {"min": 1}, "upcoming_count": {"min": 1}},
       "requires_enrichment": ["event_date", "event_time"],
       "templates": [
-        "Your calendar has an event $event_date at $event_time.",
-        "There's an event on your calendar for $event_date at $event_time."
+        "Your next event is $event_date at $event_time.",
+        "The next event on your calendar is $event_date at $event_time."
       ]
     },
     "found_with_time": {
-      "when": {"event_count": {"min": 1}},
+      "when": {"event_count": {"min": 1}, "upcoming_count": {"min": 1}},
       "requires_enrichment": ["event_time"],
       "templates": [
-        "Your calendar has an event at $event_time.",
-        "There's an event on your calendar for $event_time."
+        "Your next event is at $event_time.",
+        "The next event on your calendar is at $event_time."
       ]
     },
     "found_with_date": {
-      "when": {"event_count": {"min": 1}},
+      "when": {"event_count": {"min": 1}, "upcoming_count": {"min": 1}},
       "requires_enrichment": ["event_date"],
       "templates": [
-        "Your calendar has an event $event_date.",
-        "There's an event on your calendar for $event_date."
+        "Your next event is $event_date.",
+        "The next event on your calendar is $event_date."
       ]
     },
-    "found": {
-      "when": {"event_count": {"min": 1}},
+    "none_upcoming": {
+      "when": {"event_count": {"min": 1}, "upcoming_count": 0},
       "requires_enrichment": [],
       "templates": [
-        "Your calendar has an event, with no name, day or time given.",
-        "There's an event on your calendar, with no name, day or time given."
+        "Nothing on your calendar is still to come.",
+        "Your calendar has nothing coming up."
       ]
     },
     "cancelled_with_event_date_and_time": {
@@ -227,10 +219,12 @@
   },
   "enrichment_service": "scheduling",
   "enrichment_fields": {
-    "last_set_event": {"description": "The event scheduled, or of the events a query found the one set last (not the soonest: a stored date is free text and cannot be ordered), as given; \"\" when none was given or a query finds none", "source": "scheduling"},
-    "event_time": {"description": "The time of the event scheduled, found or cancelled, as given; \"\" when none was given or a query finds none", "source": "scheduling"},
-    "event_date": {"description": "The date of the event scheduled, found or cancelled, as given; \"\" when none was given or a query finds none; null for an event stored without one", "source": "scheduling"},
+    "last_set_event": {"description": "The event scheduled, as given; \"\" when none was given", "source": "scheduling"},
+    "next_event": {"description": "Of the events a query found, the soonest still to come at the turn, by its resolved date and time, as given; \"\" when none was given or none is still to come", "source": "scheduling"},
+    "event_time": {"description": "The time of the event scheduled, of the next event a query found, or of the event cancelled, as given; \"\" when none was given or none is still to come", "source": "scheduling"},
+    "event_date": {"description": "The date of the event scheduled, of the next event a query found, or of the event cancelled, as given; \"\" when none was given or none is still to come; null for an event stored without one", "source": "scheduling"},
     "event_count": {"description": "How many events a query found", "source": "scheduling"},
+    "upcoming_count": {"description": "How many of the events a query found are still to come at the turn", "source": "scheduling"},
     "cancelled_event": {"description": "The event a cancel removed", "source": "scheduling"},
     "cancelled_count": {"description": "How many events a cancel removed: always 1, since a cancel removes exactly one", "source": "scheduling"}
   }
