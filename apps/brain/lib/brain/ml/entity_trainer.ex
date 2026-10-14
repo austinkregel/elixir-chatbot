@@ -158,14 +158,18 @@ defmodule Brain.ML.EntityTrainer do
     end
   end
 
-  @doc "Train entity recognition model and save to disk.\n\n## Options\n  - models_path: Override the default models output path\n"
+  @doc "Train entity recognition model and save to disk.\n\n## Options\n  - models_path: Override the default models output path\n  - rows: The NER gold rows to train on (default: the gold standard's training split, as `train/1`)\n"
   def train_and_save(opts \\ []) do
     models_path =
       Keyword.get(opts, :models_path) ||
         Application.get_env(:brain, :ml)[:models_path] ||
         Brain.priv_path("ml_models")
 
-    {:ok, model} = train()
+    {:ok, model} =
+      case Keyword.fetch(opts, :rows) do
+        {:ok, rows} -> train(rows)
+        :error -> train()
+      end
     save_model(model, models_path)
   end
 
