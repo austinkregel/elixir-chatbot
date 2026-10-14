@@ -19,8 +19,11 @@ defmodule Atlas.Scheduler do
   end
 
   @doc """
-  Stores an item. `attrs` names its `:world_id` and `:kind` and the fields its
-  kind carries. Raises on a missing or blank world, or an unknown kind.
+  Stores an item. `attrs` names its `:world_id`, `:kind` and `:resolution`
+  and the fields its kind carries, with the resolved fields when it is
+  resolved (`Atlas.Schemas.SchedulerItem`). Raises on a missing or blank
+  world, an unknown kind or resolution, a resolved item without its turn,
+  zone or start, or resolved fields on an item that is not resolved.
   """
   @spec insert_item!(map()) :: SchedulerItem.t()
   def insert_item!(attrs) when is_map(attrs) do
