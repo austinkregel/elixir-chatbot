@@ -567,10 +567,13 @@ defmodule Brain do
     world_id = Map.fetch!(conversation, :world_id)
     side_effects = Map.fetch!(conversation, :side_effects)
 
+    # The turn's time is the user message's timestamp: a date or time the
+    # message says ("tomorrow", "in 2 hours") is read against it.
     opts_with_world =
       opts
       |> Keyword.put(:world_id, world_id)
       |> Keyword.put(:side_effects, side_effects)
+      |> Keyword.put(:turn_time, DateTime.from_unix!(now, :millisecond))
     ml_config = Application.get_env(:brain, :ml) || Application.get_env(:chat_bot, :ml) || []
 
     {response, processing_method, context} =
@@ -994,7 +997,8 @@ defmodule Brain do
   # (`FollowupDetector.awaiting_answer/1`).
   defp complete_followup(completed, persona, side_effects, opts) do
     world_id = Keyword.fetch!(opts, :world_id)
-    {response, enrichment} = generate_intent_response(completed, persona, side_effects, world_id)
+    turn_time = Keyword.fetch!(opts, :turn_time)
+    {response, enrichment} = generate_intent_response(completed, persona, side_effects, world_id, turn_time)
 
     context =
       Map.merge(
@@ -1141,11 +1145,11 @@ defmodule Brain do
   # The response to the request the follow-up completed, with the failure of
   # its service when it returned an error (`Generator.generate/4`'s
   # `{:service_reply, enrichment}`), or `%{}`.
-  defp generate_intent_response(context, _persona, side_effects, world_id) do
+  defp generate_intent_response(context, _persona, side_effects, world_id, turn_time) do
     intent = context.intent
     entities = slots_to_entities(context.slots)
 
-    case Generator.generate(intent, entities, nil, side_effects: side_effects, world_id: world_id) do
+    case Generator.generate(intent, entities, nil, side_effects: side_effects, world_id: world_id, turn_time: turn_time) do
       {:ok, response, {:service_reply, enrichment}} -> {response, enrichment}
       {:ok, response, _type} -> {response, %{}}
     end
