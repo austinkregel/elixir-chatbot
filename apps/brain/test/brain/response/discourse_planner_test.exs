@@ -237,6 +237,15 @@ defmodule Brain.Response.DiscoursePlannerTest do
       assert text =~ "snooze"
     end
 
+    test "a snooze with no length said asks how long, with the intent's own prompt for its duration" do
+      {plan, _specified, text} = respond(:missing_duration, :local_scheduler, "alarm.snooze")
+
+      assert [%Primitive{type: :follow_up, variant: :clarification, content: content}] = plan
+      assert content.reply == :missing_slots
+      assert content.missing_slots == ["duration"]
+      assert text == Brain.Analysis.SlotDetector.get_clarification_prompt("duration", "alarm.snooze")
+    end
+
     test "a missing location is asked for with the intent's own prompt" do
       {plan, _specified, text} = respond(:missing_location, :weather, "weather.query")
 
