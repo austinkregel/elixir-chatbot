@@ -39,8 +39,10 @@ defmodule Brain.Response.ContextBuilder do
 
   `opts` must carry `:world_id`, the world whose memory and service credentials
   are read; absent raises. `:turn_time`, the moment of the turn (a
-  `DateTime`), goes with the enrichment request; an intent of a scheduling
-  domain cannot be dispatched without it.
+  `DateTime`), and `:time_zone`, its `Brain.Temporal.Zone`, go with the
+  enrichment request; an intent of a scheduling domain cannot be dispatched
+  without them. `:web_user_id`, the web user who said the turn, goes with it
+  too.
   """
   def build(%InternalModel{} = model, opts) do
     world_id =
@@ -310,9 +312,11 @@ defmodule Brain.Response.ContextBuilder do
     intent = primary.intent
     slots = extract_slot_values(primary.slots)
 
-    # The turn's time, when the caller gives it, goes with the request: a
-    # scheduling intent's dates and times are read against it, and dispatching
-    # one without it raises (`Brain.Services.Dispatcher.dispatch/3`).
+    # The turn's time and zone and the web user who said it, when the caller
+    # gives them, go with the request: a scheduling intent's dates and times
+    # are read against the turn, dispatching one without its time or zone
+    # raises (`Brain.Services.Dispatcher.dispatch/3`), and what it sets is
+    # the web user's.
     base_context =
       Map.merge(
         %{
@@ -321,7 +325,7 @@ defmodule Brain.Response.ContextBuilder do
           side_effects: Keyword.get(opts, :side_effects, true),
           world_id: world_id
         },
-        Map.new(Keyword.take(opts, [:turn_time]))
+        Map.new(Keyword.take(opts, [:turn_time, :time_zone, :web_user_id]))
       )
 
     enriched = Enricher.prepare_context(intent, slots, base_context)
