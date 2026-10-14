@@ -267,12 +267,7 @@ defmodule Brain.ML.EntityExtractor do
         :error -> SpanReliability.loaded!(language)
       end
 
-    preferences =
-      case Keyword.fetch(opts, :preferences) do
-        {:ok, %SlotTypePreferences{} = model} -> model
-        {:ok, other} -> raise ArgumentError, "EntityExtractor: :preferences must be a SlotTypePreferences model, got #{inspect(other, limit: 3)}"
-        :error -> SlotTypePreferences.loaded!(language)
-      end
+    preferences = preferences!(opts, language)
 
     labels = span.readings |> Enum.filter(& &1.measured) |> Enum.map(& &1.canonical) |> Enum.uniq()
     evidence = SlotTypePreferences.intent_evidence(preferences, intent, labels)
@@ -407,75 +402,140 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   @doc """
-  Refines entity types based on intent context and slot schemas.
+  Refines entity types once the intent is known: a number takes the slot of
+  the intent's schema the data says it fills, and a proper-noun person is
+  split into given_name/last_name.
 
-  After intent classification, numeric entities can be refined to specific
-  slot types (final_value, change_value, etc.) based on what the intent's
-  slot schema expects. Person entities can be split into given_name/last_name.
+  A number (`entity_type: "number"`) is weighed against every slot of the
+  intent's schema whose name is a gold label of the slot type preferences
+  (`Brain.Analysis.SlotTypePreferences.label_posteriors/4`): how often the
+  intent's utterances name that label, how often a span of it is a number,
+  and how often the tag and the word before the number come before a span of
+  it ("to 40" is a final value, "by 40" a change, "from 2014" a start year,
+  "top 10" an amount). It takes the most probable slot name as its type. It
+  keeps "number" when no slot name is a gold label, when the intent's prefix
+  has no domain the preferences can weigh it in
+  (`Brain.Lexicon.IntentDomains`), or when two slots are equally probable.
 
-  When the schema has several numeric slots, numbers fill them in the order
-  they stand in the text. A number anaphora resolution supplied has no place
-  in the text: it fills the slot of a schema with one numeric slot, and keeps
-  its type when there are several.
+  A number anaphora resolution supplied (`source: :anaphora_resolution`)
+  stands nowhere in the text: it is weighed by the intent and by whether its
+  value is a number alone. Any other number without a position in `:text`
+  raises.
 
   ## Options
-    - `:intent` - The classified intent string (e.g., "smarthome.heating.set")
+
+    - `:text` - required: the text the entities' positions index.
+    - `:language` - the `Brain.Language` code whose slot type preferences
+      weigh the numbers. Absent means English; an unsupported code raises.
+    - `:preferences` - a `Brain.Analysis.SlotTypePreferences` model used in
+      place of the one loaded for the language.
   """
-  def refine_entity_types(entities, intent, _opts \\ []) when is_list(entities) and is_binary(intent) do
+  @spec refine_entity_types([map()], String.t(), keyword()) :: [map()]
+  def refine_entity_types(entities, intent, opts) when is_list(entities) and is_binary(intent) and is_list(opts) do
     schema = Analysis.SlotDetector.get_schema(intent)
+    text = refine_text!(opts)
 
     entities
-    |> refine_numeric_types(schema)
+    |> refine_numeric_types(schema, intent, text, opts)
     |> refine_person_subtypes()
     |> refine_temporal_subtypes()
   end
 
-  defp refine_numeric_types(entities, nil), do: entities
+  defp refine_numeric_types(entities, nil, _intent, _text, _opts), do: entities
 
-  defp refine_numeric_types(entities, schema) do
-    mappings = Map.get(schema, "entity_mappings", %{})
+  defp refine_numeric_types(entities, schema, intent, text, opts) do
+    if Enum.any?(entities, &number?/1) do
+      preferences = preferences!(opts, language!(opts))
 
-    numeric_slots =
-      mappings
-      |> Enum.filter(fn {_slot, types} ->
-        Enum.any?(types, fn t -> t in ["sys.number", "number"] end)
-      end)
-      |> Enum.map(fn {slot, _types} -> slot end)
+      slots =
+        schema
+        |> Map.get("entity_mappings", %{})
+        |> Map.keys()
+        |> Enum.filter(&SlotTypePreferences.label?(preferences, &1))
+        |> Enum.sort()
 
-    number_entities = Enum.filter(entities, fn e -> e[:entity_type] == "number" end)
-    non_number_entities = Enum.reject(entities, fn e -> e[:entity_type] == "number" end)
+      if slots == [] or not Brain.Lexicon.IntentDomains.declared?(intent |> String.split(".") |> hd()) do
+        entities
+      else
+        tokens = Tokenizer.tokenize(text)
+        context = %{tokens: List.to_tuple(tokens), tags: tokens |> required_pos_tags() |> List.to_tuple()}
 
-    refined_numbers =
-      case {numeric_slots, number_entities} do
-        {[], _} -> number_entities
-        {_, []} -> []
-        {[single_slot], _} ->
-          Enum.map(number_entities, fn e -> Map.put(e, :entity_type, single_slot) end)
-        {slots, nums} ->
-          assign_numbers_to_slots(nums, slots)
+        Enum.map(entities, fn entity ->
+          if number?(entity), do: refine_number(entity, slots, intent, preferences, context, text), else: entity
+        end)
       end
-
-    non_number_entities ++ refined_numbers
+    else
+      entities
+    end
   end
 
-  # Numbers fill several numeric slots in the order they stand in the text. A
-  # referent anaphora resolution supplied (`source: :anaphora_resolution`)
-  # stands nowhere in the text, so which slot it fills cannot be told from
-  # that order: it keeps its type, and the numbers that have a position are
-  # assigned without it. Any other number without a position raises.
-  defp assign_numbers_to_slots(numbers, slots) do
-    {referents, positioned} = Enum.split_with(numbers, &(Map.get(&1, :source) == :anaphora_resolution))
+  defp number?(entity), do: Map.get(entity, :entity_type) == "number"
 
-    assigned =
-      positioned
-      |> Enum.sort_by(& &1.start_pos)
-      |> Enum.with_index()
-      |> Enum.map(fn {entity, idx} ->
-        slot = Enum.at(slots, idx) || List.last(slots)
-        Map.put(entity, :entity_type, slot)
-      end)
+  defp refine_text!(opts) do
+    case Keyword.fetch(opts, :text) do
+      {:ok, text} when is_binary(text) -> text
+      {:ok, other} -> raise ArgumentError, "EntityExtractor.refine_entity_types/3: :text must be a string, got #{inspect(other)}"
+      :error -> raise ArgumentError, "EntityExtractor.refine_entity_types/3 needs :text, the text the entities' positions index"
+    end
+  end
 
-    assigned ++ referents
+  defp refine_number(entity, slots, intent, preferences, context, text) do
+    span =
+      case entity do
+        %{start_pos: start_pos, end_pos: end_pos} when is_integer(start_pos) and is_integer(end_pos) ->
+          number_context(entity, context, text)
+
+        %{source: :anaphora_resolution, value: value} ->
+          %{numeric: value |> to_string() |> Tokenizer.tokenize() |> numeric_tokens?()}
+
+        _ ->
+          raise ArgumentError,
+                "EntityExtractor.refine_entity_types/3: a number with no position in the text that anaphora resolution " <>
+                  "did not supply cannot be weighed: #{inspect(entity, limit: 8)}"
+      end
+
+    posteriors = SlotTypePreferences.label_posteriors(preferences, intent, slots, span)
+
+    case Enum.sort_by(posteriors, fn {slot, p} -> {-p, slot} end) do
+      [{_best, p}, {_second, p} | _] -> entity
+      [{best, _p} | _] -> Map.put(entity, :entity_type, best)
+    end
+  end
+
+  defp numeric_tokens?([]), do: false
+  defp numeric_tokens?(tokens), do: SlotTypePreferences.numeric_span?(tokens)
+
+  # Whether the number's tokens are a number alone, and the tag and the word
+  # before it, as the slot type preferences learned them.
+  defp number_context(%{start_pos: start_pos, end_pos: end_pos} = entity, %{tokens: tokens, tags: tags}, text) do
+    indexed = tokens |> Tuple.to_list() |> Enum.with_index()
+    first = Enum.find_value(indexed, fn {token, i} -> if token.start_pos == start_pos, do: i end)
+    last = Enum.find_value(indexed, fn {token, i} -> if token.end_pos == end_pos, do: i end)
+
+    unless is_integer(first) and is_integer(last) and first <= last do
+      raise ArgumentError,
+            "EntityExtractor.refine_entity_types/3: the number #{inspect(Map.get(entity, :value))} at #{start_pos}..#{end_pos} " <>
+              "does not start and end at tokens of #{inspect(text)}"
+    end
+
+    {preceding_tag, preceding_word} =
+      if first == 0,
+        do: {SlotTypePreferences.sentence_start(), SlotTypePreferences.sentence_start()},
+        else: {elem(tags, first - 1), SlotTypePreferences.word_key(elem(tokens, first - 1).text)}
+
+    %{
+      numeric: tokens |> Tuple.to_list() |> Enum.slice(first..last) |> numeric_tokens?(),
+      preceding_tag: preceding_tag,
+      preceding_word: preceding_word
+    }
+  end
+
+  defp preferences!(opts, language) do
+    case Keyword.fetch(opts, :preferences) do
+      {:ok, %SlotTypePreferences{} = model} -> model
+      {:ok, other} -> raise ArgumentError, "EntityExtractor: :preferences must be a SlotTypePreferences model, got #{inspect(other, limit: 3)}"
+      :error -> SlotTypePreferences.loaded!(language)
+    end
   end
 
   defp refine_person_subtypes(entities) do
@@ -505,29 +565,32 @@ defmodule Brain.ML.EntityExtractor do
     end)
   end
 
+  # A date or time a gazetteer span was read as keeps the entry's canonical
+  # value as `:canonical_value`, as a system reading of one token does
+  # (`extract_dates_from_tokens/1`): the span's candidate readings (`:types`)
+  # carry it. A span no gazetteer entry gave its type has no canonical value.
+  # (A reading summary's `:canonical` is its gold-standard type label, not this.)
   defp refine_temporal_subtypes(entities) do
+    temporal_types = TypeHierarchy.config("temporal_types", [])
+
     Enum.map(entities, fn entity ->
       entity_type = entity[:entity_type] || ""
       value = to_string(entity[:value] || "")
 
       cond do
-        entity_type == "number" and is_year_value?(value) ->
-          Map.put(entity, :entity_type, "year")
-
         entity_type in ["date_time", "date", "sys_date", "relative_date"] and is_year_only?(value) ->
           Map.put(entity, :entity_type, "year")
+
+        entity_type in temporal_types and not Map.has_key?(entity, :canonical_value) ->
+          case Enum.find(Map.get(entity, :types) || [], &(&1[:entity_type] == entity_type and is_binary(&1[:value]))) do
+            nil -> entity
+            reading -> Map.put(entity, :canonical_value, reading[:value])
+          end
 
         true ->
           entity
       end
     end)
-  end
-
-  defp is_year_value?(value) do
-    case Integer.parse(value) do
-      {n, ""} -> n >= 1900 and n <= 2100
-      _ -> false
-    end
   end
 
   defp is_year_only?(value) do
@@ -810,9 +873,10 @@ defmodule Brain.ML.EntityExtractor do
 
             match ->
               entity_type = match[:entity_type] || match["entity_type"]
+              canonical = temporal_canonical!(match, token.text)
 
               if entity_type in month_types do
-                maybe_date = check_for_date_pattern(tokens, idx)
+                maybe_date = check_for_date_pattern(tokens, idx, canonical)
 
                 case maybe_date do
                   nil ->
@@ -820,6 +884,7 @@ defmodule Brain.ML.EntityExtractor do
                       %{
                         entity_type: entity_type,
                         value: token.text,
+                        canonical_value: canonical,
                         match: token.text,
                         start_pos: token.start_pos,
                         end_pos: token.end_pos,
@@ -836,6 +901,7 @@ defmodule Brain.ML.EntityExtractor do
                   %{
                     entity_type: entity_type,
                     value: token.text,
+                    canonical_value: canonical,
                     match: token.text,
                     start_pos: token.start_pos,
                     end_pos: token.end_pos,
@@ -852,7 +918,23 @@ defmodule Brain.ML.EntityExtractor do
     end)
   end
 
-  defp check_for_date_pattern(tokens, month_idx) do
+  # A temporal entry's canonical value: what the gazetteer maps the synonym
+  # said onto ("next day" is "tomorrow", "noon" is "12:00"). An entity keeps
+  # it as `:canonical_value` beside the `:value` that was said.
+  defp temporal_canonical!(match, said) do
+    case match[:value] || match["value"] do
+      canonical when is_binary(canonical) and canonical != "" ->
+        canonical
+
+      other ->
+        raise "EntityExtractor: the gazetteer's temporal entry for #{inspect(said)} carries no canonical value, got: " <>
+                inspect(other)
+    end
+  end
+
+  # The month's canonical value, with the day and year said after it, is the
+  # date's canonical form ("mar 5" is "march 5").
+  defp check_for_date_pattern(tokens, month_idx, month_canonical) do
     next_token = Enum.at(tokens, month_idx + 1)
     month_token = Enum.at(tokens, month_idx)
 
@@ -866,6 +948,7 @@ defmodule Brain.ML.EntityExtractor do
         %{
           entity_type: "date",
           value: match_text,
+          canonical_value: "#{month_canonical} #{day_num} #{year_token.text}",
           match: match_text,
           start_pos: month_token.start_pos,
           end_pos: year_token.end_pos,
@@ -877,6 +960,7 @@ defmodule Brain.ML.EntityExtractor do
         %{
           entity_type: "date",
           value: match_text,
+          canonical_value: "#{month_canonical} #{day_num}",
           match: match_text,
           start_pos: month_token.start_pos,
           end_pos: next_token.end_pos,
@@ -983,9 +1067,10 @@ defmodule Brain.ML.EntityExtractor do
   # The world's BIO tagger over the same tokens. It was trained on
   # `Tokenizer.tokenize/1` tokens (`Brain.ML.NerGold`), so its token indexes map
   # straight back to positions in the text, and its confidence is the mean
-  # posterior of the entity's tags. Its `:extent_cue` says how the decode
-  # delimited it (`bio_extent_cue/2`), which `Brain.ML.SpanReliability` learns
-  # how far to trust its extent by.
+  # posterior of the entity's tags. Every entity the decode gives opens at a
+  # `B-` tag and is followed by `O`, a `B-` tag or the sentence's end
+  # (`EntityTrainer.extract_entities_from_bio/1` raises on any other `I-`), so
+  # how it was delimited says nothing about how far to trust its extent.
   defp extract_model_entities(text, tokens, model) do
     tagged = tokens |> Enum.map(& &1.text) |> EntityTrainer.tag(model)
 
@@ -1003,33 +1088,9 @@ defmodule Brain.ML.EntityExtractor do
         start_pos: start_pos,
         end_pos: end_pos,
         confidence: entity.confidence,
-        source: :entity_model,
-        extent_cue: bio_extent_cue(tagged, entity)
+        source: :entity_model
       }
     end)
-  end
-
-  # `{opened, followed_by}`: `:begin` when the decode opened the entity at a
-  # `B-` tag and `:inside` when at an `I-` tag (one that continues no entity of
-  # its type); `:inside` when the token after the entity is tagged `I-` (the
-  # decode ran on into another type) and `:outside` when it is tagged
-  # otherwise or the sentence ends.
-  defp bio_extent_cue(tagged, %{start_index: start_index, end_index: end_index}) do
-    opened =
-      case Enum.at(tagged, start_index) do
-        {_token, "B-" <> _type, _posterior} -> :begin
-        {_token, "I-" <> _type, _posterior} -> :inside
-      end
-
-    followed_by =
-      case Enum.at(tagged, end_index + 1) do
-        {_token, "I-" <> _type, _posterior} -> :inside
-        {_token, "B-" <> _type, _posterior} -> :outside
-        {_token, "O", _posterior} -> :outside
-        nil -> :outside
-      end
-
-    {opened, followed_by}
   end
 
   # Takes the sentence's tags rather than tagging it a second time: this and
