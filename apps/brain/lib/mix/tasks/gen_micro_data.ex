@@ -113,7 +113,7 @@ defmodule Mix.Tasks.GenMicroData do
     end
 
     fold_models =
-      if Enum.any?(names, &(&1 in @feature_vector_classifiers)) and not opts[:stats] do
+      if trains_language_artifacts?(names, opts) do
         train_language_artifacts!(gold_standard)
       end
 
@@ -133,6 +133,15 @@ defmodule Mix.Tasks.GenMicroData do
         show_stats(name, data)
       end
     end)
+  end
+
+  @doc false
+  # Whether a run fits the lexical evidence model and the speech-act table: it
+  # generates a feature-vector classifier's data and writes it. `--stats` is a
+  # boolean switch (`strict: [stats: :boolean]`), absent when not given, and
+  # then the run writes.
+  def trains_language_artifacts?(names, opts) when is_list(names) and is_list(opts) do
+    Enum.any?(names, &(&1 in @feature_vector_classifiers)) and not Keyword.get(opts, :stats, false)
   end
 
   # The lexical evidence model and the speech-act table, fitted on the training
