@@ -10,7 +10,11 @@ defmodule Brain.MetricsCase do
   telemetry window with no gauges held.
 
   The missed-event counters live outside the aggregator, for the whole node,
-  so a test compares them before and after, never against zero.
+  so a test compares them before and after, never against zero. So does when
+  a miss was last logged: a miss from a sender for a reason is logged as it
+  happens only when none from that sender for that reason was logged in the
+  last ten seconds, so a test that looks for the line logged as it happens
+  misses from a sender, for a reason, no other test does.
   """
 
   use ExUnit.CaseTemplate
@@ -37,13 +41,26 @@ defmodule Brain.MetricsCase do
   end
 
   @doc """
-  Waits until the aggregator has handled everything sent to it before: it
-  handles its messages in order, so once it answers, it has.
+  Waits until the aggregator has handled everything sent to it before and
+  written it to Atlas: it handles its messages in order, so once it answers
+  `Aggregator.flush/0`, it has.
   """
   def counted do
+    :ok = Aggregator.flush()
+  end
+
+  @doc """
+  Has the aggregator log, now, the misses it has not logged yet, as it does
+  every ten seconds, and waits until it has.
+  """
+  def report_missed do
+    send(Process.whereis(Aggregator), :report_missed)
     _state = :sys.get_state(Aggregator)
     :ok
   end
+
+  @doc "How many lines of `log` contain `pattern`."
+  def lines_with(log, pattern), do: log |> String.split("\n") |> Enum.count(&String.contains?(&1, pattern))
 
   @doc """
   Stops the aggregator and waits for its supervisor to start it again; its
