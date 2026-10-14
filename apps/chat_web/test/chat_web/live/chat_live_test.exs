@@ -11,6 +11,19 @@ defmodule ChatWeb.ChatLiveTest do
   @user_bubble "div.flex-col.items-end"
   @assistant_bubble "div.flex-col.items-start > div.bg-surface"
 
+  # The time zone the message form's BrowserTimeZone hook sends with a
+  # message (assets/js/app.js), as a browser in UTC sends it: no changes of
+  # offset from 2000 to 2100.
+  @browser_zone Jason.encode!(%{
+                  "name" => "Etc/UTC",
+                  "at" => DateTime.to_unix(~U[2026-10-14 12:00:00Z], :millisecond),
+                  "offset" => 0,
+                  "from" => DateTime.to_unix(~U[2000-01-01 00:00:00Z], :millisecond),
+                  "until" => DateTime.to_unix(~U[2100-01-01 00:00:00Z], :millisecond),
+                  "offset_at_from" => 0,
+                  "transitions" => []
+                })
+
   setup do
     start_brain_services()
     :ok
@@ -63,7 +76,7 @@ defmodule ChatWeb.ChatLiveTest do
 
       # Send a message
       view
-      |> form("#message-form", %{input: "Hello, Echo!"})
+      |> form("#message-form", %{time_zone: @browser_zone, input: "Hello, Echo!"})
       |> render_submit()
 
       # The conversation is created and named in the header, the message is
@@ -82,7 +95,7 @@ defmodule ChatWeb.ChatLiveTest do
 
       # Send a message to create conversation
       view
-      |> form("#message-form", %{input: "Test message"})
+      |> form("#message-form", %{time_zone: @browser_zone, input: "Test message"})
       |> render_submit()
 
       html = render(view)
@@ -95,7 +108,7 @@ defmodule ChatWeb.ChatLiveTest do
 
       # Create conversation
       view
-      |> form("#message-form", %{input: "Test message"})
+      |> form("#message-form", %{time_zone: @browser_zone, input: "Test message"})
       |> render_submit()
 
       # Ending a conversation writes shared state, so the trigger opens the
@@ -121,7 +134,7 @@ defmodule ChatWeb.ChatLiveTest do
 
       # Send message
       view
-      |> form("#message-form", %{input: "Hello there!"})
+      |> form("#message-form", %{time_zone: @browser_zone, input: "Hello there!"})
       |> render_submit()
 
       # Should show user message
@@ -137,11 +150,11 @@ defmodule ChatWeb.ChatLiveTest do
 
       # Send message
       view
-      |> form("#message-form", %{input: "Test input"})
+      |> form("#message-form", %{time_zone: @browser_zone, input: "Test input"})
       |> render_submit()
 
       # Input should be cleared
-      assert has_element?(view, "input[value='']")
+      assert has_element?(view, "#message-input[value='']")
     end
   end
 
@@ -164,10 +177,10 @@ defmodule ChatWeb.ChatLiveTest do
 
       assert has_element?(view, "#message-form button[type='submit'][disabled]")
 
-      view |> form("#message-form", %{input: "   "}) |> render_change()
+      view |> form("#message-form", %{time_zone: @browser_zone, input: "   "}) |> render_change()
       assert has_element?(view, "#message-form button[type='submit'][disabled]")
 
-      view |> form("#message-form", %{input: "hi"}) |> render_change()
+      view |> form("#message-form", %{time_zone: @browser_zone, input: "hi"}) |> render_change()
       refute has_element?(view, "#message-form button[type='submit'][disabled]")
     end
 
@@ -195,7 +208,7 @@ defmodule ChatWeb.ChatLiveTest do
       render_submit(view, "send_message", %{"input" => "  "})
       assert has_element?(view, @error_caption, @blank_message_error)
 
-      view |> form("#message-form", %{input: "hello"}) |> render_change()
+      view |> form("#message-form", %{time_zone: @browser_zone, input: "hello"}) |> render_change()
       refute has_element?(view, @error_caption)
       refute has_element?(view, "#message-input[aria-invalid]")
     end
@@ -209,7 +222,7 @@ defmodule ChatWeb.ChatLiveTest do
       {:ok, view, _html} = live(conn, "/chat")
 
       view
-      |> form("#message-form", %{input: "Hello there!"})
+      |> form("#message-form", %{time_zone: @browser_zone, input: "Hello there!"})
       |> render_submit()
 
       "/chat/" <> conversation_id = assert_patch(view)
@@ -234,7 +247,7 @@ defmodule ChatWeb.ChatLiveTest do
       {:ok, view, _html} = live(conn, "/chat")
 
       view
-      |> form("#message-form", %{input: "Hello there!"})
+      |> form("#message-form", %{time_zone: @browser_zone, input: "Hello there!"})
       |> render_submit()
 
       "/chat/" <> conversation_id = assert_patch(view)
@@ -249,6 +262,100 @@ defmodule ChatWeb.ChatLiveTest do
       html = render(view)
       assert html =~ "Evaluating the message failed: {:timeout, 5000}"
       assert Process.alive?(view.pid)
+    end
+  end
+
+  describe "the browser's time zone" do
+    test "the message form fills it with the BrowserTimeZone hook, for the span of years configured", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/chat")
+
+      years = Application.fetch_env!(:chat_web, :browser_zone_years)
+      assert has_element?(view, ~s(#message-form[phx-hook="BrowserTimeZone"][data-zone-years="#{years}"]))
+      assert has_element?(view, ~s(#message-form input[type="hidden"][name="time_zone"]))
+    end
+
+    test "a message sent without it fails, naming what is missing, and is not evaluated", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/chat")
+      Process.flag(:trap_exit, true)
+
+      assert {{%ArgumentError{message: message}, _stacktrace}, _call} =
+               catch_exit(render_submit(view, "send_message", %{"input" => "set an alarm for 7 am", "time_zone" => ""}))
+
+      assert message =~ "carries the browser's time zone as time_zone"
+    end
+
+    test "a message's time is shown in the browser's zone, by the LocalTime hook", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/chat")
+
+      view
+      |> form("#message-form", %{time_zone: @browser_zone, input: "Hello there!"})
+      |> render_submit()
+
+      assert has_element?(view, ~s(#{@user_bubble} time[phx-hook="LocalTime"][data-format="time"][datetime]))
+    end
+  end
+
+  describe "alarms, reminders, timers and calendar items that fire" do
+    defp user_id(view), do: :sys.get_state(view.pid).socket.assigns.current_user_id
+
+    defp fired(changes) do
+      Map.merge(
+        %{
+          id: Ecto.UUID.generate(),
+          world_id: "test_chat_live_notifications",
+          kind: :alarm,
+          said: %{time: "7 am", date: "tomorrow"},
+          due_at: ~U[2026-10-13 12:00:00.000000Z],
+          fired_at: ~U[2026-10-13 12:00:00.000000Z],
+          late: false,
+          status: "ringing"
+        },
+        changes
+      )
+    end
+
+    test "one told to the user's topic shows on the chat page, with its due time in the browser's zone, and can be dismissed",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/chat")
+      refute has_element?(view, "#scheduler-notifications")
+
+      alarm = fired(%{})
+      Phoenix.PubSub.broadcast(Brain.PubSub, Atlas.WebUsers.topic(user_id(view)), {:scheduler_fired, alarm})
+
+      notification = "#notification-#{alarm.id}"
+      assert has_element?(view, notification, "Alarm")
+      assert has_element?(view, notification, "Ringing")
+      assert has_element?(view, notification, "tomorrow · 7 am")
+      assert has_element?(view, ~s(#{notification} time[phx-hook="LocalTime"][datetime="2026-10-13T12:00:00.000Z"]))
+      refute has_element?(view, notification, "Fired late")
+
+      view |> element("#{notification} button[phx-click='dismiss_notification']") |> render_click()
+      refute has_element?(view, notification)
+      assert Process.alive?(view.pid)
+    end
+
+    test "one that fired late says so, with when it fired", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/chat")
+
+      reminder =
+        fired(%{kind: :reminder, said: %{text: "call home", time: "6 pm", date: ""}, status: nil, late: true, fired_at: ~U[2026-10-13 19:00:00.000000Z]})
+
+      Phoenix.PubSub.broadcast(Brain.PubSub, Atlas.WebUsers.topic(user_id(view)), {:scheduler_fired, reminder})
+
+      notification = "#notification-#{reminder.id}"
+      assert has_element?(view, notification, "Reminder")
+      assert has_element?(view, notification, "call home · 6 pm")
+      assert has_element?(view, notification, "Fired late")
+      assert has_element?(view, ~s(#{notification} time[datetime="2026-10-13T19:00:00.000Z"]))
+    end
+
+    test "one told to another user's topic does not show", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/chat")
+      other = Atlas.WebUsers.create!("test_chat_live_notifications")
+
+      Phoenix.PubSub.broadcast(Brain.PubSub, Atlas.WebUsers.topic(other.id), {:scheduler_fired, fired(%{})})
+
+      refute has_element?(view, "#scheduler-notifications")
     end
   end
 end
