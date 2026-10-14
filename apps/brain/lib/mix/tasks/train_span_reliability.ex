@@ -14,18 +14,21 @@ defmodule Mix.Tasks.TrainSpanReliability do
   its out-of-fold model (`Brain.ML.EntityTrainer.fold_models/2`, with the
   trained model's smoothing), so the model is measured on sentences it was not
   trained on, as it meets them at runtime. The prior strength and the decision
-  thresholds are chosen by cross-validation on the same rows, and so are the
-  thresholds a span left unresolved is decided again with once the turn's
-  intent is known (`Brain.ML.SpanReliability.select_redecision/3`), on the
-  training rows joined to an intent training row. The held-out splits are
-  never read.
+  thresholds are chosen by cross-validation on the same rows, and so are what
+  a span left unresolved is decided again with once the turn's intent is
+  known (`Brain.ML.SpanReliability.select_redecision/3`) -- the extent
+  reliabilities, their prior strength and thresholds, and the thresholds the
+  type at the decided extent is decided under -- on the training rows joined
+  to an intent training row. The held-out splits are never read.
 
   Printed: the cross-validated F1 per prior strength and the thresholds
   chosen, every measured `{source, type}` pair with its counts and
   reliability, every pair the gold standard cannot measure, with how many
-  training readings it had, and the cross-validated F1 of deciding unresolved
-  spans again with no span, with the first decision's thresholds and with the
-  redecision thresholds chosen.
+  training readings it had, the cross-validated F1 of deciding unresolved
+  spans again -- with no span, with the whole span's hypotheses under the
+  first decision's thresholds and under thresholds of their own, and with
+  the extent decided first, per extent prior strength -- and every extent
+  pair with its counts and reliability.
 
   ## Why the application is not started
 
@@ -155,16 +158,51 @@ defmodule Mix.Tasks.TrainSpanReliability do
   end
 
   defp print_redecision(%SpanReliability{redecision: redecision}) do
+    cv = redecision.cross_validation
+    extent = redecision.extent
+
     Mix.shell().info("Cross-validated span F1 of deciding unresolved spans again with the intent's evidence:")
 
-    for {name, r} <- [none: redecision.cross_validation.none, first_thresholds: redecision.cross_validation.first_thresholds, chosen: redecision.cross_validation.chosen] do
+    for {name, r} <- [none: cv.none, first_thresholds: cv.first_thresholds, without_extent: cv.without_extent, chosen: cv.chosen] do
       Mix.shell().info(
         "  #{pad(name, 17)} F1 #{pct(r.f1)}  min_score #{fmt(r.min_score)}  min_margin #{fmt(r.min_margin)}  " <>
           "decided #{r.decided}, correct #{r.correct}, gold spans #{r.gold}"
       )
     end
 
-    Mix.shell().info("Chosen: min_score #{fmt(redecision.min_score)}, min_margin #{fmt(redecision.min_margin)}")
+    Mix.shell().info("\nBy extent prior strength (the extent decided first):")
+
+    cv.by_extent_prior_strength
+    |> Enum.sort_by(&elem(&1, 0))
+    |> Enum.each(fn {strength, r} ->
+      Mix.shell().info(
+        "  #{pad(strength, 6)} F1 #{pct(r.f1)}  extent min_score #{fmt(r.extent_min_score)}  extent min_margin " <>
+          "#{fmt(r.extent_min_margin)}  min_score #{fmt(r.min_score)}  min_margin #{fmt(r.min_margin)}  " <>
+          "decided #{r.decided}, correct #{r.correct}, spans weighed #{r.extent_points}"
+      )
+    end)
+
+    Mix.shell().info(
+      "Chosen: extent prior strength #{extent.prior_strength}, extent min_score #{fmt(extent.min_score)}, " <>
+        "extent min_margin #{fmt(extent.min_margin)}, min_score #{fmt(redecision.min_score)}, " <>
+        "min_margin #{fmt(redecision.min_margin)}"
+    )
+
+    Mix.shell().info(
+      "\nExtents: #{extent.overall.agree} of #{extent.overall.n} readings had a gold span's extent " <>
+        "(#{pct(extent.overall.rate)}), on #{extent.fitted_rows} rows"
+    )
+
+    Mix.shell().info("Extent pairs (n, gold extent, boundary, no entity -> reliability):")
+
+    extent.pairs
+    |> Enum.sort_by(fn {{source, cue, type}, _} -> {Atom.to_string(source), inspect(cue), type} end)
+    |> Enum.each(fn {{source, cue, type}, p} ->
+      Mix.shell().info(
+        "  #{pad(source, 16)} #{pad(inspect(cue), 20)} #{pad(type, 20)} n #{pad(p.n, 5)} extent #{pad(p.agree, 5)} " <>
+          "boundary #{pad(p.boundary, 5)} none #{pad(p.no_entity, 5)} -> #{Float.round(p.reliability, 3)}"
+      )
+    end)
   end
 
   defp start_extraction! do
