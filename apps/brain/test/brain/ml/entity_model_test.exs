@@ -3,7 +3,8 @@ defmodule Brain.ML.EntityModelTest do
   Each world holds its own copy of the entity model. A world with no copy
   raises naming the world and the command that seeds it; seeding copies the
   trained model byte for byte; an ephemeral world is seeded in memory and
-  forgotten when dropped; and a model file of an earlier shape is refused.
+  forgotten when dropped; and a model file of an earlier shape (no
+  `:feature_totals`, or no `:transition_smoothing`) is refused.
 
   Every test runs in a world of its own that nothing else uses, and removes
   that world's directory and loaded model when it exits.
@@ -107,6 +108,30 @@ defmodule Brain.ML.EntityModelTest do
 
       assert message =~ file
       assert message =~ ":feature_totals"
+    end
+
+    test "raises for a model trained without :transition_smoothing", %{dir: dir} do
+      # Every key the current trainer writes but :transition_smoothing: a model
+      # whose transitions were never smoothed, so a BIO transition its training
+      # rows did not show has no probability.
+      earlier = %{
+        tag_vocabulary: %{"O" => 0, "B-location" => 1},
+        feature_weights: %{},
+        feature_totals: %{},
+        smoothing: 1.0,
+        transition_weights: %{},
+        tag_priors: %{}
+      }
+
+      file = Path.join(dir, "entity_model.term")
+      File.write!(file, :erlang.term_to_binary(earlier))
+
+      error = assert_raise RuntimeError, fn -> EntityModel.read!(file, :trained) end
+      message = Exception.message(error)
+
+      assert message =~ file
+      assert message =~ ":transition_smoothing"
+      assert message =~ "Retrain"
     end
   end
 end
