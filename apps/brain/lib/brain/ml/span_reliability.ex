@@ -119,7 +119,25 @@ defmodule Brain.ML.SpanReliability do
   extent with a lead, and the better of the two is kept. Starting from one
   alone misses pairs: spans sharing one extent score, mostly wrong when every
   type hypothesis is decided, are left out before a type threshold that keeps
-  only the right ones is weighed. The cross-validation report also gives the F1 of deciding
+  only the right ones is weighed.
+
+  How finely the extent thresholds are chosen is chosen the same way, at the
+  chosen extent prior strength. A span's extent is decided in the group of
+  the reading leading it, its `{source, type}` (the most reliable reading at
+  the leading extent). The candidates are one pair of thresholds for every
+  span (`:global`); thresholds of its own for every source with at least `n`
+  spans (`{:source, n}`); and thresholds of its own for every pair with at
+  least `n` spans, then every source with at least `n` of the spans left
+  (`{:pair, n}`). A span of no group of its own is decided under the shared
+  thresholds, chosen on the spans of no group of their own; when no span was
+  one, those decide nothing. The candidate counts `n` are the group sizes of
+  each fold's training spans, the spans thresholds are fitted on. Each
+  candidate's thresholds are fitted on four folds' spans and
+  applied to the fifth's, and the candidate with the best F1 over the five
+  is kept -- on equal F1 the coarser, and of one level the one backing off
+  more -- so thresholds fitted to a few spans win only where they decide
+  spans they were not fitted on better. Its thresholds are then fitted on
+  every span. The cross-validation report also gives the F1 of deciding
   nothing again, of weighing the whole span's hypotheses with the first
   decision's thresholds, and with thresholds of their own and no extent
   decision (`without_extent`). Measured 2026-10-13 on the 1,146 NER training
@@ -193,7 +211,10 @@ defmodule Brain.ML.SpanReliability do
 
   @typedoc """
   Extent reliabilities (`fit_extent/2`), with the thresholds an extent is
-  decided under once `select_redecision/3` has chosen them.
+  decided under once `select_redecision/3` has chosen them: `min_score` and
+  `min_margin` shared by every span of no group of its own, and `groups`, the
+  thresholds of each `{source, type}` pair or source that has its own, at the
+  chosen `granularity`.
   """
   @type extent :: %{
           prior_strength: number(),
@@ -202,7 +223,9 @@ defmodule Brain.ML.SpanReliability do
           overall: %{n: non_neg_integer(), agree: non_neg_integer(), rate: float()},
           fitted_rows: non_neg_integer(),
           min_score: float() | :infinity,
-          min_margin: float() | :infinity
+          min_margin: float() | :infinity,
+          granularity: :global | {:source | :pair, pos_integer()},
+          groups: %{(pair() | atom()) => %{min_score: float() | :infinity, min_margin: float() | :infinity}}
         }
 
   # Pseudo-counts of readings, from barely more than the counts to a prior
@@ -408,9 +431,10 @@ defmodule Brain.ML.SpanReliability do
 
     # Per fold: its training examples, and every span of its held-out examples
     # the first decision left for insufficient evidence, with the evidence
-    # fitted on the other folds. The first decision's counts are kept apart.
-    {first, fold_spans} =
-      Enum.reduce(0..(@folds - 1), {%{tp: 0, fp: 0}, []}, fn k, {first, fold_spans} ->
+    # fitted on the other folds. The first decision's counts and the gold
+    # spans are kept per fold.
+    {by_fold, fold_spans} =
+      Enum.reduce(0..(@folds - 1), {%{}, []}, fn k, {by_fold, fold_spans} ->
         {held, training} = split_fold(examples, folds, k)
 
         if training == [] do
@@ -421,7 +445,7 @@ defmodule Brain.ML.SpanReliability do
         evidence = evidence_for.(training)
 
         {first, spans} =
-          Enum.reduce(held, {first, []}, fn example, {first, spans} ->
+          Enum.reduce(held, {%{tp: 0, fp: 0}, []}, fn example, {first, spans} ->
             {decided, unresolved} =
               example.readings
               |> decide(fold_model, text: "", canonical: canonical, hierarchy: hierarchy)
@@ -432,16 +456,17 @@ defmodule Brain.ML.SpanReliability do
             open =
               for %{unresolved_reason: :insufficient_evidence, readings: summaries} <- unresolved do
                 labels = summaries |> Enum.filter(& &1.measured) |> Enum.map(& &1.canonical) |> Enum.uniq()
-                %{summaries: summaries, evidence: evidence.(example, labels), gold: example.gold}
+                %{summaries: summaries, evidence: evidence.(example, labels), gold: example.gold, fold: k}
               end
 
             {%{tp: first.tp + right, fp: first.fp + length(decided) - right}, open ++ spans}
           end)
 
-        {first, [{training, spans} | fold_spans]}
+        gold = held |> Enum.map(&length(&1.gold)) |> Enum.sum()
+        {Map.put(by_fold, k, Map.put(first, :gold, gold)), [{training, spans} | fold_spans]}
       end)
 
-    offsets = {first.tp, first.fp}
+    offsets = by_fold |> Map.values() |> then(&{sum_of(&1, :tp), sum_of(&1, :fp)})
 
     # Every hypothesis of the span weighed with the evidence, whatever its
     # extent: what deciding again was before extents were decided first.
@@ -452,7 +477,7 @@ defmodule Brain.ML.SpanReliability do
     with_first = redecision_result(points, gold_total, offsets, model.min_score, model.min_margin)
     none = redecision_result([], gold_total, offsets, :infinity, :infinity)
 
-    by_strength =
+    points_by_strength =
       Map.new(@prior_strengths, fn strength ->
         extent_points =
           Enum.flat_map(fold_spans, fn {training, spans} ->
@@ -460,21 +485,44 @@ defmodule Brain.ML.SpanReliability do
             Enum.flat_map(spans, &extent_point(&1, extent, hierarchy))
           end)
 
+        {strength, extent_points}
+      end)
+
+    by_strength =
+      Map.new(points_by_strength, fn {strength, extent_points} ->
         {strength, extent_points |> joint_thresholds(gold_total, offsets) |> Map.put(:extent_points, length(extent_points))}
       end)
 
     {strength, chosen} = Enum.max_by(by_strength, fn {strength, result} -> {result.f1, -strength} end)
 
+    # How finely the extent thresholds are chosen, at that strength: by the F1
+    # of each granularity's thresholds fitted on four folds' spans and applied
+    # to the fifth's.
+    extent_points = Map.fetch!(points_by_strength, strength)
+
+    by_granularity =
+      extent_points
+      |> granularities(Map.keys(by_fold))
+      |> Map.new(&{&1, nested_granularity_result(extent_points, &1, by_fold)})
+
+    {granularity, _result} = Enum.max_by(by_granularity, fn {granularity, result} -> {result.f1, coarseness(granularity)} end)
+    fitted = fit_granularity(extent_points, gold_total, offsets, granularity)
+
     extent =
       examples
       |> fit_extent(prior_strength: strength)
-      |> Map.merge(%{min_score: chosen.extent_min_score, min_margin: chosen.extent_min_margin})
+      |> Map.merge(%{
+        min_score: fitted.extent_min_score,
+        min_margin: fitted.extent_min_margin,
+        granularity: granularity,
+        groups: fitted.groups
+      })
 
     %{
       model
       | redecision: %{
-          min_score: chosen.min_score,
-          min_margin: chosen.min_margin,
+          min_score: fitted.min_score,
+          min_margin: fitted.min_margin,
           extent: extent,
           cross_validation: %{
             none: none,
@@ -482,6 +530,7 @@ defmodule Brain.ML.SpanReliability do
             without_extent: without_extent,
             chosen: Map.drop(chosen, [:extent_points]),
             by_extent_prior_strength: by_strength,
+            granularity: %{chosen: granularity, by_granularity: by_granularity, fitted: Map.drop(fitted, [:groups])},
             points: length(points),
             extent_points: chosen.extent_points
           }
@@ -491,6 +540,182 @@ defmodule Brain.ML.SpanReliability do
 
   def select_redecision(%__MODULE__{}, [], _opts),
     do: raise(ArgumentError, "SpanReliability: no examples to choose the redecision thresholds from")
+
+  defp sum_of(maps, key), do: maps |> Enum.map(&Map.fetch!(&1, key)) |> Enum.sum()
+
+  # -- the granularity of the extent decision --------------------------------
+  #
+  # An extent point's group is the {source, type} of the reading that leads
+  # its extent (`extent_group/3`). A granularity is `:global`, one pair of
+  # extent thresholds for every span; `{:source, n}`, thresholds of its own
+  # for every source with at least `n` spans; or `{:pair, n}`, for every pair
+  # with at least `n` spans, then for every source with at least `n` of the
+  # spans left, each other span backing off to the shared thresholds. The
+  # candidate counts are the group sizes the spans thresholds are fitted on
+  # have: those of every fold's training spans.
+
+  defp granularities(points, folds) do
+    sizes = fn key ->
+      folds
+      |> Enum.flat_map(fn k -> points |> Enum.reject(&(&1.fold == k)) |> Enum.frequencies_by(key) |> Map.values() end)
+      |> Enum.uniq()
+      |> Enum.sort()
+    end
+
+    [:global] ++ Enum.map(sizes.(&elem(&1.pair, 0)), &{:source, &1}) ++ Enum.map(sizes.(& &1.pair), &{:pair, &1})
+  end
+
+  # Larger is coarser: on equal F1 the coarser granularity is kept, and of one
+  # level the one that backs off more.
+  defp coarseness(:global), do: {2, 0}
+  defp coarseness({:source, n}), do: {1, n}
+  defp coarseness({:pair, n}), do: {0, n}
+
+  # The F1, decided and correct counts of `granularity` over every fold: its
+  # thresholds fitted on the other folds' points and first decisions, applied
+  # to the fold's points beside the fold's first decision.
+  defp nested_granularity_result(points, granularity, by_fold) do
+    gold_total = by_fold |> Map.values() |> sum_of(:gold)
+
+    {tp, fp} =
+      Enum.reduce(by_fold, {0, 0}, fn {k, first}, {tp, fp} ->
+        {held, training} = Enum.split_with(points, &(&1.fold == k))
+        others = by_fold |> Map.delete(k) |> Map.values()
+        fitted = fit_granularity(training, sum_of(others, :gold), {sum_of(others, :tp), sum_of(others, :fp)}, granularity)
+        passed = Enum.filter(held, &passes_granularity?(&1, fitted))
+        right = Enum.count(passed, & &1.correct)
+        {tp + first.tp + right, fp + first.fp + length(passed) - right}
+      end)
+
+    %{f1: 2 * tp / max(2 * tp + fp + (gold_total - tp), 1), decided: tp + fp, correct: tp, gold: gold_total}
+  end
+
+  # The type thresholds, the shared extent thresholds and the groups' own,
+  # with the F1 over `points`. The global granularity is `joint_thresholds/3`.
+  defp fit_granularity(points, gold_total, offsets, :global),
+    do: points |> joint_thresholds(gold_total, offsets) |> Map.put(:groups, %{})
+
+  defp fit_granularity(points, gold_total, offsets, {level, n}) do
+    pairs = if level == :pair, do: points |> Enum.frequencies_by(& &1.pair) |> keys_with_at_least(n), else: MapSet.new()
+
+    sources =
+      points
+      |> Enum.reject(&MapSet.member?(pairs, &1.pair))
+      |> Enum.frequencies_by(&elem(&1.pair, 0))
+      |> keys_with_at_least(n)
+
+    groups = Map.new(Enum.to_list(pairs) ++ Enum.to_list(sources), &{&1, nil})
+    result = grouped_thresholds(points, &group_of(&1.pair, groups), gold_total, offsets)
+
+    # A span of no group of its own decides nothing when no fitted span was
+    # one: there is nothing to choose its thresholds from.
+    shared = Map.get(result.extent, :shared, %{min_score: :infinity, min_margin: :infinity})
+
+    Map.merge(Map.take(result, [:f1, :decided, :correct, :gold]), %{
+      min_score: result.type.min_score,
+      min_margin: result.type.min_margin,
+      extent_min_score: shared.min_score,
+      extent_min_margin: shared.min_margin,
+      groups: Map.delete(result.extent, :shared)
+    })
+  end
+
+  defp keys_with_at_least(counts, n), do: for({key, count} <- counts, count >= n, into: MapSet.new(), do: key)
+
+  # The group a pair's extent is decided in: the pair's own, its source's, or
+  # the shared one.
+  defp group_of({source, _type} = pair, groups) do
+    cond do
+      Map.has_key?(groups, pair) -> pair
+      Map.has_key?(groups, source) -> source
+      true -> :shared
+    end
+  end
+
+  defp passes_granularity?(point, fitted) do
+    extent = group_thresholds(fitted.groups, point.pair, %{min_score: fitted.extent_min_score, min_margin: fitted.extent_min_margin})
+
+    score_ok?(point.extent_score, extent.min_score) and margin_ok?(point.extent_margin, extent.min_margin) and
+      score_ok?(point.score, fitted.min_score) and margin_ok?(point.margin, fitted.min_margin)
+  end
+
+  defp group_thresholds(groups, pair, shared) do
+    case group_of(pair, groups) do
+      :shared -> shared
+      group -> Map.fetch!(groups, group)
+    end
+  end
+
+  # The type thresholds and each group's extent thresholds, chosen in turn --
+  # every group's extent thresholds with the type thresholds and the other
+  # groups' fixed, then the type thresholds with every group's fixed -- until
+  # the F1 stops rising, from the same two starts as `joint_thresholds/3`.
+  defp grouped_thresholds(points, group_of, gold_total, offsets) do
+    grouped = Enum.group_by(points, group_of)
+    keys = grouped |> Map.keys() |> Enum.sort_by(&inspect/1)
+    nothing = %{min_score: :infinity, min_margin: :infinity}
+
+    from_types =
+      grouped_ascend(grouped, keys, gold_total, offsets, %{type: %{min_score: -1.0e300, min_margin: 0.0}, extent: Map.new(keys, &{&1, nothing})}, nil)
+
+    every_extent = Map.new(grouped, fn {key, group} -> {key, %{min_score: group |> Enum.map(& &1.extent_score) |> Enum.min(), min_margin: 0.0}} end)
+    start = type_step(grouped, gold_total, offsets, %{type: nil, extent: every_extent})
+    from_extents = grouped_ascend(grouped, keys, gold_total, offsets, start, grouped_result(grouped, gold_total, offsets, start))
+
+    Enum.max_by([from_types, from_extents], &{&1.f1, -&1.decided})
+  end
+
+  defp grouped_ascend(grouped, keys, gold_total, offsets, state, previous) do
+    state =
+      Enum.reduce(keys, state, fn key, state ->
+        others = grouped |> Map.delete(key) |> Enum.flat_map(fn {other, group} -> Enum.filter(group, &grouped_passes?(&1, other, state)) end)
+        right = Enum.count(others, & &1.correct)
+        {tp0, fp0} = offsets
+
+        thresholds =
+          grouped
+          |> Map.fetch!(key)
+          |> Enum.filter(&(score_ok?(&1.score, state.type.min_score) and margin_ok?(&1.margin, state.type.min_margin)))
+          |> Enum.map(&%{score: &1.extent_score, margin: &1.extent_margin, correct: &1.correct})
+          |> best_thresholds(gold_total, {tp0 + right, fp0 + length(others) - right})
+
+        put_in(state, [:extent, key], Map.take(thresholds, [:min_score, :min_margin]))
+      end)
+
+    state = type_step(grouped, gold_total, offsets, state)
+    result = grouped_result(grouped, gold_total, offsets, state)
+
+    if previous != nil and result.f1 <= previous.f1,
+      do: previous,
+      else: grouped_ascend(grouped, keys, gold_total, offsets, state, result)
+  end
+
+  defp type_step(grouped, gold_total, offsets, state) do
+    type =
+      grouped
+      |> Enum.flat_map(fn {key, group} ->
+        extent = Map.fetch!(state.extent, key)
+        Enum.filter(group, &(score_ok?(&1.extent_score, extent.min_score) and margin_ok?(&1.extent_margin, extent.min_margin)))
+      end)
+      |> best_thresholds(gold_total, offsets)
+
+    %{state | type: Map.take(type, [:min_score, :min_margin])}
+  end
+
+  defp grouped_passes?(point, key, state) do
+    extent = Map.fetch!(state.extent, key)
+
+    score_ok?(point.extent_score, extent.min_score) and margin_ok?(point.extent_margin, extent.min_margin) and
+      score_ok?(point.score, state.type.min_score) and margin_ok?(point.margin, state.type.min_margin)
+  end
+
+  defp grouped_result(grouped, gold_total, {tp0, fp0}, state) do
+    passed = Enum.flat_map(grouped, fn {key, group} -> Enum.filter(group, &grouped_passes?(&1, key, state)) end)
+    tp = tp0 + Enum.count(passed, & &1.correct)
+    fp = fp0 + length(passed) - Enum.count(passed, & &1.correct)
+
+    Map.merge(state, %{f1: 2 * tp / max(2 * tp + fp + (gold_total - tp), 1), decided: tp + fp, correct: tp, gold: gold_total})
+  end
 
   # The F1, decided and correct counts of deciding the points at the given
   # thresholds, beside the first decision's counts.
@@ -524,12 +749,29 @@ defmodule Brain.ML.SpanReliability do
   # A span's point when its extent is decided first: the leading extent's
   # score and margin beside the point of the hypotheses at that extent.
   defp extent_point(span, extent, hierarchy) do
-    with {%Candidate{label: {start_pos, end_pos}} = best, margin} <- lead(extent_lattice(span.summaries, extent)),
+    with {%Candidate{label: {start_pos, end_pos} = label} = best, margin} <- lead(extent_lattice(span.summaries, extent)),
          [point] <- span.summaries |> at_extent(start_pos, end_pos) |> lead_point(span, hierarchy) do
-      [Map.merge(point, %{extent_score: best.score, extent_margin: margin})]
+      [Map.merge(point, %{extent_score: best.score, extent_margin: margin, pair: extent_group(span.summaries, extent, label), fold: span.fold})]
     else
       _ -> []
     end
+  end
+
+  # The {source, type} of the reading that leads an extent: of the readings at
+  # it whose extent pair is measured, the most reliable one (ties to the
+  # first source and type by name).
+  defp extent_group(summaries, extent, {start_pos, end_pos}) do
+    summaries
+    |> at_extent(start_pos, end_pos)
+    |> Enum.flat_map(fn summary ->
+      case Map.fetch(extent.pairs, extent_pair(summary)) do
+        {:ok, pair} -> [{pair.reliability, extent_pair(summary)}]
+        :error -> []
+      end
+    end)
+    |> Enum.sort_by(fn {reliability, {source, type}} -> {-reliability, Atom.to_string(source), type} end)
+    |> hd()
+    |> elem(1)
   end
 
   defp lead(%Lattice{best: nil}), do: nil
@@ -689,7 +931,20 @@ defmodule Brain.ML.SpanReliability do
 
     extents = extent_lattice(summaries, extent)
 
-    case judge(extents, extent.min_score, extent.min_margin) do
+    # Judged under the thresholds of the group the leading extent's reading is
+    # in; no leading extent is no extent decided.
+    judged =
+      case extents do
+        %Lattice{best: nil} ->
+          {:undecided, :no_measured_reading}
+
+        %Lattice{best: %Candidate{label: label}} ->
+          shared = %{min_score: extent.min_score, min_margin: extent.min_margin}
+          thresholds = group_thresholds(extent.groups, extent_group(summaries, extent, label), shared)
+          judge(extents, thresholds.min_score, thresholds.min_margin)
+      end
+
+    case judged do
       {:undecided, _reason} ->
         {:extent_undecided, extents}
 
@@ -1045,6 +1300,7 @@ defmodule Brain.ML.SpanReliability do
              (is_number(extent_score) or extent_score == :infinity) and (is_number(extent_margin) or extent_margin == :infinity) ->
         case Enum.reject(Map.keys(pairs), &match?({source, type} when is_atom(source) and is_binary(type), &1)) do
           [] ->
+            extent_groups!(redecision.extent)
             redecision
 
           keys ->
@@ -1058,6 +1314,26 @@ defmodule Brain.ML.SpanReliability do
               "SpanReliability: the model has no redecision thresholds and extent reliabilities with thresholds " <>
                 "(#{inspect(other, limit: 3)}); choose them with select_redecision/3 (`mix train_span_reliability`)"
     end
+  end
+
+  # The granularity the extent thresholds were chosen at and each group's own
+  # thresholds. A model written before the granularity was chosen has neither.
+  defp extent_groups!(%{granularity: granularity, groups: groups})
+       when (granularity == :global or (is_tuple(granularity) and elem(granularity, 0) in [:source, :pair])) and is_map(groups) do
+    for {key, thresholds} <- groups do
+      unless (is_atom(key) or match?({source, type} when is_atom(source) and is_binary(type), key)) and
+               match?(%{min_score: s, min_margin: m} when (is_number(s) or s == :infinity) and (is_number(m) or m == :infinity), thresholds) do
+        raise ArgumentError, "SpanReliability: extent group #{inspect(key)} has no thresholds: #{inspect(thresholds)}"
+      end
+    end
+
+    :ok
+  end
+
+  defp extent_groups!(extent) do
+    raise ArgumentError,
+          "SpanReliability: the model's extent thresholds name no granularity and groups " <>
+            "(#{inspect(Map.take(extent, [:granularity, :groups]))}); retrain it with `mix train_span_reliability --world <id>`"
   end
 
   # Readings whose extents overlap, chained: a reading joins the span when it
