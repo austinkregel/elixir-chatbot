@@ -417,6 +417,28 @@ defmodule Brain.Services.DispatcherTest do
       assert result == {:error, :missing_credentials}
     end
 
+    test "a check that runs emits its result and how long it took; one that cannot run emits nothing" do
+      test_pid = self()
+      handler = "dispatcher-test-health-check"
+
+      :ok =
+        :telemetry.attach(
+          handler,
+          [:chat_bot, :services, :health_check, :stop],
+          fn _event, measurements, metadata, _config -> send(test_pid, {:health_check, measurements, metadata}) end,
+          nil
+        )
+
+      on_exit(fn -> :telemetry.detach(handler) end)
+
+      assert :ok = Dispatcher.health_check(:system_stats, world: "default")
+      assert_received {:health_check, %{duration: duration_ms}, %{service: :system_stats, status: :ok}}
+      assert is_integer(duration_ms) and duration_ms >= 0
+
+      assert {:error, :missing_credentials} = Dispatcher.health_check(:weather, world: "default")
+      refute_received {:health_check, _measurements, %{service: :weather}}
+    end
+
     test "raises without a world" do
       assert_raise ArgumentError, ~r/Dispatcher.health_check needs :world/, fn ->
         Dispatcher.health_check(:weather, [])
