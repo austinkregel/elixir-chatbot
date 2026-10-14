@@ -297,8 +297,11 @@ defmodule Brain.ML.SpanReliabilityTest do
   describe "redecide/4" do
     setup do
       model = SpanReliability.fit(examples(), Keyword.put(@opts, :prior_strength, 1))
-      # Extent thresholds every span with one extent passes.
-      extent = examples() |> SpanReliability.fit_extent(prior_strength: 1) |> Map.merge(%{min_score: -10.0, min_margin: 0.0})
+      # Extent thresholds every span with one extent passes, shared by every span.
+      extent =
+        examples()
+        |> SpanReliability.fit_extent(prior_strength: 1)
+        |> Map.merge(%{min_score: -10.0, min_margin: 0.0, granularity: :global, groups: %{}})
       # Thresholds the readings of "Mike" alone (the model's artist, 23/45) do
       # not reach: logit(23/45) is about 0.044. The redecision thresholds are
       # the same here, so what decides a span again is the evidence.
@@ -384,6 +387,30 @@ defmodule Brain.ML.SpanReliabilityTest do
         assert_raise ArgumentError, ~r/extent reliabilities with thresholds/, fn ->
           SpanReliability.redecide(undecided(model), %{"artist" => 2.0}, broken, Hierarchy)
         end
+      end
+    end
+
+    test "extent thresholds that name no granularity and groups are refused", %{model: model} do
+      unchosen = %{model | redecision: %{model.redecision | extent: Map.drop(model.redecision.extent, [:granularity, :groups])}}
+
+      assert_raise ArgumentError, ~r/name no granularity and groups.*mix train_span_reliability/, fn ->
+        SpanReliability.redecide(undecided(model), %{"artist" => 2.0}, unchosen, Hierarchy)
+      end
+    end
+
+    test "a span's extent is decided under its group's thresholds: its pair's, else its source's, else the shared ones", %{model: model} do
+      span = undecided(model)
+      extent = model.redecision.extent
+
+      for {groups, decided?} <- [
+            {%{{:entity_model, "artist"} => %{min_score: 50.0, min_margin: 0.0}}, false},
+            {%{:entity_model => %{min_score: 50.0, min_margin: 0.0}}, false},
+            {%{{:entity_model, "artist"} => %{min_score: -10.0, min_margin: 0.0}, :entity_model => %{min_score: 50.0, min_margin: 0.0}}, true},
+            {%{{:gazetteer, "artist"} => %{min_score: 50.0, min_margin: 0.0}, :gazetteer => %{min_score: 50.0, min_margin: 0.0}}, true}
+          ] do
+        grouped = %{model | redecision: %{model.redecision | extent: %{extent | granularity: {:pair, 1}, groups: groups}}}
+        result = SpanReliability.redecide(span, %{"artist" => 2.0}, grouped, Hierarchy)
+        assert match?({:decided, _}, result) == decided?, "groups #{inspect(groups)} gave #{inspect(elem(result, 0))}"
       end
     end
 
@@ -602,6 +629,61 @@ defmodule Brain.ML.SpanReliabilityTest do
       assert %{resolved: false, unresolved_reason: :insufficient_evidence} = span
       assert {:decided, %{entity_type: "artist"}} = SpanReliability.redecide(span, evidence.(:about_artists, ["artist"]), model, Hierarchy)
       refute match?({:decided, _}, SpanReliability.redecide(span, evidence.(:other, ["artist"]), model, Hierarchy))
+    end
+
+    # Nothing is decided by its readings (the first decision's min_score is out
+    # of reach), so every row is weighed again with its evidence.
+    defp redecided(examples, evidence) do
+      examples
+      |> SpanReliability.fit(Keyword.put(@opts, :prior_strength, 1))
+      |> Map.merge(%{min_score: 50.0, min_margin: 0.0})
+      |> SpanReliability.select_redecision(examples, canonical: @canonical, hierarchy: Hierarchy, evidence: fn _training -> evidence end)
+    end
+
+    test "select_redecision/3 gives each source extent thresholds of its own where that decides held-out folds better" do
+      # The second source places its extents well but types them wrong, and
+      # the evidence for its type is strong enough that its summed score is
+      # above the first source's: deciding its spans is always wrong, and
+      # neither their type scores nor their extent scores (both above the
+      # first source's) leave them out without the first source's spans. The
+      # first source's extents are right more often than not. Shared
+      # thresholds cannot take the first source's spans without the second's.
+      right = for i <- 1..15, do: %{key: {:right, i}, gold: [gold("artist", 0, 3)], readings: [reading(:near, "artist", 0, 3)], strength: 3.0}
+      off = for i <- 1..5, do: %{key: {:off, i}, gold: [gold("artist", 0, 5)], readings: [reading(:near, "artist", 0, 3)], strength: 3.0}
+      mistyped = for i <- 1..20, do: %{key: {:mistyped, i}, gold: [gold("final_value", 0, 3)], readings: [reading(:typo, "artist", 0, 3)], strength: 15.0}
+
+      model = redecided(right ++ off ++ mistyped, fn example, labels -> Map.new(labels, &{&1, example.strength}) end)
+      %{extent: extent, cross_validation: %{granularity: granularity}} = model.redecision
+
+      assert {level, _n} = granularity.chosen
+      assert level in [:source, :pair]
+      assert granularity.by_granularity[granularity.chosen].f1 > granularity.by_granularity[:global].f1
+      assert extent.granularity == granularity.chosen
+
+      decide_again = fn example ->
+        [span] = SpanReliability.decide(example.readings, model, text: "Rush hour", canonical: @canonical, hierarchy: Hierarchy)
+        SpanReliability.redecide(span, %{"artist" => example.strength}, model, Hierarchy)
+      end
+
+      assert {:decided, %{entity_type: "artist", source: :near}} = decide_again.(hd(right))
+      refute match?({:decided, _}, decide_again.(hd(mistyped)))
+    end
+
+    test "select_redecision/3 keeps shared extent thresholds where its own decide held-out folds no better" do
+      # Two sources alike: each right where the evidence is for its type and
+      # wrong where it is against.
+      examples =
+        for source <- [:one, :other], i <- 1..20 do
+          gold = if rem(i, 4) == 0, do: [], else: [gold("artist", 0, 3)]
+          %{key: {source, i}, gold: gold, readings: [reading(source, "artist", 0, 3)], strength: if(gold == [], do: -3.0, else: 3.0)}
+        end
+
+      model = redecided(examples, fn example, labels -> Map.new(labels, &{&1, example.strength}) end)
+      %{extent: extent, cross_validation: %{granularity: granularity}} = model.redecision
+
+      assert granularity.chosen == :global
+      assert extent.granularity == :global and extent.groups == %{}
+      assert Enum.all?(granularity.by_granularity, fn {_g, r} -> r.f1 <= granularity.by_granularity[:global].f1 end)
     end
 
     test "a model whose extent reliabilities are keyed by more than source and type is refused" do
