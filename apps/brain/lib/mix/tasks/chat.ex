@@ -11,6 +11,11 @@ defmodule Mix.Tasks.Chat do
       mix chat "What's the weather in NYC?" --world <id> --debug
 
   `--world <id>` is required: the world the conversation runs in.
+
+  A terminal has no browser to give its time zone, so the message's dates and
+  times ("tomorrow", "5 pm") are read in UTC. The message has no web user, so
+  it cannot set an alarm, reminder, timer or calendar item: they belong to
+  the web user who sets them.
   """
 
   use Mix.Task
@@ -44,7 +49,7 @@ defmodule Mix.Tasks.Chat do
 
     {:ok, conversation_id} = Brain.create_conversation(world_id: world_id)
 
-    eval_opts = [include_analysis: debug?]
+    eval_opts = [include_analysis: debug?, time_zone: Brain.Temporal.Zone.utc()]
     info("Sending: #{inspect(message)}")
     separator()
 
