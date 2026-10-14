@@ -3,13 +3,16 @@ defmodule Mix.Tasks.TrainFreeTextCapture do
 
   @moduledoc """
   Fits `Brain.Analysis.FreeTextCapture` on the free-text spans annotated in
-  the hand-written intent examples and writes `free_text_capture.<language>.term`
-  directly under the models directory, where boot loads it.
+  the hand-written intent examples and entity annotations and writes
+  `free_text_capture.<language>.term` directly under the models directory,
+  where boot loads it.
 
       mix train_free_text_capture
 
   The examples are the rows of every intent file in
-  `Brain.Corpus.Provenance.authored_dir/0` that annotates a free-text slot,
+  `Brain.Corpus.Provenance.authored_dir/0` and
+  `Brain.Corpus.Provenance.authored_entities_dir/0` that annotates a free-text
+  slot,
   tokenized with `Brain.ML.Tokenizer` and tagged with `Brain.ML.POSTagger` as
   capture tags an utterance. Rows are split as the intent gold standard is:
   the candidates and their strengths are chosen by cross-validation of the
