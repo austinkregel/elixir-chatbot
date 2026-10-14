@@ -9,10 +9,20 @@ defmodule Brain.Lexicon.ClosedClass do
   classes ("to" is ADP and PART). UD morphological features are declared
   alongside: `PronType=Tot` marks the total quantifiers ("all", "every",
   "each"), which apply what is said to every member of what they quantify.
+  `PronType=Prs` and `PronType=Dem` mark the personal pronouns and the
+  demonstratives, and the personal pronouns carry `Person`, `Gender` and
+  `Reflex=Yes` (the reflexives) as the UD English Web Treebank annotates
+  them; `Brain.Analysis.AnaphoraResolver` reads these to tell which pronouns
+  refer back to an earlier turn.
+
+  The words written with a capital wherever they stand in a sentence, not
+  only at its start, are declared as `capitalized` ("i", the pronoun "I",
+  read from the UD English Web Treebank; see the file's description).
 
   The file is read at compile time and validated: every word must be
-  lowercase and trimmed, and every word given a feature must belong to a
-  class. A file that breaks either fails the build.
+  lowercase and trimmed, every word given a feature or declared capitalized
+  must belong to a class, and a word may take only one value of a feature. A
+  file that breaks any of these fails the build.
   """
 
   @path Path.join(:code.priv_dir(:brain), "knowledge/closed_class.json")
@@ -44,7 +54,28 @@ defmodule Brain.Lexicon.ClosedClass do
                     end
 
                     [name, value] = String.split(feature, "=", parts: 2)
-                    Map.update(acc, word, %{name => value}, &Map.put(&1, name, value))
+
+                    case get_in(acc, [word, name]) do
+                      nil ->
+                        Map.update(acc, word, %{name => value}, &Map.put(&1, name, value))
+
+                      other ->
+                        raise "ClosedClass: #{inspect(word)} is declared both #{name}=#{other} and #{feature}; a word takes one value of a feature"
+                    end
+                end)
+
+  @capitalized (case Map.get(@data, "capitalized") do
+                  words when is_list(words) ->
+                    for word <- words, into: MapSet.new() do
+                      unless Map.has_key?(@class_of, word) do
+                        raise "ClosedClass: #{inspect(word)} is declared capitalized but belongs to no class"
+                      end
+
+                      word
+                    end
+
+                  other ->
+                    raise "ClosedClass: #{@path} has no \"capitalized\" list of words, got: #{inspect(other)}"
                 end)
 
   @doc "True when `word` belongs to any closed class. Case-insensitive."
@@ -72,6 +103,13 @@ defmodule Brain.Lexicon.ClosedClass do
   @doc "True when `word` is a total quantifier (UD `PronType=Tot`): all, every, each..."
   @spec total_quantifier?(String.t()) :: boolean()
   def total_quantifier?(word) when is_binary(word), do: features(word)["PronType"] == "Tot"
+
+  @doc """
+  True when `word` is written with a capital wherever it stands in a
+  sentence, not only at its start: the pronoun "I". Case-insensitive.
+  """
+  @spec capitalized?(String.t()) :: boolean()
+  def capitalized?(word) when is_binary(word), do: MapSet.member?(@capitalized, String.downcase(word))
 
   @doc "Every closed-class word, sorted."
   @spec words() :: [String.t()]
