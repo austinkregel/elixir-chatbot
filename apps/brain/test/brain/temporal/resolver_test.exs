@@ -1,13 +1,17 @@
 defmodule Brain.Temporal.ResolverTest do
   use ExUnit.Case, async: true
 
-  alias Brain.Temporal.{Resolution, Resolver, Vocabulary}
+  alias Brain.Temporal.{Resolution, Resolver, Vocabulary, Zone}
 
   # A Monday, and the Tuesday after it.
   @monday ~U[2026-10-12 09:00:00Z]
   @tuesday ~U[2026-10-13 09:00:00Z]
 
-  defp resolve!(said, turn \\ @monday), do: Resolver.resolve!(said, turn)
+  # Unless a test says otherwise, turns are read in UTC.
+  @utc Zone.utc()
+
+  defp resolve!(said, turn \\ @monday), do: Resolver.resolve!(said, turn, time_zone: @utc)
+  defp resolve(said, turn), do: Resolver.resolve(said, turn, time_zone: @utc)
 
   defp day(said, turn \\ @monday) do
     %Resolution{starts_at: starts_at, ends_at: ends_at} = resolve!(said, turn)
@@ -32,13 +36,13 @@ defmodule Brain.Temporal.ResolverTest do
       assert phrases != []
 
       for {_kind, canonical, phrase} <- phrases do
-        assert {:ok, %Resolution{}} = Resolver.resolve(phrase, @monday), "#{inspect(phrase)} (#{canonical})"
+        assert {:ok, %Resolution{}} = resolve(phrase, @monday), "#{inspect(phrase)} (#{canonical})"
       end
     end
 
     test "a phrase resolves as its entry's canonical value does: synonyms name the same time" do
       for {_kind, canonical, phrase} <- Vocabulary.entry_phrases(Vocabulary.loaded!()),
-          {:ok, by_canonical} <- [Resolver.resolve(canonical, @monday)] do
+          {:ok, by_canonical} <- [resolve(canonical, @monday)] do
         by_phrase = resolve!(phrase)
 
         assert {by_phrase.starts_at, by_phrase.ends_at, by_phrase.clock} ==
@@ -49,7 +53,7 @@ defmodule Brain.Temporal.ResolverTest do
 
     test "every date_time span of the NER gold standard resolves, or is said not to, naming the span" do
       for split <- ["gold_standard", "held_out"], span <- gold_date_time_spans(split) do
-        case Resolver.resolve(span, @monday) do
+        case resolve(span, @monday) do
           {:ok, %Resolution{said: said}} -> assert said == span
           {:error, message} -> assert message =~ inspect(span), "#{split}: #{message}"
         end
@@ -142,11 +146,11 @@ defmodule Brain.Temporal.ResolverTest do
       monday = resolve!("tomorrow", @monday)
       tuesday = resolve!("tomorrow", @tuesday)
 
-      assert Resolver.days(monday) == {~D[2026-10-13], ~D[2026-10-13]}
-      assert Resolver.days(tuesday) == {~D[2026-10-14], ~D[2026-10-14]}
-      refute Resolver.same_day?(monday, tuesday)
-      assert Resolver.same_day?(monday, resolve!("today", @tuesday))
-      assert Resolver.same_day?(monday, resolve!("tuesday", @monday))
+      assert Resolver.days(monday, @utc) == {~D[2026-10-13], ~D[2026-10-13]}
+      assert Resolver.days(tuesday, @utc) == {~D[2026-10-14], ~D[2026-10-14]}
+      refute Resolver.same_day?(monday, tuesday, @utc)
+      assert Resolver.same_day?(monday, resolve!("today", @tuesday), @utc)
+      assert Resolver.same_day?(monday, resolve!("tuesday", @monday), @utc)
     end
 
     test "a clock time that has passed today is tomorrow's" do
@@ -167,7 +171,7 @@ defmodule Brain.Temporal.ResolverTest do
 
     test "a spelled number names no length: no source holds spelled numbers" do
       for said <- ["five minutes", "an hour", "half an hour"] do
-        assert {:error, message} = Resolver.resolve(said, @monday)
+        assert {:error, message} = resolve(said, @monday)
         assert message =~ inspect(said)
       end
     end
@@ -182,37 +186,133 @@ defmodule Brain.Temporal.ResolverTest do
 
   describe "what cannot be resolved" do
     test "is said, naming the expression and what in it could not be read" do
-      assert {:error, message} = Resolver.resolve("tomorow", @monday)
+      assert {:error, message} = resolve("tomorow", @monday)
       assert message =~ ~s("tomorow") and message =~ "no word of a date"
 
-      assert {:error, message} = Resolver.resolve("monday tuesday", @monday)
+      assert {:error, message} = resolve("monday tuesday", @monday)
       assert message =~ "two days"
 
-      assert {:error, message} = Resolver.resolve("february 30", @monday)
+      assert {:error, message} = resolve("february 30", @monday)
       assert message =~ "no day"
 
-      assert {:error, message} = Resolver.resolve("at 13 pm", @monday)
+      assert {:error, message} = resolve("at 13 pm", @monday)
       assert message =~ "no hour"
 
-      assert {:error, _} = Resolver.resolve("in 2 hours tomorrow", @monday)
-      assert {:error, _} = Resolver.resolve("  ", @monday)
+      assert {:error, _} = resolve("in 2 hours tomorrow", @monday)
+      assert {:error, _} = resolve("  ", @monday)
     end
 
     test "resolve!/3 raises with the same message" do
-      assert_raise ArgumentError, ~r/cannot resolve "tomorow"/, fn -> Resolver.resolve!("tomorow", @monday) end
+      assert_raise ArgumentError, ~r/cannot resolve "tomorow"/, fn -> resolve!("tomorow", @monday) end
     end
   end
 
+  # America/Chicago as a browser gives it: from the start of 2026 to the
+  # start of 2028, at -6:00 (CST) but for daylight saving time at -5:00
+  # (CDT), from 2 am on the second Sunday of March to 2 am on the first
+  # Sunday of November.
+  @cst -6 * 3600
+  @cdt -5 * 3600
+
+  @chicago_transitions [
+    {~U[2026-03-08 08:00:00Z], @cdt},
+    {~U[2026-11-01 07:00:00Z], @cst},
+    {~U[2027-03-14 08:00:00Z], @cdt},
+    {~U[2027-11-07 07:00:00Z], @cst}
+  ]
+
+  defp ms(at), do: DateTime.to_unix(at, :millisecond)
+
+  defp chicago(read_at) do
+    offset =
+      Enum.reduce(@chicago_transitions, @cst, fn {at, offset}, current ->
+        if DateTime.compare(at, read_at) == :gt, do: current, else: offset
+      end)
+
+    Zone.from_browser!(%{
+      "name" => "America/Chicago",
+      "at" => ms(read_at),
+      "offset" => offset,
+      "from" => ms(~U[2026-01-01 00:00:00Z]),
+      "until" => ms(~U[2028-01-01 00:00:00Z]),
+      "offset_at_from" => @cst,
+      "transitions" => Enum.map(@chicago_transitions, fn {at, offset} -> [ms(at), offset] end)
+    })
+  end
+
+  defp in_chicago(said, turn), do: Resolver.resolve(said, turn, time_zone: chicago(turn))
+  defp in_chicago!(said, turn), do: Resolver.resolve!(said, turn, time_zone: chicago(turn))
+
   describe "the time zone" do
-    test "is the configured one, and an unset one raises" do
-      assert Resolver.time_zone!() == Application.fetch_env!(:brain, :time_zone)
-      assert resolve!("today").time_zone == Resolver.time_zone!()
+    # Saturday, October 31, 2026, 8 pm CDT: the clocks go back to CST at 2 am.
+    @before_fall_back ~U[2026-11-01 01:00:00Z]
+    # Saturday, March 7, 2026, 8 pm CST: the clocks go forward to CDT at 2 am.
+    @before_spring_forward ~U[2026-03-08 02:00:00Z]
+
+    test "a turn without a zone raises, naming the option" do
+      assert_raise ArgumentError, ~r/:time_zone must be the Brain.Temporal.Zone/, fn ->
+        Resolver.resolve("today", @monday, [])
+      end
+
+      assert_raise ArgumentError, ~r/:time_zone must be the Brain.Temporal.Zone/, fn ->
+        Resolver.resolve!("today", @monday, time_zone: "America/Chicago")
+      end
     end
 
-    test "a zone the calendar cannot read raises, saying it holds no time zone database" do
-      assert_raise ArgumentError, ~r/no time zone database/, fn ->
-        Resolver.resolve("today", @monday, time_zone: "America/Chicago")
-      end
+    test "a day and a clock time are read in the turn's zone, with the zone's name and offset kept" do
+      monday_morning_in_chicago = ~U[2026-10-12 14:00:00Z]
+      resolution = in_chicago!("tomorrow at 7 am", monday_morning_in_chicago)
+
+      assert resolution.starts_at == ~U[2026-10-13 12:00:00Z]
+      assert resolution.clock == ~T[07:00:00]
+      assert resolution.time_zone == "America/Chicago"
+      assert resolution.utc_offset == @cdt
+      assert Resolver.days(resolution, chicago(monday_morning_in_chicago)) == {~D[2026-10-13], ~D[2026-10-13]}
+    end
+
+    test "a time on the far side of a daylight saving change is read with that side's offset" do
+      # 9 am CST on Sunday, not 9 am at the CDT offset of the Saturday turn.
+      fall = in_chicago!("tomorrow at 9 am", @before_fall_back)
+      assert fall.starts_at == ~U[2026-11-01 15:00:00Z]
+      assert fall.utc_offset == @cst
+
+      spring = in_chicago!("tomorrow at 9 am", @before_spring_forward)
+      assert spring.starts_at == ~U[2026-03-08 14:00:00Z]
+      assert spring.utc_offset == @cdt
+    end
+
+    test "the day the clocks go back runs from midnight to midnight: 25 hours" do
+      %Resolution{starts_at: starts_at, ends_at: ends_at} = in_chicago!("tomorrow", @before_fall_back)
+
+      assert starts_at == ~U[2026-11-01 05:00:00Z]
+      assert ends_at == ~U[2026-11-02 06:00:00Z]
+      assert DateTime.diff(ends_at, starts_at, :hour) == 25
+    end
+
+    test "hours pass as elapsed time, and days move the date keeping the time of day" do
+      half_past_midnight_cdt = ~U[2026-11-01 05:30:00Z]
+      two_hours = in_chicago!("in 2 hours", half_past_midnight_cdt)
+
+      assert two_hours.starts_at == ~U[2026-11-01 07:30:00Z]
+      # Two hours after 12:30 am CDT is 1:30 am CST.
+      assert two_hours.clock == ~T[01:30:00]
+
+      saturday_morning = ~U[2026-10-31 14:00:00Z]
+      assert in_chicago!("in 1 day", saturday_morning).starts_at == ~U[2026-11-01 15:00:00Z]
+      assert in_chicago!("1 day", saturday_morning).ends_at == ~U[2026-11-01 15:00:00Z]
+    end
+
+    test "a time the clocks skip or repeat cannot be resolved, and says so" do
+      assert {:error, message} = in_chicago("tomorrow at 2:30", @before_spring_forward)
+      assert message =~ ~s("tomorrow at 2:30") and message =~ "the clocks skip it"
+
+      assert {:error, message} = in_chicago("tomorrow at 1:30", @before_fall_back)
+      assert message =~ ~s("tomorrow at 1:30") and message =~ "the clocks repeat it"
+    end
+
+    test "a time outside the span the browser gave the zone's offsets for cannot be resolved, and names the span" do
+      assert {:error, message} = in_chicago("january 3, 2017", @before_fall_back)
+      assert message =~ ~s("january 3, 2017") and message =~ "outside the span"
     end
   end
 
