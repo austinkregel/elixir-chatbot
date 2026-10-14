@@ -216,6 +216,45 @@ defmodule Brain.ML.DataLoadersTest do
     end
   end
 
+  describe "build_us_city_lookup/2" do
+    defp us_city(name, code, state), do: %{city: name, state_code: code, state_name: state, county: "", id: "1"}
+
+    # "in" and "or" are ordinary words here; "tx" and "wv" are not.
+    defp word?(word), do: word in ["in", "or"]
+
+    test "a city whose name is also an ordinary word is a reading of its name like any other" do
+      lookup = DataLoaders.build_us_city_lookup([us_city("Points", "WV", "West Virginia"), us_city("Ada", "OK", "Oklahoma")], &word?/1)
+
+      assert %{entity_type: "location", value: "Points", state_code: "WV"} = lookup["points"]
+      assert %{entity_type: "location", value: "Ada"} = lookup["ada"]
+    end
+
+    test "a city followed by its bare state code is a key only when the code is no ordinary word" do
+      lookup =
+        DataLoaders.build_us_city_lookup(
+          [us_city("Rome", "IN", "Indiana"), us_city("Salem", "OR", "Oregon"), us_city("Austin", "TX", "Texas")],
+          &word?/1
+        )
+
+      refute Map.has_key?(lookup, "rome in")
+      refute Map.has_key?(lookup, "salem or")
+      assert lookup["austin tx"].value == "Austin"
+
+      # The state's name, and the code after a comma, say what the code is.
+      for key <- ["rome indiana", "rome, indiana", "rome, in", "salem oregon", "salem, or"], do: assert(Map.has_key?(lookup, key), key)
+    end
+
+    test "each code is asked once, as the lowercase code" do
+      parent = self()
+      ask = fn code -> send(parent, {:asked, code}) && false end
+
+      DataLoaders.build_us_city_lookup([us_city("Austin", "TX", "Texas"), us_city("Dallas", "TX", "Texas")], ask)
+
+      assert_received {:asked, "tx"}
+      refute_received {:asked, _}
+    end
+  end
+
   describe "build_artist_lookup/1" do
     test "builds artist lookup from artist data" do
       artists = [
