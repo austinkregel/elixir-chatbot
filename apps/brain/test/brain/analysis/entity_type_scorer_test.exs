@@ -53,8 +53,9 @@ defmodule Brain.Analysis.EntityTypeScorerTest do
     end
 
     test "the call intent leaves thursday a date" do
-      # communication.call lists only person. Neither the date nor the band is
-      # listed, so the intent is no evidence between them and usage decides.
+      # communication.call lists only person. The date and the band are
+      # weighed by how often the call intent's gold spans agree with each,
+      # relative to every utterance, and the date's usage outweighs that.
       entity =
         entity_for("next thursday I need to call my dad", "thursday", intent: "communication.call")
 
@@ -313,23 +314,16 @@ defmodule Brain.Analysis.EntityTypeScorerTest do
     end
   end
 
-  describe "the constants shift the answer in the direction they claim" do
-    test "with context_mismatch_likelihood at 1, the intent stops mattering" do
+  describe "the context weighs readings by what the data learned" do
+    test "the music intent moves thursday from the date to the band, and no context leaves it the date" do
       music = EntityTypeScorer.expected_types("music.play")
-      indifferent = Keyword.put(@config, :context_mismatch_likelihood, 1.0)
 
       assert score("thursday", "thursday", expected_types: music).entity_type == "music_artist"
-      assert score("thursday", "thursday", expected_types: music, config: indifferent).entity_type == "sys_date"
+      assert score("thursday", "thursday", expected_types: nil).entity_type == "sys_date"
     end
+  end
 
-    test "a smaller context_mismatch_likelihood makes the intent weigh more" do
-      music = EntityTypeScorer.expected_types("music.play")
-      strict = Keyword.put(@config, :context_mismatch_likelihood, @config[:context_mismatch_likelihood] / 10)
-
-      assert score("thursday", "thursday", expected_types: music, config: strict).posteriors["music_artist"] >
-               score("thursday", "thursday", expected_types: music).posteriors["music_artist"]
-    end
-
+  describe "the constants shift the answer in the direction they claim" do
     test "when names and ordinary words are capitalized alike, casing says nothing" do
       blind = Keyword.put(@config, :ordinary_word_capitalized, @config[:proper_name_capitalized])
 
@@ -382,8 +376,8 @@ defmodule Brain.Analysis.EntityTypeScorerTest do
     SlotDetector.list_schemas()
     |> Map.keys()
     |> Enum.filter(fn intent ->
-      types = EntityTypeScorer.expected_types(intent)
-      Map.has_key?(types, wanted) and not Map.has_key?(types, unwanted)
+      types = intent |> EntityTypeScorer.expected_types() |> EntityTypeScorer.Expected.types()
+      wanted in types and unwanted not in types
     end)
     |> Enum.sort()
   end
