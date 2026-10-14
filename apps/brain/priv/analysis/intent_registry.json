@@ -1479,8 +1479,7 @@
     "domain": "smarthome",
     "entity_mappings": {
       "device": [
-        "device",
-        "appliance"
+        "device"
       ],
       "location": [
         "location",
@@ -2139,11 +2138,9 @@
     "domain": "code",
     "entity_mappings": {
       "file": [
-        "file",
-        "filepath"
+        "file"
       ],
       "language": [
-        "language",
         "programming_language"
       ],
       "symbol": [
@@ -2435,8 +2432,7 @@
     "domain": "smarthome",
     "entity_mappings": {
       "device": [
-        "device",
-        "appliance"
+        "device"
       ],
       "location": [
         "location",
@@ -2624,11 +2620,9 @@
     "domain": "code",
     "entity_mappings": {
       "file": [
-        "file",
-        "filepath"
+        "file"
       ],
       "language": [
-        "language",
         "programming_language"
       ],
       "symbol": [
@@ -4777,11 +4771,9 @@
     "domain": "code",
     "entity_mappings": {
       "file": [
-        "file",
-        "filepath"
+        "file"
       ],
       "language": [
-        "language",
         "programming_language"
       ],
       "symbol": [
@@ -4922,8 +4914,7 @@
     "domain": "device",
     "entity_mappings": {
       "device": [
-        "device",
-        "appliance"
+        "device"
       ],
       "location": [
         "location",
