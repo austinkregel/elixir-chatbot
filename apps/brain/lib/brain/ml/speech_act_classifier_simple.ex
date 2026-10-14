@@ -172,18 +172,20 @@ defmodule Brain.ML.SpeechActClassifierSimple do
   defp do_load_model do
     path = model_path()
 
-    if File.exists?(path) do
-      try do
-        model = path |> File.read!() |> :erlang.binary_to_term()
-        {:ok, model}
-      rescue
-        e ->
-          Logger.warning("SpeechActClassifierSimple: failed to load model: #{inspect(e)}")
-          {:error, :load_failed}
+    Brain.Telemetry.measure_model_load("speech_act_classifier", fn ->
+      if File.exists?(path) do
+        try do
+          model = path |> File.read!() |> :erlang.binary_to_term()
+          {:ok, model}
+        rescue
+          e ->
+            Logger.warning("SpeechActClassifierSimple: failed to load model: #{inspect(e)}")
+            {:error, :load_failed}
+        end
+      else
+        {:error, :model_not_found}
       end
-    else
-      {:error, :model_not_found}
-    end
+    end)
   end
 
   @doc false
