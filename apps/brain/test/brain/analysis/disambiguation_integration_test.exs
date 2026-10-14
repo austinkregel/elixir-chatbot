@@ -187,7 +187,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     test "Hello I'm Austin - response is a greeting, not weather", %{conversation_id: conv_id} do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Austin")
+          {:ok, %{response: response}} = evaluate_in_utc(conv_id, "Hello, I'm Austin")
           Logger.warning("Response to 'Hello, I'm Austin': #{response}")
 
           refute response =~ ~r/weather|temperature|forecast|degrees|rain|sunny|cloudy/i,
@@ -212,7 +212,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     } do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response}} = Brain.evaluate(conv_id, "I am Austin")
+          {:ok, %{response: response}} = evaluate_in_utc(conv_id, "I am Austin")
           Logger.warning("Response to 'I am Austin': #{response}")
 
           refute response =~ ~r/weather|temperature|forecast/i,
@@ -230,7 +230,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     test "My name is Austin - treated as introduction", %{conversation_id: conv_id} do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response}} = Brain.evaluate(conv_id, "My name is Austin")
+          {:ok, %{response: response}} = evaluate_in_utc(conv_id, "My name is Austin")
           Logger.warning("Response to 'My name is Austin': #{response}")
 
           refute response =~ ~r/weather|temperature|forecast|degrees/i,
@@ -247,7 +247,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     } do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response}} = Brain.evaluate(conv_id, "What's the weather in Austin?")
+          {:ok, %{response: response}} = evaluate_in_utc(conv_id, "What's the weather in Austin?")
           Logger.warning("Response to weather query: #{response}")
 
           is_weather_response =
@@ -269,14 +269,14 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     test "sequential conversation - introduction then weather query", %{conversation_id: conv_id} do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: intro_response}} = Brain.evaluate(conv_id, "Hi, I'm Austin")
+          {:ok, %{response: intro_response}} = evaluate_in_utc(conv_id, "Hi, I'm Austin")
           Logger.warning("Intro response: #{intro_response}")
 
           refute intro_response =~ ~r/weather|temperature|forecast/i,
                  "Introduction triggered weather response: #{intro_response}"
 
           {:ok, %{response: weather_response}} =
-            Brain.evaluate(conv_id, "What's the weather in Austin, Texas?")
+            evaluate_in_utc(conv_id, "What's the weather in Austin, Texas?")
 
           Logger.warning("Weather response: #{weather_response}")
           assert String.length(weather_response) > 0
@@ -293,7 +293,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       log =
         capture_log([level: :warning], fn ->
           {:ok, %{response: response}} =
-            Brain.evaluate(
+            evaluate_in_utc(
               conv_id,
               "Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?"
             )
@@ -320,10 +320,10 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     } do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response1}} = Brain.evaluate(conv_id, "Hello Austin")
+          {:ok, %{response: response1}} = evaluate_in_utc(conv_id, "Hello Austin")
           Logger.warning("Response to 'Hello Austin': #{response1}")
           {:ok, conv_id2} = Brain.create_conversation(world_id: @world_id)
-          {:ok, %{response: response2}} = Brain.evaluate(conv_id2, "Hello, I'm Austin")
+          {:ok, %{response: response2}} = evaluate_in_utc(conv_id2, "Hello, I'm Austin")
           Logger.warning("Response to 'Hello, I'm Austin': #{response2}")
 
           refute response1 =~ ~r/weather|temperature|forecast/i,
@@ -341,7 +341,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     test "introduction should not show 'location' in debug output", %{conversation_id: conv_id} do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Austin")
+          {:ok, %{response: response}} = evaluate_in_utc(conv_id, "Hello, I'm Austin")
           Logger.warning("Response: #{response}")
 
           refute response =~ ~r/weather|temperature|forecast|degrees|rain|sunny/i,
