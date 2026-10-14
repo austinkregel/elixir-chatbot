@@ -51,7 +51,10 @@ defmodule Brain.ML.EntityTrainer do
   # 1e-6: an unseen (feature, tag) pair becomes close to a veto. Zero is not a
   # candidate, since it makes such a pair impossible.
   @smoothing_candidates [1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0]
-  @transition_smoothing_candidates [0.01, 0.1, 1.0, 10.0, 100.0]
+  # On the same split (2026-10-13) the transition smoothing chosen from
+  # [0.01 .. 100] was 0.01, the grid's smallest; from this grid it is 1.0e-4,
+  # inside it. Training took 500s with this grid against 259-320s with that one.
+  @transition_smoothing_candidates [1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0, 10.0, 100.0]
   @folds 5
 
   alias Brain.ML.{EvaluationStore, NerGold}
