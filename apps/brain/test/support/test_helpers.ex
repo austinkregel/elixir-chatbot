@@ -129,9 +129,18 @@ this is typically a no-op, but some tests call it directly as a safety check.
     :ok
   end
 
-  @doc "Evaluates input and returns both the response and the analysis context.\n\nThis allows tests to assert on semantic meaning (intent, speech_act, entities)\nrather than response text, making tests resilient to dynamic response variations.\n\n## Example\n\n    {:ok, response, context} = evaluate_with_context(conv_id, \"Hello!\")\n    assert context.speech_act.sub_type == :greeting\n\n## Returns\n\n- `{:ok, response, context}` where context contains intent, speech_act, entities, etc.\n- `{:error, reason}` if evaluation fails\n"
+  @doc """
+  `Brain.evaluate/3` for a turn said in UTC. A test has no browser to give the
+  zone its turns' dates and times are read in, so it names UTC
+  (`Brain.Temporal.Zone.utc/0`); `opts` are the evaluation's other options.
+  """
+  def evaluate_in_utc(conversation_id, input, opts \\ []) do
+    Brain.evaluate(conversation_id, input, [time_zone: Brain.Temporal.Zone.utc()] ++ opts)
+  end
+
+  @doc "Evaluates input, said in UTC (`evaluate_in_utc/3`), and returns both the response and the analysis context.\n\nThis allows tests to assert on semantic meaning (intent, speech_act, entities)\nrather than response text, making tests resilient to dynamic response variations.\n\n## Example\n\n    {:ok, response, context} = evaluate_with_context(conv_id, \"Hello!\")\n    assert context.speech_act.sub_type == :greeting\n\n## Returns\n\n- `{:ok, response, context}` where context contains intent, speech_act, entities, etc.\n- `{:error, reason}` if evaluation fails\n"
   def evaluate_with_context(conversation_id, input, opts \\ []) do
-    case Brain.evaluate(conversation_id, input, opts) do
+    case evaluate_in_utc(conversation_id, input, opts) do
       {:ok, %{response: response, context: context}} ->
         {:ok, response, context || %{}}
 
