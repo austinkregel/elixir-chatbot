@@ -20,7 +20,15 @@ defmodule Brain.ML.EntityModel do
   alias Brain.ML.WorldModelFile
 
   @file_name "entity_model.term"
-  @model_keys [:tag_vocabulary, :feature_weights, :feature_totals, :smoothing, :transition_weights, :tag_priors]
+  @model_keys [
+    :tag_vocabulary,
+    :feature_weights,
+    :feature_totals,
+    :smoothing,
+    :transition_weights,
+    :transition_smoothing,
+    :tag_priors
+  ]
 
   @doc "Where a world keeps its copy of the entity model."
   @spec path(String.t()) :: Path.t()
@@ -74,7 +82,8 @@ defmodule Brain.ML.EntityModel do
   @doc """
   Reads and checks an entity model file. Raises when it is missing, or does not
   hold a model of the shape `Brain.ML.EntityTrainer` trains now (a model trained
-  by an earlier version has no `:feature_totals`, for one).
+  by an earlier version has no `:feature_totals`, or no `:transition_smoothing`
+  and none of the BIO transitions its training rows never showed).
   """
   @spec read!(Path.t(), String.t() | :trained) :: map()
   def read!(file, owner) do
