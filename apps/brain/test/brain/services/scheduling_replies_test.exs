@@ -30,8 +30,12 @@ defmodule Brain.Services.SchedulingRepliesTest do
 
   defp intent_domain(intent), do: intent |> String.split(".", parts: 2) |> hd()
 
-  defp dispatch!(intent, slots, world) do
-    assert {:ok, fields} = Dispatcher.dispatch(intent, slots, %{world_id: world})
+  # The turn intents are dispatched in, a Monday morning, unless a test says
+  # otherwise.
+  @turn_time ~U[2026-10-12 09:00:00Z]
+
+  defp dispatch!(intent, slots, world, turn_time \\ @turn_time) do
+    assert {:ok, fields} = Dispatcher.dispatch(intent, slots, %{world_id: world, turn_time: turn_time})
     fields
   end
 
@@ -82,7 +86,7 @@ defmodule Brain.Services.SchedulingRepliesTest do
       end
     end
 
-    test "a timer check that finds none says so, and one that finds a timer gives the duration it was set with",
+    test "a timer check that finds none says so, and one that finds a timer gives its duration and the time left",
          %{world: world} do
       fields = dispatch!("timer.check", %{}, world)
 
@@ -91,11 +95,44 @@ defmodule Brain.Services.SchedulingRepliesTest do
       end
 
       dispatch!("timer.set", %{duration: "5 minutes"}, world)
-      fields = dispatch!("timer.check", %{}, world)
-      assert fields == %{timer_status: "running", duration: "5 minutes"}
+      fields = dispatch!("timer.check", %{}, world, DateTime.add(@turn_time, 90))
+      assert fields == %{timer_status: "running", duration: "5 minutes", time_left: ["3 minutes", "30 seconds"]}
 
       for text <- replies("timer.check", %{}, fields, 0.5) do
-        assert text in ["There's a timer running, set for 5 minutes.", "A timer is running, set for 5 minutes."]
+        assert text in [
+                 "There's a timer running, set for 5 minutes, with 3 minutes, 30 seconds left.",
+                 "A timer set for 5 minutes is running: 3 minutes, 30 seconds left."
+               ]
+      end
+    end
+
+    test "a timer check after its duration has passed says it has run out", %{world: world} do
+      dispatch!("timer.set", %{duration: "5 minutes"}, world)
+      fields = dispatch!("timer.check", %{}, world, DateTime.add(@turn_time, 600))
+      assert fields == %{timer_status: "finished", duration: "5 minutes", time_left: []}
+
+      for text <- replies("timer.check", %{}, fields, 0.5) do
+        assert text in ["The timer set for 5 minutes has run out.", "Your timer for 5 minutes has run out."]
+      end
+    end
+
+    test "a calendar query names the soonest event still to come, or says none is", %{world: world} do
+      dispatch!("calendar.schedule", %{event: "dentist", date: "Friday", time: "3 pm"}, world)
+      dispatch!("calendar.schedule", %{event: "standup", date: "tomorrow", time: "9 am"}, world)
+
+      fields = dispatch!("calendar.query", %{}, world)
+
+      for text <- replies("calendar.query", %{}, fields, 0.5) do
+        assert text in [
+                 "Next on your calendar: standup, tomorrow at 9 am.",
+                 "Coming up on your calendar: standup, tomorrow at 9 am."
+               ]
+      end
+
+      fields = dispatch!("calendar.query", %{}, world, ~U[2026-10-17 09:00:00Z])
+
+      for text <- replies("calendar.query", %{}, fields, 0.5) do
+        assert text in ["Nothing on your calendar is still to come.", "Your calendar has nothing coming up."]
       end
     end
 
@@ -177,6 +214,15 @@ defmodule Brain.Services.SchedulingRepliesTest do
     {:cancelled, "calendar.cancel", %{event: "team standup"}}
   ]
 
+  # After the steps, each at the turn given: a timer and an event set, and
+  # checked a week later, when the timer has run out and the event has passed.
+  @later_steps [
+    {:set, "timer.set", @slots, ~U[2026-10-12 09:00:00Z]},
+    {:set, "calendar.schedule", @slots, ~U[2026-10-12 09:00:00Z]},
+    {:finished, "timer.check", %{}, ~U[2026-10-19 09:00:00Z]},
+    {:none_upcoming, "calendar.query", %{}, ~U[2026-10-19 09:00:00Z]}
+  ]
+
   defp domain_file(domain) do
     "knowledge/domains/#{domain}.json"
     |> Brain.priv_path()
@@ -220,8 +266,8 @@ defmodule Brain.Services.SchedulingRepliesTest do
 
   test "every reply to every scheduling operation and outcome is worded from a frame written for it, and reads whole",
        %{world: world} do
-    for {outcome, intent, slots} <- @steps do
-      case {outcome, Dispatcher.dispatch(intent, slots, %{world_id: world})} do
+    for {outcome, intent, slots, turn_time} <- Enum.map(@steps, &Tuple.insert_at(&1, 3, @turn_time)) ++ @later_steps do
+      case {outcome, Dispatcher.dispatch(intent, slots, %{world_id: world, turn_time: turn_time})} do
         # Alarms are stored and never rung (`Brain.Services.LocalScheduler`);
         # the error is answered as a service reply, not from a domain frame.
         {:no_ringing_alarm, result} ->
