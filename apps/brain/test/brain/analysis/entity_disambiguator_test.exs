@@ -73,6 +73,8 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       assert length(result) == 1
       # In introduction context, should prefer person over location
       assert hd(result).entity_type == "person"
+      # The type is written to :entity_type only.
+      refute Map.has_key?(hd(result), :entity)
     end
 
     test "prefers location for weather intents", %{world_id: world_id} do
@@ -111,6 +113,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       assert length(result) == 1
       # For weather intent, should prefer location
       assert hd(result).entity_type == "location"
+      refute Map.has_key?(hd(result), :entity)
     end
 
     test "prefers music_artist for music intents", %{world_id: world_id} do
@@ -167,6 +170,23 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       assert result.entity_type == "person"
     end
 
+    test "a non-person name in an introduction becomes a person, typed by :entity_type only", %{world_id: world_id} do
+      entity = %{entity_type: "location", value: "Nice"}
+      pos_tagged = [{"I", "PRON"}, {"am", "VERB"}, {"Nice", "PROPN"}]
+
+      context = %{
+        discourse: %{indicators: ["self_referential"]},
+        speech_act: %{category: :expressive, sub_type: :greeting},
+        world_id: world_id
+      }
+
+      result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
+
+      assert result.entity_type == Brain.Analysis.TypeHierarchy.config("default_propn_type", "person")
+      assert result.disambiguation_reason == "introduction_pattern"
+      refute Map.has_key?(result, :entity)
+    end
+
     test "selects best type and removes types field", %{world_id: world_id} do
       person_info = %{entity_type: "person", value: "Austin"}
       location_info = %{entity_type: "location", value: "Austin"}
@@ -199,6 +219,17 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
   end
 
   describe "infer_type_with_type_inferrer/3" do
+    test "writes the type it infers to :entity_type only", %{world_id: world_id} do
+      entity = %{entity_type: "person", value: "Austin"}
+      pos_tagged = [{"in", "ADP"}, {"Austin", "PROPN"}]
+
+      result = EntityDisambiguator.infer_type_with_type_inferrer(entity, pos_tagged, %{world_id: world_id})
+
+      assert is_binary(result.entity_type)
+      assert result.disambiguation_source == :type_inferrer
+      refute Map.has_key?(result, :entity)
+    end
+
     test "raises when the context carries no world" do
       entity = %{entity_type: "person", value: "Austin"}
       pos_tagged = [{"in", "ADP"}, {"Austin", "PROPN"}]
@@ -290,6 +321,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       }
 
       result_with = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context_with)
+      refute Map.has_key?(result_with, :entity)
 
       # Without self_referential indicator
       context_without = %{
