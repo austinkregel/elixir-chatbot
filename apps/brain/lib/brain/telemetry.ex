@@ -25,9 +25,7 @@ defmodule Brain.Telemetry do
   - `[:chat_bot, :memory, :embed, :start | :stop]` - Embedding operations
   - `[:chat_bot, :gazetteer, :lookup, :start | :stop]` - Gazetteer lookups
   - `[:chat_bot, :ml, :train, :start | :stop | :exception]` - ML model training
-  - `[:chat_bot, :ml, :load, :stop]` - ML model loading
-  - `[:chat_bot, :genserver, :message_queue]` - Periodic queue size sampling
-  - `[:chat_bot, :error]` - Error events
+  - `[:chat_bot, :ml, :load, :stop]` - A model read from disk, as it was loaded (`emit_model_load/3`)
 
   ## Learning/Training World Events
 
@@ -79,7 +77,7 @@ defmodule Brain.Telemetry do
   - `[:chat_bot, :services, :enrichment, :start | :stop | :exception]` - Response enrichment
   - `[:chat_bot, :services, :cache, :hit]` - Cache hit events
   - `[:chat_bot, :services, :cache, :miss]` - Cache miss events
-  - `[:chat_bot, :services, :health_check, :stop]` - Service health check results
+  - `[:chat_bot, :services, :health_check, :stop]` - Service health check results (`emit_service_health_check/3`)
   - `[:chat_bot, :services, :credential]` - Credential operations (store/delete)
   """
 
@@ -104,8 +102,6 @@ defmodule Brain.Telemetry do
   @entity_extract [:chat_bot, :entity, :extract]
   @ml_train [:chat_bot, :ml, :train]
   @model_load [:chat_bot, :ml, :load]
-  @message_queue [:chat_bot, :genserver, :message_queue]
-  @error_event [:chat_bot, :error]
 
   # Learning/Training World Events
   @learning_entity_discovered [:chat_bot, :learning, :entity_candidate_detected]
@@ -209,10 +205,6 @@ defmodule Brain.Telemetry do
     {"chatbot-ml-train-stop", @ml_train ++ [:stop], :training_stop},
     {"chatbot-ml-train-exception", @ml_train ++ [:exception], :training_exception},
     {"chatbot-model-load-stop", @model_load ++ [:stop], :model_load},
-
-    # Message queue sampling and error events
-    {"chatbot-message-queue", @message_queue, :message_queue},
-    {"chatbot-error", @error_event, :error},
 
     # Learning/Training World events
     {"chatbot-learning-entity-discovered", @learning_entity_discovered, {:learning, :entity_discovered}},
@@ -457,11 +449,62 @@ defmodule Brain.Telemetry do
     end)
   end
 
-  def span(:service_health_check, metadata, fun) do
-    :telemetry.span(@service_health_check, metadata, fn ->
-      result = fun.()
-      {result, %{}}
-    end)
+  @doc """
+  Emits the result of a service health check: `status` is what the
+  service's `health_check/1` returned, `duration_ms` how long it took.
+  """
+  def emit_service_health_check(service, status, duration_ms) do
+    :telemetry.execute(
+      @service_health_check ++ [:stop],
+      %{duration: duration_ms},
+      %{service: service, status: status, timestamp: System.monotonic_time(:millisecond)}
+    )
+  end
+
+  @doc """
+  Emits a model read from disk as it was loaded: `model` names it,
+  `duration_ms` is how long the read took and `success` whether it loaded.
+  Emitted where the model is read, not where a loaded copy is served.
+  """
+  def emit_model_load(model, duration_ms, success) when is_boolean(success) do
+    :telemetry.execute(
+      @model_load ++ [:stop],
+      %{duration_ms: duration_ms},
+      %{model: model, success: success, timestamp: System.monotonic_time(:millisecond)}
+    )
+  end
+
+  @doc """
+  Runs `load`, a function that reads `model` from disk, and emits the load
+  (`emit_model_load/3`): a failure when it returns `:error` or
+  `{:error, _}`, or raises (raised again), a success when it returns
+  anything else. Returns what `load` returns.
+  """
+  def measure_model_load(model, load) when is_function(load, 0) do
+    started = System.monotonic_time()
+
+    result =
+      try do
+        load.()
+      rescue
+        exception ->
+          emit_model_load(model, elapsed_ms(started), false)
+          reraise exception, __STACKTRACE__
+      end
+
+    success =
+      case result do
+        :error -> false
+        {:error, _reason} -> false
+        _loaded -> true
+      end
+
+    emit_model_load(model, elapsed_ms(started), success)
+    result
+  end
+
+  defp elapsed_ms(started) do
+    System.convert_time_unit(System.monotonic_time() - started, :native, :microsecond) / 1000
   end
 
   @doc """
@@ -661,28 +704,6 @@ defmodule Brain.Telemetry do
         string_ops: Map.get(measurements, :string_ops, false),
         timestamp: System.monotonic_time(:millisecond)
       }
-    )
-  end
-
-  @doc """
-  Emits a message queue size event. Used for periodic sampling.
-  """
-  def emit_message_queue(genserver_name, queue_length) do
-    :telemetry.execute(
-      @message_queue,
-      %{queue_length: queue_length},
-      %{genserver: genserver_name, timestamp: System.monotonic_time(:millisecond)}
-    )
-  end
-
-  @doc """
-  Emits an error event. Non-blocking.
-  """
-  def emit_error(error_type, details \\ %{}) do
-    :telemetry.execute(
-      @error_event,
-      %{count: 1},
-      %{error_type: error_type, details: details, timestamp: System.monotonic_time(:millisecond)}
     )
   end
 
