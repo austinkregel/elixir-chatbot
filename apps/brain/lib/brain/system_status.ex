@@ -156,9 +156,15 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  @doc "Returns comprehensive status of all GenServers organized by category.\n"
-  def get_all_genservers_status do
+  @doc """
+  Returns comprehensive status of all GenServers organized by category, each
+  tracked one with its activity counted in `telemetry`, the node's telemetry
+  window read once (`Brain.Metrics.Aggregator.read_telemetry/0`); read here
+  when not given. Raises when Atlas cannot be read.
+  """
+  def get_all_genservers_status(telemetry \\ Aggregator.read_telemetry()) do
     started_at = System.monotonic_time(:millisecond)
+    durations = Aggregator.get_metrics(telemetry)
 
     categories =
       @genserver_categories
@@ -166,7 +172,7 @@ defmodule Brain.SystemStatus do
         statuses =
           servers
           |> Enum.map(fn {module, name, type} ->
-            {module, get_genserver_status(module, name, type)}
+            {module, get_genserver_status(module, name, type, durations)}
           end)
           |> Map.new()
 
@@ -183,22 +189,22 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  @doc "Returns performance metrics from the Metrics Aggregator.\n"
-  def get_performance_metrics do
-    if Code.ensure_loaded?(Brain.Metrics.Aggregator) do
-      try do
-        Aggregator.get_metrics()
-      catch
-        :exit, _ -> default_metrics()
-      end
-    else
-      default_metrics()
-    end
+  @doc """
+  Returns performance metrics from the Metrics Aggregator
+  (`Brain.Metrics.Aggregator.get_metrics/1`), from `telemetry`, the node's
+  telemetry window read once; read here when not given. Raises when Atlas
+  cannot be read.
+  """
+  def get_performance_metrics(telemetry \\ Aggregator.read_telemetry()) do
+    Aggregator.get_metrics(telemetry)
   end
 
-  @doc "Returns health indicators for the system.\n"
-  def get_health_indicators do
-    genserver_status = get_all_genservers_status()
+  @doc """
+  Returns health indicators for the system, from `telemetry` as
+  `get_all_genservers_status/1` takes it.
+  """
+  def get_health_indicators(telemetry \\ Aggregator.read_telemetry()) do
+    genserver_status = get_all_genservers_status(telemetry)
     supervisor_info = get_supervisor_info()
     {running, total} = count_genserver_health(genserver_status.categories)
 
@@ -507,16 +513,18 @@ defmodule Brain.SystemStatus do
   Credentials are stored per world, so "configured" is reported for
   `world_id`; a missing world raises.
   """
-  def get_services_status(world_id) do
+  def get_services_status(world_id, telemetry \\ Aggregator.read_telemetry()) do
     unless is_binary(world_id) and world_id != "" do
       raise ArgumentError,
             "SystemStatus.get_services_status needs the world whose service credentials are checked, got: #{inspect(world_id)}"
     end
 
-    services_status_in_world(world_id)
+    services_status_in_world(world_id, Aggregator.get_service_metrics(telemetry))
   end
 
-  defp services_status_in_world(world_id) do
+  # `all_metrics` is what the aggregator counted for every service, which
+  # names each service as it is stored in Atlas: as a string.
+  defp services_status_in_world(world_id, all_metrics) do
     alias Brain.Services.{Dispatcher, CredentialVault, Cache}
 
     # GenServer statuses
@@ -529,10 +537,7 @@ defmodule Brain.SystemStatus do
       |> Enum.map(fn service_info ->
         service_name = service_info.name
 
-        # Get metrics for this service from aggregator, which names each
-        # service as it is stored in Atlas: as a string.
-        metrics = Aggregator.get_service_metrics()
-        service_metrics = get_in(metrics, [:by_service, to_string(service_name)]) || %{}
+        service_metrics = get_in(all_metrics, [:by_service, to_string(service_name)]) || %{}
 
         Map.merge(service_info, %{
           total_dispatches: Map.get(service_metrics, :total_dispatches, 0),
@@ -545,7 +550,6 @@ defmodule Brain.SystemStatus do
       end)
 
     # Overall dispatch metrics
-    all_metrics = Aggregator.get_service_metrics()
     dispatch_metrics = Map.get(all_metrics, :dispatch, %{})
     cache_metrics = Map.get(all_metrics, :cache, %{})
 
@@ -1108,7 +1112,7 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  defp get_genserver_status(module, name, type) do
+  defp get_genserver_status(module, name, type, durations) do
     pid = Process.whereis(module)
 
     base_status = %{
@@ -1143,7 +1147,7 @@ defmodule Brain.SystemStatus do
 
       status_with_info
       |> enhance_status(module, type)
-      |> add_utilization_metrics(module)
+      |> add_utilization_metrics(module, durations)
     else
       base_status
     end
@@ -1310,11 +1314,13 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  defp add_utilization_metrics(status, module) do
+  defp add_utilization_metrics(status, module, durations) do
     metric_name = Map.get(@module_metric_map, module)
 
     if metric_name do
-      metrics = get_metric_for_module(metric_name)
+      # Every tracked module's metric is a known duration metric, listed
+      # whether or not anything was counted.
+      metrics = Map.fetch!(durations, metric_name)
 
       utilization_status =
         classify_utilization(
@@ -1342,24 +1348,6 @@ defmodule Brain.SystemStatus do
               :not_started
             end
       }
-    end
-  end
-
-  defp get_metric_for_module(metric_name) do
-    try do
-      case Aggregator.get_metric(metric_name) do
-        nil ->
-          %{count: 0, rate_per_minute: 0.0, last_updated: nil}
-
-        data ->
-          %{
-            count: Map.get(data, :count, 0),
-            rate_per_minute: Map.get(data, :rate_per_minute, 0.0),
-            last_updated: Map.get(data, :last_updated)
-          }
-      end
-    catch
-      _, _ -> %{count: 0, rate_per_minute: 0.0, last_updated: nil}
     end
   end
 
@@ -1453,29 +1441,19 @@ defmodule Brain.SystemStatus do
   end
 
   @doc "Returns response timing metrics from the aggregator.\n"
-  def get_response_timing do
-    try do
-      metrics = Aggregator.get_metrics()
-      brain_eval = Map.get(metrics, :brain_evaluate, %{})
-      pipeline = Map.get(metrics, :pipeline_process, %{})
+  # `telemetry` is the node's telemetry window read once
+  # (`Brain.Metrics.Aggregator.read_telemetry/0`); read here when not given.
+  # Raises when Atlas cannot be read.
+  def get_response_timing(telemetry \\ Aggregator.read_telemetry()) do
+    metrics = Aggregator.get_metrics(telemetry)
+    brain_eval = Map.fetch!(metrics, :brain_evaluate)
+    pipeline = Map.fetch!(metrics, :pipeline_process)
 
-      %{
-        brain_avg_ms: Map.get(brain_eval, :avg_ms, 0),
-        brain_count: Map.get(brain_eval, :count, 0),
-        pipeline_avg_ms: Map.get(pipeline, :avg_ms, 0),
-        pipeline_count: Map.get(pipeline, :count, 0)
-      }
-    catch
-      _, _ -> %{brain_avg_ms: 0, brain_count: 0, pipeline_avg_ms: 0, pipeline_count: 0}
-    end
-  end
-
-  defp default_metrics do
     %{
-      brain_evaluate: %{count: 0, avg_ms: 0, min_ms: 0, max_ms: 0},
-      pipeline_process: %{count: 0, avg_ms: 0, min_ms: 0, max_ms: 0},
-      memory_query: %{count: 0, avg_ms: 0, min_ms: 0, max_ms: 0},
-      errors: %{count: 0, rate_per_minute: 0.0}
+      brain_avg_ms: brain_eval.avg_ms,
+      brain_count: brain_eval.count,
+      pipeline_avg_ms: pipeline.avg_ms,
+      pipeline_count: pipeline.count
     }
   end
 
