@@ -51,7 +51,8 @@ defmodule Brain.ConversationSideEffectsTest do
       {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id, side_effects: false)
 
       for input <- @inputs do
-        assert {:ok, %{response: _}} = Brain.evaluate(conversation_id, input, user_id: user_id)
+        assert {:ok, %{response: _}} =
+                 Brain.evaluate(conversation_id, input, user_id: user_id, time_zone: Brain.Temporal.Zone.utc())
       end
 
       assert snapshot() == before
@@ -65,7 +66,8 @@ defmodule Brain.ConversationSideEffectsTest do
       {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
 
       for input <- @inputs do
-        assert {:ok, %{response: _}} = Brain.evaluate(conversation_id, input, user_id: user_id)
+        assert {:ok, %{response: _}} =
+                 Brain.evaluate(conversation_id, input, user_id: user_id, time_zone: Brain.Temporal.Zone.utc())
       end
 
       after_turns = snapshot()
