@@ -105,6 +105,17 @@ defmodule Brain.Services.SchedulingDriver do
   @doc "Takes the event the slots identify off the calendar."
   @callback cancel_event(Service.slots(), Service.credentials(), world_id :: String.t()) :: result()
 
+  @typedoc "A kind of scheduled item."
+  @type kind :: :alarm | :reminder | :timer | :calendar
+
+  @doc """
+  The fields a cancel identifies an item of each kind by, each with the slot
+  that names it, as `%{kind => [{field, slot}]}`. An item an error names (a
+  cancel that matched several, or none identified) carries these fields, and
+  a reply that picks one is completed with these slots (`item_slots/3`).
+  """
+  @callback identifying_slots() :: %{kind() => [{field :: atom(), slot :: atom()}]}
+
   @capability "scheduling"
 
   @operations %{
@@ -158,6 +169,56 @@ defmodule Brain.Services.SchedulingDriver do
     case String.split(intent, ".") do
       [domain, verb] -> Map.fetch(@operations, {domain, verb})
       _other -> :error
+    end
+  end
+
+  @doc """
+  The slots naming `item`, an item of `kind` that `driver` returned: each of
+  the kind's identifying fields (`c:identifying_slots/0`) under the slot that
+  names it, keyed by the slot's name. A field the item leaves blank or
+  `nil` names nothing; one holding anything but a string raises. Raises for
+  a kind the driver identifies nothing of.
+  """
+  @spec item_slots(module(), kind(), map()) :: %{String.t() => String.t()}
+  def item_slots(driver, kind, item) when is_atom(driver) and is_atom(kind) and is_map(item) do
+    driver
+    |> identifying_fields!(kind)
+    |> Enum.flat_map(fn {field, slot} ->
+      case Map.get(item, field) do
+        nil ->
+          []
+
+        value when is_binary(value) ->
+          if String.trim(value) == "", do: [], else: [{Atom.to_string(slot), value}]
+
+        other ->
+          raise ArgumentError,
+                "SchedulingDriver: the #{kind} item's #{field} names its #{slot} slot and must be a string, " <>
+                  "got: #{inspect(other)}"
+      end
+    end)
+    |> Map.new()
+  end
+
+  @doc """
+  The fields `driver` identifies an item of `kind` by, each with the slot
+  that names it (`c:identifying_slots/0`). Raises for a module that is not a
+  scheduling driver or a kind it identifies nothing of.
+  """
+  @spec identifying_fields!(module(), kind()) :: [{atom(), atom()}]
+  def identifying_fields!(driver, kind) when is_atom(driver) and is_atom(kind) do
+    unless Code.ensure_loaded?(driver) and function_exported?(driver, :identifying_slots, 0) do
+      raise ArgumentError, "SchedulingDriver: #{inspect(driver)} is not a scheduling driver; it has no identifying_slots/0"
+    end
+
+    case Map.fetch(driver.identifying_slots(), kind) do
+      {:ok, [_ | _] = fields} ->
+        fields
+
+      _other ->
+        raise ArgumentError,
+              "SchedulingDriver: #{inspect(driver)} identifies no #{inspect(kind)} items; it identifies " <>
+                inspect(driver.identifying_slots() |> Map.keys() |> Enum.sort())
     end
   end
 
