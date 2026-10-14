@@ -114,8 +114,12 @@ defmodule Brain.ML.SpanReliability do
   fitted on the other folds, maximizing the span-level F1 of both decisions
   together. For each candidate extent prior strength the extent thresholds
   and the type thresholds are chosen in turn, each with the other fixed,
-  starting from type thresholds that decide every span with a lead, until the
-  F1 stops rising. The cross-validation report also gives the F1 of deciding
+  until the F1 stops rising, once starting from type thresholds that decide
+  every span with a lead and once from extent thresholds that decide every
+  extent with a lead, and the better of the two is kept. Starting from one
+  alone misses pairs: spans sharing one extent score, mostly wrong when every
+  type hypothesis is decided, are left out before a type threshold that keeps
+  only the right ones is weighed. The cross-validation report also gives the F1 of deciding
   nothing again, of weighing the whole span's hypotheses with the first
   decision's thresholds, and with thresholds of their own and no extent
   decision (`without_extent`). Measured 2026-10-13 on the 1,146 NER training
@@ -538,10 +542,38 @@ defmodule Brain.ML.SpanReliability do
   end
 
   # The extent and type thresholds with the best F1 over `points`, chosen in
-  # turn, each with the other fixed, from type thresholds that pass every
-  # point, until the F1 stops rising.
-  defp joint_thresholds(points, gold_total, offsets),
-    do: ascend(points, gold_total, offsets, %{min_score: -1.0e300, min_margin: 0.0}, nil)
+  # turn, each with the other fixed, until the F1 stops rising -- from each of
+  # two starts, keeping the better (on equal F1, the one deciding fewer spans,
+  # then the first):
+  #
+  #   - type thresholds that pass every point, the extent thresholds chosen
+  #     first;
+  #   - extent thresholds that pass every point (the lowest extent score the
+  #     points have, any lead), the type thresholds chosen first.
+  #
+  # A span is decided only when it passes both, so neither start alone can
+  # reach every pair: from the first, extents whose spans are mostly wrong
+  # with every type hypothesis decided are left out before any type threshold
+  # can keep only the right ones -- and spans sharing one extent score are
+  # kept or left out together -- so the type threshold that separates them
+  # is never weighed.
+  defp joint_thresholds([], gold_total, offsets), do: ascend([], gold_total, offsets, %{min_score: -1.0e300, min_margin: 0.0}, nil)
+
+  defp joint_thresholds(points, gold_total, offsets) do
+    from_types = ascend(points, gold_total, offsets, %{min_score: -1.0e300, min_margin: 0.0}, nil)
+
+    every_extent = %{min_score: points |> Enum.map(& &1.extent_score) |> Enum.min(), min_margin: 0.0}
+
+    type =
+      points
+      |> Enum.filter(&(score_ok?(&1.extent_score, every_extent.min_score) and margin_ok?(&1.extent_margin, every_extent.min_margin)))
+      |> best_thresholds(gold_total, offsets)
+
+    start = Map.merge(type, %{extent_min_score: every_extent.min_score, extent_min_margin: every_extent.min_margin})
+    from_extents = ascend(points, gold_total, offsets, type, start)
+
+    Enum.max_by([from_types, from_extents], &{&1.f1, -&1.decided})
+  end
 
   defp ascend(points, gold_total, offsets, type, previous) do
     extent =
