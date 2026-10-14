@@ -91,6 +91,7 @@ defmodule Brain.Response.DiscoursePlanner do
   | `{:no_matching_items, kind, %{}}` | LocalScheduler `handle_call/3` | action result | `:no_items` |
   | `{:no_matching_items, kind, criteria}` | LocalScheduler `handle_call/3` | action result | `:no_matching_items`, with `criteria` |
   | `:no_ringing_alarm` | LocalScheduler `snooze_alarm/3` | action result | `:no_ringing_alarm` |
+  | `:missing_duration` | LocalScheduler `snooze_alarm/3` | clarification | `:missing_slots`, `missing_slots: ["duration"]` |
   | `:side_effects_off` | Dispatcher `dispatch/3` | action result | `:side_effects_off` |
   | `:rate_limited` | Weather `geocode/2`, `fetch_current/2`, `fetch_forecast/2` | action result | `:rate_limited` |
   | `:service_unavailable` | Weather, the same three | action result | `:unavailable` |
@@ -146,6 +147,7 @@ defmodule Brain.Response.DiscoursePlanner do
     do: report(:no_matching_items, %{item_kind: kind, criteria: criteria})
 
   defp planned_reply!(:no_ringing_alarm), do: report(:no_ringing_alarm, %{item_kind: :alarm})
+  defp planned_reply!(:missing_duration), do: question(:missing_slots, %{missing_slots: ["duration"]})
   defp planned_reply!(:side_effects_off), do: report(:side_effects_off)
   defp planned_reply!(:rate_limited), do: report(:rate_limited)
   defp planned_reply!(:service_unavailable), do: report(:unavailable)
