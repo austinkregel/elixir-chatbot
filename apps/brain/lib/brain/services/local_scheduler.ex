@@ -35,8 +35,10 @@ defmodule Brain.Services.LocalScheduler do
 
   `check_alarms/3` and `check_reminders/3` report the alarms or reminders the
   world has, in the order they were set, with how many there are.
-  `query_calendar/3` reports the calendar item set last, with how many there
-  are. Each of the three narrows its items to the day the `:date` slot names,
+  `query_calendar/3` reports the calendar item set last (`:last_set_event`),
+  with how many there are: not the soonest, since a stored date is free text
+  ("tomorrow", "Friday") that cannot be ordered. Each of the three narrows its
+  items to the day the `:date` slot names,
   matched as above; with no `:date`, it reports all of them. No other slot
   narrows a check. When a check finds nothing, its count is 0 and the fields of
   the item it would report are `""`: no text stands in for "nothing found".
@@ -47,7 +49,7 @@ defmodule Brain.Services.LocalScheduler do
   ## Cancelling: which items a cancel matches
 
   A cancel identifies items by the fields stored for their kind, each read
-  from one slot, matched as above:
+  from one slot, matched as above (`identifying_slots/0`):
 
   | Kind     | Field      | Slot             |
   | -------- | ---------- | ---------------- |
@@ -70,10 +72,12 @@ defmodule Brain.Services.LocalScheduler do
     remove that one; no identifying slot matches every item of the kind, so
     "cancel my alarms" removes them all.
   - `cancel_event/3` removes exactly one calendar item and never more. With
-    no identifying slot it is `{:error, :event_not_identified}`; when several
-    items match it is `{:error, {:ambiguous, :calendar, events}}`, naming
-    each, and nothing is removed. Either is the response layer's cue to ask
-    which event is meant.
+    no identifying slot it is `{:error, {:event_not_identified, events}}`,
+    naming every calendar item of the world; when several items match it is
+    `{:error, {:ambiguous, :calendar, events}}`, naming each. Nothing is
+    removed, and either is the response layer's cue to ask which of the
+    events named is meant. With no identifying slot and no calendar items it
+    is `{:error, {:no_matching_items, :calendar, %{}}}`.
 
   When nothing matches, every cancel is
   `{:error, {:no_matching_items, kind, criteria}}`, with the slot values it
@@ -144,7 +148,7 @@ defmodule Brain.Services.LocalScheduler do
   def provides_fields do
     [:alarm_status, :alarm_time, :alarm_date, :alarm_times, :alarm_dates, :alarm_count, :reminder_set,
      :reminder_text, :reminder_time, :reminder_date, :reminder_texts, :reminder_times, :reminder_dates,
-     :reminder_count, :timer_status, :duration, :timer_durations, :next_event, :event_time,
+     :reminder_count, :timer_status, :duration, :timer_durations, :last_set_event, :event_time,
      :event_date, :event_count, :cancelled_event, :cancelled_count]
   end
 
@@ -316,7 +320,7 @@ defmodule Brain.Services.LocalScheduler do
     time = Map.get(slots, :time) || Map.get(slots, "time", "")
     date = Map.get(slots, :date) || Map.get(slots, "date", "")
     add_item(world_id, :calendar, %{event: event, time: time, date: date})
-    {:ok, %{next_event: event, event_time: time, event_date: date}}
+    {:ok, %{last_set_event: event, event_time: time, event_date: date}}
   end
 
   # Takes the one calendar item the slots identify off the world's calendar,
@@ -342,12 +346,18 @@ defmodule Brain.Services.LocalScheduler do
 
     case world_id |> list_items(:calendar) |> on_day(:calendar, slots) do
       [] ->
-        {:ok, %{next_event: "", event_time: "", event_date: "", event_count: 0}}
+        {:ok, %{last_set_event: "", event_time: "", event_date: "", event_count: 0}}
 
       [latest | _] = events ->
-        {:ok, %{next_event: latest.event, event_time: latest.time, event_date: latest.date, event_count: length(events)}}
+        {:ok,
+         %{last_set_event: latest.event, event_time: latest.time, event_date: latest.date, event_count: length(events)}}
     end
   end
+
+  # The fields a cancel identifies an item of each kind by, each with the slot
+  # that names it (see "Cancelling" above).
+  @impl SchedulingDriver
+  def identifying_slots, do: @identifying_slots
 
   @impl true
   def enabled? do
@@ -434,11 +444,19 @@ defmodule Brain.Services.LocalScheduler do
 
   # Removes the world's items of `type` that the slots identify, in `mode`
   # (`handle_call/3`). `:one` with no identifying slot is refused before the
-  # scheduler is asked, since it could only match every item.
+  # scheduler is asked, since it could only match every item: the refusal
+  # names the world's items of `type`, in the order they were set, for the
+  # response layer to ask which is meant.
   defp cancel_matching(world_id, type, slots, mode) do
     case {mode, criteria!(Map.fetch!(@identifying_slots, type), type, slots)} do
-      {:one, criteria} when criteria == %{} -> {:error, :event_not_identified}
-      {mode, criteria} -> GenServer.call(running!(), {:cancel_matching, world_id, type, criteria, mode})
+      {:one, criteria} when criteria == %{} ->
+        case world_id |> list_items(type) |> Enum.reverse() do
+          [] -> {:error, {:no_matching_items, type, criteria}}
+          items -> {:error, {:event_not_identified, Enum.map(items, &Map.delete(&1, :created))}}
+        end
+
+      {mode, criteria} ->
+        GenServer.call(running!(), {:cancel_matching, world_id, type, criteria, mode})
     end
   end
 
