@@ -141,7 +141,6 @@ defmodule Brain.ML.EntityExtractor do
   # `put_types/2` carries from one disambiguation onto another's entities.
   @type_fields [
     :entity_type,
-    :entity,
     :types,
     :type_posteriors,
     :p_ordinary,
@@ -183,9 +182,11 @@ defmodule Brain.ML.EntityExtractor do
   @doc """
   Decides again, now that the turn's intent is known, the spans `extract/2`
   left unresolved. A span left for `:insufficient_evidence` is decided again
-  by `Brain.ML.SpanReliability.redecide/4`, with what the intent says about
-  each of its hypothesis labels (`Brain.Analysis.SlotTypePreferences.intent_evidence/3`)
-  as one more piece of evidence and the same learned thresholds. Nothing else
+  by `Brain.ML.SpanReliability.redecide/4`: its extent first, by how far its
+  readings' extents can be trusted, then its type among the hypotheses at
+  that extent, with what the intent says about each of its hypothesis labels
+  (`Brain.Analysis.SlotTypePreferences.intent_evidence/3`) as one more piece
+  of evidence, under thresholds learned for deciding again. Nothing else
   decides it: no span is resolved because a source or the intent always wins.
 
   Returns `%{entities: entities, unresolved_spans: spans, outcomes: outcomes}`:
@@ -202,9 +203,12 @@ defmodule Brain.ML.EntityExtractor do
     the span stays unresolved as it was;
   - `%{outcome: :not_redecided, reason}` -- `:no_measured_reading` (no
     hypothesis to weigh), `:below_confidence_floor` (decided before, withheld
-    by the floor), `:no_intent`, or `:intent_without_domain` (an intent whose
+    by the floor), `:no_intent`, `:intent_without_domain` (an intent whose
     prefix `Brain.Lexicon.IntentDomains` does not declare, for which the slot
-    type preferences hold no distribution).
+    type preferences hold no distribution), `:extent_undecided` (the readings'
+    extents decide no extent, so the evidence is not weighed), or
+    `:no_hypothesis_at_extent` (no measured reading gives a type at the
+    extent decided).
 
   Each outcome also carries the span's `:value`, `:start_pos` and `:end_pos`.
 
@@ -291,6 +295,15 @@ defmodule Brain.ML.EntityExtractor do
 
         {:span, span,
          outcome(span, %{outcome: :undecided, best_type: best, score: top.score, margin: margin, evidence: evidence})}
+
+      # The extent the readings' extent reliabilities decided carries no
+      # measured reading, so there is no type there to weigh the evidence for.
+      {:undecided, %Brain.Lattice{best: nil}} ->
+        {:span, span, outcome(span, %{outcome: :not_redecided, reason: :no_hypothesis_at_extent})}
+
+      # Evidence about types cannot say where the span starts and ends.
+      {:extent_undecided, %Brain.Lattice{}} ->
+        {:span, span, outcome(span, %{outcome: :not_redecided, reason: :extent_undecided})}
     end
   end
 
@@ -400,6 +413,11 @@ defmodule Brain.ML.EntityExtractor do
   slot types (final_value, change_value, etc.) based on what the intent's
   slot schema expects. Person entities can be split into given_name/last_name.
 
+  When the schema has several numeric slots, numbers fill them in the order
+  they stand in the text. A number anaphora resolution supplied has no place
+  in the text: it fills the slot of a schema with one numeric slot, and keeps
+  its type when there are several.
+
   ## Options
     - `:intent` - The classified intent string (e.g., "smarthome.heating.set")
   """
@@ -440,15 +458,24 @@ defmodule Brain.ML.EntityExtractor do
     non_number_entities ++ refined_numbers
   end
 
+  # Numbers fill several numeric slots in the order they stand in the text. A
+  # referent anaphora resolution supplied (`source: :anaphora_resolution`)
+  # stands nowhere in the text, so which slot it fills cannot be told from
+  # that order: it keeps its type, and the numbers that have a position are
+  # assigned without it. Any other number without a position raises.
   defp assign_numbers_to_slots(numbers, slots) do
-    sorted_numbers = Enum.sort_by(numbers, & &1.start_pos)
+    {referents, positioned} = Enum.split_with(numbers, &(Map.get(&1, :source) == :anaphora_resolution))
 
-    sorted_numbers
-    |> Enum.with_index()
-    |> Enum.map(fn {entity, idx} ->
-      slot = Enum.at(slots, idx) || List.last(slots)
-      Map.put(entity, :entity_type, slot)
-    end)
+    assigned =
+      positioned
+      |> Enum.sort_by(& &1.start_pos)
+      |> Enum.with_index()
+      |> Enum.map(fn {entity, idx} ->
+        slot = Enum.at(slots, idx) || List.last(slots)
+        Map.put(entity, :entity_type, slot)
+      end)
+
+    assigned ++ referents
   end
 
   defp refine_person_subtypes(entities) do
@@ -947,11 +974,13 @@ defmodule Brain.ML.EntityExtractor do
   # The world's BIO tagger over the same tokens. It was trained on
   # `Tokenizer.tokenize/1` tokens (`Brain.ML.NerGold`), so its token indexes map
   # straight back to positions in the text, and its confidence is the mean
-  # posterior of the entity's tags.
+  # posterior of the entity's tags. Its `:extent_cue` says how the decode
+  # delimited it (`bio_extent_cue/2`), which `Brain.ML.SpanReliability` learns
+  # how far to trust its extent by.
   defp extract_model_entities(text, tokens, model) do
-    tokens
-    |> Enum.map(& &1.text)
-    |> EntityTrainer.tag(model)
+    tagged = tokens |> Enum.map(& &1.text) |> EntityTrainer.tag(model)
+
+    tagged
     |> EntityTrainer.extract_entities_from_bio()
     |> Enum.map(fn entity ->
       start_pos = Enum.at(tokens, entity.start_index).start_pos
@@ -965,9 +994,33 @@ defmodule Brain.ML.EntityExtractor do
         start_pos: start_pos,
         end_pos: end_pos,
         confidence: entity.confidence,
-        source: :entity_model
+        source: :entity_model,
+        extent_cue: bio_extent_cue(tagged, entity)
       }
     end)
+  end
+
+  # `{opened, followed_by}`: `:begin` when the decode opened the entity at a
+  # `B-` tag and `:inside` when at an `I-` tag (one that continues no entity of
+  # its type); `:inside` when the token after the entity is tagged `I-` (the
+  # decode ran on into another type) and `:outside` when it is tagged
+  # otherwise or the sentence ends.
+  defp bio_extent_cue(tagged, %{start_index: start_index, end_index: end_index}) do
+    opened =
+      case Enum.at(tagged, start_index) do
+        {_token, "B-" <> _type, _posterior} -> :begin
+        {_token, "I-" <> _type, _posterior} -> :inside
+      end
+
+    followed_by =
+      case Enum.at(tagged, end_index + 1) do
+        {_token, "I-" <> _type, _posterior} -> :inside
+        {_token, "B-" <> _type, _posterior} -> :outside
+        {_token, "O", _posterior} -> :outside
+        nil -> :outside
+      end
+
+    {opened, followed_by}
   end
 
   # Takes the sentence's tags rather than tagging it a second time: this and
