@@ -1,5 +1,5 @@
 defmodule Brain.Analysis.EntityDisambiguator do
-  @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **Candidate readings**: chosen by `Brain.Analysis.EntityTypeScorer` from how the word is used, how it was typed, the tag of the word before it, and the learned weights of the entity types the slot schemas list\n- **POS tags**: What part of speech precedes/follows the entity (introduction patterns)\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **ChunkProfile**: Domain from feature-vector classification, whose slot types, ranked by their learned weights (`Brain.Analysis.SlotTypePreferences`), widen an ambiguous-type entity's candidates\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
+  @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **Candidate readings**: chosen by `Brain.Analysis.EntityTypeScorer` from how the word is used, how it was typed, the tag of the word before it, and the context's learned likelihood of each reading (`Brain.Analysis.SlotTypePreferences`)\n- **POS tags**: What part of speech precedes/follows the entity (introduction patterns)\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **ChunkProfile**: Domain from feature-vector classification, whose slot types, ranked by their learned weights (`Brain.Analysis.SlotTypePreferences`), widen an ambiguous-type entity's candidates\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
 
   # World.TypeInferrer is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
@@ -125,18 +125,23 @@ defmodule Brain.Analysis.EntityDisambiguator do
   end
 
   # The types the context's slots expect, ranked by their learned weights
-  # (`EntityTypeScorer.expected_types/2`), offered beside the entity's own
+  # (`EntityTypeScorer.Expected.weights/1`), offered beside the entity's own
   # type. A type the slots do not list is offered every listed type. A listed
   # type is offered the listed types it is compatible with in the hierarchy
   # -- a room, its parent location -- that the data prefers to it, so a
   # better-fitting reading is weighed even when the current one is
   # acceptable. With nothing to offer, the entity keeps its own readings.
   defp expand_with_domain_candidates(entity, current_type, context) do
-    expected = slot_preferences(context)
-    current_weight = Map.get(expected, current_type)
+    weights =
+      case slot_preferences(context) do
+        nil -> %{}
+        expected -> EntityTypeScorer.Expected.weights(expected)
+      end
+
+    current_weight = Map.get(weights, current_type)
 
     alternatives =
-      expected
+      weights
       |> Enum.filter(fn {type, weight} ->
         type != current_type and
           (current_weight == nil or (weight > current_weight and TypeHierarchy.compatible?(current_type, type)))
@@ -165,9 +170,9 @@ defmodule Brain.Analysis.EntityDisambiguator do
   end
 
   # Weighs every candidate reading with EntityTypeScorer: how the word is
-  # used, how it was typed, the word before it, and the learned weights of
-  # the entity types the context's slots expect -- the same weights the
-  # domain expansion ranked by. The entity takes the winner's type, value and
+  # used, how it was typed, the word before it, and the context's learned
+  # likelihood of each reading -- the context whose listed types the domain
+  # expansion ranked by. The entity takes the winner's type, value and
   # confidence, and keeps its candidates so it can be scored again once the
   # intent is known.
   defp score_and_select(entity, types, pos_tagged, context) do
@@ -468,13 +473,13 @@ defmodule Brain.Analysis.EntityDisambiguator do
     entity
   end
 
-  # The entity types the intent registry's slot schemas expect, with their
-  # learned weights: every intent in the profile's domain when a profile is
-  # known, or else the intent's own. `%{}` when there is no context.
+  # What the context expects (`EntityTypeScorer.Expected`): the profile's
+  # domain when a profile is known, or else the intent. `nil` when there is no
+  # context.
   defp slot_preferences(context) do
     case Map.get(context, :profile) do
       %ChunkProfile{domain: domain} when domain != :unknown -> EntityTypeScorer.domain_expected_types(domain)
-      _ -> EntityTypeScorer.expected_types(Map.get(context, :intent)) || %{}
+      _ -> EntityTypeScorer.expected_types(Map.get(context, :intent))
     end
   end
 end
