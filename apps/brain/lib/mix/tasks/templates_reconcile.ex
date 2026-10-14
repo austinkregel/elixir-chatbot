@@ -28,11 +28,9 @@ defmodule Mix.Tasks.Templates.Reconcile do
 
   Deciding those requires knowing whether a label is still reachable, and the
   registry alone does not answer that — the pipeline can emit labels that are not
-  registry keys. `"question.factual"` is a literal default at
-  `Brain.Analysis.Pipeline`'s speech-act mapping, and `"unknown"` is the value
-  most of `speech_act_intent_map.json` routes to. Both have templates, both would
-  look dead by a registry check, and deleting either would remove the response for
-  unrecognised input.
+  registry keys. `"unknown"` is the label `Brain.ML.NLPPipeline` gives input it
+  cannot classify. It has a template, would look dead by a registry check, and
+  deleting it would remove the response for unrecognized input.
 
   So the report grades each unresolved key by where it is referenced, and
   distinguishes a reference in a *rename map* from a reference on a live path. A
