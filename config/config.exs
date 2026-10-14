@@ -121,12 +121,11 @@ config :brain,
     patience: 3
   ],
 
-  # The time zone a turn's dates and times are read in ("tomorrow", "5 pm"),
-  # by Brain.Temporal.Resolver. Web users store no time zone, so this is the
-  # server's, named here rather than read from the host. Elixir's calendar
-  # holds no time zone database and none is a dependency, so "Etc/UTC" is
-  # the only zone that can be read; any other raises when a turn is resolved.
-  time_zone: "Etc/UTC",
+  # The clock Brain.Services.LocalScheduler fires alarms, reminders, timers
+  # and calendar items by (Brain.Services.SchedulerClock). Required: the
+  # scheduler does not start without it. config/test.exs names a clock the
+  # tests set themselves.
+  scheduler_clock: Brain.Services.SchedulerClock.SystemClock,
 
   # Intent promotion (novel intent discovery)
   intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true",
@@ -175,7 +174,14 @@ config :world, World.EntityPromoter,
 # ============================================================================
 
 config :chat_web,
-  websocket_hub_url: System.get_env("WEBSOCKET_HUB_URL", "http://localhost:3001")
+  websocket_hub_url: System.get_env("WEBSOCKET_HUB_URL", "http://localhost:3001"),
+  # How many years either side of the current one the chat page's browser
+  # gives its time zone's offsets for with each message (Brain.Temporal.Zone).
+  # A date or time said outside that span cannot be read and is refused,
+  # naming the span. Every date said without a year falls within a year of
+  # the turn (temporal.json's periods reach a year either way), so any span
+  # of one year or more covers them; ten covers years said nearby as well.
+  browser_zone_years: 10
 
 # Configures the endpoint
 config :chat_web, ChatWeb.Endpoint,
