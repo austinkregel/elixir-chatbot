@@ -1,6 +1,7 @@
 defmodule Brain.Analysis.SlotTypePreferences do
   @moduledoc """
-  Which entity types fill an intent's slots, and which part of speech comes
+  Which entity types fill an intent's slots, how often a gazetteer match in
+  the intent's utterances is no entity at all, and which part of speech comes
   before a span of each type, learned from the gold standards' training
   splits.
 
@@ -15,14 +16,23 @@ defmodule Brain.Analysis.SlotTypePreferences do
   it -- `:sentence_start` for a span that begins the text -- and every token
   outside the spans gives the tag before an ordinary word.
 
+  Every row is also read by the gazetteer, as the extractor reads it (one
+  `Brain.ML.EntityExtractor.gazetteer_key/1` per token, looked up with
+  `Brain.ML.Gazetteer.lookup_spans/2`), before any reading is scored. A
+  gazetteer span that no gold span overlaps -- `Brain.ML.SpanReliability`'s
+  `:no_entity` outcome -- is an ordinary word the gazetteer happens to list;
+  one that a gold span overlaps is an entity.
+
   Only training rows are read: a NER training row is joined to an intent only
-  when the intent row is a training row too, and the tag counts come from the
-  NER training rows whether or not they join.
+  when the intent row is a training row too, the slot and gazetteer counts
+  come from the joined rows, and the tag counts come from the NER training
+  rows whether or not they join.
 
   ## Slot-fill preferences
 
   The label universe `U` holds every gold label, every type of the static
-  hierarchy, and the gold label of every type a slot schema lists. For an
+  hierarchy, and the gold label of every type a slot schema lists or the
+  gazetteer can read a span as. For an
   intent `i` in consolidated domain `d` (`Brain.Lexicon.IntentDomains`), the
   probability that a gold span of the utterance has label `g` is smoothed
   through three levels:
@@ -56,6 +66,54 @@ defmodule Brain.Analysis.SlotTypePreferences do
   the intent adds, in log-odds, to evidence about the span that is
   independent of the intent (`Brain.ML.SpanReliability.redecide/4`).
 
+  ## Ordinary words
+
+  The probability that a gazetteer span in a context's utterances is no
+  entity, smoothed through the same levels as the labels, from an even split
+  of the two outcomes (`o(c)` counts the ordinary spans of `c`, `m(c)` all its
+  gazetteer spans):
+
+      global:  O0   = (o     + q0 / 2)       / (m     + q0)
+      domain:  Od   = (o(d)  + qd * O0)      / (m(d)  + qd)
+      intent:  Oi   = (o(i)  + qi * Od)      / (m(i)  + qi)
+
+  ## The context's likelihood of a reading
+
+  A gazetteer span has readings: each candidate entity type `t` and the
+  ordinary word `o`. `EntityTypeScorer` weighs each by how the word is used
+  (its lexicon prior, `P(r | word)`), which already holds how often readings
+  of the word are entities at all. What the context adds must not count that
+  base rate again. Taking the context `c` to bear on the span only through its
+  reading,
+
+      P(r | word, c)  ∝  P(r | word) × P(c | r)  ∝  P(r | word) × P(r | c) / P(r)
+
+  so the context's factor is the probability of the reading in the context
+  over its probability across every utterance (`reading_likelihoods/2`):
+
+      ordinary:  K(o) = O(c) / O0
+      type t:    K(t) = (1 - O(c)) × M_c(t) / ((1 - O0) × M_global(t))
+
+  `M_c(t)` is the mass of the label of `t` under the context's distribution
+  (the label and every label refining it), so a city reading takes what the
+  data gives cities under the context, and `O(c)` is `Oi`, `Od` or `O0`.
+
+  The slot schema splits that mass in two. With `A` the labels that agree with
+  some type the schema lists (`weights/3`), the probability that a gold span of
+  the context agrees with no listed type is
+
+      u(c) = sum of P(g) over the labels g outside A          (`unlisted_rate/3`)
+
+  and `M_c(t)` is the listed part plus the unlisted part,
+
+      M_c(t) = (1 - u(c)) × P(t | listed, c) + u(c) × P(t | unlisted, c)
+
+  with each part the context's distribution over `t`'s labels inside or outside
+  `A`, renormalized. Both parts come from the smoothed distribution above, so a
+  reading the schema does not list has the likelihood the data gives it -- a
+  band under a weather intent is rare, and a city under one listing `location`
+  is common -- not a fixed penalty.
+
   ## Weights for the types a schema lists
 
   A runtime type is compared to the gold labels through the NER type mappings
@@ -86,10 +144,11 @@ defmodule Brain.Analysis.SlotTypePreferences do
   ## Choosing the smoothing
 
   `select/2` chooses `k0`, `kd`, `ki` and `lambda` in that order, then `kg`
-  and `kt`: each is the value of its grid with the highest #{5}-fold
-  cross-validated log-likelihood of the held-out folds' observations (span
-  labels given the intent; preceding tags given the label or the ordinary
-  reading), with the earlier choices fixed. Ties go to the smaller value. The
+  and `kt`, then `q0`, `qd` and `qi`: each is the value of its grid with the
+  highest #{5}-fold cross-validated log-likelihood of the held-out folds'
+  observations (span labels given the intent; preceding tags given the label
+  or the ordinary reading; whether each gazetteer span is ordinary given the
+  intent), with the earlier choices fixed. Ties go to the smaller value. The
   held-out splits are never read.
 
   ## Language
@@ -114,6 +173,7 @@ defmodule Brain.Analysis.SlotTypePreferences do
     :tag_vocabulary,
     :slot_counts,
     :tag_counts,
+    :ordinary_counts,
     :smoothing,
     :tag_likelihoods,
     :fitted
@@ -133,6 +193,7 @@ defmodule Brain.Analysis.SlotTypePreferences do
           tag_vocabulary: [String.t() | :sentence_start],
           slot_counts: map(),
           tag_counts: map(),
+          ordinary_counts: map(),
           smoothing: map(),
           tag_likelihoods: map(),
           fitted: map(),
@@ -148,7 +209,23 @@ defmodule Brain.Analysis.SlotTypePreferences do
   @hierarchy_weights [0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
   @folds 5
 
-  @smoothing_keys [:global, :domain, :intent, :hierarchy, :tag_global, :tag_type]
+  @smoothing_keys [
+    :global,
+    :domain,
+    :intent,
+    :hierarchy,
+    :tag_global,
+    :tag_type,
+    :ordinary_global,
+    :ordinary_domain,
+    :ordinary_intent
+  ]
+
+  @ordinary_keys [:ordinary_global, :ordinary_domain, :ordinary_intent]
+
+  @doc "Every smoothing value the model carries, in the order `select/2` chooses them."
+  @spec smoothing_keys() :: [atom()]
+  def smoothing_keys, do: @smoothing_keys
 
   @doc "The marker that stands for the tag before a span that begins the text."
   @spec sentence_start() :: :sentence_start
@@ -183,16 +260,24 @@ defmodule Brain.Analysis.SlotTypePreferences do
 
   @doc """
   One training or evaluation example from a NER gold row: its gold spans with
-  the tag before each, the tags before every token outside the spans, and
-  `intent` (`nil` when the row joins no usable intent row).
+  the tag before each, the tags before every token outside the spans, the
+  outcome of every gazetteer span (`:ordinary` when no gold span overlaps it,
+  `:entity` when one does), and `intent` (`nil` when the row joins no usable
+  intent row).
 
   `tag` takes the row's token texts and returns one UD tag per token, as
-  `Brain.ML.EntityExtractor` tags them.
+  `Brain.ML.EntityExtractor` tags them. `gazetteer` takes the same token texts
+  and returns the gazetteer's spans over them as `{first, last}` token
+  indexes, as `Brain.ML.Gazetteer.lookup_spans/2` finds them for the
+  extractor.
   """
-  @spec example!(map(), String.t() | nil, ([String.t()] -> [String.t()])) :: map()
-  def example!(%{"text" => text} = row, intent, tag) when (is_binary(intent) or is_nil(intent)) and is_function(tag, 1) do
+  @spec example!(map(), String.t() | nil, ([String.t()] -> [String.t()]), ([String.t()] -> [{integer(), integer()}])) ::
+          map()
+  def example!(%{"text" => text} = row, intent, tag, gazetteer)
+      when (is_binary(intent) or is_nil(intent)) and is_function(tag, 1) and is_function(gazetteer, 1) do
     tokens = Tokenizer.tokenize(text)
-    tags = tag.(Enum.map(tokens, & &1.text))
+    texts = Enum.map(tokens, & &1.text)
+    tags = tag.(texts)
 
     unless length(tags) == length(tokens) do
       raise "SlotTypePreferences: #{length(tags)} tags for #{length(tokens)} tokens of #{inspect(text)}"
@@ -211,8 +296,20 @@ defmodule Brain.Analysis.SlotTypePreferences do
       key: text,
       intent: intent,
       spans: Enum.map(ranges, fn {type, {first, _last}} -> %{type: type, preceding_tag: preceding(tags, first)} end),
-      ordinary: for(index <- 0..(tuple_size(tags) - 1)//1, not MapSet.member?(covered, index), do: preceding(tags, index))
+      ordinary: for(index <- 0..(tuple_size(tags) - 1)//1, not MapSet.member?(covered, index), do: preceding(tags, index)),
+      gazetteer: texts |> gazetteer.() |> Enum.map(&gazetteer_outcome!(&1, covered, text, length(tokens)))
     }
+  end
+
+  defp gazetteer_outcome!({first, last}, covered, _text, count)
+       when is_integer(first) and is_integer(last) and 0 <= first and first <= last and last < count do
+    if Enum.any?(first..last, &MapSet.member?(covered, &1)), do: :entity, else: :ordinary
+  end
+
+  defp gazetteer_outcome!(other, _covered, text, count) do
+    raise ArgumentError,
+          "SlotTypePreferences: the gazetteer gave #{inspect(other)} for #{inspect(text)}, " <>
+            "which is not a {first, last} range of its #{count} tokens"
   end
 
   defp preceding(_tags, 0), do: @sentence_start
@@ -221,15 +318,17 @@ defmodule Brain.Analysis.SlotTypePreferences do
   # -- fitting ------------------------------------------------------------------
 
   @doc """
-  Fits the model to `examples` (`example!/3`'s shape) with the given smoothing.
+  Fits the model to `examples` (`example!/4`'s shape) with the given smoothing.
 
   Options, all required: `:language`; `:canonical` (runtime type => gold
   label, as `Brain.ML.EntityExtractor.load_type_mappings/0` gives it);
   `:hierarchy`, a module with `all_types/0` and `parents_of/1` as
   `Brain.Analysis.TypeHierarchy`; `:listed`, every entity type a slot schema
-  lists; `:tag_vocabulary`, every tag a preceding token can have; and
-  `:smoothing`, a map of `:global`, `:domain`, `:intent` and `:tag_global`,
-  `:tag_type` (positive pseudo-counts) and `:hierarchy` (a weight in 0..1).
+  lists; `:reading_types`, every entity type the gazetteer can read a span as;
+  `:tag_vocabulary`, every tag a preceding token can have; and `:smoothing`, a
+  map of `:global`, `:domain`, `:intent`, `:tag_global`, `:tag_type`,
+  `:ordinary_global`, `:ordinary_domain`, `:ordinary_intent` (positive
+  pseudo-counts) and `:hierarchy` (a weight in 0..1).
   """
   @spec fit([map()], keyword()) :: t()
   def fit([_ | _] = examples, opts) do
@@ -275,8 +374,17 @@ defmodule Brain.Analysis.SlotTypePreferences do
     slot_observations = fold_data |> Enum.map(fn {_m, held} -> length(slot_observations(held)) end) |> Enum.sum()
     tag_observations = fold_data |> Enum.map(fn {_m, held} -> length(tag_observations(held)) end) |> Enum.sum()
 
+    ordinary_observations =
+      fold_data |> Enum.map(fn {_m, held} -> length(ordinary_observations(held)) end) |> Enum.sum()
+
     if slot_observations == 0 do
       raise ArgumentError, "SlotTypePreferences: no example joins an intent; the slot preferences cannot be cross-validated"
+    end
+
+    if ordinary_observations == 0 do
+      raise ArgumentError,
+            "SlotTypePreferences: no example joined to an intent has a gazetteer span; " <>
+              "the ordinary-word rate cannot be cross-validated"
     end
 
     start = Map.new(@smoothing_keys, &{&1, nil})
@@ -287,12 +395,20 @@ defmodule Brain.Analysis.SlotTypePreferences do
       {:intent, @strengths, &slot_loglik(&1, &2, :intent)},
       {:hierarchy, @hierarchy_weights, &slot_loglik(&1, &2, :full)},
       {:tag_global, @strengths, &tag_loglik(&1, &2, :global)},
-      {:tag_type, @strengths, &tag_loglik(&1, &2, :full)}
+      {:tag_type, @strengths, &tag_loglik(&1, &2, :full)},
+      {:ordinary_global, @strengths, &ordinary_loglik(&1, &2, :global)},
+      {:ordinary_domain, @strengths, &ordinary_loglik(&1, &2, :domain)},
+      {:ordinary_intent, @strengths, &ordinary_loglik(&1, &2, :intent)}
     ]
 
     {chosen, report} =
       Enum.reduce(stages, {start, %{}}, fn {key, grid, loglik}, {chosen, report} ->
-        observations = if key in [:tag_global, :tag_type], do: tag_observations, else: slot_observations
+        observations =
+          cond do
+            key in [:tag_global, :tag_type] -> tag_observations
+            key in @ordinary_keys -> ordinary_observations
+            true -> slot_observations
+          end
 
         scores =
           Enum.map(grid, fn value ->
@@ -311,7 +427,11 @@ defmodule Brain.Analysis.SlotTypePreferences do
         {Map.put(chosen, key, best), Map.put(report, key, scores)}
       end)
 
-    report = Map.merge(report, %{chosen: chosen, observations: %{slots: slot_observations, tags: tag_observations}})
+    report =
+      Map.merge(report, %{
+        chosen: chosen,
+        observations: %{slots: slot_observations, tags: tag_observations, gazetteer_spans: ordinary_observations}
+      })
 
     model =
       full
@@ -348,20 +468,20 @@ defmodule Brain.Analysis.SlotTypePreferences do
     overall = distribution(model, :global)
 
     Map.new(labels, fn label ->
-      below =
-        case Map.fetch(model.descendants, label) do
-          {:ok, below} ->
-            below
+      unless Map.has_key?(model.descendants, label) do
+        raise ArgumentError,
+              "SlotTypePreferences: #{inspect(label)} is not in the #{model.language} model's universe. " <>
+                "Retrain it with `mix train_slot_type_preferences`."
+      end
 
-          :error ->
-            raise ArgumentError,
-                  "SlotTypePreferences: #{inspect(label)} is not in the #{model.language} model's universe. " <>
-                    "Retrain it with `mix train_slot_type_preferences`."
-        end
-
-      mass = fn distribution -> below |> Enum.map(&Map.fetch!(distribution, &1)) |> Enum.sum() end
-      {label, :math.log(mass.(for_intent) / mass.(overall))}
+      {label, :math.log(mass(model, for_intent, label) / mass(model, overall, label))}
     end)
+  end
+
+  # A label's mass under a distribution: its probability and that of every
+  # label refining it.
+  defp mass(model, distribution, label) do
+    model.descendants |> Map.fetch!(label) |> Enum.map(&Map.fetch!(distribution, &1)) |> Enum.sum()
   end
 
   @doc """
@@ -392,6 +512,84 @@ defmodule Brain.Analysis.SlotTypePreferences do
       end)
 
     Map.new(labels, fn {type, label} -> {type, Map.fetch!(received, label)} end)
+  end
+
+  @doc """
+  The probability that a gazetteer span in an intent's, a domain's or every
+  utterance's text (`:global`) is no entity: `Oi`, `Od` or `O0` (see the
+  moduledoc). Raises for a context `distribution/2` refuses.
+  """
+  @spec ordinary_rate(t(), context()) :: float()
+  def ordinary_rate(%__MODULE__{} = model, context), do: ordinary_level(model, context, :intent)
+
+  @doc """
+  The probability that a gold span of the context's utterances agrees with no
+  type of `listed` -- the mass of the context's distribution outside the
+  labels the listed types agree with (`u(c)` in the moduledoc). Every label
+  agrees with no type of an empty list, so with nothing listed it is 1.
+  """
+  @spec unlisted_rate(t(), context(), [String.t()]) :: float()
+  def unlisted_rate(%__MODULE__{} = model, context, listed) when is_list(listed) do
+    listed_labels = Enum.map(listed, &label!(model, &1))
+
+    model
+    |> distribution(context)
+    |> Enum.reject(fn {gold, _p} -> Enum.any?(listed_labels, &MapSet.member?(Map.fetch!(model.ancestors, gold), &1)) end)
+    |> Enum.map(&elem(&1, 1))
+    |> Enum.sum()
+  end
+
+  @doc """
+  The context's likelihood of every reading of a gazetteer span, relative to
+  its likelihood across every utterance (`K` in the moduledoc): `:ordinary`
+  for the ordinary word, and `:labels`, a likelihood for every label of the
+  universe. Read one reading's with `reading_likelihood/2`. Raises for a
+  context `distribution/2` refuses.
+  """
+  @spec reading_likelihoods(t(), context()) :: %{
+          language: String.t(),
+          canonical: map(),
+          ordinary: float(),
+          labels: %{String.t() => float()}
+        }
+  def reading_likelihoods(%__MODULE__{} = model, context) do
+    in_context = distribution(model, context)
+    overall = distribution(model, :global)
+    o_context = ordinary_rate(model, context)
+    o_overall = ordinary_rate(model, :global)
+
+    %{
+      language: model.language,
+      canonical: model.canonical,
+      ordinary: o_context / o_overall,
+      labels:
+        Map.new(model.universe, fn label ->
+          {label, (1 - o_context) * mass(model, in_context, label) / ((1 - o_overall) * mass(model, overall, label))}
+        end)
+    }
+  end
+
+  @doc """
+  One reading's likelihood from `reading_likelihoods/2`: `:ordinary`, or a
+  runtime entity type, compared through the type mappings. A type whose gold
+  label is outside the model's universe raises: the model was trained before
+  the gazetteer could read a span as it.
+  """
+  @spec reading_likelihood(map(), String.t() | :ordinary) :: float()
+  def reading_likelihood(%{ordinary: ordinary}, :ordinary), do: ordinary
+
+  def reading_likelihood(%{labels: labels, canonical: mappings, language: language}, type) when is_binary(type) do
+    label = canonical(mappings, type)
+
+    case Map.fetch(labels, label) do
+      {:ok, likelihood} ->
+        likelihood
+
+      :error ->
+        raise ArgumentError,
+              "SlotTypePreferences: #{inspect(type)} (gold label #{inspect(label)}) is not in the #{language} model's " <>
+                "universe, so no context can weigh it. Retrain it with `mix train_slot_type_preferences`."
+    end
   end
 
   @doc """
@@ -458,7 +656,12 @@ defmodule Brain.Analysis.SlotTypePreferences do
     File.write!(path(language), Brain.ML.ModelStore.serialize(model))
   end
 
-  @doc "Reads the stored model for `language`. Raises when it is missing or is not a model."
+  @doc """
+  Reads the stored model for `language`. Raises when it is missing, is not a
+  model, or lacks a field this version reads -- a model trained before the
+  ordinary-word counts and their smoothing were learned is refused, not
+  completed with defaults.
+  """
   @spec read!(String.t()) :: t()
   def read!(language) do
     file = path(language)
@@ -467,7 +670,7 @@ defmodule Brain.Analysis.SlotTypePreferences do
       {:ok, binary} ->
         case :erlang.binary_to_term(binary) do
           %__MODULE__{language: ^language} = model ->
-            smoothing!(model.smoothing)
+            fields!(model, file)
             model
 
           other ->
@@ -494,11 +697,16 @@ defmodule Brain.Analysis.SlotTypePreferences do
 
   # -- structure and counts ----------------------------------------------------
 
-  defp example_shape!(%{key: _key, intent: intent, spans: spans, ordinary: ordinary} = example)
-       when (is_binary(intent) or is_nil(intent)) and is_list(spans) and is_list(ordinary) do
+  defp example_shape!(%{key: _key, intent: intent, spans: spans, ordinary: ordinary, gazetteer: gazetteer} = example)
+       when (is_binary(intent) or is_nil(intent)) and is_list(spans) and is_list(ordinary) and is_list(gazetteer) do
     Enum.each(spans, fn
       %{type: type, preceding_tag: _tag} when is_binary(type) -> :ok
       other -> raise ArgumentError, "SlotTypePreferences: a span needs :type and :preceding_tag, got #{inspect(other)}"
+    end)
+
+    Enum.each(gazetteer, fn
+      outcome when outcome in [:entity, :ordinary] -> :ok
+      other -> raise ArgumentError, "SlotTypePreferences: a gazetteer span is :entity or :ordinary, got #{inspect(other)}"
     end)
 
     example
@@ -506,7 +714,39 @@ defmodule Brain.Analysis.SlotTypePreferences do
 
   defp example_shape!(other) do
     raise ArgumentError,
-          "SlotTypePreferences: an example needs :key, :intent, :spans and :ordinary, got #{inspect(other, limit: 5)}"
+          "SlotTypePreferences: an example needs :key, :intent, :spans, :ordinary and :gazetteer, got #{inspect(other, limit: 5)}"
+  end
+
+  # A stored model must carry every field this version reads, each in the
+  # shape it is read in.
+  defp fields!(model, file) do
+    case Enum.reject(@enforce_keys, &(Map.has_key?(model, &1) and Map.fetch!(model, &1) != nil)) do
+      [] ->
+        :ok
+
+      missing ->
+        raise "SlotTypePreferences: #{file} has no #{inspect(missing)}; it was trained by an earlier version. " <>
+                "Retrain it with `mix train_slot_type_preferences`."
+    end
+
+    ordinary_counts!(model.ordinary_counts, file)
+
+    try do
+      smoothing!(model.smoothing)
+    rescue
+      e in ArgumentError ->
+        reraise "SlotTypePreferences: #{file}: #{Exception.message(e)}. Retrain it with `mix train_slot_type_preferences`.",
+                __STACKTRACE__
+    end
+  end
+
+  defp ordinary_counts!(%{global: {o, m}, domain: domain, intent: intent}, _file)
+       when is_integer(o) and is_integer(m) and o <= m and is_map(domain) and is_map(intent),
+       do: :ok
+
+  defp ordinary_counts!(other, file) do
+    raise "SlotTypePreferences: #{file} has malformed ordinary_counts #{inspect(other, limit: 5)}. " <>
+            "Retrain it with `mix train_slot_type_preferences`."
   end
 
   defp smoothing!(%{} = smoothing) do
@@ -530,10 +770,16 @@ defmodule Brain.Analysis.SlotTypePreferences do
     canonical = Keyword.fetch!(opts, :canonical)
     hierarchy = Keyword.fetch!(opts, :hierarchy)
     listed = Keyword.fetch!(opts, :listed)
+    reading_types = Keyword.fetch!(opts, :reading_types)
     vocabulary = Keyword.fetch!(opts, :tag_vocabulary)
 
     unless is_map(canonical), do: raise(ArgumentError, "SlotTypePreferences: :canonical must be a map")
     unless is_list(listed), do: raise(ArgumentError, "SlotTypePreferences: :listed must be a list of types")
+
+    unless match?([_ | _], reading_types) and Enum.all?(reading_types, &(is_binary(&1) and &1 != "")) do
+      raise ArgumentError,
+            "SlotTypePreferences: :reading_types must list the entity types the gazetteer reads, got #{inspect(reading_types)}"
+    end
 
     gold = for example <- examples, span <- example.spans, do: span.type
 
@@ -543,7 +789,7 @@ defmodule Brain.Analysis.SlotTypePreferences do
         [] -> raise ArgumentError, "SlotTypePreferences: #{inspect(hierarchy)} holds no types; is it loaded?"
       end
 
-    seeds = Enum.uniq(hierarchy_types ++ gold ++ Enum.map(listed, &canonical(canonical, &1)))
+    seeds = Enum.uniq(hierarchy_types ++ gold ++ Enum.map(listed ++ reading_types, &canonical(canonical, &1)))
     parents = parent_closure(seeds, hierarchy, %{})
     universe = parents |> Map.keys() |> Enum.sort()
     ancestors = Map.new(universe, &{&1, ancestors(&1, parents, [])})
@@ -576,6 +822,7 @@ defmodule Brain.Analysis.SlotTypePreferences do
       tag_vocabulary: vocabulary,
       slot_counts: nil,
       tag_counts: nil,
+      ordinary_counts: nil,
       smoothing: nil,
       tag_likelihoods: nil,
       fitted: nil
@@ -609,6 +856,13 @@ defmodule Brain.Analysis.SlotTypePreferences do
     slots = slot_observations(examples)
     span_tags = for example <- examples, span <- example.spans, do: {span.type, span.preceding_tag}
     ordinary = Enum.flat_map(examples, & &1.ordinary)
+    gazetteer = ordinary_observations(examples)
+
+    outcome_counts = fn outcomes -> {Enum.count(outcomes, &(&1 == :ordinary)), length(outcomes)} end
+
+    outcomes_by = fn key ->
+      gazetteer |> Enum.group_by(key, &elem(&1, 1)) |> Map.new(fn {k, outcomes} -> {k, outcome_counts.(outcomes)} end)
+    end
 
     by_label =
       span_tags
@@ -627,12 +881,19 @@ defmodule Brain.Analysis.SlotTypePreferences do
           labels: by_label,
           ordinary: Enum.frequencies(ordinary)
         },
+        ordinary_counts: %{
+          global: outcome_counts.(Enum.map(gazetteer, &elem(&1, 1))),
+          domain: outcomes_by.(fn {intent, _outcome} -> IntentDomains.consolidate(intent) end),
+          intent: outcomes_by.(fn {intent, _outcome} -> intent end)
+        },
         fitted: %{
           rows: length(examples),
           joined_rows: Enum.count(examples, &(&1.intent != nil)),
           slot_observations: length(slots),
           span_tags: length(span_tags),
-          ordinary_tags: length(ordinary)
+          ordinary_tags: length(ordinary),
+          gazetteer_spans: length(gazetteer),
+          ordinary_gazetteer_spans: Enum.count(gazetteer, &(elem(&1, 1) == :ordinary))
         }
     }
   end
@@ -645,6 +906,12 @@ defmodule Brain.Analysis.SlotTypePreferences do
 
   defp slot_observations(examples) do
     for %{intent: intent} = example <- examples, intent != nil, span <- example.spans, do: {intent, span.type}
+  end
+
+  # `{intent, :ordinary | :entity}` for every gazetteer span of the examples
+  # joined to an intent.
+  defp ordinary_observations(examples) do
+    for %{intent: intent} = example <- examples, intent != nil, outcome <- example.gazetteer, do: {intent, outcome}
   end
 
   defp tag_observations(examples) do
@@ -726,6 +993,56 @@ defmodule Brain.Analysis.SlotTypePreferences do
     |> Enum.map(fn {intent, labels} ->
       distribution = slot_distribution(model, {:intent, intent}, depth)
       labels |> Enum.map(&:math.log(Map.fetch!(distribution, &1))) |> Enum.sum()
+    end)
+    |> Enum.sum()
+  end
+
+  # -- ordinary words -------------------------------------------------------------
+
+  # O0, Od or Oi for a context, computed down to `depth` (:global, :domain or
+  # :intent), so cross-validation can choose each level's pseudo-count with
+  # only the levels above it chosen.
+  defp ordinary_level(model, {:intent, intent}, depth) when is_binary(intent) do
+    domain = IntentDomains.consolidate(intent)
+    global = ordinary_global(model)
+
+    case depth do
+      :global -> global
+      :domain -> ordinary_step(model, :domain, domain, global)
+      :intent -> ordinary_step(model, :intent, intent, ordinary_step(model, :domain, domain, global))
+    end
+  end
+
+  defp ordinary_level(model, {:domain, domain}, _depth) when is_binary(domain) do
+    unless domain in IntentDomains.domains() do
+      raise ArgumentError, "SlotTypePreferences: #{inspect(domain)} is not a domain; the domains are #{inspect(IntentDomains.domains())}"
+    end
+
+    ordinary_step(model, :domain, domain, ordinary_global(model))
+  end
+
+  defp ordinary_level(model, :global, _depth), do: ordinary_global(model)
+
+  defp ordinary_level(_model, context, _depth) do
+    raise ArgumentError, "SlotTypePreferences: a context is {:intent, name}, {:domain, name} or :global, got #{inspect(context)}"
+  end
+
+  defp ordinary_global(%__MODULE__{ordinary_counts: %{global: {o, m}}, smoothing: %{ordinary_global: q}}) do
+    (o + q / 2) / (m + q)
+  end
+
+  defp ordinary_step(%__MODULE__{ordinary_counts: counts, smoothing: smoothing}, key, name, prior) do
+    q = Map.fetch!(smoothing, %{domain: :ordinary_domain, intent: :ordinary_intent}[key])
+    {o, m} = counts |> Map.fetch!(key) |> Map.get(name, {0, 0})
+    (o + q * prior) / (m + q)
+  end
+
+  defp ordinary_loglik(model, held, depth) do
+    held
+    |> ordinary_observations()
+    |> Enum.map(fn {intent, outcome} ->
+      p = ordinary_level(model, {:intent, intent}, depth)
+      :math.log(if outcome == :ordinary, do: p, else: 1 - p)
     end)
     |> Enum.sum()
   end
