@@ -182,4 +182,53 @@ defmodule Brain.Analysis.TypeHierarchyTest do
       assert TypeHierarchy.parents_of("xyzzy") == []
     end
   end
+
+  # Relations come only from priv/analysis/entity_types.json. These are types
+  # registry slots list that the file does not declare, each an English noun
+  # whose WordNet hypernyms reach a declared type's name ("duration" reaches
+  # "amount", "event" reaches "activity", "symbol" reaches "communication").
+  describe "a type entity_types.json does not declare" do
+    @undeclared ~w(duration event symbol appliance file)
+
+    test "is related to itself and to nothing else" do
+      declared = TypeHierarchy.all_types()
+      assert declared != []
+
+      for type <- @undeclared do
+        refute type in declared, "#{type} is declared in entity_types.json"
+        assert TypeHierarchy.compatible?(type, type)
+        assert TypeHierarchy.parents_of(type) == []
+        assert TypeHierarchy.specializations(type) == []
+
+        for other <- declared do
+          refute TypeHierarchy.is_a?(type, other), "#{type} is_a? #{other}"
+          refute TypeHierarchy.is_a?(other, type), "#{other} is_a? #{type}"
+          refute TypeHierarchy.compatible?(type, other), "#{type} compatible? #{other}"
+          refute TypeHierarchy.compatible?(other, type), "#{other} compatible? #{type}"
+        end
+
+        assert TypeHierarchy.narrowing_candidates(type, declared) == []
+        assert TypeHierarchy.narrowing_candidates("amount", [type]) == []
+      end
+    end
+
+    test "is not filled by an entity of a declared type through SlotDetector" do
+      alias Brain.Analysis.{SlotDetector, SlotResult}
+
+      cases = [
+        {"timer.set", "duration", "number", "10"},
+        {"alarm.snooze", "duration", "number", "10"},
+        {"timer.set", "duration", "amount", "10"},
+        {"calendar.schedule", "event", "recurrence", "every monday"},
+        {"calendar.schedule", "event", "activity", "running"},
+        {"code.explain", "symbol", "q", "parse"}
+      ]
+
+      for {intent, slot, type, value} <- cases do
+        entities = [%{entity_type: type, value: value, confidence: 0.9}]
+        result = SlotDetector.detect(intent, entities, side_effects: false)
+        refute SlotResult.get_slot_value(result, slot), "#{intent}.#{slot} filled by #{type} #{inspect(value)}"
+      end
+    end
+  end
 end
