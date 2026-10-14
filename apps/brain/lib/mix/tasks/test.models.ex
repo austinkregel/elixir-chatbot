@@ -146,6 +146,11 @@ defmodule Mix.Tasks.Test.Models do
 
     results = Enum.map(models(), fn name -> promote!(source, dest, name) end)
 
+    # Seeding reads the models it copies: the triple scorer is rebuilt as an
+    # Axon model on the EXLA backend, which reports to telemetry. Only those
+    # are started, not the brain application.
+    Mix.Tasks.TrainSlotTypePreferences.start!([:telemetry, :nx, :exla], [])
+
     Brain.ML.EntityModel.seed!(@test_world_id)
     World.Embedder.seed!(@test_world_id)
     Brain.ML.Poincare.Embeddings.seed!(@test_world_id)
