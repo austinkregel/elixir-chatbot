@@ -3,6 +3,15 @@ defmodule Brain.SystemStatusTest do
 
   alias Brain.SystemStatus
 
+  # The metrics counted by Brain.Metrics.Aggregator are read from Atlas, and a
+  # read that fails raises, so each test reads them inside its own sandbox.
+  setup tags do
+    {:ok, _apps} = Application.ensure_all_started(:atlas)
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+    :ok
+  end
+
   describe "get_all/0" do
     test "returns a map with all expected keys" do
       result = SystemStatus.get_all()
@@ -89,6 +98,32 @@ defmodule Brain.SystemStatusTest do
       result = SystemStatus.get_performance_metrics()
 
       assert is_map(result)
+    end
+  end
+
+  describe "a telemetry window read once" do
+    test "is what the performance metrics and response timing answer from" do
+      telemetry = %{
+        window: nil,
+        values: %{
+          "duration:brain_evaluate:count" => 2,
+          "duration:brain_evaluate:sum_us" => 30_000,
+          "duration:brain_evaluate:le_ms:25" => 2,
+          "duration:pipeline_process:count" => 1,
+          "duration:pipeline_process:sum_us" => 5_000,
+          "duration:pipeline_process:le_ms:5" => 1
+        },
+        records: %{}
+      }
+
+      assert %{brain_evaluate: %{count: 2, avg_ms: 15.0}} = SystemStatus.get_performance_metrics(telemetry)
+
+      assert SystemStatus.get_response_timing(telemetry) == %{
+               brain_avg_ms: 15.0,
+               brain_count: 2,
+               pipeline_avg_ms: 5.0,
+               pipeline_count: 1
+             }
     end
   end
 
