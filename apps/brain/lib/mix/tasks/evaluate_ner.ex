@@ -66,13 +66,6 @@ defmodule Mix.Tasks.Evaluate.Ner do
     result = result |> Map.put(:diagnostics, counts) |> Map.put(:span_level, span_score)
 
     broadcast_result(result, duration_ms)
-    Brain.Telemetry.emit_evaluation_complete("ner", %{
-      accuracy: result.accuracy,
-      macro_f1: result.macro_f1,
-      weighted_f1: result.weighted_f1,
-      total_examples: result.total_examples,
-      duration_ms: duration_ms
-    })
 
     if verbose? do
       cm = Evaluation.confusion_matrix(predictions, actuals)
@@ -82,7 +75,8 @@ defmodule Mix.Tasks.Evaluate.Ner do
     end
 
     if save? do
-      {:ok, path} = EvaluationStore.save(result)
+      # Saving emits the evaluation's completion (`Brain.ML.EvaluationStore.save/1`).
+      {:ok, path} = EvaluationStore.save(Map.put(result, :duration_ms, duration_ms))
       IO.puts("Results saved to: #{path}")
     end
 
