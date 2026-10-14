@@ -125,6 +125,13 @@ defmodule Brain do
       gives it from the browser's `Accept-Language`. A caller with no browser
       language names none, which means English (`Brain.Language`). An
       unsupported code raises.
+    - `:time_zone` - required: the `Brain.Temporal.Zone` the turn's dates and
+      times are read in, as the person's browser gives it
+      (`Brain.Temporal.Zone.from_browser!/1`). A caller with no browser names
+      the zone its turns are read in (`Brain.Temporal.Zone.fixed!/2`). Absent,
+      or anything but a zone, raises: no zone is assumed.
+    - `:user_id` - the web user who says the turn; the alarms, reminders,
+      timers and calendar items the turn sets are theirs.
 
   Whether the turn writes is the conversation's `:side_effects`, set by
   `create_conversation/1`; passing `:side_effects` here raises.
@@ -133,6 +140,18 @@ defmodule Brain do
     if Keyword.has_key?(opts, :side_effects) do
       raise ArgumentError,
             "Brain.evaluate does not take :side_effects; it is set for the whole conversation by Brain.create_conversation/1"
+    end
+
+    # Checked in the caller's process, so a turn without its zone raises there.
+    case Keyword.fetch(opts, :time_zone) do
+      {:ok, %Brain.Temporal.Zone{}} ->
+        :ok
+
+      other ->
+        raise ArgumentError,
+              "Brain.evaluate needs :time_zone, the Brain.Temporal.Zone the turn's dates and times are read in, " <>
+                "as the person's browser gives it (Brain.Temporal.Zone.from_browser!/1); a caller with no browser " <>
+                "names one (Brain.Temporal.Zone.fixed!/2). Got: #{inspect(other)}"
     end
 
     server = Keyword.get(opts, :server, __MODULE__)
@@ -568,12 +587,15 @@ defmodule Brain do
     side_effects = Map.fetch!(conversation, :side_effects)
 
     # The turn's time is the user message's timestamp: a date or time the
-    # message says ("tomorrow", "in 2 hours") is read against it.
+    # message says ("tomorrow", "in 2 hours") is read against it, in the
+    # turn's :time_zone. What the turn sets belongs to the web user who said
+    # it.
     opts_with_world =
       opts
       |> Keyword.put(:world_id, world_id)
       |> Keyword.put(:side_effects, side_effects)
       |> Keyword.put(:turn_time, DateTime.from_unix!(now, :millisecond))
+      |> Keyword.put(:web_user_id, Keyword.get(opts, :user_id))
     ml_config = Application.get_env(:brain, :ml) || Application.get_env(:chat_bot, :ml) || []
 
     {response, processing_method, context} =
@@ -996,9 +1018,8 @@ defmodule Brain do
   # slots it has now. A service error answering it may ask again
   # (`FollowupDetector.awaiting_answer/1`).
   defp complete_followup(completed, persona, side_effects, opts) do
-    world_id = Keyword.fetch!(opts, :world_id)
-    turn_time = Keyword.fetch!(opts, :turn_time)
-    {response, enrichment} = generate_intent_response(completed, persona, side_effects, world_id, turn_time)
+    turn = Keyword.take(opts, [:world_id, :turn_time, :time_zone, :web_user_id])
+    {response, enrichment} = generate_intent_response(completed, persona, side_effects, turn)
 
     context =
       Map.merge(
@@ -1145,11 +1166,12 @@ defmodule Brain do
   # The response to the request the follow-up completed, with the failure of
   # its service when it returned an error (`Generator.generate/4`'s
   # `{:service_reply, enrichment}`), or `%{}`.
-  defp generate_intent_response(context, _persona, side_effects, world_id, turn_time) do
+  # `turn` holds the turn's :world_id, :turn_time, :time_zone and :web_user_id.
+  defp generate_intent_response(context, _persona, side_effects, turn) do
     intent = context.intent
     entities = slots_to_entities(context.slots)
 
-    case Generator.generate(intent, entities, nil, side_effects: side_effects, world_id: world_id, turn_time: turn_time) do
+    case Generator.generate(intent, entities, nil, [side_effects: side_effects] ++ turn) do
       {:ok, response, {:service_reply, enrichment}} -> {response, enrichment}
       {:ok, response, _type} -> {response, %{}}
     end
