@@ -71,24 +71,67 @@ defmodule Brain.ML.SpanReliability do
   readings share none, or more than one equally specific. An unresolved span
   fills no slot by itself.
 
+  ## Extents
+
+  A hypothesis is an extent and a type, and the type reliabilities judge the
+  pair only as a whole: a reading of the right type at a partial extent
+  supports a hypothesis no gold span has. How far a reading's extent can be
+  trusted is learned apart from its type (`fit_extent/2`): for each
+  `{source, cue, type}`, the rate at which a reading's extent is exactly a gold
+  span's, whatever the gold type, over every reading of the training rows. A
+  reading that only overlaps a gold span and one that overlaps none are both
+  extent errors (`:boundary`, `:no_entity`).
+
+  The cue is what the source says about how it delimited the reading, its
+  `:extent_cue`; a source that says nothing gives none (`nil`). The entity
+  model's is `{opened, followed_by}`: whether its decode opened the reading at
+  a `B-` tag (`:begin`) or at an `I-` tag that continues no entity of its type
+  (`:inside`), and whether the token after the reading is tagged `I-` (`:inside`,
+  the decode ran on into another type) or not (`:outside`). On the 1,688 NER
+  training rows (2026-10-13, out-of-fold entity models) 2,318 of the 2,538
+  readings the model opened at `B-` and closed at `:outside` had a gold
+  extent, and 32 of the 159 it opened at `I-` and closed at `:outside`. The
+  model's own confidence does not tell these apart: a partial song title it
+  opened at `I-` had a mean posterior of 1.0.
+
+  The rates are smoothed as the type reliabilities are, with a prior strength
+  of their own: a pair toward its `{source, cue}`, and that toward the rate
+  over every reading. Every reading has an extent the gold standard can judge,
+  so every pair the training rows showed is measured; a pair they never showed
+  gives no extent evidence.
+
   ## Deciding again with more evidence
 
   A span left unresolved for `:insufficient_evidence` can be decided again
-  once something its readings did not know is known (`redecide/4`): a log-odds
-  term per hypothesis label, added to the readings' sum as one more
-  independent piece of evidence. The evidence decides nothing on its own -- a
-  label no measured reading gives is no hypothesis -- and a span it does not
-  lift over the thresholds stays unresolved.
+  once something its readings did not know about its types is known
+  (`redecide/4`): a log-odds term per hypothesis label. Evidence about types
+  cannot say where a span starts and ends, so the extent is decided first,
+  by the extent reliabilities alone: each extent of the span's readings is a
+  hypothesis, every reading at it adds its extent reliability in log-odds, and
+  the best is decided under the extent thresholds as a type hypothesis is
+  under `min_score` and `min_margin`. A span whose extent is not decided stays
+  unresolved, whatever the evidence says. Otherwise only the hypotheses at the
+  decided extent are weighed again: their readings' summed log-odds plus the
+  evidence term, as one more independent piece of evidence, decided under the
+  redecision thresholds. The evidence decides nothing on its own -- a label no
+  measured reading at that extent gives is no hypothesis -- and a span it does
+  not lift over the thresholds stays unresolved.
 
-  Those thresholds are the model's `redecision`, chosen by
-  `select_redecision/3` as `select/2` chooses `min_score` and `min_margin`:
-  #{5}-fold cross-validation on the training rows, each fold's spans decided
-  by reliabilities fitted on the other folds and weighed again with evidence
+  The extent reliabilities and both pairs of thresholds are the model's
+  `redecision`, chosen by `select_redecision/3`: #{5}-fold cross-validation on
+  the training rows, each fold's spans decided by type reliabilities fitted on
+  the other folds and decided again with extent reliabilities and evidence
   fitted on the other folds, maximizing the span-level F1 of both decisions
-  together. Measured 2026-10-13 on the 1,146 NER training rows joined with
-  intent gold, cross-validated F1 was 82.67 deciding nothing again, 84.21
-  with the first decision's thresholds and 84.47 with thresholds of their
-  own, so the second decision has its own.
+  together. For each candidate extent prior strength the extent thresholds
+  and the type thresholds are chosen in turn, each with the other fixed,
+  starting from type thresholds that decide every span with a lead, until the
+  F1 stops rising. The cross-validation report also gives the F1 of deciding
+  nothing again, of weighing the whole span's hypotheses with the first
+  decision's thresholds, and with thresholds of their own and no extent
+  decision (`without_extent`). Measured 2026-10-13 on the 1,146 NER training
+  rows joined with intent gold, cross-validated F1 was 80.72 deciding nothing
+  again, 81.88 and 82.97 weighing the whole span, and 86.57 deciding the
+  extent first.
 
   ## Choosing the prior strength and the thresholds
 
@@ -145,7 +188,27 @@ defmodule Brain.ML.SpanReliability do
           min_margin: float() | :infinity | nil,
           cross_validation: map() | nil,
           redecision:
-            %{min_score: float() | :infinity, min_margin: float() | :infinity, cross_validation: map()} | nil
+            %{
+              min_score: float() | :infinity,
+              min_margin: float() | :infinity,
+              extent: extent(),
+              cross_validation: map()
+            }
+            | nil
+        }
+
+  @typedoc """
+  Extent reliabilities (`fit_extent/2`), with the thresholds an extent is
+  decided under once `select_redecision/3` has chosen them.
+  """
+  @type extent :: %{
+          prior_strength: number(),
+          pairs: %{{atom(), term(), String.t()} => map()},
+          sources: %{{atom(), term()} => map()},
+          overall: %{n: non_neg_integer(), agree: non_neg_integer(), rate: float()},
+          fitted_rows: non_neg_integer(),
+          min_score: float() | :infinity,
+          min_margin: float() | :infinity
         }
 
   # Pseudo-counts of readings, from barely more than the counts to a prior
@@ -200,22 +263,8 @@ defmodule Brain.ML.SpanReliability do
       |> Enum.split_with(fn {{_source, type}, _outcome} -> Map.fetch!(measurable, type) end)
 
     tallies = measured |> Enum.group_by(&elem(&1, 0), &elem(&1, 1)) |> Map.new(fn {pair, outs} -> {pair, tally(outs)} end)
-    overall = overall!(tallies)
-
-    sources =
-      tallies
-      |> Enum.group_by(fn {{source, _type}, _tally} -> source end, fn {_pair, tally} -> tally end)
-      |> Map.new(fn {source, source_tallies} ->
-        n = source_tallies |> Enum.map(& &1.n) |> Enum.sum()
-        agree = source_tallies |> Enum.map(& &1.agree) |> Enum.sum()
-        {source, %{n: n, agree: agree, reliability: (agree + prior_strength * overall.rate) / (n + prior_strength)}}
-      end)
-
-    pairs =
-      Map.new(tallies, fn {{source, _type} = pair, tally} ->
-        prior = Map.fetch!(sources, source).reliability
-        {pair, Map.put(tally, :reliability, (tally.agree + prior_strength * prior) / (tally.n + prior_strength))}
-      end)
+    overall = overall!(tallies, "measured readings agree with the gold standard")
+    {sources, pairs} = smooth(tallies, prior_strength, overall, fn {source, _type} -> source end)
 
     %__MODULE__{
       language: language,
@@ -230,6 +279,43 @@ defmodule Brain.ML.SpanReliability do
   end
 
   def fit([], _opts), do: raise(ArgumentError, "SpanReliability: no training examples to fit")
+
+  @doc """
+  Fits the extent reliabilities (see the moduledoc) from `fit/2`'s examples:
+  for each `{source, extent_cue, entity_type}` of their readings, how many
+  readings had exactly a gold span's extent (`agree`), only overlapped one
+  (`boundary`) or overlapped none (`no_entity`), and the smoothed rate
+  (`reliability`); the same per `{source, extent_cue}` (`sources`) and over
+  every reading (`overall`). Option: `:prior_strength`, a positive
+  pseudo-count, required. The thresholds are left unset;
+  `select_redecision/3` sets them.
+  """
+  @spec fit_extent([map()], keyword()) :: map()
+  def fit_extent([_ | _] = examples, opts) do
+    prior_strength = prior_strength!(Keyword.fetch!(opts, :prior_strength))
+    examples = Enum.map(examples, &example!/1)
+
+    tallies =
+      examples
+      |> Enum.flat_map(fn example -> Enum.map(example.readings, &{extent_pair(&1), extent_outcome(&1, example.gold)}) end)
+      |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+      |> Map.new(fn {pair, outcomes} -> {pair, extent_tally(outcomes)} end)
+
+    overall = overall!(tallies, "readings have a gold span's extent")
+    {sources, pairs} = smooth(tallies, prior_strength, overall, fn {source, cue, _type} -> {source, cue} end)
+
+    %{
+      prior_strength: prior_strength,
+      pairs: pairs,
+      sources: sources,
+      overall: overall,
+      fitted_rows: length(examples),
+      min_score: nil,
+      min_margin: nil
+    }
+  end
+
+  def fit_extent([], _opts), do: raise(ArgumentError, "SpanReliability: no training examples to fit extents from")
 
   @doc """
   Picks the prior strength, `min_score` and `min_margin` by #{@folds}-fold
@@ -285,11 +371,22 @@ defmodule Brain.ML.SpanReliability do
   def select([], _opts), do: raise(ArgumentError, "SpanReliability: no training examples to select from")
 
   @doc """
-  Chooses the thresholds `redecide/4` decides with (see the moduledoc) and
-  returns `model` with them as its `redecision`: `%{min_score, min_margin,
-  cross_validation}`, the report giving the cross-validated F1 with no span
-  decided again, with the first decision's thresholds, and with the ones
-  chosen. Thresholds that decide nothing again are `:infinity`.
+  Chooses what `redecide/4` decides with (see the moduledoc) and returns
+  `model` with it as its `redecision`: `%{min_score, min_margin, extent,
+  cross_validation}`. `extent` is `fit_extent/2`'s reliabilities fitted on
+  `examples` at the chosen prior strength, with the chosen extent thresholds
+  as its `min_score` and `min_margin`. Thresholds that decide nothing are
+  `:infinity`.
+
+  The report (`cross_validation`) gives the cross-validated F1, decided and
+  correct counts of: deciding no span again (`none`); weighing every
+  hypothesis of the span, whatever its extent, under the first decision's
+  thresholds (`first_thresholds`) and under thresholds chosen for it
+  (`without_extent`); and deciding the extent first (`chosen`, with
+  `extent_min_score` and `extent_min_margin`). `by_extent_prior_strength`
+  gives the best result for each extent prior strength tried, `points` the
+  number of spans weighed again without an extent decision, and
+  `extent_points` the number with one at the chosen strength.
 
   `model` is `select/2`'s, fitted on `examples`: its prior strength and
   thresholds make each fold's first decision. `examples` take `fit/2`'s shape
@@ -315,12 +412,11 @@ defmodule Brain.ML.SpanReliability do
     gold_total = examples |> Enum.map(&length(&1.gold)) |> Enum.sum()
     fit_opts = Keyword.merge(opts, language: model.language, prior_strength: model.prior_strength) |> Keyword.delete(:evidence)
 
-    # Every unresolved span decided again with no threshold, so each point
-    # holds the score and margin a threshold is compared with.
-    open = %{min_score: -1.0e300, min_margin: 0.0}
-
-    {first, points} =
-      Enum.reduce(0..(@folds - 1), {%{tp: 0, fp: 0}, []}, fn k, {first, points} ->
+    # Per fold: its training examples, and every span of its held-out examples
+    # the first decision left for insufficient evidence, with the evidence
+    # fitted on the other folds. The first decision's counts are kept apart.
+    {first, fold_spans} =
+      Enum.reduce(0..(@folds - 1), {%{tp: 0, fp: 0}, []}, fn k, {first, fold_spans} ->
         {held, training} = split_fold(examples, folds, k)
 
         if training == [] do
@@ -330,35 +426,71 @@ defmodule Brain.ML.SpanReliability do
         fold_model = training |> fit(fit_opts) |> Map.merge(%{min_score: model.min_score, min_margin: model.min_margin})
         evidence = evidence_for.(training)
 
-        Enum.reduce(held, {first, points}, fn example, {first, points} ->
-          spans = decide(example.readings, fold_model, text: "", canonical: canonical, hierarchy: hierarchy)
-          {decided, unresolved} = Enum.split_with(spans, & &1.resolved)
-          right = Enum.count(decided, &agrees?({&1.start_pos, &1.end_pos, canonical(&1.entity_type, canonical)}, example.gold, hierarchy))
-          first = %{tp: first.tp + right, fp: first.fp + length(decided) - right}
+        {first, spans} =
+          Enum.reduce(held, {first, []}, fn example, {first, spans} ->
+            {decided, unresolved} =
+              example.readings
+              |> decide(fold_model, text: "", canonical: canonical, hierarchy: hierarchy)
+              |> Enum.split_with(& &1.resolved)
 
-          new_points =
-            for %{unresolved_reason: :insufficient_evidence} = span <- unresolved,
-                labels = span.readings |> Enum.filter(& &1.measured) |> Enum.map(& &1.canonical) |> Enum.uniq(),
-                {:decided, entity} <- [redecide(span, evidence.(example, labels), %{fold_model | redecision: open}, hierarchy)] do
-              label = {entity.start_pos, entity.end_pos, canonical(entity.entity_type, canonical)}
-              %{score: entity.decision.score, margin: entity.decision.margin, correct: agrees?(label, example.gold, hierarchy)}
-            end
+            right = Enum.count(decided, &agrees?({&1.start_pos, &1.end_pos, canonical(&1.entity_type, canonical)}, example.gold, hierarchy))
 
-          {first, new_points ++ points}
-        end)
+            open =
+              for %{unresolved_reason: :insufficient_evidence, readings: summaries} <- unresolved do
+                labels = summaries |> Enum.filter(& &1.measured) |> Enum.map(& &1.canonical) |> Enum.uniq()
+                %{summaries: summaries, evidence: evidence.(example, labels), gold: example.gold}
+              end
+
+            {%{tp: first.tp + right, fp: first.fp + length(decided) - right}, open ++ spans}
+          end)
+
+        {first, [{training, spans} | fold_spans]}
       end)
 
     offsets = {first.tp, first.fp}
-    chosen = best_thresholds(points, gold_total, offsets)
+
+    # Every hypothesis of the span weighed with the evidence, whatever its
+    # extent: what deciding again was before extents were decided first.
+    points =
+      for {_training, spans} <- fold_spans, span <- spans, point <- lead_point(span.summaries, span, hierarchy), do: point
+
+    without_extent = best_thresholds(points, gold_total, offsets)
     with_first = redecision_result(points, gold_total, offsets, model.min_score, model.min_margin)
     none = redecision_result([], gold_total, offsets, :infinity, :infinity)
+
+    by_strength =
+      Map.new(@prior_strengths, fn strength ->
+        extent_points =
+          Enum.flat_map(fold_spans, fn {training, spans} ->
+            extent = fit_extent(training, prior_strength: strength)
+            Enum.flat_map(spans, &extent_point(&1, extent, hierarchy))
+          end)
+
+        {strength, extent_points |> joint_thresholds(gold_total, offsets) |> Map.put(:extent_points, length(extent_points))}
+      end)
+
+    {strength, chosen} = Enum.max_by(by_strength, fn {strength, result} -> {result.f1, -strength} end)
+
+    extent =
+      examples
+      |> fit_extent(prior_strength: strength)
+      |> Map.merge(%{min_score: chosen.extent_min_score, min_margin: chosen.extent_min_margin})
 
     %{
       model
       | redecision: %{
           min_score: chosen.min_score,
           min_margin: chosen.min_margin,
-          cross_validation: %{none: none, first_thresholds: with_first, chosen: chosen, points: length(points)}
+          extent: extent,
+          cross_validation: %{
+            none: none,
+            first_thresholds: with_first,
+            without_extent: without_extent,
+            chosen: Map.drop(chosen, [:extent_points]),
+            by_extent_prior_strength: by_strength,
+            points: length(points),
+            extent_points: chosen.extent_points
+          }
         }
     }
   end
@@ -381,6 +513,63 @@ defmodule Brain.ML.SpanReliability do
       correct: tp,
       gold: gold_total
     }
+  end
+
+  # The hypotheses of `summaries` weighed with the span's evidence, as one
+  # point when one leads: its score, its margin and whether deciding it agrees
+  # with the gold. A tie can never be decided, so it is no point.
+  defp lead_point(summaries, span, hierarchy) do
+    lattice = hypotheses(summaries, hierarchy, span.evidence)
+
+    case lead(lattice) do
+      {best, margin} -> [%{score: best.score, margin: margin, correct: agrees?(best.label, span.gold, hierarchy)}]
+      nil -> []
+    end
+  end
+
+  # A span's point when its extent is decided first: the leading extent's
+  # score and margin beside the point of the hypotheses at that extent.
+  defp extent_point(span, extent, hierarchy) do
+    with {%Candidate{label: {start_pos, end_pos}} = best, margin} <- lead(extent_lattice(span.summaries, extent)),
+         [point] <- span.summaries |> at_extent(start_pos, end_pos) |> lead_point(span, hierarchy) do
+      [Map.merge(point, %{extent_score: best.score, extent_margin: margin})]
+    else
+      _ -> []
+    end
+  end
+
+  defp lead(%Lattice{best: nil}), do: nil
+
+  defp lead(%Lattice{best: best} = lattice) do
+    case margin(lattice) do
+      margin when is_number(margin) and margin <= 0 -> nil
+      margin -> {best, margin}
+    end
+  end
+
+  # The extent and type thresholds with the best F1 over `points`, chosen in
+  # turn, each with the other fixed, from type thresholds that pass every
+  # point, until the F1 stops rising.
+  defp joint_thresholds(points, gold_total, offsets),
+    do: ascend(points, gold_total, offsets, %{min_score: -1.0e300, min_margin: 0.0}, nil)
+
+  defp ascend(points, gold_total, offsets, type, previous) do
+    extent =
+      points
+      |> Enum.filter(&(score_ok?(&1.score, type.min_score) and margin_ok?(&1.margin, type.min_margin)))
+      |> Enum.map(&%{score: &1.extent_score, margin: &1.extent_margin, correct: &1.correct})
+      |> best_thresholds(gold_total, offsets)
+
+    type =
+      points
+      |> Enum.filter(&(score_ok?(&1.extent_score, extent.min_score) and margin_ok?(&1.extent_margin, extent.min_margin)))
+      |> best_thresholds(gold_total, offsets)
+
+    result = Map.merge(type, %{extent_min_score: extent.min_score, extent_min_margin: extent.min_margin})
+
+    if previous != nil and result.f1 <= previous.f1,
+      do: previous,
+      else: ascend(points, gold_total, offsets, type, result)
   end
 
   defp score_ok?(_score, :infinity), do: false
@@ -430,20 +619,27 @@ defmodule Brain.ML.SpanReliability do
   @doc """
   Decides again a span `decide/3` left unresolved for `:insufficient_evidence`,
   with `evidence`: a log-odds term for each label (gold-space type) of the
-  span's hypotheses, added to each hypothesis's summed reading log-odds (see
-  the moduledoc). Every hypothesis label must have a term; a missing one
-  raises, so no hypothesis is weighed with less evidence than the others.
+  span's hypotheses. The span's extent is decided first, by its readings'
+  extent reliabilities alone; the hypotheses at that extent are then weighed,
+  the evidence added to each one's summed reading log-odds (see the
+  moduledoc). Every hypothesis label of the span must have a term; a missing
+  one raises, so no hypothesis is weighed with less evidence than the others.
 
-  The model's `redecision` thresholds decide (`select_redecision/3`); a model
-  without them raises.
+  The model's `redecision` decides (`select_redecision/3`); a model without it
+  raises.
 
   Returns `{:decided, entity}`, the span as `decide/3` returns a decided one,
-  its `:candidates` the lattice with the evidence and its `:decision` also
-  holding `:evidence`; or `{:undecided, lattice}`, the lattice with the
-  evidence, when the thresholds still do not decide it. Any other span
-  raises.
+  its `:candidates` the lattice of the hypotheses at its extent with the
+  evidence, and its `:decision` also holding `:evidence` and `:extent` (the
+  extent's `:score` and `:margin` in log-odds); `{:extent_undecided,
+  extents}`, the lattice of the span's extents, when the extent thresholds do
+  not decide one -- the evidence is not weighed; or `{:undecided, lattice}`,
+  the lattice of the hypotheses at the decided extent with the evidence, when
+  the thresholds do not decide it, or `best: nil` when no measured reading
+  gives a hypothesis at that extent. Any other span raises.
   """
-  @spec redecide(map(), %{String.t() => float()}, t(), module()) :: {:decided, map()} | {:undecided, Lattice.t()}
+  @spec redecide(map(), %{String.t() => float()}, t(), module()) ::
+          {:decided, map()} | {:extent_undecided, Lattice.t()} | {:undecided, Lattice.t()}
   def redecide(
         %{resolved: false, unresolved_reason: :insufficient_evidence, readings: summaries, raw_readings: cluster} = span,
         evidence,
@@ -451,7 +647,7 @@ defmodule Brain.ML.SpanReliability do
         hierarchy
       )
       when is_map(evidence) do
-    %{min_score: min_score, min_margin: min_margin} = redecision!(model)
+    %{min_score: min_score, min_margin: min_margin, extent: extent} = redecision!(model)
 
     labels =
       summaries
@@ -469,15 +665,30 @@ defmodule Brain.ML.SpanReliability do
                 "#{inspect(Map.get(span, :value))}; every hypothesis is weighed with the same evidence"
     end
 
-    lattice = hypotheses(summaries, hierarchy, evidence)
+    extents = extent_lattice(summaries, extent)
 
-    case judge(lattice, min_score, min_margin) do
-      {:decided, best, margin} ->
-        entity = decided(cluster, summaries, best, margin, lattice)
-        {:decided, %{entity | decision: Map.put(entity.decision, :evidence, Map.take(evidence, labels))}}
-
+    case judge(extents, extent.min_score, extent.min_margin) do
       {:undecided, _reason} ->
-        {:undecided, lattice}
+        {:extent_undecided, extents}
+
+      {:decided, %Candidate{label: {start_pos, end_pos}} = best_extent, extent_margin} ->
+        lattice = summaries |> at_extent(start_pos, end_pos) |> hypotheses(hierarchy, evidence)
+
+        case judge(lattice, min_score, min_margin) do
+          {:decided, best, margin} ->
+            entity = decided(cluster, summaries, best, margin, lattice)
+
+            decision =
+              Map.merge(entity.decision, %{
+                evidence: Map.take(evidence, labels),
+                extent: %{score: best_extent.score, margin: extent_margin}
+              })
+
+            {:decided, %{entity | decision: decision}}
+
+          {:undecided, _reason} ->
+            {:undecided, lattice}
+        end
     end
   end
 
@@ -532,7 +743,11 @@ defmodule Brain.ML.SpanReliability do
     Path.join(Brain.Analysis.RunProvenance.models_path!(), "span_reliability.#{Brain.Language.validate!(language)}.term")
   end
 
-  @doc "Writes `model` to `path/1` for its language. Raises when it has no thresholds or no redecision thresholds."
+  @doc """
+  Writes `model` to `path/1` for its language. Raises when it has no
+  thresholds, or no redecision thresholds and extent reliabilities with
+  thresholds.
+  """
   @spec save!(t()) :: :ok
   def save!(%__MODULE__{language: language} = model) do
     thresholds!(model)
@@ -540,7 +755,7 @@ defmodule Brain.ML.SpanReliability do
     File.write!(path(language), Brain.ML.ModelStore.serialize(model))
   end
 
-  @doc "Reads the stored model for `language`. Raises when it is missing or is not a model."
+  @doc "Reads the stored model for `language`. Raises when it is missing, is not a model, or lacks what `save!/1` requires."
   @spec read!(String.t()) :: t()
   def read!(language) do
     file = path(language)
@@ -645,18 +860,58 @@ defmodule Brain.ML.SpanReliability do
   end
 
   # The rate every source is pulled toward. It must lie strictly between 0 and
-  # 1, or the log-odds of a smoothed reliability would be infinite.
-  defp overall!(tallies) do
+  # 1, or the log-odds of a smoothed reliability would be infinite. `counted`
+  # says what `agree` counts, for the message.
+  defp overall!(tallies, counted) do
     n = tallies |> Map.values() |> Enum.map(& &1.n) |> Enum.sum()
     agree = tallies |> Map.values() |> Enum.map(& &1.agree) |> Enum.sum()
 
     if agree == 0 or agree == n do
-      raise ArgumentError,
-            "SpanReliability: #{agree} of #{n} measured readings agree with the gold standard; " <>
-              "a rate of 0 or 1 cannot be learned from"
+      raise ArgumentError, "SpanReliability: #{agree} of #{n} #{counted}; a rate of 0 or 1 cannot be learned from"
     end
 
     %{n: n, agree: agree, rate: agree / n}
+  end
+
+  # Two-level smoothing of `tallies` (pair => %{n, agree, ...}): each source's
+  # rate toward `overall`, and each pair's toward its source's, the source of
+  # a pair given by `source_of`. Returns `{sources, pairs}`, each with its
+  # counts and `reliability`.
+  defp smooth(tallies, prior_strength, overall, source_of) do
+    sources =
+      tallies
+      |> Enum.group_by(fn {pair, _tally} -> source_of.(pair) end, fn {_pair, tally} -> tally end)
+      |> Map.new(fn {source, source_tallies} ->
+        n = source_tallies |> Enum.map(& &1.n) |> Enum.sum()
+        agree = source_tallies |> Enum.map(& &1.agree) |> Enum.sum()
+        {source, %{n: n, agree: agree, reliability: (agree + prior_strength * overall.rate) / (n + prior_strength)}}
+      end)
+
+    pairs =
+      Map.new(tallies, fn {pair, tally} ->
+        prior = Map.fetch!(sources, source_of.(pair)).reliability
+        {pair, Map.put(tally, :reliability, (tally.agree + prior_strength * prior) / (tally.n + prior_strength))}
+      end)
+
+    {sources, pairs}
+  end
+
+  # A reading's key in the extent reliabilities: its source, the cue the
+  # source gave about its extent (nil when it gives none) and its type.
+  defp extent_pair(reading), do: {reading.source, Map.get(reading, :extent_cue), reading.entity_type}
+
+  defp extent_outcome(reading, gold) do
+    cond do
+      Enum.any?(gold, &(&1.start_pos == reading.start_pos and &1.end_pos == reading.end_pos)) -> :agree
+      Enum.any?(gold, &overlaps?(&1, reading)) -> :boundary
+      true -> :no_entity
+    end
+  end
+
+  defp extent_tally(outcomes) do
+    Enum.reduce(outcomes, %{n: 0, agree: 0, boundary: 0, no_entity: 0}, fn outcome, acc ->
+      Map.update!(%{acc | n: acc.n + 1}, outcome, &(&1 + 1))
+    end)
   end
 
   defp split_fold(examples, folds, k) do
@@ -757,18 +1012,20 @@ defmodule Brain.ML.SpanReliability do
             "min_margin #{inspect(margin)}); fit it with select/2"
   end
 
-  # The thresholds `redecide/4` decides with. A model read from a file written
-  # before they existed has no `:redecision` key at all.
+  # What `redecide/4` decides with: its thresholds, and the extent
+  # reliabilities with theirs. A model read from a file written before they
+  # existed has no `:redecision` key at all, or a redecision without `:extent`.
   defp redecision!(%__MODULE__{} = model) do
     case Map.get(model, :redecision) do
-      %{min_score: score, min_margin: margin} = redecision
-      when (is_number(score) or score == :infinity) and (is_number(margin) or margin == :infinity) ->
+      %{min_score: score, min_margin: margin, extent: %{pairs: pairs, min_score: extent_score, min_margin: extent_margin}} = redecision
+      when (is_number(score) or score == :infinity) and (is_number(margin) or margin == :infinity) and is_map(pairs) and
+             (is_number(extent_score) or extent_score == :infinity) and (is_number(extent_margin) or extent_margin == :infinity) ->
         redecision
 
       other ->
         raise ArgumentError,
-              "SpanReliability: the model has no redecision thresholds (#{inspect(other, limit: 3)}); " <>
-                "choose them with select_redecision/3 (`mix train_span_reliability`)"
+              "SpanReliability: the model has no redecision thresholds and extent reliabilities with thresholds " <>
+                "(#{inspect(other, limit: 3)}); choose them with select_redecision/3 (`mix train_span_reliability`)"
     end
   end
 
@@ -806,12 +1063,28 @@ defmodule Brain.ML.SpanReliability do
       canonical: canonical(reading.entity_type, canonical),
       start_pos: reading.start_pos,
       end_pos: reading.end_pos,
+      extent_cue: Map.get(reading, :extent_cue),
       raw_confidence: Map.get(reading, :confidence),
       measured: reliability != nil,
       reliability: reliability,
       evidence: evidence
     }
   end
+
+  # One candidate per reading whose extent pair the extent reliabilities
+  # measured, labeled by its extent with its extent reliability as its
+  # confidence; the log-odds merge sums them per extent.
+  defp extent_lattice(summaries, extent) do
+    candidates =
+      for summary <- summaries, {:ok, pair} <- [Map.fetch(extent.pairs, extent_pair(summary))] do
+        %Candidate{label: {summary.start_pos, summary.end_pos}, score: 0.0, confidence: pair.reliability, source: summary.source, metadata: %{}}
+      end
+
+    Lattice.merge(Lattice.empty(:entity_extent), %Lattice{candidates: candidates}, :log_odds)
+  end
+
+  defp at_extent(summaries, start_pos, end_pos),
+    do: Enum.filter(summaries, &(&1.start_pos == start_pos and &1.end_pos == end_pos))
 
   # One candidate per hypothesis a measured reading supports, with the
   # reliability as its confidence, and one per hypothesis whose label
