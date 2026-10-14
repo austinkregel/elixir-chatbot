@@ -139,6 +139,9 @@ defmodule Brain.ML.EntityExtractor do
 
   # The type an entity holds, and the record of how it was chosen: what
   # `put_types/2` carries from one disambiguation onto another's entities.
+  # `:types` are scored again once the intent is known
+  # (`EntityTypeScorer.rescore/3`), with the position context they were
+  # scored with first, so that context travels with them.
   @type_fields [
     :entity_type,
     :types,
@@ -146,7 +149,10 @@ defmodule Brain.ML.EntityExtractor do
     :p_ordinary,
     :disambiguation_source,
     :disambiguation_reason,
-    :disambiguation_confidence
+    :disambiguation_confidence,
+    :tag,
+    :preceding_tag,
+    :sentence_initial
   ]
 
   @doc """
@@ -212,7 +218,11 @@ defmodule Brain.ML.EntityExtractor do
 
   Each outcome also carries the span's `:value`, `:start_pos` and `:end_pos`.
 
-  Options: `:language`, `:min_confidence` as for `extract/2`;
+  A decided entity carries `put_position_context/4`'s context from its own
+  offsets, as every entity `extract/2` decides does.
+
+  Options: `:text`, required, the text the spans' positions index;
+  `:language`, `:min_confidence` as for `extract/2`;
   `:span_reliability` and `:preferences`, models used in place of the ones
   loaded for the language.
   """
@@ -224,11 +234,21 @@ defmodule Brain.ML.EntityExtractor do
   def resolve_with_intent(spans, intent, opts) when is_list(spans) and is_list(opts) do
     language = language!(opts)
     intent = if is_nil(intent), do: nil, else: to_string(intent)
+    text = resolve_text!(opts)
+
+    # A decided span is an entity, scored again once the intent is known
+    # (`EntityTypeScorer.rescore/3`), so it carries the context every entity
+    # extraction decides carries, from its own offsets. The text is tagged
+    # only when a span is decided.
+    position_context = fn entity ->
+      tokens = Tokenizer.tokenize(text)
+      put_position_context(entity, tokens, required_pos_tags(tokens), text)
+    end
 
     results =
       spans
       |> Enum.sort_by(&{&1.start_pos, &1.end_pos})
-      |> Enum.map(&resolve_span(&1, intent, language, opts))
+      |> Enum.map(&resolve_span(&1, intent, language, Keyword.put(opts, :position_context, position_context)))
 
     %{
       entities: for({:entity, entity, _outcome} <- results, do: entity),
@@ -274,7 +294,9 @@ defmodule Brain.ML.EntityExtractor do
 
     case SpanReliability.redecide(span, evidence, reliability, TypeHierarchy) do
       {:decided, entity} ->
-        entity = %{entity | decision: Map.put(entity.decision, :resolved_by, {:intent, intent})}
+        entity =
+          %{entity | decision: Map.put(entity.decision, :resolved_by, {:intent, intent})}
+          |> Keyword.fetch!(opts, :position_context).()
         decided = %{entity_type: entity.entity_type, score: entity.decision.score, margin: entity.decision.margin, evidence: evidence}
 
         # The floor `extract/2` applies to every entity applies here too; a
@@ -299,6 +321,14 @@ defmodule Brain.ML.EntityExtractor do
       # Evidence about types cannot say where the span starts and ends.
       {:extent_undecided, %Brain.Lattice{}} ->
         {:span, span, outcome(span, %{outcome: :not_redecided, reason: :extent_undecided})}
+    end
+  end
+
+  defp resolve_text!(opts) do
+    case Keyword.fetch(opts, :text) do
+      {:ok, text} when is_binary(text) -> text
+      {:ok, other} -> raise ArgumentError, "EntityExtractor.resolve_with_intent/3: :text must be a string, got #{inspect(other)}"
+      :error -> raise ArgumentError, "EntityExtractor.resolve_with_intent/3 needs :text, the text the spans' positions index"
     end
   end
 
@@ -674,6 +704,33 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   @doc """
+  Sets on `entity` the context `Brain.Analysis.EntityTypeScorer` weighs its
+  readings with, from the entity's own offsets in `text`: `:tag`, the UD tag of
+  its head word (the last word of an English noun phrase); `:preceding_tag`,
+  the tag of the word before it as the slot type preferences were learned
+  from it (`SlotTypePreferences.sentence_start/0` at the start of the text);
+  and `:sentence_initial`. `tokens` are `Brain.ML.Tokenizer.tokenize/1`'s
+  tokens of `text` and `tags` their tags, one each. An entity whose offsets
+  do not begin and end on token boundaries raises. Any context the entity
+  carried is replaced.
+  """
+  @spec put_position_context(map(), [map()], [String.t()], String.t()) :: map()
+  def put_position_context(%{start_pos: start_pos, end_pos: end_pos} = entity, tokens, tags, text)
+      when is_list(tokens) and is_list(tags) and is_binary(text) do
+    unless length(tags) == length(tokens) do
+      raise ArgumentError, "EntityExtractor.put_position_context/4: #{length(tags)} tags for #{length(tokens)} tokens"
+    end
+
+    {first, last} = Tokenizer.token_range!(tokens, start_pos, end_pos)
+
+    Map.merge(entity, %{
+      tag: Enum.at(tags, last),
+      preceding_tag: if(first == 0, do: SlotTypePreferences.sentence_start(), else: Enum.at(tags, first - 1)),
+      sentence_initial: EntityTypeScorer.sentence_initial?(text, start_pos)
+    })
+  end
+
+  @doc """
   The key a token is looked up in the gazetteer by: its text lowercased, with
   every character but letters, digits, spaces and hyphens removed, and trimmed.
   `Brain.ML.Gazetteer.lookup_spans/2` takes one key per token.
@@ -719,14 +776,9 @@ defmodule Brain.ML.EntityExtractor do
           end_pos: end_token.end_pos,
           confidence: nil,
           types: candidates,
-          source: :gazetteer,
-          # The head word's tag -- the last word of an English noun phrase.
-          tag: Enum.at(tags, end_idx),
-          # The tag of the word before the span, as the slot type preferences
-          # were learned from it.
-          preceding_tag: if(start_idx == 0, do: SlotTypePreferences.sentence_start(), else: Enum.at(tags, start_idx - 1))
+          source: :gazetteer
         }
-        |> EntityTypeScorer.mark_position(text)
+        |> put_position_context(tokens, tags, text)
         |> EntityTypeScorer.apply_to(expected_types, scoring)
 
       selected =
