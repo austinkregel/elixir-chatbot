@@ -19,9 +19,16 @@ defmodule Brain.ML.Trainer do
           max_features: integer()
         }
 
+  # What training reports. Each `train_*` function takes the stats so far
+  # (`%{}` by default, as `mix train_models --intent-only` and `--entity-only`
+  # pass) and sets its own keys on them; `train_and_save/1` threads one map
+  # through every stage.
   @type training_stats :: %{
-          intent_samples: integer(),
-          vocab_size: integer()
+          optional(:intent_samples) => non_neg_integer(),
+          optional(:vocab_size) => non_neg_integer(),
+          optional(:entity_model_trained) => boolean(),
+          optional(:sentiment_samples) => non_neg_integer(),
+          optional(:sentiment_labels) => non_neg_integer()
         }
 
   @doc "Main training function that loads data, trains all models, and saves them.\nReturns {:ok, stats} or {:error, reason}.\n\n## Options\n  - models_path: Override the default models output path\n"
@@ -89,11 +96,8 @@ defmodule Brain.ML.Trainer do
       File.write!(embedder_path, Brain.ML.ModelStore.serialize(embedder_model))
       Logger.info("Embedder vocabulary saved", %{path: embedder_path})
 
-      updated_stats = %{
-        stats
-        | intent_samples: length(training_data),
-          vocab_size: map_size(model.vocabulary)
-      }
+      updated_stats =
+        Map.merge(stats, %{intent_samples: length(training_data), vocab_size: map_size(model.vocabulary)})
 
       {updated_stats, :ok}
     end
@@ -125,9 +129,8 @@ defmodule Brain.ML.Trainer do
     gold = ML.EvaluationStore.load_gold_standard("sentiment")
 
     if gold == [] do
-      Logger.warning("No sentiment gold standard data found. Skipping sentiment classifier training.")
-      Logger.warning("Add examples to: priv/evaluation/sentiment/gold_standard.json")
-      stats
+      raise "Trainer: the sentiment gold standard (#{ML.EvaluationStore.gold_standard_path("sentiment")}) " <>
+              "holds no examples, so no sentiment classifier can be trained"
     else
       training_data =
         gold
@@ -148,15 +151,11 @@ defmodule Brain.ML.Trainer do
       File.write!(model_path, Brain.ML.ModelStore.serialize(model))
       Logger.info("Sentiment classifier saved", %{path: model_path})
 
-      %{
-        stats
-        | sentiment_samples: length(training_data),
-          sentiment_labels: map_size(model.label_centroids)
-      }
+      Map.merge(stats, %{sentiment_samples: length(training_data), sentiment_labels: map_size(model.label_centroids)})
     end
   end
 
-  @doc "Train the entity recognition model using BIO tagging.\n\n## Options\n  - models_path: Override the default models output path\n"
+  @doc "Train the entity recognition model using BIO tagging. Raises when the model cannot be saved.\n\n## Options\n  - models_path: Override the default models output path\n  - rows: The NER gold rows to train on (default: the gold standard's training split)\n"
   def train_entity_model(stats \\ %{}, opts \\ []) do
     models_path =
       Keyword.get(opts, :models_path) ||
@@ -165,17 +164,16 @@ defmodule Brain.ML.Trainer do
 
     Logger.info("Training entity recognition model...")
 
-    case EntityTrainer.train_and_save(models_path: models_path) do
+    case EntityTrainer.train_and_save(Keyword.put(Keyword.take(opts, [:rows]), :models_path, models_path)) do
       {:ok, model} ->
         Logger.info("Entity model trained and saved", %{
           tag_count: map_size(model.tag_vocabulary)
         })
 
-        %{stats | entity_model_trained: true}
+        Map.merge(stats, %{entity_model_trained: true})
 
       {:error, reason} ->
-        Logger.warning("Entity model training failed", %{reason: reason})
-        stats
+        raise "Trainer: the entity model was not saved to #{models_path}: #{reason}"
     end
   end
 
