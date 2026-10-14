@@ -51,6 +51,13 @@
         "Currently, the $device is set to $brightness."
       ]
     },
+    "action_confirmed_with_brightness": {
+      "requires_enrichment": ["action", "device", "device_status", "brightness"],
+      "templates": [
+        "Done, I've set the $device to $action, at $brightness brightness.",
+        "Got it, the $device has been set to $action, at $brightness brightness."
+      ]
+    },
     "with_temperature": {
       "condition": "enriched:current_temp",
       "requires_enrichment": ["current_temp", "target_temp", "mode"],
