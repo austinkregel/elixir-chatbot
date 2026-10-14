@@ -52,16 +52,25 @@ defmodule Brain.Analysis.EntityTypeScorer do
 
   ## Context
 
-  When the intent is known and its slot schema lists entity types, the
-  context is the listed types weighted by `Brain.Analysis.SlotTypePreferences`
-  (`expected_types/2`): how often the gold data shows a span of each filling
-  the intent's slots. A listed reading's likelihood is its weight relative to
-  the best listed weight, so the type the data prefers has likelihood 1;
-  every reading the schema does not list -- ordinary word included -- has
-  `context_mismatch_likelihood`. Listed means listed: the schema names the
-  types it accepts, and a subtype the hierarchy would allow (a `music_artist`
-  is a `person`) is not thereby as likely to fill the slot. With no listed
-  types, context says nothing.
+  When the intent (or the domain) is known, `expected_types/2` gives what it
+  expects (`Brain.Analysis.EntityTypeScorer.Expected`), and every reading is
+  weighed by the context's likelihood of it relative to its likelihood across
+  every utterance, both learned by `Brain.Analysis.SlotTypePreferences` from
+  the gold standards:
+
+      ordinary:  K(o) = O(c) / O(all)
+      type t:    K(t) = (1 - O(c)) × M_c(t) / ((1 - O(all)) × M_all(t))
+
+  `O` is the probability that a gazetteer span is no entity, `M` the
+  probability that a gold span agrees with `t` (its label or one refining it).
+  The ratio, not `P(t | c)` itself, is the factor because the prior already
+  holds how often each reading is used: by Bayes, with the context bearing on
+  the span only through its reading,
+  `P(r | word, c) ∝ P(r | word) × P(r | c) / P(r)`. Types the schema does not
+  list are weighed the same way, by the mass the data gives them under the
+  context, so a band under a weather intent is unlikely and a city under one
+  listing `location` is likely (`SlotTypePreferences` splits `M_c(t)` into
+  its listed and unlisted parts). With no context, context says nothing.
 
   ## Preceding tag
 
@@ -80,10 +89,12 @@ defmodule Brain.Analysis.EntityTypeScorer do
   entity at all, so two readings of one entity (a door as `device` or as
   `lock`) do not halve each other's confidence.
 
-  The constants live in `config :brain, :entity_type_scoring`.
+  The prior smoothing, casing and tag constants live in
+  `config :brain, :entity_type_scoring`.
   """
 
   alias Brain.Analysis.{SlotDetector, SlotTypePreferences, TypeHierarchy}
+  alias Brain.Analysis.EntityTypeScorer.Expected
   alias Brain.Lexicon.UserDefined
 
   @ordinary :ordinary
@@ -93,7 +104,7 @@ defmodule Brain.Analysis.EntityTypeScorer do
   @lexicon_pos ~w(noun verb adj adv)
   @closed_class "closed_class"
 
-  @type expected :: %{String.t() => float()}
+  @type expected :: Expected.t()
 
   @type evidence :: %{
           required(:match) => String.t(),
@@ -116,8 +127,8 @@ defmodule Brain.Analysis.EntityTypeScorer do
 
   `candidates` are gazetteer infos, each with `:entity_type` and `:value`.
   `evidence` carries the matched text as typed, whether it starts a
-  sentence, the entity types the intent expects with their weights
-  (`expected_types/2`; `nil` or `%{}` when there is no context), the UD tag
+  sentence, what the context expects (`expected_types/2` or
+  `domain_expected_types/2`; `nil` when there is no context), the UD tag
   of the span's head word, and the UD tag of the word before the span
   (`:sentence_start` when it starts the text). A tag that is `nil` or absent
   says nothing.
@@ -144,7 +155,6 @@ defmodule Brain.Analysis.EntityTypeScorer do
       when is_binary(match) and is_boolean(initial?) do
     config = Keyword.get_lazy(opts, :config, &config!/0)
     alpha = Keyword.fetch!(config, :prior_smoothing)
-    epsilon = Keyword.fetch!(config, :context_mismatch_likelihood)
     delta = Keyword.fetch!(config, :tag_mismatch_likelihood)
 
     casing = %{
@@ -155,7 +165,7 @@ defmodule Brain.Analysis.EntityTypeScorer do
     surface = String.downcase(match)
     usage = Keyword.get_lazy(opts, :usage, fn -> usage(surface, Keyword.get(opts, :lexicon, UserDefined)) end)
     by_type = one_candidate_per_type(candidates, match)
-    context = context_fit(Map.get(evidence, :expected_types), epsilon)
+    context = context_fit(Map.get(evidence, :expected_types))
     pos = pos_config!()
     tag_fit = tag_fit(Map.get(evidence, :tag), surface, pos, delta)
     preceding = preceding_fit(Map.get(evidence, :preceding_tag), opts)
@@ -274,13 +284,16 @@ defmodule Brain.Analysis.EntityTypeScorer do
   end
 
   @doc """
-  The entity types an intent's slot schema lists, each with its learned
-  weight (`Brain.Analysis.SlotTypePreferences.weights/3`): how strongly the
-  gold data prefers a span read as that type to fill the intent's slots. A
-  larger weight is a better fit; weights rank, they do not sum to one.
+  What an intent expects of the entities in its utterances
+  (`Brain.Analysis.EntityTypeScorer.Expected`): the entity types its slot
+  schema lists, each with its learned weight
+  (`Brain.Analysis.SlotTypePreferences.weights/3`) -- how strongly the gold
+  data prefers a span read as that type to fill the intent's slots; weights
+  rank, they do not sum to one -- and the intent's likelihood of every
+  reading of a gazetteer span, which `score/3` weighs readings by.
 
   `nil` when there is no intent -- no context to weigh. An intent whose
-  schema maps no entity types returns `%{}`, which likewise says nothing.
+  schema maps no entity types lists none, and still weighs readings.
 
   Options: `:preferences`, a model to use in place of the one loaded for
   `:language` (absent means English).
@@ -293,19 +306,28 @@ defmodule Brain.Analysis.EntityTypeScorer do
   def expected_types(intent, opts) do
     intent = to_string(intent)
     listed = intent |> SlotDetector.get_entity_types_for_intent() |> MapSet.to_list()
-    SlotTypePreferences.weights(preferences(opts), {:intent, intent}, listed)
+    expected(preferences(opts), {:intent, intent}, listed)
   end
 
   @doc """
   `expected_types/2` for a consolidated domain (`ChunkProfile.domain`): the
   entity types any registry intent of the domain lists
   (`Brain.Analysis.SlotDetector.entity_types_for_domain/1`), weighted for the
-  domain. Takes `expected_types/2`'s options.
+  domain, and the domain's likelihood of every reading. Takes
+  `expected_types/2`'s options.
   """
   @spec domain_expected_types(atom(), keyword()) :: expected()
   def domain_expected_types(domain, opts \\ []) when is_atom(domain) and not is_nil(domain) do
     listed = domain |> SlotDetector.entity_types_for_domain() |> MapSet.to_list()
-    SlotTypePreferences.weights(preferences(opts), {:domain, Atom.to_string(domain)}, listed)
+    expected(preferences(opts), {:domain, Atom.to_string(domain)}, listed)
+  end
+
+  defp expected(model, context, listed) do
+    %Expected{
+      context: context,
+      weights: SlotTypePreferences.weights(model, context, listed),
+      readings: SlotTypePreferences.reading_likelihoods(model, context)
+    }
   end
 
   defp preferences(opts) do
@@ -526,27 +548,16 @@ defmodule Brain.Analysis.EntityTypeScorer do
   defp capitalization_probability(p_capitalized, true), do: p_capitalized
   defp capitalization_probability(p_capitalized, false), do: 1.0 - p_capitalized
 
-  # A listed reading's weight relative to the best listed weight; epsilon for
-  # a reading the schema does not list and for the ordinary word.
-  defp context_fit(expected, _epsilon) when expected in [nil, %{}], do: fn _reading -> 1.0 end
+  # The context's likelihood of each reading relative to its likelihood
+  # across every utterance (see the moduledoc); 1 for everything when there is
+  # no context.
+  defp context_fit(nil), do: fn _reading -> 1.0 end
+  defp context_fit(%Expected{} = expected), do: &Expected.reading_likelihood(expected, &1)
 
-  defp context_fit(expected, epsilon) when is_map(expected) do
-    Enum.each(expected, fn
-      {type, w} when is_binary(type) and is_number(w) and w > 0 -> :ok
-      entry -> raise ArgumentError, "EntityTypeScorer: an expected type needs a positive weight, got #{inspect(entry)}"
-    end)
-
-    best = expected |> Map.values() |> Enum.max()
-
-    fn
-      @ordinary -> epsilon
-      type -> if(Map.has_key?(expected, type), do: Map.fetch!(expected, type) / best, else: epsilon)
-    end
-  end
-
-  defp context_fit(expected, _epsilon) do
+  defp context_fit(expected) do
     raise ArgumentError,
-          "EntityTypeScorer: :expected_types must be a map of type => weight (expected_types/2), got #{inspect(expected)}"
+          "EntityTypeScorer: :expected_types must be what expected_types/2 or domain_expected_types/2 returns, " <>
+            "or nil, got #{inspect(expected, limit: 5)}"
   end
 
   # P(the tag before the span | reading), learned from the NER gold standard.
