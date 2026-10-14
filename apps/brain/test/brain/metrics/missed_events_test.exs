@@ -107,7 +107,7 @@ defmodule Brain.Metrics.MissedEventsTest do
     assert missed(@used_handler, :malformed_event) == before + 1
   end
 
-  test "an event waiting in the mailbox when the aggregator stops is counted as missed, and the next aggregator counts on",
+  test "an event waiting in the mailbox when the aggregator stops is counted as it stops, and the next aggregator counts on",
        %{world_id: world_id, pattern: pattern} do
     before = missed(@used_handler, :aggregator_stopped)
     aggregator = Process.whereis(Aggregator)
@@ -116,14 +116,77 @@ defmodule Brain.Metrics.MissedEventsTest do
     :ok = :sys.suspend(aggregator)
     :ok = RecurringPattern.used(pattern, :synthesizer, [])
 
-    log = capture_log(fn -> _restarted = restart_aggregator!() end)
+    _restarted = restart_aggregator!()
+
+    assert missed(@used_handler, :aggregator_stopped) == before
+    assert Aggregator.get_semantic_fact_metrics(world_id).used_total == 1
+
+    :ok = RecurringPattern.used(pattern, :synthesizer, [])
+    :ok = counted()
+    assert Aggregator.get_semantic_fact_metrics(world_id).used_total == 2
+  end
+
+  test "an event still waiting once the aggregator has used its time to count what waits is logged and counted as missed",
+       %{world_id: world_id, pattern: pattern} do
+    before = missed(@used_handler, :aggregator_stopped)
+
+    log =
+      capture_log(fn ->
+        while_aggregator_down(fn ->
+          # No time to count what waits: everything waiting is missed.
+          {:ok, pid} = GenServer.start(Aggregator, [drain_ms: 0], name: Aggregator)
+          :ok = :sys.suspend(pid)
+          :ok = RecurringPattern.used(pattern, :synthesizer, [])
+          :ok = GenServer.stop(pid)
+        end)
+      end)
 
     assert log =~ "from #{@used_handler} (aggregator_stopped)"
     assert missed(@used_handler, :aggregator_stopped) == before + 1
     assert Aggregator.get_semantic_fact_metrics(world_id).used_total == 0
+  end
 
-    :ok = RecurringPattern.used(pattern, :synthesizer, [])
-    :ok = counted()
-    assert Aggregator.get_semantic_fact_metrics(world_id).used_total == 1
+  test "its supervisor gives it the time it takes to stop, so a full mailbox is counted, never killed uncounted" do
+    assert Aggregator.child_spec([]).shutdown == 15_000
+
+    source = "record_fact_retrieval"
+    before = missed(source, :aggregator_stopped)
+    aggregator = Process.whereis(Aggregator)
+    ref = Process.monitor(aggregator)
+    sent = 20_000
+
+    :ok = :sys.suspend(aggregator)
+    for _ <- 1..sent, do: :ok = Aggregator.record_fact_retrieval(1)
+
+    # Stopped by its supervisor, which kills it once its shutdown time is up.
+    {stop_us, :ok} = :timer.tc(fn -> while_aggregator_down(fn -> :ok end) end)
+
+    assert_received {:DOWN, ^ref, :process, ^aggregator, reason}
+    assert reason == :shutdown
+    assert stop_us < 15_000_000
+
+    counted_in_atlas = Aggregator.get_enrichment_metrics().fact_queries
+    assert counted_in_atlas + (missed(source, :aggregator_stopped) - before) == sent
+  end
+
+  test "misses from one sender for one reason are logged once, then together, and every one is counted" do
+    handler = "chatbot-code-gazetteer-add-stop"
+    event = [:chat_bot, :code, :gazetteer, :add, :stop]
+    before = missed(handler, :aggregator_not_running)
+
+    log =
+      capture_log(fn ->
+        while_aggregator_down(fn ->
+          for _ <- 1..100, do: :ok = :telemetry.execute(event, %{duration: 1_000}, %{})
+        end)
+
+        :ok = report_missed()
+      end)
+
+    assert missed(handler, :aggregator_not_running) == before + 100
+    # The first is logged as it happens; the 99 after it, in the aggregator's report.
+    assert lines_with(log, "from #{handler} (aggregator_not_running)") == 2
+    assert log =~ "missed 1 event(s) from #{handler} (aggregator_not_running)"
+    assert log =~ "99 from #{handler} (aggregator_not_running)"
   end
 end
