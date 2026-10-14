@@ -71,7 +71,7 @@ defmodule Brain.Analysis.FreeTextCaptureTest do
       gold: Keyword.get(opts, :gold, gold),
       held_out: Enum.filter(gold, &(&1["text"] in @held_out_texts)),
       tagger: fixture_tagger(),
-      dir: fixture_dir!(entries)
+      dirs: [fixture_dir!(entries)]
     )
   end
 
@@ -124,7 +124,7 @@ defmodule Brain.Analysis.FreeTextCaptureTest do
       end
     end
 
-    test "the tracked reminder annotations: every span placed and split as the intent gold standard splits its rows" do
+    test "the tracked annotations, in the authored intent examples and entity annotations: every span placed and split as the intent gold standard splits its rows" do
       held = "intent" |> EvaluationStore.load_gold_standard(:held_out) |> MapSet.new(&{&1["text"], &1["intent"]})
 
       examples =
@@ -135,14 +135,35 @@ defmodule Brain.Analysis.FreeTextCaptureTest do
           tagger: TrainSlotTypePreferences.tagger!()
         )
 
-      assert examples |> Enum.map(& &1.slot) |> Enum.uniq() == ["reminder_text"]
+      assert examples |> Enum.map(& &1.slot) |> Enum.uniq() |> Enum.sort() == ["event", "reminder_text"]
+
+      assert examples |> Enum.filter(&(&1.slot == "event")) |> Enum.map(& &1.intent) |> Enum.uniq() |> Enum.sort() ==
+               ["calendar.cancel", "calendar.query", "calendar.schedule"]
+
+      assert "reminder.create" in Enum.map(examples, & &1.intent)
 
       for example <- examples do
         assert example.split == if(MapSet.member?(held, {example.text, example.intent}), do: :held_out, else: :train)
       end
 
-      assert Enum.any?(examples, &(&1.split == :held_out and &1.span != nil))
-      assert Enum.any?(examples, &(&1.split == :train and &1.span != nil))
+      for slot <- ["event", "reminder_text"], split <- [:held_out, :train] do
+        assert Enum.any?(examples, &(&1.slot == slot and &1.split == split and &1.span != nil)), "no #{split} #{slot} span"
+      end
+    end
+
+    test "a slot of one intent annotated in two directories raises" do
+      [first, second] = Enum.split(fixture_entries(), 9) |> Tuple.to_list()
+      gold = Enum.map(first ++ second, &%{"text" => text_of(&1), "intent" => "reminder.cancel"})
+
+      assert_raise ArgumentError, ~r/reminder_text of reminder.cancel is annotated in more than one file/, fn ->
+        FreeTextCapture.examples!(
+          registry: @registry,
+          gold: gold,
+          held_out: [],
+          tagger: fixture_tagger(),
+          dirs: [fixture_dir!(first), fixture_dir!(second)]
+        )
+      end
     end
 
     test "a slot the registry does not declare for the intent raises" do
@@ -253,6 +274,12 @@ defmodule Brain.Analysis.FreeTextCaptureTest do
         :abstain -> :ok
         {:ok, %{end_pos: end_pos}} -> assert end_pos < at
       end
+    end
+
+    test "a calendar item's event is learned from the calendar rows and captured", %{model: model} do
+      assert FreeTextCapture.slots(model) == ["event", "reminder_text"]
+      assert model.slots["event"].intents == ["calendar.cancel", "calendar.query", "calendar.schedule"]
+      assert {:ok, %{value: "appointment"}} = FreeTextCapture.capture(model, "event", "Delete the appointment", [])
     end
 
     test "a slot the model does not capture raises", %{model: model} do
