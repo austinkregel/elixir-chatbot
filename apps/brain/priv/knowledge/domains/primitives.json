@@ -55,10 +55,6 @@
       "Which one: $candidates?",
       "Which $item_noun do you mean: $candidates?"
     ],
-    "item_not_identified": [
-      "Which $item_noun do you mean?",
-      "Which $item_noun should I cancel?"
-    ],
     "location_not_found": [
       "I couldn't find that location. Which place did you mean?",
       "I don't know that place. Could you name the location another way?"
@@ -120,33 +116,33 @@
         "singular": "event",
         "plural": "events",
         "description": [
-          {"field": "event", "slot": "event", "text": "$value"},
-          {"field": "date", "slot": "date", "text": "on $value"},
-          {"field": "time", "slot": "time", "text": "at $value"}
+          {"field": "event", "text": "$value"},
+          {"field": "date", "text": "on $value"},
+          {"field": "time", "text": "at $value"}
         ]
       },
       "reminder": {
         "singular": "reminder",
         "plural": "reminders",
         "description": [
-          {"field": "text", "slot": "reminder_text", "text": "$value"},
-          {"field": "date", "slot": "date", "text": "on $value"},
-          {"field": "time", "slot": "time", "text": "at $value"}
+          {"field": "text", "text": "$value"},
+          {"field": "date", "text": "on $value"},
+          {"field": "time", "text": "at $value"}
         ]
       },
       "alarm": {
         "singular": "alarm",
         "plural": "alarms",
         "description": [
-          {"field": "time", "slot": "time", "text": "$value"},
-          {"field": "date", "slot": "date", "text": "on $value"}
+          {"field": "time", "text": "$value"},
+          {"field": "date", "text": "on $value"}
         ]
       },
       "timer": {
         "singular": "timer",
         "plural": "timers",
         "description": [
-          {"field": "duration", "slot": "duration", "text": "$value"}
+          {"field": "duration", "text": "$value"}
         ]
       }
     }
