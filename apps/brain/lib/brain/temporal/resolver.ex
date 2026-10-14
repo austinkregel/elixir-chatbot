@@ -56,6 +56,9 @@ defmodule Brain.Temporal.Resolver do
   alias Brain.Lexicon.Clitics
   alias Brain.Temporal.{Resolution, Vocabulary, Zone}
 
+  # The units of a `Duration` a length is said in, largest first.
+  @length_units ~w(year month week day hour minute second)a
+
   @doc """
   Resolves `said` -- one text, or several said about the same thing, such as
   an alarm's date and time ("tomorrow", "7 am"), read in order as one
@@ -169,6 +172,160 @@ defmodule Brain.Temporal.Resolver do
 
       "#{count} #{if count == 1, do: singular, else: plural}"
     end)
+  end
+
+  @doc """
+  A length said in the vocabulary's units, largest first, one part per unit
+  of `length` that is not zero: a length of 1 hour and 30 minutes is
+  `"1 hour 30 minutes"`. `resolve/3` reads it back as the same length. A
+  length of nothing is said as nothing of the smallest unit the vocabulary
+  declares (`"0 seconds"`). Raises for a unit of `length` the vocabulary
+  declares no name for, and for microseconds, which no unit names.
+  """
+  @spec say_length(Duration.t(), Vocabulary.t()) :: String.t()
+  def say_length(%Duration{microsecond: {0, _precision}} = length, %Vocabulary{unit_names: names}) do
+    declared = Enum.filter(@length_units, &Map.has_key?(names, &1))
+
+    parts =
+      Enum.flat_map(@length_units, fn unit ->
+        case Map.fetch!(length, unit) do
+          0 ->
+            []
+
+          count ->
+            {singular, plural} =
+              Map.get(names, unit) || raise(ArgumentError, "Temporal.Resolver: the vocabulary declares no #{unit} unit to say")
+
+            ["#{count} #{if count == 1, do: singular, else: plural}"]
+        end
+      end)
+
+    case {parts, List.last(declared)} do
+      {[_ | _], _smallest} -> Enum.join(parts, " ")
+      {[], nil} -> raise ArgumentError, "Temporal.Resolver: the vocabulary declares no unit to say a length in"
+      {[], smallest} -> "0 #{names |> Map.fetch!(smallest) |> elem(1)}"
+    end
+  end
+
+  def say_length(%Duration{} = length, %Vocabulary{}),
+    do: raise(ArgumentError, "Temporal.Resolver: #{inspect(length)} has microseconds, which no unit says")
+
+  @doc """
+  What `said` names, read without a turn: `{:length, duration}` for a length
+  said alone ("5 minutes", "1 hour 30 min"), `:date_or_time` for a day, a
+  time of day, an offset from the turn or a range ("tomorrow", "at 5 pm",
+  "in 2 hours"), or `{:error, message}` when it is neither, as `resolve/3`
+  would say. Which length a length is does not depend on the turn; when a
+  date or time falls does, and only `resolve/3` works it out, so a date that
+  does not exist ("February 30") is read here as a date.
+
+  Options: `:vocabulary` (default: `Brain.Temporal.Vocabulary.loaded!/0`).
+  """
+  @spec read(String.t(), keyword()) :: {:length, Duration.t()} | :date_or_time | {:error, String.t()}
+  def read(said, opts \\ []) when is_binary(said) and is_list(opts) do
+    vocabulary = Keyword.get_lazy(opts, :vocabulary, &Vocabulary.loaded!/0)
+
+    case read_tokens(Brain.ML.Tokenizer.tokenize(said), vocabulary) do
+      {:error, reason} -> {:error, "cannot read #{inspect(said)}: #{reason}"}
+      read -> read
+    end
+  end
+
+  @doc """
+  The lengths said in `text`, in text order, each as `%{start_pos:, end_pos:,
+  said:, length:}`: its first and last grapheme in `text` (inclusive, as
+  `Brain.ML.Tokenizer` places tokens), the words said, and the `Duration`
+  they name.
+
+  A length is a run of words `read/2` reads as a length alone that no longer
+  run of words around it reads as anything (`read/2`): in "set a timer for
+  5 minutes" it is "5 minutes", and "in 2 hours" holds none, since it names
+  a point in time. Each is the fewest words of its run that name the same
+  length: "10 minutes" in "put 10 minutes on the clock", whose run "10
+  minutes on the" names it too, the point words being passed over.
+
+  Options: `:vocabulary` (default: `Brain.Temporal.Vocabulary.loaded!/0`).
+  """
+  @spec lengths(String.t(), keyword()) :: [%{start_pos: non_neg_integer(), end_pos: non_neg_integer(), said: String.t(), length: Duration.t()}]
+  def lengths(text, opts \\ []) when is_binary(text) and is_list(opts) do
+    vocabulary = Keyword.get_lazy(opts, :vocabulary, &Vocabulary.loaded!/0)
+    readable = readable_words(vocabulary)
+
+    text
+    |> Brain.ML.Tokenizer.tokenize()
+    |> Enum.chunk_by(&readable?(&1, readable, vocabulary))
+    |> Enum.filter(fn [token | _] -> readable?(token, readable, vocabulary) end)
+    |> Enum.flat_map(&run_lengths(&1, vocabulary))
+    |> Enum.map(fn {first, last, length} ->
+      %{start_pos: first.start_pos, end_pos: last.end_pos, said: String.slice(text, first.start_pos, last.end_pos - first.start_pos + 1), length: length}
+    end)
+  end
+
+  # The lengths of a run of words every one of which the vocabulary can read:
+  # every stretch of it read as anything, the lengths among them no longer
+  # stretch holds, each trimmed to its fewest words naming the same length.
+  defp run_lengths(tokens, vocabulary) do
+    run = List.to_tuple(tokens)
+    last = tuple_size(run) - 1
+
+    read =
+      for i <- 0..last, j <- i..last, into: %{} do
+        {{i, j}, read_tokens(Enum.slice(tokens, i..j), vocabulary)}
+      end
+
+    expressions = for {stretch, result} <- read, not match?({:error, _}, result), do: stretch
+
+    for {{i, j} = stretch, {:length, length}} <- read,
+        not Enum.any?(expressions, fn {a, b} = other -> other != stretch and a <= i and j <= b end) do
+      {a, b} =
+        for({{a, b}, {:length, ^length}} <- read, i <= a and b <= j, do: {a, b})
+        |> Enum.min_by(fn {a, b} -> {b - a, a} end)
+
+      {elem(run, a), elem(run, b), length}
+    end
+    |> Enum.uniq()
+    |> Enum.sort_by(fn {first, _last, _length} -> first.start_pos end)
+  end
+
+  # Every word the vocabulary reads, wherever it stands: each word of its
+  # phrases, its units, meridiems and relation words. A run of words with any
+  # other word in it is read as nothing (`scan/3` stops at it), so lengths are
+  # looked for only in runs of these, of numbers, of a number fused with a
+  # meridiem, unit or ordinal suffix ("5pm", "5min", "2nd"), of clock colons,
+  # and of the commas and clitics `clean/1` passes over.
+  defp readable_words(vocabulary) do
+    phrase_words = vocabulary.phrases |> Map.keys() |> List.flatten()
+
+    MapSet.new(
+      phrase_words ++
+        Map.keys(vocabulary.units) ++
+        Map.keys(vocabulary.meridiems) ++
+        Map.keys(vocabulary.shift_words) ++
+        vocabulary.offset_words ++ vocabulary.point_words ++ vocabulary.range_start_words ++ vocabulary.range_end_words
+    )
+  end
+
+  defp readable?(%{type: :number}, _readable, _vocabulary), do: true
+  defp readable?(%{type: :punctuation, text: text}, _readable, _vocabulary) when text in [":", ","], do: true
+
+  defp readable?(%{type: :contraction, text: text} = token, readable, vocabulary) do
+    Clitics.canonical(text) in Clitics.forms() or word_readable?(token, readable, vocabulary)
+  end
+
+  defp readable?(token, readable, vocabulary), do: word_readable?(token, readable, vocabulary)
+
+  defp word_readable?(%{text: text}, readable, vocabulary) do
+    word = String.downcase(text)
+
+    MapSet.member?(readable, word) or
+      case Integer.parse(word) do
+        {_number, suffix} when suffix != "" ->
+          Map.has_key?(vocabulary.meridiems, suffix) or Map.has_key?(vocabulary.units, suffix) or
+            suffix in vocabulary.ordinal_suffixes
+
+        _ ->
+          false
+      end
   end
 
   # Tokens
@@ -505,6 +662,49 @@ defmodule Brain.Temporal.Resolver do
       do: throw({:unresolved, "its range does not end after it starts"})
 
     {till_start, till_end, clock, length}
+  end
+
+  # Reading without a turn: what the words scanned and composed name, or why
+  # they name nothing.
+  defp read_tokens(tokens, vocabulary) do
+    atoms = scan(clean(tokens), vocabulary, [])
+    shape!(compose(atoms, vocabulary, @empty, []))
+  catch
+    {:unresolved, reason} -> {:error, reason}
+  end
+
+  # What the segments name, before any instant is worked out, checked as
+  # `resolve_segment/2` and `resolve_after/3` check them.
+  defp shape!([%{length: %Duration{} = length} = segment]) do
+    alone!(segment, :length)
+    {:length, length}
+  end
+
+  defp shape!([segment]) do
+    date_or_time!(segment)
+    :date_or_time
+  end
+
+  defp shape!([from, till]) do
+    if from.length != nil, do: throw({:unresolved, "its range starts with a length"})
+    date_or_time!(from)
+
+    case till do
+      %{day: nil, clock: %Time{}} -> alone!(Map.delete(till, :clock), :clock)
+      %{length: nil} -> date_or_time!(till)
+      _length -> throw({:unresolved, "its range does not end after it starts"})
+    end
+
+    :date_or_time
+  end
+
+  defp date_or_time!(segment) do
+    cond do
+      segment.offset != nil -> alone!(segment, :offset)
+      segment.after_turn -> alone!(segment, :after_turn)
+      segment.day == nil and segment.clock == nil -> throw({:unresolved, "it names no day, time or length"})
+      true -> :ok
+    end
   end
 
   # `at` moved by `duration`: its years, months, weeks and days on the local
