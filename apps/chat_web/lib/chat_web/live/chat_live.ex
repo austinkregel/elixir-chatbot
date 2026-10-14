@@ -51,6 +51,7 @@ defmodule ChatWeb.ChatLive do
       |> assign(:memory_stats, memory_stats)
       |> assign(:system_status, system_status)
       |> assign(:language, language)
+      |> assign(:zone_years, Application.fetch_env!(:chat_web, :browser_zone_years))
       |> assign(:selected_message_id, nil)
       |> assign(:world_models_loading, false)
       |> assign(:world_models_status, get_world_models_status(socket))
@@ -121,12 +122,16 @@ defmodule ChatWeb.ChatLive do
   # conversation or calls `Brain.evaluate/3`.
   @blank_message_error "A message needs at least one character that is not a space."
 
+  # The message form's BrowserTimeZone hook (assets/js/app.js) sends the
+  # browser's time zone with every message, as `time_zone`, JSON that
+  # `Brain.Temporal.Zone.from_browser!/1` reads; the turn's dates and times
+  # are read in it. A message without it raises, naming what was sent.
   @impl true
-  def handle_event("send_message", %{"input" => input}, socket) do
+  def handle_event("send_message", %{"input" => input} = params, socket) do
     if blank_message?(input) do
       {:noreply, socket |> assign(:input_text, input) |> assign(:input_error, @blank_message_error)}
     else
-      send_new_message(input, socket)
+      send_new_message(input, browser_zone!(params), socket)
     end
   end
 
@@ -653,9 +658,19 @@ defmodule ChatWeb.ChatLive do
 
   defp blank_message?(input), do: String.trim(input) == ""
 
-  defp send_new_message(input, socket) do
+  defp browser_zone!(%{"time_zone" => json}) when is_binary(json) and json != "" do
+    json |> Jason.decode!() |> Brain.Temporal.Zone.from_browser!()
+  end
+
+  defp browser_zone!(params) do
+    raise ArgumentError,
+          "ChatLive: a message carries the browser's time zone as time_zone (the message form's BrowserTimeZone " <>
+            "hook fills it); got: #{inspect(Map.get(params, "time_zone"))}"
+  end
+
+  defp send_new_message(input, zone, socket) do
     if socket.assigns.current_conversation_id do
-      send_message(socket.assigns.current_conversation_id, input, socket)
+      send_message(socket.assigns.current_conversation_id, input, zone, socket)
     else
       world_id = socket.assigns.current_world_id
 
@@ -676,7 +691,7 @@ defmodule ChatWeb.ChatLive do
             ])
             |> push_patch(to: ~p"/chat/#{conversation_id}", replace: true)
 
-          send_message(conversation_id, input, socket)
+          send_message(conversation_id, input, zone, socket)
 
         {:error, reason} ->
           socket = assign(socket, :error_message, "Failed to create conversation: #{reason}")
@@ -685,7 +700,7 @@ defmodule ChatWeb.ChatLive do
     end
   end
 
-  defp send_message(conversation_id, input, socket) do
+  defp send_message(conversation_id, input, zone, socket) do
     message_id = generate_message_id()
 
     user_message = %{
@@ -713,6 +728,7 @@ defmodule ChatWeb.ChatLive do
         Brain.evaluate(conversation_id, input,
           user_id: user_id,
           language: language,
+          time_zone: zone,
           progress: %{conversation_id: conversation_id, message_id: message_id}
         )
 
@@ -747,6 +763,112 @@ defmodule ChatWeb.ChatLive do
 
   defp generate_message_id do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+  end
+
+  @doc """
+  What an alarm, reminder, timer or calendar item that fired is shown as
+  (`Brain.Services.LocalScheduler.notification/1`, kept by
+  `ChatWeb.WorldContext`): what it is and was set with, its ringing or
+  finished state, when it was due, and, when it fired late, that it did and
+  when. Times are shown in the browser's zone (the LocalTime hook).
+  """
+  attr :notification, :map, required: true
+
+  def scheduler_notification(%{notification: notification} = assigns) do
+    assigns =
+      assigns
+      |> assign(:title, notification_title(notification))
+      |> assign(:said, notification_said(notification))
+      |> assign(:dom_id, "notification-#{notification.id}")
+
+    ~H"""
+    <.alert
+      id={@dom_id}
+      variant={if @notification.status == "ringing", do: :warning, else: :info}
+      icon={if @notification.kind in [:alarm, :timer], do: "hero-bell-alert", else: "hero-calendar"}
+    >
+      <div class="flex items-start justify-between gap-space-md">
+        <div class="space-y-space-xs">
+          <div class="flex flex-wrap items-center gap-space-sm">
+            <span class="font-semibold">{@title}</span>
+            <%= if @notification.status do %>
+              <.badge variant={if @notification.status == "ringing", do: :warning, else: :default}>
+                {String.capitalize(@notification.status)}
+              </.badge>
+            <% end %>
+            <%= if @notification.late do %>
+              <.badge variant={:warning}>Fired late</.badge>
+            <% end %>
+          </div>
+          <%= if @said != "" do %>
+            <div class="text-body-dense">{@said}</div>
+          <% end %>
+          <div class="text-caption text-ink-muted">
+            Due
+            <time
+              id={"#{@dom_id}-due"}
+              phx-hook="LocalTime"
+              phx-update="ignore"
+              data-format="datetime"
+              datetime={browser_instant(@notification.due_at)}
+            ></time>
+            <%= if @notification.late do %>
+              , fired
+              <time
+                id={"#{@dom_id}-fired"}
+                phx-hook="LocalTime"
+                phx-update="ignore"
+                data-format="datetime"
+                datetime={browser_instant(@notification.fired_at)}
+              ></time>
+              when the scheduler started
+            <% end %>
+          </div>
+          <%= if @notification.status == "ringing" do %>
+            <div class="text-caption text-ink-muted">
+              Ask to snooze it for a while, or to cancel it.
+            </div>
+          <% end %>
+        </div>
+        <.icon_btn
+          phx-click="dismiss_notification"
+          phx-value-id={@notification.id}
+          title="Dismiss"
+        >
+          <.icon name="hero-x-mark" class="size-4" />
+        </.icon_btn>
+      </div>
+    </.alert>
+    """
+  end
+
+  # An instant as the LocalTime hook reads it: ISO 8601 in UTC, to the
+  # millisecond, the precision JavaScript's date-time string format has.
+  @doc false
+  def browser_instant(%DateTime{} = instant),
+    do: instant |> DateTime.shift_zone!("Etc/UTC") |> DateTime.truncate(:millisecond) |> DateTime.to_iso8601()
+
+  defp notification_title(%{kind: :alarm}), do: "Alarm"
+  defp notification_title(%{kind: :timer}), do: "Timer"
+  defp notification_title(%{kind: :reminder}), do: "Reminder"
+  defp notification_title(%{kind: :calendar}), do: "Event"
+
+  # The fields it was set with, as they were said: a reminder's text or a
+  # calendar item's event first, then its date and time, or a timer's
+  # duration.
+  defp notification_said(%{kind: kind, said: said}) do
+    fields =
+      case kind do
+        :alarm -> [:date, :time]
+        :reminder -> [:text, :date, :time]
+        :timer -> [:duration]
+        :calendar -> [:event, :date, :time]
+      end
+
+    fields
+    |> Enum.map(&Map.fetch!(said, &1))
+    |> Enum.reject(&(&1 in [nil, ""]))
+    |> Enum.join(" · ")
   end
 
   def step_label(step) when is_atom(step) do
