@@ -122,6 +122,22 @@
         "There are $reminder_count reminders set."
       ]
     },
+    "found_one_fired": {
+      "when": {"reminder_count": 1, "reminder_set": true},
+      "requires_enrichment": ["fired_reminder_texts"],
+      "templates": [
+        "Your reminder has gone off: $fired_reminder_texts.",
+        "Your one reminder has already gone off: $fired_reminder_texts."
+      ]
+    },
+    "found_several_some_fired": {
+      "when": {"reminder_count": {"min": 2}, "reminder_set": true},
+      "requires_enrichment": ["reminder_count", "fired_reminder_texts"],
+      "templates": [
+        "You have $reminder_count reminders; gone off already: $fired_reminder_texts.",
+        "Of your $reminder_count reminders, these have gone off: $fired_reminder_texts."
+      ]
+    },
     "cancelled_one_with_text": {
       "when": {"cancelled_count": 1, "reminder_set": false, "reminder_count": null},
       "requires_enrichment": ["reminder_texts"],
@@ -179,6 +195,7 @@
     "reminder_times": {"description": "The time of each reminder a check found or a cancel removed, oldest first", "source": "scheduling"},
     "reminder_dates": {"description": "The date of each reminder a check found or a cancel removed, oldest first; null for a reminder stored without one", "source": "scheduling"},
     "reminder_count": {"description": "How many reminders a check found", "source": "scheduling"},
+    "fired_reminder_texts": {"description": "The text of each reminder a check found that has gone off, oldest first; empty when none has", "source": "scheduling"},
     "cancelled_count": {"description": "How many reminders a cancel removed", "source": "scheduling"}
   }
 }
