@@ -56,9 +56,15 @@ defmodule ChatWeb.BrainChannel do
     # A channel socket is not given the browser's Accept-Language header, so the
     # client sends it as "accept_language". No value names no language, which is
     # English; an unsupported one raises.
+    #
+    # The client sends the browser's time zone as "time_zone", the map
+    # `Brain.Temporal.Zone.from_browser!/1` reads (the chat page's
+    # browserZone in assets/js/app.js builds it); the turn's dates and times
+    # are read in it. A turn without it raises: no zone is assumed.
     eval_opts = [
       user_id: user_id,
       language: Brain.Language.resolve!(Map.get(payload, "accept_language")),
+      time_zone: Brain.Temporal.Zone.from_browser!(Map.get(payload, "time_zone")),
       progress: %{conversation_id: conversation_id, message_id: message_id}
     ]
 
