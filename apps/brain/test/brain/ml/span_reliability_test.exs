@@ -214,13 +214,68 @@ defmodule Brain.ML.SpanReliabilityTest do
     end
   end
 
+  describe "fit_extent/2" do
+    setup do
+      {:ok, extent: SpanReliability.fit_extent(examples(), prior_strength: 1)}
+    end
+
+    test "a reading at a gold span's extent agrees whatever its type; a partial overlap is an extent error", %{extent: extent} do
+      # The model's artist is the wrong type for "Mike" (given_name) but at
+      # its extent, and right for "Adele".
+      assert %{n: 2, agree: 2, boundary: 0, no_entity: 0} = extent.pairs[{:entity_model, nil, "artist"}]
+      # 9..11 overlaps the gold 10..11 without matching it.
+      assert %{n: 2, agree: 1, boundary: 1, no_entity: 0} = extent.pairs[{:entity_model, nil, "final_value"}]
+      assert %{n: 2, agree: 1, boundary: 0, no_entity: 1} = extent.pairs[{:gazetteer, nil, "music_artist"}]
+    end
+
+    test "a type no gold label confirms still has an extent the gold standard judges", %{extent: extent} do
+      assert %{n: 1, agree: 1} = extent.pairs[{:gazetteer, nil, "emoji"}]
+    end
+
+    test "smoothing pulls a pair toward its source and cue, and those toward the overall rate", %{extent: extent} do
+      # 10 readings, 8 at a gold extent.
+      assert extent.overall == %{n: 10, agree: 8, rate: 0.8}
+      # The model: 4 readings, 3 at a gold extent -> (3 + 0.8) / (4 + 1).
+      assert_in_delta extent.sources[{:entity_model, nil}].reliability, 0.76, 1.0e-12
+      # Its final_value: 1 of 2 -> (1 + 0.76) / (2 + 1).
+      assert_in_delta extent.pairs[{:entity_model, nil, "final_value"}].reliability, 1.76 / 3, 1.0e-12
+      assert extent.fitted_rows == 4
+      assert extent.min_score == nil and extent.min_margin == nil
+    end
+
+    test "readings of one source with different extent cues are counted apart" do
+      rows = [
+        %{key: 1, gold: [gold("song", 10, 19)],
+          readings: [reading(:entity_model, "song", 10, 19, %{extent_cue: {:begin, :outside}})]},
+        %{key: 2, gold: [gold("song", 10, 19)],
+          readings: [reading(:entity_model, "song", 16, 19, %{extent_cue: {:inside, :outside}})]}
+      ]
+
+      extent = SpanReliability.fit_extent(rows, prior_strength: 1)
+
+      assert %{n: 1, agree: 1} = extent.pairs[{:entity_model, {:begin, :outside}, "song"}]
+      assert %{n: 1, agree: 0, boundary: 1} = extent.pairs[{:entity_model, {:inside, :outside}, "song"}]
+      assert extent.sources[{:entity_model, {:begin, :outside}}].reliability > extent.sources[{:entity_model, {:inside, :outside}}].reliability
+    end
+
+    test "a rate of 0 or 1 over every reading's extent cannot be learned from" do
+      all_right = [%{key: 1, gold: [gold("artist", 0, 3)], readings: [reading(:gazetteer, "music_artist", 0, 3)]}]
+
+      assert_raise ArgumentError, ~r/1 of 1 readings have a gold span's extent/, fn ->
+        SpanReliability.fit_extent(all_right, prior_strength: 1)
+      end
+    end
+  end
+
   describe "redecide/4" do
     setup do
       model = SpanReliability.fit(examples(), Keyword.put(@opts, :prior_strength, 1))
+      # Extent thresholds every span with one extent passes.
+      extent = examples() |> SpanReliability.fit_extent(prior_strength: 1) |> Map.merge(%{min_score: -10.0, min_margin: 0.0})
       # Thresholds the readings of "Mike" alone (the model's artist, 23/45) do
       # not reach: logit(23/45) is about 0.044. The redecision thresholds are
       # the same here, so what decides a span again is the evidence.
-      {:ok, model: %{model | min_score: 1.0, min_margin: 0.0, redecision: %{min_score: 1.0, min_margin: 0.0}}}
+      {:ok, model: %{model | min_score: 1.0, min_margin: 0.0, redecision: %{min_score: 1.0, min_margin: 0.0, extent: extent}}}
     end
 
     defp undecided(model) do
@@ -246,6 +301,10 @@ defmodule Brain.ML.SpanReliabilityTest do
       assert_in_delta entity.decision.score, :math.log(p / (1 - p)) + 2.0, 1.0e-6
       assert entity.decision.margin == :infinity
       assert entity.decision.evidence == %{"artist" => 2.0}
+      # The extent, decided first by the model's artist extent reliability alone.
+      q = model.redecision.extent.pairs[{:entity_model, nil, "artist"}].reliability
+      assert_in_delta entity.decision.extent.score, :math.log(q / (1 - q)), 1.0e-6
+      assert entity.decision.extent.margin == :infinity
       assert_in_delta entity.confidence, 1 / (1 + :math.exp(-entity.decision.score)), 1.0e-6
       assert entity.readings == span.readings
     end
@@ -262,7 +321,7 @@ defmodule Brain.ML.SpanReliabilityTest do
     test "evidence can change which hypothesis leads", %{model: model} do
       # number and final_value at one extent; final_value refines number.
       readings = [reading(:system, "number", 7, 7), reading(:entity_model, "final_value", 7, 7)]
-      model = %{model | min_margin: 5.0, redecision: %{min_score: 1.0, min_margin: 5.0}}
+      model = %{model | min_margin: 5.0, redecision: %{model.redecision | min_score: 1.0, min_margin: 5.0}}
       [span] = SpanReliability.decide(readings, model, text: "set to 5", canonical: @canonical, hierarchy: Hierarchy)
       assert span.unresolved_reason == :insufficient_evidence
 
@@ -277,10 +336,10 @@ defmodule Brain.ML.SpanReliabilityTest do
       # Evidence of 2.0 decides "Mike" at a redecision min_score of 1.0 ...
       assert {:decided, _} = SpanReliability.redecide(span, %{"artist" => 2.0}, model, Hierarchy)
       # ... but not at 3.0, whatever the first decision's thresholds are.
-      strict = %{model | min_score: -10.0, redecision: %{min_score: 3.0, min_margin: 0.0}}
+      strict = %{model | min_score: -10.0, redecision: %{model.redecision | min_score: 3.0, min_margin: 0.0}}
       assert {:undecided, _} = SpanReliability.redecide(span, %{"artist" => 2.0}, strict, Hierarchy)
       # Thresholds that decide nothing again.
-      never = %{model | redecision: %{min_score: :infinity, min_margin: :infinity}}
+      never = %{model | redecision: %{model.redecision | min_score: :infinity, min_margin: :infinity}}
       assert {:undecided, _} = SpanReliability.redecide(span, %{"artist" => 50.0}, never, Hierarchy)
     end
 
@@ -288,6 +347,84 @@ defmodule Brain.ML.SpanReliabilityTest do
       assert_raise ArgumentError, ~r/no redecision thresholds/, fn ->
         SpanReliability.redecide(undecided(model), %{"artist" => 2.0}, %{model | redecision: nil}, Hierarchy)
       end
+    end
+
+    test "a redecision without extent reliabilities, or without their thresholds, cannot decide again", %{model: model} do
+      no_extent = %{model | redecision: Map.delete(model.redecision, :extent)}
+      unchosen = %{model | redecision: %{model.redecision | extent: %{model.redecision.extent | min_score: nil}}}
+
+      for broken <- [no_extent, unchosen] do
+        assert_raise ArgumentError, ~r/extent reliabilities with thresholds/, fn ->
+          SpanReliability.redecide(undecided(model), %{"artist" => 2.0}, broken, Hierarchy)
+        end
+      end
+    end
+
+    test "a span whose extent is not decided is never decided again, whatever the evidence", %{model: model} do
+      span = undecided(model)
+      undecidable = %{model | redecision: %{model.redecision | extent: %{model.redecision.extent | min_score: 50.0}}}
+
+      assert {:extent_undecided, %Lattice{best: %{label: {0, 3}}}} =
+               SpanReliability.redecide(span, %{"artist" => 1000.0}, undecidable, Hierarchy)
+
+      # Extents the readings trust equally are never decided either.
+      equal = %{
+        model.redecision.extent
+        | pairs: %{{:a, nil, "artist"} => %{n: 5, reliability: 0.8}, {:b, nil, "artist"} => %{n: 5, reliability: 0.8}}
+      }
+
+      model = %{model | pairs: Map.merge(model.pairs, %{{:a, "artist"} => %{n: 5, reliability: 0.5}, {:b, "artist"} => %{n: 5, reliability: 0.5}})}
+      [span] = SpanReliability.decide([reading(:a, "artist", 0, 9), reading(:b, "artist", 5, 9)], model, text: "Lady Gaga", canonical: @canonical, hierarchy: Hierarchy)
+      assert span.unresolved_reason == :insufficient_evidence
+
+      assert {:extent_undecided, %Lattice{}} =
+               SpanReliability.redecide(span, %{"artist" => 1000.0}, %{model | redecision: %{model.redecision | extent: equal}}, Hierarchy)
+    end
+
+    test "only the hypotheses at the decided extent are weighed", %{model: model} do
+      # The model's artist over 0..3 and its final_value over 2..3: one span
+      # whose two hypotheses the type reliabilities tie (23/45 each).
+      readings = [reading(:entity_model, "artist", 0, 3), reading(:entity_model, "final_value", 2, 3)]
+      [span] = SpanReliability.decide(readings, model, text: "Poker Face", canonical: @canonical, hierarchy: Hierarchy)
+      assert span.unresolved_reason == :insufficient_evidence
+
+      extent = %{
+        model.redecision.extent
+        | pairs: %{
+            {:entity_model, nil, "artist"} => %{n: 10, reliability: 0.9},
+            {:entity_model, nil, "final_value"} => %{n: 10, reliability: 0.6}
+          }
+      }
+
+      model = %{model | redecision: %{model.redecision | extent: extent}}
+
+      # 0..3 is the extent: logit(0.9) against logit(0.6). Evidence for the
+      # final_value at 2..3 cannot decide it, and evidence against the artist
+      # leaves the span undecided.
+      assert {:undecided, %Lattice{best: %{label: {0, 3, "artist"}}, candidates: candidates}} =
+               SpanReliability.redecide(span, %{"artist" => -2.0, "final_value" => 50.0}, model, Hierarchy)
+
+      assert Enum.all?(candidates, &match?(%{label: {0, 3, _}}, &1))
+
+      assert {:decided, entity} = SpanReliability.redecide(span, %{"artist" => 2.0, "final_value" => 50.0}, model, Hierarchy)
+      assert %{entity_type: "artist", start_pos: 0, end_pos: 3} = entity
+      assert_in_delta entity.decision.extent.score, :math.log(0.9 / 0.1), 1.0e-6
+      assert_in_delta entity.decision.extent.margin, :math.log(0.9 / 0.1) - :math.log(0.6 / 0.4), 1.0e-6
+    end
+
+    test "an extent no measured reading gives a type at leaves nothing to weigh", %{model: model} do
+      # The emoji reading is unmeasured for its type but its extent is trusted.
+      readings = [reading(:entity_model, "artist", 0, 3), reading(:gazetteer, "emoji", 0, 9)]
+      [span] = SpanReliability.decide(readings, model, text: "Mean Kitty", canonical: @canonical, hierarchy: Hierarchy)
+      assert span.unresolved_reason == :insufficient_evidence
+
+      extent = %{
+        model.redecision.extent
+        | pairs: %{{:entity_model, nil, "artist"} => %{n: 10, reliability: 0.3}, {:gazetteer, nil, "emoji"} => %{n: 10, reliability: 0.9}}
+      }
+
+      assert {:undecided, %Lattice{best: nil}} =
+               SpanReliability.redecide(span, %{"artist" => 50.0}, %{model | redecision: %{model.redecision | extent: extent}}, Hierarchy)
     end
 
     test "every hypothesis label needs evidence", %{model: model} do
@@ -347,38 +484,65 @@ defmodule Brain.ML.SpanReliabilityTest do
       assert %{resolved: true, entity_type: "final_value", source: :good} = span
     end
 
-    test "select_redecision/3 chooses thresholds that keep evidence that decides right and leave evidence that does not" do
-      # Two sources the data trusts about equally read every row differently,
-      # and the first decision's min_score is out of their reach, so no row is
-      # decided by its readings. The evidence names the gold label strongly on
-      # 40 rows, and the wrong one weakly on 10.
+    test "select_redecision/3 decides extents first and keeps evidence that decides right, leaving evidence that does not" do
+      # Two sources the data trusts about equally read every tied row
+      # differently, and the first decision's min_score is out of their reach,
+      # so no row is decided by its readings. The evidence names the gold
+      # label strongly on 40 tied rows, and the wrong one weakly on 10.
       tied =
         for i <- 1..50 do
           type = if rem(i, 2) == 0, do: "artist", else: "final_value"
           %{key: {:row, i}, gold: [gold(type, 0, 3)], readings: [reading(:a, "artist", 0, 3), reading(:b, "final_value", 0, 3)]}
         end
 
+      # On 20 more rows the first source reads only the end of a longer gold
+      # artist ("Poker Face" read as "Face"), and says it opened the reading
+      # inside an entity. The evidence names artist as strongly as it names the
+      # right label on the tied rows, and the reading's type reliability is the
+      # one it has there, so the type alone cannot tell these apart.
+      partial =
+        for i <- 1..20 do
+          %{key: {:partial, i}, gold: [gold("artist", 0, 7)], readings: [reading(:a, "artist", 4, 7, %{extent_cue: {:inside, :outside}})]}
+        end
+
+      examples = tied ++ partial
+
       evidence = fn _training ->
-        fn %{key: {:row, i}, gold: [%{type: right}]}, labels ->
-          {to_right, to_other} = if i <= 40, do: {3.0, -3.0}, else: {-0.5, 0.5}
-          Map.new(labels, &{&1, if(&1 == right, do: to_right, else: to_other)})
+        fn
+          %{key: {:row, i}, gold: [%{type: right}]}, labels ->
+            {to_right, to_other} = if i <= 40, do: {3.0, -3.0}, else: {-0.5, 0.5}
+            Map.new(labels, &{&1, if(&1 == right, do: to_right, else: to_other)})
+
+          %{key: {:partial, _i}}, labels ->
+            Map.new(labels, &{&1, if(&1 == "artist", do: 3.0, else: -3.0)})
         end
       end
 
-      model = tied |> SpanReliability.fit(Keyword.put(@opts, :prior_strength, 1)) |> Map.merge(%{min_score: 5.0, min_margin: 0.0})
-      model = SpanReliability.select_redecision(model, tied, canonical: @canonical, hierarchy: Hierarchy, evidence: evidence)
+      model = examples |> SpanReliability.fit(Keyword.put(@opts, :prior_strength, 1)) |> Map.merge(%{min_score: 5.0, min_margin: 0.0})
+      model = SpanReliability.select_redecision(model, examples, canonical: @canonical, hierarchy: Hierarchy, evidence: evidence)
 
-      %{min_score: min_score, min_margin: min_margin, cross_validation: cv} = model.redecision
+      %{min_score: min_score, min_margin: min_margin, extent: extent, cross_validation: cv} = model.redecision
       assert cv.none.f1 == 0.0
       assert cv.first_thresholds.decided == 0
+      assert cv.points == 70
+      # Weighing every hypothesis whatever its extent decides the partial
+      # readings wrong along with the right ones ...
+      assert cv.without_extent.decided > cv.without_extent.correct
+      # ... and deciding the extent first leaves them, and only them, out.
       assert %{decided: 40, correct: 40} = cv.chosen
-      assert cv.chosen.f1 > cv.first_thresholds.f1
-      assert cv.points == 50
+      assert cv.chosen.f1 > cv.without_extent.f1
+      assert cv.chosen.f1 == cv.by_extent_prior_strength[extent.prior_strength].f1
+      assert cv.chosen.f1 == cv.by_extent_prior_strength |> Map.values() |> Enum.map(& &1.f1) |> Enum.max()
       assert min_score > 0.5 or min_margin > 1.0
+      assert extent.fitted_rows == 70
+      assert {extent.min_score, extent.min_margin} == {cv.chosen.extent_min_score, cv.chosen.extent_min_margin}
 
       [span] = SpanReliability.decide(hd(tied).readings, model, text: "Rush", canonical: @canonical, hierarchy: Hierarchy)
       assert {:decided, %{entity_type: "artist"}} = SpanReliability.redecide(span, %{"artist" => 3.0, "final_value" => -3.0}, model, Hierarchy)
       assert {:undecided, _} = SpanReliability.redecide(span, %{"artist" => 0.5, "final_value" => -0.5}, model, Hierarchy)
+
+      [span] = SpanReliability.decide(hd(partial).readings, model, text: "Poker Face", canonical: @canonical, hierarchy: Hierarchy)
+      assert {:extent_undecided, _} = SpanReliability.redecide(span, %{"artist" => 3.0}, model, Hierarchy)
     end
 
     test "the prior strength is not the caller's to pass" do
