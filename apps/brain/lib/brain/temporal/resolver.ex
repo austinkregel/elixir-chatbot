@@ -34,34 +34,27 @@ defmodule Brain.Temporal.Resolver do
 
   ## The time zone
 
-  Days and clock times are read in a time zone. Web users store none
-  (`web_users` has no zone column), so the zone is the server's, set
-  explicitly as `config :brain, :time_zone`; nothing is assumed when it is
-  unset, and resolving raises. Elixir's calendar holds no time zone
-  database, and none is among this project's dependencies, so only
-  `"Etc/UTC"` can be read; any other zone raises when a turn's time is read
-  in it.
+  Days and clock times are read in the zone of the person who said them, as
+  their browser gives it with the turn (`Brain.Temporal.Zone`), and there is
+  no other: resolving without a zone raises. A local time is read as UTC with
+  the offset the zone has at that instant, so a time on the other side of a
+  daylight saving change than the turn is read with the offset of its own
+  side. A day runs from local midnight to the next local midnight, however
+  long that is.
+
+  A length is counted the way a clock and a calendar count it: its days,
+  weeks, months and years move the local date, keeping the local time of
+  day, and its hours, minutes and seconds then pass as elapsed time. "In 2
+  hours" is two hours from the turn even across a daylight saving change;
+  "in 2 days" is the same local time two dates on.
+
+  A local time the zone skips or repeats, and an instant outside the span of
+  years the browser gave the zone's offsets for, cannot be resolved:
+  `resolve/3` says so, naming it.
   """
 
   alias Brain.Lexicon.Clitics
-  alias Brain.Temporal.{Resolution, Vocabulary}
-
-  @doc """
-  The zone a turn's days and clock times are read in: `config :brain,
-  :time_zone`. Raises when it is unset.
-  """
-  @spec time_zone!() :: String.t()
-  def time_zone! do
-    case Application.fetch_env(:brain, :time_zone) do
-      {:ok, zone} when is_binary(zone) and zone != "" ->
-        zone
-
-      other ->
-        raise ArgumentError,
-              "Temporal.Resolver: config :brain, :time_zone must name the zone a turn's dates and times " <>
-                "are read in (web users store none), got: #{inspect(other)}"
-    end
-  end
+  alias Brain.Temporal.{Resolution, Vocabulary, Zone}
 
   @doc """
   Resolves `said` -- one text, or several said about the same thing, such as
@@ -73,23 +66,24 @@ defmodule Brain.Temporal.Resolver do
   over; when every text is blank there is nothing to resolve, and this is an
   error too.
 
-  Options: `:vocabulary` (default: `Brain.Temporal.Vocabulary.loaded!/0`),
-  `:time_zone` (default: `time_zone!/0`).
+  Options: `:time_zone` (required), the `Brain.Temporal.Zone` the turn's days
+  and clock times are read in; without it this raises. `:vocabulary`
+  (default: `Brain.Temporal.Vocabulary.loaded!/0`).
   """
   @spec resolve(String.t() | [String.t()], DateTime.t(), keyword()) :: {:ok, Resolution.t()} | {:error, String.t()}
-  def resolve(said, %DateTime{} = turn_time, opts \\ []) when is_list(opts) do
+  def resolve(said, %DateTime{} = turn_time, opts) when is_list(opts) do
     texts = said |> List.wrap() |> Enum.reject(&blank?/1)
     expression = Enum.join(texts, " ")
     vocabulary = Keyword.get_lazy(opts, :vocabulary, &Vocabulary.loaded!/0)
-    zone = Keyword.get_lazy(opts, :time_zone, &time_zone!/0)
+    zone = zone!(opts)
+    turn_time = DateTime.shift_zone!(turn_time, "Etc/UTC")
 
     try do
       if texts == [], do: throw({:unresolved, "nothing was said"})
 
       atoms = Enum.flat_map(texts, &scan(clean(Brain.ML.Tokenizer.tokenize(&1)), vocabulary, []))
-      turn_local = local!(turn_time, zone)
 
-      {:ok, resolution(atoms, turn_local, vocabulary, expression, zone)}
+      {:ok, resolution(atoms, %{turn: turn_time, zone: zone, vocabulary: vocabulary}, expression)}
     catch
       {:unresolved, reason} -> {:error, "cannot resolve #{inspect(expression)}: #{reason}"}
     end
@@ -97,36 +91,49 @@ defmodule Brain.Temporal.Resolver do
 
   @doc "`resolve/3`, raising `ArgumentError` with its message when the expression cannot be resolved."
   @spec resolve!(String.t() | [String.t()], DateTime.t(), keyword()) :: Resolution.t()
-  def resolve!(said, %DateTime{} = turn_time, opts \\ []) do
+  def resolve!(said, %DateTime{} = turn_time, opts) do
     case resolve(said, turn_time, opts) do
       {:ok, resolution} -> resolution
       {:error, message} -> raise ArgumentError, "Temporal.Resolver: " <> message
     end
   end
 
+  defp zone!(opts) do
+    case Keyword.fetch(opts, :time_zone) do
+      {:ok, %Zone{} = zone} ->
+        zone
+
+      other ->
+        raise ArgumentError,
+              "Temporal.Resolver: :time_zone must be the Brain.Temporal.Zone the turn's days and clock times are " <>
+                "read in, as the person's browser gives it; got: #{inspect(other)}"
+    end
+  end
+
   @doc """
-  The days a resolution covers, in its time zone: `{first, last}`, `last`
-  being `:open` for a resolution with no end ("later").
+  The days a resolution covers, read in `zone`: `{first, last}`, `last` being
+  `:open` for a resolution with no end ("later"). Raises when its start or
+  end is outside the span `zone`'s offsets are known for.
   """
-  @spec days(Resolution.t()) :: {Date.t(), Date.t() | :open}
-  def days(%Resolution{starts_at: starts_at, ends_at: ends_at, time_zone: zone}) do
-    first = local!(starts_at, zone) |> DateTime.to_date()
+  @spec days(Resolution.t(), Zone.t()) :: {Date.t(), Date.t() | :open}
+  def days(%Resolution{starts_at: starts_at, ends_at: ends_at}, %Zone{} = zone) do
+    first = zone |> Zone.local!(starts_at) |> NaiveDateTime.to_date()
 
     last =
       cond do
         is_nil(ends_at) -> :open
-        DateTime.compare(ends_at, starts_at) == :gt -> ends_at |> DateTime.add(-1, :microsecond) |> local!(zone) |> DateTime.to_date()
+        DateTime.compare(ends_at, starts_at) == :gt -> zone |> Zone.local!(DateTime.add(ends_at, -1, :microsecond)) |> NaiveDateTime.to_date()
         true -> first
       end
 
     {first, last}
   end
 
-  @doc "Whether two resolutions cover a day in common (`days/1`)."
-  @spec same_day?(Resolution.t(), Resolution.t()) :: boolean()
-  def same_day?(%Resolution{} = a, %Resolution{} = b) do
-    {a_first, a_last} = days(a)
-    {b_first, b_last} = days(b)
+  @doc "Whether two resolutions cover a day in common, their days read in `zone` (`days/2`)."
+  @spec same_day?(Resolution.t(), Resolution.t(), Zone.t()) :: boolean()
+  def same_day?(%Resolution{} = a, %Resolution{} = b, %Zone{} = zone) do
+    {a_first, a_last} = days(a, zone)
+    {b_first, b_last} = days(b, zone)
     not_after?(a_first, b_last) and not_after?(b_first, a_last)
   end
 
@@ -335,27 +342,30 @@ defmodule Brain.Temporal.Resolver do
 
   @empty %{day: nil, clock: nil, day_clock: nil, offset: nil, length: nil, after_turn: false}
 
-  defp resolution(atoms, turn_local, vocabulary, expression, zone) do
-    [first_segment | _] = segments = compose(atoms, vocabulary, @empty, [])
+  # `context` holds the turn (UTC), its zone and the vocabulary.
+  defp resolution(atoms, context, expression) do
+    context = Map.put(context, :turn_local, local(context, context.turn))
+    [first_segment | _] = segments = compose(atoms, context.vocabulary, @empty, [])
 
     {starts_at, ends_at, clock, length} =
       case segments do
         [segment] ->
-          resolve_segment(segment, turn_local, vocabulary)
+          resolve_segment(segment, context)
 
         [from, till] ->
-          {starts_at, _from_end, clock, length} = resolve_segment(from, turn_local, vocabulary)
+          {starts_at, _from_end, clock, length} = resolve_segment(from, context)
           if length != nil, do: throw({:unresolved, "its range starts with a length"})
-          {_till_start, till_end, _clock, nil} = resolve_after(till, starts_at, turn_local, vocabulary)
+          {_till_start, till_end, _clock, nil} = resolve_after(till, starts_at, context)
           {starts_at, till_end, clock, nil}
       end
 
     %Resolution{
       said: expression,
-      turn_time: utc(turn_local),
-      time_zone: zone,
-      starts_at: utc(starts_at),
-      ends_at: ends_at && utc(ends_at),
+      turn_time: context.turn,
+      time_zone: context.zone.name,
+      utc_offset: Zone.offset_at!(context.zone, starts_at),
+      starts_at: starts_at,
+      ends_at: ends_at,
       clock: clock,
       day_said: first_segment.day != nil,
       length: length
@@ -447,54 +457,70 @@ defmodule Brain.Temporal.Resolver do
     |> Duration.new!()
   end
 
-  # {starts_at, ends_at, clock, length}, local.
-  defp resolve_segment(segment, turn_local, vocabulary) do
+  # {starts_at, ends_at, clock, length}, the instants in UTC.
+  defp resolve_segment(segment, context) do
     case segment do
       %{length: %Duration{} = length} = segment ->
         alone!(segment, :length)
-        {turn_local, DateTime.shift(turn_local, length), nil, length}
+        {context.turn, shift(context, context.turn, length), nil, length}
 
       %{offset: %Duration{} = offset} = segment ->
         alone!(segment, :offset)
-        at = DateTime.shift(turn_local, offset)
-        {at, at, DateTime.to_time(at), nil}
+        at = shift(context, context.turn, offset)
+        {at, at, context |> local(at) |> NaiveDateTime.to_time(), nil}
 
       %{after_turn: true} = segment ->
         alone!(segment, :after_turn)
-        {turn_local, nil, nil, nil}
+        {context.turn, nil, nil, nil}
 
       %{day: nil, clock: nil} ->
         throw({:unresolved, "it names no day, time or length"})
 
       %{day: nil, clock: clock} ->
-        at = next_at(clock, turn_local, :at_or_after)
+        at = utc(context, next_at(clock, context.turn_local, :at_or_after))
         {at, at, clock, nil}
 
       %{day: day, clock: clock, day_clock: day_clock} ->
-        {first, last} = day_span(day, DateTime.to_date(turn_local), vocabulary)
+        {first, last} = day_span(day, NaiveDateTime.to_date(context.turn_local), context.vocabulary)
 
         case clock || day_clock do
-          nil -> {local_at(first, ~T[00:00:00], turn_local), local_at(Date.add(last, 1), ~T[00:00:00], turn_local), nil, nil}
-          time -> {local_at(first, time, turn_local), local_at(first, time, turn_local), time, nil}
+          nil -> {utc(context, first, ~T[00:00:00]), utc(context, Date.add(last, 1), ~T[00:00:00]), nil, nil}
+          time -> {utc(context, first, time), utc(context, first, time), time, nil}
         end
     end
   end
 
   # The end of a range: a time of day alone is its soonest occurrence after
   # the range's start.
-  defp resolve_after(%{day: nil, clock: %Time{} = clock} = segment, starts_at, _turn_local, _vocabulary) do
+  defp resolve_after(%{day: nil, clock: %Time{} = clock} = segment, starts_at, context) do
     alone!(Map.delete(segment, :clock), :clock)
-    at = next_at(clock, starts_at, :after)
+    at = utc(context, next_at(clock, local(context, starts_at), :after))
     {at, at, clock, nil}
   end
 
-  defp resolve_after(segment, starts_at, turn_local, vocabulary) do
-    {till_start, till_end, clock, length} = resolve_segment(segment, turn_local, vocabulary)
+  defp resolve_after(segment, starts_at, context) do
+    {till_start, till_end, clock, length} = resolve_segment(segment, context)
 
     if length != nil or DateTime.compare(till_start, starts_at) != :gt,
       do: throw({:unresolved, "its range does not end after it starts"})
 
     {till_start, till_end, clock, length}
+  end
+
+  # `at` moved by `duration`: its years, months, weeks and days on the local
+  # date, keeping the local time of day; then its hours, minutes and seconds
+  # as elapsed time.
+  defp shift(context, %DateTime{} = at, %Duration{} = duration) do
+    calendar = %Duration{year: duration.year, month: duration.month, week: duration.week, day: duration.day}
+    elapsed = %Duration{hour: duration.hour, minute: duration.minute, second: duration.second, microsecond: duration.microsecond}
+
+    moved =
+      if calendar == %Duration{},
+        do: at,
+        else: utc(context, context |> local(at) |> NaiveDateTime.shift(calendar))
+
+    # In UTC, which has no daylight saving time, a shift is elapsed time.
+    DateTime.shift(moved, elapsed)
   end
 
   defp alone!(segment, key) do
@@ -511,12 +537,15 @@ defmodule Brain.Temporal.Resolver do
   defp key_name_alone(:after_turn), do: "a time after the turn"
   defp key_name_alone(:clock), do: "the end of a range"
 
-  defp next_at(clock, from, mode) do
-    at = local_at(DateTime.to_date(from), clock, from)
+  # The soonest local time at `clock` at or after (`:at_or_after`) or after
+  # (`:after`) the local time `from`.
+  defp next_at(clock, %NaiveDateTime{} = from, mode) do
+    date = NaiveDateTime.to_date(from)
+    at = NaiveDateTime.new!(date, clock)
 
-    case {mode, DateTime.compare(at, from)} do
-      {:at_or_after, :lt} -> local_at(Date.add(DateTime.to_date(from), 1), clock, from)
-      {:after, order} when order in [:lt, :eq] -> local_at(Date.add(DateTime.to_date(from), 1), clock, from)
+    case {mode, NaiveDateTime.compare(at, from)} do
+      {:at_or_after, :lt} -> NaiveDateTime.new!(Date.add(date, 1), clock)
+      {:after, order} when order in [:lt, :eq] -> NaiveDateTime.new!(Date.add(date, 1), clock)
       _ -> at
     end
   end
@@ -575,26 +604,23 @@ defmodule Brain.Temporal.Resolver do
 
   defp one_day(date), do: {date, date}
 
-  defp local_at(date, time, %DateTime{time_zone: zone}) do
-    case DateTime.new(date, time, zone) do
+  # The local time of an instant, and the instant of a local time, in the
+  # turn's zone; one the zone cannot read cannot be resolved.
+  defp local(context, %DateTime{} = at) do
+    case Zone.local(context.zone, at) do
+      {:ok, local} -> local
+      {:error, reason} -> throw({:unresolved, reason})
+    end
+  end
+
+  defp utc(context, %Date{} = date, %Time{} = time), do: utc(context, NaiveDateTime.new!(date, time))
+
+  defp utc(context, %NaiveDateTime{} = local) do
+    case Zone.utc(context.zone, local) do
       {:ok, at} -> at
-      {:error, reason} -> raise ArgumentError, "Temporal.Resolver: #{date} #{time} cannot be read in #{zone}: #{inspect(reason)}"
+      {:error, reason} -> throw({:unresolved, reason})
     end
   end
-
-  defp local!(%DateTime{} = at, zone) do
-    case DateTime.shift_zone(at, zone) do
-      {:ok, local} ->
-        local
-
-      {:error, reason} ->
-        raise ArgumentError,
-              "Temporal.Resolver: cannot read #{inspect(at)} in the time zone #{inspect(zone)}: #{inspect(reason)}; " <>
-                "the calendar holds no time zone database, so only \"Etc/UTC\" can be read"
-    end
-  end
-
-  defp utc(%DateTime{} = at), do: DateTime.shift_zone!(at, "Etc/UTC")
 
   defp blank?(text) when is_binary(text), do: String.trim(text) == ""
   defp blank?(other), do: raise(ArgumentError, "Temporal.Resolver: what is said must be text, got: #{inspect(other)}")
