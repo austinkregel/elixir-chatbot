@@ -22,6 +22,64 @@ import "phoenix_html"
 // Establish Phoenix Socket and LiveView configuration.
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
+
+// The browser's time zone, as Brain.Temporal.Zone.from_browser!/1 reads it:
+// its name, its offset now, and every change of offset from the start of
+// the year `years` before the current one to the end of the year `years`
+// after it. The server holds no time zone database, so these offsets are
+// how it reads a day or a clock time in this zone, on either side of a
+// daylight saving change. Offsets are seconds east of UTC; instants are
+// milliseconds since the epoch. The zone is the operating system's, read
+// through Date, so no library is needed.
+//
+// The offset is sampled once a day and each change is narrowed to the
+// millisecond it happens at; two changes within one day would be missed.
+function browserZone(years) {
+  const offsetAt = ms => Math.round(-new Date(ms).getTimezoneOffset() * 60)
+  const at = Date.now()
+  const year = new Date(at).getUTCFullYear()
+  const from = Date.UTC(year - years, 0, 1)
+  const until = Date.UTC(year + years + 1, 0, 1)
+  const day = 24 * 60 * 60 * 1000
+  const transitions = []
+  let before = offsetAt(from)
+
+  for (let probe = from; probe < until - 1; ) {
+    const next = Math.min(probe + day, until - 1)
+    const offset = offsetAt(next)
+
+    if (offset !== before) {
+      // The change lies in (probe, next]: narrow it to its first millisecond.
+      let low = probe
+      let high = next
+      while (high - low > 1) {
+        const middle = Math.floor((low + high) / 2)
+        if (offsetAt(middle) === before) low = middle
+        else high = middle
+      }
+      transitions.push([high, offset])
+      before = offset
+    }
+
+    probe = next
+  }
+
+  return {
+    name: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    at: at,
+    offset: offsetAt(at),
+    from: from,
+    until: until,
+    offset_at_from: offsetAt(from),
+    transitions: transitions,
+  }
+}
+
+const localTimeFormats = {
+  time: {hour: "2-digit", minute: "2-digit", hourCycle: "h23"},
+  datetime: {weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23"},
+}
+
 const Hooks = {
   AutoScrollBottom: {
     mounted() {
@@ -29,6 +87,38 @@ const Hooks = {
     },
     updated() {
       this.el.scrollTop = this.el.scrollHeight
+    },
+  },
+  // On a form whose turns the server reads dates and times in: fills its
+  // `time_zone` input with the browser's zone (browserZone) as the form is
+  // submitted, before LiveView reads the form. `data-zone-years` names how
+  // many years either side of this one the zone's offsets are given for.
+  BrowserTimeZone: {
+    mounted() {
+      const years = Number(this.el.dataset.zoneYears)
+      if (!Number.isInteger(years) || years < 1) {
+        throw new Error(`BrowserTimeZone: data-zone-years must be a whole number of years, got ${this.el.dataset.zoneYears}`)
+      }
+      const field = this.el.querySelector("input[name='time_zone']")
+      if (!field) throw new Error(`BrowserTimeZone: #${this.el.id} has no time_zone input`)
+
+      // LiveView reads a submitted form in its own submit listener on window,
+      // which runs after this one on the form itself.
+      this.el.addEventListener("submit", () => {
+        field.value = JSON.stringify(browserZone(years))
+      })
+    },
+  },
+  // A <time> element whose `datetime` (an ISO 8601 instant) is shown in the
+  // browser's own time zone and locale, as its `data-format` says: "time"
+  // (hours and minutes) or "datetime" (with the day).
+  LocalTime: {
+    mounted() {
+      const format = localTimeFormats[this.el.dataset.format]
+      if (!format) throw new Error(`LocalTime: unknown data-format ${this.el.dataset.format}`)
+      const at = new Date(this.el.getAttribute("datetime"))
+      if (Number.isNaN(at.getTime())) throw new Error(`LocalTime: unreadable datetime ${this.el.getAttribute("datetime")}`)
+      this.el.textContent = new Intl.DateTimeFormat(undefined, format).format(at)
     },
   },
 }
