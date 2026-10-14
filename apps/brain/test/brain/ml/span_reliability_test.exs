@@ -242,6 +242,41 @@ defmodule Brain.ML.SpanReliabilityTest do
       assert model.unmeasurable == %{{:gazetteer, "locks_status"} => %{n: 1}}
       assert %{exact: 1} = model.pairs[{:gazetteer, "lock"}]
     end
+
+    # Needs the type hierarchy and the temporal vocabulary loaded. The gold
+    # standard labels the lengths of timer and snooze rows duration, and an
+    # offset ("in 2 hours") date_time, which holds no length. The length
+    # source alone is read, so no span has competing hypotheses, and a fold of
+    # its readings can agree throughout, which select/2 cannot fit; the model
+    # is fitted on the whole training split and decides a span whose
+    # reliability is at least even odds.
+    test "the temporal resolver's lengths are measured on the training split and decide the held-out duration spans" do
+      alias Brain.ML.{EntityExtractor, EvaluationStore, NerGold}
+
+      canonical = EntityExtractor.load_type_mappings()
+      hierarchy = Brain.Analysis.TypeHierarchy
+      examples = for row <- EvaluationStore.load_gold_standard("ner", :train), do: %{key: row["text"], readings: EntityExtractor.length_readings(row["text"]), gold: NerGold.spans!(row)}
+
+      model =
+        examples
+        |> SpanReliability.fit(language: "en", canonical: canonical, hierarchy: hierarchy, prior_strength: 1)
+        |> Map.merge(%{min_score: 0.0, min_margin: 0.0})
+
+      assert %{exact: exact, reliability: reliability} = model.pairs[{:temporal_resolver, "duration"}]
+      assert exact > 0
+      assert reliability > 0.5
+
+      held = for row <- EvaluationStore.load_gold_standard("ner", :held_out), do: {row["text"], NerGold.spans!(row)}
+      assert Enum.any?(held, fn {_text, gold} -> Enum.any?(gold, &(&1.type == "duration")) end), "no held-out row labels a duration"
+
+      for {text, gold} <- held do
+        decided = text |> EntityExtractor.length_readings() |> SpanReliability.decide(model, text: text, canonical: canonical, hierarchy: hierarchy) |> Enum.filter(& &1.resolved)
+        durations = for span <- gold, span.type == "duration", do: {span.start_pos, span.end_pos}
+
+        assert Enum.map(decided, &{&1.start_pos, &1.end_pos}) == durations, "#{inspect(text)}: decided #{inspect(Enum.map(decided, & &1.value))}"
+        assert Enum.all?(decided, &(&1.entity_type == "duration")), inspect(text)
+      end
+    end
   end
 
   describe "fit_extent/2" do
