@@ -141,6 +141,10 @@ defmodule Brain.ML.Poincare.Embeddings do
   """
   @spec read!(Path.t(), String.t() | :trained) :: map()
   def read!(file, owner) do
+    Brain.Telemetry.measure_model_load("poincare_embeddings", fn -> read_checked!(file, owner) end)
+  end
+
+  defp read_checked!(file, owner) do
     unless File.regular?(file) do
       raise missing_message(file, owner)
     end
