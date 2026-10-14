@@ -236,12 +236,13 @@ defmodule Brain.Response.Synthesizer do
       "I think "
     ]
 
-    Enum.random(hedges) <> String.downcase(String.first(response)) <> String.slice(response, 1..-1//1)
+    hedges |> Enum.random() |> String.trim_trailing() |> join_after(response)
   end
 
   # Try to build a response using enriched_response_frames if enrichment
-  # succeeded. A failed enrichment, a service that is not set up among them,
-  # is answered before synthesis (`DiscoursePlanner.enrichment_error_primitive/2`).
+  # succeeded (`enriched_frame/3`). A failed enrichment, a service that is not
+  # set up among them, is answered before synthesis
+  # (`DiscoursePlanner.enrichment_error_primitive/2`).
   defp try_enriched_response(domain_config, entities, context, confidence) do
     enriched_data = Map.get(context, :enriched_data, %{})
 
@@ -254,7 +255,7 @@ defmodule Brain.Response.Synthesizer do
 
       # Try to find a matching enriched frame
       map_size(enriched_frames) > 0 ->
-        case find_matching_enriched_frame(enriched_frames, entities, enriched_data) do
+        case enriched_frame(enriched_frames, entities, enriched_data) do
           nil ->
             :not_enriched
 
@@ -267,45 +268,81 @@ defmodule Brain.Response.Synthesizer do
     end
   end
 
-  # An enriched frame fires only when the enrichment and the entities give it
-  # everything its templates say:
-  #
-  #   * every field its "requires_enrichment" names carries a sayable value
-  #     (`sayable?/1`). A boolean is never sayable, since it would read as
-  #     "true" or "false": a frame that requires one raises, and is to test it
-  #     under "when" and word it in its templates instead;
-  #   * every field its "when" names holds the value given there: a string,
-  #     number or boolean equal to the field's value, {"min": n, "max": m}
-  #     (either bound alone, both inclusive) around a number, or null for a
-  #     field the enrichment does not carry or carries as nil. A field the
-  #     enrichment does not carry meets no other condition. Null tells apart
-  #     what different operations return: a reminder created carries no
-  #     reminder_count, the reminders a check found do;
-  #   * every other `$placeholder` its templates name is filled by an entity of
-  #     that type with a non-blank value.
-  #
-  # So a frame for "nothing was found" is chosen by the value that says so (a
-  # count of 0), never by a field merely being present. Of the frames that
-  # fire, the most specific is chosen: the one with the most required fields
-  # and "when" conditions together.
-  defp find_matching_enriched_frame(enriched_frames, entities, enriched_data) do
-    enriched_frames
-    |> Enum.sort_by(fn {_key, config} ->
-      -(length(required_enrichment(config)) + map_size(frame_conditions(config)))
-    end)
-    |> Enum.find(fn {frame_key, config} ->
-      required = required_enrichment(config)
+  @doc """
+  The enriched frame, `{key, config}` of `enriched_frames` (a domain's
+  `enriched_response_frames`), that words a reply from `enriched_data` and
+  `entities`, or nil when none fires.
 
-      Enum.all?(required, &required_field_sayable?(frame_key, &1, enriched_data)) and
-        Enum.all?(frame_conditions(config), fn {field, expected} ->
-          condition_holds?(frame_key, field, fetch_enriched(enriched_data, field), expected)
-        end) and
-        config
-        |> frame_templates(frame_key)
-        |> Enum.flat_map(&template_placeholders/1)
-        |> Enum.reject(&(&1 in required))
-        |> Enum.all?(&(entity_value(entities, &1) != nil))
-    end)
+  A frame fires only when the enrichment and the entities give it everything
+  its templates say:
+
+    * every field its "requires_enrichment" names carries a sayable value: a
+      non-blank string, a number, or a non-empty list of those. A boolean is
+      never sayable, since it would read as "true" or "false": a frame that
+      requires one raises, and is to test it under "when" and word it in its
+      templates instead;
+    * every field its "when" names holds the value given there: a string,
+      number or boolean equal to the field's value, {"min": n, "max": m}
+      (either bound alone, both inclusive) around a number, or null for a
+      field the enrichment does not carry or carries as nil. A field the
+      enrichment does not carry meets no other condition. Null tells apart
+      what different operations return: a reminder created carries no
+      reminder_count, the reminders a check found do;
+    * every other `$placeholder` its templates name is filled by an entity of
+      that type with a non-blank value.
+
+  So a frame for "nothing was found" is chosen by the value that says so (a
+  count of 0), never by a field merely being present. Of the frames that
+  fire, the most specific is chosen (`frame_specificity/1`). Two or more
+  firing at the top specificity raise: nothing in the data says which of them
+  is meant, and picking by the order the frames happen to be read in would be
+  a silent guess.
+  """
+  @spec enriched_frame(map(), list(), map()) :: {String.t(), map()} | nil
+  def enriched_frame(enriched_frames, entities, enriched_data)
+      when is_map(enriched_frames) and is_list(entities) and is_map(enriched_data) do
+    firing =
+      enriched_frames
+      |> Enum.filter(fn {frame_key, config} -> frame_fires?(frame_key, config, entities, enriched_data) end)
+      |> Enum.group_by(fn {_key, config} -> frame_specificity(config) end)
+
+    case Enum.max_by(firing, fn {specificity, _frames} -> specificity end, fn -> nil end) do
+      nil ->
+        nil
+
+      {_specificity, [frame]} ->
+        frame
+
+      {specificity, tied} ->
+        raise ArgumentError,
+              "the enriched frames #{inspect(tied |> Enum.map(&elem(&1, 0)) |> Enum.sort())} all fire, each " <>
+                "with specificity #{specificity}, for the enrichment #{inspect(enriched_data)}; one of them " <>
+                "must require or test more, or exclude the others with a \"when\" condition"
+    end
+  end
+
+  @doc """
+  How specific an enriched frame is: the fields its `requires_enrichment`
+  names and the conditions its `when` sets, together. Of the frames that fire
+  for an enrichment, the most specific is chosen, and two at the top raise.
+  """
+  @spec frame_specificity(map()) :: non_neg_integer()
+  def frame_specificity(config) when is_map(config) do
+    length(required_enrichment(config)) + map_size(frame_conditions(config))
+  end
+
+  defp frame_fires?(frame_key, config, entities, enriched_data) do
+    required = required_enrichment(config)
+
+    Enum.all?(required, &required_field_sayable?(frame_key, &1, enriched_data)) and
+      Enum.all?(frame_conditions(config), fn {field, expected} ->
+        condition_holds?(frame_key, field, fetch_enriched(enriched_data, field), expected)
+      end) and
+      config
+      |> frame_templates(frame_key)
+      |> Enum.flat_map(&template_placeholders/1)
+      |> Enum.reject(&(&1 in required))
+      |> Enum.all?(&(entity_value(entities, &1) != nil))
   end
 
   defp required_enrichment(config) do
@@ -417,7 +454,7 @@ defmodule Brain.Response.Synthesizer do
 
   # Each `$placeholder` is filled whole, so `$alarm_time` is never read as
   # `$alarm` followed by "_time": a required field from the enrichment, any
-  # other name from the entity of that type (`find_matching_enriched_frame/3`
+  # other name from the entity of that type (`enriched_frame/3`
   # chose the frame because both are there). A template naming a field the
   # enrichment carries but the frame does not require raises, since that field
   # was never checked for a value worth saying.
@@ -567,28 +604,6 @@ defmodule Brain.Response.Synthesizer do
   end
 
   defp put_item_values(values, _content), do: values
-
-  @doc """
-  The slots naming a scheduled item of `item_kind`: each of the kind's
-  `description` segments in primitives.json's `service_items` names the slot
-  its field is given in, and a field the item leaves blank names none. A
-  reply that picks one of a clarification's candidates is completed with
-  these slots (`Brain.Analysis.FollowupDetector`).
-  """
-  @spec service_item_slots(atom(), map()) :: %{String.t() => String.t()}
-  def service_item_slots(item_kind, item) when is_atom(item_kind) and is_map(item) do
-    @primitives
-    |> Map.fetch!("service_items")
-    |> service_item_kind!(item_kind)
-    |> Map.fetch!("description")
-    |> Enum.flat_map(fn %{"field" => field, "slot" => slot} ->
-      case item_field(item, field) do
-        value when is_binary(value) -> if String.trim(value) == "", do: [], else: [{slot, value}]
-        _ -> []
-      end
-    end)
-    |> Map.new()
-  end
 
   defp item_field(item, field), do: Enum.find_value(item, fn {key, value} -> if to_string(key) == field, do: value end)
 
@@ -849,12 +864,62 @@ defmodule Brain.Response.Synthesizer do
       ack_prefixes = Map.get(domain_config, "acknowledgment_prefixes", [])
 
       if ack_prefixes != [] and :rand.uniform() > 0.5 do
-        "#{Enum.random(ack_prefixes)} #{String.downcase(String.first(response))}#{String.slice(response, 1..-1//1)}"
+        join_after(Enum.random(ack_prefixes), response)
       else
         response
       end
     else
       response
+    end
+  end
+
+  # The UD tag the POS tagger gives a proper noun (`Brain.ML.POSTagger.valid_tags/0`).
+  @proper_noun_tag "PROPN"
+
+  @doc """
+  `sentence` said after `prefix`, a phrase put before it ("Sure,", "Done.",
+  "Also,"), separated by a space.
+
+  A prefix that ends a sentence ("Done.") leaves `sentence` as written. One
+  that continues it ("Sure,") lowercases the sentence's first letter, which
+  was capitalized only for starting a sentence, unless its first word is
+  written capitalized wherever it stands: a proper noun, as the POS tagger
+  tags it in `sentence`, or a word the closed-class lexicon declares
+  capitalized (`Brain.Lexicon.ClosedClass.capitalized?/1`), the pronoun "I".
+
+  Raises for an empty sentence, and when the POS tagger cannot be loaded.
+  """
+  @spec join_after(String.t(), String.t()) :: String.t()
+  def join_after(prefix, sentence) when is_binary(prefix) and is_binary(sentence) do
+    "#{prefix} #{continue_after(prefix, sentence)}"
+  end
+
+  defp continue_after(prefix, sentence) do
+    cond do
+      Brain.ML.Tokenizer.ends_with_terminal_punctuation?(prefix) -> sentence
+      keeps_capital?(sentence) -> sentence
+      true -> String.downcase(String.first(sentence)) <> String.slice(sentence, 1..-1//1)
+    end
+  end
+
+  defp keeps_capital?(sentence) do
+    case Brain.ML.Tokenizer.tokenize_words(sentence) do
+      [] ->
+        raise ArgumentError, "Synthesizer: there is no sentence to put after a prefix, got: #{inspect(sentence)}"
+
+      [first | _] = words ->
+        Brain.Lexicon.ClosedClass.capitalized?(first) or proper_noun_first?(words)
+    end
+  end
+
+  defp proper_noun_first?([first | _] = words) do
+    case Brain.ML.POSTagger.load_model() do
+      {:ok, model} ->
+        match?([{_word, @proper_noun_tag} | _], Brain.ML.POSTagger.predict(words, model))
+
+      {:error, reason} ->
+        raise "Synthesizer: the POS tagger could not be loaded to tell whether #{inspect(first)} is a proper " <>
+                "noun, which decides whether it keeps its capital after a prefix: #{inspect(reason)}"
     end
   end
 
