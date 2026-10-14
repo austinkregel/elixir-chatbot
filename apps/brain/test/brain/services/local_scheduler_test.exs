@@ -451,6 +451,21 @@ defmodule Brain.Services.LocalSchedulerTest do
                 reminder_count: 2
               }} = LocalScheduler.enrich("reminder.check", said(%{}), %{}, world_a)
     end
+
+    test "a reminder's text narrows a check to the reminders set with it, case and runs of whitespace ignored",
+         %{world_a: world_a} do
+      LocalScheduler.enrich("reminder.create", said(%{reminder_text: "water plants", time: "noon"}), %{}, world_a)
+      LocalScheduler.enrich("reminder.create", said(%{reminder_text: "call home", time: "6pm"}), %{}, world_a)
+
+      assert {:ok, %{reminder_set: true, reminder_texts: ["call home"], reminder_times: ["6pm"], reminder_count: 1}} =
+               LocalScheduler.enrich("reminder.check", said(%{reminder_text: "Call  Home"}), %{}, world_a)
+
+      assert {:ok, %{reminder_set: false, reminder_texts: [], reminder_count: 0}} =
+               LocalScheduler.enrich("reminder.check", said(%{reminder_text: "call"}), %{}, world_a)
+
+      assert {:ok, %{reminder_count: 0}} =
+               LocalScheduler.enrich("reminder.check", said(%{reminder_text: "call home", date: "tomorrow"}), %{}, world_a)
+    end
   end
 
   describe "cancelling alarms, reminders and timers" do
@@ -737,6 +752,14 @@ defmodule Brain.Services.LocalSchedulerTest do
 
       assert {:ok, %{next_event: "", event_count: 1, upcoming_count: 0}} =
                LocalScheduler.enrich("calendar.query", said(%{date: "yesterday"}), %{}, world_a)
+    end
+
+    test "narrowed to an event, reports the events set with it", %{world_a: world_a} do
+      assert {:ok, %{next_event: "dentist", event_time: "3 pm", event_count: 1, upcoming_count: 1}} =
+               LocalScheduler.enrich("calendar.query", said(%{event: "Dentist"}), %{}, world_a)
+
+      assert {:ok, %{next_event: "", event_count: 0, upcoming_count: 0}} =
+               LocalScheduler.enrich("calendar.query", said(%{event: "dentist", date: "tomorrow"}), %{}, world_a)
     end
 
     test "an event stored before resolutions were has no time to order by, and is never the next",
