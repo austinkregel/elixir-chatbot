@@ -3,9 +3,9 @@
   "type_hierarchy": {
     "person": ["artist", "name", "given_name", "last_name"],
     "artist": ["music_artist"],
-    "location": ["city", "room", "place_name", "geo_location", "ambiguous_name_location", "setting", "gpe", "address"],
+    "location": ["city", "room", "place_name", "geo_location", "ambiguous_name_location", "setting", "gpe", "address", "state", "borough", "neighborhood", "country", "continent", "river", "mountain_range"],
     "device": ["lights", "heating", "device_volume", "lock", "color"],
-    "date_time": ["date", "relative_date", "sys_date", "day_name", "sys_time", "time", "year"],
+    "date_time": ["date", "relative_date", "sys_date", "day_name", "month_name", "weekday", "sys_time", "time", "year"],
     "year": ["start_year", "end_year"],
     "number": ["final_value", "change_value", "value", "amount", "age"],
     "media": ["song", "music_album", "playlist", "album", "music_service", "video_service", "genre", "language"],
@@ -18,7 +18,9 @@
     "sort": ["music_sort", "news_sort"],
     "clothing": ["outfit"],
     "weather": ["weather_condition", "condition"],
-    "action": ["activity", "recurrence"]
+    "action": ["activity", "recurrence"],
+    "code": ["symbol", "file", "programming_language"],
+    "symbol": ["function", "class", "method", "variable"]
   },
   "type_groups": {
     "location_types": ["location", "city", "room", "ambiguous_name_location", "place_name", "geo_location", "setting", "gpe"],
@@ -78,6 +80,27 @@
     "temporal_parent_type": "date_time",
     "temporal_types": ["sys_date", "date", "relative_date", "day", "weekday", "month", "day_name", "month_name", "time", "sys_time"],
     "month_types": ["month", "month_name"],
+    "code_entity_types": {
+      "description": "The entity type a span is read as by the code subsystem (Brain.Code.EntityReadings). 'kinds' maps each kind Brain.Code.CodeGazetteer stores a symbol as to the type a mention of its name is read as: the four kinds the code intents' symbol slots name are their own types, and every other named definition is a symbol. A language keyword is part of a language's syntax, not a definition, so a mention of one is no entity (null). A kind this table does not list raises. 'file' is the type a mention of an analyzed file's path is read as, and 'language' the type a mention of a language the code parser supports is read as.",
+      "kinds": {
+        "code.function": "function",
+        "code.method": "method",
+        "code.class": "class",
+        "code.variable": "variable",
+        "code.constant": "symbol",
+        "code.type": "symbol",
+        "code.interface": "symbol",
+        "code.enum": "symbol",
+        "code.macro": "symbol",
+        "code.namespace": "symbol",
+        "code.field": "symbol",
+        "code.parameter": "symbol",
+        "code.import": "symbol",
+        "code.keyword": null
+      },
+      "file": "file",
+      "language": "programming_language"
+    },
     "export_system_types": {
       "description": "The runtime entity type each Dialogflow system entity of the intent export (data/intents) stands for, which mix registry.derive writes as a slot's type. A system entity not listed has no runtime type, and registry.derive raises on it; sys.any is any text and has none.",
       "sys.number": "number",
