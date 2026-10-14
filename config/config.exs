@@ -121,6 +121,13 @@ config :brain,
     patience: 3
   ],
 
+  # The time zone a turn's dates and times are read in ("tomorrow", "5 pm"),
+  # by Brain.Temporal.Resolver. Web users store no time zone, so this is the
+  # server's, named here rather than read from the host. Elixir's calendar
+  # holds no time zone database and none is a dependency, so "Etc/UTC" is
+  # the only zone that can be read; any other raises when a turn is resolved.
+  time_zone: "Etc/UTC",
+
   # Intent promotion (novel intent discovery)
   intent_promotion_enabled: System.get_env("INTENT_PROMOTION_ENABLED", "false") == "true",
 
