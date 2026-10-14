@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.TrainModels do
-  @moduledoc "Mix task to train ML models from training data.\n\n## Usage\n\n    mix train_models [options]\n\n## Options\n\n  --intent-only    Train only the intent classifier\n  --entity-only    Train only the entity recognition model\n  --pos-only       Train only the POS tagger model\n  --skip-pos       Skip POS tagger training\n\nAn option this task does not know raises.\n\n## Trained Models and Worlds\n\nModels are saved to the trained models directory (`:brain, :ml, :models_path`,\nor priv/ml_models/), the files worlds are seeded from\n(`Brain.ML.EntityModel.trained_path/0`, `World.Embedder.trained_path/0`).\nTraining does not write into any world. A world receives a retrained entity\nmodel or embedder vocabulary when it is seeded: `mix world.seed_model`, or\n`World.Manager` when it creates the world.\n\nThe POS tagger is shared by every world, so it is always saved to\n`Brain.ML.POSTagger.model_path/0`.\n\n## Examples\n\n    # Train all models\n    mix train_models\n\n    # Train only the intent classifier\n    mix train_models --intent-only\n\nThis task will:\n- Load intent training data from data/intents/ (or data/training/intents/)\n- Build TF-IDF vectorizer and train intent classifier\n- Train BIO-tagged entity recognition model\n- Train POS tagger from annotated data (if available)\n- Save all models to the trained models directory\n- Report training statistics and model sizes\n"
+  @moduledoc "Mix task to train ML models from training data.\n\n## Usage\n\n    mix train_models [options]\n\n## Options\n\n  --intent-only    Train only the intent classifier\n  --entity-only    Train only the entity recognition model\n  --pos-only       Train only the POS tagger model\n  --skip-pos       Skip POS tagger training\n\nAn option this task does not know raises.\n\n`--entity-only` does not start the brain application: boot loads the span\nreliability model, which `mix train_span_reliability` trains from this\nentity model, so it starts only what `Brain.ML.EntityTrainer` reads. The\nother modes start the application, and so need every boot artifact.\n\n## Trained Models and Worlds\n\nModels are saved to the trained models directory (`:brain, :ml, :models_path`,\nor priv/ml_models/), the files worlds are seeded from\n(`Brain.ML.EntityModel.trained_path/0`, `World.Embedder.trained_path/0`).\nTraining does not write into any world. A world receives a retrained entity\nmodel or embedder vocabulary when it is seeded: `mix world.seed_model`, or\n`World.Manager` when it creates the world.\n\nThe POS tagger is shared by every world, so it is always saved to\n`Brain.ML.POSTagger.model_path/0`.\n\n## Examples\n\n    # Train all models\n    mix train_models\n\n    # Train only the intent classifier\n    mix train_models --intent-only\n\nThis task will:\n- Load intent training data from data/intents/ (or data/training/intents/)\n- Build TF-IDF vectorizer and train intent classifier\n- Train BIO-tagged entity recognition model\n- Train POS tagger from annotated data (if available)\n- Save all models to the trained models directory\n- Report training statistics and model sizes\n"
 
   # World.Embedder is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
@@ -29,8 +29,14 @@ defmodule Mix.Tasks.TrainModels do
       )
     end
 
-    Application.put_env(:brain, :skip_ml_init, true)
-    Mix.Task.run("app.start")
+    if Keyword.get(opts, :entity_only, false) do
+      Mix.Task.run("app.config")
+      start_entity_training!()
+    else
+      Application.put_env(:brain, :skip_ml_init, true)
+      Mix.Task.run("app.start")
+    end
+
     models_path = trained_models_path()
 
     Logger.info("Starting ML model training pipeline...")
@@ -76,6 +82,16 @@ defmodule Mix.Tasks.TrainModels do
         System.halt(1)
     end
   end
+
+  @doc false
+  # What `Brain.ML.EntityTrainer` reads, and nothing more: the NER gold
+  # standard (files, read with Jason), the tokenizer (compiled data) and
+  # telemetry, which training reports to. The brain application is not
+  # started: its boot loads the span reliability model, which is trained from
+  # this task's entity model, so booting first would need the artifact this
+  # task is a prerequisite of.
+  def start_entity_training!,
+    do: Mix.Tasks.TrainSlotTypePreferences.start!([:logger, :jason, :telemetry], [])
 
   # The directory training writes to: the one holding the trained entity model
   # and embedder vocabulary that worlds are seeded from.
