@@ -946,7 +946,10 @@ defmodule Brain.Analysis.Pipeline do
       EntityExtractor.resolve_with_intent(
         pass1.unresolved_spans,
         intent,
-        opts |> Keyword.take([:min_confidence]) |> Keyword.put(:language, Map.fetch!(pass1, :language))
+        opts
+        |> Keyword.take([:min_confidence])
+        |> Keyword.put(:language, Map.fetch!(pass1, :language))
+        |> Keyword.put(:text, entity_text(pass1))
       )
 
     Progress.report(opts, :unresolved_spans_resolved, %{
