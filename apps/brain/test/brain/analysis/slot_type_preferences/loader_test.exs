@@ -37,14 +37,14 @@ defmodule Brain.Analysis.SlotTypePreferences.LoaderTest do
       %{
         key: 1,
         intent: "weather.query",
-        spans: [%{type: "location", preceding_tag: "ADP"}],
+        spans: [%{type: "location", preceding_tag: "ADP", preceding_word: "in", numeric: false}],
         ordinary: ["NOUN"],
         gazetteer: [:entity, :ordinary]
       },
       %{
         key: 2,
         intent: "smarthome.device.switch.on",
-        spans: [%{type: "room", preceding_tag: "DET"}],
+        spans: [%{type: "room", preceding_tag: "DET", preceding_word: "the", numeric: false}],
         ordinary: ["VERB"],
         gazetteer: [:entity]
       }
@@ -64,6 +64,10 @@ defmodule Brain.Analysis.SlotTypePreferences.LoaderTest do
         hierarchy: 0.0,
         tag_global: 1,
         tag_type: 1,
+        word_global: 1,
+        word_type: 1,
+        numeric_global: 1,
+        numeric_type: 1,
         ordinary_global: 1,
         ordinary_domain: 1,
         ordinary_intent: 1
@@ -110,6 +114,25 @@ defmodule Brain.Analysis.SlotTypePreferences.LoaderTest do
       error = assert_raise RuntimeError, fn -> Loader.load!() end
       assert error.message =~ "smoothing #{inspect(key)} is invalid"
       assert error.message =~ "mix train_slot_type_preferences"
+    end
+  end
+
+  test "boot fails on a model trained before the preceding-word and numeric likelihoods were learned", %{dir: dir} do
+    full = model(SlotTypePreferences.listed_types())
+
+    for key <- [:word_counts, :numeric_counts, :word_likelihoods, :numeric_likelihoods] do
+      write_raw!(dir, Map.delete(full, key))
+
+      error = assert_raise RuntimeError, fn -> Loader.load!() end
+      assert error.message =~ "has no [#{inspect(key)}]"
+      assert error.message =~ "mix train_slot_type_preferences"
+    end
+
+    for key <- [:word_global, :word_type, :numeric_global, :numeric_type] do
+      write_raw!(dir, %{full | smoothing: Map.delete(full.smoothing, key)})
+
+      error = assert_raise RuntimeError, fn -> Loader.load!() end
+      assert error.message =~ "smoothing #{inspect(key)} is invalid"
     end
   end
 
