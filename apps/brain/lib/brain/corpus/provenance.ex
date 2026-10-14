@@ -21,6 +21,18 @@ defmodule Brain.Corpus.Provenance do
   usersays format. Their kind is `"authored"`, read from the directory they
   are in rather than from an id. They were never in the export, so they are
   not among the kinds written back into it (`written_back/0`).
+
+  ## Authored entity annotations
+
+  Entity annotations written by hand for intent gold texts the export
+  annotates no entity in are kept in `priv/training/authored_entities/`
+  (`authored_entities_dir/0`), one usersays file per intent, each entity a
+  `data` segment marked as Dialogflow marks one: `meta` names its entity type
+  (`"@function"`), `alias` the intent's slot it fills (`"symbol"`). They are
+  the source of the NER gold rows labeled `"authored"`, which
+  `mix rebuild_ner_gold` rebuilds from them. Only the annotations are
+  authored: the texts are intent gold rows and keep the provenance the intent
+  gold records for them.
   """
 
   # Ordered most genuine first. The integer is the comparison key, not an id.
@@ -34,6 +46,7 @@ defmodule Brain.Corpus.Provenance do
 
   @authored "authored"
   @authored_dir "training/authored_intents"
+  @authored_entities_dir "training/authored_entities"
 
   @synthetic_id ~r/^[a-z]+-[0-9a-f]{8}$/
 
@@ -64,6 +77,14 @@ defmodule Brain.Corpus.Provenance do
   @doc "Where the hand-written intent examples are kept, one usersays file per intent."
   @spec authored_dir() :: Path.t()
   def authored_dir, do: Brain.priv_path(@authored_dir)
+
+  @doc """
+  Where the hand-written entity annotations of intent gold texts are kept, one
+  usersays file per intent. The NER gold rows built from them are labeled
+  `authored/0`.
+  """
+  @spec authored_entities_dir() :: Path.t()
+  def authored_entities_dir, do: Brain.priv_path(@authored_entities_dir)
 
   @doc """
   The kind of a usersays row's `id`.
