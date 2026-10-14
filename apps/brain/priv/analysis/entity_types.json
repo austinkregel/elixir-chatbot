@@ -4,15 +4,15 @@
     "person": ["artist", "name", "given_name", "last_name"],
     "artist": ["music_artist"],
     "location": ["city", "room", "place_name", "geo_location", "ambiguous_name_location", "setting", "gpe", "address"],
-    "device": ["lights", "heating", "locks_status", "device_volume", "lock", "color"],
+    "device": ["lights", "heating", "device_volume", "lock", "color"],
     "date_time": ["date", "relative_date", "sys_date", "day_name", "sys_time", "time", "year"],
     "year": ["start_year", "end_year"],
-    "number": ["final_value", "change_value", "value", "amount", "q", "age"],
+    "number": ["final_value", "change_value", "value", "amount", "age"],
     "media": ["song", "music_album", "playlist", "album", "music_service", "video_service", "genre", "language"],
     "commerce": ["account", "merchant", "transfer_type"],
     "measurement": ["temperature", "unit_temperature", "unit"],
     "communication": ["message_content", "message_type"],
-    "information": ["source", "topic", "category", "search_engine", "keyword", "color"],
+    "information": ["source", "topic", "category", "search_engine", "keyword", "q", "color"],
     "source": ["news_source"],
     "selection": ["all", "sort"],
     "sort": ["music_sort", "news_sort"],
@@ -22,17 +22,17 @@
   },
   "type_groups": {
     "location_types": ["location", "city", "room", "ambiguous_name_location", "place_name", "geo_location", "setting", "gpe"],
-    "device_types": ["device", "lights", "heating", "locks_status"],
+    "device_types": ["device", "lights", "heating"],
     "music_types": ["song", "music_artist", "music_album", "playlist"],
     "person_types": ["person", "name", "artist", "music_artist", "given_name", "last_name"],
     "date_types": ["date", "relative_date", "sys_date", "day_name", "year", "start_year", "end_year"],
     "time_types": ["time", "sys_time"],
-    "numeric_types": ["number", "final_value", "change_value", "value", "amount", "q", "age"]
+    "numeric_types": ["number", "final_value", "change_value", "value", "amount", "age"]
   },
   "type_synonyms": {
     "location": ["location", "room", "city", "place_name", "geo_location", "setting", "gpe"],
     "device": ["device", "lights", "heating"],
-    "number": ["number", "value", "temperature", "final_value", "change_value", "amount", "q", "age"]
+    "number": ["number", "value", "temperature", "final_value", "change_value", "amount", "age"]
   },
   "disambiguation_groups": {
     "person_vs_location": ["person", "location"],
@@ -78,6 +78,15 @@
     "temporal_parent_type": "date_time",
     "temporal_types": ["sys_date", "date", "relative_date", "day", "weekday", "month", "day_name", "month_name", "time", "sys_time"],
     "month_types": ["month", "month_name"],
+    "export_system_types": {
+      "description": "The runtime entity type each Dialogflow system entity of the intent export (data/intents) stands for, which mix registry.derive writes as a slot's type. A system entity not listed has no runtime type, and registry.derive raises on it; sys.any is any text and has none.",
+      "sys.number": "number",
+      "sys.date_time": "date_time",
+      "sys.location": "location",
+      "sys.language": "language",
+      "sys.music_artist": "music_artist",
+      "sys.music_genre": "genre"
+    },
     "mention_pos": {
       "description": "The UD parts of speech a mention of each entity type takes in a sentence, as Brain.Analysis.EntityTypeScorer weighs the word's tag. A reading whose parts of speech include the tag keeps full weight; any other is weighed down. 'default' is every type not listed. '*' means any part of speech: a title can be any word ('chill' the playlist). Declared from the values in each type's entity file; extend a type here when its data grows a new kind of mention.",
       "default": ["NOUN", "PROPN"],
