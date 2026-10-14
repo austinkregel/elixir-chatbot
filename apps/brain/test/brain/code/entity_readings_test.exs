@@ -203,7 +203,9 @@ defmodule Brain.Code.EntityReadingsTest do
       authored =
         for row <- EvaluationStore.load_gold_standard("ner", :all), row["labeled_by"] == Brain.Corpus.Provenance.authored(), do: row
 
-      for row <- authored, %{"type" => type, "value" => value} <- row["expected"] do
+      # The authored rows annotate other intents' entities too (a timer's
+      # duration); only the code entities are names a world's code holds.
+      for row <- authored, %{"type" => type, "value" => value} <- row["expected"], TypeHierarchy.is_a?(type, "code") do
         symbol =
           if type == types.file,
             do: %{name: "test_owner_of_" <> value, entity_type: kind_of.("function"), file_path: value},
@@ -219,7 +221,8 @@ defmodule Brain.Code.EntityReadingsTest do
          %{authored: authored} do
       canonical = EntityExtractor.load_type_mappings()
       held = MapSet.new(EvaluationStore.load_gold_standard("ner", :held_out))
-      train_types = for row <- authored, not MapSet.member?(held, row), span <- NerGold.spans!(row), uniq: true, do: span.type
+      train_types =
+        for row <- authored, not MapSet.member?(held, row), span <- NerGold.spans!(row), TypeHierarchy.is_a?(span.type, "code"), uniq: true, do: span.type
       assert train_types != []
 
       examples = annotated_examples(EvaluationStore.load_gold_standard("ner", :train))
