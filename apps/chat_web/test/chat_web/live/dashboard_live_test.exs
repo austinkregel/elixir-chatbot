@@ -169,6 +169,62 @@ defmodule ChatWeb.DashboardLiveTest do
       assert missed =~ "telemetry event(s) not counted"
       assert missed =~ ~r/>\s*2\s*<\/span> from chatbot-semantic-fact-used: the aggregator was not running/
     end
+
+    test "shows the activity the aggregator counted: KG signals, learning, consistency, racing early exits and code languages",
+         %{conn: conn} do
+      :ok =
+        Atlas.Metrics.write!([
+          %{
+            scope: :node,
+            family: "telemetry",
+            values: [
+              {"kg_signal:scored:count", :sum, 3},
+              {"kg_signal:scored:items", :sum, 7},
+              {"learning:document_processed", :sum, 2},
+              {"consistency:total", :sum, 1},
+              {"consistency:high", :sum, 1},
+              {"racing_early_exit:fast_path", :sum, 4},
+              {"code_language:elixir", :sum, 5}
+            ]
+          }
+        ])
+
+      {:ok, view, _html} = live(conn, "/dashboard")
+
+      assert view |> element("#activity-kg-signals") |> render() =~ ~r/scored.*3.*7 items/s
+      assert view |> element("#activity-learning") |> render() =~ ~r/document_processed.*2/s
+      assert view |> element("#activity-consistency") |> render() =~ ~r/high.*1/s
+      assert view |> element("#activity-racing-early-exits") |> render() =~ ~r/fast_path.*4/s
+      assert view |> element("#activity-code-languages") |> render() =~ ~r/elixir.*5/s
+    end
+
+    test "a refresh reads the node's telemetry window from Atlas once", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/dashboard")
+      test_pid = self()
+      handler = "dashboard-test-telemetry-reads"
+
+      # The reads of the node's metric windows the LiveView itself makes.
+      :ok =
+        :telemetry.attach(
+          handler,
+          [:atlas, :repo, :query],
+          fn _event, _measurements, %{source: source, params: params}, live_view ->
+            if self() == live_view and source == "atlas_metric_windows" and "telemetry" in params do
+              send(test_pid, :telemetry_window_read)
+            end
+          end,
+          view.pid
+        )
+
+      on_exit(fn -> :telemetry.detach(handler) end)
+
+      send(view.pid, :refresh_dashboard)
+      _html = render(view)
+      :telemetry.detach(handler)
+
+      assert_received :telemetry_window_read
+      refute_received :telemetry_window_read
+    end
   end
 
   describe "auto-refresh toggle" do
