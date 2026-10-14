@@ -24018,6 +24018,51 @@
     "text": "turn decorations brightness down by 50 points"
   },
   {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Add a meeting to my schedule"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Add a reminder"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Add an event to my calendar"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "tomorrow afternoon"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Am I free tomorrow afternoon"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "tomorrow"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Any events tomorrow"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "this week"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Any meetings this week"
+  },
+  {
     "expected": [
       {
         "type": "class",
@@ -24030,12 +24075,167 @@
   {
     "expected": [
       {
+        "type": "duration",
+        "value": "20 minute"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Begin a 20 minute timer"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Book a meeting with the team"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Book an appointment"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Book the conference room"
+  },
+  {
+    "expected": [
+      {
         "type": "function",
         "value": "handle_request"
       }
     ],
     "labeled_by": "authored",
     "text": "can you explain handle_request"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Can you remind me to call John"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Cancel all timers"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "10 minute"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Cancel my 10 minute timer"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "John"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Cancel my meeting with John"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Cancel the countdown"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Cancel the meeting"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Cancel the team sync"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Cancel the timer"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "tomorrow's"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Cancel tomorrow's meeting"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Check my availability"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Check my calendar"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "Friday"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Clear my schedule for Friday"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "5 minute"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Clear the 5 minute timer"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "10 minutes"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Count down 10 minutes"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Create a calendar event"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Create a reminder"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Create a timer"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Delete the appointment"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Delete the calendar event"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Delete the timer"
   },
   {
     "expected": [
@@ -24076,6 +24276,21 @@
     ],
     "labeled_by": "authored",
     "text": "describe what fetch_data does"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "today"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Do I have any meetings today"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "End the timer now"
   },
   {
     "expected": [
@@ -24213,6 +24428,21 @@
     "text": "function signature for authenticate_user"
   },
   {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Get rid of the egg timer"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "5 more minutes"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Give me 5 more minutes"
+  },
+  {
     "expected": [
       {
         "type": "symbol",
@@ -24231,6 +24461,11 @@
     ],
     "labeled_by": "authored",
     "text": "help me understand parse_json"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Hit snooze"
   },
   {
     "expected": [
@@ -24293,6 +24528,11 @@
     "text": "how to use HttpClient"
   },
   {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "I don't need the timer anymore"
+  },
+  {
     "expected": [
       {
         "type": "class",
@@ -24301,6 +24541,16 @@
     ],
     "labeled_by": "authored",
     "text": "I want to understand the OrderService class"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Kill the timer"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Let me sleep more"
   },
   {
     "expected": [
@@ -24323,6 +24573,96 @@
     "text": "method signature of save_to_database"
   },
   {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Never mind the timer"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Put a meeting on my calendar"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Remind me about the meeting"
+  },
+  {
+    "expected": [
+      {
+        "type": "time",
+        "value": "at 5pm"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Remind me at 5pm to leave"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Remind me later"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "next week"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Remind me next week"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Remind me to call mom"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Remind me to pick up groceries"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Remind me to send the email"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Remind me to water the plants"
+  },
+  {
+    "expected": [
+      {
+        "type": "time",
+        "value": "2pm"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Remove my 2pm appointment"
+  },
+  {
+    "expected": [
+      {
+        "type": "time",
+        "value": "3pm"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Remove the 3pm appointment"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Remove the event from my calendar"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Remove the workout timer"
+  },
+  {
     "expected": [
       {
         "type": "function",
@@ -24331,6 +24671,141 @@
     ],
     "labeled_by": "authored",
     "text": "return type of fetch_data"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Sarah"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Schedule a call with Sarah"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "next week"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Schedule a meeting for next week"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "tomorrow"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Schedule a meeting tomorrow"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Schedule a one on one"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Schedule a team sync"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "John"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Schedule lunch with John"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "15 minute"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Set a 15 minute timer"
+  },
+  {
+    "expected": [
+      {
+        "type": "time",
+        "value": "9am"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Set a reminder for 9am"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "tomorrow"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Set a reminder for tomorrow"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Set a reminder to take medicine"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Set a timer"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "10 minutes"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Set a timer for 10 minutes"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Set a workout timer"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Set an egg timer"
+  },
+  {
+    "expected": [
+      {
+        "type": "time",
+        "value": "3pm"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Set up a 3pm meeting"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "Friday"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Set up a call for Friday"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Set up a reminder"
   },
   {
     "expected": [
@@ -24351,6 +24826,11 @@
     ],
     "labeled_by": "authored",
     "text": "show callers of authenticate"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Show me my appointments"
   },
   {
     "expected": [
@@ -24375,6 +24855,16 @@
   {
     "expected": [
       {
+        "type": "date",
+        "value": "tomorrow"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Show my schedule for tomorrow"
+  },
+  {
+    "expected": [
+      {
         "type": "function",
         "value": "parse_json"
       }
@@ -24395,12 +24885,102 @@
   {
     "expected": [
       {
+        "type": "date",
+        "value": "today's"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Show today's schedule"
+  },
+  {
+    "expected": [
+      {
         "type": "method",
         "value": "render"
       }
     ],
     "labeled_by": "authored",
     "text": "signature of the method render"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Snooze"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "10 minutes"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Snooze for 10 minutes"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "5 minutes"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Snooze for 5 minutes"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Snooze it"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Snooze the alarm"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Snooze the alarm please"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "5 minute"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Start a 5 minute timer"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Start a countdown"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Start a timer for cooking"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Start the timer"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Stop the alarm and snooze"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Stop the pasta timer"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Stop the timer"
   },
   {
     "expected": [
@@ -24445,12 +25025,47 @@
   {
     "expected": [
       {
+        "type": "duration",
+        "value": "3 minutes"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Timer 3 minutes"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "2 hours"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Timer for 2 hours"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "30 seconds"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Timer for 30 seconds"
+  },
+  {
+    "expected": [
+      {
         "type": "symbol",
         "value": "Session"
       }
     ],
     "labeled_by": "authored",
     "text": "trace usage of Session"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Turn off the timer"
   },
   {
     "expected": [
@@ -24501,6 +25116,11 @@
     ],
     "labeled_by": "authored",
     "text": "what depends on HttpClient"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "What do I have scheduled"
   },
   {
     "expected": [
@@ -24658,6 +25278,11 @@
     "text": "what is the purpose of the CodeGazetteer module"
   },
   {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "What meetings do I have"
+  },
+  {
     "expected": [
       {
         "type": "function",
@@ -24700,6 +25325,31 @@
   {
     "expected": [
       {
+        "type": "date",
+        "value": "this afternoon"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "What's happening this afternoon"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "What's my schedule look like"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "today"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "What's on my calendar today"
+  },
+  {
+    "expected": [
+      {
         "type": "function",
         "value": "process_items"
       }
@@ -24726,6 +25376,11 @@
     ],
     "labeled_by": "authored",
     "text": "what's the purpose of validate_input"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "When is my next meeting"
   },
   {
     "expected": [
