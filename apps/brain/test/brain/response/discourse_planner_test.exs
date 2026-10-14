@@ -184,14 +184,28 @@ defmodule Brain.Response.DiscoursePlannerTest do
       assert text =~ "A at 1 pm, B or C at 3 pm"
     end
 
-    test "no event identified: the plan asks which event, waiting for the event slot" do
-      {plan, _specified, text} = respond(:event_not_identified, :local_scheduler, "calendar.cancel")
+    test "no event identified: the plan asks which event, listing every event the calendar has" do
+      events = [%{event: "Dentist", date: "Friday", time: "3 pm"}, %{event: "Standup", date: "", time: "5 pm"}]
+      reason = {:event_not_identified, events}
+
+      {plan, _specified, text} = respond(reason, :local_scheduler, "calendar.cancel")
 
       assert [%Primitive{type: :follow_up, variant: :clarification, content: content}] = plan
-      assert content.reply == :item_not_identified
-      assert content.missing_slots == ["event"]
-      assert text =~ "event"
+      assert content.reply == :ambiguous_item
+      assert content.item_kind == :calendar
+      assert content.candidates == events
+      assert content.enrichment_error == reason
+      refute Map.has_key?(content, :missing_slots)
+
+      assert text =~ "Dentist on Friday at 3 pm or Standup at 5 pm"
       assert String.ends_with?(text, "?")
+    end
+
+    test "no event identified on a calendar with one event: the plan asks about that one" do
+      {_plan, _specified, text} =
+        respond({:event_not_identified, [%{event: "Dentist", date: "", time: "3 pm"}]}, :local_scheduler, "calendar.cancel")
+
+      assert text =~ "Dentist at 3 pm?"
     end
 
     test "nothing matched what was described: an action result naming the description, with its day" do
@@ -282,7 +296,10 @@ defmodule Brain.Response.DiscoursePlannerTest do
       two_chunks = %{model | analyses: model.analyses ++ [%{hd(model.analyses) | chunk_index: 1, text: "thanks"}]}
 
       assert [%Primitive{type: :follow_up, variant: :clarification}] =
-               DiscoursePlanner.plan(two_chunks, failed(:event_not_identified, :local_scheduler, "calendar.cancel"))
+               DiscoursePlanner.plan(
+                 two_chunks,
+                 failed({:event_not_identified, [%{event: "Dentist", date: "", time: ""}]}, :local_scheduler, "calendar.cancel")
+               )
     end
 
     test "an error with no planned response raises" do
@@ -297,6 +314,10 @@ defmodule Brain.Response.DiscoursePlannerTest do
           model,
           failed({:ambiguous, :calendar, [%{event: "Dentist", time: "3 pm"}]}, :local_scheduler, "calendar.cancel")
         )
+      end
+
+      assert_raise ArgumentError, ~r/no planned response for the service error \{:event_not_identified, \[\]\}/, fn ->
+        DiscoursePlanner.plan(model, failed({:event_not_identified, []}, :local_scheduler, "calendar.cancel"))
       end
     end
 
