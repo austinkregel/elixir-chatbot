@@ -20,22 +20,48 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
     canonical: %{"place_name" => "address"},
     hierarchy: Hierarchy,
     listed: ~w(location room device place_name),
+    reading_types: ~w(city lights),
     tag_vocabulary: @tags
   ]
 
-  @flat %{global: 6, domain: 1, intent: 1, hierarchy: 0.0, tag_global: 5, tag_type: 2}
+  @flat %{
+    global: 6,
+    domain: 1,
+    intent: 1,
+    hierarchy: 0.0,
+    tag_global: 5,
+    tag_type: 2,
+    ordinary_global: 2,
+    ordinary_domain: 1,
+    ordinary_intent: 1
+  }
 
-  defp example(key, intent, spans, ordinary \\ []) do
-    %{key: key, intent: intent, spans: Enum.map(spans, fn {type, tag} -> %{type: type, preceding_tag: tag} end), ordinary: ordinary}
+  defp example(key, intent, spans, ordinary \\ [], gazetteer \\ []) do
+    %{
+      key: key,
+      intent: intent,
+      spans: Enum.map(spans, fn {type, tag} -> %{type: type, preceding_tag: tag} end),
+      ordinary: ordinary,
+      gazetteer: gazetteer
+    }
   end
 
   # Weather asks for addresses; smart-home commands name a room and a device
-  # equally often. Expected values are worked out by hand in the tests.
+  # equally often. Two of every three gazetteer matches in a weather request
+  # are ordinary words; every gazetteer match in a smart-home command is an
+  # entity. Expected values are worked out by hand in the tests.
   defp examples do
-    weather = for i <- 1..4, do: example({:weather, i}, "weather.query", [{"address", "ADP"}], ["NOUN"])
+    weather =
+      for i <- 1..4,
+          do: example({:weather, i}, "weather.query", [{"address", "ADP"}], ["NOUN"], [:entity, :ordinary, :ordinary])
 
     smarthome =
-      for i <- 1..4, do: example({:smarthome, i}, "smarthome.device.switch.on", [{"room", "DET"}, {"device", "DET"}], ["VERB"])
+      for i <- 1..4,
+          do:
+            example({:smarthome, i}, "smarthome.device.switch.on", [{"room", "DET"}, {"device", "DET"}], ["VERB"], [
+              :entity,
+              :entity
+            ])
 
     weather ++ smarthome
   end
@@ -50,6 +76,21 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
       assert model.parents["room"] == ["location"]
       assert model.children["location"] == ~w(address city room)
       assert MapSet.equal?(model.descendants["location"], MapSet.new(~w(location room address city)))
+    end
+
+    test "every type the gazetteer reads joins it, as a root when the hierarchy has no parents for it" do
+      model = SlotTypePreferences.fit(examples(), @opts |> Keyword.put(:reading_types, ~w(emoji city)) |> Keyword.put(:smoothing, @flat))
+
+      assert "emoji" in model.universe
+      assert model.parents["emoji"] == []
+    end
+
+    test "the gazetteer's types are required" do
+      for bad <- [[], nil, [""]] do
+        assert_raise ArgumentError, ~r/:reading_types must list/, fn ->
+          SlotTypePreferences.fit(examples(), @opts |> Keyword.put(:reading_types, bad) |> Keyword.put(:smoothing, @flat))
+        end
+      end
     end
 
     test "a hierarchy that holds no types is an error, not an empty hierarchy" do
@@ -185,6 +226,133 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
     end
   end
 
+  describe "ordinary_rate/2" do
+    test "is smoothed from the intent to its domain to every utterance to an even split" do
+      model = fit(@flat)
+
+      # 8 of weather's 12 gazetteer spans are ordinary, none of smart home's 8.
+      # O0 = (8 + 2/2) / (20 + 2); Od = (8 + O0) / (12 + 1); Oi = (8 + Od) / (12 + 1).
+      assert_in_delta SlotTypePreferences.ordinary_rate(model, :global), 9 / 22, 1.0e-12
+      assert_in_delta SlotTypePreferences.ordinary_rate(model, {:domain, "weather"}), 185 / 286, 1.0e-12
+      assert_in_delta SlotTypePreferences.ordinary_rate(model, {:intent, "weather.query"}), 2473 / 3718, 1.0e-12
+
+      # Od = (0 + O0) / (8 + 1); Oi = (0 + Od) / (8 + 1).
+      assert_in_delta SlotTypePreferences.ordinary_rate(model, {:intent, "smarthome.device.switch.on"}), 1 / 198, 1.0e-12
+    end
+
+    test "an intent the data never shows takes its domain's rate" do
+      model = fit(@flat)
+
+      assert SlotTypePreferences.ordinary_rate(model, {:intent, "weather.outfit"}) ==
+               SlotTypePreferences.ordinary_rate(model, {:domain, "weather"})
+    end
+
+    test "only the gazetteer spans of rows joined to an intent are counted" do
+      unjoined = example(:unjoined, nil, [{"room", "DET"}], [], [:ordinary, :ordinary, :ordinary])
+      model = SlotTypePreferences.fit([unjoined | examples()], Keyword.put(@opts, :smoothing, @flat))
+
+      assert model.ordinary_counts.global == {8, 20}
+      assert_in_delta SlotTypePreferences.ordinary_rate(model, :global), 9 / 22, 1.0e-12
+    end
+
+    test "a context that is neither an intent of a known domain nor a domain raises" do
+      model = fit(@flat)
+      assert_raise ArgumentError, ~r/not a domain/, fn -> SlotTypePreferences.ordinary_rate(model, {:domain, "nowhere"}) end
+      assert_raise ArgumentError, ~r/no domain declared/, fn -> SlotTypePreferences.ordinary_rate(model, {:intent, "zzz.query"}) end
+    end
+  end
+
+  describe "unlisted_rate/3" do
+    test "is the mass of the labels that agree with no listed type" do
+      model = fit(@flat)
+      dist = SlotTypePreferences.distribution(model, {:intent, "weather.query"})
+
+      # location and room cover location, room, address and city.
+      assert_in_delta SlotTypePreferences.unlisted_rate(model, {:intent, "weather.query"}, ~w(location room)),
+                      dist["device"] + dist["lights"],
+                      1.0e-12
+
+      # A listed type's gold label counts: place_name is an address.
+      assert_in_delta SlotTypePreferences.unlisted_rate(model, {:intent, "weather.query"}, ~w(place_name)),
+                      1 - dist["address"],
+                      1.0e-12
+    end
+
+    test "is every span with nothing listed, and none with every root listed" do
+      model = fit(@flat)
+      assert_in_delta SlotTypePreferences.unlisted_rate(model, {:intent, "weather.query"}, []), 1.0, 1.0e-12
+      assert_in_delta SlotTypePreferences.unlisted_rate(model, {:intent, "weather.query"}, ~w(location device)), 0.0, 1.0e-12
+    end
+
+    test "weather's spans agree with its listed location far more often than smart home's do" do
+      model = fit(@flat)
+
+      assert SlotTypePreferences.unlisted_rate(model, {:intent, "weather.query"}, ~w(location)) <
+               SlotTypePreferences.unlisted_rate(model, {:intent, "smarthome.device.switch.on"}, ~w(location))
+    end
+  end
+
+  describe "reading_likelihoods/2" do
+    test "is each reading's probability in the context over its probability across every utterance" do
+      model = fit(@flat)
+      table = SlotTypePreferences.reading_likelihoods(model, {:intent, "weather.query"})
+
+      o_i = SlotTypePreferences.ordinary_rate(model, {:intent, "weather.query"})
+      o_0 = SlotTypePreferences.ordinary_rate(model, :global)
+      for_intent = SlotTypePreferences.distribution(model, {:intent, "weather.query"})
+      overall = SlotTypePreferences.distribution(model, :global)
+
+      assert_in_delta SlotTypePreferences.reading_likelihood(table, :ordinary), o_i / o_0, 1.0e-12
+
+      # place_name is read through its gold label, address.
+      assert_in_delta SlotTypePreferences.reading_likelihood(table, "place_name"),
+                      (1 - o_i) * for_intent["address"] / ((1 - o_0) * overall["address"]),
+                      1.0e-12
+
+      # A label's mass includes every label that refines it.
+      location = fn d -> d["location"] + d["room"] + d["address"] + d["city"] end
+
+      assert_in_delta SlotTypePreferences.reading_likelihood(table, "location"),
+                      (1 - o_i) * location.(for_intent) / ((1 - o_0) * location.(overall)),
+                      1.0e-12
+    end
+
+    test "moves each reading the way the context's data does, listed or not" do
+      model = fit(@flat)
+      weather = SlotTypePreferences.reading_likelihoods(model, {:intent, "weather.query"})
+      smarthome = SlotTypePreferences.reading_likelihoods(model, {:intent, "smarthome.device.switch.on"})
+
+      # Weather names addresses and rarely rooms; a gazetteer match in a weather
+      # request is more often an ordinary word than one anywhere.
+      assert SlotTypePreferences.reading_likelihood(weather, "address") > 1
+      assert SlotTypePreferences.reading_likelihood(weather, "room") < 1
+      assert SlotTypePreferences.reading_likelihood(weather, :ordinary) > 1
+
+      # Smart-home commands name rooms and devices, and their gazetteer
+      # matches are entities.
+      assert SlotTypePreferences.reading_likelihood(smarthome, "room") > 1
+      assert SlotTypePreferences.reading_likelihood(smarthome, :ordinary) < 1
+    end
+
+    test "every utterance together says nothing about any reading" do
+      table = SlotTypePreferences.reading_likelihoods(fit(@flat), :global)
+
+      assert_in_delta SlotTypePreferences.reading_likelihood(table, :ordinary), 1.0, 1.0e-12
+
+      for type <- ~w(address room device lights location city place_name) do
+        assert_in_delta SlotTypePreferences.reading_likelihood(table, type), 1.0, 1.0e-12
+      end
+    end
+
+    test "a type outside the universe raises rather than being weighed as anything" do
+      table = SlotTypePreferences.reading_likelihoods(fit(@flat), {:intent, "weather.query"})
+
+      assert_raise ArgumentError, ~r/"emoji" \(gold label "emoji"\) is not in the en model's universe.*mix train_slot_type_preferences/, fn ->
+        SlotTypePreferences.reading_likelihood(table, "emoji")
+      end
+    end
+  end
+
   describe "preceding-tag likelihood" do
     test "is learned per type and for an ordinary word" do
       model = fit(@flat)
@@ -251,14 +419,28 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
             true -> "city"
           end
 
-        example({:row, i}, intent, [{label, if(label == "address", do: "ADP", else: "DET")}], ["NOUN", "VERB"])
+        # In `distinct` a query's gazetteer matches are ordinary words and an
+        # outfit request's are entities; in `shared` each intent's rows
+        # alternate between the two, as their labels do.
+        gazetteer =
+          cond do
+            distinct? and intent == "weather.query" -> [:ordinary, :ordinary]
+            distinct? -> [:entity, :entity]
+            rem(div(i, 2), 2) == 0 -> [:ordinary, :ordinary]
+            true -> [:entity, :entity]
+          end
+
+        example({:row, i}, intent, [{label, if(label == "address", do: "ADP", else: "DET")}], ["NOUN", "VERB"], gazetteer)
       end
     end
 
     test "chooses each smoothing value as the best cross-validated one of its grid, in order" do
       {model, report} = SlotTypePreferences.select(examples() ++ weather_rows(true), @opts)
 
-      for key <- [:global, :domain, :intent, :hierarchy, :tag_global, :tag_type] do
+      assert SlotTypePreferences.smoothing_keys() ==
+               ~w(global domain intent hierarchy tag_global tag_type ordinary_global ordinary_domain ordinary_intent)a
+
+      for key <- SlotTypePreferences.smoothing_keys() do
         scores = Map.fetch!(report, key)
         best = scores |> Enum.map(&elem(&1, 1)) |> Enum.max()
         {first_best, _} = Enum.find(scores, fn {_value, score} -> score == best end)
@@ -268,6 +450,7 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
       assert model.smoothing == report.chosen
       assert model.cross_validation == report
       assert report.observations.slots == 8 + 4 + 60
+      assert report.observations.gazetteer_spans == 12 + 8 + 120
     end
 
     test "intents that differ keep their own counts; intents that agree lean on their domain" do
@@ -275,6 +458,22 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
       {shared, _} = SlotTypePreferences.select(weather_rows(false), @opts)
 
       assert distinct.smoothing.intent < shared.smoothing.intent
+      assert distinct.smoothing.ordinary_intent < shared.smoothing.ordinary_intent
+    end
+
+    test "the ordinary-word rate it chooses follows each intent's data" do
+      {model, _} = SlotTypePreferences.select(weather_rows(true), @opts)
+
+      assert SlotTypePreferences.ordinary_rate(model, {:intent, "weather.query"}) > 0.9
+      assert SlotTypePreferences.ordinary_rate(model, {:intent, "weather.outfit"}) < 0.1
+    end
+
+    test "rows joined to an intent with no gazetteer span cannot choose the ordinary-word smoothing" do
+      rows = Enum.map(weather_rows(true), &%{&1 | gazetteer: []})
+
+      assert_raise ArgumentError, ~r/no example joined to an intent has a gazetteer span/, fn ->
+        SlotTypePreferences.select(rows, @opts)
+      end
     end
 
     test "the smoothing is not the caller's to pass" do
@@ -284,26 +483,40 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
     end
   end
 
-  describe "example!/3" do
-    test "records each span's gold label with the tag before it, and the tag before every other token" do
-      row = %{
-        "text" => "turn on the kitchen lights",
-        "expected" => [%{"type" => "room", "value" => "kitchen"}, %{"type" => "device", "value" => "lights"}]
-      }
+  describe "example!/4" do
+    @row %{
+      "text" => "turn on the kitchen lights",
+      "expected" => [%{"type" => "room", "value" => "kitchen"}, %{"type" => "device", "value" => "lights"}]
+    }
 
-      tagger = fn ["turn", "on", "the", "kitchen", "lights"] -> ["VERB", "ADP", "DET", "NOUN", "NOUN"] end
+    defp tagger, do: fn ["turn", "on", "the", "kitchen", "lights"] -> ["VERB", "ADP", "DET", "NOUN", "NOUN"] end
 
-      assert SlotTypePreferences.example!(row, "smarthome.device.switch.on", tagger) == %{
+    test "records each span's gold label with the tag before it, the tag before every other token, and each gazetteer span's outcome" do
+      # The gazetteer reads "turn on" (no gold span overlaps it), "kitchen"
+      # (a gold span) and "the kitchen" (overlapping one).
+      gazetteer = fn ["turn", "on", "the", "kitchen", "lights"] -> [{0, 1}, {3, 3}, {2, 3}] end
+
+      assert SlotTypePreferences.example!(@row, "smarthome.device.switch.on", tagger(), gazetteer) == %{
                key: "turn on the kitchen lights",
                intent: "smarthome.device.switch.on",
                spans: [%{type: "room", preceding_tag: "DET"}, %{type: "device", preceding_tag: "NOUN"}],
-               ordinary: [:sentence_start, "VERB", "ADP"]
+               ordinary: [:sentence_start, "VERB", "ADP"],
+               gazetteer: [:ordinary, :entity, :entity]
              }
+    end
+
+    test "a gazetteer span outside the row's tokens raises" do
+      assert_raise ArgumentError, ~r/not a \{first, last\} range of its 5 tokens/, fn ->
+        SlotTypePreferences.example!(@row, nil, tagger(), fn _ -> [{4, 5}] end)
+      end
     end
 
     test "a tagger that does not tag every token raises" do
       row = %{"text" => "play jazz", "expected" => [%{"type" => "genre", "value" => "jazz"}]}
-      assert_raise RuntimeError, ~r/1 tags for 2 tokens/, fn -> SlotTypePreferences.example!(row, nil, fn _ -> ["VERB"] end) end
+
+      assert_raise RuntimeError, ~r/1 tags for 2 tokens/, fn ->
+        SlotTypePreferences.example!(row, nil, fn _ -> ["VERB"] end, fn _ -> [] end)
+      end
     end
   end
 
