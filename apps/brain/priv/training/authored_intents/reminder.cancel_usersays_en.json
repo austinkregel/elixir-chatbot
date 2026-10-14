@@ -2,7 +2,13 @@
   {
     "data": [
       {
-        "text": "Can you cancel the reminder about the team lunch"
+        "text": "Can you cancel the reminder about "
+      },
+      {
+        "text": "the team lunch",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   },
@@ -16,7 +22,16 @@
   {
     "data": [
       {
-        "text": "Cancel the medication reminder"
+        "text": "Cancel the "
+      },
+      {
+        "text": "medication",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
+      },
+      {
+        "text": " reminder"
       }
     ]
   },
@@ -44,28 +59,52 @@
   {
     "data": [
       {
-        "text": "Delete the reminder to call mom"
+        "text": "Delete the reminder to "
+      },
+      {
+        "text": "call mom",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   },
   {
     "data": [
       {
-        "text": "Drop the reminder to buy milk"
+        "text": "Drop the reminder to "
+      },
+      {
+        "text": "buy milk",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   },
   {
     "data": [
       {
-        "text": "Forget the reminder about paying rent"
+        "text": "Forget the reminder about "
+      },
+      {
+        "text": "paying rent",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   },
   {
     "data": [
       {
-        "text": "Get rid of the reminder to pick up the dry cleaning"
+        "text": "Get rid of the reminder to "
+      },
+      {
+        "text": "pick up the dry cleaning",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   },
@@ -79,7 +118,13 @@
   {
     "data": [
       {
-        "text": "Never mind the reminder to email Sarah"
+        "text": "Never mind the reminder to "
+      },
+      {
+        "text": "email Sarah",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   },
@@ -93,14 +138,26 @@
   {
     "data": [
       {
-        "text": "Remove the reminder about the dentist"
+        "text": "Remove the reminder about "
+      },
+      {
+        "text": "the dentist",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   },
   {
     "data": [
       {
-        "text": "Stop reminding me to water the plants"
+        "text": "Stop reminding me to "
+      },
+      {
+        "text": "water the plants",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   }
