@@ -74,4 +74,34 @@ defmodule Brain.Response.RealizationPacketTest do
       refute_receive {:used, _}, 50
     end
   end
+
+  describe "build/3 with the turn's entities" do
+    defp content(analysis, unified_context) do
+      [_system, %{role: "user", content: content}] = RealizationPacket.build([], analysis, unified_context: unified_context)
+      content
+    end
+
+    test "names each entity by its :entity_type" do
+      analysis = %ChunkAnalysis{text: "dim the lamp", entities: [%{entity_type: "device", value: "lamp", confidence: 0.9}]}
+
+      assert content(analysis, %{}) =~ "Entities: lamp (device, confidence 0.9)."
+
+      chunks = [
+        %ChunkAnalysis{chunk_index: 0, text: "hi", entities: []},
+        %ChunkAnalysis{analysis | chunk_index: 1}
+      ]
+
+      assert content(analysis, %{all_analyses: chunks}) =~ "entities: lamp (device)"
+    end
+
+    test "an entity without :entity_type raises" do
+      untyped = %{entity: "device", value: "lamp", confidence: 0.9}
+      analysis = %ChunkAnalysis{text: "dim the lamp", entities: [untyped]}
+
+      assert_raise ArgumentError, ~r/entity has no :entity_type/, fn -> content(analysis, %{}) end
+
+      chunks = [%ChunkAnalysis{chunk_index: 0, text: "hi", entities: []}, %ChunkAnalysis{analysis | chunk_index: 1}]
+      assert_raise ArgumentError, ~r/entity has no :entity_type/, fn -> content(analysis, %{all_analyses: chunks}) end
+    end
+  end
 end
