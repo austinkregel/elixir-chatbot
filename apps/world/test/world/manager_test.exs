@@ -102,6 +102,9 @@ defmodule World.ManagerTest do
     end
   end
 
+  # The turn the scheduler is asked in.
+  @turn_time ~U[2026-10-12 09:00:00Z]
+
   # A world with something in each of the places a world keeps data in Atlas
   # through the running processes: an episode in the memory store, a belief, a
   # scheduler item, and a node in its knowledge graph. Its scheduling driver
@@ -109,7 +112,7 @@ defmodule World.ManagerTest do
   defp populate!(world_id) do
     {:ok, _id} = MemoryStore.add_episode("the weather in paris is sunny", "weather", "", [], world_id: world_id)
     {:ok, _id} = BeliefStore.add_belief(world_id, :user, :likes, "tea")
-    {:ok, _} = LocalScheduler.enrich("timer.set", %{duration: "5 minutes"}, %{}, world_id)
+    {:ok, _} = LocalScheduler.enrich("timer.set", %{duration: "5 minutes", turn_time: @turn_time}, %{}, world_id)
     {:ok, _} = Atlas.Graph.add_node(Atlas.Graph.world_graph("knowledge_graph", world_id), "Thing", %{name: "tea"})
     :ok = Brain.AtlasIntegration.drain()
   end
@@ -143,7 +146,7 @@ defmodule World.ManagerTest do
 
       # Nothing the running processes held of it is left either.
       assert {:ok, []} = BeliefStore.query_beliefs(world.id)
-      assert {:ok, %{timer_status: "none"}} = LocalScheduler.enrich("timer.check", %{}, %{}, world.id)
+      assert {:ok, %{timer_status: "none"}} = LocalScheduler.enrich("timer.check", %{turn_time: @turn_time}, %{}, world.id)
       assert {:ok, []} = MemoryStore.all_episodes(world_id: world.id)
 
       assert Enum.all?(Atlas.Graph.world_graphs(other.id), &Atlas.Graph.graph_exists?/1)
@@ -151,7 +154,7 @@ defmodule World.ManagerTest do
       assert atlas_rows(other.id)[Atlas.Schemas.Episode] == 1
       assert atlas_rows(other.id)[Atlas.Schemas.Belief] == 1
       assert {:ok, [_belief]} = BeliefStore.query_beliefs(other.id)
-      assert {:ok, %{timer_status: "running"}} = LocalScheduler.enrich("timer.check", %{}, %{}, other.id)
+      assert {:ok, %{timer_status: "running"}} = LocalScheduler.enrich("timer.check", %{turn_time: @turn_time}, %{}, other.id)
       assert atlas_rows(other.id)[Atlas.Schemas.WorldServiceDriver] == 1
     end
 
