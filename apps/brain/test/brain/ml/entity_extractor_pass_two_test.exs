@@ -26,13 +26,12 @@ defmodule Brain.ML.EntityExtractorPassTwoTest do
 
       retyped = [
         entity("number", 10, 10, %{confidence: 0.1}),
-        entity("room", 0, 4, %{value: "other", confidence: 0.2, entity: "room", disambiguation_source: :type_inferrer, disambiguation_confidence: 0.7})
+        entity("room", 0, 4, %{value: "other", confidence: 0.2, disambiguation_source: :type_inferrer, disambiguation_confidence: 0.7})
       ]
 
       [room, number] = EntityExtractor.put_types(pass1, retyped)
 
       assert room.entity_type == "room"
-      assert room.entity == "room"
       assert room.disambiguation_source == :type_inferrer
       assert room.disambiguation_confidence == 0.7
       # A type field the second disambiguation does not give is removed.
@@ -54,6 +53,53 @@ defmodule Brain.ML.EntityExtractorPassTwoTest do
       assert_raise ArgumentError, ~r/0 retyped entities at 0\.\.4/, fn ->
         EntityExtractor.put_types([entity("location", 0, 4)], [entity("location", 0, 5)])
       end
+    end
+  end
+
+  describe "refine_entity_types/2" do
+    # smarthome.device.hue.down's slot schema maps two slots, change_value and
+    # final_value, to numbers.
+    @two_numeric_slots "smarthome.device.hue.down"
+
+    test "numbers fill several numeric slots in text order; a referent anaphora resolution supplied keeps its type" do
+      assert numeric_slots(@two_numeric_slots) == ["change_value", "final_value"]
+      referent = %{entity_type: "number", value: "40", confidence: 0.42, source: :anaphora_resolution}
+
+      refined =
+        EntityExtractor.refine_entity_types([entity("number", 12, 13), referent, entity("number", 3, 4)], @two_numeric_slots)
+
+      assert Enum.map(refined, &{&1.entity_type, Map.get(&1, :start_pos)}) == [
+               {"change_value", 3},
+               {"final_value", 12},
+               {"number", nil}
+             ]
+
+      assert List.last(refined) == referent
+    end
+
+    test "a referent fills the numeric slot of a schema that has one" do
+      assert numeric_slots("smarthome.device.brightness.set") == ["final_value"]
+
+      referent = %{entity_type: "number", value: "40", confidence: 0.42, source: :anaphora_resolution}
+
+      assert [%{referent | entity_type: "final_value"}] ==
+               EntityExtractor.refine_entity_types([referent], "smarthome.device.brightness.set")
+    end
+
+    test "any other number without a position raises" do
+      positionless = %{entity_type: "number", value: "40", confidence: 0.9, source: :gazetteer}
+
+      assert_raise KeyError, ~r/:start_pos/, fn ->
+        EntityExtractor.refine_entity_types([entity("number", 3, 4), positionless], @two_numeric_slots)
+      end
+    end
+
+    defp numeric_slots(intent) do
+      intent
+      |> Brain.Analysis.SlotDetector.get_schema()
+      |> Map.fetch!("entity_mappings")
+      |> Enum.filter(fn {_slot, types} -> Enum.any?(types, &(&1 in ["sys.number", "number"])) end)
+      |> Enum.map(&elem(&1, 0))
     end
   end
 
