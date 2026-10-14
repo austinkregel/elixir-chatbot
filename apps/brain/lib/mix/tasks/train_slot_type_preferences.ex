@@ -152,14 +152,27 @@ defmodule Mix.Tasks.TrainSlotTypePreferences do
   end
 
   @doc false
-  def start! do
-    for app <- [:logger, :jason, :telemetry, :nx, :exla] do
+  def start!, do: start!([:logger, :jason, :telemetry, :nx, :exla], @children)
+
+  @doc false
+  # Starts `apps` and supervises `children`, and nothing else: a training task
+  # starts only what it reads rather than the brain application, whose boot
+  # loads the artifacts training tasks write. Raises naming the children when
+  # they do not start.
+  def start!(apps, children) when is_list(apps) and is_list(children) do
+    for app <- apps do
       {:ok, _} = Application.ensure_all_started(app)
     end
 
-    case Supervisor.start_link(@children, strategy: :one_for_one) do
-      {:ok, _pid} -> :ok
-      other -> Mix.raise("train_slot_type_preferences: could not start what tagging reads: #{inspect(other)}")
+    case children do
+      [] ->
+        :ok
+
+      _ ->
+        case Supervisor.start_link(children, strategy: :one_for_one) do
+          {:ok, _pid} -> :ok
+          other -> Mix.raise("could not start #{inspect(children)} for training: #{inspect(other)}")
+        end
     end
   end
 
