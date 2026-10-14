@@ -1,7 +1,8 @@
 defmodule Brain.Services.SchedulingDomainFieldsTest do
   use ExUnit.Case, async: false
 
-  alias Brain.Services.{Dispatcher, SchedulingDriver}
+  alias Brain.Services.{Dispatcher, LocalScheduler, SchedulingDriver}
+  alias Brain.Test.ManualClock
 
   # The alarm, timer, reminder and calendar domain files
   # (`priv/knowledge/domains/<domain>.json`) declare the enrichment fields
@@ -12,8 +13,9 @@ defmodule Brain.Services.SchedulingDomainFieldsTest do
   #
   # Every operation is dispatched in a fresh `test_` world that has chosen the
   # driver, in an order that has each act on something: checks with nothing
-  # stored, the operations that store an item, checks of what was stored, a
-  # snooze, and the cancels that remove it.
+  # stored, the operations that store an item, checks of what was stored, the
+  # items coming due (`:due`, below) and checked again, a snooze of the alarm
+  # ringing, and the cancels that remove them.
   @sequence [
     "alarm.check",
     "reminder.check",
@@ -27,12 +29,20 @@ defmodule Brain.Services.SchedulingDomainFieldsTest do
     "reminder.check",
     "timer.check",
     "calendar.query",
+    :due,
+    "alarm.check",
+    "reminder.check",
     "alarm.snooze",
     "alarm.cancel",
     "reminder.cancel",
     "timer.cancel",
     "calendar.cancel"
   ]
+
+  # When the items set with `@slots` have all come due: 7 am on the Tuesday
+  # after the turn. At `:due` the scheduler's clock (`Brain.Test.ManualClock`)
+  # is moved there and the scheduler woken, so they fire.
+  @all_due ~U[2026-10-13 07:00:00Z]
 
   # One value for every slot an operation reads, so each cancel identifies
   # exactly the item stored before it.
@@ -44,12 +54,14 @@ defmodule Brain.Services.SchedulingDomainFieldsTest do
     event: "team standup"
   }
 
-  # The turn every operation is dispatched in.
+  # The turn every operation is dispatched in, read in UTC.
   @turn_time ~U[2026-10-12 09:00:00Z]
 
   setup tags do
     owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
     on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+    ManualClock.reset!()
+    on_exit(&ManualClock.reset!/0)
     :ok
   end
 
@@ -69,33 +81,39 @@ defmodule Brain.Services.SchedulingDomainFieldsTest do
     on_exit(fn -> driver.clear_world(world) end)
 
     assert :ok = Dispatcher.assign_scheduling_driver(world, driver)
+    web_user = Atlas.WebUsers.create!(world)
+    turn = %{world_id: world, turn_time: @turn_time, time_zone: Brain.Temporal.Zone.utc(), web_user_id: web_user.id}
 
-    Enum.map(@sequence, fn intent ->
-      {intent, Dispatcher.dispatch(intent, @slots, %{world_id: world, turn_time: @turn_time})}
+    Enum.flat_map(@sequence, fn
+      :due ->
+        come_due!()
+        []
+
+      intent ->
+        [{intent, Dispatcher.dispatch(intent, @slots, turn)}]
     end)
   end
 
+  # The local scheduler is the only driver; its items fire when its clock
+  # reaches them and it wakes.
+  defp come_due! do
+    ManualClock.set!(@all_due)
+    :ok = LocalScheduler.wake()
+  end
+
   test "the sequence dispatches every scheduling operation" do
-    assert @sequence |> Enum.uniq() |> Enum.sort() == SchedulingDriver.intents()
+    assert @sequence |> Enum.reject(&(&1 == :due)) |> Enum.uniq() |> Enum.sort() == SchedulingDriver.intents()
   end
 
   for driver <- Dispatcher.scheduling_drivers() do
     describe "with #{inspect(driver)} as the world's driver" do
       @driver driver
 
-      test "each operation returns its fields, and only a snooze finds nothing to act on" do
+      test "each operation returns its fields" do
         for {intent, result} <- dispatched_results(@driver) do
-          case {intent, result} do
-            {_intent, {:ok, fields}} when is_map(fields) ->
-              :ok
-
-            # Alarms are stored and never rung, so there is no ringing alarm
-            # to snooze (`Brain.Services.LocalScheduler`).
-            {"alarm.snooze", {:error, :no_ringing_alarm}} ->
-              :ok
-
-            other ->
-              flunk("#{intent} returned #{inspect(other)}")
+          case result do
+            {:ok, fields} when is_map(fields) -> :ok
+            other -> flunk("#{intent} returned #{inspect(other)}")
           end
         end
       end
