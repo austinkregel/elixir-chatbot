@@ -1,5 +1,5 @@
 defmodule Brain.ML.EntityExtractor do
-  @moduledoc "Entity extraction using gazetteer lookups and classical NLP techniques.\n\nThis module extracts entities from user input text using:\n- Gazetteer lookups for known entities (cities, artists, devices, etc.)\n- the world's BIO entity model (`Brain.ML.EntityModel`), run on the same tokens\n- Token-based pattern matching for system entities (dates, numbers)\n- the names of the world's analyzed code (`Brain.Code.EntityReadings`)\n\nAvoids regex in favor of tokenizer-based approaches.\n\nKnown entities come from `Brain.ML.Gazetteer`, which loads its sources before\nthe application finishes starting. There is no second copy of the gazetteer\nhere.\n\nEvery source's spans are kept as readings (`readings/2`). Overlapping readings\nform one span, decided by `Brain.ML.SpanReliability` from how reliable each\nsource has been for each type on the NER gold standard's training split. A\ndecided span (`resolved: true`) is an entity; a span the data cannot decide\n(`resolved: false`) is no entity of any type, and travels apart from the\nentities (`extract/2`'s `:unresolved_spans`), carrying its readings, its\ncandidates and why it was left undecided. Nothing that consumes entities is\ngiven one.\n"
+  @moduledoc "Entity extraction using gazetteer lookups and classical NLP techniques.\n\nThis module extracts entities from user input text using:\n- Gazetteer lookups for known entities (cities, artists, devices, etc.)\n- the world's BIO entity model (`Brain.ML.EntityModel`), run on the same tokens\n- Token-based pattern matching for system entities (dates, numbers)\n- the lengths `Brain.Temporal.Resolver` reads (\"5 minutes\"), as durations\n- the names of the world's analyzed code (`Brain.Code.EntityReadings`)\n\nAvoids regex in favor of tokenizer-based approaches.\n\nKnown entities come from `Brain.ML.Gazetteer`, which loads its sources before\nthe application finishes starting. There is no second copy of the gazetteer\nhere.\n\nEvery source's spans are kept as readings (`readings/2`). Overlapping readings\nform one span, decided by `Brain.ML.SpanReliability` from how reliable each\nsource has been for each type on the NER gold standard's training split. A\ndecided span (`resolved: true`) is an entity; a span the data cannot decide\n(`resolved: false`) is no entity of any type, and travels apart from the\nentities (`extract/2`'s `:unresolved_spans`), carrying its readings, its\ncandidates and why it was left undecided. Nothing that consumes entities is\ngiven one.\n"
 
   alias Brain.Analysis
   alias Brain.ML
@@ -308,8 +308,9 @@ defmodule Brain.ML.EntityExtractor do
 
   @doc """
   Every source's reading of `text`, before any span is decided: the gazetteer,
-  the system parsers (numbers, dates), the location and proper-noun hints, the
-  world's entity model, and the names of the world's analyzed code
+  the system parsers (numbers, dates), the lengths `Brain.Temporal.Resolver`
+  reads, the location and proper-noun hints, the world's entity model, and the
+  names of the world's analyzed code
   (`Brain.Code.EntityReadings`). Each is an entity map with its `:source`, its
   `:entity_type`, its extent and, from a source that has one, the source's own
   `:confidence`, as `Brain.ML.SpanReliability` takes them.
@@ -329,6 +330,7 @@ defmodule Brain.ML.EntityExtractor do
 
     extract_gazetteer_entities(tokens, tags, text, gaz_context, language!(opts)) ++
       extract_system_entities(tokens, text) ++
+      length_readings(text) ++
       extract_location_hints(tokens, tags) ++
       extract_proper_noun_hints(tokens, tags) ++
       extract_model_entities(text, tokens, entity_model!(opts, world_id)) ++
@@ -918,6 +920,47 @@ defmodule Brain.ML.EntityExtractor do
           []
       end
     end)
+  end
+
+  @doc """
+  The readings of the lengths said in `text`, one source among those
+  `readings/2` gathers: every length `Brain.Temporal.Resolver.lengths/2` reads
+  ("5 minutes" in "set a timer for 5 minutes"; nothing in "in 2 hours", a
+  point in time, nor in "10", a number alone), read as the type
+  `priv/analysis/entity_types.json`'s config names `duration_type`, from the
+  source `:temporal_resolver`. Its `:value` is the words said and its
+  `:canonical_value` the length said in the temporal vocabulary's units
+  (`Brain.Temporal.Resolver.say_length/2`), which the resolver reads back as
+  the same length. Raises when the config names no `duration_type`.
+  """
+  @spec length_readings(String.t()) :: [map()]
+  def length_readings(text) when is_binary(text) do
+    type = duration_type!()
+    vocabulary = Brain.Temporal.Vocabulary.loaded!()
+
+    for %{start_pos: start_pos, end_pos: end_pos, said: said, length: length} <-
+          Brain.Temporal.Resolver.lengths(text, vocabulary: vocabulary) do
+      %{
+        entity_type: type,
+        value: said,
+        match: said,
+        canonical_value: Brain.Temporal.Resolver.say_length(length, vocabulary),
+        start_pos: start_pos,
+        end_pos: end_pos,
+        source: :temporal_resolver
+      }
+    end
+  end
+
+  defp duration_type! do
+    case TypeHierarchy.config("duration_type") do
+      type when is_binary(type) and type != "" ->
+        type
+
+      other ->
+        raise "EntityExtractor: priv/analysis/entity_types.json's config names no duration_type, the type a length " <>
+                "is read as; got #{inspect(other)}"
+    end
   end
 
   # A temporal entry's canonical value: what the gazetteer maps the synonym
