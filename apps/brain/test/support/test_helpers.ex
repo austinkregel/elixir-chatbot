@@ -37,6 +37,26 @@ defmodule Brain.TestHelpers do
     {:error, :max_retries_exceeded}
   end
 
+  @doc """
+  Starts what tagging with `Brain.ML.POSTagger` needs when the application is
+  not running: EXLA, and `Brain.ML.Lexicon` and
+  `Brain.ML.POSTagger.LexicalFeatures` under the test's supervisor, each only
+  when it is not already running. Call it from `setup_all`.
+  """
+  def start_pos_tagger! do
+    {:ok, _} = Application.ensure_all_started(:exla)
+
+    for {name, child} <- [
+          {Brain.ML.Lexicon, Brain.ML.Lexicon},
+          {Brain.ML.POSTagger.LexicalFeatures, {Brain.ML.POSTagger.LexicalFeatures, []}}
+        ],
+        Process.whereis(name) == nil do
+      start_supervised!(child)
+    end
+
+    :ok
+  end
+
   @doc "Repeatedly calls `get_fn` and checks the result with `check_fn` until it returns true\nor max_attempts is reached. Returns the value from get_fn when check succeeds.\n\n## Example\n\n    eventually(\n      fn -> render(view) end,\n      fn html -> String.contains?(html, \"expected\") end,\n      100\n    )\n"
   def eventually(get_fn, check_fn, max_attempts \\ 50, delay_ms \\ 10)
 
