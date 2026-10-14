@@ -167,7 +167,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :ambiguous_names
     test "Austin is also a city in Texas", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Austin")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, I'm Austin")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "weather")
@@ -176,7 +176,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :ambiguous_names
     test "Dallas is also a city in Texas", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, my name is Dallas")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, my name is Dallas")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "weather")
@@ -184,7 +184,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :ambiguous_names
     test "Paris is also a city in France", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Paris")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, I'm Paris")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "weather")
@@ -192,91 +192,91 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :ambiguous_names
     test "Jordan is also a country", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hey there, I'm Jordan")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hey there, I'm Jordan")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Brooklyn is also part of NYC", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, I'm Brooklyn")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, I'm Brooklyn")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Georgia is also a state and country", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, my name is Georgia")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, my name is Georgia")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Madison is also a city in Wisconsin", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi there, I'm Madison")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi there, I'm Madison")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Sydney is also a city in Australia", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Sydney")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, I'm Sydney")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Charlotte is also a city in North Carolina", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, my name is Charlotte")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, my name is Charlotte")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Savannah is also a city in Georgia", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Savannah")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, I'm Savannah")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Dakota is also a state reference", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hey, I'm Dakota")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hey, I'm Dakota")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Orlando is also a city in Florida", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, I'm Orlando")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, I'm Orlando")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Florence is also a city in Italy", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, my name is Florence")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, my name is Florence")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Victoria is also a city and state", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, I'm Victoria")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, I'm Victoria")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Lincoln is also a city in Nebraska", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Lincoln")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, I'm Lincoln")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :ambiguous_names
     test "Jackson is also a city in Mississippi", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi there, I'm Jackson")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi there, I'm Jackson")
 
       refute_response_intent(response, "weather")
     end
@@ -291,7 +291,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :ambiguous_names
     test "Delilah is also a song (Hey There Delilah)", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Delilah")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, I'm Delilah")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "music")
@@ -299,7 +299,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :ambiguous_names
     test "Jolene is also a famous song", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, my name is Jolene")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, my name is Jolene")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "music")
@@ -307,7 +307,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :ambiguous_names
     test "Iris is also a song by Goo Goo Dolls", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Iris")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, I'm Iris")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "music")
@@ -315,7 +315,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :ambiguous_names
     test "Roxanne is also a song by The Police", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, I'm Roxanne")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, I'm Roxanne")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "music")
@@ -331,14 +331,14 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :ambiguous_names
     test "Alexa is also Amazon's assistant", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Alexa")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, I'm Alexa")
 
       refute_response_intent(response, "smarthome")
     end
 
     @tag :ambiguous_names
     test "Mercedes is also a car brand", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, my name is Mercedes")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, my name is Mercedes")
 
       refute_response_intent(response, "weather")
       refute_response_intent(response, "smarthome")
@@ -346,7 +346,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :ambiguous_names
     test "Luna is also a cryptocurrency and brand", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Luna")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, I'm Luna")
 
       refute_response_intent(response, "weather")
       refute_response_intent(response, "smarthome")
@@ -362,7 +362,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :informal
     test "yo as greeting", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Yo")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Yo")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "smalltalk.greetings.bye")
@@ -370,7 +370,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :informal
     test "sup as greeting", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Sup")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Sup")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "smalltalk.greetings.bye")
@@ -378,7 +378,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :informal
     test "wassup as greeting", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Wassup")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Wassup")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "smalltalk.greetings.bye")
@@ -386,7 +386,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :informal
     test "hiya as greeting", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hiya!")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hiya!")
       assert String.length(response) > 0
 
       refute_response_intent(response, "smalltalk.greetings.bye")
@@ -394,48 +394,48 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :informal
     test "ello as greeting (dropped h)", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "'Ello there")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"'Ello there")
 
       refute_response_intent(response, "smalltalk.greetings.bye")
     end
 
     @tag :informal
     test "extended vowels - heyyy", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Heyyy")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Heyyy")
 
       refute_response_intent(response, "smalltalk.greetings.bye")
     end
 
     @tag :informal
     test "extended vowels - hiii", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hiii")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hiii")
 
       refute_response_intent(response, "smalltalk.greetings.bye")
     end
 
     @tag :informal
     test "cultural greeting - g'day", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "G'day mate")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"G'day mate")
 
       refute_response_intent(response, "smalltalk.greetings.bye")
     end
 
     @tag :informal
     test "cultural greeting - aloha", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Aloha")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Aloha")
       assert String.length(response) > 0
     end
 
     @tag :informal
     test "formal greeting - salutations", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Salutations!")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Salutations!")
 
       refute_response_intent(response, "smalltalk.greetings.bye")
     end
 
     @tag :informal
     test "what's up as greeting", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "What's up!")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"What's up!")
 
       refute_response_intent(response, "smalltalk.greetings.bye")
     end
@@ -450,7 +450,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :formatting
     test "all lowercase with no punctuation", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "hello im austin")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"hello im austin")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -458,7 +458,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :formatting
     test "all uppercase", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "HELLO I AM AUSTIN")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"HELLO I AM AUSTIN")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -466,7 +466,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :formatting
     test "excessive punctuation", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello!!!! I'm Austin!!!!")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello!!!! I'm Austin!!!!")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -474,7 +474,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :formatting
     test "mixed case in name", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, I'm AuStIn")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, I'm AuStIn")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -482,7 +482,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :formatting
     test "lowercase i in I'm", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, i'm austin")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, i'm austin")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -490,7 +490,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :formatting
     test "extra spaces", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello,    I'm    Austin")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello,    I'm    Austin")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "music")
@@ -507,20 +507,20 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :typos
     test "helo (missing l)", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Helo, I'm Austin")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Helo, I'm Austin")
       assert String.length(response) > 0
     end
 
     @tag :typos
     test "hlelo (transposed letters)", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hlelo, I'm Austin")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hlelo, I'm Austin")
 
       assert String.length(response) > 0
     end
 
     @tag :typos
     test "im vs I'm", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, im Austin")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, im Austin")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "music")
@@ -529,7 +529,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :typos
     test "goodmorning (no space)", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Goodmorning!")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Goodmorning!")
 
       refute_response_intent(response, "smalltalk.greetings.bye")
     end
@@ -544,7 +544,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :introductions
     test "with title - Dr.", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Dr. Smith")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, I'm Dr. Smith")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -552,7 +552,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :introductions
     test "with title - Professor", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, I'm Professor Johnson")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, I'm Professor Johnson")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -560,7 +560,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :introductions
     test "nickname pattern - call me", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, you can call me Bobby")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, you can call me Bobby")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -568,7 +568,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :introductions
     test "my friends call me pattern", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, my friends call me Ace")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, my friends call me Ace")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -576,7 +576,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :introductions
     test "full name introduction", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, I'm John Smith")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, I'm John Smith")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -584,7 +584,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :introductions
     test "name with apostrophe - O'Brien", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm O'Brien")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello, I'm O'Brien")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -592,7 +592,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :introductions
     test "hyphenated name", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hi, I'm Mary-Jane")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hi, I'm Mary-Jane")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -600,7 +600,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :introductions
     test "name is pattern", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "My name is Alex")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"My name is Alex")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -608,7 +608,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :introductions
     test "the name's pattern (James Bond style)", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "The name's Bond, James Bond")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"The name's Bond, James Bond")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "music")
@@ -617,7 +617,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :introductions
     test "I go by pattern", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "I go by Max")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"I go by Max")
 
       refute_response_intent(response, "music")
       refute_response_intent(response, "weather")
@@ -633,14 +633,14 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :time_greeting
     test "good morning with city name (Austin)", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Good morning, I'm Austin")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Good morning, I'm Austin")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :time_greeting
     test "good afternoon with city name (Dallas)", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Good afternoon, I'm Dallas")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Good afternoon, I'm Dallas")
 
       assert_response_intent(response, "smalltalk.")
       refute_response_intent(response, "weather")
@@ -648,14 +648,14 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :time_greeting
     test "good evening with city name (Paris)", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Good evening, I'm Paris")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Good evening, I'm Paris")
 
       refute_response_intent(response, "weather")
     end
 
     @tag :time_greeting
     test "good night with city name (Sydney)", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Good night, I'm Sydney")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Good night, I'm Sydney")
 
       refute_response_intent(response, "weather")
     end
@@ -703,7 +703,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
              end),
              "Expected Owosso entity in weather chunk. Entities: #{inspect(weather_query.entities)}"
 
-      {:ok, %{response: response, context: context}} = Brain.evaluate(conv_id, input)
+      {:ok, %{response: response, context: context}} = evaluate_in_utc(conv_id,input)
 
       assert context.intent != nil, "Expected a final intent in context"
 
@@ -715,7 +715,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :multi_sentence
     test "multiple greetings", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello! Hi! Hey there!")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"Hello! Hi! Hey there!")
 
       refute_response_intent(response, "smalltalk.greetings.bye")
       assert String.length(response) > 0
@@ -723,7 +723,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
     @tag :multi_sentence
     test "introduction then command", %{conversation_id: conv_id} do
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, "I'm Dallas. Play some music.")
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,"I'm Dallas. Play some music.")
 
       assert String.length(response) > 0
     end
@@ -745,7 +745,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
           fn i -> "This is sentence number #{i}." end
         )
 
-      result = Brain.evaluate(conv_id, long_input)
+      result = evaluate_in_utc(conv_id,long_input)
 
       case result do
         {:ok, %{response: response}} ->
@@ -795,7 +795,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
       mixed_input =
         "Hello, I'm Austin. What's the weather? Play some music. Turn on the lights.\nGood morning! What time is it? Set a reminder. How are you today?\nGoodbye! Wait, actually, hello again. What can you do?\n"
 
-      {:ok, %{response: response}} = Brain.evaluate(conv_id, mixed_input)
+      {:ok, %{response: response}} = evaluate_in_utc(conv_id,mixed_input)
       assert is_binary(response)
       assert String.length(response) > 0
     end
@@ -819,7 +819,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
         )
 
       start_time = System.monotonic_time(:millisecond)
-      {:ok, %{response: _response}} = Brain.evaluate(conv_id, moderate_input)
+      {:ok, %{response: _response}} = evaluate_in_utc(conv_id,moderate_input)
       elapsed = System.monotonic_time(:millisecond) - start_time
       assert elapsed < 30_000, "Processing took too long: #{elapsed}ms"
     end
