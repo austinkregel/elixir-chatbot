@@ -43,10 +43,12 @@ defmodule Brain.Analysis.ContextResolver do
   Resolves missing slots from conversation history, user model, and user profile.
 
   Options:
-  - :conversation_history - list of previous messages with entities
+  - :conversation_history - the earlier turns in chronological order, each with
+    `:entities`, the list of its entities (`:entity_type`, `:value`,
+    `:confidence`)
   - :user_profile - map of user preferences
   - :user_id - user ID for querying the epistemic user model
-  - :history_depth - how many turns to look back (default: 5)
+  - :history_depth - how many of the most recent turns to look back (default: 5)
 
   Returns an updated SlotResult with resolved slots.
   """
@@ -117,9 +119,10 @@ defmodule Brain.Analysis.ContextResolver do
 
   # Private functions
 
+  # The history is chronological, the most recent turn last. The `depth` most
+  # recent turns are searched, the most recent first, which is 1 turn ago.
   defp resolve_from_history(slot_result, missing, history, depth) do
-    # Take only recent history
-    recent_history = Enum.take(history, depth)
+    recent_history = history |> Enum.take(-depth) |> Enum.reverse()
 
     # Try to find each missing slot in history
     Enum.reduce(missing, slot_result, fn slot_name, acc ->
@@ -140,26 +143,29 @@ defmodule Brain.Analysis.ContextResolver do
     end)
   end
 
+  # A turn's `:entities` is the list its analysis kept, each entity with its
+  # `:entity_type`, `:value` and `:confidence`.
   defp find_in_history(slot_name, history) do
-    # Look through history for matching entity
     history
     |> Enum.with_index(1)
-    |> Enum.find_value(fn {context, turns_ago} ->
-      entities = Map.get(context, :entities, %{})
+    |> Enum.find_value(fn
+      {%{entities: entities}, turns_ago} when is_list(entities) ->
+        case entity_value_of_type(entities, slot_name) || find_related_entity(slot_name, entities) do
+          nil -> nil
+          value -> {:ok, value, turns_ago}
+        end
 
-      # Check for exact slot name match
-      case Map.get(entities, slot_name) do
-        nil ->
-          # Try related entity types
-          case find_related_entity(slot_name, entities) do
-            nil -> nil
-            value -> {:ok, value, turns_ago}
-          end
-
-        value ->
-          {:ok, value, turns_ago}
-      end
+      {turn, _turns_ago} ->
+        raise ArgumentError, "ContextResolver: a history turn's :entities must be a list of entities, got: #{inspect(turn)}"
     end) || :not_found
+  end
+
+  # The value of the turn's most confident entity of `type`, or nil.
+  defp entity_value_of_type(entities, type) do
+    case Enum.filter(entities, &(&1.entity_type == type)) do
+      [] -> nil
+      of_type -> Enum.max_by(of_type, & &1.confidence).value
+    end
   end
 
   @external_resource Path.join(:code.priv_dir(:brain), "analysis/related_slot_mappings.json")
@@ -170,9 +176,7 @@ defmodule Brain.Analysis.ContextResolver do
   defp find_related_entity(slot_name, entities) do
     related_types = Map.get(@related_slot_mappings, slot_name, [])
 
-    Enum.find_value(related_types, fn type ->
-      Map.get(entities, type)
-    end)
+    Enum.find_value(related_types, &entity_value_of_type(entities, &1))
   end
 
   defp calculate_history_confidence(turns_ago, max_depth) do
