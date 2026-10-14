@@ -59,7 +59,7 @@ defmodule Brain.Services.HomeAssistant do
       "required" => [],
       "optional" => ["device", "location", "brightness", "color", "temperature", "volume", "duration", "time"],
       "entity_mappings" => %{
-        "device" => ["device", "appliance", "light", "switch"],
+        "device" => ["device", "light", "switch"],
         "location" => ["room", "location", "area"],
         "brightness" => ["percentage", "level", "number"],
         "color" => ["color"],
