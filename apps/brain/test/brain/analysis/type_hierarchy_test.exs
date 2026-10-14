@@ -183,24 +183,37 @@ defmodule Brain.Analysis.TypeHierarchyTest do
     end
   end
 
-  # Relations come only from priv/analysis/entity_types.json. These are types
-  # registry slots list that the file does not declare, each an English noun
-  # whose WordNet hypernyms reach a declared type's name ("duration" reaches
-  # "amount", "event" reaches "activity").
-  describe "a type entity_types.json does not declare" do
-    @undeclared ~w(duration event)
+  describe "all_types/0" do
+    test "is every type entity_types.json declares: each parent, a root with no kinds among them, and each kind" do
+      hierarchy =
+        Path.join(:code.priv_dir(:brain), "analysis/entity_types.json") |> File.read!() |> Jason.decode!() |> Map.fetch!("type_hierarchy")
 
-    test "is related to itself and to nothing else" do
+      declared = (Map.keys(hierarchy) ++ List.flatten(Map.values(hierarchy))) |> Enum.uniq() |> Enum.sort()
+
+      assert Enum.any?(hierarchy, fn {_root, kinds} -> kinds == [] end), "entity_types.json declares no root without kinds"
+      assert TypeHierarchy.all_types() == declared
+    end
+  end
+
+  # Relations come only from priv/analysis/entity_types.json. These are types
+  # registry slots list that the file declares as roots with no kinds, each an
+  # English noun whose WordNet hypernyms reach another declared type's name
+  # ("duration" reaches "amount", "event" reaches "activity"): the file, not
+  # WordNet, relates them, and it relates them to nothing.
+  describe "a root entity_types.json declares with no kinds" do
+    @childless_roots ~w(duration event)
+
+    test "is declared, and related to itself and to nothing else" do
       declared = TypeHierarchy.all_types()
       assert declared != []
 
-      for type <- @undeclared do
-        refute type in declared, "#{type} is declared in entity_types.json"
+      for type <- @childless_roots do
+        assert type in declared, "#{type} is not declared in entity_types.json"
         assert TypeHierarchy.compatible?(type, type)
         assert TypeHierarchy.parents_of(type) == []
         assert TypeHierarchy.specializations(type) == []
 
-        for other <- declared do
+        for other <- declared, other != type do
           refute TypeHierarchy.is_a?(type, other), "#{type} is_a? #{other}"
           refute TypeHierarchy.is_a?(other, type), "#{other} is_a? #{type}"
           refute TypeHierarchy.compatible?(type, other), "#{type} compatible? #{other}"
