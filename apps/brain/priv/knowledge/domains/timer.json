@@ -43,7 +43,7 @@
       ]
     },
     "cancelled_one_with_duration": {
-      "when": {"cancelled_count": 1},
+      "when": {"cancelled_count": 1, "timer_status": "cancelled"},
       "requires_enrichment": ["timer_durations"],
       "templates": [
         "Cancelled the timer set for $timer_durations.",
@@ -51,7 +51,7 @@
       ]
     },
     "cancelled_one": {
-      "when": {"cancelled_count": 1},
+      "when": {"cancelled_count": 1, "timer_status": "cancelled"},
       "requires_enrichment": [],
       "templates": [
         "Cancelled the timer.",
@@ -59,7 +59,7 @@
       ]
     },
     "cancelled_several_with_durations": {
-      "when": {"cancelled_count": {"min": 2}},
+      "when": {"cancelled_count": {"min": 2}, "timer_status": "cancelled"},
       "requires_enrichment": ["cancelled_count", "timer_durations"],
       "templates": [
         "Cancelled $cancelled_count timers, set for $timer_durations.",
@@ -67,7 +67,7 @@
       ]
     },
     "cancelled_several": {
-      "when": {"cancelled_count": {"min": 2}},
+      "when": {"cancelled_count": {"min": 2}, "timer_status": "cancelled"},
       "requires_enrichment": ["cancelled_count"],
       "templates": [
         "Cancelled $cancelled_count timers.",
