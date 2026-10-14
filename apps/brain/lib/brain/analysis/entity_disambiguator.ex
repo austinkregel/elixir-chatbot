@@ -264,7 +264,14 @@ defmodule Brain.Analysis.EntityDisambiguator do
                   "the world types are inferred in; got #{inspect(other)}"
       end
 
-    expected = slot_preferences(context)
+    # The types the context's slots list, with their learned weights; none
+    # when there is no context.
+    expected =
+      case slot_preferences(context) do
+        nil -> %{}
+        %EntityTypeScorer.Expected{} = preferences -> EntityTypeScorer.Expected.weights(preferences)
+      end
+
     ranked = expected |> Enum.sort_by(fn {type, weight} -> {-weight, type} end) |> Enum.map(&elem(&1, 0))
 
     {context_tokens, context_tags} =
