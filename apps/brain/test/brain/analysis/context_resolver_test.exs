@@ -16,7 +16,7 @@ defmodule Brain.Analysis.ContextResolverTest do
 
       history = [
         %{
-          entities: %{"location" => "New York"},
+          entities: [%{entity_type: "location", value: "New York", confidence: 0.9}],
           intent: "weather.query",
           timestamp: System.system_time(:millisecond)
         }
@@ -26,6 +26,61 @@ defmodule Brain.Analysis.ContextResolverTest do
 
       assert SlotResult.get_slot_value(resolved, "location") == "New York"
       assert resolved.all_required_filled == true
+    end
+
+    test "the history is chronological: the most recent turn fills the slot" do
+      slot_result = %SlotResult{
+        schema_name: "weather.query",
+        filled_slots: %{},
+        missing_required: ["location"],
+        missing_optional: [],
+        all_required_filled: false
+      }
+
+      history = [
+        %{entities: [%{entity_type: "location", value: "Boston", confidence: 0.9}], intent: "weather.query", timestamp: 1},
+        %{entities: [], intent: "other", timestamp: 2},
+        %{entities: [%{entity_type: "location", value: "Denver", confidence: 0.6}], intent: "weather.query", timestamp: 3}
+      ]
+
+      resolved = ContextResolver.resolve(slot_result, conversation_history: history)
+
+      assert SlotResult.get_slot_value(resolved, "location") == "Denver"
+      # One turn ago: the history confidence has not decayed.
+      assert resolved.filled_slots["location"].confidence == 0.9
+    end
+
+    test "of a turn's entities of the slot's type, the most confident fills it" do
+      slot_result = %SlotResult{
+        schema_name: "weather.query",
+        filled_slots: %{},
+        missing_required: ["location"],
+        missing_optional: [],
+        all_required_filled: false
+      }
+
+      entities = [
+        %{entity_type: "location", value: "Paris", confidence: 0.4},
+        %{entity_type: "location", value: "Lyon", confidence: 0.8}
+      ]
+
+      resolved = ContextResolver.resolve(slot_result, conversation_history: [%{entities: entities, intent: "weather.query"}])
+
+      assert SlotResult.get_slot_value(resolved, "location") == "Lyon"
+    end
+
+    test "a turn whose entities are not a list raises" do
+      slot_result = %SlotResult{
+        schema_name: "weather.query",
+        filled_slots: %{},
+        missing_required: ["location"],
+        missing_optional: [],
+        all_required_filled: false
+      }
+
+      assert_raise ArgumentError, ~r/:entities must be a list of entities/, fn ->
+        ContextResolver.resolve(slot_result, conversation_history: [%{entities: %{"location" => "Boston"}}])
+      end
     end
 
     test "fills slot from user profile" do
@@ -58,7 +113,7 @@ defmodule Brain.Analysis.ContextResolverTest do
 
       history = [
         %{
-          entities: %{"location" => "Boston"},
+          entities: [%{entity_type: "location", value: "Boston", confidence: 0.9}],
           intent: "weather.query",
           timestamp: System.system_time(:millisecond)
         }
@@ -85,14 +140,15 @@ defmodule Brain.Analysis.ContextResolverTest do
         all_required_filled: false
       }
 
-      # Create history with location only in the 6th entry (beyond default depth of 5)
+      # The history is chronological: the location is only in the oldest of six
+      # turns, 6 turns ago, beyond a depth of 5.
       history =
         1..6
         |> Enum.map(fn i ->
-          if i == 6 do
-            %{entities: %{"location" => "Old Location"}, intent: "other", timestamp: 0}
+          if i == 1 do
+            %{entities: [%{entity_type: "location", value: "Old Location", confidence: 0.9}], intent: "other", timestamp: i}
           else
-            %{entities: %{}, intent: "other", timestamp: i}
+            %{entities: [], intent: "other", timestamp: i}
           end
         end)
 
