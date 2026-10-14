@@ -24,6 +24,9 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
   Every stage runs with side effects off: conversations are created with
   `side_effects: false`, and the refinement stages pass the same option, so a
   run writes nothing to the stores, the graph or disk.
+
+  A benchmark has no browser to give its time zone, so the end-to-end stages'
+  dates and times are read in UTC.
   """
 
   use Mix.Task
@@ -396,7 +399,7 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
         {elapsed, result} =
           timed(fn ->
             try do
-              Brain.evaluate(conv, test_input, timeout: :infinity)
+              Brain.evaluate(conv, test_input, timeout: :infinity, time_zone: Brain.Temporal.Zone.utc())
             rescue
               e -> {:error, Exception.message(e)}
             catch
@@ -433,7 +436,7 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
         {elapsed, result} =
           timed(fn ->
             try do
-              Brain.evaluate(conv, input_a, timeout: :infinity)
+              Brain.evaluate(conv, input_a, timeout: :infinity, time_zone: Brain.Temporal.Zone.utc())
             rescue
               e -> {:error, Exception.message(e)}
             catch
@@ -452,7 +455,7 @@ defmodule Mix.Tasks.BenchmarkOuroPipeline do
         {elapsed, result} =
           timed(fn ->
             try do
-              Brain.evaluate(conv, input_b, timeout: :infinity)
+              Brain.evaluate(conv, input_b, timeout: :infinity, time_zone: Brain.Temporal.Zone.utc())
             rescue
               e -> {:error, Exception.message(e)}
             catch
