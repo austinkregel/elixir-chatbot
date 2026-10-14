@@ -91,6 +91,54 @@
         "There are $alarm_count alarms set."
       ]
     },
+    "ringing_one_with_time": {
+      "when": {"alarm_status": "ringing", "alarm_count": 1},
+      "requires_enrichment": ["ringing_times"],
+      "templates": [
+        "Your $ringing_times alarm is ringing.",
+        "The $ringing_times alarm is ringing now."
+      ]
+    },
+    "ringing_one": {
+      "when": {"alarm_status": "ringing", "alarm_count": 1},
+      "requires_enrichment": [],
+      "templates": [
+        "Your alarm is ringing.",
+        "Your alarm is ringing now."
+      ]
+    },
+    "ringing_several_with_times": {
+      "when": {"alarm_status": "ringing", "alarm_count": {"min": 2}},
+      "requires_enrichment": ["alarm_count", "ringing_times"],
+      "templates": [
+        "You have $alarm_count alarms set, and ringing now: $ringing_times.",
+        "Of your $alarm_count alarms, ringing now: $ringing_times."
+      ]
+    },
+    "ringing_several": {
+      "when": {"alarm_status": "ringing", "alarm_count": {"min": 2}},
+      "requires_enrichment": ["alarm_count"],
+      "templates": [
+        "You have $alarm_count alarms set, and at least one is ringing.",
+        "Of your $alarm_count alarms, at least one is ringing now."
+      ]
+    },
+    "snoozed_with_time": {
+      "when": {"alarm_status": "snoozed"},
+      "requires_enrichment": ["alarm_times", "snooze_duration"],
+      "templates": [
+        "Snoozed your $alarm_times alarm for $snooze_duration.",
+        "Your $alarm_times alarm is snoozed for $snooze_duration."
+      ]
+    },
+    "snoozed": {
+      "when": {"alarm_status": "snoozed"},
+      "requires_enrichment": ["snooze_duration"],
+      "templates": [
+        "Alarm snoozed for $snooze_duration.",
+        "Snoozed for $snooze_duration."
+      ]
+    },
     "cancelled_one_with_time": {
       "when": {"cancelled_count": 1, "alarm_status": "cancelled", "alarm_count": null},
       "requires_enrichment": ["alarm_times"],
@@ -134,12 +182,14 @@
   },
   "enrichment_service": "scheduling",
   "enrichment_fields": {
-    "alarm_status": {"description": "\"set\" for an alarm set, or when a check finds alarms; \"none\" when a check finds none; \"cancelled\" after a cancel", "source": "scheduling"},
+    "alarm_status": {"description": "\"set\" for an alarm set, or when a check finds alarms none of which is ringing; \"ringing\" when a check finds alarms one of which is; \"none\" when a check finds none; \"snoozed\" after a snooze; \"cancelled\" after a cancel", "source": "scheduling"},
     "alarm_time": {"description": "The time an alarm was set for, as given; \"\" when none was given", "source": "scheduling"},
     "alarm_date": {"description": "The date an alarm was set for, as given; \"\" when none was given", "source": "scheduling"},
-    "alarm_times": {"description": "The time of each alarm a check found or a cancel removed, oldest first", "source": "scheduling"},
-    "alarm_dates": {"description": "The date of each alarm a check found or a cancel removed, oldest first; null for an alarm stored without one", "source": "scheduling"},
+    "alarm_times": {"description": "The time of each alarm a check found, a snooze snoozed or a cancel removed, oldest first", "source": "scheduling"},
+    "alarm_dates": {"description": "The date of each alarm a check found, a snooze snoozed or a cancel removed, oldest first; null for an alarm stored without one", "source": "scheduling"},
     "alarm_count": {"description": "How many alarms a check found", "source": "scheduling"},
+    "ringing_times": {"description": "The time of each alarm a check found that is ringing, oldest first; empty when none is", "source": "scheduling"},
+    "snooze_duration": {"description": "How long a snooze snoozed the ringing alarms for, as given", "source": "scheduling"},
     "cancelled_count": {"description": "How many alarms a cancel removed", "source": "scheduling"}
   }
 }
