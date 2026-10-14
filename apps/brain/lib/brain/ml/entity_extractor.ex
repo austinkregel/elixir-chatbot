@@ -606,14 +606,23 @@ defmodule Brain.ML.EntityExtractor do
     end
   end
 
+  @doc """
+  The key a token is looked up in the gazetteer by: its text lowercased, with
+  every character but letters, digits, spaces and hyphens removed, and trimmed.
+  `Brain.ML.Gazetteer.lookup_spans/2` takes one key per token.
+  """
+  @spec gazetteer_key(String.t()) :: String.t()
+  def gazetteer_key(token_text) when is_binary(token_text) do
+    token_text
+    |> String.downcase()
+    |> String.graphemes()
+    |> Enum.filter(&word_or_space_or_hyphen?/1)
+    |> Enum.join()
+    |> String.trim()
+  end
+
   defp extract_gazetteer_entities(tokens, tags, text, gaz_context, language) do
-    token_texts =
-      Enum.map(tokens, fn t ->
-        t.text
-        |> String.downcase()
-        |> strip_non_word_chars()
-        |> String.trim()
-      end)
+    token_texts = Enum.map(tokens, &gazetteer_key(&1.text))
 
     scoring = [language: language]
     expected_types = EntityTypeScorer.expected_types(gaz_context[:intent], scoring)
@@ -1182,13 +1191,6 @@ defmodule Brain.ML.EntityExtractor do
     end)
 
     Enum.empty?(between) or Enum.all?(between, &(&1.type == :punctuation))
-  end
-
-  defp strip_non_word_chars(text) do
-    text
-    |> String.graphemes()
-    |> Enum.filter(&word_or_space_or_hyphen?/1)
-    |> Enum.join()
   end
 
   defp word_or_space_or_hyphen?(grapheme) do
