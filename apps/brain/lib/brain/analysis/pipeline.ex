@@ -676,10 +676,18 @@ defmodule Brain.Analysis.Pipeline do
     })
 
     # A chunk no intent was determined for has no slot schema, so no slots.
+    # Free-text slots are captured from the text the entities' positions index.
     slot_result =
       case intent do
-        nil -> default_empty_slots()
-        intent -> SlotDetector.detect(intent, relevant_entities, side_effects: side_effects?(opts))
+        nil ->
+          default_empty_slots()
+
+        intent ->
+          SlotDetector.detect(intent, relevant_entities,
+            side_effects: side_effects?(opts),
+            text: entity_text(pass1),
+            language: Map.fetch!(pass1, :language)
+          )
       end
 
     if debug_pass2?, do: Logger.info("  pass2:slot_detect=#{System.monotonic_time(:millisecond) - t0}ms")
