@@ -16,7 +16,13 @@
   {
     "data": [
       {
-        "text": "Did I set a reminder to call the bank"
+        "text": "Did I set a reminder to "
+      },
+      {
+        "text": "call the bank",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   },
@@ -30,14 +36,26 @@
   {
     "data": [
       {
-        "text": "Have I got a reminder about Jake's birthday"
+        "text": "Have I got a reminder about "
+      },
+      {
+        "text": "Jake's birthday",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   },
   {
     "data": [
       {
-        "text": "Is there a reminder for the meeting"
+        "text": "Is there a reminder for "
+      },
+      {
+        "text": "the meeting",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   },
@@ -93,7 +111,13 @@
   {
     "data": [
       {
-        "text": "When is my reminder to take medicine"
+        "text": "When is my reminder to "
+      },
+      {
+        "text": "take medicine",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
       }
     ]
   },
