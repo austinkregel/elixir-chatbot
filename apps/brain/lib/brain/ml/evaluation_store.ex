@@ -2,8 +2,11 @@ defmodule Brain.ML.EvaluationStore do
   @moduledoc """
   Stores and retrieves ML evaluation results.
 
-  Primary storage: Atlas `atlas_evaluation_results` table.
-  Write-through: JSON files in `priv/evaluation/results/` for offline access.
+  Atlas (`atlas_evaluation_results`) is the one record of them: every
+  result is read from there. Each result is also written as a JSON file in
+  `priv/evaluation/results/`, a copy for reading by hand; nothing here reads
+  those files back, except `import_result_files!/1`, which imports the files
+  saved before Atlas held every result.
 
   ## Usage
 
@@ -14,21 +17,22 @@ defmodule Brain.ML.EvaluationStore do
       EvaluationStore.trend("intent", :accuracy)
   """
 
+  import Ecto.Query
   require Logger
 
+  alias Atlas.Schemas.EvaluationResult
+
   @doc """
-  Save an evaluation result to Atlas (primary) and disk (write-through).
+  Saves an evaluation result to Atlas, writes its JSON copy, and emits the
+  evaluation's completion (`Brain.Telemetry.emit_evaluation_complete/2`).
+  Raises when Atlas refuses the result or cannot be reached.
   """
   def save(result) when is_map(result) do
     task = Map.get(result, :task, "unknown")
 
-    # Primary: write to Atlas
-    save_to_atlas(result)
-
-    # Write-through: file-based for offline access
+    save_to_atlas!(result)
     file_result = save_to_file(result)
 
-    # Emit telemetry
     Brain.Telemetry.emit_evaluation_complete(task, %{
       accuracy: Map.get(result, :accuracy, 0.0),
       macro_f1: Map.get(result, :macro_f1, 0.0),
@@ -41,33 +45,124 @@ defmodule Brain.ML.EvaluationStore do
   end
 
   @doc """
-  Get the most recent evaluation for a task.
-
-  Queries Atlas first, falls back to file-based storage.
+  The most recent evaluation of a task, read from Atlas; `nil` when Atlas
+  holds none. Raises when Atlas cannot be read.
   """
   def latest(task) do
-    case latest_from_atlas(task) do
-      nil ->
-        case list_runs_from_files(task) do
-          [] -> nil
-          runs -> List.first(runs)
-        end
-
-      result ->
-        result
+    EvaluationResult
+    |> where([r], r.task == ^task)
+    |> order_by([r], desc: r.inserted_at)
+    |> limit(1)
+    |> Atlas.Repo.one()
+    |> case do
+      nil -> nil
+      row -> atlas_row_to_result(row)
     end
   end
 
   @doc """
-  List all evaluation runs for a task, newest first.
-
-  Queries Atlas first, falls back to file-based storage.
+  Every evaluation of a task, newest first, read from Atlas. Raises when
+  Atlas cannot be read.
   """
   def list_runs(task) do
-    case list_runs_from_atlas(task) do
-      [] -> list_runs_from_files(task)
-      runs -> runs
+    EvaluationResult
+    |> where([r], r.task == ^task)
+    |> order_by([r], desc: r.inserted_at)
+    |> Atlas.Repo.all()
+    |> Enum.map(&atlas_row_to_result/1)
+  end
+
+  @doc """
+  Imports into Atlas the evaluation results saved as JSON files in `dir`
+  (default: `priv/evaluation/results/`) that Atlas does not hold, each
+  inserted at the time its file records, so the history reads in the order
+  the evaluations ran.
+
+  A file is held already when Atlas holds a result of the same task with the
+  same accuracy, F1 scores, example count, per-class scores and confusion
+  matrix; a file is imported for each such file beyond the results Atlas
+  holds, so running it again imports nothing. Every file is read before
+  anything is written, and all are written in one transaction: a file that
+  cannot be read, decoded or inserted raises, and nothing is imported.
+
+  Returns `%{files: count, imported: count, held: count}`.
+  """
+  @spec import_result_files!(Path.t()) :: %{files: non_neg_integer(), imported: non_neg_integer(), held: non_neg_integer()}
+  def import_result_files!(dir \\ results_path()) do
+    unless File.dir?(dir) do
+      raise "Brain.ML.EvaluationStore: no evaluation results directory at #{dir}"
     end
+
+    files =
+      dir
+      |> File.ls!()
+      |> Enum.filter(&String.ends_with?(&1, ".json"))
+      |> Enum.sort()
+      |> Enum.map(&read_result_file!(Path.join(dir, &1)))
+
+    {:ok, imported} =
+      Atlas.Repo.transaction(fn ->
+        held =
+          files
+          |> Enum.map(& &1.task)
+          |> Enum.uniq()
+          |> Enum.flat_map(fn task -> EvaluationResult |> where([r], r.task == ^task) |> Atlas.Repo.all() end)
+          |> Enum.frequencies_by(&result_key/1)
+
+        {to_import, _held} =
+          Enum.reduce(files, {[], held}, fn file, {to_import, held} ->
+            key = result_key(file)
+
+            case Map.get(held, key, 0) do
+              0 -> {[file | to_import], held}
+              n -> {to_import, Map.put(held, key, n - 1)}
+            end
+          end)
+
+        Enum.each(Enum.reverse(to_import), fn file ->
+          %EvaluationResult{}
+          |> EvaluationResult.changeset(Map.delete(file, :inserted_at))
+          |> Ecto.Changeset.put_change(:inserted_at, file.inserted_at)
+          |> Ecto.Changeset.put_change(:updated_at, file.inserted_at)
+          |> Atlas.Repo.insert!()
+        end)
+
+        length(to_import)
+      end)
+
+    %{files: length(files), imported: imported, held: length(files) - imported}
+  end
+
+  defp read_result_file!(path) do
+    data = path |> File.read!() |> Jason.decode!()
+
+    for key <- ~w(task timestamp accuracy macro_f1 total_examples), not Map.has_key?(data, key) do
+      raise "#{path} holds no #{key}"
+    end
+
+    timestamp =
+      case DateTime.from_iso8601(data["timestamp"]) do
+        {:ok, timestamp, 0} -> timestamp
+        other -> raise "#{path}: its timestamp #{inspect(data["timestamp"])} is not an ISO 8601 UTC time (#{inspect(other)})"
+      end
+
+    %{
+      task: data["task"],
+      accuracy: data["accuracy"],
+      macro_f1: data["macro_f1"],
+      weighted_f1: data["weighted_f1"],
+      total_examples: data["total_examples"],
+      duration_ms: data["duration_ms"],
+      per_class: data["per_class"] || %{},
+      confusion_matrix: data["confusion_matrix"] || %{},
+      inserted_at: timestamp
+    }
+  end
+
+  # What makes two results the same evaluation run's.
+  defp result_key(result) do
+    {result.task, result.accuracy * 1.0, result.macro_f1 * 1.0, result.weighted_f1 && result.weighted_f1 * 1.0,
+     result.total_examples, result.per_class || %{}, result.confusion_matrix || %{}}
   end
 
   @doc """
@@ -209,67 +304,21 @@ defmodule Brain.ML.EvaluationStore do
   # Atlas Storage
   # ============================================================================
 
-  defp save_to_atlas(result) do
-    Brain.AtlasIntegration.async(fn ->
-      attrs = %{
-        task: Map.get(result, :task, "unknown"),
-        accuracy: Map.get(result, :accuracy, 0.0),
-        macro_f1: Map.get(result, :macro_f1, 0.0),
-        weighted_f1: Map.get(result, :weighted_f1, 0.0),
-        total_examples: Map.get(result, :total_examples, 0),
-        duration_ms: Map.get(result, :duration_ms),
-        per_class: Map.get(result, :per_class, %{}),
-        confusion_matrix: Map.get(result, :confusion_matrix, %{})
-      }
+  defp save_to_atlas!(result) do
+    attrs = %{
+      task: Map.get(result, :task, "unknown"),
+      accuracy: Map.get(result, :accuracy, 0.0),
+      macro_f1: Map.get(result, :macro_f1, 0.0),
+      weighted_f1: Map.get(result, :weighted_f1, 0.0),
+      total_examples: Map.get(result, :total_examples, 0),
+      duration_ms: Map.get(result, :duration_ms),
+      per_class: Map.get(result, :per_class, %{}),
+      confusion_matrix: Map.get(result, :confusion_matrix, %{})
+    }
 
-      %Atlas.Schemas.EvaluationResult{}
-      |> Atlas.Schemas.EvaluationResult.changeset(attrs)
-      |> Atlas.Repo.insert()
-    end)
-  rescue
-    _ -> :ok
-  end
-
-  defp latest_from_atlas(task) do
-    import Ecto.Query
-
-    case Brain.AtlasIntegration.sync(fn ->
-           Atlas.Schemas.EvaluationResult
-           |> where([r], r.task == ^task)
-           |> order_by([r], desc: r.inserted_at)
-           |> limit(1)
-           |> Atlas.Repo.one()
-         end) do
-      {:ok, nil} ->
-        nil
-
-      {:ok, row} ->
-        atlas_row_to_result(row)
-
-      {:error, _} ->
-        nil
-    end
-  rescue
-    _ -> nil
-  end
-
-  defp list_runs_from_atlas(task) do
-    import Ecto.Query
-
-    case Brain.AtlasIntegration.sync(fn ->
-           Atlas.Schemas.EvaluationResult
-           |> where([r], r.task == ^task)
-           |> order_by([r], desc: r.inserted_at)
-           |> Atlas.Repo.all()
-         end) do
-      {:ok, rows} ->
-        Enum.map(rows, &atlas_row_to_result/1)
-
-      {:error, _} ->
-        []
-    end
-  rescue
-    _ -> []
+    %EvaluationResult{}
+    |> EvaluationResult.changeset(attrs)
+    |> Atlas.Repo.insert!()
   end
 
   defp atlas_row_to_result(row) do
@@ -287,7 +336,7 @@ defmodule Brain.ML.EvaluationStore do
   end
 
   # ============================================================================
-  # File-based Storage (write-through)
+  # The JSON copy
   # ============================================================================
 
   defp save_to_file(result) do
@@ -308,35 +357,6 @@ defmodule Brain.ML.EvaluationStore do
     e ->
       Logger.warning("EvaluationStore: failed to save to file: #{inspect(e)}")
       {:error, e}
-  end
-
-  defp list_runs_from_files(task) do
-    dir = results_path()
-
-    if File.dir?(dir) do
-      dir
-      |> File.ls!()
-      |> Enum.filter(&String.starts_with?(&1, "#{task}_"))
-      |> Enum.filter(&String.ends_with?(&1, ".json"))
-      |> Enum.sort(:desc)
-      |> Enum.map(fn filename ->
-        path = Path.join(dir, filename)
-
-        case File.read(path) do
-          {:ok, content} ->
-            case Jason.decode(content) do
-              {:ok, data} -> data
-              _ -> nil
-            end
-
-          _ ->
-            nil
-        end
-      end)
-      |> Enum.reject(&is_nil/1)
-    else
-      []
-    end
   end
 
   defp results_path do
