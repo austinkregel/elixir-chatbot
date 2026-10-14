@@ -224,8 +224,7 @@ defmodule Brain.Response.RealizationPacket do
       entities
       |> Enum.map(fn e ->
         value = Map.get(e, :value) || Map.get(e, "value") || "?"
-        type = Map.get(e, :entity_type) || Map.get(e, "entity_type") || ""
-        if type == "", do: value, else: "#{value} (#{type})"
+        "#{value} (#{entity_type!(e)})"
       end)
       |> Enum.reject(&(&1 == "" or &1 == "?"))
 
@@ -259,15 +258,22 @@ defmodule Brain.Response.RealizationPacket do
         parts =
           Enum.map(entities, fn e ->
             value = Map.get(e, :value) || Map.get(e, "value") || "?"
-            type = Map.get(e, :entity_type) || Map.get(e, :entity) || Map.get(e, "entity_type") || ""
             conf = Map.get(e, :confidence) || Map.get(e, "confidence")
 
             conf_str = if is_number(conf), do: ", confidence #{Float.round(conf * 1.0, 2)}", else: ""
-            "#{value} (#{type}#{conf_str})"
+            "#{value} (#{entity_type!(e)}#{conf_str})"
           end)
 
         ["Entities: #{Enum.join(parts, "; ")}."]
     end
+  end
+
+  # An entity's type is its `:entity_type`; an entity without one raises.
+  defp entity_type!(%{entity_type: type}) when (is_binary(type) and type != "") or (is_atom(type) and not is_nil(type)),
+    do: type
+
+  defp entity_type!(entity) do
+    raise ArgumentError, "RealizationPacket: entity has no :entity_type: #{inspect(entity)}"
   end
 
   defp render_speech_act(analysis) do
