@@ -10,13 +10,41 @@ defmodule Brain.Services.LocalScheduler do
   `enrich/4`, raises `ArgumentError` without a world; none is assumed.
 
   Every operation also needs the moment of the turn it was asked in, as the
-  `:turn_time` slot (a `DateTime`; `Brain.Services.Dispatcher` puts it there
-  from the turn), and raises without one: what "tomorrow" or "5 pm" names
-  depends on when it is said.
+  `:turn_time` slot (a `DateTime`), and the zone of the person who asked, as
+  the `:time_zone` slot (a `Brain.Temporal.Zone`); `Brain.Services.Dispatcher`
+  puts both there from the turn, and an operation raises without either: what
+  "tomorrow" or "5 pm" names depends on when and where it is said. Setting an
+  alarm, timer or reminder or scheduling a calendar item also needs the web
+  user who asks, as the `:web_user_id` slot, and raises without one: the item
+  is theirs, and they are told when it fires.
 
-  Items are stored, never rung: no alarm, timer, reminder or calendar item
-  fires when it is due, so there is never a ringing alarm to snooze, and
-  `snooze_alarm/3` says so.
+  ## Firing
+
+  An item fires at its due time: a timer when it runs out, an alarm,
+  reminder or calendar item at the time of day it was set for, on the day it
+  was set for. An item whose time names no time of day ("tomorrow", "later")
+  or that has nothing resolved names no instant to fire at, and never fires
+  (`"no_due_time"`).
+
+  This module's process wakes at the soonest due time Atlas holds, read from
+  Atlas whenever it starts and after every change, fires every item due by
+  then, and sets its next wake-up (`Brain.Services.SchedulerClock`, the clock
+  `config :brain, :scheduler_clock` names). Firing records in Atlas that the
+  item fired and when (`"fired"`); an item that came due while the process was
+  not running fires as soon as it starts, and is recorded as fired late
+  (`"fired_late"`). A fired alarm is ringing (`"ringing"`) until it is snoozed
+  or cancelled, and a fired timer has finished (`"finished"`).
+
+  Each firing is told to the item's owner: `{:scheduler_fired, notification}`
+  is broadcast on their topic (`Atlas.WebUsers.topic/1`) on `Brain.PubSub`,
+  and on no other (`notification/1`). An item stored before owners were has
+  no owner, and never fires (`"owner_not_recorded"`).
+
+  `snooze_alarm/3` snoozes the world's ringing alarms for the length its
+  `:duration` slot names, from the turn: each stops ringing and is due again
+  then. With no alarm ringing it is `{:error, :no_ringing_alarm}`, and with
+  no length said, `{:error, :missing_duration}`, for the response layer to
+  ask how long.
 
   ## What is stored
 
@@ -60,6 +88,9 @@ defmodule Brain.Services.LocalScheduler do
   - a `:duration`: an item matches when the timer runs as long as the
     duration names.
 
+  Days are read in the zone of the turn the slot is said in, for the item as
+  for what is said.
+
   An item with nothing resolved, or stored before resolutions were, matches no
   date, time or duration. A slot holding anything but a string raises, and so
   does one that cannot be resolved.
@@ -67,7 +98,10 @@ defmodule Brain.Services.LocalScheduler do
   ## Checking
 
   `check_alarms/3` and `check_reminders/3` report the alarms or reminders the
-  world has, in the order they were set, with how many there are.
+  world has, in the order they were set, with how many there are. A check of
+  alarms also reports the times of those ringing (`:ringing_times`), and its
+  `:alarm_status` is `"ringing"` when one is; a check of reminders reports the
+  texts of those that have fired (`:fired_reminder_texts`).
   `query_calendar/3` reports the soonest calendar item still to come
   (`:next_event`): of the items found, those whose time has not passed at the
   turn, ordered by when they start, the first set first among those starting
@@ -128,8 +162,9 @@ defmodule Brain.Services.LocalScheduler do
 
   Items are stored in Atlas (`Atlas.Scheduler`), so they survive a restart.
   This module is also the supervised process that owns the ETS table the items
-  are read from: it loads every stored item when it starts, and every set or
-  cancel goes through it, writing Atlas first and the table after. A cancel
+  are read from: it loads every stored item when it starts, and every set,
+  cancel, snooze and firing goes through it, writing Atlas first and the
+  table after. A cancel
   finds the items it removes inside that same call, so no other write can come
   between matching and removing. Reads go straight to the table.
   """
@@ -140,8 +175,8 @@ defmodule Brain.Services.LocalScheduler do
   use GenServer
   require Logger
 
-  alias Brain.Services.SchedulingDriver
-  alias Brain.Temporal.{Resolution, Resolver, Vocabulary}
+  alias Brain.Services.{SchedulerClock, SchedulingDriver}
+  alias Brain.Temporal.{Resolution, Resolver, Vocabulary, Zone}
 
   @table :local_scheduler_items
 
@@ -170,9 +205,19 @@ defmodule Brain.Services.LocalScheduler do
   @field_matches %{text: :text, event: :text, date: :date, time: :time, duration: :duration}
 
   # What an item keeps beside its fields, which no reply or error names.
-  @internal_keys [:created, :resolution]
+  @internal_keys [:id, :created, :resolution, :web_user_id, :due_at, :fire_state, :fired_at]
 
-  @doc "Starts the scheduler, which loads every stored item into its table."
+  # What a fired item's status becomes: an alarm rings, a timer has finished.
+  @fired_status %{alarm: "ringing", timer: "finished"}
+
+  @fired_states ["fired", "fired_late"]
+
+  @doc """
+  Starts the scheduler, which loads every stored item into its table, fires
+  those that came due while it was not running, and wakes when the next is
+  due. `opts` may name the `:clock` (a `Brain.Services.SchedulerClock`);
+  without it the clock is `config :brain, :scheduler_clock`.
+  """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -196,17 +241,18 @@ defmodule Brain.Services.LocalScheduler do
 
   @impl true
   def provides_fields do
-    [:alarm_status, :alarm_time, :alarm_date, :alarm_times, :alarm_dates, :alarm_count, :reminder_set,
-     :reminder_text, :reminder_time, :reminder_date, :reminder_texts, :reminder_times, :reminder_dates,
-     :reminder_count, :timer_status, :duration, :time_left, :timer_durations, :last_set_event, :next_event,
-     :event_time, :event_date, :event_count, :upcoming_count, :cancelled_event, :cancelled_count]
+    [:alarm_status, :alarm_time, :alarm_date, :alarm_times, :alarm_dates, :alarm_count, :ringing_times,
+     :snooze_duration, :reminder_set, :reminder_text, :reminder_time, :reminder_date, :reminder_texts,
+     :reminder_times, :reminder_dates, :reminder_count, :fired_reminder_texts, :timer_status, :duration,
+     :time_left, :timer_durations, :last_set_event, :next_event, :event_time, :event_date, :event_count,
+     :upcoming_count, :cancelled_event, :cancelled_count]
   end
 
-  # Setting, creating, scheduling and cancelling store or remove items;
-  # checking and querying only read them, and a snooze finds no ringing alarm
-  # and changes nothing.
+  # Setting, creating, scheduling and cancelling store or remove items, and a
+  # snooze reschedules them; checking and querying only read them.
   @writing_operations [
     :set_alarm,
+    :snooze_alarm,
     :cancel_alarm,
     :set_timer,
     :cancel_timer,
@@ -248,25 +294,48 @@ defmodule Brain.Services.LocalScheduler do
   @impl SchedulingDriver
   def set_alarm(slots, _credentials, world_id) do
     world_id = world!(world_id, :set_alarm)
-    turn = turn_time!(slots, :set_alarm)
+    turn = turn!(slots, :set_alarm)
+    owner = owner!(slots, :set_alarm)
     time = Map.get(slots, :time) || Map.get(slots, "time", "")
     date = Map.get(slots, :date) || Map.get(slots, "date", "")
-    add_item(world_id, :alarm, %{time: time, date: date, status: "set"}, moment!([date, time], turn, :alarm))
+    add_item(world_id, :alarm, %{time: time, date: date, status: "set"}, moment!([date, time], turn, :alarm), owner)
     {:ok, %{alarm_status: "set", alarm_time: time, alarm_date: date}}
   end
 
-  # Alarms are stored and never rung, so no alarm is ever ringing to snooze.
+  # The world's ringing alarms, each due again once the length the
+  # `:duration` slot names has passed from the turn (see "Firing" above).
   @impl SchedulingDriver
   def snooze_alarm(slots, _credentials, world_id) do
-    _world_id = world!(world_id, :snooze_alarm)
-    _turn = turn_time!(slots, :snooze_alarm)
-    {:error, :no_ringing_alarm}
+    world_id = world!(world_id, :snooze_alarm)
+    turn = turn!(slots, :snooze_alarm)
+    duration = Map.get(slots, :duration) || Map.get(slots, "duration", "")
+
+    running!()
+
+    with [_ | _] <- ringing(world_id),
+         %Resolution{ends_at: until} <- length!(duration, turn),
+         {:ok, alarms} <- GenServer.call(running!(), {:snooze, world_id, until}) do
+      {:ok,
+       %{
+         alarm_status: "snoozed",
+         alarm_times: Enum.map(alarms, & &1.time),
+         alarm_dates: Enum.map(alarms, & &1.date),
+         snooze_duration: duration
+       }}
+    else
+      [] -> {:error, :no_ringing_alarm}
+      :nothing_said -> {:error, :missing_duration}
+      {:error, :no_ringing_alarm} = error -> error
+    end
   end
+
+  # The world's ringing alarms, each with its stored id.
+  defp ringing(world_id), do: world_id |> entries(:alarm) |> Enum.filter(fn {_id, data} -> data.status == "ringing" end)
 
   @impl SchedulingDriver
   def cancel_alarm(slots, _credentials, world_id) do
     world_id = world!(world_id, :cancel_alarm)
-    turn = turn_time!(slots, :cancel_alarm)
+    turn = turn!(slots, :cancel_alarm)
 
     with {:ok, cancelled} <- cancel_matching(world_id, :alarm, slots, turn, :all) do
       {:ok,
@@ -282,33 +351,51 @@ defmodule Brain.Services.LocalScheduler do
   @impl SchedulingDriver
   def check_alarms(slots, _credentials, world_id) do
     world_id = world!(world_id, :check_alarms)
-    turn = turn_time!(slots, :check_alarms)
+    turn = turn!(slots, :check_alarms)
     alarms = world_id |> list_items(:alarm) |> Enum.reverse() |> on_day(:alarm, slots, turn)
+    ringing = Enum.filter(alarms, &(&1.status == "ringing"))
+
+    status =
+      cond do
+        alarms == [] -> "none"
+        ringing != [] -> "ringing"
+        true -> "set"
+      end
 
     {:ok,
      %{
-       alarm_status: if(alarms == [], do: "none", else: "set"),
+       alarm_status: status,
        alarm_times: Enum.map(alarms, & &1.time),
        alarm_dates: Enum.map(alarms, & &1.date),
-       alarm_count: length(alarms)
+       alarm_count: length(alarms),
+       ringing_times: Enum.map(ringing, & &1.time)
      }}
   end
 
   @impl SchedulingDriver
   def create_reminder(slots, _credentials, world_id) do
     world_id = world!(world_id, :create_reminder)
-    turn = turn_time!(slots, :create_reminder)
+    turn = turn!(slots, :create_reminder)
+    owner = owner!(slots, :create_reminder)
     text = Map.get(slots, :reminder_text) || Map.get(slots, "reminder_text", "")
     time = Map.get(slots, :time) || Map.get(slots, "time", "")
     date = Map.get(slots, :date) || Map.get(slots, "date", "")
-    add_item(world_id, :reminder, %{text: text, time: time, date: date, status: "set"}, moment!([date, time], turn, :reminder))
+
+    add_item(
+      world_id,
+      :reminder,
+      %{text: text, time: time, date: date, status: "set"},
+      moment!([date, time], turn, :reminder),
+      owner
+    )
+
     {:ok, %{reminder_set: true, reminder_text: text, reminder_time: time, reminder_date: date}}
   end
 
   @impl SchedulingDriver
   def cancel_reminder(slots, _credentials, world_id) do
     world_id = world!(world_id, :cancel_reminder)
-    turn = turn_time!(slots, :cancel_reminder)
+    turn = turn!(slots, :cancel_reminder)
 
     with {:ok, cancelled} <- cancel_matching(world_id, :reminder, slots, turn, :all) do
       {:ok,
@@ -325,7 +412,7 @@ defmodule Brain.Services.LocalScheduler do
   @impl SchedulingDriver
   def check_reminders(slots, _credentials, world_id) do
     world_id = world!(world_id, :check_reminders)
-    turn = turn_time!(slots, :check_reminders)
+    turn = turn!(slots, :check_reminders)
     reminders = world_id |> list_items(:reminder) |> Enum.reverse() |> on_day(:reminder, slots, turn)
 
     {:ok,
@@ -334,16 +421,18 @@ defmodule Brain.Services.LocalScheduler do
        reminder_texts: Enum.map(reminders, & &1.text),
        reminder_times: Enum.map(reminders, & &1.time),
        reminder_dates: Enum.map(reminders, & &1.date),
-       reminder_count: length(reminders)
+       reminder_count: length(reminders),
+       fired_reminder_texts: for(%{fire_state: state, text: text} <- reminders, state in @fired_states, do: text)
      }}
   end
 
   @impl SchedulingDriver
   def set_timer(slots, _credentials, world_id) do
     world_id = world!(world_id, :set_timer)
-    turn = turn_time!(slots, :set_timer)
+    turn = turn!(slots, :set_timer)
+    owner = owner!(slots, :set_timer)
     duration = Map.get(slots, :duration) || Map.get(slots, "duration", "")
-    add_item(world_id, :timer, %{duration: duration, status: "running"}, length!(duration, turn))
+    add_item(world_id, :timer, %{duration: duration, status: "running"}, length!(duration, turn), owner)
     {:ok, %{timer_status: "running", duration: duration}}
   end
 
@@ -351,14 +440,14 @@ defmodule Brain.Services.LocalScheduler do
   @impl SchedulingDriver
   def check_timer(slots, _credentials, world_id) do
     world_id = world!(world_id, :check_timer)
-    turn = turn_time!(slots, :check_timer)
+    turn = turn!(slots, :check_timer)
 
     case list_items(world_id, :timer) do
       [] ->
         {:ok, %{timer_status: "none", duration: "", time_left: []}}
 
       [%{resolution: %Resolution{ends_at: %DateTime{} = ends_at}} = latest | _] ->
-        case DateTime.diff(ends_at, turn, :microsecond) do
+        case DateTime.diff(ends_at, turn.time, :microsecond) do
           left when left > 0 ->
             seconds = div(left + 999_999, 1_000_000)
             {:ok, %{timer_status: latest.status, duration: latest.duration, time_left: Resolver.say_seconds(seconds, Vocabulary.loaded!())}}
@@ -376,7 +465,7 @@ defmodule Brain.Services.LocalScheduler do
   @impl SchedulingDriver
   def cancel_timer(slots, _credentials, world_id) do
     world_id = world!(world_id, :cancel_timer)
-    turn = turn_time!(slots, :cancel_timer)
+    turn = turn!(slots, :cancel_timer)
 
     with {:ok, cancelled} <- cancel_matching(world_id, :timer, slots, turn, :all) do
       {:ok,
@@ -391,11 +480,12 @@ defmodule Brain.Services.LocalScheduler do
   @impl SchedulingDriver
   def schedule_event(slots, _credentials, world_id) do
     world_id = world!(world_id, :schedule_event)
-    turn = turn_time!(slots, :schedule_event)
+    turn = turn!(slots, :schedule_event)
+    owner = owner!(slots, :schedule_event)
     event = Map.get(slots, :event) || Map.get(slots, "event", "")
     time = Map.get(slots, :time) || Map.get(slots, "time", "")
     date = Map.get(slots, :date) || Map.get(slots, "date", "")
-    add_item(world_id, :calendar, %{event: event, time: time, date: date}, moment!([date, time], turn, :calendar))
+    add_item(world_id, :calendar, %{event: event, time: time, date: date}, moment!([date, time], turn, :calendar), owner)
     {:ok, %{last_set_event: event, event_time: time, event_date: date}}
   end
 
@@ -404,7 +494,7 @@ defmodule Brain.Services.LocalScheduler do
   @impl SchedulingDriver
   def cancel_event(slots, _credentials, world_id) do
     world_id = world!(world_id, :cancel_event)
-    turn = turn_time!(slots, :cancel_event)
+    turn = turn!(slots, :cancel_event)
 
     with {:ok, [cancelled]} <- cancel_matching(world_id, :calendar, slots, turn, :one) do
       {:ok,
@@ -421,7 +511,7 @@ defmodule Brain.Services.LocalScheduler do
   @impl SchedulingDriver
   def query_calendar(slots, _credentials, world_id) do
     world_id = world!(world_id, :query_calendar)
-    turn = turn_time!(slots, :query_calendar)
+    turn = turn!(slots, :query_calendar)
     events = world_id |> list_items(:calendar) |> Enum.reverse() |> on_day(:calendar, slots, turn)
 
     upcoming =
@@ -462,31 +552,132 @@ defmodule Brain.Services.LocalScheduler do
     Enum.each(Map.keys(@kinds), &cancel_items(world_id, &1))
   end
 
+  @doc """
+  Fires every item due by the clock's current instant, as a wake-up does, and
+  sets the next wake-up. Returns when they have fired.
+  """
+  @spec wake() :: :ok
+  def wake, do: GenServer.call(running!(), :wake)
+
+  @doc """
+  What the web user's open pages are told of their alarms ringing now, in
+  any world, oldest first (`notification/1`): what a page opened while one
+  rings shows.
+  """
+  @spec ringing_notifications(String.t()) :: [map()]
+  def ringing_notifications(web_user_id) when is_binary(web_user_id) do
+    running!()
+
+    @table
+    |> :ets.match_object({{:_, :_}, :alarm, :_})
+    |> Enum.filter(fn {_key, _type, data} -> data.web_user_id == web_user_id and data.status == "ringing" end)
+    |> Enum.sort_by(fn {_key, _type, data} -> data.created end, {:asc, DateTime})
+    |> Enum.map(&notification/1)
+  end
+
+  @doc """
+  Every item of the world, oldest first, as `notification/1` gives it with
+  its `:fire_state`, its owner (`:web_user_id`) and its `:status` as stored
+  (`nil` for a calendar item, which has none): what a page listing them shows.
+  Raises without a world.
+  """
+  @spec items(String.t()) :: [map()]
+  def items(world_id) do
+    world_id = world!(world_id, :items)
+    running!()
+
+    @table
+    |> :ets.match_object({{world_id, :_}, :_, :_})
+    |> Enum.sort_by(fn {_key, _type, data} -> data.created end, {:asc, DateTime})
+    |> Enum.map(fn {_key, _type, data} = entry ->
+      entry
+      |> notification()
+      |> Map.merge(%{fire_state: data.fire_state, web_user_id: data.web_user_id, status: Map.get(data, :status)})
+    end)
+  end
+
+  @doc """
+  What an item's owner is told when it fires, from its table entry:
+
+  - `:id`, `:world_id`, `:kind` (`:alarm`, `:reminder`, `:timer`, `:calendar`);
+  - `:said`, the fields it was set with, as they were said (an alarm's
+    `:time` and `:date`, a reminder's `:text`, `:time` and `:date`, a timer's
+    `:duration`, a calendar item's `:event`, `:time` and `:date`);
+  - `:due_at` and `:fired_at`, instants in UTC, and `:late`, whether it fired
+    late, having come due while the scheduler was not running;
+  - `:status`: an alarm's `"ringing"`, a timer's `"finished"`, or `nil` for a
+    reminder or calendar item, which have no status that firing changes.
+  """
+  @spec notification({{String.t(), String.t()}, atom(), map()}) :: map()
+  def notification({{world_id, id}, type, data}) do
+    %{
+      id: id,
+      world_id: world_id,
+      kind: type,
+      said: Map.drop(data, @internal_keys ++ [:status]),
+      due_at: data.due_at,
+      fired_at: data.fired_at,
+      late: data.fire_state == "fired_late",
+      status: Map.get(@fired_status, type)
+    }
+  end
+
   # Server callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
+    clock = Keyword.get_lazy(opts, :clock, &SchedulerClock.configured!/0)
     table = :ets.new(@table, [:named_table, :set, :protected, read_concurrency: true])
 
     items = Atlas.Scheduler.list_items()
     Enum.each(items, &:ets.insert(table, entry(&1)))
 
     Logger.info("Local scheduler loaded #{length(items)} stored items")
-    {:ok, %{table: table}}
+
+    # What came due while the scheduler was not running fires now, late.
+    state = %{table: table, clock: clock, wake_ref: nil, wake_at: nil}
+    fired = fire_due(state, "fired_late")
+    if fired != [], do: Logger.info("Local scheduler fired #{length(fired)} items late, due while it was not running")
+
+    {:ok, arm(state)}
   end
 
   @impl true
-  def handle_call({:add, world_id, type, data, resolution}, _from, state) do
-    item = Atlas.Scheduler.insert_item!(row_attrs(world_id, type, data, resolution))
+  def handle_call({:add, world_id, type, data, resolution, owner}, _from, state) do
+    item = Atlas.Scheduler.insert_item!(row_attrs(world_id, type, data, resolution, owner))
     :ets.insert(state.table, entry(item))
-    {:reply, :ok, state}
+    {:reply, :ok, arm(state)}
   end
 
   @impl true
   def handle_call({:cancel, world_id, type}, _from, state) do
     Atlas.Scheduler.delete_items!(world_id, Map.fetch!(@kinds, type))
     :ets.match_delete(state.table, {{world_id, :_}, type, :_})
-    {:reply, :ok, state}
+    {:reply, :ok, arm(state)}
+  end
+
+  # The world's ringing alarms are found and snoozed in this one call, so no
+  # cancel or firing comes between. Replies with the alarms snoozed, oldest
+  # first.
+  def handle_call({:snooze, world_id, until}, _from, state) do
+    case ringing(world_id) do
+      [] ->
+        {:reply, {:error, :no_ringing_alarm}, state}
+
+      ringing ->
+        Enum.each(ringing, fn {id, _data} ->
+          item = Atlas.Scheduler.update_item!(id, %{status: "set", fire_state: "pending", due_at: until, fired_at: nil})
+          :ets.insert(state.table, entry(item))
+        end)
+
+        alarms = ringing |> Enum.map(&elem(&1, 1)) |> Enum.sort_by(& &1.created, {:asc, DateTime})
+        {:reply, {:ok, alarms}, arm(state)}
+    end
+  end
+
+  def handle_call(:wake, _from, state) do
+    fire_due(state, "fired")
+    {:reply, :ok, arm(state)}
   end
 
   # Matching and removing happen in this one call, so no other write comes
@@ -515,7 +706,14 @@ defmodule Brain.Services.LocalScheduler do
           {:ok, Enum.map(matches, &public(elem(&1, 1)))}
       end
 
-    {:reply, reply, state}
+    {:reply, reply, arm(state)}
+  end
+
+  # The clock's wake-up: what is due fires, and the next wake-up is set.
+  @impl true
+  def handle_info(:wake, state) do
+    fire_due(state, "fired")
+    {:noreply, arm(state)}
   end
 
   # Every stored item belongs to the world it was set in; there is no default.
@@ -526,16 +724,44 @@ defmodule Brain.Services.LocalScheduler do
           "LocalScheduler.#{function} needs the world whose alarms, reminders, timers and calendar items are used, got: #{inspect(other)}"
   end
 
-  # What a date or time names depends on when it is said; there is no default.
-  defp turn_time!(slots, function) do
-    case Map.get(slots, :turn_time) do
-      %DateTime{} = turn ->
-        turn
+  # What a date or time names depends on when and where it is said: the turn
+  # is its moment and its zone, and there is no default for either.
+  defp turn!(slots, function) do
+    time =
+      case Map.get(slots, :turn_time) do
+        %DateTime{} = turn ->
+          turn
+
+        other ->
+          raise ArgumentError,
+                "LocalScheduler.#{function} needs the :turn_time slot, the moment of the turn it is asked in, " <>
+                  "got: #{inspect(other)}"
+      end
+
+    zone =
+      case Map.get(slots, :time_zone) do
+        %Zone{} = zone ->
+          zone
+
+        other ->
+          raise ArgumentError,
+                "LocalScheduler.#{function} needs the :time_zone slot, the Brain.Temporal.Zone of the person who " <>
+                  "asks, got: #{inspect(other)}"
+      end
+
+    %{time: time, zone: zone}
+  end
+
+  # An item belongs to the web user who sets it; there is no default.
+  defp owner!(slots, function) do
+    case Map.get(slots, :web_user_id) do
+      owner when is_binary(owner) and owner != "" ->
+        owner
 
       other ->
         raise ArgumentError,
-              "LocalScheduler.#{function} needs the :turn_time slot, the moment of the turn it is asked in, " <>
-                "got: #{inspect(other)}"
+              "LocalScheduler.#{function} needs the :web_user_id slot, the web user who sets the item and is told " <>
+                "when it fires, got: #{inspect(other)}"
     end
   end
 
@@ -547,7 +773,7 @@ defmodule Brain.Services.LocalScheduler do
         :nothing_said
 
       said ->
-        case Resolver.resolve!(said, turn) do
+        case Resolver.resolve!(said, turn.time, time_zone: turn.zone) do
           %Resolution{length: nil} = resolution ->
             resolution
 
@@ -558,17 +784,17 @@ defmodule Brain.Services.LocalScheduler do
     end
   end
 
-  # What a timer's duration names: a length, or :nothing_said when none was
-  # given.
+  # What a timer's or a snooze's duration names: a length from the turn, or
+  # :nothing_said when none was given.
   defp length!(duration, turn) do
     cond do
       blank?(duration) ->
         :nothing_said
 
       true ->
-        case Resolver.resolve!(duration, turn) do
+        case Resolver.resolve!(duration, turn.time, time_zone: turn.zone) do
           %Resolution{length: %Duration{}} = resolution -> resolution
-          %Resolution{said: said} -> raise ArgumentError, "LocalScheduler: the timer's duration #{inspect(said)} names no length"
+          %Resolution{said: said} -> raise ArgumentError, "LocalScheduler: the duration #{inspect(said)} names no length"
         end
     end
   end
@@ -578,9 +804,53 @@ defmodule Brain.Services.LocalScheduler do
   defp blank?(other),
     do: raise(ArgumentError, "LocalScheduler: a date, time or duration must be a string, got: #{inspect(other)}")
 
-  defp add_item(world_id, type, data, resolution) do
-    :ok = GenServer.call(running!(), {:add, world_id, type, data, resolution})
+  defp add_item(world_id, type, data, resolution, owner) do
+    :ok = GenServer.call(running!(), {:add, world_id, type, data, resolution, owner})
   end
+
+  # Firing (see "Firing" above).
+
+  # Fires every pending item due by the clock's instant, as `fire_state`
+  # ("fired", or "fired_late" for what came due while the scheduler was not
+  # running): records it in Atlas, then in the table, then tells its owner.
+  # Returns the items fired.
+  defp fire_due(state, fire_state) do
+    now = state.clock.now()
+
+    for item <- Atlas.Scheduler.due_items(now) do
+      type = Map.fetch!(@types, item.kind)
+
+      attrs =
+        case Map.fetch(@fired_status, type) do
+          {:ok, status} -> %{fire_state: fire_state, fired_at: now, status: status}
+          :error -> %{fire_state: fire_state, fired_at: now}
+        end
+
+      fired = Atlas.Scheduler.update_item!(item.id, attrs)
+      entry = entry(fired)
+      :ets.insert(state.table, entry)
+      Phoenix.PubSub.broadcast(Brain.PubSub, Atlas.WebUsers.topic(fired.web_user_id), {:scheduler_fired, notification(entry)})
+      fired
+    end
+  end
+
+  # Sets the wake-up for the soonest pending item Atlas holds, in place of
+  # the one set before; none when nothing is pending.
+  defp arm(state) do
+    if state.wake_ref, do: state.clock.cancel(state.wake_ref)
+
+    case Atlas.Scheduler.next_due_at() do
+      nil -> %{state | wake_ref: nil, wake_at: nil}
+      due_at -> %{state | wake_ref: state.clock.send_at(self(), :wake, due_at), wake_at: due_at}
+    end
+  end
+
+  # When an item fires: a timer when it runs out; an alarm, reminder or
+  # calendar item at the time of day it was set for. Anything else names no
+  # instant to fire at.
+  defp due_at(:timer, %Resolution{length: %Duration{}, ends_at: %DateTime{} = ends_at}), do: ends_at
+  defp due_at(type, %Resolution{clock: %Time{}, starts_at: starts_at}) when type != :timer, do: starts_at
+  defp due_at(_type, _resolution), do: nil
 
   defp cancel_items(world_id, type) do
     :ok = GenServer.call(running!(), {:cancel, world_id, type})
@@ -646,14 +916,14 @@ defmodule Brain.Services.LocalScheduler do
             {:text, normalize(value)}
 
           :duration ->
-            case Resolver.resolve!(value, turn) do
+            case Resolver.resolve!(value, turn.time, time_zone: turn.zone) do
               %Resolution{length: %Duration{}} = resolution -> {:length, Resolver.length_seconds(resolution)}
               _other -> raise ArgumentError, "LocalScheduler: the duration #{inspect(value)} names no length"
             end
 
           kind when kind in [:date, :time] ->
-            case Resolver.resolve!(value, turn) do
-              %Resolution{length: nil} = resolution -> {kind, resolution}
+            case Resolver.resolve!(value, turn.time, time_zone: turn.zone) do
+              %Resolution{length: nil} = resolution -> {kind, resolution, turn.zone}
               _length -> raise ArgumentError, "LocalScheduler: #{inspect(value)} names a length, not a #{kind}"
             end
         end
@@ -677,13 +947,14 @@ defmodule Brain.Services.LocalScheduler do
   defp field_matches?(%{resolution: %Resolution{} = item}, _field, criterion), do: resolved_match?(item, criterion)
   defp field_matches?(_data, _field, _criterion), do: false
 
-  defp resolved_match?(item, {:date, said}), do: Resolver.same_day?(item, said)
+  # Days are read in the zone of the turn the slot was said in.
+  defp resolved_match?(item, {:date, said, zone}), do: Resolver.same_day?(item, said, zone)
 
-  defp resolved_match?(item, {:time, %Resolution{clock: nil} = said}), do: Resolver.same_day?(item, said)
+  defp resolved_match?(item, {:time, %Resolution{clock: nil} = said, zone}), do: Resolver.same_day?(item, said, zone)
 
-  defp resolved_match?(item, {:time, %Resolution{clock: clock} = said}) do
+  defp resolved_match?(item, {:time, %Resolution{clock: clock} = said, zone}) do
     item.clock != nil and Time.compare(item.clock, clock) == :eq and
-      (not said.day_said or Resolver.same_day?(item, said))
+      (not said.day_said or Resolver.same_day?(item, said, zone))
   end
 
   defp resolved_match?(%Resolution{length: %Duration{}} = item, {:length, seconds}),
@@ -693,7 +964,7 @@ defmodule Brain.Services.LocalScheduler do
 
   # Whether a calendar item's time has not passed at the turn: a point in
   # time not before it, a day or period not over, a time with no end.
-  defp still_to_come?(%{resolution: %Resolution{starts_at: starts_at, ends_at: ends_at}}, turn) do
+  defp still_to_come?(%{resolution: %Resolution{starts_at: starts_at, ends_at: ends_at}}, %{time: turn}) do
     cond do
       is_nil(ends_at) -> true
       DateTime.compare(ends_at, starts_at) == :eq -> DateTime.compare(starts_at, turn) != :lt
@@ -739,11 +1010,15 @@ defmodule Brain.Services.LocalScheduler do
   end
 
   # A calendar item's event is stored as the item's text.
-  defp row_attrs(world_id, :calendar, %{event: event, time: time, date: date}, resolution),
-    do: Map.merge(%{world_id: world_id, kind: @kinds.calendar, text: event, time: time, date: date}, resolution_attrs(resolution))
+  defp row_attrs(world_id, :calendar, %{event: event, time: time, date: date}, resolution, owner),
+    do: row_attrs(world_id, :calendar, %{text: event, time: time, date: date}, resolution, owner)
 
-  defp row_attrs(world_id, type, data, resolution),
-    do: data |> Map.merge(%{world_id: world_id, kind: Map.fetch!(@kinds, type)}) |> Map.merge(resolution_attrs(resolution))
+  defp row_attrs(world_id, type, data, resolution, owner) do
+    data
+    |> Map.merge(%{world_id: world_id, kind: Map.fetch!(@kinds, type)})
+    |> Map.merge(resolution_attrs(resolution))
+    |> Map.merge(fire_attrs(type, resolution, owner))
+  end
 
   defp resolution_attrs(:nothing_said), do: %{resolution: "nothing_said"}
 
@@ -752,15 +1027,37 @@ defmodule Brain.Services.LocalScheduler do
       resolution: "resolved",
       turn_time: resolution.turn_time,
       time_zone: resolution.time_zone,
+      utc_offset: resolution.utc_offset,
       starts_at: resolution.starts_at,
       ends_at: resolution.ends_at,
       clock: resolution.clock
     }
   end
 
+  # A new item is pending when it names an instant to fire at.
+  defp fire_attrs(type, resolution, owner) do
+    case due_at(type, resolution) do
+      nil -> %{web_user_id: owner, fire_state: "no_due_time"}
+      due_at -> %{web_user_id: owner, fire_state: "pending", due_at: due_at}
+    end
+  end
+
   defp entry(%Atlas.Schemas.SchedulerItem{} = item) do
     type = Map.fetch!(@types, item.kind)
-    {{item.world_id, item.id}, type, type |> data(item) |> Map.put(:resolution, resolution(type, item))}
+
+    data =
+      type
+      |> data(item)
+      |> Map.merge(%{
+        id: item.id,
+        resolution: resolution(type, item),
+        web_user_id: item.web_user_id,
+        due_at: item.due_at,
+        fire_state: item.fire_state,
+        fired_at: item.fired_at
+      })
+
+    {{item.world_id, item.id}, type, data}
   end
 
   defp data(:alarm, item),
@@ -789,6 +1086,7 @@ defmodule Brain.Services.LocalScheduler do
       said: said,
       turn_time: item.turn_time,
       time_zone: item.time_zone,
+      utc_offset: item.utc_offset,
       starts_at: item.starts_at,
       ends_at: item.ends_at,
       clock: item.clock,
