@@ -672,7 +672,12 @@ defmodule Brain.Analysis.Pipeline do
         end)
     })
 
-    slot_result = SlotDetector.detect(intent, relevant_entities, side_effects: side_effects?(opts))
+    # A chunk no intent was determined for has no slot schema, so no slots.
+    slot_result =
+      case intent do
+        nil -> default_empty_slots()
+        intent -> SlotDetector.detect(intent, relevant_entities, side_effects: side_effects?(opts))
+      end
 
     if debug_pass2?, do: Logger.info("  pass2:slot_detect=#{System.monotonic_time(:millisecond) - t0}ms")
 
@@ -1274,6 +1279,14 @@ defmodule Brain.Analysis.Pipeline do
                       }}
                    end)
   @registered_intent_set @intent_metadata |> Map.keys() |> MapSet.new()
+
+  # Every intent the speech-act map names is a registered one: the map never
+  # stands in a label for "no intent".
+  for {speech_act, intent} <- @speech_act_intent_map, not MapSet.member?(@registered_intent_set, intent) do
+    raise "Pipeline: speech_act_intent_map.json maps #{inspect(speech_act)} to #{inspect(intent)}, " <>
+            "which intent_registry.json does not register"
+  end
+
   @known_domain_set @intent_metadata
                     |> Map.values()
                     |> Enum.map(& &1.domain)
@@ -1588,8 +1601,9 @@ defmodule Brain.Analysis.Pipeline do
 
   # Resolves an intent label when the `:intent_full` classifier produced no
   # registered top candidate. **Never** fabricates labels — every returned value
-  # is either a registered intent (validated against `intent_registry.json`) or
-  # a canonical entry from `speech_act_intent_map.json`.
+  # is a registered intent (validated against `intent_registry.json`; the
+  # entries of `speech_act_intent_map.json` are checked against it when this
+  # module compiles), or nil when no intent was determined.
   #
   # Strategy: run a multi-signal scorer over every registered intent, blending
   # all the signals the pipeline has already produced from trained classifiers
@@ -1925,24 +1939,14 @@ defmodule Brain.Analysis.Pipeline do
 
   defp entity_type_set(_), do: MapSet.new()
 
+  # The registered intent `speech_act_intent_map.json` gives the speech act's
+  # sub-type, else its category. nil when it gives neither: no intent was
+  # determined, and none is made up.
   defp speech_act_map_fallback(speech_act) do
-    sub_type_str = to_string(Map.get(speech_act, :sub_type, ""))
-    category_str = to_string(Map.get(speech_act, :category, ""))
-    is_question = Map.get(speech_act, :is_question, false)
+    sub_type = to_string(Map.get(speech_act, :sub_type, ""))
+    category = to_string(Map.get(speech_act, :category, ""))
 
-    cond do
-      is_binary(canonical = Map.get(@speech_act_intent_map, sub_type_str)) ->
-        canonical
-
-      is_question ->
-        Map.get(@speech_act_intent_map, "question", "question.factual")
-
-      Map.has_key?(@speech_act_intent_map, category_str) ->
-        Map.get(@speech_act_intent_map, category_str)
-
-      true ->
-        Map.get(@speech_act_intent_map, "default", "unknown")
-    end
+    Map.get(@speech_act_intent_map, sub_type) || Map.get(@speech_act_intent_map, category)
   end
 
   # The events of every analyzed text read as things the user said, so a caller
@@ -2135,61 +2139,35 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
+  # A failure to resolve is not caught: it reaches the caller.
   defp resolve_anaphora(text, history, chunk_index, opts) do
-    case AnaphoraResolver.resolve_and_substitute(text, history) do
-      {:ok, resolved_text, resolved_entities} ->
-        if resolved_entities != [] do
-          Progress.report(opts, :anaphora_resolved, %{
-            chunk_index: chunk_index,
-            resolved_count: length(resolved_entities),
-            entities:
-              Enum.map(resolved_entities, fn e ->
-                %{
-                  entity_type: e[:entity_type],
-                  value: e[:value]
-                }
-              end)
-          })
-        end
+    {:ok, resolved_text, referents} = AnaphoraResolver.resolve_and_substitute(text, history)
 
-        {resolved_text, resolved_entities}
-
-      _ ->
-        {text, []}
+    if referents != [] do
+      Progress.report(opts, :anaphora_resolved, %{
+        chunk_index: chunk_index,
+        resolved_count: length(referents),
+        entities:
+          Enum.map(referents, fn referent ->
+            %{entity_type: referent.entity_type, value: referent.value, confidence: referent.confidence}
+          end)
+      })
     end
-  rescue
-    e ->
-      Logger.warning("Anaphora resolution failed", %{error: Exception.message(e)})
-      {text, []}
+
+    {resolved_text, referents}
   end
 
-  defp merge_anaphora_entities(entities, anaphora_entities) when is_list(anaphora_entities) do
-    converted =
-      Enum.map(anaphora_entities, fn e ->
-        %{
-          entity_type: e[:entity_type],
-          value: e[:value],
-          confidence: 0.75,
-          source: :anaphora_resolution
-        }
-      end)
+  # The referents resolution gives (`AnaphoraResolver`), each with the
+  # confidence its resolution derived, join the extracted entities -- except
+  # one of a type extraction already found in the text.
+  defp merge_anaphora_entities(entities, referents) when is_list(referents) do
+    extracted_types = MapSet.new(entities, & &1.entity_type)
 
-    extracted_types =
-      entities
-      |> Enum.map(& &1[:entity_type])
-      |> MapSet.new()
-
-    unique_anaphora =
-      Enum.reject(converted, fn e ->
-        MapSet.member?(extracted_types, e[:entity_type])
-      end)
-
-    entities ++ unique_anaphora
+    entities ++ Enum.reject(referents, &MapSet.member?(extracted_types, &1.entity_type))
   end
 
-  defp merge_anaphora_entities(entities, _) do
-    entities
-  end
+  # A chunk no intent was determined for has no slot schema to filter by.
+  defp filter_entities_by_intent(entities, nil) when is_list(entities), do: entities
 
   @doc false
   defp filter_entities_by_intent(entities, intent) when is_list(entities) do
@@ -2435,9 +2413,7 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp record_verification_miss(reason) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(Brain.Metrics.Aggregator, {:record_verification_miss_reason, reason})
-    end
+    :ok = Brain.Metrics.Aggregator.record_verification_miss_reason(reason)
   end
 
   defp extract_subject_from_entities(entities, text) do
