@@ -41,6 +41,16 @@ defmodule Brain.Lexicon.ClosedClassTest do
     refute ClosedClass.total_quantifier?("the")
   end
 
+  test "every word takes the features declared for it", %{data: data} do
+    for {feature, words} <- data["features"], word <- words do
+      [name, value] = String.split(feature, "=", parts: 2)
+      assert ClosedClass.features(word)[name] == value, "#{word} should be #{feature}"
+    end
+
+    assert ClosedClass.features("Him") == %{"PronType" => "Prs", "Person" => "3", "Gender" => "Masc"}
+    assert ClosedClass.features("those") == %{"PronType" => "Dem"}
+  end
+
   test "the words written capitalized wherever they stand are exactly those declared, ignoring case", %{data: data} do
     declared = data["capitalized"]
 
