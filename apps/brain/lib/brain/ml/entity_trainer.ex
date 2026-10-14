@@ -149,18 +149,20 @@ defmodule Brain.ML.EntityTrainer do
     models_path = Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
     model_path = Path.join(models_path, "entity_model.term")
 
-    case File.read(model_path) do
-      {:ok, binary} ->
-        try do
-          model = :erlang.binary_to_term(binary)
-          {:ok, model}
-        rescue
-          e -> {:error, "Failed to deserialize model: #{inspect(e)}"}
-        end
+    Brain.Telemetry.measure_model_load("entity_trainer", fn ->
+      case File.read(model_path) do
+        {:ok, binary} ->
+          try do
+            model = :erlang.binary_to_term(binary)
+            {:ok, model}
+          rescue
+            e -> {:error, "Failed to deserialize model: #{inspect(e)}"}
+          end
 
-      {:error, reason} ->
-        {:error, "Failed to read model: #{reason}"}
-    end
+        {:error, reason} ->
+          {:error, "Failed to read model: #{reason}"}
+      end
+    end)
   end
 
   @doc "Predict entity tags for a sequence of tokens.\nReturns list of {token, predicted_tag} tuples.\n"
