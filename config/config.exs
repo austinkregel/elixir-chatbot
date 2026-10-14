@@ -70,10 +70,6 @@ config :brain,
     # rates measured from the brain's own conversations.
     proper_name_capitalized: 0.8,
     ordinary_word_capitalized: 0.005,
-    # Likelihood of a reading the classified intent has no slot for, relative
-    # to one it does. Small, but not zero, so a strong prior can still
-    # overrule the intent.
-    context_mismatch_likelihood: 0.01,
     # Likelihood of the word's part-of-speech tag under a reading whose parts
     # of speech do not include it, relative to one whose do. Not zero: the
     # tagger is wrong often enough ("light" in "a light meal" tagged NOUN)
