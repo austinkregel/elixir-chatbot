@@ -77,28 +77,18 @@ defmodule Brain.ML.SpanReliability do
   pair only as a whole: a reading of the right type at a partial extent
   supports a hypothesis no gold span has. How far a reading's extent can be
   trusted is learned apart from its type (`fit_extent/2`): for each
-  `{source, cue, type}`, the rate at which a reading's extent is exactly a gold
+  `{source, type}`, the rate at which a reading's extent is exactly a gold
   span's, whatever the gold type, over every reading of the training rows. A
   reading that only overlaps a gold span and one that overlaps none are both
-  extent errors (`:boundary`, `:no_entity`).
-
-  The cue is what the source says about how it delimited the reading, its
-  `:extent_cue`; a source that says nothing gives none (`nil`). The entity
-  model's is `{opened, followed_by}`: whether its decode opened the reading at
-  a `B-` tag (`:begin`) or at an `I-` tag that continues no entity of its type
-  (`:inside`), and whether the token after the reading is tagged `I-` (`:inside`,
-  the decode ran on into another type) or not (`:outside`). On the 1,688 NER
-  training rows (2026-10-13, out-of-fold entity models) 2,318 of the 2,538
-  readings the model opened at `B-` and closed at `:outside` had a gold
-  extent, and 32 of the 159 it opened at `I-` and closed at `:outside`. The
-  model's own confidence does not tell these apart: a partial song title it
-  opened at `I-` had a mean posterior of 1.0.
+  extent errors (`:boundary`, `:no_entity`). A reading of the right extent and
+  the wrong type agrees on its extent and not on its type, so the two rates
+  differ wherever a source places spans better than it types them.
 
   The rates are smoothed as the type reliabilities are, with a prior strength
-  of their own: a pair toward its `{source, cue}`, and that toward the rate
-  over every reading. Every reading has an extent the gold standard can judge,
-  so every pair the training rows showed is measured; a pair they never showed
-  gives no extent evidence.
+  of their own: a pair toward its source, and that toward the rate over every
+  reading. Every reading has an extent the gold standard can judge, so every
+  pair the training rows showed is measured; a pair they never showed gives no
+  extent evidence.
 
   ## Deciding again with more evidence
 
@@ -203,8 +193,8 @@ defmodule Brain.ML.SpanReliability do
   """
   @type extent :: %{
           prior_strength: number(),
-          pairs: %{{atom(), term(), String.t()} => map()},
-          sources: %{{atom(), term()} => map()},
+          pairs: %{pair() => map()},
+          sources: %{atom() => map()},
           overall: %{n: non_neg_integer(), agree: non_neg_integer(), rate: float()},
           fitted_rows: non_neg_integer(),
           min_score: float() | :infinity,
@@ -282,10 +272,10 @@ defmodule Brain.ML.SpanReliability do
 
   @doc """
   Fits the extent reliabilities (see the moduledoc) from `fit/2`'s examples:
-  for each `{source, extent_cue, entity_type}` of their readings, how many
-  readings had exactly a gold span's extent (`agree`), only overlapped one
-  (`boundary`) or overlapped none (`no_entity`), and the smoothed rate
-  (`reliability`); the same per `{source, extent_cue}` (`sources`) and over
+  for each `{source, entity_type}` of their readings, how many readings had
+  exactly a gold span's extent (`agree`), only overlapped one (`boundary`) or
+  overlapped none (`no_entity`), and the smoothed rate (`reliability`); the
+  same per source (`sources`) and over
   every reading (`overall`). Option: `:prior_strength`, a positive
   pseudo-count, required. The thresholds are left unset;
   `select_redecision/3` sets them.
@@ -302,7 +292,7 @@ defmodule Brain.ML.SpanReliability do
       |> Map.new(fn {pair, outcomes} -> {pair, extent_tally(outcomes)} end)
 
     overall = overall!(tallies, "readings have a gold span's extent")
-    {sources, pairs} = smooth(tallies, prior_strength, overall, fn {source, cue, _type} -> {source, cue} end)
+    {sources, pairs} = smooth(tallies, prior_strength, overall, fn {source, _type} -> source end)
 
     %{
       prior_strength: prior_strength,
@@ -896,9 +886,8 @@ defmodule Brain.ML.SpanReliability do
     {sources, pairs}
   end
 
-  # A reading's key in the extent reliabilities: its source, the cue the
-  # source gave about its extent (nil when it gives none) and its type.
-  defp extent_pair(reading), do: {reading.source, Map.get(reading, :extent_cue), reading.entity_type}
+  # A reading's key in the extent reliabilities, as in the type reliabilities.
+  defp extent_pair(reading), do: {reading.source, reading.entity_type}
 
   defp extent_outcome(reading, gold) do
     cond do
@@ -1014,13 +1003,23 @@ defmodule Brain.ML.SpanReliability do
 
   # What `redecide/4` decides with: its thresholds, and the extent
   # reliabilities with theirs. A model read from a file written before they
-  # existed has no `:redecision` key at all, or a redecision without `:extent`.
+  # existed has no `:redecision` key at all, or a redecision without `:extent`;
+  # one written while extents were keyed by a cue as well has
+  # `{source, cue, type}` keys, which no reading's key would ever find.
   defp redecision!(%__MODULE__{} = model) do
     case Map.get(model, :redecision) do
       %{min_score: score, min_margin: margin, extent: %{pairs: pairs, min_score: extent_score, min_margin: extent_margin}} = redecision
       when (is_number(score) or score == :infinity) and (is_number(margin) or margin == :infinity) and is_map(pairs) and
              (is_number(extent_score) or extent_score == :infinity) and (is_number(extent_margin) or extent_margin == :infinity) ->
-        redecision
+        case Enum.reject(Map.keys(pairs), &match?({source, type} when is_atom(source) and is_binary(type), &1)) do
+          [] ->
+            redecision
+
+          keys ->
+            raise ArgumentError,
+                  "SpanReliability: the model's extent reliabilities are keyed #{inspect(Enum.take(keys, 3))}, not " <>
+                    "{source, entity_type}; retrain it with `mix train_span_reliability --world <id>`"
+        end
 
       other ->
         raise ArgumentError,
@@ -1063,7 +1062,6 @@ defmodule Brain.ML.SpanReliability do
       canonical: canonical(reading.entity_type, canonical),
       start_pos: reading.start_pos,
       end_pos: reading.end_pos,
-      extent_cue: Map.get(reading, :extent_cue),
       raw_confidence: Map.get(reading, :confidence),
       measured: reliability != nil,
       reliability: reliability,
