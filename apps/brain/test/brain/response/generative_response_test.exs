@@ -9,6 +9,12 @@ defmodule Brain.Response.GenerativeResponseTest do
   # The world the test suite runs in, seeded by `mix test.models`.
   @opts [world_id: "default"]
 
+  # An acknowledgment that continues a reply's sentence asks the POS tagger
+  # whether the reply's first word is a proper noun (`Synthesizer.join_after/2`).
+  setup_all do
+    Brain.TestHelpers.start_pos_tagger!()
+  end
+
   describe "Synthesizer.synthesize/3" do
     test "generates response for weather intent with location" do
       entities = [%{entity_type: "location", value: "New York"}]
