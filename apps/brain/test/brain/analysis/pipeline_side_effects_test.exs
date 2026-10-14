@@ -69,7 +69,7 @@ defmodule Brain.Analysis.PipelineSideEffectsTest do
     test "a live conversation turn extracts a belief for the user", %{user_id: user_id} do
       {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
 
-      assert {:ok, %{response: _}} = Brain.evaluate(conversation_id, @directive, user_id: user_id)
+      assert {:ok, %{response: _}} = Brain.evaluate(conversation_id, @directive, user_id: user_id, time_zone: Brain.Temporal.Zone.utc())
 
       assert Enum.any?(beliefs_for(user_id), &(&1.predicate == :requests)),
              "Expected the conversation turn to store a :requests belief for #{user_id}, " <>
