@@ -36,7 +36,8 @@ defmodule Mix.Tasks.TrainSpanReliability do
   what extraction reads: the lexicon, the slot type preferences the gazetteer
   readings are scored with (train them first with
   `mix train_slot_type_preferences`), the gazetteer (which reads reviewed
-  entities from Atlas) and the type hierarchy.
+  entities from Atlas), the code gazetteer (`Brain.Code.EntityReadings` reads
+  the world's analyzed code from it) and the type hierarchy.
 
   ## Options
 
@@ -62,6 +63,7 @@ defmodule Mix.Tasks.TrainSpanReliability do
     Brain.Lexicon.UserDefined,
     Brain.ML.InformalExpansions,
     Brain.ML.Gazetteer,
+    Brain.Code.CodeGazetteer,
     Brain.Analysis.TypeHierarchy
   ]
 
