@@ -510,6 +510,7 @@
       }
     ],
     "optional": [
+      "reminder_text",
       "date"
     ],
     "output_contexts": [],
@@ -1513,6 +1514,9 @@
     "entity_mappings": {
       "date": [
         "date"
+      ],
+      "event": [
+        "event"
       ]
     },
     "input_contexts": [
@@ -1522,6 +1526,7 @@
       }
     ],
     "optional": [
+      "event",
       "date"
     ],
     "output_contexts": [],
