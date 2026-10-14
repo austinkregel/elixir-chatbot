@@ -72,6 +72,12 @@ defmodule Mix.Tasks.Test.Models do
   intent expects are weighed with it and every gazetteer reading is scored
   with its preceding-tag likelihoods.
 
+  ## Free-text capture
+
+  Each supported language's `free_text_capture.<language>.term`, written by
+  `mix train_free_text_capture`. Boot loads it; every free-text slot (a
+  reminder's text) is captured with it.
+
   The text micro-classifiers in the same directory are not promoted: the factory
   trains them from test fixtures and writes them there, which is why the test
   suite needs a writable models directory of its own rather than pointing at priv.
@@ -157,8 +163,9 @@ defmodule Mix.Tasks.Test.Models do
 
   # Each supported language's lexical evidence model and speech-act table, which
   # `mix gen_micro_data` trains, span reliability model, which
-  # `mix train_span_reliability` trains, and slot type preferences, which
-  # `mix train_slot_type_preferences` trains; boot requires all four.
+  # `mix train_span_reliability` trains, slot type preferences, which
+  # `mix train_slot_type_preferences` trains, and free-text capture model, which
+  # `mix train_free_text_capture` trains; boot requires all five.
   defp models do
     @models ++
       Enum.flat_map(Brain.Language.supported(), fn code ->
@@ -166,7 +173,8 @@ defmodule Mix.Tasks.Test.Models do
           "lexical_evidence.#{code}.term",
           "speech_act_table.#{code}.term",
           "span_reliability.#{code}.term",
-          "slot_type_preferences.#{code}.term"
+          "slot_type_preferences.#{code}.term",
+          "free_text_capture.#{code}.term"
         ]
       end)
   end
