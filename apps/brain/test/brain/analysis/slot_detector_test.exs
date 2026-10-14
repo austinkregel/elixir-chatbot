@@ -54,6 +54,16 @@ defmodule Brain.Analysis.SlotDetectorTest do
       assert SlotResult.get_slot_value(result, "location") == "kitchen"
     end
 
+    test "web.search's query is text a search is run for: a number does not fill it" do
+      # Every gold q of the NER gold standard is a text query ("how to build
+      # a house", "Monty Python"), so q is information, not a number.
+      number = [%{entity_type: "number", value: "40", confidence: 0.9}]
+      refute SlotResult.get_slot_value(SlotDetector.detect("web.search", number, side_effects: false), "q")
+
+      query = [%{entity_type: "q", value: "apple pie recipes", confidence: 0.9}]
+      assert SlotResult.get_slot_value(SlotDetector.detect("web.search", query, side_effects: false), "q") == "apple pie recipes"
+    end
+
     test "handles unknown intent gracefully" do
       entities = [
         %{entity_type: "color", value: "blue", confidence: 0.9}
@@ -193,8 +203,13 @@ defmodule Brain.Analysis.SlotDetectorTest do
 
       {:ok, intent, score} = SlotDetector.suggest_intent_from_entities(entities)
 
-      # A smarthome.device.* intent should be returned for device + room entities
-      assert String.starts_with?(intent, "smarthome.lights.")
+      # An intent of the registry whose slots take both a device and a room.
+      # (The registry holds no smarthome.lights.* intent: the gold standard's
+      # rebuild folded them into smarthome.device.*. A service's domain schema,
+      # "device" or "smarthome", is no intent.)
+      schema = Map.fetch!(SlotDetector.registry(), intent)
+      types = schema |> Map.fetch!("entity_mappings") |> Map.values() |> List.flatten()
+      assert "device" in types and "room" in types, "#{intent}: #{inspect(schema["entity_mappings"])}"
       assert score >= 2
     end
 
@@ -408,6 +423,121 @@ defmodule Brain.Analysis.SlotDetectorTest do
     test "raises for an intent with no schema too" do
       assert_raise ArgumentError, ~r/no type cannot fill a slot/, fn ->
         SlotDetector.detect("zzz_no_such_domain.intent", [%{entity_type: nil, value: "Prince", confidence: 0.9}])
+      end
+    end
+  end
+
+  # A slot fills from an entity of a type it lists, or of one related to it in
+  # the type hierarchy of priv/analysis/entity_types.json. A listed type the
+  # hierarchy does not declare is related to nothing, so no entity of another
+  # type can fill the slot, and the gold labels cannot be compared with it.
+  describe "the intent registry's slot types" do
+    test "every type a registry slot lists is declared in the entity type hierarchy" do
+      hierarchy =
+        "analysis/entity_types.json"
+        |> Brain.priv_path()
+        |> File.read!()
+        |> Jason.decode!()
+        |> Map.fetch!("type_hierarchy")
+
+      declared = hierarchy |> Enum.flat_map(fn {parent, children} -> [parent | children] end) |> MapSet.new()
+
+      undeclared =
+        for {intent, schema} <- SlotDetector.registry(),
+            {slot, types} <- Map.get(schema, "entity_mappings", %{}),
+            type <- types,
+            not MapSet.member?(declared, type) do
+          "#{intent}.#{slot}: #{type}"
+        end
+
+      assert undeclared == [], "registry slots list types entity_types.json does not declare:\n" <> Enum.join(Enum.sort(undeclared), "\n")
+    end
+  end
+
+  # What fills a slot is decided by what the slot's value is used for.
+  # Brain.Services.LocalScheduler runs a timer for the length its duration
+  # names and raises for a duration that names none, and stores a calendar
+  # item's event as the item's text, which a cancellation is matched against.
+  describe "slots filled for the scheduler" do
+    test "a length fills a timer's and a snooze's duration, with a length the scheduler runs a timer for" do
+      alias Brain.Temporal.{Resolution, Resolver, Zone}
+
+      turn = ~U[2026-10-12 09:00:00Z]
+
+      for {text, said, length} <- [
+            {"set a timer for 5 minutes", "5 minutes", Duration.new!(minute: 5)},
+            {"snooze for 10 minutes", "10 minutes", Duration.new!(minute: 10)},
+            {"cancel the 1 hour 30 min timer", "1 hour 30 min", Duration.new!(hour: 1, minute: 30)}
+          ] do
+        assert [reading] = Brain.ML.EntityExtractor.length_readings(text)
+        assert %{entity_type: "duration", value: ^said} = reading
+
+        for intent <- ["timer.set", "timer.cancel", "alarm.snooze"] do
+          result = SlotDetector.detect(intent, [reading], side_effects: false)
+          assert SlotResult.get_slot_value(result, "duration") == said, "#{intent}: #{text}"
+          assert result.filled_slots["duration"].source == :explicit
+        end
+
+        # Brain.Services.LocalScheduler resolves the slot's text and runs the
+        # timer for the length it names; the canonical value names the same one.
+        assert %Resolution{length: ^length} = Resolver.resolve!(said, turn, time_zone: Zone.utc())
+        assert %Resolution{length: ^length} = Resolver.resolve!(reading.canonical_value, turn, time_zone: Zone.utc())
+      end
+    end
+
+    test "a number alone and a point in time are read as no length" do
+      for text <- ["set a timer for 10", "turn on the TV in 2 hours", "red light off after 3 hours"] do
+        assert Brain.ML.EntityExtractor.length_readings(text) == [], text
+      end
+    end
+
+    test "a bare number does not fill a timer's or a snooze's duration: it names no length" do
+      # Brain.Temporal.Resolver reads "10" as said with no unit.
+      number = [%{entity_type: "number", value: "10", confidence: 0.9}]
+
+      for intent <- ["timer.set", "timer.cancel", "alarm.snooze"] do
+        refute SlotResult.get_slot_value(SlotDetector.detect(intent, number, side_effects: false), "duration"), intent
+      end
+    end
+
+    test "a point in time does not fill a timer's duration: \"in 2 hours\" names no length" do
+      # The gold standard labels "in 2 hours" and "after 3 hours" date_time,
+      # and Brain.Temporal.Resolver resolves them to a moment with no length.
+      for type <- ["date_time", "sys_time", "sys_date"] do
+        moment = [%{entity_type: type, value: "in 2 hours", confidence: 0.9}]
+        refute SlotResult.get_slot_value(SlotDetector.detect("timer.set", moment, side_effects: false), "duration"), type
+      end
+    end
+
+    test "a recurrence does not fill a calendar item's event: it says when, not what" do
+      # The gold standard's recurrences are "every day", "on Mondays",
+      # "each morning".
+      recurrence = [%{entity_type: "recurrence", value: "every monday", confidence: 0.9}]
+
+      for intent <- ["calendar.schedule", "calendar.cancel"] do
+        refute SlotResult.get_slot_value(SlotDetector.detect(intent, recurrence, side_effects: false), "event"), intent
+      end
+    end
+  end
+
+  describe "slots for an appliance" do
+    test "an appliance is a device entry: no slot lists appliance, and a device entity fills every slot that lists device" do
+      # data/entities/device_entries_en.json holds the dishwasher, the oven
+      # and the refrigerator as devices; no entity file holds appliances.
+      mappings = for {intent, schema} <- SlotDetector.registry(), {slot, types} <- Map.get(schema, "entity_mappings", %{}), do: {intent, slot, types}
+
+      assert for({intent, slot, types} <- mappings, "appliance" in types, do: "#{intent}.#{slot}") == []
+
+      slots = for {intent, slot, types} <- mappings, "device" in types, do: {intent, slot}
+
+      assert slots != []
+
+      dishwasher = [%{entity_type: "device", value: "dishwasher", confidence: 0.9}]
+
+      for {intent, slot} <- slots do
+        result = SlotDetector.detect(intent, dishwasher, side_effects: false)
+        assert SlotResult.get_slot_value(result, slot) == "dishwasher", "#{intent}.#{slot}"
+        assert result.filled_slots[slot].source == :explicit, "#{intent}.#{slot}"
       end
     end
   end
