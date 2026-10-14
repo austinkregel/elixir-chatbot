@@ -197,14 +197,14 @@ defmodule Brain.Services.LocalSchedulerTest do
     end
 
     test "a scheduled event is read only in the world it was scheduled in", %{world_a: world_a, world_b: world_b} do
-      assert {:ok, %{next_event: "dentist", event_time: "Tuesday"}} =
+      assert {:ok, %{last_set_event: "dentist", event_time: "Tuesday"}} =
                LocalScheduler.enrich("calendar.schedule", %{event: "dentist", time: "Tuesday"}, %{}, world_a)
 
-      assert {:ok, %{next_event: "dentist", event_time: "Tuesday", event_count: 1}} =
+      assert {:ok, %{last_set_event: "dentist", event_time: "Tuesday", event_count: 1}} =
                LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
 
       assert LocalScheduler.enrich("calendar.query", %{}, %{}, world_b) ==
-               {:ok, %{next_event: "", event_time: "", event_date: "", event_count: 0}}
+               {:ok, %{last_set_event: "", event_time: "", event_date: "", event_count: 0}}
     end
 
     test "cancelling in one world takes the event off its calendar and leaves another world's",
@@ -217,7 +217,7 @@ defmodule Brain.Services.LocalSchedulerTest do
 
       assert {:ok, %{event_count: 0}} = LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
 
-      assert {:ok, %{next_event: "dentist", event_time: "Tuesday"}} =
+      assert {:ok, %{last_set_event: "dentist", event_time: "Tuesday"}} =
                LocalScheduler.enrich("calendar.query", %{}, %{}, world_b)
     end
 
@@ -356,18 +356,63 @@ defmodule Brain.Services.LocalSchedulerTest do
     end
   end
 
+  describe "identifying_slots/0" do
+    test "names, for each kind, the field a cancel identifies an item by and the slot each is read from" do
+      assert LocalScheduler.identifying_slots() == %{
+               alarm: [time: :time, date: :date],
+               reminder: [text: :reminder_text, time: :time, date: :date],
+               timer: [duration: :duration],
+               calendar: [event: :event, time: :time, date: :date]
+             }
+    end
+
+    test "an item's slots are its non-blank identifying fields, each under the slot that names it" do
+      assert SchedulingDriver.item_slots(LocalScheduler, :reminder, %{text: "call mom", date: "", time: "6 pm", status: "set"}) ==
+               %{"reminder_text" => "call mom", "time" => "6 pm"}
+
+      assert SchedulingDriver.item_slots(LocalScheduler, :calendar, %{event: "dentist", time: "3 pm", date: nil}) ==
+               %{"event" => "dentist", "time" => "3 pm"}
+    end
+
+    test "a kind the driver identifies nothing of, or a module that is no driver, raises" do
+      assert_raise ArgumentError, ~r/identifies no :weather items/, fn ->
+        SchedulingDriver.item_slots(LocalScheduler, :weather, %{})
+      end
+
+      assert_raise ArgumentError, ~r/is not a scheduling driver/, fn ->
+        SchedulingDriver.item_slots(Brain.Services.Weather, :calendar, %{})
+      end
+    end
+  end
+
   describe "cancelling a calendar event" do
-    test "with no slot that identifies an event, nothing is removed and the error asks which",
+    test "with no slot that identifies an event, nothing is removed and the error names every event, to ask which",
          %{world_a: world_a} do
       LocalScheduler.enrich("calendar.schedule", %{event: "dentist", time: "Tuesday"}, %{}, world_a)
       LocalScheduler.enrich("calendar.schedule", %{event: "standup", time: "Monday"}, %{}, world_a)
 
-      assert {:error, :event_not_identified} = LocalScheduler.enrich("calendar.cancel", %{}, %{}, world_a)
+      events = [%{event: "dentist", time: "Tuesday", date: ""}, %{event: "standup", time: "Monday", date: ""}]
 
-      assert {:error, :event_not_identified} =
+      assert {:error, {:event_not_identified, ^events}} = LocalScheduler.enrich("calendar.cancel", %{}, %{}, world_a)
+
+      assert {:error, {:event_not_identified, ^events}} =
                LocalScheduler.enrich("calendar.cancel", %{event: "  ", person: "John"}, %{}, world_a)
 
       assert length(stored(world_a, "calendar")) == 2
+    end
+
+    test "with no slot that identifies an event and a single event, the error still names it rather than removing it",
+         %{world_a: world_a} do
+      LocalScheduler.enrich("calendar.schedule", %{event: "dentist", time: "Tuesday"}, %{}, world_a)
+
+      assert {:error, {:event_not_identified, [%{event: "dentist", time: "Tuesday", date: ""}]}} =
+               LocalScheduler.enrich("calendar.cancel", %{}, %{}, world_a)
+
+      assert length(stored(world_a, "calendar")) == 1
+    end
+
+    test "with no slot that identifies an event and no events, nothing matches", %{world_a: world_a} do
+      assert {:error, {:no_matching_items, :calendar, %{}}} = LocalScheduler.enrich("calendar.cancel", %{}, %{}, world_a)
     end
 
     test "removes only the event the slots identify", %{world_a: world_a} do
@@ -422,7 +467,7 @@ defmodule Brain.Services.LocalSchedulerTest do
                  world_a
                )
 
-      assert {:ok, %{next_event: "dentist", event_date: "March 5"}} =
+      assert {:ok, %{last_set_event: "dentist", event_date: "March 5"}} =
                LocalScheduler.enrich("calendar.schedule", %{event: "dentist", time: "3pm", date: "March 5"}, %{}, world_a)
 
       assert [%Atlas.Schemas.SchedulerItem{date: "tomorrow"}] = stored(world_a, "alarm")
@@ -507,13 +552,13 @@ defmodule Brain.Services.LocalSchedulerTest do
       assert {:ok, %{reminder_texts: ["call home"], reminder_dates: ["Friday"], reminder_count: 1}} =
                LocalScheduler.enrich("reminder.check", %{date: "friday"}, %{}, world_a)
 
-      assert {:ok, %{next_event: "dentist", event_date: "Friday", event_count: 1}} =
+      assert {:ok, %{last_set_event: "dentist", event_date: "Friday", event_count: 1}} =
                LocalScheduler.enrich("calendar.query", %{date: "Friday"}, %{}, world_a)
 
-      assert {:ok, %{next_event: "standup", event_date: "Monday", event_count: 2}} =
+      assert {:ok, %{last_set_event: "standup", event_date: "Monday", event_count: 2}} =
                LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
 
-      assert {:ok, %{next_event: "", event_date: "", event_count: 0}} =
+      assert {:ok, %{last_set_event: "", event_date: "", event_count: 0}} =
                LocalScheduler.enrich("calendar.query", %{date: "Sunday"}, %{}, world_a)
     end
 
@@ -586,13 +631,13 @@ defmodule Brain.Services.LocalSchedulerTest do
       assert {:ok, %{timer_status: "running", duration: "3 minutes"}} =
                LocalScheduler.enrich("timer.check", %{}, %{}, world_a)
 
-      assert {:ok, %{next_event: "standup", event_time: "Monday"}} =
+      assert {:ok, %{last_set_event: "standup", event_time: "Monday"}} =
                LocalScheduler.enrich("calendar.query", %{}, %{}, world_a)
 
       assert {:ok, %{timer_status: "running", duration: "5 minutes"}} =
                LocalScheduler.enrich("timer.check", %{}, %{}, world_b)
 
-      assert {:ok, %{next_event: "dentist", event_time: "Tuesday"}} =
+      assert {:ok, %{last_set_event: "dentist", event_time: "Tuesday"}} =
                LocalScheduler.enrich("calendar.query", %{}, %{}, world_b)
     end
 
