@@ -21,7 +21,8 @@
     "action": ["activity", "recurrence"],
     "code": ["symbol", "file", "programming_language"],
     "symbol": ["function", "class", "method", "variable"],
-    "event": []
+    "event": [],
+    "duration": []
   },
   "type_groups": {
     "location_types": ["location", "city", "room", "ambiguous_name_location", "place_name", "geo_location", "setting", "gpe"],
@@ -79,6 +80,7 @@
     "default_propn_type": "person",
     "subject_capable_types": ["object", "thing", "location", "person", "noun"],
     "temporal_parent_type": "date_time",
+    "duration_type": "duration",
     "temporal_types": ["sys_date", "date", "relative_date", "day", "weekday", "month", "day_name", "month_name", "time", "sys_time"],
     "month_types": ["month", "month_name"],
     "code_entity_types": {
