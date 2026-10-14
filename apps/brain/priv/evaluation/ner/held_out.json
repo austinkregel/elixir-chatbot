@@ -4991,5 +4991,135 @@
     ],
     "labeled_by": "authored",
     "text": "where is the function parse_json referenced"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "John"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Cancel my meeting with John"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "5 minute"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Clear the 5 minute timer"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Hit snooze"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "I don't need the timer anymore"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Let me sleep more"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Remind me about the meeting"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Remind me later"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Remind me to call mom"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "next week"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Schedule a meeting for next week"
+  },
+  {
+    "expected": [
+      {
+        "type": "time",
+        "value": "9am"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Set a reminder for 9am"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Set a timer"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Show me my appointments"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "today's"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Show today's schedule"
+  },
+  {
+    "expected": [
+      {
+        "type": "duration",
+        "value": "10 minutes"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Snooze for 10 minutes"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Snooze the alarm"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Stop the pasta timer"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "Turn off the timer"
+  },
+  {
+    "expected": [
+      {
+        "type": "date",
+        "value": "today"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "What's on my calendar today"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "When is my next meeting"
   }
 ]
