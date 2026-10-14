@@ -429,7 +429,7 @@ defmodule Brain.Analysis.SlotResult do
 
   @type slot_value :: %{
           value: any(),
-          source: :explicit | :type_compatible | :conversation | :user_profile | :default | :inferred,
+          source: :explicit | :type_compatible | :captured | :conversation | :user_profile | :default | :inferred,
           confidence: float()
         }
 
