@@ -444,6 +444,7 @@ defmodule World.Manager do
   def handle_call({:destroy_world, world_id}, _from, state) do
     case :ets.lookup(@ets_worlds, world_id) do
       [{^world_id, world}] ->
+        emit_world_destroyed(world)
         drop_world_runtime_state(world_id)
         Logger.info("Destroyed training world runtime state", %{id: world_id, name: world.name})
         {:reply, :ok, state}
@@ -463,6 +464,7 @@ defmodule World.Manager do
         # purged again.
         case delete_persisted_files(world) do
           :ok ->
+            emit_world_destroyed(world)
             drop_world_runtime_state(world_id)
             Logger.info("Purged training world", %{id: world_id, name: world.name})
             {:reply, :ok, state}
@@ -736,6 +738,16 @@ defmodule World.Manager do
 
       [] ->
         :ok
+    end
+  end
+
+  # Emitted while the world is still held, before its runtime state goes;
+  # its events go with it, so the event is not appended to them.
+  defp emit_world_destroyed(world) do
+    if world.config[:emit_telemetry] do
+      world.id
+      |> WorldEvents.new(:world_destroyed, %{name: world.name, mode: world.mode})
+      |> WorldEvents.emit_telemetry()
     end
   end
 
