@@ -109,8 +109,10 @@ defmodule Brain.Services.LocalScheduler do
   has no time to order by and is never the next. It reports how many items it
   found (`:event_count`) and how many of them are still to come
   (`:upcoming_count`). Each of the three narrows its items to the days the
-  `:date` slot names, matched as above; with no `:date`, it reports all of
-  them. No other slot narrows a check. When a check finds nothing, its count is
+  `:date` slot names, a check of reminders to those whose text the
+  `:reminder_text` slot names, and a query of the calendar to the items whose
+  event the `:event` slot names, each matched as above; with none of them
+  said, it reports all of them. No other slot narrows a check. When a check finds nothing, its count is
   0 and the fields of the item it would report are `""`: no text stands in for
   "nothing found".
 
@@ -193,12 +195,12 @@ defmodule Brain.Services.LocalScheduler do
     calendar: [event: :event, time: :time, date: :date]
   }
 
-  # The field a check narrows the items of each type to, with the slot that
-  # names it (see "Checking" above).
-  @day_slots %{
+  # The fields a check narrows the items of each type by, each with the slot
+  # that names it (see "Checking" above).
+  @check_slots %{
     alarm: [date: :date],
-    reminder: [date: :date],
-    calendar: [date: :date]
+    reminder: [text: :reminder_text, date: :date],
+    calendar: [event: :event, date: :date]
   }
 
   # How each identifying field is matched (see "Matching a slot to an item").
@@ -352,7 +354,7 @@ defmodule Brain.Services.LocalScheduler do
   def check_alarms(slots, _credentials, world_id) do
     world_id = world!(world_id, :check_alarms)
     turn = turn!(slots, :check_alarms)
-    alarms = world_id |> list_items(:alarm) |> Enum.reverse() |> on_day(:alarm, slots, turn)
+    alarms = world_id |> list_items(:alarm) |> Enum.reverse() |> narrowed(:alarm, slots, turn)
     ringing = Enum.filter(alarms, &(&1.status == "ringing"))
 
     status =
@@ -413,7 +415,7 @@ defmodule Brain.Services.LocalScheduler do
   def check_reminders(slots, _credentials, world_id) do
     world_id = world!(world_id, :check_reminders)
     turn = turn!(slots, :check_reminders)
-    reminders = world_id |> list_items(:reminder) |> Enum.reverse() |> on_day(:reminder, slots, turn)
+    reminders = world_id |> list_items(:reminder) |> Enum.reverse() |> narrowed(:reminder, slots, turn)
 
     {:ok,
      %{
@@ -512,7 +514,7 @@ defmodule Brain.Services.LocalScheduler do
   def query_calendar(slots, _credentials, world_id) do
     world_id = world!(world_id, :query_calendar)
     turn = turn!(slots, :query_calendar)
-    events = world_id |> list_items(:calendar) |> Enum.reverse() |> on_day(:calendar, slots, turn)
+    events = world_id |> list_items(:calendar) |> Enum.reverse() |> narrowed(:calendar, slots, turn)
 
     upcoming =
       events
@@ -879,10 +881,11 @@ defmodule Brain.Services.LocalScheduler do
     end
   end
 
-  # The items, of `type`, that are for the days the slots name; all of them
-  # when no slot names a day (see "Checking" above).
-  defp on_day(items, type, slots, turn) do
-    criteria = @day_slots |> Map.fetch!(type) |> said!(type, slots) |> criteria!(turn)
+  # The items, of `type`, that match what the check's slots name (the days, and
+  # a reminder's text or a calendar item's event); all of them when no such
+  # slot names anything (see "Checking" above).
+  defp narrowed(items, type, slots, turn) do
+    criteria = @check_slots |> Map.fetch!(type) |> said!(type, slots) |> criteria!(turn)
     Enum.filter(items, &matches?(&1, criteria))
   end
 
