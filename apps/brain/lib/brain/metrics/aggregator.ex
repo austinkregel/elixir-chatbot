@@ -1,14 +1,25 @@
 defmodule Brain.Metrics.Aggregator do
+  # How long its supervisor gives it to stop, and what it does in that time.
+  @shutdown_ms 15_000
+  @drain_ms 2_000
+  @final_write_ms 10_000
+  # How often, and after how many events, the batch is written.
+  @batch_interval_ms 1_000
+  @batch_max_events 500
+  # How long after a logged miss from a sender for a reason the next ones are
+  # logged together, and how often the aggregator logs what is not logged yet.
+  @missed_log_interval_ms 10_000
+
   @moduledoc """
   Counts the events `Brain.Telemetry` hands it, off the emitting process's
   path, and answers what was counted.
 
   ## Where each metric lives
 
-  What must survive a restart is written to Atlas (`Atlas.Metrics`) as each
-  event is handled, in measurement windows, and every reader reads it from
-  Atlas; there is no copy in memory to diverge. Durations are kept as
-  aggregates, never as raw events: count, sum, min, max and a histogram.
+  What must survive a restart is written to Atlas (`Atlas.Metrics`), in
+  measurement windows, and every reader reads it from Atlas; there is no
+  copy in memory to diverge. Durations are kept as aggregates, never as raw
+  events: count, sum, min, max and a histogram.
 
   Kept in Atlas, for the whole node (the `"telemetry"` family, `:node`):
 
@@ -37,8 +48,8 @@ defmodule Brain.Metrics.Aggregator do
   Kept in memory only, because each describes the live process or the
   moment, not history (`get_metrics/0`):
 
-  - queue sizes and readiness: gauges of the running processes
-  - model loads: what this process has loaded
+  - readiness: a gauge of the running processes
+  - model loads: what this node loaded last, per model
   - the rate per minute and when each duration was last seen: how busy this
     process is now
   - the last service health check, and the last dispatch, verification,
@@ -48,27 +59,57 @@ defmodule Brain.Metrics.Aggregator do
   Evaluation results are kept by `Brain.ML.EvaluationStore`, in Atlas, and
   read from there; the aggregator does not keep a copy.
 
+  ## Writes are batched
+
+  The aggregator combines what the events it handles add, as Atlas would
+  (sums added, the smaller minimum and the larger maximum kept, the later
+  record kept), and writes them in one transaction every
+  #{@batch_interval_ms} milliseconds, as soon as #{@batch_max_events} events are waiting, before it
+  starts a window (`reset/0`, `start_semantic_fact_window/1`), when asked
+  (`flush/0`) and when it stops. What it answers is read from Atlas, so an
+  event shows there once its batch is written. The missed counts held in
+  memory are written in the same transaction.
+
   ## Nothing is missed silently
 
-  An event the aggregator cannot count is logged as an error and counted as
-  missed, by who sent it and why (`get_missed_events/0`):
+  An event the aggregator cannot count is counted as missed, by who sent it
+  and why (`get_missed_events/0`), and logged as an error:
 
   - `:aggregator_not_running` - it was sent while the aggregator was not
     running, as while its supervisor restarts it (`submit/2`)
-  - `:atlas_write_failed` - Atlas refused or could not take the write; the
-    aggregator logs it and goes on, so an unavailable Atlas never crashes it
-    into a restart loop
+  - `:atlas_write_failed` - Atlas refused or could not take the batch it was
+    in; the aggregator logs it and goes on, so an unavailable Atlas never
+    crashes it into a restart loop
   - `:malformed_event` - the event lacked what it is counted by
-  - `:aggregator_stopped` - it was waiting in the mailbox when the
-    aggregator stopped or crashed
+  - `:aggregator_stopped` - it was still waiting in the mailbox when the
+    aggregator, stopping, had used the time it takes to count what waits
+    (`:drain_ms`, #{@drain_ms} milliseconds unless started with another)
+
+  The first miss from a sender for a reason is logged as it happens; the
+  misses after it from the same sender for the same reason, within
+  #{@missed_log_interval_ms} milliseconds, are counted and logged together:
+  by the sender's next miss after that time, or by the aggregator, which
+  every #{@missed_log_interval_ms} milliseconds and when it stops logs one
+  line with what was missed and not yet logged, by sender and reason. So an
+  Atlas outage logs a line per sender and reason in that time, not one per
+  event, and every miss is in a line once the aggregator runs.
 
   Missed counts are held in memory, outside the aggregator's process, until
-  the aggregator writes them to Atlas: when it starts, every ten seconds, and
-  when it stops. Any other exception crashes the aggregator, loudly; its
-  supervisor restarts it.
+  the aggregator writes them to Atlas. Any other exception crashes the
+  aggregator, loudly; its supervisor restarts it.
+
+  ## Stopping
+
+  Its supervisor gives it #{@shutdown_ms} milliseconds to stop. Stopping, it
+  stops taking events (a sender from then on counts its event as missed),
+  counts what waits in its mailbox for up to `:drain_ms`, counts the rest
+  as missed, and writes the batch in at most #{@final_write_ms} milliseconds; a batch
+  that cannot be written in that time is counted as missed. So it always
+  finishes within the time its supervisor gives it, and no event in its
+  mailbox goes uncounted.
   """
 
-  use GenServer
+  use GenServer, shutdown: @shutdown_ms
   require Logger
 
   @gauges_table :chatbot_metrics
@@ -76,7 +117,6 @@ defmodule Brain.Metrics.Aggregator do
   @semantic_fact_family "semantic_facts"
   @rate_window_ms 5 * 60 * 1000
   @max_rate_points 1000
-  @flush_interval_ms 10_000
 
   # The spans `Brain.Telemetry` measures and the durations the aggregator
   # records itself; each is in `get_metrics/0`, counted or not.
@@ -117,12 +157,17 @@ defmodule Brain.Metrics.Aggregator do
   @training_statuses %{"in_progress" => :in_progress, "completed" => :completed, "failed" => :failed}
 
   # Who sends the aggregator events besides the telemetry handlers: its own
-  # record functions, and the modules that cast to it directly.
-  @cast_sources [:record_fact_retrieval, :record_semantic_retrieval, :record_verification_miss_reason]
-  @direct_sources ~w(record_duration record_error record_queue_size record_readiness) ++
-                    Enum.map(@cast_sources, &Atom.to_string/1)
+  # record functions.
+  @direct_sources ~w(record_duration record_error record_readiness record_fact_retrieval
+                     record_semantic_retrieval record_verification_miss_reason)
   @miss_reasons [:aggregator_not_running, :atlas_write_failed, :malformed_event, :aggregator_stopped]
   @missed_key {__MODULE__, :missed}
+
+  @typedoc """
+  The node-wide telemetry window as read from Atlas once (`read_telemetry/0`),
+  for readers that answer several questions from one read.
+  """
+  @type telemetry :: %{window: Atlas.Schemas.MetricWindow.t() | nil, values: map(), records: map()}
 
   defmodule MalformedEvent do
     @moduledoc false
@@ -134,6 +179,8 @@ defmodule Brain.Metrics.Aggregator do
 
   ## Options
     - `:name` - The name to register under (default: `#{__MODULE__}`)
+    - `:drain_ms` - how long, stopping, it counts what waits in its mailbox
+      before it counts the rest as missed (default: #{@drain_ms})
   """
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -147,8 +194,8 @@ defmodule Brain.Metrics.Aggregator do
   @doc """
   Sends `message` from `source` (a telemetry handler id, or one of the
   aggregator's own record functions) to the aggregator, without waiting.
-  Never raises: when the aggregator is not running, the event is logged as
-  an error and counted as missed (`get_missed_events/0`).
+  Never raises: when the aggregator is not running, the event is counted as
+  missed (`get_missed_events/0`) and logged.
   """
   @spec submit(String.t(), tuple()) :: :ok
   def submit(source, message) when is_binary(source) and is_tuple(message) do
@@ -156,7 +203,7 @@ defmodule Brain.Metrics.Aggregator do
     :ok
   rescue
     # Sending to a name nothing is registered under raises.
-    ArgumentError -> missed(source, :aggregator_not_running, describe(message))
+    ArgumentError -> missed(source, :aggregator_not_running, 1, describe(message))
   end
 
   @doc "Records a duration metric, in milliseconds, without waiting.\n"
@@ -169,14 +216,34 @@ defmodule Brain.Metrics.Aggregator do
     submit("record_error", {:record_error, metric_name, duration_ms, metadata})
   end
 
-  @doc "Records a queue size, without waiting.\n"
-  def record_queue_size(genserver_name, queue_length) do
-    submit("record_queue_size", {:record_queue_size, genserver_name, queue_length})
-  end
-
   @doc "Records readiness state for a subsystem, without waiting.\n"
   def record_readiness(system_name, ready?) when is_atom(system_name) or is_binary(system_name) do
     submit("record_readiness", {:record_readiness, system_name, ready?})
+  end
+
+  @doc """
+  Records a fact retrieval for a response that found `result_count` facts
+  (`get_enrichment_metrics/0`), without waiting.
+  """
+  def record_fact_retrieval(result_count) do
+    submit("record_fact_retrieval", {:record_fact_retrieval, result_count})
+  end
+
+  @doc """
+  Records a semantic retrieval for a response that found `result_count`
+  facts (`get_enrichment_metrics/0`), without waiting.
+  """
+  def record_semantic_retrieval(result_count) do
+    submit("record_semantic_retrieval", {:record_semantic_retrieval, result_count})
+  end
+
+  @doc """
+  Records why a fact verification missed, one of
+  `#{inspect(@verification_miss_reasons)}` (`get_verification_miss_reasons/0`),
+  without waiting.
+  """
+  def record_verification_miss_reason(reason) do
+    submit("record_verification_miss_reason", {:record_verification_miss_reason, reason})
   end
 
   @doc "Returns true if the Aggregator is ready to accept requests."
@@ -189,11 +256,21 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   @doc """
+  Writes every event sent before this call to Atlas, in one batch, and
+  returns once it is written or, when Atlas cannot take it, counted as
+  missed.
+  """
+  @spec flush() :: :ok
+  def flush do
+    GenServer.call(__MODULE__, :flush, 30_000)
+  end
+
+  @doc """
   Clears the gauges held in memory and starts a new node-wide telemetry
   window in Atlas, so what is counted from now on starts at zero; the ended
-  window keeps its counts. Made by the aggregator after every event sent
-  before it. Raises when the window cannot be started. Useful for testing.
-  The semantic-fact windows are left as they are
+  window keeps its counts. Made by the aggregator after it wrote every event
+  sent before it. Raises when the window cannot be started. Useful for
+  testing. The semantic-fact windows are left as they are
   (`start_semantic_fact_window/1`).
   """
   def reset do
@@ -210,7 +287,8 @@ defmodule Brain.Metrics.Aggregator do
   @doc false
   # Creates the counters of missed events, once per node, where they outlive
   # the aggregator: a handler counts a miss while the aggregator is down, and
-  # the next aggregator writes it to Atlas.
+  # the next aggregator writes it to Atlas. Beside each count: the misses not
+  # logged yet, and when a miss of its sender and reason was last logged.
   def ensure_missed_counters do
     if :persistent_term.get(@missed_key, nil) == nil do
       :global.trans(
@@ -219,7 +297,13 @@ defmodule Brain.Metrics.Aggregator do
           if :persistent_term.get(@missed_key, nil) == nil do
             keys = for source <- sources(), reason <- @miss_reasons, do: {source, reason}
             index = keys |> Enum.with_index(1) |> Map.new()
-            :persistent_term.put(@missed_key, {index, :counters.new(map_size(index), [:write_concurrency])})
+            size = map_size(index)
+
+            :persistent_term.put(
+              @missed_key,
+              {index, :counters.new(size, [:write_concurrency]), :counters.new(size, [:write_concurrency]),
+               :atomics.new(size, signed: true)}
+            )
           end
         end,
         [node()]
@@ -231,15 +315,69 @@ defmodule Brain.Metrics.Aggregator do
 
   defp sources, do: Brain.Telemetry.handler_ids() ++ @direct_sources
 
-  defp missed(source, reason, detail) do
+  # Counts `count` events from `source` as missed for `reason`, and logs them
+  # unless a miss from `source` for `reason` was logged in the last
+  # `@missed_log_interval_ms`: then they are logged with the next one, or by
+  # the aggregator's report (`report_unlogged_misses/0`).
+  defp missed(source, reason, count, detail) do
     :ok = ensure_missed_counters()
-    {index, counters} = :persistent_term.get(@missed_key)
-    :counters.add(counters, Map.fetch!(index, {source, reason}), 1)
+    {index, counters, unlogged, logged_at} = :persistent_term.get(@missed_key)
+    i = Map.fetch!(index, {source, reason})
+    :counters.add(counters, i, count)
+    :counters.add(unlogged, i, count)
 
-    Logger.error(
-      "Brain.Metrics.Aggregator: missed #{detail} from #{source} (#{reason}); " <>
-        "counted in Brain.Metrics.Aggregator.get_missed_events/0"
-    )
+    now = System.system_time(:millisecond)
+    last = :atomics.get(logged_at, i)
+
+    if now - last >= @missed_log_interval_ms and :atomics.compare_exchange(logged_at, i, last, now) == :ok do
+      case :counters.get(unlogged, i) do
+        # The aggregator's report logged them meanwhile.
+        0 ->
+          :ok
+
+        n ->
+          :counters.sub(unlogged, i, n)
+
+          Logger.error(
+            "Brain.Metrics.Aggregator: missed #{n} event(s) from #{source} (#{reason}), the latest #{detail}; " <>
+              "further misses from #{source} (#{reason}) in the next #{div(@missed_log_interval_ms, 1000)} seconds " <>
+              "are counted and logged together. Counted in Brain.Metrics.Aggregator.get_missed_events/0"
+          )
+      end
+    end
+
+    :ok
+  end
+
+  # Logs, in one line, the misses counted and not logged yet, by sender and
+  # reason.
+  defp report_unlogged_misses do
+    :ok = ensure_missed_counters()
+    {index, _counters, unlogged, _logged_at} = :persistent_term.get(@missed_key)
+
+    reported =
+      index
+      |> Enum.sort_by(&elem(&1, 1))
+      |> Enum.flat_map(fn {key, i} ->
+        case :counters.get(unlogged, i) do
+          0 ->
+            []
+
+          n ->
+            :counters.sub(unlogged, i, n)
+            [{key, n}]
+        end
+      end)
+
+    if reported != [] do
+      total = reported |> Enum.map(&elem(&1, 1)) |> Enum.sum()
+
+      Logger.error(
+        "Brain.Metrics.Aggregator: #{total} more missed event(s) since the last report: " <>
+          Enum.map_join(reported, ", ", fn {{source, reason}, n} -> "#{n} from #{source} (#{reason})" end) <>
+          ". Counted in Brain.Metrics.Aggregator.get_missed_events/0"
+      )
+    end
 
     :ok
   end
@@ -247,7 +385,7 @@ defmodule Brain.Metrics.Aggregator do
   # Missed events not yet written to Atlas.
   defp pending_missed do
     :ok = ensure_missed_counters()
-    {index, counters} = :persistent_term.get(@missed_key)
+    {index, counters, _unlogged, _logged_at} = :persistent_term.get(@missed_key)
 
     Enum.reduce(index, %{}, fn {key, i}, acc ->
       case :counters.get(counters, i) do
@@ -257,29 +395,23 @@ defmodule Brain.Metrics.Aggregator do
     end)
   end
 
-  # Writes the missed events counted so far to Atlas, and takes them off the
-  # counters once written; a miss counted meanwhile stays counted. When Atlas
-  # cannot take them they stay counted in memory for the next try.
-  defp flush_missed do
-    pending = pending_missed()
+  # Takes the missed events written to Atlas off the counters; a miss counted
+  # meanwhile stays counted.
+  defp missed_written(pending) do
+    {index, counters, _unlogged, _logged_at} = :persistent_term.get(@missed_key)
+    Enum.each(pending, fn {key, count} -> :counters.sub(counters, Map.fetch!(index, key), count) end)
+  end
 
-    if pending != %{} do
-      values = Enum.map(pending, fn {{source, reason}, count} -> {"missed:#{source}:#{reason}", :sum, count} end)
+  defp missed_write(pending) when pending == %{}, do: []
 
-      case atlas_write([%{scope: :node, family: @telemetry_family, values: values}]) do
-        :ok ->
-          {index, counters} = :persistent_term.get(@missed_key)
-          Enum.each(pending, fn {key, count} -> :counters.sub(counters, Map.fetch!(index, key), count) end)
-
-        {:error, exception} ->
-          Logger.error(
-            "Brain.Metrics.Aggregator: could not write #{pending |> Map.values() |> Enum.sum()} missed event(s) " <>
-              "to Atlas; they stay counted here and are written on the next try: #{Exception.message(exception)}"
-          )
-      end
-    end
-
-    :ok
+  defp missed_write(pending) do
+    [
+      %{
+        scope: :node,
+        family: @telemetry_family,
+        values: Enum.map(pending, fn {{source, reason}, count} -> {"missed:#{source}:#{reason}", :sum, count} end)
+      }
+    ]
   end
 
   @doc """
@@ -291,12 +423,10 @@ defmodule Brain.Metrics.Aggregator do
   record functions, and a reason is one of `#{inspect(@miss_reasons)}`.
   Raises when Atlas cannot be read.
   """
-  @spec get_missed_events() :: %{total: non_neg_integer(), by_source: %{String.t() => %{atom() => pos_integer()}}}
-  def get_missed_events do
-    {_window, values, _records} = telemetry_window()
-
+  @spec get_missed_events(telemetry()) :: %{total: non_neg_integer(), by_source: %{String.t() => %{atom() => pos_integer()}}}
+  def get_missed_events(telemetry \\ read_telemetry()) do
     persisted =
-      for {"missed:" <> missed, count} <- values do
+      for {"missed:" <> missed, count} <- telemetry.values do
         [source, reason] = String.split(missed, ":", parts: 2)
         {{source, decode_miss_reason(reason)}, count}
       end
@@ -326,32 +456,42 @@ defmodule Brain.Metrics.Aggregator do
   # ============================================================================
 
   @doc """
+  Reads the current node-wide telemetry window from Atlas, once: every
+  reader below answers from it when given it, so a caller with several
+  questions (the dashboard) reads Atlas once. Each reader reads it itself
+  when not given it. Raises when Atlas cannot be read.
+  """
+  @spec read_telemetry() :: telemetry()
+  def read_telemetry do
+    case Atlas.Metrics.windows(:node, @telemetry_family, 1) do
+      [%{window: window, values: values, records: records}] -> %{window: window, values: values, records: records}
+      [] -> %{window: nil, values: %{}, records: %{}}
+    end
+  end
+
+  @doc """
   The current node-wide telemetry window, `%{started_at: DateTime.t(),
   ended_at: nil}`: what the Atlas-kept metrics count since; `nil` before
   anything was counted. Raises when Atlas cannot be read.
   """
-  @spec get_telemetry_window() :: %{started_at: DateTime.t(), ended_at: nil} | nil
-  def get_telemetry_window do
-    {window, _values, _records} = telemetry_window()
+  @spec get_telemetry_window(telemetry()) :: %{started_at: DateTime.t(), ended_at: nil} | nil
+  def get_telemetry_window(telemetry \\ read_telemetry()) do
+    window = telemetry.window
     window && %{started_at: window.started_at, ended_at: window.ended_at}
   end
 
   @doc """
   The metrics of the node: each duration metric in its current telemetry
   window (`get_metric/1`), and under `:errors` (`get_errors/0`), `:training`
-  (`get_training_stats/0`), `:queues` (`get_queue_sizes/0`), `:model_loads`
-  (`get_model_load_stats/0`) and `:readiness` the rest. Raises when Atlas
-  cannot be read.
+  (`get_training_stats/0`), `:model_loads` (`get_model_load_stats/0`) and
+  `:readiness` the rest. Raises when Atlas cannot be read.
   """
-  def get_metrics do
-    {_window, values, records} = telemetry_window()
-
-    values
+  def get_metrics(telemetry \\ read_telemetry()) do
+    telemetry.values
     |> duration_metrics()
     |> Map.merge(%{
-      errors: errors(values),
-      training: training(records),
-      queues: gauges(:queue),
+      errors: errors(telemetry.values),
+      training: training(telemetry.records),
       model_loads: gauges(:model_load),
       readiness: gauges(:readiness)
     })
@@ -374,9 +514,8 @@ defmodule Brain.Metrics.Aggregator do
   `:sample_count`, the spans in the last five minutes, and `:last_updated`,
   the monotonic time in milliseconds of the last one (`nil` before one).
   """
-  def get_metric(name) do
-    {_window, values, _records} = telemetry_window()
-    Map.get(duration_metrics(values), name)
+  def get_metric(name, telemetry \\ read_telemetry()) do
+    Map.get(duration_metrics(telemetry.values), name)
   end
 
   @doc """
@@ -385,13 +524,9 @@ defmodule Brain.Metrics.Aggregator do
   raised counts under its kind (`"error"`, `"exit"`, `"throw"`); a failed
   training run under `"training_failed.<model>"`.
   """
-  def get_errors do
-    {_window, values, _records} = telemetry_window()
-    errors(values)
+  def get_errors(telemetry \\ read_telemetry()) do
+    errors(telemetry.values)
   end
-
-  @doc "The latest queue size sampled per GenServer, in memory: a gauge of the running process.\n"
-  def get_queue_sizes, do: gauges(:queue)
 
   @doc """
   The last training run of each model in the current telemetry window, by
@@ -400,12 +535,14 @@ defmodule Brain.Metrics.Aggregator do
   reason:, recorded_at:}}`. `started_at` is `nil` when the run started
   before the aggregator last started.
   """
-  def get_training_stats do
-    {_window, _values, records} = telemetry_window()
-    training(records)
+  def get_training_stats(telemetry \\ read_telemetry()) do
+    training(telemetry.records)
   end
 
-  @doc "The last load of each model by this process, in memory.\n"
+  @doc """
+  The last load of each model this node made, in memory, by model name:
+  `%{model => %{loaded_at:, duration_ms:, success:, last_updated:}}`.
+  """
   def get_model_load_stats, do: gauges(:model_load)
 
   @doc """
@@ -417,8 +554,8 @@ defmodule Brain.Metrics.Aggregator do
     `:health_status` this process saw
   - `:cache` - `:hits`, `:misses` and `:hit_rate`
   """
-  def get_service_metrics do
-    {_window, values, _records} = telemetry_window()
+  def get_service_metrics(telemetry \\ read_telemetry()) do
+    values = telemetry.values
     durations = duration_metrics(values)
 
     by_service =
@@ -471,8 +608,8 @@ defmodule Brain.Metrics.Aggregator do
   - `:last_verifications` - from memory, the last verification this process
     saw per status
   """
-  def get_epistemic_metrics do
-    {_window, values, _records} = telemetry_window()
+  def get_epistemic_metrics(telemetry \\ read_telemetry()) do
+    values = telemetry.values
 
     %{
       total_verifications: Map.get(values, "duration:fact_verification:count", 0),
@@ -494,8 +631,8 @@ defmodule Brain.Metrics.Aggregator do
   Response enrichment in the current telemetry window: fact and semantic
   retrieval hit rates, and facts retrieved per response.
   """
-  def get_enrichment_metrics do
-    {_window, values, _records} = telemetry_window()
+  def get_enrichment_metrics(telemetry \\ read_telemetry()) do
+    values = telemetry.values
     fact_total = Map.get(values, "fact_retrieval:total", 0)
     fact_hits = Map.get(values, "fact_retrieval:hits", 0)
     fact_results = Map.get(values, "fact_retrieval:results", 0)
@@ -512,9 +649,8 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   @doc "Why fact verifications missed, in the current telemetry window: counts, percentages and total.\n"
-  def get_verification_miss_reasons do
-    {_window, values, _records} = telemetry_window()
-    counts = Map.new(@verification_miss_reasons, &{&1, Map.get(values, "verification_miss:#{&1}", 0)})
+  def get_verification_miss_reasons(telemetry \\ read_telemetry()) do
+    counts = Map.new(@verification_miss_reasons, &{&1, Map.get(telemetry.values, "verification_miss:#{&1}", 0)})
     total = counts |> Map.values() |> Enum.sum()
 
     %{counts: counts, percentages: Map.new(counts, fn {reason, count} -> {reason, percent(count, total)} end), total: total}
@@ -532,8 +668,8 @@ defmodule Brain.Metrics.Aggregator do
   - `:racing_early_exits` - by analyzer
   - `:code_languages` - code files processed by language
   """
-  def get_activity_metrics do
-    {_window, values, _records} = telemetry_window()
+  def get_activity_metrics(telemetry \\ read_telemetry()) do
+    values = telemetry.values
     durations = duration_metrics(values)
 
     kg_signal_fields =
@@ -573,13 +709,6 @@ defmodule Brain.Metrics.Aggregator do
 
   defp percent(_part, 0), do: 0.0
   defp percent(part, total), do: Float.round(part / total * 100, 1)
-
-  defp telemetry_window do
-    case Atlas.Metrics.windows(:node, @telemetry_family, 1) do
-      [%{window: window, values: values, records: records}] -> {window, values, records}
-      [] -> {nil, %{}, %{}}
-    end
-  end
 
   # "a:b:c" -> {"a:b", "c"}
   defp split_last(name) do
@@ -756,10 +885,7 @@ defmodule Brain.Metrics.Aggregator do
   """
   @spec get_semantic_fact_metrics(String.t()) :: map()
   def get_semantic_fact_metrics(world_id) when is_binary(world_id) do
-    case Atlas.Metrics.windows({:world, world_id}, @semantic_fact_family, 1) do
-      [current] -> semantic_fact_metrics(current)
-      [] -> semantic_fact_metrics(nil, %{})
-    end
+    get_semantic_fact_windows(world_id).current
   end
 
   @doc """
@@ -769,9 +895,19 @@ defmodule Brain.Metrics.Aggregator do
   """
   @spec get_previous_semantic_fact_metrics(String.t()) :: map() | nil
   def get_previous_semantic_fact_metrics(world_id) when is_binary(world_id) do
+    get_semantic_fact_windows(world_id).previous
+  end
+
+  @doc """
+  `%{current: get_semantic_fact_metrics(world_id), previous:
+  get_previous_semantic_fact_metrics(world_id)}`, read from Atlas once.
+  """
+  @spec get_semantic_fact_windows(String.t()) :: %{current: map(), previous: map() | nil}
+  def get_semantic_fact_windows(world_id) when is_binary(world_id) do
     case Atlas.Metrics.windows({:world, world_id}, @semantic_fact_family, 2) do
-      [_current, previous] -> semantic_fact_metrics(previous)
-      _no_previous -> nil
+      [current, previous] -> %{current: semantic_fact_metrics(current), previous: semantic_fact_metrics(previous)}
+      [current] -> %{current: semantic_fact_metrics(current), previous: nil}
+      [] -> %{current: semantic_fact_metrics(nil, %{}), previous: nil}
     end
   end
 
@@ -780,9 +916,9 @@ defmodule Brain.Metrics.Aggregator do
   counts, and starts a new one; returns the new window's
   `%{started_at: DateTime.t(), ended_at: nil}`.
 
-  Made by the aggregator, after every event it was sent before this call, so
-  those events count in the window they happened in. Raises when the window
-  cannot be started.
+  Made by the aggregator, after it wrote every event it was sent before this
+  call, so those events count in the window they happened in. Raises when
+  the window cannot be started.
   """
   @spec start_semantic_fact_window(String.t()) :: %{started_at: DateTime.t(), ended_at: nil}
   def start_semantic_fact_window(world_id) when is_binary(world_id) do
@@ -891,34 +1027,56 @@ defmodule Brain.Metrics.Aggregator do
   # ============================================================================
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
+    drain_ms = Keyword.get(opts, :drain_ms, @drain_ms)
+
+    unless is_integer(drain_ms) and drain_ms >= 0 do
+      raise ArgumentError, "Brain.Metrics.Aggregator: :drain_ms must be a non-negative integer, got #{inspect(drain_ms)}"
+    end
+
+    if drain_ms + @final_write_ms >= @shutdown_ms do
+      raise ArgumentError,
+            "Brain.Metrics.Aggregator: :drain_ms (#{drain_ms}) and the final write (#{@final_write_ms}) " <>
+              "must fit in the #{@shutdown_ms} ms its supervisor gives it to stop"
+    end
+
     # Stopped by its supervisor, it still runs terminate/2, and counts what it
-    # was sent and had not counted as missed.
+    # was sent and had not counted.
     Process.flag(:trap_exit, true)
     :ok = ensure_missed_counters()
     :ets.new(@gauges_table, [:named_table, :public, :set, read_concurrency: true])
-    schedule_flush()
+    schedule(:flush, @batch_interval_ms)
+    schedule(:report_missed, @missed_log_interval_ms)
 
     Logger.info("Metrics.Aggregator started")
 
-    {:ok, %{}, {:continue, :flush_missed}}
+    {:ok, %{batch: %{}, batch_sources: %{}, batch_events: 0, drain_ms: drain_ms}, {:continue, :flush}}
   end
 
   @impl true
-  def handle_continue(:flush_missed, state) do
-    flush_missed()
-    {:noreply, state}
+  def handle_continue(:flush, state) do
+    {:noreply, flush_batch(state)}
   end
 
   @impl true
   def handle_info({:metric_event, source, message}, state) do
-    count(source, message)
-    {:noreply, state}
+    state = count(state, source, message)
+
+    if state.batch_events >= @batch_max_events do
+      {:noreply, flush_batch(state)}
+    else
+      {:noreply, state}
+    end
   end
 
-  def handle_info(:flush_missed, state) do
-    flush_missed()
-    schedule_flush()
+  def handle_info(:flush, state) do
+    schedule(:flush, @batch_interval_ms)
+    {:noreply, flush_batch(state)}
+  end
+
+  def handle_info(:report_missed, state) do
+    report_unlogged_misses()
+    schedule(:report_missed, @missed_log_interval_ms)
     {:noreply, state}
   end
 
@@ -926,20 +1084,19 @@ defmodule Brain.Metrics.Aggregator do
     {:stop, reason, state}
   end
 
-  # The modules that cast to the aggregator directly.
-  @impl true
-  def handle_cast({kind, _} = message, state) when kind in @cast_sources do
-    count(Atom.to_string(kind), message)
-    {:noreply, state}
-  end
-
   @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
   end
 
+  def handle_call(:flush, _from, state) do
+    {:reply, :ok, flush_batch(state)}
+  end
+
   # A window Atlas cannot start is raised in the caller; the aggregator goes on.
   def handle_call({:start_semantic_fact_window, world_id}, _from, state) do
+    state = flush_batch(state)
+
     reply =
       with {:ok, window} <- atlas_start_window({:world, world_id}, @semantic_fact_family) do
         {:ok, %{started_at: window.started_at, ended_at: window.ended_at}}
@@ -949,6 +1106,7 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   def handle_call(:reset, _from, state) do
+    state = flush_batch(state)
     :ets.delete_all_objects(@gauges_table)
 
     reply =
@@ -960,49 +1118,155 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   @impl true
-  def terminate(_reason, _state) do
+  def terminate(_reason, state) do
     # Senders that find no aggregator from here on count their events as
-    # missed themselves; what already waits in the mailbox is counted here.
+    # missed themselves; what already waits in the mailbox is counted here,
+    # within the time its supervisor gives it.
     if Process.whereis(__MODULE__) == self(), do: Process.unregister(__MODULE__)
-    drain_mailbox()
-    flush_missed()
+    state = drain_mailbox(state, System.monotonic_time(:millisecond) + state.drain_ms)
+    final_flush(state)
+    report_unlogged_misses()
   end
 
-  defp drain_mailbox do
+  # Counts the events waiting in the mailbox into the batch until `deadline`,
+  # and those still waiting after it as missed.
+  defp drain_mailbox(state, deadline) do
     receive do
       {:metric_event, source, message} ->
-        missed(source, :aggregator_stopped, describe(message))
-        drain_mailbox()
-
-      {:"$gen_cast", {kind, _} = message} when kind in @cast_sources ->
-        missed(Atom.to_string(kind), :aggregator_stopped, describe(message))
-        drain_mailbox()
+        if System.monotonic_time(:millisecond) < deadline do
+          drain_mailbox(count(state, source, message), deadline)
+        else
+          :ok = missed(source, :aggregator_stopped, 1, describe(message))
+          drain_mailbox(state, deadline)
+        end
     after
-      0 -> :ok
+      0 -> state
     end
   end
 
-  defp schedule_flush do
-    Process.send_after(self(), :flush_missed, @flush_interval_ms)
+  # The last batch, written in a process of its own so that a write Atlas
+  # does not finish within `@final_write_ms` is stopped there and counted as
+  # missed, not left to its supervisor's kill.
+  defp final_flush(state) do
+    pending = pending_missed()
+    writes = batch_writes(state.batch) ++ missed_write(pending)
+
+    if writes != [] do
+      task = Task.async(fn -> atlas_write(writes) end)
+
+      result =
+        case Task.yield(task, @final_write_ms) || Task.shutdown(task, :brutal_kill) do
+          {:ok, result} -> result
+          {:exit, reason} -> {:error, "the write exited: #{inspect(reason)}"}
+          nil -> {:error, "the write did not finish within #{@final_write_ms} ms"}
+        end
+
+      batch_written(state, pending, result)
+    end
+
+    :ok
+  end
+
+  defp schedule(message, after_ms) do
+    Process.send_after(self(), message, after_ms)
   end
 
   # ============================================================================
   # Counting one event
   # ============================================================================
 
-  defp count(source, message) do
+  # Adds what the event counts to the batch; a malformed event is missed.
+  defp count(state, source, message) do
     case interpret(message) do
-      [] ->
-        :ok
-
-      writes ->
-        case atlas_write(writes) do
-          :ok -> :ok
-          {:error, exception} -> missed(source, :atlas_write_failed, "#{describe(message)}: #{Exception.message(exception)}")
-        end
+      [] -> state
+      writes -> add_to_batch(state, source, writes)
     end
   rescue
-    exception in MalformedEvent -> missed(source, :malformed_event, "#{describe(message)}: #{exception.message}")
+    exception in MalformedEvent ->
+      :ok = missed(source, :malformed_event, 1, "#{describe(message)}: #{exception.message}")
+      state
+  end
+
+  defp add_to_batch(state, source, writes) do
+    batch =
+      Enum.reduce(writes, state.batch, fn %{scope: scope, family: family} = write, batch ->
+        held = Map.get(batch, {scope, family}, %{values: %{}, records: %{}})
+
+        values =
+          Enum.reduce(Map.get(write, :values, []), held.values, fn {name, aggregate, value}, values ->
+            Map.update(values, name, {aggregate, value}, fn {held_aggregate, held_value} ->
+              {held_aggregate, combine(name, held_aggregate, held_value, aggregate, value)}
+            end)
+          end)
+
+        records = Enum.reduce(Map.get(write, :records, []), held.records, fn {name, record}, records -> Map.put(records, name, record) end)
+        Map.put(batch, {scope, family}, %{values: values, records: records})
+      end)
+
+    %{
+      state
+      | batch: batch,
+        batch_sources: Map.update(state.batch_sources, source, 1, &(&1 + 1)),
+        batch_events: state.batch_events + 1
+    }
+  end
+
+  # How Atlas combines a value with the one its window holds.
+  defp combine(_name, :sum, held, :sum, value), do: held + value
+  defp combine(_name, :min, held, :min, value), do: min(held, value)
+  defp combine(_name, :max, held, :max, value), do: max(held, value)
+
+  defp combine(name, held_aggregate, _held, aggregate, _value) do
+    raise "Brain.Metrics.Aggregator: #{name} is counted as #{held_aggregate} and as #{aggregate}"
+  end
+
+  defp batch_writes(batch) do
+    Enum.map(batch, fn {{scope, family}, %{values: values, records: records}} ->
+      %{
+        scope: scope,
+        family: family,
+        values: Enum.map(values, fn {name, {aggregate, value}} -> {name, aggregate, value} end),
+        records: Map.to_list(records)
+      }
+    end)
+  end
+
+  # Writes the batch and the missed counts held in memory to Atlas, in one
+  # transaction.
+  defp flush_batch(state) do
+    pending = pending_missed()
+    writes = batch_writes(state.batch) ++ missed_write(pending)
+
+    if writes == [] do
+      state
+    else
+      batch_written(state, pending, atlas_write(writes))
+    end
+  end
+
+  # What a write of the batch and the `pending` missed counts did: written,
+  # the missed counts come off the counters; not written, every event in the
+  # batch is missed, and the missed counts stay held for the next write.
+  defp batch_written(state, pending, :ok) do
+    missed_written(pending)
+    %{state | batch: %{}, batch_sources: %{}, batch_events: 0}
+  end
+
+  defp batch_written(state, pending, {:error, error}) do
+    message = if is_exception(error), do: Exception.message(error), else: error
+
+    Enum.each(state.batch_sources, fn {source, events} ->
+      :ok = missed(source, :atlas_write_failed, events, "in a batch of #{state.batch_events} Atlas did not write: #{message}")
+    end)
+
+    if pending != %{} do
+      Logger.error(
+        "Brain.Metrics.Aggregator: could not write #{pending |> Map.values() |> Enum.sum()} missed event(s) " <>
+          "to Atlas; they stay counted here and are written on the next try: #{message}"
+      )
+    end
+
+    %{state | batch: %{}, batch_sources: %{}, batch_events: 0}
   end
 
   # Atlas refusing a write (Postgrex.Error), being unreachable
@@ -1111,13 +1375,17 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   defp interpret({:telemetry, :model_load, measurements, metadata, at}) do
+    success = fetch!(metadata, :success)
+
+    unless is_boolean(success), do: malformed!("a model load's success must be a boolean, got #{inspect(success)}")
+
     :ets.insert(
       @gauges_table,
       {{:model_load, segment!(fetch!(metadata, :model))},
        %{
          loaded_at: at,
          duration_ms: number_or_nil!(measurements, :duration_ms),
-         success: Map.get(metadata, :success) != false,
+         success: success,
          last_updated: System.monotonic_time(:millisecond)
        }}
     )
@@ -1125,12 +1393,12 @@ defmodule Brain.Metrics.Aggregator do
     []
   end
 
-  defp interpret({:telemetry, :message_queue, measurements, metadata, _at}) do
-    set_queue_size(fetch!(metadata, :genserver), fetch!(measurements, :queue_length))
-  end
-
-  defp interpret({:telemetry, :error, _measurements, metadata, at}) do
-    [node_write(error(fetch!(metadata, :error_type), at))]
+  # A destroyed world is counted for the node only: what the world held in
+  # Atlas may be purged with it, and a count written after would bring it back.
+  defp interpret({:telemetry, {:learning, :world_destroyed}, _measurements, metadata, _at}) do
+    world_id = world!(metadata, :world_id)
+    :ets.insert(@gauges_table, {{:learning_last, :world_destroyed}, %{timestamp: System.monotonic_time(:millisecond), world_id: world_id}})
+    [node_write([{"learning:world_destroyed", :sum, 1}])]
   end
 
   defp interpret({:telemetry, {:learning, event}, _measurements, metadata, _at}) do
@@ -1185,9 +1453,10 @@ defmodule Brain.Metrics.Aggregator do
     [node_write([{"racing_early_exit:#{analyzer}", :sum, 1}])]
   end
 
+  # The file's duration is the `:code_pipeline` span it was processed in,
+  # counted by that span's handler; this event counts its language.
   defp interpret({:telemetry, :code_file_processed, measurements, metadata, _at}) do
     language = segment!(fetch!(metadata, :language))
-    duration_ms = fetch!(measurements, :duration_ms)
 
     :ets.insert(
       @gauges_table,
@@ -1196,12 +1465,12 @@ defmodule Brain.Metrics.Aggregator do
          file_path: Map.get(metadata, :file_path),
          symbols_count: Map.get(measurements, :symbols_count),
          relations_count: Map.get(measurements, :relations_count),
-         duration_ms: duration_ms,
+         duration_ms: Map.get(measurements, :duration_ms),
          timestamp: System.monotonic_time(:millisecond)
        }}
     )
 
-    [node_write(duration(:code_pipeline, ms_to_us!(duration_ms)) ++ [{"code_language:#{language}", :sum, 1}])]
+    [node_write([{"code_language:#{language}", :sum, 1}])]
   end
 
   defp interpret({:telemetry, :consistency_disagreement, _measurements, metadata, _at}) do
@@ -1313,10 +1582,6 @@ defmodule Brain.Metrics.Aggregator do
     [node_write(duration(metric, ms_to_us!(duration_ms), :error) ++ error(fetch!(metadata, :kind), DateTime.utc_now()))]
   end
 
-  defp interpret({:record_queue_size, genserver, queue_length}) do
-    set_queue_size(genserver, queue_length)
-  end
-
   defp interpret({:record_readiness, system_name, ready?}) do
     :ets.insert(@gauges_table, {{:readiness, system_name}, %{ready?: ready?, timestamp: System.monotonic_time(:millisecond)}})
     []
@@ -1344,18 +1609,17 @@ defmodule Brain.Metrics.Aggregator do
   end
 
   defp interpret({:record_verification_miss_reason, reason}) do
-    [node_write([{"verification_miss:#{segment!(reason)}", :sum, 1}])]
+    unless reason in @verification_miss_reasons do
+      malformed!("no verification miss reason #{inspect(reason)}, expected one of #{inspect(@verification_miss_reasons)}")
+    end
+
+    [node_write([{"verification_miss:#{reason}", :sum, 1}])]
   end
 
   defp interpret(message), do: malformed!("not an event the aggregator counts: #{inspect(message)}")
 
   defp node_write(values, records \\ []) do
     %{scope: :node, family: @telemetry_family, values: values, records: records}
-  end
-
-  defp set_queue_size(genserver, queue_length) do
-    :ets.insert(@gauges_table, {{:queue, genserver}, %{length: queue_length, timestamp: System.monotonic_time(:millisecond)}})
-    []
   end
 
   defp take_training_start(model) do
