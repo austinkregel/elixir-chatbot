@@ -1,0 +1,515 @@
+[
+  {
+    "data": [
+      {
+        "text": "can you explain "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "handle_request"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "describe "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Brain.Analysis.Pipeline"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "describe the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Embedder"
+      },
+      {
+        "text": " module"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "describe the function "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "send_email"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "describe what "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "fetch_data"
+      },
+      {
+        "text": " does"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "explain how "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "sort_items"
+      },
+      {
+        "text": " works"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "explain the code in "
+      },
+      {
+        "alias": "file",
+        "meta": "@file",
+        "text": "brain.ex"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "explain the method "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@method",
+        "text": "get_user_by_id"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "explain the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Pipeline"
+      },
+      {
+        "text": " module"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "explain the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@class",
+        "text": "UserController"
+      },
+      {
+        "text": " class"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "explain this code"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "explain what the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "ResponseGenerator"
+      },
+      {
+        "text": " does"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "give me an overview of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "cache_manager"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "help me understand "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "parse_json"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "how does "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "authenticate_user"
+      },
+      {
+        "text": " work"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "how does the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Tokenizer"
+      },
+      {
+        "text": " module work"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "how does "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "World.DocumentIngestor"
+      },
+      {
+        "text": " work"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "I want to understand the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@class",
+        "text": "OrderService"
+      },
+      {
+        "text": " class"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "summarize the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Router"
+      },
+      {
+        "text": " module"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "tell me about "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Brain.ML.Trainer"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "tell me about the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@class",
+        "text": "DatabaseConnection"
+      },
+      {
+        "text": " class"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "tell me about the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "World"
+      },
+      {
+        "text": " module"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "walk me through "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "process_payment"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what does "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "Brain.evaluate"
+      },
+      {
+        "text": " do"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what does the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Brain"
+      },
+      {
+        "text": " module do"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what does the codebase do"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what does the function "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "calculate_tax"
+      },
+      {
+        "text": " do"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what does the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Generator"
+      },
+      {
+        "text": " module do"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what does the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Parser"
+      },
+      {
+        "text": " module do"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what does this class do"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what does this function do"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what does this method do"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what does this module do"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what is "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Brain.Code.QueryHandler"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what is "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "process_order"
+      },
+      {
+        "text": " used for"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what is the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Config"
+      },
+      {
+        "text": " module for"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what is the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Gazetteer"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what is the purpose of the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "CodeGazetteer"
+      },
+      {
+        "text": " module"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's happening in "
+      },
+      {
+        "alias": "file",
+        "meta": "@file",
+        "text": "main.py"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's the purpose of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "validate_input"
+      }
+    ]
+  }
+]
