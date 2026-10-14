@@ -277,6 +277,22 @@
       </div>
     </header>
 
+<!-- Alarms, reminders, timers and calendar items that fired -->
+    <%= if @scheduler_notifications != [] do %>
+      <div
+        id="scheduler-notifications"
+        role="status"
+        aria-live="polite"
+        class="shrink-0 border-b border-border bg-surface"
+      >
+        <div class="max-w-4xl mx-auto p-space-lg space-y-space-sm">
+          <%= for notification <- @scheduler_notifications do %>
+            <.scheduler_notification notification={notification} />
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
 <!-- Messages Area -->
     <div class="flex-1 overflow-y-auto">
       <div class="max-w-4xl mx-auto p-space-lg lg:p-space-xl space-y-space-lg">
@@ -362,7 +378,13 @@
                 >
                   <div class="text-body-dense whitespace-pre-wrap">{message.content}</div>
                   <div class="text-caption mt-space-sm text-ink-muted">
-                    {Calendar.strftime(DateTime.from_unix!(div(message.timestamp, 1000)), "%H:%M")}
+                    <time
+                      id={"message-time-#{message.id}"}
+                      phx-hook="LocalTime"
+                      phx-update="ignore"
+                      data-format="time"
+                      datetime={browser_instant(DateTime.from_unix!(message.timestamp, :millisecond))}
+                    ></time>
                   </div>
                 </button>
               <% else %>
@@ -375,7 +397,13 @@
                 ]}>
                   <div class="text-body-dense whitespace-pre-wrap">{message.content}</div>
                   <div class="text-caption mt-space-sm text-ink-muted">
-                    {Calendar.strftime(DateTime.from_unix!(div(message.timestamp, 1000)), "%H:%M")}
+                    <time
+                      id={"message-time-#{message.id}"}
+                      phx-hook="LocalTime"
+                      phx-update="ignore"
+                      data-format="time"
+                      datetime={browser_instant(DateTime.from_unix!(message.timestamp, :millisecond))}
+                    ></time>
                   </div>
                 </div>
               <% end %>
@@ -419,8 +447,14 @@
         id="message-form"
         phx-submit="send_message"
         phx-change="input_change"
+        phx-hook="BrowserTimeZone"
+        data-zone-years={@zone_years}
         class="max-w-4xl mx-auto flex items-start gap-space-md"
       >
+        <%!-- The browser's time zone, filled as the form is submitted. --%>
+        <div id="message-form-time-zone" phx-update="ignore" class="hidden">
+          <input type="hidden" name="time_zone" value="" />
+        </div>
         <div class="flex-1 min-w-0">
           <.input
             id="message-input"
