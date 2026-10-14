@@ -422,25 +422,72 @@ defmodule Brain.ML.DataLoaders do
     end)
   end
 
-  @ambiguous_city_names ~w(
-    tell me you can the and for in on at to be is are was were
-    will would could should have has had do does did may might
-    can could shall should will would be being been
-    home big little new old good bad high low long short
-    sun moon star lake river hill dale view park spring
-    point bay city town fair hope love joy grace faith
-    burns wells ford bridge mills dale glen grove
-  )
+  @doc """
+  Whether `word`, as written, is an ordinary English word: the brain's own
+  lexicon (`Brain.Lexicon.UserDefined`) records more uses of it as an
+  ordinary word (`ordinary_usage` facts) than as any entity type
+  (`sense_usage` facts), so that, before anything else is known, the ordinary
+  reading is the more probable one. `Brain.Lexicon.Seeder` seeds both from
+  the senses SemCor counted and the ordinary ones from the closed-class
+  vocabulary too, and they are the counts `Brain.Analysis.EntityTypeScorer`
+  weighs a gazetteer match's readings by. With the counts as the seeder
+  derives them (2026-10-13), the state codes "in", "or", "me", "hi" and "ok"
+  are ordinary words; "dc" (7 uses as a place, 1 ordinary) and "tx" are not.
 
-  @doc "Build US city lookup from loaded US city data.\nMaps lowercase city name -> city info with state.\nAlso creates entries for \"city, state\" format.\nFilters out ambiguous city names that are common English words.\n"
-  def build_us_city_lookup(cities) when is_list(cities) do
+  `store` is the `Brain.Lexicon.UserDefined` store to read.
+  """
+  @spec ordinary_word?(String.t(), GenServer.server()) :: boolean()
+  def ordinary_word?(word, store \\ Brain.Lexicon.UserDefined) when is_binary(word) do
+    uses = fn key ->
+      word
+      |> String.downcase()
+      |> Brain.Lexicon.UserDefined.facts([kind: "property", key: key], store)
+      |> Enum.map(fn
+        %{value: %{"count" => n}} when is_integer(n) and n >= 0 ->
+          n
+
+        fact ->
+          raise "DataLoaders: #{fact.key} fact for #{inspect(fact.word)} (#{fact.source}) has no count: #{inspect(fact.value)}"
+      end)
+      |> Enum.sum()
+    end
+
+    uses.("ordinary_usage") > uses.("sense_usage")
+  end
+
+  @doc """
+  Build US city lookup from loaded US city data.
+
+  Maps each lowercase city name to the city's info, and the name followed by
+  its state's name ("springfield illinois", "springfield, illinois") or code
+  after a comma ("owosso, mi") too.
+
+  A city's name is a reading of the name like any other, whether or not the
+  name is also an ordinary word (Points, Check, Money): which a match is, the
+  place or the word, is decided where the match is read
+  (`Brain.Analysis.EntityTypeScorer` weighs the word's ordinary uses against
+  its uses as a place, its casing, its tag and its context), not here.
+
+  The name followed by the bare state code ("austin tx") is a key only when
+  the code is not an ordinary word (`ordinary_word?`, given as a function of
+  the code): "rome in" or "salem or" is far more often a place and a word
+  than a city and its state, and the gazetteer's keys are lowercase, so how
+  the code was written cannot tell them apart.
+  """
+  def build_us_city_lookup(cities, ordinary_word?) when is_list(cities) and is_function(ordinary_word?, 1) do
+    code_is_word =
+      cities
+      |> Enum.map(&String.downcase(Map.get(&1, :state_code) || ""))
+      |> Enum.uniq()
+      |> Map.new(&{&1, ordinary_word?.(&1)})
+
     Enum.reduce(cities, %{}, fn city, acc ->
       name = Map.get(city, :city) || ""
       state_code = Map.get(city, :state_code) || ""
       state_name = Map.get(city, :state_name) || ""
       county = Map.get(city, :county) || ""
       normalized = normalize_text(name)
-      is_ambiguous = String.length(normalized) <= 3 or normalized in @ambiguous_city_names
+      code = String.downcase(state_code)
 
       if String.length(normalized) >= 2 do
         city_info = %{
@@ -455,17 +502,13 @@ defmodule Brain.ML.DataLoaders do
         }
 
         acc =
-          if is_ambiguous do
-            acc
-          else
-            Map.put(acc, normalized, city_info)
-          end
+          acc
+          |> Map.put(normalized, city_info)
+          |> Map.put("#{normalized}, #{code}", city_info)
+          |> Map.put("#{normalized}, #{String.downcase(state_name)}", city_info)
+          |> Map.put("#{normalized} #{String.downcase(state_name)}", city_info)
 
-        acc
-        |> Map.put("#{normalized}, #{String.downcase(state_code)}", city_info)
-        |> Map.put("#{normalized}, #{String.downcase(state_name)}", city_info)
-        |> Map.put("#{normalized} #{String.downcase(state_code)}", city_info)
-        |> Map.put("#{normalized} #{String.downcase(state_name)}", city_info)
+        if Map.fetch!(code_is_word, code), do: acc, else: Map.put(acc, "#{normalized} #{code}", city_info)
       else
         acc
       end
