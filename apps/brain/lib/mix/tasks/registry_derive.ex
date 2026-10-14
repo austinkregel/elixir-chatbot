@@ -28,11 +28,23 @@ defmodule Mix.Tasks.Registry.Derive do
   | `domain` | first dotted part of the name |
   | `required` | `parameters` with `required: true` |
   | `optional` | `parameters` with `required: false` |
-  | `entity_mappings` | each parameter's `dataType`, minus the `@` |
+  | `entity_mappings` | each parameter's `dataType`, as the runtime entity type it stands for |
   | `clarification_templates` | each parameter's first `prompts[].value` |
   | `defaults` | each parameter's non-empty `defaultValue` |
   | `input_contexts` | `contexts`, plus each `followupContexts[].context` |
   | `output_contexts` | `responses[0].affectedContexts` |
+
+  ## Slot types
+
+  A slot's types are runtime entity types that `analysis/entity_types.json`
+  declares in its `type_hierarchy`, which is what an extracted entity is
+  compared with. A `dataType` of the export's own (`@room`) is that type, and
+  raises when the hierarchy does not declare it. A Dialogflow system entity
+  (`@sys.number`) is the runtime type `config.export_system_types` maps it to,
+  and raises when it maps it to none (`@sys.any`, any text, has no type) or
+  when the slot's name is a declared type the mapped type is not related to in
+  the hierarchy: a `start_year` slot typed `@sys.number` is a year, not any
+  number, and that is not the export's to say.
 
   Slot names, entity types and context names are written with underscores in
   the export and the registry alike (`final_value`, `sys.date_time`,
@@ -59,6 +71,7 @@ defmodule Mix.Tasks.Registry.Derive do
   @switches [judgment: :string, save: :boolean, out: :string]
 
   @registry_path "analysis/intent_registry.json"
+  @entity_types_path "analysis/entity_types.json"
   @device_prefix "smarthome.device."
   @lights_prefix "smarthome.lights."
 
@@ -78,7 +91,7 @@ defmodule Mix.Tasks.Registry.Derive do
     Mix.shell().info("  missing from registry #{length(missing)}")
 
     judgment = load_judgment(opts[:judgment])
-    {entries, undecided} = derive_all(missing, judgment)
+    {entries, undecided} = derive_all(missing, judgment, load_entity_types!())
 
     report(entries, undecided, judgment)
 
@@ -111,6 +124,42 @@ defmodule Mix.Tasks.Registry.Derive do
     |> MapSet.new(& &1["intent"])
   end
 
+  # The declared runtime types, each with the types above it, and the runtime
+  # type each export system entity stands for.
+  @doc false
+  def load_entity_types! do
+    path = Brain.priv_path(@entity_types_path)
+    data = path |> File.read!() |> Jason.decode!()
+
+    hierarchy =
+      case data do
+        %{"type_hierarchy" => %{} = hierarchy} -> hierarchy
+        _ -> Mix.raise("registry.derive: #{path} has no type_hierarchy object")
+      end
+
+    system =
+      case get_in(data, ["config", "export_system_types"]) do
+        %{} = mappings -> Map.delete(mappings, "description")
+        other -> Mix.raise("registry.derive: #{path} has no config.export_system_types object, got #{inspect(other)}")
+      end
+
+    parents =
+      Enum.reduce(hierarchy, %{}, fn {parent, children}, acc ->
+        acc = Map.put_new(acc, parent, [])
+        Enum.reduce(children, acc, fn child, acc -> Map.update(acc, child, [parent], &[parent | &1]) end)
+      end)
+
+    entity_types = %{parents: parents, system: system, path: path}
+
+    Enum.each(system, fn {export, type} ->
+      unless is_binary(type) and Map.has_key?(parents, type) do
+        Mix.raise("registry.derive: #{path} maps #{export} to #{inspect(type)}, which its type_hierarchy does not declare")
+      end
+    end)
+
+    entity_types
+  end
+
   defp load_judgment(nil), do: %{}
 
   defp load_judgment(path) do
@@ -121,7 +170,7 @@ defmodule Mix.Tasks.Registry.Derive do
 
   # -- derivation -------------------------------------------------------------
 
-  defp derive_all(missing, judgment) do
+  defp derive_all(missing, judgment, entity_types) do
     Enum.reduce(missing, {%{}, []}, fn intent, {entries, undecided} ->
       case definition_for(intent) do
         nil ->
@@ -135,7 +184,7 @@ defmodule Mix.Tasks.Registry.Derive do
 
         definition ->
           decided = Map.get(judgment, intent)
-          entry = build_entry(intent, definition, decided)
+          entry = build_entry(intent, definition, decided, entity_types)
 
           if decided, do: {Map.put(entries, intent, entry), undecided},
             else: {Map.put(entries, intent, entry), [intent | undecided]}
@@ -163,7 +212,7 @@ defmodule Mix.Tasks.Registry.Derive do
     end
   end
 
-  defp build_entry(intent, definition, decided) do
+  defp build_entry(intent, definition, decided, entity_types) do
     params = definition |> Map.get("responses", []) |> List.first(%{}) |> Map.get("parameters", [])
 
     {required, optional} = Enum.split_with(params, &Map.get(&1, "required", false))
@@ -172,7 +221,7 @@ defmodule Mix.Tasks.Registry.Derive do
       "domain" => intent |> String.split(".") |> List.first(),
       "required" => Enum.map(required, &canonical(&1["name"])),
       "optional" => Enum.map(optional, &canonical(&1["name"])),
-      "entity_mappings" => entity_mappings(params),
+      "entity_mappings" => entity_mappings(params, entity_types),
       "clarification_templates" => clarification_templates(params),
       "input_contexts" => input_contexts(definition),
       "output_contexts" => output_contexts(definition)
@@ -183,15 +232,60 @@ defmodule Mix.Tasks.Registry.Derive do
     |> Map.merge(judgment_fields(decided))
   end
 
-  defp entity_mappings(params) do
+  @doc false
+  # Each parameter's slot and the runtime type its `dataType` stands for (see
+  # the moduledoc's "Slot types").
+  def entity_mappings(params, entity_types) do
     params
     |> Enum.flat_map(fn p ->
       case p["dataType"] do
-        "@" <> type when type != "" -> [{canonical(p["name"]), [canonical(type)]}]
-        _ -> []
+        "@" <> type when type != "" ->
+          slot = canonical(p["name"])
+          [{slot, [runtime_type!(canonical(type), slot, entity_types)]}]
+
+        _ ->
+          []
       end
     end)
     |> Map.new()
+  end
+
+  defp runtime_type!("sys." <> _ = system, slot, %{system: system_types, path: path} = entity_types) do
+    case Map.fetch(system_types, system) do
+      {:ok, type} ->
+        if Map.has_key?(entity_types.parents, slot) and not related?(type, slot, entity_types.parents) do
+          Mix.raise(
+            "registry.derive: the slot #{slot} is typed @#{system}, which stands for #{type}; #{slot} is a type " <>
+              "#{path} declares, unrelated to #{type} in its type_hierarchy, so the slot's type is not the export's " <>
+              "to say. Type the slot by hand."
+          )
+        end
+
+        type
+
+      :error ->
+        Mix.raise(
+          "registry.derive: the slot #{slot} is typed @#{system}, a system entity #{path}'s " <>
+            "config.export_system_types maps to no runtime type. Map it there, or type the slot by hand."
+        )
+    end
+  end
+
+  defp runtime_type!(type, slot, %{parents: parents, path: path}) do
+    unless Map.has_key?(parents, type) do
+      Mix.raise("registry.derive: the slot #{slot} is typed @#{type}, which #{path}'s type_hierarchy does not declare")
+    end
+
+    type
+  end
+
+  # Whether one type is the other or lies above or below it in the hierarchy.
+  defp related?(a, b, parents), do: b in ancestors(a, parents) or a in ancestors(b, parents)
+
+  defp ancestors(type, parents) do
+    parents
+    |> Map.get(type, [])
+    |> Enum.reduce([type], fn parent, acc -> acc ++ ancestors(parent, parents) end)
   end
 
   defp clarification_templates(params) do
