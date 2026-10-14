@@ -83,7 +83,7 @@ defmodule Brain.Analysis.PipelineTest do
     test "uses conversation history for context" do
       history = [
         %{
-          entities: %{"location" => "London"},
+          entities: [%{entity_type: "location", value: "London", confidence: 0.9}],
           intent: "weather.query",
           timestamp: System.system_time(:millisecond)
         }
