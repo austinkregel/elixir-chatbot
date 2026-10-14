@@ -4,12 +4,12 @@ defmodule Brain.Metrics.AggregatorTest do
   counts survive it restarting: durations as count, sum, min, max and
   histogram, errors, training runs, fact verification, enrichment, service
   dispatches and cache use, and the node's activity. What describes the
-  live process (queue sizes, readiness, the rate per minute, the last event
+  live process (readiness, model loads, the rate per minute, the last event
   seen) is held in memory and starts over with it.
 
   Events reach it through the handlers `Brain.Telemetry.attach_handlers/0`
   attaches, as in the running application, or through its own record
-  functions.
+  functions. It writes them to Atlas in batches, one transaction each.
   """
   use Brain.MetricsCase, async: false
 
@@ -106,7 +106,7 @@ defmodule Brain.Metrics.AggregatorTest do
 
     test "a health check is held in memory for the service" do
       Telemetry.emit_service_dispatch(:weather, "weather.query", :success, 100)
-      :ok = :telemetry.execute([:chat_bot, :services, :health_check, :stop], %{duration: 50}, %{service: :weather, status: :ok})
+      Telemetry.emit_service_health_check(:weather, :ok, 50)
       :ok = counted()
 
       assert %{status: :ok, duration_ms: 50} = Aggregator.get_service_metrics().by_service["weather"].health_status
@@ -129,12 +129,12 @@ defmodule Brain.Metrics.AggregatorTest do
     end
 
     test "fact and semantic retrievals give their hit rates, and verification misses their reasons" do
-      GenServer.cast(Aggregator, {:record_fact_retrieval, 3})
-      GenServer.cast(Aggregator, {:record_fact_retrieval, 0})
-      GenServer.cast(Aggregator, {:record_semantic_retrieval, 2})
-      GenServer.cast(Aggregator, {:record_verification_miss_reason, :no_facts})
-      GenServer.cast(Aggregator, {:record_verification_miss_reason, :no_facts})
-      GenServer.cast(Aggregator, {:record_verification_miss_reason, :low_confidence})
+      :ok = Aggregator.record_fact_retrieval(3)
+      :ok = Aggregator.record_fact_retrieval(0)
+      :ok = Aggregator.record_semantic_retrieval(2)
+      :ok = Aggregator.record_verification_miss_reason(:no_facts)
+      :ok = Aggregator.record_verification_miss_reason(:no_facts)
+      :ok = Aggregator.record_verification_miss_reason(:low_confidence)
       :ok = counted()
 
       assert Aggregator.get_enrichment_metrics() == %{
@@ -192,7 +192,13 @@ defmodule Brain.Metrics.AggregatorTest do
       :ok = :telemetry.execute([:chat_bot, :learning, :document_processed], %{}, %{world_id: world_id})
       :ok = :telemetry.execute([:chat_bot, :analysis, :consistency, :disagreement], %{}, %{severity: :high})
       Telemetry.emit_racing_early_exit(:fast_path, 0.9, 3)
-      Telemetry.emit_code_file_processed("lib/a.ex", :elixir, 3, 2, 25)
+
+      # As Brain.Code.Pipeline.process/3 emits a processed file: inside its span.
+      :ok =
+        Telemetry.span(:code_pipeline, %{language: :elixir}, fn ->
+          Telemetry.emit_code_file_processed("lib/a.ex", :elixir, 3, 2, 25)
+        end)
+
       :ok = counted()
 
       activity = Aggregator.get_activity_metrics()
@@ -204,6 +210,7 @@ defmodule Brain.Metrics.AggregatorTest do
       assert activity.consistency == %{total: 1, by_severity: %{"high" => 1}}
       assert activity.racing_early_exits == %{"fast_path" => 1}
       assert activity.code_languages == %{"elixir" => 1}
+      # The file is counted once, by its span.
       assert Aggregator.get_metric(:code_pipeline).count == 1
 
       # A learning event is counted in its world as well.
@@ -212,18 +219,105 @@ defmodule Brain.Metrics.AggregatorTest do
   end
 
   describe "gauges" do
-    test "queue sizes and readiness are held in memory, and start over with the aggregator" do
-      Aggregator.record_queue_size(:some_genserver, 12)
+    test "readiness and model loads are held in memory, and start over with the aggregator" do
       Aggregator.record_readiness(:test_system, true)
+      Telemetry.emit_model_load("pos_tagger", 12.5, true)
       :ok = counted()
 
-      assert %{some_genserver: %{length: 12}} = Aggregator.get_queue_sizes()
       assert %{test_system: %{ready?: true}} = Aggregator.get_metrics().readiness
+      assert %{"pos_tagger" => %{duration_ms: 12.5, success: true}} = Aggregator.get_model_load_stats()
+      assert Aggregator.get_metrics().model_loads == Aggregator.get_model_load_stats()
 
       _restarted = restart_aggregator!()
 
-      assert Aggregator.get_queue_sizes() == %{}
       assert Aggregator.get_metrics().readiness == %{}
+      assert Aggregator.get_model_load_stats() == %{}
+    end
+
+    test "a model load is measured where the model is read: a returned error or a raise is a failed load" do
+      assert {:ok, :model} = Telemetry.measure_model_load("speech_act_classifier", fn -> {:ok, :model} end)
+      assert {:error, :model_not_found} = Telemetry.measure_model_load("sentiment_classifier", fn -> {:error, :model_not_found} end)
+      assert_raise RuntimeError, fn -> Telemetry.measure_model_load("entity_model", fn -> raise "not a model" end) end
+      :ok = counted()
+
+      assert %{
+               "speech_act_classifier" => %{success: true, duration_ms: ms},
+               "sentiment_classifier" => %{success: false},
+               "entity_model" => %{success: false}
+             } = Aggregator.get_model_load_stats()
+
+      assert is_float(ms)
+    end
+  end
+
+  describe "batches" do
+    test "the events handled since the last write are written in one transaction" do
+      test_pid = self()
+
+      :ok =
+        :telemetry.attach(
+          "aggregator-test-queries",
+          [:atlas, :repo, :query],
+          fn _event, _measurements, %{source: source}, _config -> send(test_pid, {:query, source}) end,
+          nil
+        )
+
+      on_exit(fn -> :telemetry.detach("aggregator-test-queries") end)
+
+      for _ <- 1..100, do: Telemetry.emit_service_dispatch(:weather, "weather.query", :success, 100)
+      :ok = counted()
+      :telemetry.detach("aggregator-test-queries")
+
+      assert Aggregator.get_service_metrics().by_service["weather"].total_dispatches == 100
+      # One write per batch: the window opened or found, and its values.
+      assert length(received_queries("atlas_metric_values")) <= 2
+    end
+
+    test "starting a window writes the events sent before it into the window they happened in" do
+      Telemetry.emit_service_dispatch(:weather, "weather.query", :success, 100)
+      :ok = Aggregator.reset()
+
+      assert [%{values: new_values}, %{values: %{"service:weather:count" => 1}}] = Atlas.Metrics.windows(:node, "telemetry", 2)
+      assert new_values == %{}
+    end
+
+    test "a sum, a minimum and a maximum combine in a batch as Atlas combines them" do
+      Aggregator.record_duration(:knowledge_research, 40)
+      Aggregator.record_duration(:knowledge_research, 4)
+      Aggregator.record_duration(:knowledge_research, 400)
+      :ok = counted()
+      Aggregator.record_duration(:knowledge_research, 2)
+      :ok = counted()
+
+      assert %{count: 4, min_ms: 2.0, max_ms: 400.0, avg_ms: 111.5} = Aggregator.get_metric(:knowledge_research)
+    end
+  end
+
+  describe "read once" do
+    test "every reader answers from one read of the telemetry window" do
+      Telemetry.emit_service_dispatch(:weather, "weather.query", :success, 100)
+      Telemetry.emit_fact_verification(:verified, "paris", 5)
+      :ok = counted()
+
+      telemetry = Aggregator.read_telemetry()
+      Telemetry.emit_service_dispatch(:weather, "weather.query", :success, 100)
+      :ok = counted()
+
+      # What was read stays what is answered; a new read sees the later event.
+      assert Aggregator.get_service_metrics(telemetry).by_service["weather"].total_dispatches == 1
+      assert Aggregator.get_metric(:service_dispatch, telemetry).count == 1
+      assert Aggregator.get_epistemic_metrics(telemetry).total_verifications == 1
+      assert Aggregator.get_telemetry_window(telemetry) == Aggregator.get_telemetry_window()
+      assert Aggregator.get_service_metrics().by_service["weather"].total_dispatches == 2
+    end
+  end
+
+  defp received_queries(source) do
+    receive do
+      {:query, ^source} -> [source | received_queries(source)]
+      {:query, _other} -> received_queries(source)
+    after
+      0 -> []
     end
   end
 
@@ -233,11 +327,11 @@ defmodule Brain.Metrics.AggregatorTest do
       Telemetry.emit_service_dispatch(:weather, "weather.query", :success, 100)
       Telemetry.emit_service_cache_hit(:weather, "k1")
       Telemetry.emit_fact_verification(:verified, "paris", 5)
-      GenServer.cast(Aggregator, {:record_fact_retrieval, 3})
-      GenServer.cast(Aggregator, {:record_verification_miss_reason, :no_facts})
+      :ok = Aggregator.record_fact_retrieval(3)
+      :ok = Aggregator.record_verification_miss_reason(:no_facts)
       :ok = :telemetry.execute([:chat_bot, :ml, :train, :stop], %{duration_ms: 1200}, %{model: :pos_tagger})
       :ok = :telemetry.execute([:brain, :kg_signal, :cache_hit], %{}, %{})
-      :ok = :telemetry.execute([:chat_bot, :error], %{count: 1}, %{error_type: :timeout, details: %{}})
+      assert_raise RuntimeError, fn -> Telemetry.span(:jtms_justify, %{}, fn -> raise "boom" end) end
       :ok = counted()
 
       before = persisted()
