@@ -49,7 +49,8 @@ defmodule Atlas.WorldsTest do
       kind: "alarm",
       time: "7am",
       status: "set",
-      resolution: "recorded_before_resolution"
+      resolution: "recorded_before_resolution",
+      fire_state: "owner_not_recorded"
     })
     Atlas.WorldServiceDrivers.put!(world_id, "scheduling", "local_scheduler")
     # One metric window with one value and one record in it.
