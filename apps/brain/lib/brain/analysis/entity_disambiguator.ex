@@ -116,7 +116,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
 
     name_type = %{
       entity_type: default_type,
-      entity: default_type,
       value: Map.get(entity, :value) || Map.get(entity, "value"),
       confidence: intro_confidence,
       disambiguation_reason: "introduction_pattern"
@@ -184,7 +183,7 @@ defmodule Brain.Analysis.EntityDisambiguator do
     |> Map.put_new_lazy(:preceding_tag, fn -> preceding_tag(entity, pos_tagged) end)
     |> EntityTypeScorer.mark_position(text)
     |> EntityTypeScorer.apply_to(slot_preferences(context))
-    |> then(&Map.merge(&1, %{entity: &1.entity_type, disambiguation_source: :context_analysis}))
+    |> Map.put(:disambiguation_source, :context_analysis)
   end
 
   # The tag of the entity's head word (its last word) in the sentence's tags,
@@ -301,7 +300,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
       end
 
     entity
-    |> Map.put(:entity, final_type)
     |> Map.put(:entity_type, final_type)
     |> Map.put(:disambiguation_source, :type_inferrer)
     |> Map.put(:disambiguation_confidence, type_confidence)
@@ -447,7 +445,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
 
   defp select_type(entity, selected_type) when is_map(selected_type) do
     base_merge = %{
-      entity: get_type_name(selected_type),
       entity_type: get_type_name(selected_type),
       value:
         Map.get(selected_type, :value) || Map.get(entity, :value) || Map.get(entity, "value"),
