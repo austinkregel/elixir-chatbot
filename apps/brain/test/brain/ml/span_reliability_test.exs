@@ -573,6 +573,37 @@ defmodule Brain.ML.SpanReliabilityTest do
       assert {:extent_undecided, _} = SpanReliability.redecide(span, %{"artist" => 3.0}, model, Hierarchy)
     end
 
+    test "select_redecision/3 finds the evidence that decides right among spans that all share one extent score" do
+      # A reliable source decides 20 rows by itself. A second source reads one
+      # extent on 20 more rows, the right type on 4 of them and no entity on
+      # 16, so every one of its spans has the same extent score and is left
+      # undecided. The evidence is for its type on the 4 and against it on the
+      # 16: with every type hypothesis decided, deciding those extents decides
+      # 16 wrong, but with the evidence weighed only the 4 right ones pass.
+      reliable = for i <- 1..20, do: %{key: {:reliable, i}, gold: [gold("final_value", 0, 3)], readings: [reading(:reliable, "final_value", 0, 3)], said: :other}
+      named = for i <- 1..4, do: %{key: {:named, i}, gold: [gold("artist", 0, 3)], readings: [reading(:word, "artist", 0, 3)], said: :about_artists}
+      word = for i <- 1..16, do: %{key: {:word, i}, gold: [], readings: [reading(:word, "artist", 0, 3)], said: :other}
+      examples = reliable ++ named ++ word
+
+      {model, _report} = SpanReliability.select(examples, @opts)
+
+      evidence = fn said, labels -> Map.new(labels, &{&1, if(said == :about_artists, do: 3.0, else: -3.0)}) end
+
+      model =
+        SpanReliability.select_redecision(model, examples,
+          canonical: @canonical,
+          hierarchy: Hierarchy,
+          evidence: fn _training -> fn example, labels -> evidence.(example.said, labels) end end
+        )
+
+      assert %{decided: 24, correct: 24} = model.redecision.cross_validation.chosen
+
+      [span] = SpanReliability.decide(hd(named).readings, model, text: "Rush", canonical: @canonical, hierarchy: Hierarchy)
+      assert %{resolved: false, unresolved_reason: :insufficient_evidence} = span
+      assert {:decided, %{entity_type: "artist"}} = SpanReliability.redecide(span, evidence.(:about_artists, ["artist"]), model, Hierarchy)
+      refute match?({:decided, _}, SpanReliability.redecide(span, evidence.(:other, ["artist"]), model, Hierarchy))
+    end
+
     test "a model whose extent reliabilities are keyed by more than source and type is refused" do
       extent = examples() |> SpanReliability.fit_extent(prior_strength: 1) |> Map.merge(%{min_score: -10.0, min_margin: 0.0})
       keyed_by_cue = %{extent | pairs: Map.new(extent.pairs, fn {{source, type}, p} -> {{source, {:begin, :outside}, type}, p} end)}
