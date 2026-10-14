@@ -76,7 +76,7 @@
     "required": ["device"],
     "optional": ["room", "brightness", "color", "temperature"],
     "slot_type_aliases": {
-      "device": ["device", "appliance", "light", "switch", "room"]
+      "device": ["device", "light", "switch", "room"]
     }
   },
   "enrichment_service": "home_assistant",
