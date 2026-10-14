@@ -182,6 +182,12 @@ defmodule ChatWeb.AppShell do
                 active={String.starts_with?(@current_path, "/verify")}
               />
               <.nav_item
+                href={~p"/scheduler"}
+                icon="hero-clock"
+                label="Scheduler"
+                active={String.starts_with?(@current_path, "/scheduler")}
+              />
+              <.nav_item
                 href={~p"/design"}
                 icon="hero-swatch"
                 label="Design Language"
