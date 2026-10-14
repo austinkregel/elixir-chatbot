@@ -1,17 +1,46 @@
 defmodule Brain.Analysis.SlotDetector do
   @moduledoc "Detects required and optional slots for a given intent and fills them from entities.\n\nThis module:\n- Loads slot schemas from JSON configuration\n- Maps extracted entities to slots\n- Identifies missing required slots\n- Applies default values where configured\n- Provides clarification prompts for missing slots\n"
 
-  alias Brain.Analysis.{SlotResult, TypeHierarchy}
+  alias Brain.Analysis.{FreeTextCapture, SlotResult, TypeHierarchy}
 
   require Logger
 
   @schemas_path "analysis/intent_registry.json"
 
-  @doc "Detects slots for the given intent and fills them from entities.\n\nReturns a SlotResult struct indicating which slots are filled and which are missing.\n\nOptions:\n- `:side_effects` - when a slot is filled through a compatible (not exact)\n  entity type, the match is recorded as a Gazetteer type preference. `false`\n  skips that write. Defaults to `true`.\n"
+  @doc """
+  Detects slots for the given intent and fills them from entities, and its
+  free-text slots from the utterance.
+
+  Returns a SlotResult struct indicating which slots are filled and which are missing.
+
+  A free-text slot (a reminder's text) is one `Brain.Analysis.FreeTextCapture`
+  captures: no entity type names its value, so it is a span of the utterance.
+  Each slot of the intent's schema that the capture model captures and no
+  entity filled is filled with the span it captures, its source `:captured`
+  and its confidence the capture's. The span holds no token of an entity that
+  filled another slot, nor a date, time or length. When the model abstains the
+  slot stays unfilled, among the missing slots.
+
+  Options:
+  - `:side_effects` - when a slot is filled through a compatible (not exact)
+    entity type, the match is recorded as a Gazetteer type preference. `false`
+    skips that write. Defaults to `true`.
+  - `:text` - the utterance the entities' `:start_pos` and `:end_pos` index.
+    Free-text slots are captured only from it: without it, none is filled.
+  - `:language` - the language of `:text`, whose loaded capture model
+    (`Brain.Analysis.FreeTextCapture.loaded!/1`) is used. Required with `:text`
+    unless `:free_text_capture` is given.
+  - `:free_text_capture` - a `Brain.Analysis.FreeTextCapture` model used in
+    place of the loaded one.
+
+  With `:text`, every entity that fills a slot must carry its `:start_pos` and
+  `:end_pos`, or this raises: a captured span could not be kept off it.
+  """
   def detect(intent, entities, opts \\ []) when is_binary(intent) and is_list(entities) do
     schemas = load_schemas()
     record? = Keyword.get(opts, :side_effects, true)
     entities = slot_fillers!(entities)
+    utterance = utterance!(opts)
 
     case Map.get(schemas, intent) do
       nil ->
@@ -21,15 +50,45 @@ defmodule Brain.Analysis.SlotDetector do
           nil ->
             case find_domain_prefix_schema(intent, entities, schemas) do
               nil -> build_unknown_result(entities)
-              {schema, matched_intent} -> process_schema(schema, matched_intent, entities, record?)
+              {schema, matched_intent} -> process_schema(schema, matched_intent, entities, record?, utterance)
             end
 
           schema ->
-            process_schema(schema, intent, entities, record?)
+            process_schema(schema, intent, entities, record?, utterance)
         end
 
       schema ->
-        process_schema(schema, intent, entities, record?)
+        process_schema(schema, intent, entities, record?, utterance)
+    end
+  end
+
+  # The utterance free-text slots are captured from, with the capture model,
+  # or nil when no `:text` was given.
+  defp utterance!(opts) do
+    case Keyword.fetch(opts, :text) do
+      :error ->
+        nil
+
+      {:ok, text} when is_binary(text) ->
+        model =
+          case {Keyword.fetch(opts, :free_text_capture), Keyword.fetch(opts, :language)} do
+            {{:ok, %FreeTextCapture{} = model}, _} ->
+              model
+
+            {{:ok, other}, _} ->
+              raise ArgumentError, "SlotDetector: :free_text_capture must be a FreeTextCapture model, got #{inspect(other, limit: 3)}"
+
+            {:error, {:ok, language}} ->
+              FreeTextCapture.loaded!(language)
+
+            {:error, :error} ->
+              raise ArgumentError, "SlotDetector: :text needs :language, whose free-text capture model reads it"
+          end
+
+        %{text: text, model: model}
+
+      {:ok, other} ->
+        raise ArgumentError, "SlotDetector: :text must be the utterance's text, got #{inspect(other, limit: 3)}"
     end
   end
 
@@ -288,13 +347,14 @@ defmodule Brain.Analysis.SlotDetector do
     end)
   end
 
-  defp process_schema(schema, intent, entities, record?) do
+  defp process_schema(schema, intent, entities, record?, utterance) do
     required = Map.get(schema, "required", [])
     optional = Map.get(schema, "optional", [])
     defaults = Map.get(schema, "defaults", %{})
     mappings = Map.get(schema, "entity_mappings", %{})
     result = SlotResult.new(intent)
-    result = fill_slots_from_entities(result, required ++ optional, entities, mappings, record?)
+    {result, fillers} = fill_slots_from_entities(result, required ++ optional, entities, mappings, record?)
+    result = capture_free_text(result, required ++ optional, fillers, utterance)
     result = apply_defaults(result, defaults)
     filled_slot_names = Map.keys(result.filled_slots)
     missing_required = Enum.reject(required, &(&1 in filled_slot_names))
@@ -308,8 +368,10 @@ defmodule Brain.Analysis.SlotDetector do
     }
   end
 
+  # The result with each slot an entity fills filled, and the entities that
+  # filled one.
   defp fill_slots_from_entities(result, slots, entities, mappings, record?) do
-    Enum.reduce(slots, result, fn slot_name, acc ->
+    Enum.map_reduce(slots, result, fn slot_name, acc ->
       mapped_entity_types = Map.get(mappings, slot_name, [slot_name])
 
       exact_match =
@@ -330,7 +392,7 @@ defmodule Brain.Analysis.SlotDetector do
 
       case matching_entity do
         nil ->
-          acc
+          {nil, acc}
 
         entity ->
           if via_compatibility and record? do
@@ -344,9 +406,44 @@ defmodule Brain.Analysis.SlotDetector do
           # slot) is recorded as such, so a narrowing step can still refine
           # the entity's type to what the slot asks for.
           source = if via_compatibility, do: :type_compatible, else: :explicit
-          SlotResult.fill_slot(acc, slot_name, value, source, confidence)
+          {entity, SlotResult.fill_slot(acc, slot_name, value, source, confidence)}
       end
     end)
+    |> then(fn {fillers, filled} -> {filled, Enum.reject(fillers, &is_nil/1)} end)
+  end
+
+  # Each slot of `slots` the capture model captures and no entity filled,
+  # filled with the span it captures from the utterance, kept off the
+  # entities that filled the other slots. Nothing is captured without an
+  # utterance.
+  defp capture_free_text(result, _slots, _fillers, nil), do: result
+
+  defp capture_free_text(result, slots, fillers, %{text: text, model: model}) do
+    captured = FreeTextCapture.slots(model)
+
+    case Enum.filter(slots, &(&1 in captured and not Map.has_key?(result.filled_slots, &1))) do
+      [] ->
+        result
+
+      free ->
+        excluded = Enum.map(fillers, &filler_range!/1)
+
+        Enum.reduce(free, result, fn slot, acc ->
+          case FreeTextCapture.capture(model, slot, text, excluded) do
+            {:ok, %{value: value, confidence: confidence}} -> SlotResult.fill_slot(acc, slot, value, :captured, confidence)
+            :abstain -> acc
+          end
+        end)
+    end
+  end
+
+  defp filler_range!(%{start_pos: start_pos, end_pos: end_pos}) when is_integer(start_pos) and is_integer(end_pos),
+    do: {start_pos, end_pos}
+
+  defp filler_range!(entity) do
+    raise ArgumentError,
+          "SlotDetector: an entity that fills a slot carries no :start_pos and :end_pos, so a captured free-text " <>
+            "span cannot be kept off it: #{inspect(entity, limit: 8)}"
   end
 
   defp find_compatible_entity(entities, mapped_entity_types) do
