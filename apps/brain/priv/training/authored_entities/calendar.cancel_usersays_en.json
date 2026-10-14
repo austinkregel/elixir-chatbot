@@ -1,0 +1,144 @@
+[
+  {
+    "data": [
+      {
+        "text": "Cancel my "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meeting"
+      },
+      {
+        "text": " with "
+      },
+      {
+        "alias": "person",
+        "meta": "@person",
+        "text": "John"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Cancel the "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meeting"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Cancel the "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "team sync"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Cancel "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "tomorrow's"
+      },
+      {
+        "text": " "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meeting"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Clear my schedule for "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "Friday"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Delete the "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "appointment"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Delete the calendar event"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Remove my "
+      },
+      {
+        "alias": "time",
+        "meta": "@time",
+        "text": "2pm"
+      },
+      {
+        "text": " "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "appointment"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Remove the "
+      },
+      {
+        "alias": "time",
+        "meta": "@time",
+        "text": "3pm"
+      },
+      {
+        "text": " "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "appointment"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Remove the event from my calendar"
+      }
+    ]
+  }
+]
