@@ -85,7 +85,7 @@ defmodule Brain.Response.DiscoursePlanner do
   | Reason | Returned by | Primitive | Reply |
   | --- | --- | --- | --- |
   | `{:ambiguous, kind, items}` (two or more) | LocalScheduler `handle_call/3` (`:cancel_matching`) | clarification | `:ambiguous_item`, with `item_kind`, `candidates` |
-  | `:event_not_identified` | LocalScheduler `cancel_matching/4` | clarification | `:item_not_identified`, `missing_slots: ["event"]` |
+  | `{:event_not_identified, events}` (one or more) | LocalScheduler `cancel_matching/4` | clarification | `:ambiguous_item`, with `item_kind: :calendar`, `candidates` |
   | `:missing_location` | Weather `enrich/4` | clarification | `:missing_slots`, `missing_slots: ["location"]` |
   | `:location_not_found` | Weather `geocode/2` | clarification | `:location_not_found`, `missing_slots: ["location"]` |
   | `{:no_matching_items, kind, %{}}` | LocalScheduler `handle_call/3` | action result | `:no_items` |
@@ -133,8 +133,8 @@ defmodule Brain.Response.DiscoursePlanner do
   defp planned_reply!({:ambiguous, kind, [_, _ | _] = items}) when is_atom(kind),
     do: question(:ambiguous_item, %{item_kind: kind, candidates: items})
 
-  defp planned_reply!(:event_not_identified),
-    do: question(:item_not_identified, %{item_kind: :calendar, missing_slots: ["event"]})
+  defp planned_reply!({:event_not_identified, [_ | _] = events}),
+    do: question(:ambiguous_item, %{item_kind: :calendar, candidates: events})
 
   defp planned_reply!(:missing_location), do: question(:missing_slots, %{missing_slots: ["location"]})
   defp planned_reply!(:location_not_found), do: question(:location_not_found, %{missing_slots: ["location"]})
