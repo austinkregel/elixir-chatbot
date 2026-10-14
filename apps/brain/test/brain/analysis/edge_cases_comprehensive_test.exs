@@ -107,7 +107,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
     entities
     |> Enum.map(fn e ->
       %{
-        type: Map.get(e, :entity_type, Map.get(e, :type, Map.get(e, :entity, "unknown"))),
+        type: Map.fetch!(e, :entity_type),
         value: Map.get(e, :value, Map.get(e, :match, "unknown")),
         confidence: round_confidence(Map.get(e, :confidence, 1.0))
       }
