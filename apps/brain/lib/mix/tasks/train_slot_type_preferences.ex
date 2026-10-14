@@ -35,7 +35,8 @@ defmodule Mix.Tasks.TrainSlotTypePreferences do
   what tagging, the gazetteer and the type hierarchy read: WordNet, the
   tagger's lexical features, the database repository the gazetteer reads
   approved entities through (the repository alone: no migration or import
-  runs), the gazetteer and the type hierarchy.
+  runs), the owned lexicon the gazetteer reads ordinary words from, the
+  gazetteer and the type hierarchy.
 
   ## Options
 
@@ -163,15 +164,16 @@ defmodule Mix.Tasks.TrainSlotTypePreferences do
   end
 
   @doc false
-  # The gazetteer, and the repository it reads approved entities through. The
-  # repository is started alone, not the database application, so nothing
-  # migrates or imports.
+  # The gazetteer, the repository it reads approved entities through, and the
+  # owned lexicon it asks which state codes are ordinary words
+  # (`Brain.ML.DataLoaders.ordinary_word?/1`). The repository is started
+  # alone, not the database application, so nothing migrates or imports.
   def start_gazetteer! do
     for app <- [:ecto_sql, :postgrex] do
       {:ok, _} = Application.ensure_all_started(app)
     end
 
-    case Supervisor.start_link([Atlas.Repo, Gazetteer], strategy: :one_for_one) do
+    case Supervisor.start_link([Atlas.Repo, Brain.Lexicon.UserDefined, Gazetteer], strategy: :one_for_one) do
       {:ok, _pid} -> :ok
       other -> Mix.raise("train_slot_type_preferences: could not start the gazetteer: #{inspect(other)}")
     end
