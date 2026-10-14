@@ -2,35 +2,58 @@ defmodule Brain.Services.LocalSchedulerTest do
   use ExUnit.Case, async: false
 
   alias Brain.Services.{Dispatcher, LocalScheduler, SchedulingDriver}
+  alias Brain.Test.ManualClock
+  alias Brain.Temporal.Zone
 
   # Items are stored in Atlas, so the scheduler reads and writes inside this
   # test's sandbox transaction. The scheduler keys every item by world id and
   # reads no world directory, so these tests use fresh `test_` ids and clear
   # both worlds before the transaction is rolled back, which also removes them
-  # from the scheduler's table.
+  # from the scheduler's table. Items belong to a web user, created in the
+  # transaction too.
+  #
+  # The scheduler's clock is `Brain.Test.ManualClock` (config/test.exs): it
+  # stands at its configured start, the Monday below, until a test moves it,
+  # and nothing fires until a test wakes the scheduler.
   setup tags do
-    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
-    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+    sandbox = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(sandbox) end)
+
+    ManualClock.reset!()
+    on_exit(&ManualClock.reset!/0)
 
     suffix = System.unique_integer([:positive])
     world_a = "test_scheduler_a_#{suffix}"
     world_b = "test_scheduler_b_#{suffix}"
+    owner = Atlas.WebUsers.create!(world_a)
+    other_user = Atlas.WebUsers.create!(world_a)
+
+    # The web user every turn below is said by (`said/2`).
+    Process.put(:scheduler_test_owner, owner.id)
 
     on_exit(fn ->
       LocalScheduler.clear_world(world_a)
       LocalScheduler.clear_world(world_b)
     end)
 
-    %{world_a: world_a, world_b: world_b}
+    %{world_a: world_a, world_b: world_b, owner: owner.id, other_user: other_user.id}
   end
 
   # The turns these tests are said in: a Monday morning, unless a test says
-  # otherwise.
+  # otherwise. Their days and times are read in UTC.
   @monday ~U[2026-10-12 09:00:00Z]
   @tuesday ~U[2026-10-13 09:00:00Z]
+  @utc Zone.utc()
 
-  # The slots of a turn: what was said, and when.
-  defp said(slots, turn \\ @monday), do: Map.put(slots, :turn_time, turn)
+  # The slots of a turn: what was said, when, where, and by the test's web
+  # user.
+  defp said(slots, turn \\ @monday),
+    do: Map.merge(slots, %{turn_time: turn, time_zone: @utc, web_user_id: Process.get(:scheduler_test_owner)})
+
+  defp stored_one!(world_id, kind) do
+    [item] = stored(world_id, kind)
+    item
+  end
 
   # What Atlas holds of the world's items of one kind, oldest first: the
   # alarms and reminders no operation reads back.
@@ -164,13 +187,13 @@ defmodule Brain.Services.LocalSchedulerTest do
       assert stored(world_b, "alarm") == []
     end
 
-    test "snoozing finds no ringing alarm, since alarms are stored and never rung", %{world_a: world_a} do
+    test "snoozing with no alarm ringing finds none, and changes nothing", %{world_a: world_a} do
       LocalScheduler.enrich("alarm.set", said(%{time: "7am"}), %{}, world_a)
 
       assert {:error, :no_ringing_alarm} =
                LocalScheduler.enrich("alarm.snooze", said(%{duration: "5 minutes"}), %{}, world_a)
 
-      assert [%Atlas.Schemas.SchedulerItem{time: "7am", status: "set"}] = stored(world_a, "alarm")
+      assert [%Atlas.Schemas.SchedulerItem{time: "7am", status: "set", fire_state: "pending"}] = stored(world_a, "alarm")
     end
 
     test "each world stores its own reminder", %{world_a: world_a, world_b: world_b} do
@@ -267,6 +290,35 @@ defmodule Brain.Services.LocalSchedulerTest do
 
       for kind <- Atlas.Schemas.SchedulerItem.kinds(), do: assert(stored(world_a, kind) == [])
     end
+
+    test "raises without the turn's zone, naming the slot, and stores nothing", %{world_a: world_a} do
+      for intent <- LocalScheduler.supported_intents() do
+        assert_raise ArgumentError, ~r/needs the :time_zone slot/, fn ->
+          LocalScheduler.enrich(intent, Map.delete(said(%{time: "7am", duration: "5 minutes"}), :time_zone), %{}, world_a)
+        end
+      end
+
+      assert_raise ArgumentError, ~r/needs the :time_zone slot/, fn ->
+        LocalScheduler.set_alarm(said(%{time: "7am"}) |> Map.put(:time_zone, "America/Chicago"), %{}, world_a)
+      end
+
+      for kind <- Atlas.Schemas.SchedulerItem.kinds(), do: assert(stored(world_a, kind) == [])
+    end
+
+    test "setting an item raises without the web user it is for, and stores nothing", %{world_a: world_a} do
+      for intent <- ["alarm.set", "reminder.create", "timer.set", "calendar.schedule"] do
+        assert_raise ArgumentError, ~r/needs the :web_user_id slot/, fn ->
+          LocalScheduler.enrich(intent, Map.delete(said(%{time: "7am", duration: "5 minutes"}), :web_user_id), %{}, world_a)
+        end
+      end
+
+      for kind <- Atlas.Schemas.SchedulerItem.kinds(), do: assert(stored(world_a, kind) == [])
+    end
+
+    test "an item is stored as its owner's", %{world_a: world_a, owner: owner} do
+      LocalScheduler.enrich("alarm.set", said(%{time: "7am"}), %{}, world_a)
+      assert %Atlas.Schemas.SchedulerItem{web_user_id: ^owner} = stored_one!(world_a, "alarm")
+    end
   end
 
   describe "what is stored beside the text" do
@@ -280,11 +332,41 @@ defmodule Brain.Services.LocalSchedulerTest do
                  resolution: "resolved",
                  turn_time: ~U[2026-10-12 09:00:00.000000Z],
                  time_zone: "Etc/UTC",
+                 utc_offset: 0,
                  starts_at: ~U[2026-10-13 07:00:00.000000Z],
                  ends_at: ~U[2026-10-13 07:00:00.000000Z],
-                 clock: ~T[07:00:00]
+                 clock: ~T[07:00:00],
+                 due_at: ~U[2026-10-13 07:00:00.000000Z],
+                 fire_state: "pending",
+                 fired_at: nil
                }
              ] = stored(world_a, "alarm")
+    end
+
+    test "a time read in the turn's zone is stored as the instant it names, with the zone's name and offset",
+         %{world_a: world_a} do
+      # Tokyo, at +9:00 and with no daylight saving time, as a browser gives it.
+      tokyo =
+        Zone.from_browser!(%{
+          "name" => "Asia/Tokyo",
+          "at" => DateTime.to_unix(@monday, :millisecond),
+          "offset" => 9 * 3600,
+          "from" => DateTime.to_unix(~U[2026-01-01 00:00:00Z], :millisecond),
+          "until" => DateTime.to_unix(~U[2027-01-01 00:00:00Z], :millisecond),
+          "offset_at_from" => 9 * 3600,
+          "transitions" => []
+        })
+
+      LocalScheduler.enrich("alarm.set", %{said(%{time: "7 am", date: "tomorrow"}) | time_zone: tokyo}, %{}, world_a)
+
+      # Monday 09:00 UTC is Monday 18:00 in Tokyo; 7 am there on Tuesday is
+      # 22:00 UTC on Monday.
+      assert %Atlas.Schemas.SchedulerItem{
+               time_zone: "Asia/Tokyo",
+               utc_offset: 32_400,
+               starts_at: ~U[2026-10-12 22:00:00.000000Z],
+               due_at: ~U[2026-10-12 22:00:00.000000Z]
+             } = stored_one!(world_a, "alarm")
     end
 
     test "a day alone covers the whole day, and a timer runs from the turn for its duration", %{world_a: world_a} do
@@ -503,7 +585,8 @@ defmodule Brain.Services.LocalSchedulerTest do
         kind: "timer",
         duration: "5 minutes",
         status: "running",
-        resolution: "recorded_before_resolution"
+        resolution: "recorded_before_resolution",
+        fire_state: "owner_not_recorded"
       })
 
       restart!()
@@ -664,7 +747,8 @@ defmodule Brain.Services.LocalSchedulerTest do
         text: "dentist",
         date: "tomorrow",
         time: "",
-        resolution: "recorded_before_resolution"
+        resolution: "recorded_before_resolution",
+        fire_state: "owner_not_recorded"
       })
 
       restart!()
@@ -811,7 +895,8 @@ defmodule Brain.Services.LocalSchedulerTest do
         text: "water plants",
         time: "noon",
         status: "set",
-        resolution: "recorded_before_resolution"
+        resolution: "recorded_before_resolution",
+        fire_state: "owner_not_recorded"
       })
 
       restart!()
@@ -838,9 +923,10 @@ defmodule Brain.Services.LocalSchedulerTest do
   end
 
   describe "writes?/1" do
-    test "is true for setting, creating, scheduling and cancelling, and false for reading and snoozing" do
+    test "is true for setting, snoozing, creating, scheduling and cancelling, and false for reading" do
       for intent <- [
             "alarm.set",
+            "alarm.snooze",
             "alarm.cancel",
             "timer.set",
             "timer.cancel",
@@ -852,7 +938,7 @@ defmodule Brain.Services.LocalSchedulerTest do
         assert LocalScheduler.writes?(intent), intent
       end
 
-      for intent <- ["alarm.check", "timer.check", "reminder.check", "calendar.query", "alarm.snooze"] do
+      for intent <- ["alarm.check", "timer.check", "reminder.check", "calendar.query"] do
         refute LocalScheduler.writes?(intent), intent
       end
     end
@@ -918,39 +1004,249 @@ defmodule Brain.Services.LocalSchedulerTest do
       :ok
     end
 
-    test "a scheduler intent sets and reads back the item in the context's world, at the context's turn",
-         %{world_a: world_a, world_b: world_b} do
+    defp turn(world_id, turn_time, owner),
+      do: %{world_id: world_id, turn_time: turn_time, time_zone: @utc, web_user_id: owner}
+
+    test "a scheduler intent sets and reads back the item in the context's world, at the context's turn, as its web user's",
+         %{world_a: world_a, world_b: world_b, owner: owner} do
       assert {:ok, %{timer_status: "running", duration: "7 minutes"}} =
-               Dispatcher.dispatch("timer.set", %{duration: "7 minutes"}, %{world_id: world_a, turn_time: @monday})
+               Dispatcher.dispatch("timer.set", %{duration: "7 minutes"}, turn(world_a, @monday, owner))
 
       assert {:ok, %{timer_status: "running", duration: "7 minutes", time_left: ["6 minutes"]}} =
-               Dispatcher.dispatch("timer.check", %{}, %{world_id: world_a, turn_time: DateTime.add(@monday, 60)})
+               Dispatcher.dispatch("timer.check", %{}, turn(world_a, DateTime.add(@monday, 60), owner))
 
       assert {:ok, %{timer_status: "none"}} =
-               Dispatcher.dispatch("timer.check", %{}, %{world_id: world_b, turn_time: @monday})
+               Dispatcher.dispatch("timer.check", %{}, turn(world_b, @monday, owner))
 
       assert {:ok, %{timer_status: "running", duration: "7 minutes"}} =
                LocalScheduler.enrich("timer.check", said(%{}), %{}, world_a)
+
+      assert %Atlas.Schemas.SchedulerItem{web_user_id: ^owner} = stored_one!(world_a, "timer")
     end
 
-    test "a context without the turn's time raises", %{world_a: world_a} do
+    test "a context without the turn's time or zone raises", %{world_a: world_a, owner: owner} do
       assert_raise ArgumentError, ~r/context needs :turn_time/, fn ->
-        Dispatcher.dispatch("timer.set", %{duration: "7 minutes"}, %{world_id: world_a})
+        Dispatcher.dispatch("timer.set", %{duration: "7 minutes"}, %{world_id: world_a, time_zone: @utc, web_user_id: owner})
+      end
+
+      assert_raise ArgumentError, ~r/context needs :time_zone/, fn ->
+        Dispatcher.dispatch("timer.set", %{duration: "7 minutes"}, %{world_id: world_a, turn_time: @monday, web_user_id: owner})
       end
 
       assert stored(world_a, "timer") == []
     end
 
-    test "with side effects off, a setting intent is refused and nothing is stored", %{world_a: world_a} do
+    test "with side effects off, a setting intent is refused and nothing is stored", %{world_a: world_a, owner: owner} do
       assert {:error, :side_effects_off} =
-               Dispatcher.dispatch("timer.set", %{duration: "5 minutes"}, %{
-                 world_id: world_a,
-                 side_effects: false,
-                 turn_time: @monday
-               })
+               Dispatcher.dispatch("timer.set", %{duration: "5 minutes"}, Map.put(turn(world_a, @monday, owner), :side_effects, false))
 
       assert {:ok, %{timer_status: "none"}} =
-               Dispatcher.dispatch("timer.check", %{}, %{world_id: world_a, side_effects: false, turn_time: @monday})
+               Dispatcher.dispatch("timer.check", %{}, Map.put(turn(world_a, @monday, owner), :side_effects, false))
+    end
+  end
+
+  describe "firing" do
+    defp subscribe(web_user_id), do: Phoenix.PubSub.subscribe(Brain.PubSub, Atlas.WebUsers.topic(web_user_id))
+
+    test "an alarm fires at the instant it is due and not before, told to its owner only",
+         %{world_a: world_a, owner: owner, other_user: other_user} do
+      subscribe(owner)
+      subscribe(other_user)
+      LocalScheduler.enrich("alarm.set", said(%{time: "7 am", date: "tomorrow"}), %{}, world_a)
+      due = ~U[2026-10-13 07:00:00.000000Z]
+
+      # The scheduler is set to wake when it is due.
+      assert :sys.get_state(LocalScheduler).wake_at == due
+
+      ManualClock.set!(DateTime.add(due, -1, :microsecond))
+      :ok = LocalScheduler.wake()
+      refute_received {:scheduler_fired, _}
+      assert %Atlas.Schemas.SchedulerItem{fire_state: "pending", status: "set", fired_at: nil} = stored_one!(world_a, "alarm")
+
+      ManualClock.set!(due)
+      :ok = LocalScheduler.wake()
+
+      %Atlas.Schemas.SchedulerItem{id: id} = alarm = stored_one!(world_a, "alarm")
+      assert %{fire_state: "fired", status: "ringing", fired_at: ^due} = alarm
+
+      assert_received {:scheduler_fired,
+                       %{id: ^id, world_id: ^world_a, kind: :alarm, said: %{time: "7 am", date: "tomorrow"}, due_at: ^due, fired_at: ^due, late: false, status: "ringing"}}
+
+      # Once, on the owner's topic only: this process hears both topics.
+      refute_received {:scheduler_fired, _}
+
+      # Fired, it is not due again.
+      :ok = LocalScheduler.wake()
+      refute_received {:scheduler_fired, _}
+      assert :sys.get_state(LocalScheduler).wake_at != due
+    end
+
+    test "a timer fires when it runs out, and has finished", %{world_a: world_a, owner: owner} do
+      subscribe(owner)
+      LocalScheduler.enrich("timer.set", said(%{duration: "5 minutes"}), %{}, world_a)
+
+      ManualClock.set!(~U[2026-10-12 09:05:00Z])
+      :ok = LocalScheduler.wake()
+
+      assert_received {:scheduler_fired, %{kind: :timer, said: %{duration: "5 minutes"}, status: "finished", late: false}}
+      assert %Atlas.Schemas.SchedulerItem{fire_state: "fired", status: "finished"} = stored_one!(world_a, "timer")
+    end
+
+    test "an item whose time names no time of day, or with nothing resolved, has no due time and never fires",
+         %{world_a: world_a, owner: owner} do
+      subscribe(owner)
+      LocalScheduler.enrich("reminder.create", said(%{reminder_text: "pay rent", date: "tomorrow"}), %{}, world_a)
+      LocalScheduler.enrich("alarm.set", said(%{}), %{}, world_a)
+      LocalScheduler.enrich("calendar.schedule", said(%{event: "party", date: "later"}), %{}, world_a)
+
+      ManualClock.set!(~U[2026-12-31 00:00:00Z])
+      :ok = LocalScheduler.wake()
+
+      refute_received {:scheduler_fired, _}
+
+      for kind <- ["reminder", "alarm", "calendar"] do
+        assert %Atlas.Schemas.SchedulerItem{fire_state: "no_due_time", due_at: nil} = stored_one!(world_a, kind)
+      end
+    end
+
+    test "what came due while the scheduler was not running fires when it starts, marked late",
+         %{world_a: world_a, owner: owner} do
+      LocalScheduler.enrich("reminder.create", said(%{reminder_text: "call home", time: "6 pm"}), %{}, world_a)
+      LocalScheduler.enrich("alarm.set", said(%{time: "8 pm"}), %{}, world_a)
+      due = ~U[2026-10-12 18:00:00.000000Z]
+
+      :ok = Supervisor.terminate_child(Brain.Supervisor, LocalScheduler)
+      # The scheduler was down from before 6 pm until 7 pm.
+      ManualClock.set!(~U[2026-10-12 19:00:00Z])
+      subscribe(owner)
+      {:ok, _restarted} = Supervisor.restart_child(Brain.Supervisor, LocalScheduler)
+
+      assert_received {:scheduler_fired,
+                       %{kind: :reminder, said: %{text: "call home"}, due_at: ^due, fired_at: ~U[2026-10-12 19:00:00.000000Z], late: true, status: nil}}
+
+      refute_received {:scheduler_fired, _}
+
+      assert %Atlas.Schemas.SchedulerItem{fire_state: "fired_late", fired_at: ~U[2026-10-12 19:00:00.000000Z]} =
+               stored_one!(world_a, "reminder")
+
+      # The 8 pm alarm is still to come, and the scheduler wakes for it.
+      assert %Atlas.Schemas.SchedulerItem{fire_state: "pending"} = stored_one!(world_a, "alarm")
+      assert :sys.get_state(LocalScheduler).wake_at == ~U[2026-10-12 20:00:00.000000Z]
+    end
+
+    test "an item stored before owners were never fires", %{world_a: world_a} do
+      Atlas.Scheduler.insert_item!(%{
+        world_id: world_a,
+        kind: "alarm",
+        time: "7 am",
+        date: "",
+        status: "set",
+        resolution: "resolved",
+        turn_time: @monday,
+        time_zone: "Etc/UTC",
+        utc_offset: 0,
+        starts_at: ~U[2026-10-13 07:00:00Z],
+        ends_at: ~U[2026-10-13 07:00:00Z],
+        clock: ~T[07:00:00],
+        fire_state: "owner_not_recorded"
+      })
+
+      ManualClock.set!(~U[2026-10-14 00:00:00Z])
+      restart!()
+      :ok = LocalScheduler.wake()
+
+      assert %Atlas.Schemas.SchedulerItem{fire_state: "owner_not_recorded", status: "set", fired_at: nil} =
+               stored_one!(world_a, "alarm")
+
+      assert {:ok, %{alarm_status: "set", alarm_count: 1}} = LocalScheduler.enrich("alarm.check", said(%{}), %{}, world_a)
+    end
+
+    test "a check reports the alarms ringing and the reminders that have gone off", %{world_a: world_a} do
+      LocalScheduler.enrich("alarm.set", said(%{time: "6 am"}), %{}, world_a)
+      # Alarms are ordered by the microsecond they were set.
+      Process.sleep(2)
+      LocalScheduler.enrich("alarm.set", said(%{time: "9 pm"}), %{}, world_a)
+      LocalScheduler.enrich("reminder.create", said(%{reminder_text: "stretch", time: "10 am"}), %{}, world_a)
+      LocalScheduler.enrich("reminder.create", said(%{reminder_text: "sleep", time: "11 pm"}), %{}, world_a)
+
+      assert {:ok, %{alarm_status: "set", ringing_times: []}} = LocalScheduler.enrich("alarm.check", said(%{}), %{}, world_a)
+      assert {:ok, %{fired_reminder_texts: []}} = LocalScheduler.enrich("reminder.check", said(%{}), %{}, world_a)
+
+      # Monday 9:30 pm: the 10 am reminder has gone off and the 11 pm one has
+      # not; the 9 pm alarm is ringing, and the 6 am one is Tuesday's.
+      ManualClock.set!(~U[2026-10-12 21:30:00Z])
+      :ok = LocalScheduler.wake()
+      later = said(%{}, ~U[2026-10-12 21:30:00Z])
+
+      assert {:ok, %{alarm_status: "ringing", ringing_times: ["9 pm"], alarm_times: ["6 am", "9 pm"], alarm_count: 2}} =
+               LocalScheduler.enrich("alarm.check", later, %{}, world_a)
+
+      assert {:ok, %{fired_reminder_texts: ["stretch"], reminder_count: 2}} =
+               LocalScheduler.enrich("reminder.check", later, %{}, world_a)
+    end
+
+    test "snoozing a ringing alarm stops it ringing and has it ring again once the length said has passed",
+         %{world_a: world_a, owner: owner} do
+      subscribe(owner)
+      LocalScheduler.enrich("alarm.set", said(%{time: "7 am"}), %{}, world_a)
+      ManualClock.set!(~U[2026-10-13 07:00:00Z])
+      :ok = LocalScheduler.wake()
+      assert_received {:scheduler_fired, %{kind: :alarm, status: "ringing"}}
+
+      ringing_turn = said(%{}, ~U[2026-10-13 07:01:00Z])
+
+      # With no length said, the snooze asks for one and changes nothing.
+      assert {:error, :missing_duration} = LocalScheduler.enrich("alarm.snooze", ringing_turn, %{}, world_a)
+      assert %Atlas.Schemas.SchedulerItem{status: "ringing"} = stored_one!(world_a, "alarm")
+
+      assert {:ok, %{alarm_status: "snoozed", alarm_times: ["7 am"], snooze_duration: "9 minutes"}} =
+               LocalScheduler.enrich("alarm.snooze", Map.put(ringing_turn, :duration, "9 minutes"), %{}, world_a)
+
+      again = ~U[2026-10-13 07:10:00.000000Z]
+
+      assert %Atlas.Schemas.SchedulerItem{status: "set", fire_state: "pending", due_at: ^again, fired_at: nil} =
+               stored_one!(world_a, "alarm")
+
+      assert {:error, :no_ringing_alarm} =
+               LocalScheduler.enrich("alarm.snooze", Map.put(ringing_turn, :duration, "9 minutes"), %{}, world_a)
+
+      ManualClock.set!(DateTime.add(again, -1))
+      :ok = LocalScheduler.wake()
+      refute_received {:scheduler_fired, _}
+
+      ManualClock.set!(again)
+      :ok = LocalScheduler.wake()
+      assert_received {:scheduler_fired, %{kind: :alarm, status: "ringing", due_at: ^again}}
+    end
+
+    test "a world's items are listed oldest first, each with its state, due time, firing and owner",
+         %{world_a: world_a, world_b: world_b, owner: owner} do
+      LocalScheduler.enrich("alarm.set", said(%{time: "7 am"}), %{}, world_a)
+      Process.sleep(2)
+      LocalScheduler.enrich("reminder.create", said(%{reminder_text: "pay rent", date: "friday"}), %{}, world_a)
+      LocalScheduler.enrich("timer.set", said(%{duration: "5 minutes"}), %{}, world_b)
+
+      ManualClock.set!(~U[2026-10-13 07:00:00Z])
+      :ok = LocalScheduler.wake()
+
+      assert [
+               %{kind: :alarm, said: %{time: "7 am"}, status: "ringing", fire_state: "fired", web_user_id: ^owner,
+                 due_at: ~U[2026-10-13 07:00:00.000000Z], fired_at: ~U[2026-10-13 07:00:00.000000Z]},
+               %{kind: :reminder, said: %{text: "pay rent"}, status: "set", fire_state: "no_due_time", due_at: nil, fired_at: nil}
+             ] = LocalScheduler.items(world_a)
+
+      assert_raise ArgumentError, ~r/LocalScheduler.items needs the world/, fn -> LocalScheduler.items("") end
+    end
+
+    test "the alarms ringing for a web user are what a page opened now shows", %{world_a: world_a, owner: owner, other_user: other_user} do
+      LocalScheduler.enrich("alarm.set", said(%{time: "7 am"}), %{}, world_a)
+      assert LocalScheduler.ringing_notifications(owner) == []
+
+      ManualClock.set!(~U[2026-10-13 07:00:00Z])
+      :ok = LocalScheduler.wake()
+
+      assert [%{kind: :alarm, status: "ringing", said: %{time: "7 am"}}] = LocalScheduler.ringing_notifications(owner)
+      assert LocalScheduler.ringing_notifications(other_user) == []
     end
   end
 
