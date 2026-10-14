@@ -712,7 +712,7 @@ defmodule Brain do
         previous_entities: length(previous_context[:entities] || [])
       })
 
-      handle_followup_message(persona, input, previous_context, opts)
+      handle_followup_message(persona, input, previous_context, memory, opts)
     else
       process_new_message(persona, input, memory, opts)
     end
@@ -882,7 +882,7 @@ defmodule Brain do
     end
   end
 
-  defp handle_followup_message(persona, input, previous_context, opts) do
+  defp handle_followup_message(persona, input, previous_context, memory, opts) do
     side_effects = Keyword.fetch!(opts, :side_effects)
 
     analysis_model =
@@ -917,9 +917,11 @@ defmodule Brain do
       used_pipeline: best_analysis != nil
     })
 
+    pending = Map.get(previous_context, :pending_clarification)
+
     pending_answer =
-      case Map.get(previous_context, :pending_clarification) do
-        %{} = pending -> FollowupDetector.resolve_pending(input, pending)
+      case pending do
+        %{} -> FollowupDetector.resolve_pending(%{text: input, entities: entities}, pending)
         nil -> :unrelated
       end
 
@@ -934,8 +936,7 @@ defmodule Brain do
       {:narrowed, candidates} ->
         # The reply named some of the candidates but not one: the question is
         # asked again with those.
-        %{item_kind: kind} = previous_context.pending_clarification
-        reason = {:ambiguous, kind, candidates}
+        reason = {:ambiguous, pending.item_kind, candidates}
 
         {:ok, prompt} =
           reason
@@ -948,11 +949,16 @@ defmodule Brain do
           entities: entities,
           slots: previous_context.slots,
           missing_slots: [],
-          pending_clarification: %{item_kind: kind, candidates: candidates}
+          pending_clarification: %{pending | candidates: candidates}
         }
 
         report_followup_response(opts, :followup_needs_more, previous_context.intent, entities, reason)
         {prompt, :followup_needs_more, context}
+
+      :unrelated when pending != nil ->
+        # The reply named none of the candidates it was asked to pick from:
+        # it is a message of its own (`FollowupDetector.is_followup?/2`).
+        process_new_message(persona, input, memory, opts)
 
       :unrelated ->
         carried = FollowupDetector.get_carried_context(input, previous_context)
@@ -1193,9 +1199,13 @@ defmodule Brain do
               timestamp: Map.get(m, :timestamp, 0)
             }
 
+          # The turn's entities as its analysis kept them, each with its
+          # `:entity_type`, `:value` and `:confidence`: slots are filled from
+          # them (`ContextResolver`) and references resolve to them
+          # (`AnaphoraResolver`), with the confidence they were found with.
           context ->
             %{
-              entities: build_entities_map(Map.get(context, :entities, [])),
+              entities: Map.fetch!(context, :entities),
               intent: Map.get(context, :intent),
               timestamp: Map.get(context, :timestamp, 0),
               missing_slots: Map.get(context, :missing_slots, [])
@@ -1221,27 +1231,6 @@ defmodule Brain do
     :ok
   rescue
     _ -> :ok
-  end
-
-  defp build_entities_map(entities) when is_list(entities) do
-    Enum.reduce(entities, %{}, fn entity, acc ->
-      entity_type = entity[:entity_type]
-      entity_value = entity[:value]
-
-      if entity_type do
-        Map.put(acc, entity_type, entity_value)
-      else
-        acc
-      end
-    end)
-  end
-
-  defp build_entities_map(entities) when is_map(entities) do
-    entities
-  end
-
-  defp build_entities_map(_) do
-    %{}
   end
 
   defp try_nlp_with_analysis(persona, input, _memory, analysis_model, opts) do
@@ -1641,13 +1630,10 @@ defmodule Brain do
         ""
 
       [single_prompt] ->
-        transition = Synthesizer.get_transition_phrase(:additional_info)
-
-        "#{transition} #{String.downcase(String.first(single_prompt))}#{String.slice(single_prompt, 1..-1//1)}"
+        :additional_info |> Synthesizer.get_transition_phrase() |> Synthesizer.join_after(single_prompt)
 
       [first | _rest] ->
-        transition = Synthesizer.get_transition_phrase(:additional_info)
-        "#{transition} #{String.downcase(String.first(first))}#{String.slice(first, 1..-1//1)}"
+        :additional_info |> Synthesizer.get_transition_phrase() |> Synthesizer.join_after(first)
     end
   end
 
