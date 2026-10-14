@@ -91,8 +91,10 @@ defmodule Brain.Services.Dispatcher do
   the operation it names (`Brain.Services.SchedulingDriver.operation/1`); a
   world with no driver chosen raises. Its dates and times are read against
   the turn they were said in: the context must carry `:turn_time`, the
-  moment of the turn (a `DateTime`), which goes to the driver as the
-  `:turn_time` slot; a context without it raises.
+  moment of the turn (a `DateTime`), and `:time_zone`, the zone of the person
+  who said it (a `Brain.Temporal.Zone`), which go to the driver as the slots
+  of those names; a context without either raises. The context's
+  `:web_user_id`, the web user who said it, goes as the `:web_user_id` slot.
 
   ## Returns
     - {:ok, enrichment_data} on success
@@ -115,7 +117,7 @@ defmodule Brain.Services.Dispatcher do
           {:error, :side_effects_off}
         else
           Logger.info("Dispatcher: routing intent=#{intent} to #{inspect(service)}")
-          dispatch_to_service(service, intent, with_turn_time(intent, slots, context), world)
+          dispatch_to_service(service, intent, with_turn(intent, slots, context), world)
         end
     end
   end
@@ -453,19 +455,36 @@ defmodule Brain.Services.Dispatcher do
   end
 
   # A scheduling operation reads its dates and times against the turn they
-  # were said in, so the turn's time goes with its slots as `:turn_time`. The
-  # context must carry it; nothing stands in for it.
-  defp with_turn_time(intent, slots, context) do
+  # were said in, so the turn's time and zone go with its slots as
+  # `:turn_time` and `:time_zone`. The context must carry both; nothing stands
+  # in for either. The web user who said it goes as `:web_user_id`, `nil`
+  # when the context names none: the items they set are theirs, and the
+  # driver refuses to set one for no one.
+  defp with_turn(intent, slots, context) do
     if SchedulingDriver.domain?(intent) do
-      case Map.get(context, :turn_time) do
-        %DateTime{} = turn_time ->
-          Map.put(slots, :turn_time, turn_time)
+      turn_time =
+        case Map.get(context, :turn_time) do
+          %DateTime{} = turn_time ->
+            turn_time
 
-        other ->
-          raise ArgumentError,
-                "Dispatcher.dispatch context needs :turn_time, the moment of the turn a #{intent} intent was said " <>
-                  "in, got: #{inspect(other)}"
-      end
+          other ->
+            raise ArgumentError,
+                  "Dispatcher.dispatch context needs :turn_time, the moment of the turn a #{intent} intent was said " <>
+                    "in, got: #{inspect(other)}"
+        end
+
+      zone =
+        case Map.get(context, :time_zone) do
+          %Brain.Temporal.Zone{} = zone ->
+            zone
+
+          other ->
+            raise ArgumentError,
+                  "Dispatcher.dispatch context needs :time_zone, the Brain.Temporal.Zone a #{intent} intent's dates " <>
+                    "and times are read in, got: #{inspect(other)}"
+        end
+
+      Map.merge(slots, %{turn_time: turn_time, time_zone: zone, web_user_id: Map.get(context, :web_user_id)})
     else
       slots
     end
