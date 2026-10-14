@@ -89,7 +89,10 @@ defmodule Brain.Services.Dispatcher do
 
   An intent of a scheduling domain goes to the world's scheduling driver, as
   the operation it names (`Brain.Services.SchedulingDriver.operation/1`); a
-  world with no driver chosen raises.
+  world with no driver chosen raises. Its dates and times are read against
+  the turn they were said in: the context must carry `:turn_time`, the
+  moment of the turn (a `DateTime`), which goes to the driver as the
+  `:turn_time` slot; a context without it raises.
 
   ## Returns
     - {:ok, enrichment_data} on success
@@ -112,7 +115,7 @@ defmodule Brain.Services.Dispatcher do
           {:error, :side_effects_off}
         else
           Logger.info("Dispatcher: routing intent=#{intent} to #{inspect(service)}")
-          dispatch_to_service(service, intent, slots, world)
+          dispatch_to_service(service, intent, with_turn_time(intent, slots, context), world)
         end
     end
   end
@@ -447,6 +450,25 @@ defmodule Brain.Services.Dispatcher do
 
   defp world_id!(other, function) do
     raise ArgumentError, "Dispatcher.#{function} needs the world it acts in, got: #{inspect(other)}"
+  end
+
+  # A scheduling operation reads its dates and times against the turn they
+  # were said in, so the turn's time goes with its slots as `:turn_time`. The
+  # context must carry it; nothing stands in for it.
+  defp with_turn_time(intent, slots, context) do
+    if SchedulingDriver.domain?(intent) do
+      case Map.get(context, :turn_time) do
+        %DateTime{} = turn_time ->
+          Map.put(slots, :turn_time, turn_time)
+
+        other ->
+          raise ArgumentError,
+                "Dispatcher.dispatch context needs :turn_time, the moment of the turn a #{intent} intent was said " <>
+                  "in, got: #{inspect(other)}"
+      end
+    else
+      slots
+    end
   end
 
   defp context_world!(context) do
