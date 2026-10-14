@@ -1,7 +1,7 @@
 defmodule Brain.Corpus.ProvenanceTest do
   use ExUnit.Case, async: true
 
-  alias Brain.Analysis.TypeHierarchy
+  alias Brain.Analysis.{FreeTextCapture, SlotDetector}
   alias Brain.Corpus.{Export, Label, Provenance}
   alias Brain.ML.{EvaluationStore, NerGold}
 
@@ -114,7 +114,15 @@ defmodule Brain.Corpus.ProvenanceTest do
 
     setup do
       path = EvaluationStore.gold_standard_path("ner")
-      %{path: path, content: File.read!(path), authored: RebuildNerGold.authored_rows!()}
+
+      # Each annotation with the intent its file is filed under.
+      annotations =
+        for file <- Export.usersays_files(Provenance.authored_entities_dir()),
+            intent = file |> Export.label_of() |> Label.canonical(),
+            entry <- file |> File.read!() |> Jason.decode!(),
+            do: %{intent: intent, entry: entry, text: Export.phrase_text(entry)}
+
+      %{path: path, content: File.read!(path), authored: RebuildNerGold.authored_rows!(), annotations: annotations}
     end
 
     test "the committed NER gold standard is what the annotations rebuild to, byte for byte", %{path: path, content: content, authored: authored} do
@@ -122,18 +130,35 @@ defmodule Brain.Corpus.ProvenanceTest do
       assert RebuildNerGold.rebuild!(content, path, authored) == content
     end
 
-    test "every annotation's entities are placed in its text, typed under the code root", %{authored: authored} do
-      for row <- authored, span <- NerGold.spans!(row) do
-        assert TypeHierarchy.is_a?(span.type, "code"), "#{inspect(row["text"])}: #{span.type} is not a code type"
+    test "every annotation's entities are placed in its text, each of a type that fills its slot of the annotation's intent, " <>
+           "and its free-text spans are no entities",
+         %{authored: authored, annotations: annotations} do
+      registry = SlotDetector.registry()
+      rows = Map.new(authored, &{&1["text"], &1})
+
+      for %{intent: intent, entry: entry, text: text} <- annotations do
+        row = Map.fetch!(rows, text)
+        entities = for %{"meta" => meta} = segment <- entry["data"], meta != FreeTextCapture.any_text(), do: segment
+
+        assert Enum.map(NerGold.spans!(row), &{&1.type, &1.value}) == Enum.map(entities, &{String.trim_leading(&1["meta"], "@"), &1["text"]})
+
+        for segment <- entities do
+          types = SlotDetector.slot_entity_types!(Map.fetch!(registry, intent), segment["alias"])
+          assert String.trim_leading(segment["meta"], "@") in types, "#{inspect(text)}: #{segment["meta"]} does not fill #{intent}'s #{segment["alias"]}"
+        end
       end
     end
 
-    test "every annotation is of a text the intent gold standard files under the annotation's intent", %{authored: authored} do
-      gold = EvaluationStore.load_gold_standard("intent")
+    test "every annotation is of a text the intent gold standard files under the annotation's intent", %{annotations: annotations} do
+      # Filed under the intent, or listing it among its candidates, as `mix rebuild_ner_gold` checks.
+      gold =
+        for row <- EvaluationStore.load_gold_standard("intent"),
+            intent <- [row["intent"] | Map.get(row, "candidates", [])],
+            into: MapSet.new(),
+            do: {Export.normalise(row["text"]), intent}
 
-      for row <- authored do
-        assert Enum.any?(gold, &(Export.normalise(&1["text"]) == Export.normalise(row["text"]) and String.starts_with?(&1["intent"], "code."))),
-               "#{inspect(row["text"])} is no code intent gold row"
+      for %{intent: intent, text: text} <- annotations do
+        assert MapSet.member?(gold, {Export.normalise(text), intent}), "#{inspect(text)} is no #{intent} intent gold row"
       end
     end
 
@@ -170,6 +195,27 @@ defmodule Brain.Corpus.ProvenanceTest do
 
       write.([%{"text" => "describe the function "}, %{"alias" => "symbol", "meta" => "@function", "text" => "send_email"}])
       assert [%{"expected" => [%{"type" => "function", "value" => "send_email"}], "labeled_by" => "authored"}] = RebuildNerGold.authored_rows!(dir)
+    end
+
+    @tag :tmp_dir
+    test "a free-text span names no entity, and one of a slot the intent does not declare raises", %{tmp_dir: dir} do
+      write = fn data ->
+        File.write!(Path.join(dir, "calendar.cancel_usersays_en.json"), Jason.encode!([%{"data" => data}]))
+      end
+
+      # calendar.cancel declares a date slot its entity_mappings does not
+      # list; SlotDetector fills it with an entity of type date.
+      write.([
+        %{"text" => "Cancel "},
+        %{"alias" => "date", "meta" => "@date", "text" => "tomorrow's"},
+        %{"text" => " "},
+        %{"alias" => "event", "meta" => "@sys.any", "text" => "meeting"}
+      ])
+
+      assert [%{"expected" => [%{"type" => "date", "value" => "tomorrow's"}], "text" => "Cancel tomorrow's meeting"}] = RebuildNerGold.authored_rows!(dir)
+
+      write.([%{"text" => "Cancel the "}, %{"alias" => "reminder_text", "meta" => "@sys.any", "text" => "meeting"}])
+      assert_raise Mix.Error, ~r/the free-text span's slot "reminder_text" is no slot calendar.cancel declares/, fn -> RebuildNerGold.authored_rows!(dir) end
     end
   end
 end
