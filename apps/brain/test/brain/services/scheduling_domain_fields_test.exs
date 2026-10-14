@@ -44,6 +44,9 @@ defmodule Brain.Services.SchedulingDomainFieldsTest do
     event: "team standup"
   }
 
+  # The turn every operation is dispatched in.
+  @turn_time ~U[2026-10-12 09:00:00Z]
+
   setup tags do
     owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
     on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
@@ -68,7 +71,7 @@ defmodule Brain.Services.SchedulingDomainFieldsTest do
     assert :ok = Dispatcher.assign_scheduling_driver(world, driver)
 
     Enum.map(@sequence, fn intent ->
-      {intent, Dispatcher.dispatch(intent, @slots, %{world_id: world})}
+      {intent, Dispatcher.dispatch(intent, @slots, %{world_id: world, turn_time: @turn_time})}
     end)
   end
 
