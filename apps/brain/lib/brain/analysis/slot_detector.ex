@@ -83,9 +83,9 @@ defmodule Brain.Analysis.SlotDetector do
     load_schemas()
   end
 
-  @doc "Suggests an intent based on entities present.\n\nThis can be used when intent classification has low confidence.\n\nScoring algorithm:\n1. Primary: Count unique entity types that can fill ANY slot (not slots per type)\n2. Tiebreaker: Ratio of required slots that can be filled\n\nThis prevents intents with multiple slots accepting the same type from\nscoring higher (e.g., navigation.directions with destination+origin both\naccepting location should not beat weather.query for a single location entity).\n"
+  @doc "Suggests an intent based on entities present.\n\nThis can be used when intent classification has low confidence.\n\nScoring algorithm:\n1. Primary: Count unique entity types that can fill ANY slot (not slots per type)\n2. Tiebreaker: Ratio of required slots that can be filled\n\nThis prevents intents with multiple slots accepting the same type from\nscoring higher (e.g., navigation.directions with destination+origin both\naccepting location should not beat weather.query for a single location entity).\n\nOnly the intents of the registry are suggested. A service's schema answers for\na domain (\"device\", \"smarthome\") through `get_parent_intent/1` and merges into\nthe registry's intents; it is no intent of its own.\n"
   def suggest_intent_from_entities(entities) when is_list(entities) do
-    schemas = load_schemas()
+    schemas = Map.take(load_schemas(), Map.keys(load_registry()))
     entity_types = Enum.map(entities, fn e -> e[:entity_type] end) |> Enum.uniq()
 
     scored_schemas =
