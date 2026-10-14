@@ -32,17 +32,20 @@ defmodule Mix.Tasks.RebuildNerGold do
   format: a JSON array of entries, each entry's text the concatenation of its
   `data` segments. A segment that is an entity carries `meta`, `"@"` and its
   entity type, and `alias`, the slot of the intent it fills, as Dialogflow
-  marks one; any other segment carries only `text`. An entry carries no id: its
-  provenance is the directory it is in. An entry whose text names nothing is
-  an annotation too, of no entity.
+  marks one; any other segment carries only `text`. A segment whose `meta` is
+  `"@sys.any"` is a free-text span, the value of a free-text slot
+  (`Brain.Analysis.FreeTextCapture` learns from it), and names no entity. An
+  entry carries no id: its provenance is the directory it is in. An entry
+  whose text names nothing is an annotation too, of no entity.
 
   Each entry becomes the NER row `%{"text", "expected", "labeled_by" =>
   "authored"}`, `expected` its entity segments in text order as `{type,
   value}`. The run aborts, naming the entry, when:
 
-    * its intent (the file's name) has no schema in the intent registry, or its
-      `alias` is no slot of that schema, or the slot's `entity_mappings` does
-      not list its type;
+    * its intent (the file's name) has no schema in the intent registry, or an
+      entity's `alias` is no slot of that schema, or its type is not one that
+      fills the slot (`Brain.Analysis.SlotDetector.slot_entity_types!/2`), or a
+      free-text span's `alias` is no slot the schema declares;
     * its text is not the text of an intent gold row filed under the file's
       intent, so every annotation is of a text the intent gold holds;
     * its text is already the text of an NER gold row that is not authored, or
@@ -61,7 +64,7 @@ defmodule Mix.Tasks.RebuildNerGold do
 
   use Mix.Task
 
-  alias Brain.Analysis.SlotDetector
+  alias Brain.Analysis.{FreeTextCapture, SlotDetector}
   alias Brain.Corpus.{Export, Label, Provenance}
   alias Brain.ML.{EvaluationStore, NerGold}
 
@@ -178,8 +181,12 @@ defmodule Mix.Tasks.RebuildNerGold do
       Mix.raise("rebuild_ner_gold: #{where} is not the text of an intent gold row filed under #{intent}")
     end
 
+    {free_text, entities} = segments |> Enum.filter(&Map.has_key?(&1, "meta")) |> Enum.split_with(&(&1["meta"] == FreeTextCapture.any_text()))
+
+    for segment <- free_text, do: free_text_slot!(segment, schema, intent, where)
+
     expected =
-      for %{"meta" => _} = segment <- segments do
+      for segment <- entities do
         %{"type" => entity_type!(segment, schema, intent, where), "value" => segment["text"]}
       end
 
@@ -212,19 +219,27 @@ defmodule Mix.Tasks.RebuildNerGold do
 
   # The type `meta` names, which the slot `alias` names must list.
   defp entity_type!(%{"meta" => "@" <> type, "alias" => slot}, schema, intent, where) when type != "" do
-    case schema |> Map.get("entity_mappings", %{}) |> Map.fetch(slot) do
-      {:ok, types} ->
-        if type in types,
-          do: type,
-          else: Mix.raise("rebuild_ner_gold: #{where}: slot #{inspect(slot)} of #{intent} lists #{inspect(types)}, not #{inspect(type)}")
+    types =
+      try do
+        SlotDetector.slot_entity_types!(schema, slot)
+      rescue
+        ArgumentError -> Mix.raise("rebuild_ner_gold: #{where}: #{inspect(slot)} is no slot of #{intent}")
+      end
 
-      :error ->
-        Mix.raise("rebuild_ner_gold: #{where}: #{inspect(slot)} is no slot of #{intent}'s entity_mappings")
-    end
+    if type in types,
+      do: type,
+      else: Mix.raise("rebuild_ner_gold: #{where}: slot #{inspect(slot)} of #{intent} lists #{inspect(types)}, not #{inspect(type)}")
   end
 
   defp entity_type!(segment, _schema, _intent, where) do
     Mix.raise("rebuild_ner_gold: #{where}: an entity segment's meta is \"@\" and its type: #{inspect(segment)}")
+  end
+
+  # A free-text span names no entity; its slot must be one the intent declares.
+  defp free_text_slot!(%{"alias" => slot}, schema, intent, where) do
+    unless slot in Map.get(schema, "required", []) ++ Map.get(schema, "optional", []) do
+      Mix.raise("rebuild_ner_gold: #{where}: the free-text span's slot #{inspect(slot)} is no slot #{intent} declares")
+    end
   end
 
   # -- the rebuild --------------------------------------------------------------
