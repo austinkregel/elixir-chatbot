@@ -38,7 +38,10 @@ defmodule Brain.Services.SchedulingDriver do
 
   Every operation takes the slots, the driver's credentials read from the
   world, and the world, and returns what `Brain.Services.Service.enrich/4`
-  returns.
+  returns. Besides the intent's slots, the slots carry `:turn_time`, the
+  moment of the turn the intent was said in (a `DateTime`), which
+  `Brain.Services.Dispatcher` puts there: what a date or time said names
+  depends on when it is said.
 
   `Brain.Services.LocalScheduler` is the only driver. A driver is the point
   where another scheduling backend is added: a module that implements this
