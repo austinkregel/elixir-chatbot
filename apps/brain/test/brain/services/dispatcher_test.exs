@@ -236,8 +236,9 @@ defmodule Brain.Services.DispatcherTest do
   # are written inside this test's sandbox transaction; the Home Assistant
   # credentials the vault holds in memory are deleted when the test ends.
   describe "scheduling routing by the world's driver" do
-    # The turn scheduling intents are dispatched in.
+    # The turn scheduling intents are dispatched in, read in UTC.
     @turn_time ~U[2026-10-12 09:00:00Z]
+    @utc Brain.Temporal.Zone.utc()
 
     setup tags do
       owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
@@ -247,6 +248,9 @@ defmodule Brain.Services.DispatcherTest do
       local_world = "test_dispatch_local_#{suffix}"
       stale_world = "test_dispatch_stale_driver_#{suffix}"
       no_driver_world = "test_dispatch_no_driver_#{suffix}"
+
+      # The web user the scheduling turns are said by (`turn/1`).
+      Process.put(:dispatch_test_web_user, Atlas.WebUsers.create!(local_world).id)
 
       on_exit(fn ->
         LocalScheduler.clear_world(local_world)
@@ -269,8 +273,12 @@ defmodule Brain.Services.DispatcherTest do
       end
     end
 
+    # A scheduling turn in `world_id`: its time, its zone and its web user.
+    defp turn(world_id),
+      do: %{world_id: world_id, turn_time: @turn_time, time_zone: @utc, web_user_id: Process.get(:dispatch_test_web_user)}
+
     test "dispatching to the local driver performs the operation the intent names", %{local_world: local_world} do
-      context = %{world_id: local_world, turn_time: @turn_time}
+      context = turn(local_world)
 
       assert {:ok, %{timer_status: "running", duration: "6 minutes"}} =
                Dispatcher.dispatch("timer.set", %{duration: "6 minutes"}, context)
@@ -279,19 +287,23 @@ defmodule Brain.Services.DispatcherTest do
                Dispatcher.dispatch("timer.check", %{}, context)
     end
 
-    test "a scheduling intent is dispatched with the turn's time, and a context without it raises",
+    test "a scheduling intent is dispatched with the turn's time and zone, and a context without either raises",
          %{local_world: local_world} do
       assert_raise ArgumentError, ~r/context needs :turn_time, the moment of the turn a timer.set intent/, fn ->
-        Dispatcher.dispatch("timer.set", %{duration: "6 minutes"}, %{world_id: local_world})
+        Dispatcher.dispatch("timer.set", %{duration: "6 minutes"}, Map.delete(turn(local_world), :turn_time))
       end
 
       assert_raise ArgumentError, ~r/context needs :turn_time/, fn ->
-        Dispatcher.dispatch("timer.check", %{}, %{world_id: local_world, turn_time: "today"})
+        Dispatcher.dispatch("timer.check", %{}, %{turn(local_world) | turn_time: "today"})
+      end
+
+      assert_raise ArgumentError, ~r/context needs :time_zone, the Brain.Temporal.Zone a timer.check intent/, fn ->
+        Dispatcher.dispatch("timer.check", %{}, Map.delete(turn(local_world), :time_zone))
       end
     end
 
     test "the restored cancel and check operations are dispatched to the local driver", %{local_world: local_world} do
-      context = %{world_id: local_world, turn_time: @turn_time}
+      context = turn(local_world)
 
       {:ok, _} = Dispatcher.dispatch("alarm.set", %{time: "6am"}, context)
       {:ok, _} = Dispatcher.dispatch("reminder.create", %{reminder_text: "feed the cat", time: "8pm"}, context)
@@ -310,8 +322,8 @@ defmodule Brain.Services.DispatcherTest do
     end
 
     test "with side effects off, a cancel is refused and a check still runs", %{local_world: local_world} do
-      {:ok, _} = Dispatcher.dispatch("alarm.set", %{time: "6am"}, %{world_id: local_world, turn_time: @turn_time})
-      context = %{world_id: local_world, side_effects: false, turn_time: @turn_time}
+      {:ok, _} = Dispatcher.dispatch("alarm.set", %{time: "6am"}, turn(local_world))
+      context = Map.put(turn(local_world), :side_effects, false)
 
       for intent <- ["alarm.cancel", "reminder.cancel", "timer.cancel", "calendar.cancel"] do
         assert {:error, :side_effects_off} = Dispatcher.dispatch(intent, %{}, context), intent
