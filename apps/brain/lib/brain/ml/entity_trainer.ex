@@ -20,6 +20,20 @@ defmodule Brain.ML.EntityTrainer do
   probability under the model (forward-backward), and an extracted entity's
   confidence is the mean of its tokens' posteriors.
 
+  ## Transitions
+
+  An `I-x` tag continues an entity of type `x`, so it can only follow `B-x` or
+  `I-x`; it cannot open a sentence or follow `O` or a tag of another type.
+  Those transitions are not in the model at all, so neither the decode nor the
+  posteriors can produce an invalid tag sequence. Every other transition
+  (including from `<START>` and to `<END>`) has the probability the training
+  sequences give it, smoothed with a Dirichlet of strength
+  `transition_smoothing` toward how often each successor follows anything
+  (restricted to the successors allowed after that tag): a transition the
+  training rows never showed, such as `B-room` straight to `B-device`, stays
+  possible. `transition_smoothing` is chosen by the same cross-validation as
+  `smoothing`.
+
   ## Emission
 
   A token's features (its form, affixes, shape, neighbours) are combined as a
@@ -37,6 +51,7 @@ defmodule Brain.ML.EntityTrainer do
   # 1e-6: an unseen (feature, tag) pair becomes close to a veto. Zero is not a
   # candidate, since it makes such a pair impossible.
   @smoothing_candidates [1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0]
+  @transition_smoothing_candidates [0.01, 0.1, 1.0, 10.0, 100.0]
   @folds 5
 
   alias Brain.ML.{EvaluationStore, NerGold}
@@ -47,7 +62,10 @@ defmodule Brain.ML.EntityTrainer do
   @type entity_model :: %{
           tag_vocabulary: %{bio_tag() => integer()},
           feature_weights: %{String.t() => %{bio_tag() => float()}},
+          feature_totals: %{String.t() => pos_integer()},
+          smoothing: float(),
           transition_weights: %{bio_tag() => %{bio_tag() => float()}},
+          transition_smoothing: float(),
           tag_priors: %{bio_tag() => float()}
         }
 
@@ -68,8 +86,8 @@ defmodule Brain.ML.EntityTrainer do
     )
 
     sequences = Enum.map(rows, &NerGold.sequence!/1)
-    smoothing = select_smoothing(rows, sequences)
-    model = train_sequence_model(sequences, smoothing)
+    {smoothing, transition_smoothing} = select_smoothing(rows, sequences)
+    model = train_sequence_model(sequences, smoothing, transition_smoothing)
 
     Logger.info("Entity model trained", %{
       sequence_count: length(sequences),
@@ -95,24 +113,16 @@ defmodule Brain.ML.EntityTrainer do
 
   @doc """
   Out-of-fold models for the rows `model` was trained on: `{fold_of_row,
-  models}`, where a row's fold model was trained with `model`'s smoothing on
-  every other fold's rows. Tagging a training row with its fold model shows how
-  the model reads a sentence it was not trained on, which is what
-  `Brain.ML.SpanReliability` measures. Folds are assigned as `train/1`'s
-  cross-validation assigns them.
+  models}`, where a row's fold model was trained with `model`'s smoothing and
+  transition smoothing on every other fold's rows. Tagging a training row with
+  its fold model shows how the model reads a sentence it was not trained on,
+  which is what `Brain.ML.SpanReliability` measures. Folds are assigned as
+  `train/1`'s cross-validation assigns them.
   """
   @spec fold_models([map()], entity_model()) :: {[non_neg_integer()], %{non_neg_integer() => entity_model()}}
   def fold_models([_ | _] = rows, model) do
-    smoothing =
-      case Map.fetch(model, :smoothing) do
-        {:ok, smoothing} when is_number(smoothing) and smoothing > 0 ->
-          smoothing
-
-        other ->
-          raise ArgumentError,
-                "EntityTrainer: fold models need the trained model's smoothing, got #{inspect(other)}; " <>
-                  "retrain with `mix train --world <id>`"
-      end
+    smoothing = trained_strength!(model, :smoothing)
+    transition_smoothing = trained_strength!(model, :transition_smoothing)
 
     folds = Enum.map(rows, &:erlang.phash2(&1, @folds))
     sequences = Enum.map(rows, &NerGold.sequence!/1)
@@ -125,13 +135,25 @@ defmodule Brain.ML.EntityTrainer do
           |> Enum.reject(fn {_sequence, fold} -> fold == k end)
           |> Enum.map(&elem(&1, 0))
 
-        {k, train_sequence_model(training, smoothing)}
+        {k, train_sequence_model(training, smoothing, transition_smoothing)}
       end)
 
     {folds, models}
   end
 
   def fold_models([], _model), do: raise(ArgumentError, "EntityTrainer: no NER rows to fold")
+
+  defp trained_strength!(model, key) do
+    case Map.fetch(model, key) do
+      {:ok, strength} when is_number(strength) and strength > 0 ->
+        strength
+
+      other ->
+        raise ArgumentError,
+              "EntityTrainer: fold models need the trained model's #{key}, got #{inspect(other)}; " <>
+                "retrain with `mix train --world <id>`"
+    end
+  end
 
   @doc "Train entity recognition model and save to disk.\n\n## Options\n  - models_path: Override the default models output path\n"
   def train_and_save(opts \\ []) do
@@ -192,7 +214,8 @@ defmodule Brain.ML.EntityTrainer do
   Entities from tagged tokens (`tag/2`'s output). Each is
   `%{entity_type, value, tokens, confidence, start_index, end_index}`, where the
   indexes are the first and last token positions in the input and `confidence`
-  is the mean posterior of its tokens.
+  is the mean posterior of its tokens. An `I-` tag that continues no entity of
+  its type is not a BIO sequence and raises.
   """
   def extract_entities_from_bio(tagged) when is_list(tagged) do
     tagged
@@ -208,11 +231,11 @@ defmodule Brain.ML.EntityTrainer do
         {"I-" <> type, %{type: type} = open} ->
           {done, extend(open, token, probability, index)}
 
-        {"I-" <> type, nil} ->
-          {done, open(type, token, probability, index)}
-
         {"I-" <> type, open} ->
-          {[close(open) | done], open(type, token, probability, index)}
+          raise ArgumentError,
+                "EntityTrainer: #{inspect(tag)} at token #{index} (#{inspect(token)}) continues " <>
+                  "#{if open, do: "an entity of type #{inspect(open.type)}", else: "no entity"}; " <>
+                  "an I-#{type} tag can only follow B-#{type} or I-#{type}"
 
         {"O", nil} ->
           {done, nil}
@@ -244,32 +267,50 @@ defmodule Brain.ML.EntityTrainer do
     }
   end
 
-  # The smoothing strength with the best exact span-and-type F1 across the
-  # folds of the training rows; ties go to the smaller strength.
+  # The emission and transition smoothing strengths, `{smoothing,
+  # transition_smoothing}`, with the best exact span-and-type F1 across the
+  # folds of the training rows, every pair of candidates tried; ties go to the
+  # smaller strengths.
   defp select_smoothing(rows, sequences) do
     folds = Enum.map(rows, &:erlang.phash2(&1, @folds))
-    indexed = Enum.zip([rows, sequences, folds])
+    indexed = Enum.zip(sequences, folds)
 
-    @smoothing_candidates
-    |> Enum.map(fn smoothing ->
-      counts =
-        Enum.reduce(0..(@folds - 1), {0, 0, 0}, fn k, acc ->
-          {held, train} = Enum.split_with(indexed, fn {_r, _s, fold} -> fold == k end)
-          model = train_sequence_model(Enum.map(train, &elem(&1, 1)), smoothing)
+    totals =
+      Enum.reduce(0..(@folds - 1), %{}, fn k, acc ->
+        {held, train} = Enum.split_with(indexed, fn {_sequence, fold} -> fold == k end)
+        counts = train |> Enum.map(&elem(&1, 0)) |> sequence_counts()
+        held = Enum.map(held, fn {seq, _fold} -> {seq.tokens, spans_of(Enum.zip(seq.tokens, seq.tags))} end)
+        transitions = Map.new(@transition_smoothing_candidates, &{&1, transition_weights(counts, &1)})
 
-          Enum.reduce(held, acc, fn {_row, seq, _fold}, {tp, fp, fn_} ->
-            gold = spans_of(Enum.zip(seq.tokens, seq.tags))
-            predicted = seq.tokens |> predict(model) |> spans_of()
-            hit = MapSet.size(MapSet.intersection(gold, predicted))
-            {tp + hit, fp + MapSet.size(predicted) - hit, fn_ + MapSet.size(gold) - hit}
-          end)
-        end)
+        for smoothing <- @smoothing_candidates, reduce: acc do
+          acc ->
+            emission = emission_model(counts, smoothing)
 
-      {smoothing, f1(counts)}
-    end)
-    |> Enum.max_by(fn {smoothing, f1} -> {f1, -smoothing} end)
+            for {transition_smoothing, weights} <- transitions, reduce: acc do
+              acc ->
+                model = Map.merge(emission, %{transition_weights: weights, transition_smoothing: transition_smoothing})
+                fold_counts = score_fold(held, model)
+                Map.update(acc, {smoothing, transition_smoothing}, fold_counts, &add_counts(&1, fold_counts))
+            end
+        end
+      end)
+
+    totals
+    |> Enum.max_by(fn {{smoothing, transition_smoothing}, counts} -> {f1(counts), -smoothing, -transition_smoothing} end)
     |> elem(0)
   end
+
+  # `{tp, fp, fn}` of the exact spans `model` decodes for the held rows, each
+  # `{tokens, gold spans}`.
+  defp score_fold(held, model) do
+    Enum.reduce(held, {0, 0, 0}, fn {tokens, gold}, {tp, fp, fn_} ->
+      predicted = tokens |> predict(model) |> spans_of()
+      hit = MapSet.size(MapSet.intersection(gold, predicted))
+      {tp + hit, fp + MapSet.size(predicted) - hit, fn_ + MapSet.size(gold) - hit}
+    end)
+  end
+
+  defp add_counts({tp, fp, fn_}, {tp2, fp2, fn2}), do: {tp + tp2, fp + fp2, fn_ + fn2}
 
   defp f1({tp, fp, fn_}) do
     precision = tp / max(tp + fp, 1)
@@ -285,100 +326,108 @@ defmodule Brain.ML.EntityTrainer do
     |> MapSet.new(&{&1.entity_type, &1.start_index, &1.end_index})
   end
 
-  defp train_sequence_model(sequences, smoothing) do
-    all_tags =
-      sequences
-      |> Enum.flat_map(& &1.tags)
-      |> Enum.uniq()
-      |> Enum.sort()
+  defp train_sequence_model(sequences, smoothing, transition_smoothing) do
+    counts = sequence_counts(sequences)
 
-    tag_vocabulary =
-      all_tags
-      |> Enum.with_index()
-      |> Enum.into(%{})
+    counts
+    |> emission_model(smoothing)
+    |> Map.merge(%{
+      transition_weights: transition_weights(counts, transition_smoothing),
+      transition_smoothing: transition_smoothing
+    })
+  end
 
-    tag_counts =
-      sequences
-      |> Enum.flat_map(& &1.tags)
-      |> Enum.frequencies()
+  # What training counts from the sequences, before any smoothing: the tags,
+  # how often each occurs, each transition and each (feature, tag) pair.
+  defp sequence_counts(sequences) do
+    %{
+      tags: sequences |> Enum.flat_map(& &1.tags) |> Enum.uniq() |> Enum.sort(),
+      tag_counts: sequences |> Enum.flat_map(& &1.tags) |> Enum.frequencies(),
+      transition_counts: transition_counts(sequences),
+      feature_tag_counts: feature_tag_counts(sequences)
+    }
+  end
 
-    total_tags = Enum.sum(Map.values(tag_counts))
-
-    tag_priors =
-      Enum.into(tag_counts, %{}, fn {tag, count} ->
-        {tag, count / total_tags}
-      end)
-
-    transition_counts = calculate_transition_counts(sequences)
-    transition_weights = normalize_transition_counts(transition_counts, all_tags)
-    {feature_weights, feature_totals} = calculate_feature_weights(sequences, tag_priors, smoothing)
+  defp emission_model(counts, smoothing) do
+    total_tags = Enum.sum(Map.values(counts.tag_counts))
+    tag_priors = Map.new(counts.tag_counts, fn {tag, count} -> {tag, count / total_tags} end)
+    {feature_weights, feature_totals} = feature_weights(counts.feature_tag_counts, tag_priors, smoothing)
 
     %{
-      tag_vocabulary: tag_vocabulary,
+      tag_vocabulary: counts.tags |> Enum.with_index() |> Map.new(),
       feature_weights: feature_weights,
       feature_totals: feature_totals,
       smoothing: smoothing,
-      transition_weights: transition_weights,
       tag_priors: tag_priors
     }
   end
 
-  defp calculate_transition_counts(sequences) do
-    Enum.reduce(sequences, %{}, fn seq, acc ->
-      tags = ["<START>" | seq.tags] ++ ["<END>"]
+  # Whether BIO allows `curr` after `prev`: an `I-x` only continues `B-x` or
+  # `I-x`; anything else may follow anything.
+  defp bio_transition?(prev, "I-" <> type), do: prev in ["B-" <> type, "I-" <> type]
+  defp bio_transition?(_prev, _curr), do: true
 
-      tags
+  defp transition_counts(sequences) do
+    Enum.reduce(sequences, %{}, fn seq, acc ->
+      (["<START>" | seq.tags] ++ ["<END>"])
       |> Enum.chunk_every(2, 1, :discard)
       |> Enum.reduce(acc, fn [prev, curr], inner_acc ->
-        key = {prev, curr}
-        Map.update(inner_acc, key, 1, &(&1 + 1))
+        unless bio_transition?(prev, curr) do
+          raise ArgumentError,
+                "EntityTrainer: the training sequence #{inspect(seq.tokens)} has #{prev} followed by #{curr}, " <>
+                  "which BIO does not allow: #{inspect(seq.tags)}"
+        end
+
+        Map.update(inner_acc, {prev, curr}, 1, &(&1 + 1))
       end)
     end)
   end
 
-  defp normalize_transition_counts(counts, all_tags) do
-    all_tags_with_markers = ["<START>" | all_tags] ++ ["<END>"]
-    grouped = Enum.group_by(counts, fn {{prev, _curr}, _count} -> prev end)
+  # P(curr | prev) for every transition BIO allows, and no entry for one it
+  # does not: (n(prev, curr) + s * q(curr | prev)) / (n(prev) + s), where q is
+  # how often `curr` follows any tag, normalized over the successors allowed
+  # after `prev`. Each row sums to 1, since the training sequences hold only
+  # allowed transitions.
+  defp transition_weights(counts, strength) do
+    successors = counts.tags ++ ["<END>"]
+    sum_by = fn key -> Enum.reduce(counts.transition_counts, %{}, fn {pair, n}, acc -> Map.update(acc, key.(pair), n, &(&1 + n)) end) end
+    out_of = sum_by.(&elem(&1, 0))
+    into = sum_by.(&elem(&1, 1))
 
-    Enum.reduce(all_tags_with_markers, %{}, fn prev_tag, acc ->
-      transitions = Map.get(grouped, prev_tag, [])
-      total = Enum.sum(Enum.map(transitions, fn {_, count} -> count end))
+    Map.new(["<START>" | counts.tags], fn prev ->
+      allowed = Enum.filter(successors, &bio_transition?(prev, &1))
+      allowed_total = allowed |> Enum.map(&Map.fetch!(into, &1)) |> Enum.sum()
+      seen = Map.fetch!(out_of, prev)
 
-      if total > 0 do
-        probs =
-          Enum.into(transitions, %{}, fn {{_prev, curr}, count} ->
-            {curr, count / total}
+      {prev,
+       Map.new(allowed, fn curr ->
+         base = Map.fetch!(into, curr) / allowed_total
+         {curr, (Map.get(counts.transition_counts, {prev, curr}, 0) + strength * base) / (seen + strength)}
+       end)}
+    end)
+  end
+
+  defp feature_tag_counts(sequences) do
+    Enum.reduce(sequences, %{}, fn seq, acc ->
+      seq.tokens
+      |> Enum.zip(seq.tags)
+      |> Enum.with_index()
+      |> Enum.reduce(acc, fn {{token, tag}, idx}, inner_acc ->
+        features = extract_token_features(token, seq.tokens, idx)
+
+        Enum.reduce(features, inner_acc, fn feature, feat_acc ->
+          Map.update(feat_acc, feature, %{tag => 1}, fn tag_counts ->
+            Map.update(tag_counts, tag, 1, &(&1 + 1))
           end)
-
-        Map.put(acc, prev_tag, probs)
-      else
-        uniform = 1.0 / length(all_tags_with_markers)
-        probs = Enum.into(all_tags_with_markers, %{}, fn tag -> {tag, uniform} end)
-        Map.put(acc, prev_tag, probs)
-      end
+        end)
+      end)
     end)
   end
 
   # P(tag | feature), smoothed toward the tag prior: (n(f, tag) + s * P(tag)) /
   # (n(f) + s). Only observed (feature, tag) pairs are stored; the rest follow
   # from `feature_totals` at decode time.
-  defp calculate_feature_weights(sequences, tag_priors, smoothing) do
-    feature_tag_counts =
-      Enum.reduce(sequences, %{}, fn seq, acc ->
-        seq.tokens
-        |> Enum.zip(seq.tags)
-        |> Enum.with_index()
-        |> Enum.reduce(acc, fn {{token, tag}, idx}, inner_acc ->
-          features = extract_token_features(token, seq.tokens, idx)
-
-          Enum.reduce(features, inner_acc, fn feature, feat_acc ->
-            Map.update(feat_acc, feature, %{tag => 1}, fn tag_counts ->
-              Map.update(tag_counts, tag, 1, &(&1 + 1))
-            end)
-          end)
-        end)
-      end)
-
+  defp feature_weights(feature_tag_counts, tag_priors, smoothing) do
     totals = Map.new(feature_tag_counts, fn {feature, tag_counts} -> {feature, Enum.sum(Map.values(tag_counts))} end)
 
     weights =
@@ -474,117 +523,126 @@ defmodule Brain.ML.EntityTrainer do
       end)
   end
 
-  defp model_tags(model), do: model.tag_vocabulary |> Map.keys() |> Enum.reject(&(&1 in ["<START>", "<END>"]))
+  defp model_tags(model), do: model.tag_vocabulary |> Map.keys() |> Enum.sort()
 
-  defp viterbi_decode(tokens, model) do
-    if tokens == [] do
-      []
-    else
-      tags = model_tags(model)
+  # The log transition scores the decode reads, for the transitions BIO allows
+  # only: `from_start` (tag => score), `incoming` and `outgoing` (tag => [{other
+  # tag, score}]) and `to_end` (tag => score). A transition BIO does not allow
+  # is in none of them, so no path takes it. A model without a probability for
+  # an allowed transition raises.
+  defp log_transitions(model, tags) do
+    weights = model.transition_weights
 
-      {initial_viterbi, initial_backpointer} =
-        initialize_viterbi(Enum.at(tokens, 0), tokens, 0, tags, model)
+    pairs =
+      for prev <- tags, curr <- tags, bio_transition?(prev, curr) do
+        {prev, curr, log_transition!(weights, prev, curr)}
+      end
 
-      {final_viterbi, backpointers} =
-        tokens
-        |> Enum.with_index()
-        |> Enum.drop(1)
-        |> Enum.reduce({initial_viterbi, [initial_backpointer]}, fn {token, idx},
-                                                                    {prev_viterbi, bps} ->
-          {new_viterbi, new_bp} = viterbi_step(token, tokens, idx, prev_viterbi, tags, model)
-          {new_viterbi, [new_bp | bps]}
-        end)
+    %{
+      from_start: for(tag <- tags, bio_transition?("<START>", tag), into: %{}, do: {tag, log_transition!(weights, "<START>", tag)}),
+      incoming: Map.merge(Map.new(tags, &{&1, []}), Enum.group_by(pairs, &elem(&1, 1), fn {prev, _curr, score} -> {prev, score} end)),
+      outgoing: Map.merge(Map.new(tags, &{&1, []}), Enum.group_by(pairs, &elem(&1, 0), fn {_prev, curr, score} -> {curr, score} end)),
+      to_end: Map.new(tags, &{&1, log_transition!(weights, &1, "<END>")})
+    }
+  end
 
-      # Newest first: the walk starts from the last token's backpointers.
-      backtrack(final_viterbi, backpointers, tags)
+  defp log_transition!(weights, prev, curr) do
+    case weights do
+      %{^prev => %{^curr => p}} when is_float(p) and p > 0 ->
+        :math.log(p)
+
+      _ ->
+        raise ArgumentError,
+              "EntityTrainer: the model gives no probability to #{prev} -> #{curr}, a transition BIO allows; " <>
+                "retrain with `mix train --world <id>`"
     end
   end
 
-  defp initialize_viterbi(token, all_tokens, idx, tags, model) do
-    features = extract_token_features(token, all_tokens, idx)
-
-    viterbi =
-      Enum.into(tags, %{}, fn tag ->
-        transition = get_transition_prob("<START>", tag, model)
-        score = emission_log(features, tag, model) + :math.log(max(transition, 1.0e-10))
-        {tag, score}
-      end)
-
-    backpointer = Enum.into(tags, %{}, fn tag -> {tag, nil} end)
-
-    {viterbi, backpointer}
+  # Each token's log emission score under every tag.
+  defp emission_table(tokens, tags, model) do
+    tokens
+    |> Enum.with_index()
+    |> Enum.map(fn {token, idx} ->
+      features = extract_token_features(token, tokens, idx)
+      Map.new(tags, &{&1, emission_log(features, &1, model)})
+    end)
   end
 
-  defp viterbi_step(token, all_tokens, idx, prev_viterbi, tags, model) do
-    features = extract_token_features(token, all_tokens, idx)
+  # The best tag sequence over the transitions BIO allows. A column holds only
+  # the tags some allowed path reaches; ties go to the tag that sorts last.
+  defp viterbi_decode([], _model), do: []
 
-    {viterbi, backpointer} =
-      Enum.reduce(tags, {%{}, %{}}, fn curr_tag, {vit_acc, bp_acc} ->
-        emission = emission_log(features, curr_tag, model)
+  defp viterbi_decode(tokens, model) do
+    tags = model_tags(model)
+    transitions = log_transitions(model, tags)
+    [first | rest] = emission_table(tokens, tags, model)
 
-        {best_score, best_prev_tag} =
-          Enum.reduce(tags, {nil, nil}, fn prev_tag, {best, best_tag} ->
-            prev_score = Map.get(prev_viterbi, prev_tag, -1000)
-            transition = get_transition_prob(prev_tag, curr_tag, model)
+    start = Map.new(transitions.from_start, fn {tag, score} -> {tag, score + Map.fetch!(first, tag)} end)
 
-            score = prev_score + :math.log(max(transition, 1.0e-10)) + emission
-
-            if best == nil or score > best do
-              {score, prev_tag}
-            else
-              {best, best_tag}
-            end
-          end)
-
-        {Map.put(vit_acc, curr_tag, best_score), Map.put(bp_acc, curr_tag, best_prev_tag)}
+    {last, backpointers} =
+      Enum.reduce(rest, {start, []}, fn emission, {previous, backpointers} ->
+        {column, backpointer} = viterbi_column(previous, emission, transitions.incoming, tags)
+        {column, [backpointer | backpointers]}
       end)
 
-    {viterbi, backpointer}
+    {_score, best} = last |> Enum.map(fn {tag, score} -> {score + Map.fetch!(transitions.to_end, tag), tag} end) |> Enum.max()
+
+    # Newest first: the walk starts from the last token's backpointers.
+    Enum.reduce(backpointers, [best], fn backpointer, [tag | _] = path -> [Map.fetch!(backpointer, tag) | path] end)
+  end
+
+  defp viterbi_column(previous, emission, incoming, tags) do
+    Enum.reduce(tags, {%{}, %{}}, fn curr, {column, backpointer} ->
+      case for({prev, score} <- Map.fetch!(incoming, curr), Map.has_key?(previous, prev), do: {Map.fetch!(previous, prev) + score, prev}) do
+        [] ->
+          {column, backpointer}
+
+        candidates ->
+          {score, prev} = Enum.max(candidates)
+          {Map.put(column, curr, score + Map.fetch!(emission, curr)), Map.put(backpointer, curr, prev)}
+      end
+    end)
   end
 
   # Forward-backward over the same emission and transition scores Viterbi uses:
-  # for each token, the probability of each tag given the whole sequence.
+  # for each token, the probability of each tag given the whole sequence. A tag
+  # no allowed path reaches at a token has probability 0 there and no entry.
   defp posterior_marginals(tokens, model) do
     tags = model_tags(model)
+    transitions = log_transitions(model, tags)
+    [first | rest] = emission_table(tokens, tags, model)
 
-    emissions =
-      tokens
-      |> Enum.with_index()
-      |> Enum.map(fn {token, idx} ->
-        features = extract_token_features(token, tokens, idx)
-        Map.new(tags, fn tag -> {tag, emission_log(features, tag, model)} end)
-      end)
-
-    log_t = fn prev, curr -> :math.log(max(get_transition_prob(prev, curr, model), 1.0e-10)) end
-
-    [first | rest] = emissions
-    alpha0 = Map.new(tags, fn tag -> {tag, log_t.("<START>", tag) + first[tag]} end)
+    alpha0 = Map.new(transitions.from_start, fn {tag, score} -> {tag, score + Map.fetch!(first, tag)} end)
 
     alphas =
-      Enum.scan(rest, alpha0, fn emission, prev ->
-        Map.new(tags, fn curr ->
-          {curr, log_sum_exp(Enum.map(tags, fn p -> prev[p] + log_t.(p, curr) end)) + emission[curr]}
+      Enum.scan(rest, alpha0, fn emission, previous ->
+        Enum.reduce(tags, %{}, fn curr, column ->
+          case for({prev, score} <- Map.fetch!(transitions.incoming, curr), Map.has_key?(previous, prev), do: Map.fetch!(previous, prev) + score) do
+            [] -> column
+            terms -> Map.put(column, curr, log_sum_exp(terms) + Map.fetch!(emission, curr))
+          end
         end)
       end)
       |> then(&[alpha0 | &1])
 
-    last_beta = Map.new(tags, &{&1, 0.0})
-
     betas =
       rest
       |> Enum.reverse()
-      |> Enum.scan(last_beta, fn emission, next ->
+      |> Enum.scan(transitions.to_end, fn emission, next ->
         Map.new(tags, fn prev ->
-          {prev, log_sum_exp(Enum.map(tags, fn c -> log_t.(prev, c) + emission[c] + next[c] end))}
+          {prev, log_sum_exp(for {curr, score} <- Map.fetch!(transitions.outgoing, prev), do: score + Map.fetch!(emission, curr) + Map.fetch!(next, curr))}
         end)
       end)
       |> Enum.reverse()
-      |> Kernel.++([last_beta])
+      |> Kernel.++([transitions.to_end])
 
-    log_z = alphas |> List.last() |> Map.values() |> log_sum_exp()
-
+    # Each token's scores are normalized by their own log-sum, which is the
+    # sequence's log-likelihood at every token; summing per token keeps every
+    # probability at most 1 under floating-point rounding.
     Enum.zip_with(alphas, betas, fn alpha, beta ->
-      Map.new(tags, fn tag -> {tag, :math.exp(alpha[tag] + beta[tag] - log_z)} end)
+      scores = Map.new(alpha, fn {tag, a} -> {tag, a + Map.fetch!(beta, tag)} end)
+      log_z = scores |> Map.values() |> log_sum_exp()
+      Map.new(scores, fn {tag, score} -> {tag, :math.exp(score - log_z)} end)
     end)
   end
 
@@ -613,42 +671,6 @@ defmodule Brain.ML.EntityTrainer do
           acc + :math.log(p) - log_prior
       end
     end)
-  end
-
-  defp get_transition_prob(prev_tag, curr_tag, model) do
-    case Map.get(model.transition_weights, prev_tag) do
-      nil -> 0.01
-      probs -> Map.get(probs, curr_tag, 0.01)
-    end
-  end
-
-  defp backtrack(final_viterbi, backpointers, tags) do
-    {_best_score, best_tag} =
-      Enum.reduce(tags, {nil, nil}, fn tag, {best, best_tag} ->
-        score = Map.get(final_viterbi, tag, -1000)
-
-        if best == nil or score > best do
-          {score, tag}
-        else
-          {best, best_tag}
-        end
-      end)
-
-    backtrack_impl(backpointers, best_tag, [best_tag])
-  end
-
-  defp backtrack_impl([], _current_tag, path) do
-    path
-  end
-
-  defp backtrack_impl([bp | rest], current_tag, path) do
-    prev_tag = Map.get(bp, current_tag)
-
-    if prev_tag != nil do
-      backtrack_impl(rest, prev_tag, [prev_tag | path])
-    else
-      backtrack_impl(rest, current_tag, path)
-    end
   end
 
   defp save_model(model, models_path) do
