@@ -20,7 +20,8 @@
     "weather": ["weather_condition", "condition"],
     "action": ["activity", "recurrence"],
     "code": ["symbol", "file", "programming_language"],
-    "symbol": ["function", "class", "method", "variable"]
+    "symbol": ["function", "class", "method", "variable"],
+    "event": []
   },
   "type_groups": {
     "location_types": ["location", "city", "room", "ambiguous_name_location", "place_name", "geo_location", "setting", "gpe"],
