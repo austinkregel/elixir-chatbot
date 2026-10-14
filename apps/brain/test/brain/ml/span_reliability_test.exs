@@ -214,6 +214,36 @@ defmodule Brain.ML.SpanReliabilityTest do
     end
   end
 
+  describe "with the NER type mappings and gold standard" do
+    # Needs the type hierarchy running.
+    test "a lock status is compared as itself, which no gold label is or refines, so its readings are unmeasured" do
+      canonical = Brain.ML.EntityExtractor.load_type_mappings()
+      hierarchy = Brain.Analysis.TypeHierarchy
+
+      # The gold's lock is the lockable thing ("door"); a lock status is an
+      # action or a state ("lock", "open"), and the gold labels none.
+      refute Map.has_key?(canonical, "locks_status")
+
+      gold_labels =
+        for row <- Brain.ML.EvaluationStore.load_gold_standard("ner", :all), %{"type" => type} <- row["expected"], uniq: true, do: type
+
+      refute Enum.any?(gold_labels, &(&1 == "locks_status" or hierarchy.is_a?(&1, "locks_status")))
+
+      # "lock the front door, then the den in the hall": the gazetteer reads
+      # "den" as a room the gold does not label.
+      example = %{
+        key: 1,
+        gold: [gold("lock", 9, 18), gold("room", 41, 44)],
+        readings: [reading(:gazetteer, "locks_status", 0, 3), reading(:gazetteer, "lock", 9, 18), reading(:gazetteer, "room", 30, 32)]
+      }
+
+      model = SpanReliability.fit([example], language: "en", canonical: canonical, hierarchy: hierarchy, prior_strength: 1)
+
+      assert model.unmeasurable == %{{:gazetteer, "locks_status"} => %{n: 1}}
+      assert %{exact: 1} = model.pairs[{:gazetteer, "lock"}]
+    end
+  end
+
   describe "fit_extent/2" do
     setup do
       {:ok, extent: SpanReliability.fit_extent(examples(), prior_strength: 1)}
@@ -222,40 +252,37 @@ defmodule Brain.ML.SpanReliabilityTest do
     test "a reading at a gold span's extent agrees whatever its type; a partial overlap is an extent error", %{extent: extent} do
       # The model's artist is the wrong type for "Mike" (given_name) but at
       # its extent, and right for "Adele".
-      assert %{n: 2, agree: 2, boundary: 0, no_entity: 0} = extent.pairs[{:entity_model, nil, "artist"}]
+      assert %{n: 2, agree: 2, boundary: 0, no_entity: 0} = extent.pairs[{:entity_model, "artist"}]
       # 9..11 overlaps the gold 10..11 without matching it.
-      assert %{n: 2, agree: 1, boundary: 1, no_entity: 0} = extent.pairs[{:entity_model, nil, "final_value"}]
-      assert %{n: 2, agree: 1, boundary: 0, no_entity: 1} = extent.pairs[{:gazetteer, nil, "music_artist"}]
+      assert %{n: 2, agree: 1, boundary: 1, no_entity: 0} = extent.pairs[{:entity_model, "final_value"}]
+      assert %{n: 2, agree: 1, boundary: 0, no_entity: 1} = extent.pairs[{:gazetteer, "music_artist"}]
     end
 
     test "a type no gold label confirms still has an extent the gold standard judges", %{extent: extent} do
-      assert %{n: 1, agree: 1} = extent.pairs[{:gazetteer, nil, "emoji"}]
+      assert %{n: 1, agree: 1} = extent.pairs[{:gazetteer, "emoji"}]
     end
 
-    test "smoothing pulls a pair toward its source and cue, and those toward the overall rate", %{extent: extent} do
+    test "smoothing pulls a pair toward its source, and a source toward the overall rate", %{extent: extent} do
       # 10 readings, 8 at a gold extent.
       assert extent.overall == %{n: 10, agree: 8, rate: 0.8}
       # The model: 4 readings, 3 at a gold extent -> (3 + 0.8) / (4 + 1).
-      assert_in_delta extent.sources[{:entity_model, nil}].reliability, 0.76, 1.0e-12
+      assert_in_delta extent.sources[:entity_model].reliability, 0.76, 1.0e-12
       # Its final_value: 1 of 2 -> (1 + 0.76) / (2 + 1).
-      assert_in_delta extent.pairs[{:entity_model, nil, "final_value"}].reliability, 1.76 / 3, 1.0e-12
+      assert_in_delta extent.pairs[{:entity_model, "final_value"}].reliability, 1.76 / 3, 1.0e-12
       assert extent.fitted_rows == 4
       assert extent.min_score == nil and extent.min_margin == nil
     end
 
-    test "readings of one source with different extent cues are counted apart" do
+    test "a reading is keyed by its source and type alone, whatever else it carries" do
       rows = [
-        %{key: 1, gold: [gold("song", 10, 19)],
-          readings: [reading(:entity_model, "song", 10, 19, %{extent_cue: {:begin, :outside}})]},
-        %{key: 2, gold: [gold("song", 10, 19)],
-          readings: [reading(:entity_model, "song", 16, 19, %{extent_cue: {:inside, :outside}})]}
+        %{key: 1, gold: [gold("song", 10, 19)], readings: [reading(:entity_model, "song", 10, 19, %{confidence: 1.0})]},
+        %{key: 2, gold: [gold("song", 10, 19)], readings: [reading(:entity_model, "song", 16, 19, %{confidence: 1.0})]}
       ]
 
       extent = SpanReliability.fit_extent(rows, prior_strength: 1)
 
-      assert %{n: 1, agree: 1} = extent.pairs[{:entity_model, {:begin, :outside}, "song"}]
-      assert %{n: 1, agree: 0, boundary: 1} = extent.pairs[{:entity_model, {:inside, :outside}, "song"}]
-      assert extent.sources[{:entity_model, {:begin, :outside}}].reliability > extent.sources[{:entity_model, {:inside, :outside}}].reliability
+      assert Map.keys(extent.pairs) == [{:entity_model, "song"}]
+      assert %{n: 2, agree: 1, boundary: 1} = extent.pairs[{:entity_model, "song"}]
     end
 
     test "a rate of 0 or 1 over every reading's extent cannot be learned from" do
@@ -302,7 +329,7 @@ defmodule Brain.ML.SpanReliabilityTest do
       assert entity.decision.margin == :infinity
       assert entity.decision.evidence == %{"artist" => 2.0}
       # The extent, decided first by the model's artist extent reliability alone.
-      q = model.redecision.extent.pairs[{:entity_model, nil, "artist"}].reliability
+      q = model.redecision.extent.pairs[{:entity_model, "artist"}].reliability
       assert_in_delta entity.decision.extent.score, :math.log(q / (1 - q)), 1.0e-6
       assert entity.decision.extent.margin == :infinity
       assert_in_delta entity.confidence, 1 / (1 + :math.exp(-entity.decision.score)), 1.0e-6
@@ -370,7 +397,7 @@ defmodule Brain.ML.SpanReliabilityTest do
       # Extents the readings trust equally are never decided either.
       equal = %{
         model.redecision.extent
-        | pairs: %{{:a, nil, "artist"} => %{n: 5, reliability: 0.8}, {:b, nil, "artist"} => %{n: 5, reliability: 0.8}}
+        | pairs: %{{:a, "artist"} => %{n: 5, reliability: 0.8}, {:b, "artist"} => %{n: 5, reliability: 0.8}}
       }
 
       model = %{model | pairs: Map.merge(model.pairs, %{{:a, "artist"} => %{n: 5, reliability: 0.5}, {:b, "artist"} => %{n: 5, reliability: 0.5}})}
@@ -391,8 +418,8 @@ defmodule Brain.ML.SpanReliabilityTest do
       extent = %{
         model.redecision.extent
         | pairs: %{
-            {:entity_model, nil, "artist"} => %{n: 10, reliability: 0.9},
-            {:entity_model, nil, "final_value"} => %{n: 10, reliability: 0.6}
+            {:entity_model, "artist"} => %{n: 10, reliability: 0.9},
+            {:entity_model, "final_value"} => %{n: 10, reliability: 0.6}
           }
       }
 
@@ -420,7 +447,7 @@ defmodule Brain.ML.SpanReliabilityTest do
 
       extent = %{
         model.redecision.extent
-        | pairs: %{{:entity_model, nil, "artist"} => %{n: 10, reliability: 0.3}, {:gazetteer, nil, "emoji"} => %{n: 10, reliability: 0.9}}
+        | pairs: %{{:entity_model, "artist"} => %{n: 10, reliability: 0.3}, {:gazetteer, "emoji"} => %{n: 10, reliability: 0.9}}
       }
 
       assert {:undecided, %Lattice{best: nil}} =
@@ -496,13 +523,14 @@ defmodule Brain.ML.SpanReliabilityTest do
         end
 
       # On 20 more rows the first source reads only the end of a longer gold
-      # artist ("Poker Face" read as "Face"), and says it opened the reading
-      # inside an entity. The evidence names artist as strongly as it names the
-      # right label on the tied rows, and the reading's type reliability is the
-      # one it has there, so the type alone cannot tell these apart.
+      # artist ("Poker Face" read as "Face"), alone. The evidence names artist
+      # as strongly as it names the right label on the tied rows, and the
+      # reading's type reliability is the one it has there, so the type alone
+      # cannot tell these apart; what the second source's reading of the same
+      # extent adds on the tied rows can.
       partial =
         for i <- 1..20 do
-          %{key: {:partial, i}, gold: [gold("artist", 0, 7)], readings: [reading(:a, "artist", 4, 7, %{extent_cue: {:inside, :outside}})]}
+          %{key: {:partial, i}, gold: [gold("artist", 0, 7)], readings: [reading(:a, "artist", 4, 7)]}
         end
 
       examples = tied ++ partial
@@ -543,6 +571,22 @@ defmodule Brain.ML.SpanReliabilityTest do
 
       [span] = SpanReliability.decide(hd(partial).readings, model, text: "Poker Face", canonical: @canonical, hierarchy: Hierarchy)
       assert {:extent_undecided, _} = SpanReliability.redecide(span, %{"artist" => 3.0}, model, Hierarchy)
+    end
+
+    test "a model whose extent reliabilities are keyed by more than source and type is refused" do
+      extent = examples() |> SpanReliability.fit_extent(prior_strength: 1) |> Map.merge(%{min_score: -10.0, min_margin: 0.0})
+      keyed_by_cue = %{extent | pairs: Map.new(extent.pairs, fn {{source, type}, p} -> {{source, {:begin, :outside}, type}, p} end)}
+
+      model =
+        examples()
+        |> SpanReliability.fit(Keyword.put(@opts, :prior_strength, 1))
+        |> Map.merge(%{min_score: 1.0, min_margin: 0.0, redecision: %{min_score: 1.0, min_margin: 0.0, extent: keyed_by_cue}})
+
+      [span] = SpanReliability.decide([reading(:entity_model, "artist", 0, 3)], model, text: "Mike", canonical: @canonical, hierarchy: Hierarchy)
+
+      assert_raise ArgumentError, ~r/extent reliabilities are keyed .* not \{source, entity_type\}.*mix train_span_reliability/, fn ->
+        SpanReliability.redecide(span, %{"artist" => 3.0}, model, Hierarchy)
+      end
     end
 
     test "the prior strength is not the caller's to pass" do
