@@ -182,6 +182,57 @@ defmodule Brain.Temporal.ResolverTest do
       assert Resolver.say_seconds(3600, vocabulary) == ["1 hour"]
       assert Resolver.say_seconds(90_061, vocabulary) == ["1 day", "1 hour", "1 minute", "1 second"]
     end
+
+    test "a length is said in the vocabulary's units, largest first, and read back as the same length" do
+      vocabulary = Vocabulary.loaded!()
+
+      for {said, canonical} <- [
+            {"5 minutes", "5 minutes"},
+            {"5 min", "5 minutes"},
+            {"5min", "5 minutes"},
+            {"1 hour 30 mins", "1 hour 30 minutes"},
+            {"90 minutes", "90 minutes"},
+            {"2 days", "2 days"},
+            {"0 minutes", "0 seconds"}
+          ] do
+        length = resolve!(said).length
+        assert Resolver.say_length(length, vocabulary) == canonical, said
+        assert resolve!(canonical).length == length, said
+      end
+    end
+
+    test "read/2 tells a length from a date or time without a turn" do
+      assert Resolver.read("5 minutes") == {:length, Duration.new!(minute: 5)}
+      assert Resolver.read("1 hour 30 min") == {:length, Duration.new!(hour: 1, minute: 30)}
+
+      for said <- ["in 2 hours", "after 3 hours", "tomorrow", "at 5 pm", "from 10 pm till 8 am", "later"] do
+        assert Resolver.read(said) == :date_or_time, said
+      end
+
+      for said <- ["10", "five minutes", "5 minutes tomorrow", "the"] do
+        assert {:error, message} = Resolver.read(said)
+        assert message =~ inspect(said)
+      end
+    end
+
+    test "the lengths said in a text are its runs of words naming a length alone, not a point in time" do
+      lengths = fn text -> for l <- Resolver.lengths(text), do: {l.said, l.length} end
+
+      assert lengths.("set a timer for 5 minutes") == [{"5 minutes", Duration.new!(minute: 5)}]
+      assert lengths.("Start a 5 minute timer") == [{"5 minute", Duration.new!(minute: 5)}]
+      assert lengths.("set a timer for 1 hour 30 min") == [{"1 hour 30 min", Duration.new!(hour: 1, minute: 30)}]
+      assert lengths.("snooze for 10 minutes") == [{"10 minutes", Duration.new!(minute: 10)}]
+      # The point words after it name nothing, so the length is said without them.
+      assert lengths.("put 10 minutes on the clock") == [{"10 minutes", Duration.new!(minute: 10)}]
+
+      # An offset from the turn is a point in time, a number alone no length.
+      for text <- ["turn on the TV in 2 hours", "red light off after 3 hours", "weather in London in 5 days", "set a timer for 10"] do
+        assert lengths.(text) == [], text
+      end
+
+      [length] = Resolver.lengths("set a timer for 5 minutes")
+      assert {length.start_pos, length.end_pos} == {16, 24}
+    end
   end
 
   describe "what cannot be resolved" do
