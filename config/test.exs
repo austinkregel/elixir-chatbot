@@ -108,9 +108,17 @@ ouro_ml =
 test_run_dir =
   Path.join(System.tmp_dir!(), "brain-test-run-#{System.unique_integer([:positive])}-#{System.os_time()}")
 
+# The local scheduler's clock stands still in tests: it reads the instant a
+# test sets, and before that the start below, and fires nothing until a test
+# moves it and wakes the scheduler (Brain.Test.ManualClock). The start is the
+# turn the scheduling tests are said in, so the items they set are still to
+# come and none fires while another test runs.
+config :brain, Brain.Test.ManualClock, start: ~U[2026-10-12 09:00:00.000000Z]
+
 # Brain app test configuration
 config :brain,
   test_run_dir: test_run_dir,
+  scheduler_clock: Brain.Test.ManualClock,
   # Ouro is OFF for the test run by default: the Python sidecar and the
   # Elixir-side Ouro.Model backend init are both skipped, and test_helper
   # excludes the :requires_ouro tests that need real generation.
