@@ -123,7 +123,7 @@
       ]
     },
     "cancelled_one_with_text": {
-      "when": {"cancelled_count": 1},
+      "when": {"cancelled_count": 1, "reminder_set": false, "reminder_count": null},
       "requires_enrichment": ["reminder_texts"],
       "templates": [
         "Cancelled your reminder: $reminder_texts.",
@@ -131,7 +131,7 @@
       ]
     },
     "cancelled_one": {
-      "when": {"cancelled_count": 1},
+      "when": {"cancelled_count": 1, "reminder_set": false, "reminder_count": null},
       "requires_enrichment": [],
       "templates": [
         "Cancelled your reminder.",
@@ -139,7 +139,7 @@
       ]
     },
     "cancelled_several_with_texts": {
-      "when": {"cancelled_count": {"min": 2}},
+      "when": {"cancelled_count": {"min": 2}, "reminder_set": false, "reminder_count": null},
       "requires_enrichment": ["cancelled_count", "reminder_texts"],
       "templates": [
         "Cancelled $cancelled_count reminders: $reminder_texts.",
@@ -147,7 +147,7 @@
       ]
     },
     "cancelled_several": {
-      "when": {"cancelled_count": {"min": 2}},
+      "when": {"cancelled_count": {"min": 2}, "reminder_set": false, "reminder_count": null},
       "requires_enrichment": ["cancelled_count"],
       "templates": [
         "Cancelled $cancelled_count reminders.",
