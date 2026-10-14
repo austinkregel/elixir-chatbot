@@ -56,50 +56,146 @@ defmodule Brain.ML.EntityExtractorPassTwoTest do
     end
   end
 
-  describe "refine_entity_types/2" do
-    # smarthome.device.hue.down's slot schema maps two slots, change_value and
-    # final_value, to numbers.
-    @two_numeric_slots "smarthome.device.hue.down"
+  describe "refine_entity_types/3" do
+    alias Brain.Analysis.SlotTypePreferences
 
-    test "numbers fill several numeric slots in text order; a referent anaphora resolution supplied keeps its type" do
-      assert numeric_slots(@two_numeric_slots) == ["change_value", "final_value"]
-      referent = %{entity_type: "number", value: "40", confidence: 0.42, source: :anaphora_resolution}
-
-      refined =
-        EntityExtractor.refine_entity_types([entity("number", 12, 13), referent, entity("number", 3, 4)], @two_numeric_slots)
-
-      assert Enum.map(refined, &{&1.entity_type, Map.get(&1, :start_pos)}) == [
-               {"change_value", 3},
-               {"final_value", 12},
-               {"number", nil}
-             ]
-
-      assert List.last(refined) == referent
+    # A hierarchy of its own, so the preferences below are the test's data and
+    # not entity_types.json's.
+    defmodule Hierarchy do
+      def all_types, do: ~w(device room change_value final_value amount start_year)
+      def parents_of(_type), do: []
     end
 
-    test "a referent fills the numeric slot of a schema that has one" do
-      assert numeric_slots("smarthome.device.brightness.set") == ["final_value"]
+    defp span(type, tag, word, numeric), do: %{type: type, preceding_tag: tag, preceding_word: word, numeric: numeric}
 
-      referent = %{entity_type: "number", value: "40", confidence: 0.42, source: :anaphora_resolution}
+    # Lowering the hue gives the change after "by" twice as often as the final
+    # value after "to"; a music request names an amount after "top" and a
+    # start year after "from" equally often.
+    defp preferences do
+      hue =
+        for i <- 1..6 do
+          number = if rem(i, 3) == 0, do: span("final_value", "ADP", "to", true), else: span("change_value", "ADP", "by", true)
+          %{key: {:hue, i}, intent: "smarthome.device.hue.down", spans: [span("device", "DET", "the", false), number], ordinary: ["VERB"], gazetteer: [:entity]}
+        end
 
-      assert [%{referent | entity_type: "final_value"}] ==
-               EntityExtractor.refine_entity_types([referent], "smarthome.device.brightness.set")
+      music =
+        for i <- 1..6 do
+          %{
+            key: {:music, i},
+            intent: "music.play",
+            spans: [span("amount", "ADJ", "top", true), span("start_year", "ADP", "from", true)],
+            ordinary: ["VERB", "NOUN"],
+            gazetteer: [:entity]
+          }
+        end
+
+      SlotTypePreferences.fit(hue ++ music,
+        language: "en",
+        canonical: %{},
+        hierarchy: Hierarchy,
+        listed: [],
+        reading_types: ["device"],
+        tag_vocabulary: Brain.ML.POSTagger.valid_tags() ++ [SlotTypePreferences.sentence_start()],
+        smoothing: %{
+          global: 1,
+          domain: 1,
+          intent: 1,
+          hierarchy: 0.0,
+          tag_global: 1,
+          tag_type: 1,
+          word_global: 1,
+          word_type: 1,
+          numeric_global: 1,
+          numeric_type: 1,
+          ordinary_global: 1,
+          ordinary_domain: 1,
+          ordinary_intent: 1
+        }
+      )
     end
 
-    test "any other number without a position raises" do
+    defp number_at(text, value) do
+      {start_pos, _} = :binary.match(text, value)
+      entity("number", start_pos, start_pos + String.length(value) - 1, %{value: value, match: value, source: :system})
+    end
+
+    defp refine(entities, intent, text), do: EntityExtractor.refine_entity_types(entities, intent, text: text, preferences: preferences())
+
+    test "a number takes the slot the word before it says: a final value after \"to\", a change after \"by\"" do
+      text = "lower the hue by 10 to 30"
+      refined = refine([number_at(text, "10"), number_at(text, "30")], "smarthome.device.hue.down", text)
+
+      assert Enum.map(refined, &{&1.value, &1.entity_type}) == [{"10", "change_value"}, {"30", "final_value"}]
+    end
+
+    test "the order of the numbers decides nothing" do
+      text = "lower the hue to 30 by 10"
+      refined = refine([number_at(text, "30"), number_at(text, "10")], "smarthome.device.hue.down", text)
+
+      assert Enum.map(refined, &{&1.value, &1.entity_type}) == [{"30", "final_value"}, {"10", "change_value"}]
+    end
+
+    test "a year is told from an amount in a music request, whatever slot types the schema lists" do
+      text = "play top 10 songs from 2014"
+      refined = refine([number_at(text, "10"), number_at(text, "2014")], "music.play", text)
+
+      assert Enum.map(refined, &{&1.value, &1.entity_type}) == [{"10", "amount"}, {"2014", "start_year"}]
+    end
+
+    test "every other entity is left as it is, in its place" do
+      text = "lower the hue by 10"
+      room = entity("room", 0, 4)
+      [first, second] = refine([room, number_at(text, "10")], "smarthome.device.hue.down", text)
+
+      assert first == room
+      assert second.entity_type == "change_value"
+    end
+
+    test "a referent anaphora resolution supplied is weighed by the intent and its form alone" do
+      model = preferences()
+      referent = %{entity_type: "number", value: "40", confidence: 0.42, source: :anaphora_resolution}
+
+      [refined] = EntityExtractor.refine_entity_types([referent], "music.play", text: "play that many", preferences: model)
+
+      # music.play's numbers are amounts and start years equally often: a tie
+      # decides nothing, and the referent keeps its type.
+      assert refined == referent
+
+      # Lowering the hue gives a change twice as often as a final value.
+      posteriors =
+        SlotTypePreferences.label_posteriors(model, "smarthome.device.hue.down", ~w(change_value device final_value room), %{numeric: true})
+
+      assert posteriors["change_value"] > posteriors["final_value"]
+
+      [refined] = EntityExtractor.refine_entity_types([referent], "smarthome.device.hue.down", text: "set it", preferences: model)
+      assert refined.entity_type == "change_value"
+    end
+
+    test "a number stays a number when no slot of the intent's schema is a gold label, or the intent has no schema" do
+      text = "say 40"
+      number = number_at(text, "40")
+
+      # smalltalk.agent.age's one slot, age, is no label of these preferences.
+      assert refine([number], "smalltalk.agent.age", text) == [number]
+      assert refine([number], "no_such.intent", text) == [number]
+    end
+
+    test "any other number without a position, or one that does not sit on tokens of the text, raises" do
       positionless = %{entity_type: "number", value: "40", confidence: 0.9, source: :gazetteer}
 
-      assert_raise KeyError, ~r/:start_pos/, fn ->
-        EntityExtractor.refine_entity_types([entity("number", 3, 4), positionless], @two_numeric_slots)
+      assert_raise ArgumentError, ~r/a number with no position in the text/, fn ->
+        refine([positionless], "smarthome.device.hue.down", "lower the hue by 40")
+      end
+
+      assert_raise ArgumentError, ~r/does not start and end at tokens/, fn ->
+        refine([entity("number", 1, 2)], "smarthome.device.hue.down", "lower the hue by 40")
       end
     end
 
-    defp numeric_slots(intent) do
-      intent
-      |> Brain.Analysis.SlotDetector.get_schema()
-      |> Map.fetch!("entity_mappings")
-      |> Enum.filter(fn {_slot, types} -> Enum.any?(types, &(&1 in ["sys.number", "number"])) end)
-      |> Enum.map(&elem(&1, 0))
+    test "the text the positions index is required" do
+      assert_raise ArgumentError, ~r/needs :text/, fn ->
+        EntityExtractor.refine_entity_types([], "music.play", [])
+      end
     end
   end
 
