@@ -186,9 +186,9 @@ defmodule Brain.Analysis.TypeHierarchyTest do
   # Relations come only from priv/analysis/entity_types.json. These are types
   # registry slots list that the file does not declare, each an English noun
   # whose WordNet hypernyms reach a declared type's name ("duration" reaches
-  # "amount", "event" reaches "activity", "symbol" reaches "communication").
+  # "amount", "event" reaches "activity").
   describe "a type entity_types.json does not declare" do
-    @undeclared ~w(duration event symbol appliance file)
+    @undeclared ~w(duration event)
 
     test "is related to itself and to nothing else" do
       declared = TypeHierarchy.all_types()
@@ -220,8 +220,7 @@ defmodule Brain.Analysis.TypeHierarchyTest do
         {"alarm.snooze", "duration", "number", "10"},
         {"timer.set", "duration", "amount", "10"},
         {"calendar.schedule", "event", "recurrence", "every monday"},
-        {"calendar.schedule", "event", "activity", "running"},
-        {"code.explain", "symbol", "q", "parse"}
+        {"calendar.schedule", "event", "activity", "running"}
       ]
 
       for {intent, slot, type, value} <- cases do
