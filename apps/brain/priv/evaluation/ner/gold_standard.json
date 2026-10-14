@@ -24016,5 +24016,775 @@
       }
     ],
     "text": "turn decorations brightness down by 50 points"
+  },
+  {
+    "expected": [
+      {
+        "type": "class",
+        "value": "Cache"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "API for Cache class"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "handle_request"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "can you explain handle_request"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Brain.Analysis.Pipeline"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "describe Brain.Analysis.Pipeline"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Embedder"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "describe the Embedder module"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "send_email"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "describe the function send_email"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "fetch_data"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "describe what fetch_data does"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "sort_items"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "explain how sort_items works"
+  },
+  {
+    "expected": [
+      {
+        "type": "file",
+        "value": "brain.ex"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "explain the code in brain.ex"
+  },
+  {
+    "expected": [
+      {
+        "type": "method",
+        "value": "get_user_by_id"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "explain the method get_user_by_id"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Pipeline"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "explain the Pipeline module"
+  },
+  {
+    "expected": [
+      {
+        "type": "class",
+        "value": "UserController"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "explain the UserController class"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "explain this code"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "ResponseGenerator"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "explain what the ResponseGenerator does"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "utils"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "find all imports of utils"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "UserService"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "find all usages of UserService"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "DatabaseConnection"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "find references to DatabaseConnection"
+  },
+  {
+    "expected": [
+      {
+        "type": "class",
+        "value": "Config"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "find usages of Config class"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "format_date"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "find where format_date is invoked"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "init"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "function definition for init"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "authenticate_user"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "function signature for authenticate_user"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "cache_manager"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "give me an overview of cache_manager"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "parse_json"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "help me understand parse_json"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "create_user"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "how do I call create_user"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "authenticate_user"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "how does authenticate_user work"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Tokenizer"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "how does the Tokenizer module work"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "World.DocumentIngestor"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "how does World.DocumentIngestor work"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "connect"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "how many arguments does connect take"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "HttpClient"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "how to use HttpClient"
+  },
+  {
+    "expected": [
+      {
+        "type": "class",
+        "value": "OrderService"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I want to understand the OrderService class"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "get_user"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "list all callers of get_user"
+  },
+  {
+    "expected": [
+      {
+        "type": "method",
+        "value": "save_to_database"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "method signature of save_to_database"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "fetch_data"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "return type of fetch_data"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "create_user"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "show all references to create_user"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "authenticate"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "show callers of authenticate"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "process_order"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "show me the signature of process_order"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "validate_email"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "show me where validate_email is called"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "parse_json"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "show the definition of parse_json"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "handle_error"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "show the prototype of handle_error"
+  },
+  {
+    "expected": [
+      {
+        "type": "method",
+        "value": "render"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "signature of the method render"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Router"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "summarize the Router module"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Brain.ML.Trainer"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "tell me about Brain.ML.Trainer"
+  },
+  {
+    "expected": [
+      {
+        "type": "class",
+        "value": "DatabaseConnection"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "tell me about the DatabaseConnection class"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "World"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "tell me about the World module"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Session"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "trace usage of Session"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "process_payment"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "walk me through process_payment"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "format_date"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what are the parameters for format_date"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "send_email"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what arguments does send_email accept"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "process_order"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what calls process_order"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "HttpClient"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what depends on HttpClient"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "Brain.evaluate"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what does Brain.evaluate do"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Brain"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what does the Brain module do"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "what does the codebase do"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "calculate_tax"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what does the function calculate_tax do"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Generator"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what does the Generator module do"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Parser"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what does the Parser module do"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "what does this class do"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "what does this function do"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "what does this method do"
+  },
+  {
+    "expected": [],
+    "labeled_by": "authored",
+    "text": "what does this module do"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "validate_input"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what does validate_input return"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Logger"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what files use Logger"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "calculate_discount"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what inputs does calculate_discount need"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Brain.Code.QueryHandler"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what is Brain.Code.QueryHandler"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "process_order"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what is process_order used for"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Config"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what is the Config module for"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Gazetteer"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what is the Gazetteer"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "CodeGazetteer"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what is the purpose of the CodeGazetteer module"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "calculate_tax"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what parameters does calculate_tax take"
+  },
+  {
+    "expected": [
+      {
+        "type": "method",
+        "value": "get_user_by_id"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what type does get_user_by_id return"
+  },
+  {
+    "expected": [
+      {
+        "type": "class",
+        "value": "PaymentProcessor"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what uses the PaymentProcessor class"
+  },
+  {
+    "expected": [
+      {
+        "type": "file",
+        "value": "main.py"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what's happening in main.py"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "process_items"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what's the arity of process_items"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "Logger"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what's the interface for Logger"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "validate_input"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "what's the purpose of validate_input"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "calculate_tax"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "where is calculate_tax used"
+  },
+  {
+    "expected": [
+      {
+        "type": "symbol",
+        "value": "MAX_RETRIES"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "where is MAX_RETRIES referenced"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "parse_json"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "where is the function parse_json referenced"
+  },
+  {
+    "expected": [
+      {
+        "type": "method",
+        "value": "save_to_database"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "which functions call save_to_database"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "send_notification"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "who calls send_notification"
+  },
+  {
+    "expected": [
+      {
+        "type": "function",
+        "value": "fetch_api_data"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "who uses fetch_api_data"
   }
 ]
