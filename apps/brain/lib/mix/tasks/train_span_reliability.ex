@@ -200,10 +200,10 @@ defmodule Mix.Tasks.TrainSpanReliability do
     Mix.shell().info("Extent pairs (n, gold extent, boundary, no entity -> reliability):")
 
     extent.pairs
-    |> Enum.sort_by(fn {{source, cue, type}, _} -> {Atom.to_string(source), inspect(cue), type} end)
-    |> Enum.each(fn {{source, cue, type}, p} ->
+    |> Enum.sort_by(fn {{source, type}, _} -> {Atom.to_string(source), type} end)
+    |> Enum.each(fn {{source, type}, p} ->
       Mix.shell().info(
-        "  #{pad(source, 16)} #{pad(inspect(cue), 20)} #{pad(type, 20)} n #{pad(p.n, 5)} extent #{pad(p.agree, 5)} " <>
+        "  #{pad(source, 16)} #{pad(type, 20)} n #{pad(p.n, 5)} extent #{pad(p.agree, 5)} " <>
           "boundary #{pad(p.boundary, 5)} none #{pad(p.no_entity, 5)} -> #{Float.round(p.reliability, 3)}"
       )
     end)
