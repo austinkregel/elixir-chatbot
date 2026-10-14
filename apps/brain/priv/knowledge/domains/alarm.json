@@ -92,7 +92,7 @@
       ]
     },
     "cancelled_one_with_time": {
-      "when": {"cancelled_count": 1},
+      "when": {"cancelled_count": 1, "alarm_status": "cancelled", "alarm_count": null},
       "requires_enrichment": ["alarm_times"],
       "templates": [
         "Your $alarm_times alarm is cancelled.",
@@ -100,7 +100,7 @@
       ]
     },
     "cancelled_one": {
-      "when": {"cancelled_count": 1},
+      "when": {"cancelled_count": 1, "alarm_status": "cancelled", "alarm_count": null},
       "requires_enrichment": [],
       "templates": [
         "Your alarm is cancelled.",
@@ -108,7 +108,7 @@
       ]
     },
     "cancelled_several_with_times": {
-      "when": {"cancelled_count": {"min": 2}},
+      "when": {"cancelled_count": {"min": 2}, "alarm_status": "cancelled", "alarm_count": null},
       "requires_enrichment": ["cancelled_count", "alarm_times"],
       "templates": [
         "Cancelled $cancelled_count alarms, set for $alarm_times.",
@@ -116,7 +116,7 @@
       ]
     },
     "cancelled_several": {
-      "when": {"cancelled_count": {"min": 2}},
+      "when": {"cancelled_count": {"min": 2}, "alarm_status": "cancelled", "alarm_count": null},
       "requires_enrichment": ["cancelled_count"],
       "templates": [
         "Cancelled $cancelled_count alarms.",
