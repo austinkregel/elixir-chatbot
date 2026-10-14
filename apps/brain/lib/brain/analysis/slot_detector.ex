@@ -101,6 +101,28 @@ defmodule Brain.Analysis.SlotDetector do
   @doc "The intent registry as stored, without the service schemas `detect/3` merges in. Raises when it cannot be read.\n"
   def registry, do: load_registry()
 
+  @doc """
+  The entity types that fill `slot` of an intent's `schema`, as `detect/3`
+  fills it: the types the schema's `entity_mappings` lists for the slot, or,
+  for a slot the schema declares (`required` or `optional`) and the mappings
+  do not list, the type named as the slot. Raises for a slot the schema
+  neither declares nor maps.
+  """
+  @spec slot_entity_types!(map(), String.t()) :: [String.t()]
+  def slot_entity_types!(schema, slot) when is_map(schema) and is_binary(slot) do
+    case schema |> Map.get("entity_mappings", %{}) |> Map.fetch(slot) do
+      {:ok, types} ->
+        types
+
+      :error ->
+        if slot in Map.get(schema, "required", []) ++ Map.get(schema, "optional", []) do
+          [slot]
+        else
+          raise ArgumentError, "SlotDetector: #{inspect(slot)} is neither declared nor mapped by the schema #{inspect(schema, limit: 4)}"
+        end
+    end
+  end
+
   @doc "Returns the set of entity types that can fill slots for a given intent.\n\nThis is useful for filtering entities to only those relevant to the intent.\n"
   def get_entity_types_for_intent(intent) do
     case get_schema(intent) do
@@ -351,9 +373,8 @@ defmodule Brain.Analysis.SlotDetector do
     required = Map.get(schema, "required", [])
     optional = Map.get(schema, "optional", [])
     defaults = Map.get(schema, "defaults", %{})
-    mappings = Map.get(schema, "entity_mappings", %{})
     result = SlotResult.new(intent)
-    {result, fillers} = fill_slots_from_entities(result, required ++ optional, entities, mappings, record?)
+    {result, fillers} = fill_slots_from_entities(result, required ++ optional, entities, schema, record?)
     result = capture_free_text(result, required ++ optional, fillers, utterance)
     result = apply_defaults(result, defaults)
     filled_slot_names = Map.keys(result.filled_slots)
@@ -370,9 +391,9 @@ defmodule Brain.Analysis.SlotDetector do
 
   # The result with each slot an entity fills filled, and the entities that
   # filled one.
-  defp fill_slots_from_entities(result, slots, entities, mappings, record?) do
+  defp fill_slots_from_entities(result, slots, entities, schema, record?) do
     Enum.map_reduce(slots, result, fn slot_name, acc ->
-      mapped_entity_types = Map.get(mappings, slot_name, [slot_name])
+      mapped_entity_types = slot_entity_types!(schema, slot_name)
 
       exact_match =
         Enum.find(entities, fn entity ->
