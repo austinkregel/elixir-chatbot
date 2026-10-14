@@ -16,6 +16,7 @@
   "enriched_response_frames": {
     "status_healthy": {
       "condition": "enriched:health_status",
+      "when": {"categories_summary": null},
       "requires_enrichment": ["health_status", "health_score", "genservers_running", "genservers_total", "uptime"],
       "templates": [
         "System is $health_status — $genservers_running of $genservers_total services running, health score $health_score. Uptime: $uptime.",
