@@ -68,6 +68,12 @@ defmodule Mix.Tasks.World.SeedModel do
 
     if worlds == [], do: Mix.raise("world.seed_model: no worlds under #{Persistence.base_path()}")
 
+    # Seeding reads the model it copies: the triple scorer is rebuilt as an
+    # Axon model on the EXLA backend, which reports to telemetry. Only those
+    # are started, not the brain application, whose boot needs artifacts this
+    # task does not read.
+    Mix.Tasks.TrainSlotTypePreferences.start!([:telemetry, :nx, :exla], [])
+
     Enum.each(worlds, fn world_id ->
       seed!.(world_id)
       Mix.shell().info("  seeded #{world_id}")
