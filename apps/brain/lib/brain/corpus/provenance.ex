@@ -28,9 +28,12 @@ defmodule Brain.Corpus.Provenance do
   annotates no entity in are kept in `priv/training/authored_entities/`
   (`authored_entities_dir/0`), one usersays file per intent, each entity a
   `data` segment marked as Dialogflow marks one: `meta` names its entity type
-  (`"@function"`), `alias` the intent's slot it fills (`"symbol"`). They are
-  the source of the NER gold rows labeled `"authored"`, which
-  `mix rebuild_ner_gold` rebuilds from them. Only the annotations are
+  (`"@function"`), `alias` the intent's slot it fills (`"symbol"`). A segment
+  whose `meta` is `"@sys.any"` marks the value of a free-text slot
+  (`"reminder_text"`) instead, which names no entity. They are the source of
+  the NER gold rows labeled `"authored"`, which `mix rebuild_ner_gold`
+  rebuilds from them, and, with the authored intent examples, of the spans
+  `Brain.Analysis.FreeTextCapture` learns from. Only the annotations are
   authored: the texts are intent gold rows and keep the provenance the intent
   gold records for them.
   """
