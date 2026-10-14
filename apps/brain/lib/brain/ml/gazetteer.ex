@@ -871,7 +871,7 @@ defmodule Brain.ML.Gazetteer do
 
     # Load and index US cities (comprehensive dataset)
     us_cities = DataLoaders.load_us_cities() |> DataLoaders.require_source!(:us_cities)
-    indexed = us_cities |> DataLoaders.build_us_city_lookup() |> index_entities(:us_cities)
+    indexed = us_cities |> DataLoaders.build_us_city_lookup(&DataLoaders.ordinary_word?(&1)) |> index_entities(:us_cities)
     Logger.info("Loaded US cities", %{count: length(us_cities), indexed: indexed})
     stats = %{stats | entities: stats.entities + indexed, us_cities: length(us_cities)}
 
