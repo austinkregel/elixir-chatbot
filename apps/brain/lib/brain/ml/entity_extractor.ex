@@ -1,5 +1,5 @@
 defmodule Brain.ML.EntityExtractor do
-  @moduledoc "Entity extraction using gazetteer lookups and classical NLP techniques.\n\nThis module extracts entities from user input text using:\n- Gazetteer lookups for known entities (cities, artists, devices, etc.)\n- the world's BIO entity model (`Brain.ML.EntityModel`), run on the same tokens\n- Token-based pattern matching for system entities (dates, numbers)\n\nAvoids regex in favor of tokenizer-based approaches.\n\nKnown entities come from `Brain.ML.Gazetteer`, which loads its sources before\nthe application finishes starting. There is no second copy of the gazetteer\nhere.\n\nEvery source's spans are kept as readings (`readings/2`). Overlapping readings\nform one span, decided by `Brain.ML.SpanReliability` from how reliable each\nsource has been for each type on the NER gold standard's training split. A\ndecided span (`resolved: true`) is an entity; a span the data cannot decide\n(`resolved: false`) is no entity of any type, and travels apart from the\nentities (`extract/2`'s `:unresolved_spans`), carrying its readings, its\ncandidates and why it was left undecided. Nothing that consumes entities is\ngiven one.\n"
+  @moduledoc "Entity extraction using gazetteer lookups and classical NLP techniques.\n\nThis module extracts entities from user input text using:\n- Gazetteer lookups for known entities (cities, artists, devices, etc.)\n- the world's BIO entity model (`Brain.ML.EntityModel`), run on the same tokens\n- Token-based pattern matching for system entities (dates, numbers)\n- the names of the world's analyzed code (`Brain.Code.EntityReadings`)\n\nAvoids regex in favor of tokenizer-based approaches.\n\nKnown entities come from `Brain.ML.Gazetteer`, which loads its sources before\nthe application finishes starting. There is no second copy of the gazetteer\nhere.\n\nEvery source's spans are kept as readings (`readings/2`). Overlapping readings\nform one span, decided by `Brain.ML.SpanReliability` from how reliable each\nsource has been for each type on the NER gold standard's training split. A\ndecided span (`resolved: true`) is an entity; a span the data cannot decide\n(`resolved: false`) is no entity of any type, and travels apart from the\nentities (`extract/2`'s `:unresolved_spans`), carrying its readings, its\ncandidates and why it was left undecided. Nothing that consumes entities is\ngiven one.\n"
 
   alias Brain.Analysis
   alias Brain.ML
@@ -308,10 +308,11 @@ defmodule Brain.ML.EntityExtractor do
 
   @doc """
   Every source's reading of `text`, before any span is decided: the gazetteer,
-  the system parsers (numbers, dates), the location and proper-noun hints, and
-  the world's entity model. Each is an entity map with its `:source`, its
-  `:entity_type`, its extent and the source's own `:confidence`, as
-  `Brain.ML.SpanReliability` takes them.
+  the system parsers (numbers, dates), the location and proper-noun hints, the
+  world's entity model, and the names of the world's analyzed code
+  (`Brain.Code.EntityReadings`). Each is an entity map with its `:source`, its
+  `:entity_type`, its extent and, from a source that has one, the source's own
+  `:confidence`, as `Brain.ML.SpanReliability` takes them.
 
   Takes `extract_entities/2`'s `:world_id`, `:domain` and `:intent`, and
   `:entity_model`, a model of `Brain.ML.EntityTrainer`'s shape used in place of
@@ -330,7 +331,8 @@ defmodule Brain.ML.EntityExtractor do
       extract_system_entities(tokens, text) ++
       extract_location_hints(tokens, tags) ++
       extract_proper_noun_hints(tokens, tags) ++
-      extract_model_entities(text, tokens, entity_model!(opts, world_id))
+      extract_model_entities(text, tokens, entity_model!(opts, world_id)) ++
+      Brain.Code.EntityReadings.readings(text, tokens, world_id)
   end
 
   defp entity_model!(opts, world_id) do
