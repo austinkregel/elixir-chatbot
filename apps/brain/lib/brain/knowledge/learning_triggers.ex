@@ -26,10 +26,6 @@ defmodule Brain.Knowledge.LearningTriggers do
   for that session's world.
   """
 
-  # World.Manager is in a sibling umbrella app that depends on :brain.
-  # It is available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Manager}
-
   use GenServer
   require Logger
 
@@ -139,8 +135,8 @@ defmodule Brain.Knowledge.LearningTriggers do
 
   @impl true
   def handle_call({:set_auto_learning_world, world_id}, _from, state) do
-    case World.Manager.get(world_id) do
-      {:ok, _world} ->
+    case Brain.Worlds.fetch(world_id) do
+      {:ok, _mode} ->
         Atlas.Settings.put!(@auto_learning_world_setting, world_id)
         Logger.info("LearningTriggers: auto-learning world set", auto_learning_world_id: world_id)
         {:reply, :ok, %{state | auto_learning_world_id: world_id}}
@@ -312,8 +308,8 @@ defmodule Brain.Knowledge.LearningTriggers do
   end
 
   defp auto_learning_world_loaded!(world_id) do
-    case World.Manager.get(world_id) do
-      {:ok, _world} ->
+    case Brain.Worlds.fetch(world_id) do
+      {:ok, _mode} ->
         :ok
 
       {:error, reason} ->
