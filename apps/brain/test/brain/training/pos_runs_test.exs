@@ -18,7 +18,9 @@ defmodule Brain.Training.POSRunsTest do
 
       assert run["status"] == "completed"
       assert run["params"] == %{"sentences" => 40, "max_epochs" => 5, "patience" => nil, "seed" => 3}
-      assert Enum.map(run["inputs"], & &1["name"]) == ~w(ud_ewt.train.json ud_ewt.dev.json ud_ewt.test.json)
+      # The three EWT splits, and the lexicon the tagger's features read per
+      # token (`Brain.Training.POS.inputs/0`).
+      assert Enum.map(run["inputs"], & &1["name"]) == ~w(ud_ewt.train.json ud_ewt.dev.json ud_ewt.test.json lexicon)
       assert Enum.map(run["curve"], & &1["epoch"]) == [1, 2, 3, 4, 5]
       assert Enum.all?(run["curve"], &(is_float(&1["loss"]) and is_float(&1["dev_accuracy"])))
 
