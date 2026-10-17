@@ -2,7 +2,7 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
   use ExUnit.Case, async: false
 
   alias Brain.Analysis.EntityDisambiguator
-  alias World.TypeInferrer
+  alias Brain.Worlds.TypeInferrer
 
   @test_world_id "test_disambiguator_world"
 
