@@ -10,7 +10,8 @@ defmodule ChatWeb.WorldContextTest do
   """
   use ChatWeb.ConnCase, async: false
   import Phoenix.LiveViewTest
-  import Brain.TestHelpers
+  import Brain.TestHelpers, except: [create_test_world: 1, create_test_world: 2, start_world_test_services: 0]
+  import World.TestWorlds
 
   alias Brain.Memory.Store, as: MemoryStore
   alias World.Manager, as: WorldManager
@@ -22,7 +23,7 @@ defmodule ChatWeb.WorldContextTest do
     ensure_started(Brain.Memory.Store)
     ensure_started(Brain.KnowledgeStore)
     ensure_started(World.Manager)
-    ensure_started(World.ModelRegistry)
+    ensure_started(Brain.Worlds.ModelRegistry)
 
     setup_world_sandbox()
 
