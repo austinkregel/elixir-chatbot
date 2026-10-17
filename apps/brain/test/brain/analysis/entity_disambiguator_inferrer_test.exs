@@ -2,7 +2,7 @@ defmodule Brain.Analysis.EntityDisambiguatorInferrerTest do
   use ExUnit.Case, async: false
 
   alias Brain.Analysis.{EntityDisambiguator, EntityTypeScorer, TypeHierarchy}
-  alias World.TypeInferrer
+  alias Brain.Worlds.TypeInferrer
 
   # A world no pattern was learned in: the type inferrer infers nothing, so the
   # context's expected types decide. The intent's expected types are weighed by
