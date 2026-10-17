@@ -63,7 +63,7 @@ defmodule World.EntityDiscoverer do
   end
 
   @doc """
-  Aggregates `World.EntityCandidate`s by value, the same way as discoveries.
+  Aggregates `Brain.Worlds.EntityCandidate`s by value, the same way as discoveries.
 
   Candidates are not discovery results: they carry no `:status`, because they
   are already the narrowed thing the promoter accumulates rather than one
@@ -75,10 +75,10 @@ defmodule World.EntityDiscoverer do
   select *unknown* discoveries -- the fallback hid the mismatch. And the
   aggregation reads `&1.context`, which candidates from the type-narrowing path
   did not set, so the promoter died with a `KeyError` on each scan. Measured
-  2026-09-23. The shape is now enforced by `World.EntityCandidate` and the two
+  2026-09-23. The shape is now enforced by `Brain.Worlds.EntityCandidate` and the two
   aggregations are separate functions.
   """
-  @spec aggregate_candidates([World.EntityCandidate.t()]) :: [map()]
+  @spec aggregate_candidates([Brain.Worlds.EntityCandidate.t()]) :: [map()]
   def aggregate_candidates(candidates) when is_list(candidates) do
     aggregate_by_value(candidates)
   end
@@ -232,7 +232,7 @@ defmodule World.EntityDiscoverer do
   defp infer_type_from_context(pn, world_id, tokens, pos_predictions) do
     context_tags = extract_context_tags(pn, pos_predictions)
 
-    case World.TypeInferrer.infer_type(pn.value, tokens, context_tags, world_id) do
+    case Brain.Worlds.TypeInferrer.infer_type(pn.value, tokens, context_tags, world_id) do
       {type, confidence} when is_binary(type) and is_float(confidence) ->
         {type, confidence}
 
