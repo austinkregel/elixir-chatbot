@@ -1,11 +1,6 @@
 defmodule Brain do
   @moduledoc "The Brain GenServer manages the AI personality, conversations, and global memory.\nThis is the core component that orchestrates all chat bot functionality.\n"
 
-  # World.Context and World.Manager are in a sibling umbrella app that depends on :brain.
-  # They are available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Context}
-  @compile {:no_warn_undefined, World.Manager}
-
   alias Brain.ML.Tokenizer
   alias Brain.Learner
   alias Brain.ML.NLPPipeline
@@ -39,8 +34,6 @@ defmodule Brain do
   alias Epistemic.{UserModelStore, BeliefStore}
   alias Types.{Belief, Config}
   alias Response.{Synthesizer, Generator}
-  alias World.Context, as: WorldContext
-  alias World.Manager, as: WorldManager
 
   @doc "Returns the priv directory path for the brain app.\n\nUses `:code.priv_dir(:brain)` which correctly resolves the path\nregardless of which directory the application is run from.\n"
   def priv_dir do
@@ -175,9 +168,9 @@ defmodule Brain do
 
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
-    - `:world_id` - required: the world the conversation runs in, one
-      `World.Manager` holds. Every turn is analyzed in it. Absent, or a world
-      that is not loaded (a purged one), raises.
+    - `:world_id` - required: the world the conversation runs in, one whose
+      tree brain runs (`Brain.Worlds`). Every turn is analyzed in it. Absent,
+      or a world that is not loaded (a purged one), raises.
     - `:side_effects` - whether the conversation and its turns write what they
       learn: graph nodes, beliefs, user-model facts, episodes, learner files,
       entity candidates, Gazetteer preferences, Ouro debug and training data,
@@ -194,19 +187,19 @@ defmodule Brain do
   end
 
   # Checked in the caller's process, so a missing world raises there. The world
-  # must be one `World.Manager` holds: a purged world's id (one a web user still
-  # has selected, say) names no world to run in.
+  # must be one whose tree brain runs (`Brain.Worlds`): a purged world's id (one
+  # a web user still has selected, say) names no world to run in.
   defp conversation_world!(opts) do
     case Keyword.fetch(opts, :world_id) do
       {:ok, world_id} when is_binary(world_id) and world_id != "" ->
-        case WorldManager.get(world_id) do
-          {:ok, _world} ->
+        case Brain.Worlds.fetch(world_id) do
+          {:ok, _mode} ->
             world_id
 
           {:error, reason} ->
             raise ArgumentError,
                   "Brain.create_conversation: world #{inspect(world_id)} is not loaded (#{inspect(reason)}); " <>
-                    "a conversation runs in a world World.Manager holds"
+                    "a conversation runs in a world whose tree brain runs (Brain.Worlds)"
         end
 
       {:ok, other} ->
@@ -2063,12 +2056,12 @@ defmodule Brain do
         tags = intent_tags(entry.intent)
         world_id = Map.fetch!(entry, :world_id)
 
-        WorldContext.add_episode(
-          world_id,
+        Brain.Memory.Store.add_episode(
           entry.input,
           "conversation",
           entry.response,
-          ["conversation", entry.conversation_id | tags]
+          ["conversation", entry.conversation_id | tags],
+          world_id: world_id
         )
       end)
     end
@@ -2196,7 +2189,7 @@ defmodule Brain do
   end
 
   # `input` is the text the entities were extracted from, and becomes each
-  # candidate's `:context`. Without it World.EntityPromoter died with a KeyError
+  # candidate's `:context`. Without it the world's entity promoter died with a KeyError
   # while aggregating, and a reviewer would have had no text to judge the
   # suggestion against. Measured 2026-09-23.
   defp feed_entities_to_world(entities, world_id, input) when is_list(entities) do
@@ -2221,7 +2214,7 @@ defmodule Brain do
         }
 
         try do
-          WorldManager.add_candidate(world_id, candidate)
+          Brain.Worlds.report_candidate!(world_id, candidate)
         rescue
           e ->
             Logger.debug("Failed to add entity candidate to world: #{inspect(e)}")
