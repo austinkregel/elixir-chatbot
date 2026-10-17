@@ -47,9 +47,9 @@ defmodule ChatWeb.DashboardLive do
 
     socket =
       socket
-      |> assign(:genserver_status, load_genserver_status(telemetry))
+      |> assign(:genserver_status, load_genserver_status(world_id, telemetry))
       |> assign(:performance_metrics, load_performance_metrics(telemetry))
-      |> assign(:health_indicators, load_health_indicators(telemetry))
+      |> assign(:health_indicators, load_health_indicators(world_id, telemetry))
       |> assign(:ml_models_status, load_ml_models_status())
       |> assign(:readiness_details, load_readiness_details(world_id))
       |> assign(:training_worlds_status, load_training_worlds_status())
@@ -109,9 +109,9 @@ defmodule ChatWeb.DashboardLive do
 
       socket =
         socket
-        |> assign(:genserver_status, load_genserver_status(telemetry))
+        |> assign(:genserver_status, load_genserver_status(world_id, telemetry))
         |> assign(:performance_metrics, load_performance_metrics(telemetry))
-        |> assign(:health_indicators, load_health_indicators(telemetry))
+        |> assign(:health_indicators, load_health_indicators(world_id, telemetry))
         |> assign(:ml_models_status, load_ml_models_status())
         |> assign(:readiness_details, load_readiness_details(world_id))
         |> assign(:training_worlds_status, load_training_worlds_status())
@@ -157,9 +157,9 @@ defmodule ChatWeb.DashboardLive do
 
     socket =
       socket
-      |> assign(:genserver_status, load_genserver_status(telemetry))
+      |> assign(:genserver_status, load_genserver_status(world_id, telemetry))
       |> assign(:performance_metrics, load_performance_metrics(telemetry))
-      |> assign(:health_indicators, load_health_indicators(telemetry))
+      |> assign(:health_indicators, load_health_indicators(world_id, telemetry))
       |> assign(:ml_models_status, load_ml_models_status())
       |> assign(:readiness_details, load_readiness_details(world_id))
       |> assign(:training_worlds_status, load_training_worlds_status())
@@ -239,6 +239,8 @@ defmodule ChatWeb.DashboardLive do
     telemetry = Brain.Metrics.Aggregator.read_telemetry()
 
     socket
+    |> assign(:genserver_status, load_genserver_status(world_id, telemetry))
+    |> assign(:health_indicators, load_health_indicators(world_id, telemetry))
     |> assign(:world_memory_stats, load_world_memory_stats(world_id))
     |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
     |> assign(:semantic_fact_window_confirm_open, false)
@@ -251,17 +253,18 @@ defmodule ChatWeb.DashboardLive do
 
   # `telemetry` below is the node's telemetry window, read from Atlas once
   # per refresh (Brain.Metrics.Aggregator.read_telemetry/0), so every panel
-  # shows the same counts and the dashboard reads them once.
-  defp load_genserver_status(telemetry) do
-    SystemStatus.get_all_genservers_status(telemetry)
+  # shows the same counts and the dashboard reads them once. The JTMS network
+  # and the beliefs among the GenServers are the selected world's.
+  defp load_genserver_status(world_id, telemetry) do
+    SystemStatus.get_all_genservers_status(world_id, telemetry)
   end
 
   defp load_performance_metrics(telemetry) do
     SystemStatus.get_performance_metrics(telemetry)
   end
 
-  defp load_health_indicators(telemetry) do
-    SystemStatus.get_health_indicators(telemetry)
+  defp load_health_indicators(world_id, telemetry) do
+    SystemStatus.get_health_indicators(world_id, telemetry)
   end
 
   defp load_ml_models_status do
@@ -273,7 +276,7 @@ defmodule ChatWeb.DashboardLive do
   end
 
   defp load_training_worlds_status do
-    SystemStatus.get_training_worlds_status()
+    Manager.training_worlds_status()
   end
 
   defp load_world_models_status(world_id) do
