@@ -67,7 +67,6 @@ defmodule Brain.DataDrivenTestSetup do
     ensure_pubsub_started()
 
     ensure_started(Brain.ML.Gazetteer)
-    ensure_started(World.Manager)
 
     Gazetteer.load_all()
     :ok
