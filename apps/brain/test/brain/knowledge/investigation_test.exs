@@ -2,7 +2,7 @@ defmodule Brain.Knowledge.InvestigationTest do
   @moduledoc """
   `Investigation.record_evidence/3` associates a finding with a hypothesis by
   the similarity of their claims in the named world's embedder
-  (`World.Embedder`), and nowhere else: while the world's vocabulary is being
+  (`Brain.Worlds.Embedder`), and nowhere else: while the world's vocabulary is being
   rebuilt it waits for the rebuild to finish, and a world that cannot embed
   raises naming the world.
 
@@ -14,7 +14,7 @@ defmodule Brain.Knowledge.InvestigationTest do
 
   alias Brain.Knowledge.Types.{Finding, Hypothesis, Investigation, SourceInfo}
   alias Brain.Memory.Store
-  alias World.Embedder
+  alias Brain.Worlds.Embedder
 
   # Both claims hold "paris" and one other word. In a world whose vocabulary
   # is only "paris" they embed as the same vector (similarity 1.0); in one
