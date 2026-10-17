@@ -151,7 +151,6 @@ end
 
 defmodule Mix.Tasks.DomainTasks.Transform do
   alias World.Manager
-  alias World.Persistence
   @shortdoc "Transforms domain tasks into chatbot training data"
 
   @moduledoc "Transforms domain-specific NLP task files into training data for the chatbot.\n\nThis task reads NLP benchmark task files and converts them into:\n- Intent training samples (for classifier training)\n- Knowledge facts (for semantic memory)\n- Entity candidates (for gazetteer)\n\n## Usage\n\n    mix domain_tasks.transform [options]\n\n## Options\n\n  * `--world-id` - required: the world entities are extracted in and the results are\n    integrated into. It must be loaded.\n  * `--tasks-path` - Path to tasks directory (default: data/domain_specific_tasks)\n  * `--categories` - Comma-separated list of categories to include\n  * `--max-instances` - Maximum instances per task (default: 1000)\n  * `--max-tasks` - Maximum number of tasks to process (default: all)\n  * `--dry-run` - Preview without writing to disk\n  * `--output-dir` - Output directory for transformed data (default: data/training/domain_tasks)\n  * `--skip-entity-extraction` - Skip entity extraction for faster processing\n\n## Examples\n\n    # Process all useful tasks\n    mix domain_tasks.transform --world-id <id>\n\n    # Process only Question Answering tasks with limit\n    mix domain_tasks.transform --world-id <id> --categories \"Question Answering\" --max-instances 500\n\n    # Dry run to preview\n    mix domain_tasks.transform --world-id <id> --dry-run --max-tasks 10\n"
@@ -444,7 +443,7 @@ defmodule Mix.Tasks.DomainTasks.Transform do
         end
 
         if facts != [] do
-          world_path = Persistence.world_path(world_id)
+          world_path = Brain.Worlds.world_path(world_id)
           knowledge_file = Path.join(world_path, "domain_knowledge.json")
 
           case Jason.encode(facts, pretty: true) do
