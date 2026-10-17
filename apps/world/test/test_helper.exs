@@ -14,7 +14,7 @@ try do
   {:ok, _} = Application.ensure_all_started(:brain)
   {:ok, _} = Application.ensure_all_started(:world)
 
-  Brain.Test.AtlasSandbox.allow_for_test_owner!(bootstrap_owner)
+  Brain.Test.AtlasSandbox.allow_for_test_owner!(bootstrap_owner, [World.Manager])
   Brain.Test.Database.verify_prepared!()
 
   # Train the test models here, before the clock starts on any test. World
