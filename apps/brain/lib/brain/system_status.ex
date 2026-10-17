@@ -1,21 +1,13 @@
 defmodule Brain.SystemStatus do
   @moduledoc "Reports the status of various background systems for UI display.\nProvides comprehensive monitoring of all GenServers in the application.\n"
 
-  # These modules are in sibling umbrella apps that depend on :brain.
-  # They're available at runtime but not at compile time.
-  @compile {:no_warn_undefined,
-            [World.ModelRegistry, World.Embedder, World.Manager, World.Persistence, World.Metrics]}
-
   alias Brain.Metrics.Aggregator
   alias Brain.ML.EntityTrainer
   alias Brain.ML.MicroClassifiers
   alias Brain.ML.POSTagger
   alias Brain.ML.Gazetteer
-  alias World.ModelRegistry
-  alias World.Embedder
-  alias World.Manager
-  alias World.Persistence
-  alias World.Metrics
+  alias Brain.Worlds.ModelRegistry
+  alias Brain.Worlds.Embedder
   alias Brain.Code.LanguageGrammar
   alias Brain.Code.CodeGazetteer
   alias Brain.ML.EvaluationStore
@@ -28,8 +20,8 @@ defmodule Brain.SystemStatus do
       {Brain.Memory.Store, "Memory Store", :has_stats}
     ],
     epistemic: [
-      {Brain.Epistemic.JTMS, "JTMS", :has_ready_and_stats},
-      {Brain.Epistemic.BeliefStore, "Belief Store", :has_ready_and_stats},
+      {Brain.Epistemic.JTMS, "JTMS", :has_ready_and_world_stats},
+      {Brain.Epistemic.BeliefStore, "Belief Store", :has_ready_and_world_stats},
       {Brain.Epistemic.UserModelStore, "User Model Store", :has_ready_and_stats},
       {Brain.Epistemic.ContradictionHandler, "Contradiction Handler", :has_ready_and_stats},
       {Brain.Epistemic.StanceTracker, "Stance Tracker", :has_ready_and_stats},
@@ -74,8 +66,8 @@ defmodule Brain.SystemStatus do
       {Brain.Lexicon.Loader, "Lexicon Loader", :has_ready_and_stats}
     ],
     learning: [
-      {World.Manager, "World Manager", :has_ready},
-      {World.ModelRegistry, "World Model Registry", :has_ready}
+      {Brain.Worlds.Supervisor, "World Supervisor", :basic},
+      {Brain.Worlds.ModelRegistry, "World Model Registry", :has_ready}
     ],
     code_analysis: [
       {Brain.Code.CodeGazetteer, "Code Gazetteer", :has_stats},
@@ -160,9 +152,12 @@ defmodule Brain.SystemStatus do
   Returns comprehensive status of all GenServers organized by category, each
   tracked one with its activity counted in `telemetry`, the node's telemetry
   window read once (`Brain.Metrics.Aggregator.read_telemetry/0`); read here
-  when not given. Raises when Atlas cannot be read.
+  when not given. The JTMS network and the beliefs are held per world, so
+  their stats are those of `world_id`; a missing world raises. Raises when
+  Atlas cannot be read.
   """
-  def get_all_genservers_status(telemetry \\ Aggregator.read_telemetry()) do
+  def get_all_genservers_status(world_id, telemetry \\ Aggregator.read_telemetry()) do
+    world_id = world_id!(world_id, "get_all_genservers_status")
     started_at = System.monotonic_time(:millisecond)
     durations = Aggregator.get_metrics(telemetry)
 
@@ -172,7 +167,7 @@ defmodule Brain.SystemStatus do
         statuses =
           servers
           |> Enum.map(fn {module, name, type} ->
-            {module, get_genserver_status(module, name, type, durations)}
+            {module, get_genserver_status(module, name, type, durations, world_id)}
           end)
           |> Map.new()
 
@@ -200,11 +195,11 @@ defmodule Brain.SystemStatus do
   end
 
   @doc """
-  Returns health indicators for the system, from `telemetry` as
-  `get_all_genservers_status/1` takes it.
+  Returns health indicators for the system, in `world_id` and from
+  `telemetry` as `get_all_genservers_status/2` takes them.
   """
-  def get_health_indicators(telemetry \\ Aggregator.read_telemetry()) do
-    genserver_status = get_all_genservers_status(telemetry)
+  def get_health_indicators(world_id, telemetry \\ Aggregator.read_telemetry()) do
+    genserver_status = get_all_genservers_status(world_id, telemetry)
     supervisor_info = get_supervisor_info()
     {running, total} = count_genserver_health(genserver_status.categories)
 
@@ -226,9 +221,9 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  @doc "Returns a utilization report identifying idle, low-usage, and high-cost systems.\n"
-  def get_utilization_report do
-    genserver_status = get_all_genservers_status()
+  @doc "Returns a utilization report identifying idle, low-usage, and high-cost systems,\nwith the world-held ones reported in `world_id` as `get_all_genservers_status/2` does.\n"
+  def get_utilization_report(world_id) do
+    genserver_status = get_all_genservers_status(world_id)
 
     all_statuses =
       genserver_status.categories
@@ -693,55 +688,6 @@ defmodule Brain.SystemStatus do
     }
   end
 
-  @doc "Returns training worlds status.\n"
-  def get_training_worlds_status do
-    if Code.ensure_loaded?(World.Manager) and Process.whereis(World.Manager) do
-      try do
-        worlds = Manager.list_worlds()
-
-        world_summaries =
-          Enum.map(worlds, fn world ->
-            metrics =
-              case Manager.get_metrics(world.id) do
-                {:ok, m} -> Metrics.summary(m)
-                _ -> nil
-              end
-
-            candidates_count = length(Manager.get_candidates(world.id, limit: 1000))
-
-            %{
-              id: world.id,
-              name: world.name,
-              mode: world.mode,
-              created_at: world.created_at,
-              metrics: metrics,
-              candidates_count: candidates_count
-            }
-          end)
-
-        persisted_count =
-          try do
-            Persistence.list_persisted_worlds() |> length()
-          catch
-            _, _ -> 0
-          end
-
-        %{
-          manager_ready: Manager.ready?(),
-          active_worlds: length(worlds),
-          persisted_worlds: persisted_count,
-          worlds: world_summaries,
-          checked_at: DateTime.utc_now()
-        }
-      catch
-        :exit, _ ->
-          default_training_worlds_status()
-      end
-    else
-      default_training_worlds_status()
-    end
-  end
-
   @doc "Returns readiness details for a specific world.\n\nOptions:\n  - `:world_id` - Required. The world ID to check; absent raises.\n"
   def get_readiness_details(opts) do
     world_id =
@@ -795,25 +741,21 @@ defmodule Brain.SystemStatus do
 
   @doc "Returns the status of the world-specific embedder.\n"
   def get_world_embedder_status(world_id) do
-    if Code.ensure_loaded?(World.Embedder) and function_exported?(World.Embedder, :get_status, 1) do
-      try do
-        status = Embedder.get_status(world_id)
+    try do
+      status = Embedder.get_status(world_id)
 
-        %{
-          world_id: world_id,
-          ready: status[:ready] || false,
-          phase: status[:phase] || :not_initialized,
-          phase_label: status[:phase_label] || "Not initialized",
-          vocabulary_size: status[:vocabulary_size] || 0,
-          episode_count: status[:episode_count] || 0,
-          built_at: status[:built_at],
-          label: build_world_embedder_label(status)
-        }
-      catch
-        _, _ -> default_world_embedder_status(world_id)
-      end
-    else
-      default_world_embedder_status(world_id)
+      %{
+        world_id: world_id,
+        ready: status[:ready] || false,
+        phase: status[:phase] || :not_initialized,
+        phase_label: status[:phase_label] || "Not initialized",
+        vocabulary_size: status[:vocabulary_size] || 0,
+        episode_count: status[:episode_count] || 0,
+        built_at: status[:built_at],
+        label: build_world_embedder_label(status)
+      }
+    catch
+      _, _ -> default_world_embedder_status(world_id)
     end
   end
 
@@ -857,7 +799,7 @@ defmodule Brain.SystemStatus do
 
   @doc "Returns the ML model status for a specific training world.\n"
   def get_world_models_status(world_id) when is_binary(world_id) do
-    if Code.ensure_loaded?(World.ModelRegistry) and Process.whereis(World.ModelRegistry) do
+    if Process.whereis(ModelRegistry) do
       try do
         has_models = ModelRegistry.world_has_models?(world_id)
 
@@ -1112,7 +1054,7 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  defp get_genserver_status(module, name, type, durations) do
+  defp get_genserver_status(module, name, type, durations, world_id) do
     pid = Process.whereis(module)
 
     base_status = %{
@@ -1146,12 +1088,27 @@ defmodule Brain.SystemStatus do
       }
 
       status_with_info
-      |> enhance_status(module, type)
+      |> enhance_status(module, type, world_id)
       |> add_utilization_metrics(module, durations)
     else
       base_status
     end
   end
+
+  # A store held per world reports the stats of the world asked about.
+  defp enhance_status(status, module, :has_ready_and_world_stats, world_id) do
+    ready = safe_call_ready(module)
+
+    %{
+      status
+      | ready: ready,
+        status: if(ready, do: :ready, else: :initializing),
+        label: if(ready, do: "Ready", else: "Initializing..."),
+        stats: if(ready, do: module.stats(world_id), else: nil)
+    }
+  end
+
+  defp enhance_status(status, module, type, _world_id), do: enhance_status(status, module, type)
 
   defp enhance_status(status, _module, :basic) do
     %{status | ready: true, status: :ready, label: "Ready"}
@@ -1280,6 +1237,13 @@ defmodule Brain.SystemStatus do
     else
       false
     end
+  end
+
+  defp world_id!(world_id, _function) when is_binary(world_id) and world_id != "", do: world_id
+
+  defp world_id!(other, function) do
+    raise ArgumentError,
+          "SystemStatus.#{function} needs the world whose JTMS network and beliefs are reported, got: #{inspect(other)}"
   end
 
   defp safe_call_stats(module) do
@@ -1454,16 +1418,6 @@ defmodule Brain.SystemStatus do
       brain_count: brain_eval.count,
       pipeline_avg_ms: pipeline.avg_ms,
       pipeline_count: pipeline.count
-    }
-  end
-
-  defp default_training_worlds_status do
-    %{
-      manager_ready: false,
-      active_worlds: 0,
-      persisted_worlds: 0,
-      worlds: [],
-      checked_at: DateTime.utc_now()
     }
   end
 end
