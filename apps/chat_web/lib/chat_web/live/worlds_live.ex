@@ -10,7 +10,7 @@ defmodule ChatWeb.WorldsLive do
   conversations run in the selected world.
 
   Each world's row lists the model files in its own models directory
-  (`World.ModelRegistry.models_dir/1`): a world uses the models it holds, so a
+  (`Brain.Worlds.ModelRegistry.models_dir/1`): a world uses the models it holds, so a
   world missing one is visible here before a conversation fails on it.
 
   "Your profile" lists the facts the system holds about this web user: their
@@ -23,7 +23,7 @@ defmodule ChatWeb.WorldsLive do
   import ChatWeb.AppShell
 
   alias Brain.Epistemic.UserModelStore
-  alias World.ModelRegistry
+  alias Brain.Worlds.ModelRegistry
 
   @impl true
   def mount(_params, _session, socket) do
