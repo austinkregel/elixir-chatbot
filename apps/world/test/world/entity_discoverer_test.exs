@@ -65,6 +65,8 @@ defmodule World.EntityDiscovererDataTest do
       @texts texts
       @description description
 
+      # The batch is the texts' discoveries one after another, the one list
+      # aggregate_discoveries/1 takes, each a discovery result.
       test "#{description}" do
         results =
           EntityDiscoverer.discover_entities_batch(@texts, @test_world_id, emit_events: false)
@@ -72,8 +74,13 @@ defmodule World.EntityDiscovererDataTest do
         assert is_list(results)
 
         for r <- results do
-          assert is_list(r)
+          assert is_map(r)
+          assert Map.has_key?(r, :value)
+          assert r.status in [:known, :unknown, :ambiguous]
         end
+
+        assert results ==
+                 Enum.flat_map(@texts, &EntityDiscoverer.discover_entities(&1, @test_world_id, emit_events: false))
       end
     end
   end
