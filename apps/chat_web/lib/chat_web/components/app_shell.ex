@@ -1,7 +1,7 @@
 defmodule ChatWeb.AppShell do
   @moduledoc "App shell component with global sidebar navigation.\n\nProvides a consistent layout across all pages with:\n- The world selector, the shell's first control, and a readout of the selected\n  world that stays visible at every width (in the top bar on narrow screens)\n- Global sidebar with navigation links\n- System status indicator\n- The system, light and dark theme switch (`ChatWeb.Layouts.theme_toggle/1`)\n- Collapsible on mobile\n"
 
-  alias World.ModelRegistry
+  alias Brain.Worlds.ModelRegistry
   use Phoenix.Component
   use ChatWeb, :verified_routes
   import ChatWeb.CoreComponents
