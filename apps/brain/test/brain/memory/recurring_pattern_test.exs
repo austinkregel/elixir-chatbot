@@ -6,13 +6,9 @@ defmodule Brain.Memory.RecurringPatternTest do
   use ExUnit.Case, async: false
   import Brain.TestHelpers
 
-  # World.Embedder is in a sibling umbrella app that depends on :brain.
-  # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Embedder}
-
   alias Brain.Memory.{RecurringPattern, Store}
   alias Brain.Memory.Types.SemanticFact
-  alias World.Embedder, as: WorldEmbedder
+  alias Brain.Worlds.Embedder, as: WorldEmbedder
 
   @words ~w(weather paris rain sunny umbrella)
   @model %{vocabulary: @words |> Enum.with_index() |> Map.new(), idf_weights: Map.new(@words, &{&1, 1.0})}
