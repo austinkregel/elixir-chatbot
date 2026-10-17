@@ -2,6 +2,10 @@
 # GenServer (e.g. CredentialVault) queries `atlas_test.*` tables.
 {:ok, _} = Application.ensure_all_started(:atlas)
 
+# The run has the test database to itself, or raises naming the run that has
+# it: two runs on one database hold up each other's writes.
+:ok = Atlas.Repo.claim_test_database!("brain")
+
 # :manual for the whole run, set before anything else can write. Every test
 # then works inside a transaction that is rolled back, and a write from a
 # process holding no connection raises DBConnection.OwnershipError instead of
