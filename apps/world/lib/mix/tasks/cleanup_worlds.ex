@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.CleanupWorlds do
-  @moduledoc "Cleans up orphaned test world directories from disk.\n\nOnly a test world's directory -- its id starts with `test_`\n(`World.Manager.test_world_id?/1`) -- is ever deleted. Every other directory\nis a real world and is never deleted, whatever its age or contents.\n\nA test world's directory is orphaned when it:\n- Has no valid config.json file, OR\n- Is older than the specified age\n\nWorlds are read from `World.Persistence.base_path/0`.\n\n## Usage\n\n    # Dry run (default) - shows what would be deleted\n    mix cleanup_worlds\n\n    # Actually delete orphaned directories\n    mix cleanup_worlds --delete\n\n    # Delete directories older than 12 hours\n    mix cleanup_worlds --delete --max-age 12\n\n    # Exclude specific world IDs from cleanup\n    mix cleanup_worlds --delete --exclude my_world --exclude another_world\n\n## Options\n\n  * `--delete` - Actually delete the directories (default is dry run)\n  * `--max-age` - Maximum age in hours before a directory is considered orphaned (default: 24)\n  * `--exclude` - World IDs to exclude from cleanup (can be specified multiple times)\n\n"
+  @moduledoc "Cleans up orphaned test world directories from disk.\n\nOnly a test world's directory -- its id starts with `test_`\n(`World.Manager.test_world_id?/1`) -- is ever deleted. Every other directory\nis a real world and is never deleted, whatever its age or contents.\n\nA test world's directory is orphaned when it:\n- Has no valid config.json file, OR\n- Is older than the specified age\n\nWorlds are read from `Brain.Worlds.base_path/0`.\n\n## Usage\n\n    # Dry run (default) - shows what would be deleted\n    mix cleanup_worlds\n\n    # Actually delete orphaned directories\n    mix cleanup_worlds --delete\n\n    # Delete directories older than 12 hours\n    mix cleanup_worlds --delete --max-age 12\n\n    # Exclude specific world IDs from cleanup\n    mix cleanup_worlds --delete --exclude my_world --exclude another_world\n\n## Options\n\n  * `--delete` - Actually delete the directories (default is dry run)\n  * `--max-age` - Maximum age in hours before a directory is considered orphaned (default: 24)\n  * `--exclude` - World IDs to exclude from cleanup (can be specified multiple times)\n\n"
   use Mix.Task
 
   require Logger
@@ -32,7 +32,7 @@ defmodule Mix.Tasks.CleanupWorlds do
     Mix.shell().info("Excluded: #{inspect(exclude)}")
     Mix.shell().info("")
 
-    base_path = World.Persistence.base_path()
+    base_path = Brain.Worlds.base_path()
 
     unless File.exists?(base_path) do
       Mix.shell().info("No training worlds directory found at: #{base_path}")
