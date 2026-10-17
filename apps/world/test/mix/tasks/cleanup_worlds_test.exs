@@ -5,7 +5,7 @@ defmodule Mix.Tasks.CleanupWorldsTest do
   contents.
 
   The task runs against a directory of this test's own: with
-  `:test_world_sandbox` off, `World.Persistence.base_path/0` returns
+  `:test_world_sandbox` off, `Brain.Worlds.base_path/0` returns
   `:training_worlds_path`, which points there for the duration. The directory
   exists, so the task returns instead of halting the VM.
   """
@@ -19,11 +19,11 @@ defmodule Mix.Tasks.CleanupWorldsTest do
 
     File.mkdir_p!(base_path)
 
-    original_sandbox = Application.fetch_env(:world, :test_world_sandbox)
-    original_path = Application.fetch_env(:world, :training_worlds_path)
+    original_sandbox = Application.fetch_env(:brain, :test_world_sandbox)
+    original_path = Application.fetch_env(:brain, :training_worlds_path)
 
-    Application.put_env(:world, :test_world_sandbox, false)
-    Application.put_env(:world, :training_worlds_path, base_path)
+    Application.put_env(:brain, :test_world_sandbox, false)
+    Application.put_env(:brain, :training_worlds_path, base_path)
 
     previous_shell = Mix.shell()
     Mix.shell(Mix.Shell.Process)
@@ -35,7 +35,7 @@ defmodule Mix.Tasks.CleanupWorldsTest do
       File.rm_rf!(base_path)
     end)
 
-    assert World.Persistence.base_path() == base_path
+    assert Brain.Worlds.base_path() == base_path
 
     u = System.unique_integer([:positive])
     real_id = "realworld_#{u}"
@@ -73,6 +73,6 @@ defmodule Mix.Tasks.CleanupWorldsTest do
     assert_received {:mix_shell, :info, ["Would delete 1 directories"]}
   end
 
-  defp restore_env(key, {:ok, value}), do: Application.put_env(:world, key, value)
-  defp restore_env(key, :error), do: Application.delete_env(:world, key)
+  defp restore_env(key, {:ok, value}), do: Application.put_env(:brain, key, value)
+  defp restore_env(key, :error), do: Application.delete_env(:brain, key)
 end
