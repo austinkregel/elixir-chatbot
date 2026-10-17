@@ -142,6 +142,24 @@ defmodule Brain.ML.GazetteerTest do
       assert is_list(spans)
     end
 
+    test "a span neither starts nor ends on a token with no key" do
+      # "weather in Austin ?" keyed per token, as EntityExtractor.gazetteer_key/1
+      # keys them: the question mark's key is empty. Joined and trimmed, "austin"
+      # and "austin " are one phrase, so the span used to end on the mark.
+      keys = Enum.map(["weather", "in", "Austin", "?"], &Brain.ML.EntityExtractor.gazetteer_key/1)
+      assert List.last(keys) == ""
+      assert {:ok, _} = Gazetteer.lookup("austin")
+
+      spans = Gazetteer.lookup_spans(keys, world_id: @world_id)
+
+      assert Enum.any?(spans, &match?({2, 2, _}, &1))
+      refute Enum.any?(spans, fn {first, last, _} -> first == 3 or last == 3 end)
+
+      leading = Gazetteer.lookup_spans(["", "austin"], world_id: @world_id)
+      assert Enum.any?(leading, &match?({1, 1, _}, &1))
+      refute Enum.any?(leading, fn {first, _last, _} -> first == 0 end)
+    end
+
     test "finds multi-word entities" do
       if Gazetteer.loaded?() do
         spans = Gazetteer.lookup_spans(["new", "york", "city"], world_id: @world_id)
