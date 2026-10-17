@@ -1,9 +1,7 @@
 defmodule Brain.Response.ChunkSegmenter do
-  @moduledoc "Segments response templates into typed chunks for template blending.\n\nUses sentence boundaries and embedding-based classification to identify\nchunk types. Chunks can then be recombined to generate novel responses.\n\nChunks are embedded, and classified against the chunk type centroids, by a\nworld's embedder (`World.Embedder`), so every segmenting call names its world.\nA world whose embedder cannot embed raises. While its vocabulary is being\nrebuilt from its episodes, segmenting waits for the rebuild to finish\n(`World.Embedder.await_ready/2`); the `try_` functions, for a process that a\nrebuild calls, return `{:error, :vocabulary_building}` instead. A world's centroids are built once and kept until its\nvocabulary is rebuilt or it is destroyed (`forget_world/1`); a chunk embedding\nwhose length differs from the centroids' raises.\n\n## Chunk Types\n\n- `:greeting` - Opening phrases (\"Hello!\", \"Nice to meet you!\")\n- `:acknowledgment` - Confirmation phrases (\"I understand.\", \"Got it.\")\n- `:body` - Substantive content (\"The weather in $location is...\")\n- `:offer` - Invitations for next action (\"What can I help with?\")\n- `:clarification` - Requests for missing info (\"Which location?\")\n- `:closing` - Farewell phrases (\"Have a great day!\", \"Goodbye!\")\n\n## Usage\n\n    ChunkSegmenter.segment(world_id, \"Hello! The weather is sunny. Anything else?\")\n    # => [\n    #   %Chunk{text: \"Hello!\", type: :greeting},\n    #   %Chunk{text: \"The weather is sunny.\", type: :body},\n    #   %Chunk{text: \"Anything else?\", type: :offer}\n    # ]\n"
+  @moduledoc "Segments response templates into typed chunks for template blending.\n\nUses sentence boundaries and embedding-based classification to identify\nchunk types. Chunks can then be recombined to generate novel responses.\n\nChunks are embedded, and classified against the chunk type centroids, by a\nworld's embedder (`Brain.Worlds.Embedder`), so every segmenting call names its world.\nA world whose embedder cannot embed raises. While its vocabulary is being\nrebuilt from its episodes, segmenting waits for the rebuild to finish\n(`Brain.Worlds.Embedder.await_ready/2`); the `try_` functions, for a process that a\nrebuild calls, return `{:error, :vocabulary_building}` instead. A world's centroids are built once and kept until its\nvocabulary is rebuilt or it is destroyed (`forget_world/1`); a chunk embedding\nwhose length differs from the centroids' raises.\n\n## Chunk Types\n\n- `:greeting` - Opening phrases (\"Hello!\", \"Nice to meet you!\")\n- `:acknowledgment` - Confirmation phrases (\"I understand.\", \"Got it.\")\n- `:body` - Substantive content (\"The weather in $location is...\")\n- `:offer` - Invitations for next action (\"What can I help with?\")\n- `:clarification` - Requests for missing info (\"Which location?\")\n- `:closing` - Farewell phrases (\"Have a great day!\", \"Goodbye!\")\n\n## Usage\n\n    ChunkSegmenter.segment(world_id, \"Hello! The weather is sunny. Anything else?\")\n    # => [\n    #   %Chunk{text: \"Hello!\", type: :greeting},\n    #   %Chunk{text: \"The weather is sunny.\", type: :body},\n    #   %Chunk{text: \"Anything else?\", type: :offer}\n    # ]\n"
 
-  # World.Embedder is in a sibling umbrella app that depends on :brain.
-  @compile {:no_warn_undefined, World.Embedder}
-  alias World.Embedder, as: WorldEmbedder
+  alias Brain.Worlds.Embedder, as: WorldEmbedder
   alias Brain.ML.Tokenizer
 
   require Logger
@@ -44,7 +42,7 @@ defmodule Brain.Response.ChunkSegmenter do
                      end)
   @centroid_key :chunk_type_centroids
 
-  @doc "Segments a template text into typed chunks, in the world's embedder.\n\nReturns a list of %Chunk{} structs, each with:\n- text: The chunk text\n- type: The classified chunk type (:greeting, :body, etc.)\n- embedding: the world's TF-IDF embedding for the chunk\n\nWhile the world's vocabulary is being rebuilt this waits for the rebuild to\nfinish (`World.Embedder.await_ready/2`).\n"
+  @doc "Segments a template text into typed chunks, in the world's embedder.\n\nReturns a list of %Chunk{} structs, each with:\n- text: The chunk text\n- type: The classified chunk type (:greeting, :body, etc.)\n- embedding: the world's TF-IDF embedding for the chunk\n\nWhile the world's vocabulary is being rebuilt this waits for the rebuild to\nfinish (`Brain.Worlds.Embedder.await_ready/2`).\n"
   def segment(world_id, template_text) when is_binary(world_id) and is_binary(template_text) do
     awaiting_rebuild(world_id, fn -> try_segment(world_id, template_text) end)
   end
@@ -64,7 +62,7 @@ defmodule Brain.Response.ChunkSegmenter do
   `segment/2` that does not wait for a rebuild: `{:ok, chunks}`, or
   `{:error, :vocabulary_building}` while the world's vocabulary is being
   rebuilt. For a process that a rebuild calls, which must not wait in its own
-  callbacks (`World.Embedder`): it returns the error to its caller, which waits.
+  callbacks (`Brain.Worlds.Embedder`): it returns the error to its caller, which waits.
   """
   @spec try_segment(String.t(), String.t()) :: {:ok, [%Chunk{}]} | {:error, :vocabulary_building}
   def try_segment(world_id, template_text) when is_binary(world_id) and is_binary(template_text) do
