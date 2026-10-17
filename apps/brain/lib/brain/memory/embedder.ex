@@ -1,5 +1,5 @@
 defmodule Brain.Memory.Embedder do
-  @moduledoc "Embedding utilities for the cognitive memory system.\n\nProduces TF-IDF based embeddings for text that can be used in\nsimilarity search. This replaces the byte frequency approach\nfrom the Rust implementation with a more semantically meaningful\nTF-IDF vectorization.\n\nThe embedder maintains a vocabulary and IDF weights that are\nbuilt from training data and used to consistently embed new text.\n\nThis holds the trained vocabulary, read from `<models_path>/embedder.term`, and\nhas no world. A world's own vocabulary is `World.Embedder`'s.\n"
+  @moduledoc "Embedding utilities for the cognitive memory system.\n\nProduces TF-IDF based embeddings for text that can be used in\nsimilarity search. This replaces the byte frequency approach\nfrom the Rust implementation with a more semantically meaningful\nTF-IDF vectorization.\n\nThe embedder maintains a vocabulary and IDF weights that are\nbuilt from training data and used to consistently embed new text.\n\nThis holds the trained vocabulary, read from `<models_path>/embedder.term`, and\nhas no world. A world's own vocabulary is `Brain.Worlds.Embedder`'s.\n"
 
   alias Phoenix.PubSub
   alias Brain.Telemetry
