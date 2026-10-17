@@ -179,7 +179,10 @@ defmodule Brain.ML.TrainerTest do
         File.rm_rf!(models_path)
       end)
 
-      result = Trainer.train_and_save(models_path: models_path)
+      # Every stage runs; the entity model trains on the subset of the NER
+      # training split the train_entity_model/2 tests use.
+      rows = "ner" |> Brain.ML.EvaluationStore.load_gold_standard(:train) |> Enum.take(25)
+      result = Trainer.train_and_save(models_path: models_path, rows: rows)
 
       assert {:ok, stats} = result
       assert is_map(stats)
