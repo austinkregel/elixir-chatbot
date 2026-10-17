@@ -29,9 +29,12 @@ defmodule Brain.Epistemic.JTMS do
   - Derived nodes (IN if any valid justification)
   - Contradiction nodes (trigger handler when IN)
 
-  The contradiction handler is one callback for every world; it is called
-  with `{:contradiction, world_id, node_id, supporting_assumptions}`, naming
-  the world whose network holds the contradiction.
+  A contradiction node that becomes IN is reported as a warning, "Contradiction
+  detected in world ...", naming the world whose network holds it, and is then
+  handed to the contradiction handler when one is set
+  (`set_contradiction_handler/1`). The handler is one callback for every
+  world; it is called with `{:contradiction, world_id, node_id,
+  supporting_assumptions}`.
   """
 
   alias Brain.Epistemic.Types
@@ -258,9 +261,11 @@ defmodule Brain.Epistemic.JTMS do
 
   @impl true
   def init(_opts) do
+    # No handler until one is set (`set_contradiction_handler/1`); a
+    # contradiction is reported either way.
     state = %{
       worlds: %{},
-      contradiction_handler: &default_contradiction_handler/1
+      contradiction_handler: nil
     }
 
     Logger.info("JTMS initialized")
@@ -619,7 +624,16 @@ defmodule Brain.Epistemic.JTMS do
 
       if node && node.label == :in do
         assumptions = find_supporting_assumptions(net, node_id)
-        net.contradiction_handler.({:contradiction, net.world_id, node_id, assumptions})
+
+        Logger.warning("Contradiction detected in world #{inspect(net.world_id)}",
+          world_id: net.world_id,
+          node_id: node_id,
+          supporting_assumptions: assumptions
+        )
+
+        if net.contradiction_handler do
+          net.contradiction_handler.({:contradiction, net.world_id, node_id, assumptions})
+        end
       end
     end
 
@@ -688,14 +702,6 @@ defmodule Brain.Epistemic.JTMS do
 
         {:ok, result}
     end
-  end
-
-  defp default_contradiction_handler({:contradiction, world_id, node_id, assumptions}) do
-    Logger.warning("Contradiction detected",
-      world_id: world_id,
-      node_id: node_id,
-      supporting_assumptions: assumptions
-    )
   end
 
   defp generate_id do
