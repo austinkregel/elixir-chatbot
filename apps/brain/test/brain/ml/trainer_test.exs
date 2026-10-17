@@ -132,23 +132,37 @@ defmodule Brain.ML.TrainerTest do
     end
   end
 
-  describe "train_entity_model/2 (slow)" do
-    @tag :slow
-    @tag timeout: 180_000
-    test "returns updated stats" do
-      stats = %{entity_model_trained: false}
-
-      temp_dir = System.tmp_dir!()
-      models_path = Path.join(temp_dir, "test_entity_models_#{System.unique_integer()}")
+  describe "train_entity_model/2" do
+    setup do
+      models_path = Path.join(System.tmp_dir!(), "test_entity_models_#{System.unique_integer([:positive])}")
       File.mkdir_p!(models_path)
+      on_exit(fn -> File.rm_rf!(models_path) end)
 
-      on_exit(fn ->
-        File.rm_rf!(models_path)
-      end)
+      rows = "ner" |> Brain.ML.EvaluationStore.load_gold_standard(:train) |> Enum.take(25)
+      %{models_path: models_path, rows: rows}
+    end
 
-      result = Trainer.train_entity_model(stats, models_path: models_path)
+    # `mix train_models --entity-only` passes no stats of its own, so the key
+    # this sets cannot be one only `train_and_save/1` builds.
+    test "reports the model trained on stats that carry no entity key", %{models_path: models_path, rows: rows} do
+      assert Trainer.train_entity_model(%{}, models_path: models_path, rows: rows) == %{entity_model_trained: true}
+      assert File.regular?(Path.join(models_path, "entity_model.term"))
+    end
 
-      assert is_map(result)
+    test "keeps the stats it was given", %{models_path: models_path, rows: rows} do
+      stats = %{intent_samples: 3, vocab_size: 7, entity_model_trained: false}
+
+      assert Trainer.train_entity_model(stats, models_path: models_path, rows: rows) ==
+               %{intent_samples: 3, vocab_size: 7, entity_model_trained: true}
+    end
+
+    # A directory where the model file goes makes the write fail.
+    test "raises with the reason when the model cannot be saved", %{models_path: models_path, rows: rows} do
+      File.mkdir_p!(Path.join(models_path, "entity_model.term"))
+
+      assert_raise RuntimeError, ~r/the entity model was not saved to .*eisdir/, fn ->
+        Trainer.train_entity_model(%{}, models_path: models_path, rows: rows)
+      end
     end
   end
 

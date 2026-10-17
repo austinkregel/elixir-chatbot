@@ -78,4 +78,27 @@ defmodule Mix.Tasks.World.SeedModelTest do
       assert_received {:mix_shell, :info, ["  seeded " <> ^world_id]}
     end
   end
+
+  # The suite's own VM has already started EXLA, which hid that the task, run
+  # on its own, never started what rebuilding the triple scorer reads. A fresh
+  # VM that starts nothing runs it as `mix world.seed_model` does.
+  @tag timeout: 300_000
+  test "seeds the triple scorer in a VM that starts nothing else" do
+    world_id = "test_seed_fresh_vm_#{System.unique_integer([:positive])}"
+    path = Brain.ML.KnowledgeGraph.TripleScorer.path(world_id)
+    on_exit(fn -> File.rm_rf!(World.Persistence.world_path(world_id)) end)
+
+    code = ~s|Mix.Tasks.World.SeedModel.run(["triple_scorer", "--world", #{inspect(world_id)}])|
+
+    {output, status} =
+      System.cmd("mix", ["run", "--no-start", "--no-compile", "--no-deps-check", "-e", code],
+        cd: Brain.umbrella_root(),
+        env: [{"MIX_ENV", "test"}],
+        stderr_to_stdout: true
+      )
+
+    assert status == 0, output
+    assert output =~ "seeded #{world_id}"
+    assert File.read!(path) == File.read!(Brain.ML.KnowledgeGraph.TripleScorer.trained_path())
+  end
 end

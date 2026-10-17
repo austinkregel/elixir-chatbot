@@ -13,6 +13,22 @@ defmodule Brain.Analysis.PipelineTest do
     :ok
   end
 
+  describe "analyze_chunk/2 scoring entities again with the intent" do
+    # A NER held-out row. The model decided "Tampa" with no candidate types;
+    # pass 2's second disambiguation gave it some, without the head word's
+    # tag, the tag before it or whether it opens the sentence, and
+    # EntityTypeScorer.rescore/3 raised on it.
+    test "every entity with candidate types is scored with its position's context" do
+      text = "I'd like to know the temperature on July 22 in Tampa"
+      analysis = Pipeline.analyze_chunk(text, side_effects: false, world_id: @world_id)
+
+      for entity <- analysis.entities, Map.has_key?(entity, :types) do
+        assert is_boolean(entity.sentence_initial), inspect(entity, limit: 8)
+        assert Map.has_key?(entity, :tag) and Map.has_key?(entity, :preceding_tag), inspect(entity, limit: 8)
+      end
+    end
+  end
+
   describe "process/2" do
     test "processes simple greeting" do
       model = Pipeline.process("Hello there!", world_id: @world_id)

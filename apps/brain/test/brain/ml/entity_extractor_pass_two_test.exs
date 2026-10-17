@@ -44,6 +44,19 @@ defmodule Brain.ML.EntityExtractorPassTwoTest do
       assert number == hd(tl(pass1))
     end
 
+    # An entity the model decided carries no :types until the second
+    # disambiguation gives it some; it took the types without the context they
+    # were scored with, and EntityTypeScorer.rescore/3 raised on it ("Tampa").
+    test "types travel with the position context they were scored with" do
+      pass1 = [entity("device", 0, 4, %{source: :entity_model})]
+
+      context = %{types: [%{entity_type: "location"}], tag: "PROPN", preceding_tag: "ADP", sentence_initial: false}
+      [retyped] = EntityExtractor.put_types(pass1, [entity("location", 0, 4, context)])
+
+      assert Map.take(retyped, [:types, :tag, :preceding_tag, :sentence_initial]) == context
+      assert retyped.source == :entity_model
+    end
+
     test "an entity anaphora resolution supplied has no position and is left as it is" do
       referent = %{entity_type: "device", value: "lamp", confidence: 0.75, source: :anaphora_resolution}
       assert EntityExtractor.put_types([referent], []) == [referent]
@@ -200,13 +213,17 @@ defmodule Brain.ML.EntityExtractorPassTwoTest do
   end
 
   describe "resolve_with_intent/3" do
+    # The text the spans below index; none of them is decided, so only its
+    # presence matters.
+    @spans_text "u0 u5 u8 u9"
+
     defp unresolved(reason, s, e),
       do: %{entity_type: nil, value: "u#{s}", match: "u#{s}", start_pos: s, end_pos: e, confidence: 0.0, resolved: false, unresolved_reason: reason, readings: []}
 
     test "a span with nothing to weigh, or an intent with nothing to say, stays unresolved and says why" do
       spans = [unresolved(:no_measured_reading, 0, 3), unresolved(:below_confidence_floor, 5, 6), unresolved(:insufficient_evidence, 8, 9)]
 
-      no_intent = EntityExtractor.resolve_with_intent(spans, nil, [])
+      no_intent = EntityExtractor.resolve_with_intent(spans, nil, text: @spans_text)
       assert no_intent.entities == []
       assert no_intent.unresolved_spans == spans
 
@@ -217,14 +234,20 @@ defmodule Brain.ML.EntityExtractorPassTwoTest do
              ]
 
       # "question" is no prefix IntentDomains declares.
-      undomained = EntityExtractor.resolve_with_intent(spans, "question.factual", [])
+      undomained = EntityExtractor.resolve_with_intent(spans, "question.factual", text: @spans_text)
       assert List.last(undomained.outcomes).reason == :intent_without_domain
       assert undomained.unresolved_spans == spans
     end
 
     test "anything but an unresolved span raises" do
       assert_raise ArgumentError, ~r/not an unresolved span/, fn ->
-        EntityExtractor.resolve_with_intent([entity("room", 0, 4)], "smarthome.lights.on", [])
+        EntityExtractor.resolve_with_intent([entity("room", 0, 4)], "smarthome.lights.on", text: @spans_text)
+      end
+    end
+
+    test "the text the positions index is required" do
+      assert_raise ArgumentError, ~r/needs :text/, fn ->
+        EntityExtractor.resolve_with_intent([], "smarthome.lights.on", [])
       end
     end
   end

@@ -112,7 +112,7 @@ defmodule Brain.ML.EntityExtractorTest do
       floor = Application.fetch_env!(:brain, :ml)[:entity_confidence_threshold]
 
       for {text, intent, %{unresolved_spans: spans}} <- cases do
-        result = EntityExtractor.resolve_with_intent(spans, intent, [])
+        result = EntityExtractor.resolve_with_intent(spans, intent, text: text)
 
         assert length(result.entities) + length(result.unresolved_spans) == length(spans), text
         assert length(result.outcomes) == length(spans)
@@ -122,6 +122,8 @@ defmodule Brain.ML.EntityExtractorTest do
           assert %{resolved: true, decision: %{resolved_by: {:intent, ^intent}, evidence: evidence}} = entity
           assert map_size(evidence) > 0
           assert entity.confidence >= floor
+          # Scored again with the intent, so it carries the context every decided entity does.
+          assert is_boolean(entity.sentence_initial) and Map.has_key?(entity, :tag) and Map.has_key?(entity, :preceding_tag), text
         end
 
         for %{outcome: outcome} = o <- result.outcomes, outcome in [:resolved, :undecided, :below_confidence_floor] do
