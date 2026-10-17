@@ -15,7 +15,7 @@ defmodule World.Application do
     # rather than with World.Manager's failed start wrapped in the supervisor's.
     :ok = Atlas.Graph.refuse_unscoped_graphs!()
 
-    children = [World.Manager, World.ModelRegistry, World.EntityPromoter]
+    children = [World.Manager, World.EntityPromoter]
 
     opts = [strategy: :one_for_one, name: World.Supervisor]
 
