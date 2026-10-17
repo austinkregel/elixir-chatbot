@@ -65,7 +65,15 @@ defmodule Brain.Analysis.Interpretation do
     }
   end
 
-  @doc "Creates an interpretation from analyzer results, picking the winner.\n"
+  @doc """
+  Creates an interpretation from analyzer results, picking the winner.
+
+  An analyzer that names no intent abstains: it is not an interpretation, so
+  it neither wins over one that names an intent nor waits as an alternative
+  that backtracking could promote. When every analyzer abstains, the
+  interpretation names no intent and has no alternatives. Every result is
+  kept in `analyzer_results`.
+  """
   def from_analyzer_results(text, results) when is_list(results) do
     sorted = Enum.sort_by(results, & &1.calibrated_activation, :desc)
 
@@ -73,7 +81,13 @@ defmodule Brain.Analysis.Interpretation do
       [] ->
         new("unknown", text, 0.0, :structural)
 
-      [winner | runners_up] ->
+      _ ->
+        {winner, runners_up} =
+          case Enum.filter(sorted, &is_binary(&1.intent)) do
+            [named_winner | named_runners_up] -> {named_winner, named_runners_up}
+            [] -> {hd(sorted), []}
+          end
+
         alternatives =
           runners_up
           |> Enum.take(5)
