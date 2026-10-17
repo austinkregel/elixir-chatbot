@@ -6,13 +6,17 @@ defmodule Brain.Analysis.PipelineTopicSimilarityTest do
 
   describe "topic_similarity/3" do
     setup do
-      ensure_started(World.Manager)
+      # Creating a world writes to Atlas (its graphs and its scheduling
+      # driver), in this process.
+      owner = Brain.Test.AtlasSandbox.checkout_allowed!()
+      on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
       setup_world_sandbox()
 
       {:ok, world} = create_test_world("topic_similarity")
 
       :ok =
-        World.Embedder.load_model(world.id, %{
+        Brain.Worlds.Embedder.load_model(world.id, %{
           vocabulary: %{"weather" => 0, "forecast" => 1, "music" => 2, "jazz" => 3},
           idf_weights: %{"weather" => 1.0, "forecast" => 1.0, "music" => 1.0, "jazz" => 1.0}
         })
