@@ -20,8 +20,8 @@ defmodule Brain.EmbeddingCachesTest do
   alias Brain.EmbeddingCaches
   alias Brain.Memory.Store
   alias Brain.Response.{ChunkSegmenter, SemanticFactRetriever, TemplateBlender, TemplateStore}
-  alias World.Embedder
-  alias World.Manager, as: WorldManager
+  alias Brain.Worlds
+  alias Brain.Worlds.Embedder
 
   # A sentence the heuristics classify as :body, so the world's chunk type
   # centroids classify it.
@@ -36,13 +36,6 @@ defmodule Brain.EmbeddingCachesTest do
 
     start_world_test_services()
     setup_world_sandbox()
-
-    eventually(
-      fn -> WorldManager.ready?() end,
-      fn ready -> ready end,
-      50,
-      20
-    )
 
     :ok
   end
@@ -92,7 +85,7 @@ defmodule Brain.EmbeddingCachesTest do
       build_every_cache(world.id, intent)
       counts = cache_counts()
 
-      :ok = WorldManager.destroy(world.id)
+      :ok = Worlds.stop!(world.id)
 
       assert cache_counts() == %{
                fact_indexes: counts.fact_indexes - 1,
