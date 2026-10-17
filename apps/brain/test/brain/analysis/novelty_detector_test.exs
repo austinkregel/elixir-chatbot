@@ -6,7 +6,11 @@ defmodule Brain.Analysis.NoveltyDetectorTest do
 
   describe "maybe_kg_downweight/4" do
     setup do
-      ensure_started(World.Manager)
+      # Creating a world and adding a belief write to Atlas, in this process
+      # and in the allowed workers.
+      owner = Brain.Test.AtlasSandbox.checkout_allowed!()
+      on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
       setup_world_sandbox()
 
       {:ok, with_belief} = create_test_world("novelty_with_belief")
@@ -16,7 +20,7 @@ defmodule Brain.Analysis.NoveltyDetectorTest do
       # utterance and the belief's text embed identically.
       for world <- [with_belief, without_belief] do
         :ok =
-          World.Embedder.load_model(world.id, %{
+          Brain.Worlds.Embedder.load_model(world.id, %{
             vocabulary: %{"dogs" => 0, "animals" => 1},
             idf_weights: %{"dogs" => 1.0, "animals" => 1.0}
           })
