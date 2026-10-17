@@ -4,6 +4,11 @@
 # of persisting. World tests previously ran with no owner at all, so their
 # episodes and graph writes were committed to the shared test database.
 {:ok, _} = Application.ensure_all_started(:atlas)
+
+# The run has the test database to itself, or raises naming the run that has
+# it: two runs on one database hold up each other's writes.
+:ok = Atlas.Repo.claim_test_database!("world")
+
 Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
 
 # A shared owner covers application boot until each test's own owner takes
