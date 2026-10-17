@@ -8,14 +8,10 @@ defmodule Brain.Response.GeneratorMemoryTest do
   use ExUnit.Case, async: false
   import Brain.TestHelpers
 
-  # World.Embedder is in a sibling umbrella app that depends on :brain.
-  # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Embedder}
-
   alias Brain.Memory.{Store, VectorIndex}
   alias Brain.Memory.Types.SemanticFact
   alias Brain.Response.Generator
-  alias World.Embedder, as: WorldEmbedder
+  alias Brain.Worlds.Embedder, as: WorldEmbedder
 
   @words ~w(weather paris sunny rain)
   @model %{vocabulary: @words |> Enum.with_index() |> Map.new(), idf_weights: Map.new(@words, &{&1, 1.0})}
