@@ -151,13 +151,15 @@ config :brain,
   ]
 
 # ============================================================================
-# World App Configuration
+# Worlds Configuration
 # ============================================================================
 
-config :world,
-  # Note: Uses World app's priv directory if not set
-  # Resolved at runtime via Application.app_dir(:world, "priv/training_worlds")
-  training_worlds_path: System.get_env("TRAINING_WORLDS_PATH") || nil
+config :brain,
+  # The directory every world's directory is under (Brain.Worlds.base_path/0):
+  # TRAINING_WORLDS_PATH, or apps/world/priv/training_worlds.
+  training_worlds_path:
+    System.get_env("TRAINING_WORLDS_PATH") ||
+      Path.expand("../apps/world/priv/training_worlds", __DIR__)
 
 # When World.EntityPromoter may suggest an entity for human review. It never
 # adds to the gazetteer itself; a reviewer decides.
