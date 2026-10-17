@@ -38,9 +38,17 @@ defmodule Brain.ML.POSTaggerTest do
       assert e.split == "ud_ewt.test"
       assert is_map(e.confusion) and map_size(e.per_tag) > 0
 
+      # The three EWT splits, and the lexicon the tagger's features read per
+      # token (`Brain.Training.POS.inputs/0`).
       names = Enum.map(model.training.inputs, & &1.name)
-      assert names == ~w(ud_ewt.train.json ud_ewt.dev.json ud_ewt.test.json)
-      assert Enum.all?(model.training.inputs, &(byte_size(&1.sha256) == 64))
+      assert names == ~w(ud_ewt.train.json ud_ewt.dev.json ud_ewt.test.json lexicon)
+
+      # Each split by the SHA-256 of its file; the lexicon by the digest of its
+      # shape and size the tagger records and checks at load
+      # (`Brain.ML.POSTagger.LexicalFeatures.lexicon_digest/0`).
+      {splits, [lexicon]} = Enum.split(model.training.inputs, 3)
+      assert Enum.all?(splits, &(byte_size(&1.sha256) == 64))
+      assert lexicon.sha256 == Brain.ML.POSTagger.LexicalFeatures.lexicon_digest()
     end
 
     test "tags a word by its context, not by the word alone", %{model: model, test_split: test} do
