@@ -24,8 +24,8 @@ defmodule Mix.Tasks.TrainPoincare do
   the embeddings are written to the trained models directory
   (`Brain.ML.Poincare.Embeddings.trained_path/0`), not into any world. A world
   receives retrained embeddings when it is seeded:
-  `mix world.seed_model poincare_embeddings`, or `World.Manager` when it creates
-  the world.
+  `mix world.seed_model poincare_embeddings`, or `Brain.Worlds.create!/2` when
+  the world is created.
   """
 
   use Mix.Task
