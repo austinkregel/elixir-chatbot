@@ -7,8 +7,9 @@ defmodule Brain.ML.EntityModel do
   copy at `<world>/models/entity_model.term` (`path/1`), seeded by copying the
   trained model (`trained_path/0`, where `mix train` writes it):
 
-  - a persistent world is seeded when `World.Manager` creates it, and an existing
-    world, or every world after a retrain, with `mix world.seed_model entity_model`;
+  - a persistent world is seeded when it is created (`Brain.Worlds.create!/2`),
+    and an existing world, or every world after a retrain, with
+    `mix world.seed_model entity_model`;
   - an ephemeral world has no directory, so it is seeded in memory when it is
     created (`seed_in_memory!/1`) and dropped with it (`drop/1`).
 
