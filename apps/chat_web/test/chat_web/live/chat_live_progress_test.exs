@@ -13,7 +13,9 @@ defmodule ChatWeb.ChatLiveProgressTest do
     {:ok, view, _html} = live(conn, "/chat")
 
     # The time zone the form's BrowserTimeZone hook sends with a message, as a
-    # browser in UTC sends it.
+    # browser in UTC sends it. The hook writes it into the form's hidden
+    # time_zone input as the form is submitted, so it is given to
+    # render_submit/2 as the hook's value; form/3 takes only what is typed.
     browser_zone =
       Jason.encode!(%{
         "name" => "Etc/UTC",
@@ -26,8 +28,8 @@ defmodule ChatWeb.ChatLiveProgressTest do
       })
 
     view
-    |> form("#message-form", %{time_zone: browser_zone, input: "Hello there"})
-    |> render_submit()
+    |> form("#message-form", %{input: "Hello there"})
+    |> render_submit(%{time_zone: browser_zone})
 
     # Wait for the processing summary pill to appear (shown inline with user messages)
     html =
