@@ -32,9 +32,7 @@ defmodule Brain.Analysis.Pipeline do
   alias Brain.Lexicon.IntentDomains
   alias Brain.ML.{EntityExtractor, MicroClassifiers, POSTagger, Tokenizer}
 
-  # World.Embedder is in a sibling umbrella app that depends on :brain.
-  @compile {:no_warn_undefined, World.Embedder}
-  alias World.Embedder, as: WorldEmbedder
+  alias Brain.Worlds.Embedder, as: WorldEmbedder
 
   alias Brain.FactDatabase.Integration, as: FactIntegration
   alias Brain.Epistemic.BeliefStore
@@ -1577,7 +1575,7 @@ defmodule Brain.Analysis.Pipeline do
 
   @doc """
   The cosine similarity of the closest of the recent `topics` to the intent's
-  `domain`, both embedded with the world's embedder (`World.Embedder.embed/2`);
+  `domain`, both embedded with the world's embedder (`Brain.Worlds.Embedder.embed/2`);
   0.0 when there are no topics. The domain and every topic are embedded with
   the same vocabulary, so vectors of different lengths raise
   (`FourthWall.Math.cosine_similarity!/2`), as does a world whose embedder
@@ -1600,7 +1598,7 @@ defmodule Brain.Analysis.Pipeline do
 
   # A world's embedding comes from the world's embedder and nowhere else. While
   # the world's vocabulary is being rebuilt this waits for the rebuild to finish
-  # (`World.Embedder.await_ready/2`, which raises naming the world when it does
+  # (`Brain.Worlds.Embedder.await_ready/2`, which raises naming the world when it does
   # not) and embeds then. A world whose embedder has no copy, no vocabulary, or
   # no table raises.
   defp world_embedding!(world_id, text) do
