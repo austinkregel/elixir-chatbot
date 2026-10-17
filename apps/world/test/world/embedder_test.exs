@@ -255,7 +255,7 @@ defmodule World.EmbedderTest do
     end
 
     test "a fact whose evidence episodes are not in the world stops the rebuild, naming it" do
-      {:ok, world} = create_test_world("embedder_rebuild_missing_evidence")
+      {:ok, world} = create_test_world("embedder_rebuild_no_evidence")
 
       for text <- ["the weather in paris is sunny", "is the weather in paris sunny"] do
         {:ok, _id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
