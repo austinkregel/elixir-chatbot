@@ -1,10 +1,6 @@
 defmodule Brain.Memory.Store do
   @moduledoc "Storage layer for the cognitive memory system.\n\nPorted from the Rust cognitive_memory_system MemoryStore.\n\nManages collections of episodic and semantic memories with separate\nvector indices for efficient retrieval. Supports persistence to disk.\n\n## World Scoping\n\nEvery operation on episodes or semantic facts requires a `:world_id` option and\nraises `ArgumentError` without one; no world is assumed. `stats/1` and `clear/1`\ntreat an absent `:world_id` as \"all worlds\".\n\nEpisodes and semantic facts are stored per-world, allowing complete\nisolation between training worlds while sharing the same GenServer.\n"
 
-  # World.Embedder is in a sibling umbrella app that depends on :brain.
-  # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Embedder}
-
   alias Brain.Telemetry
   alias Brain.Memory
   alias Brain.Memory.Types
@@ -12,7 +8,7 @@ defmodule Brain.Memory.Store do
 
   alias Types.{Episode, SemanticFact}
   alias Memory.{Consolidation, VectorIndex}
-  alias World.Embedder, as: WorldEmbedder
+  alias Brain.Worlds.Embedder, as: WorldEmbedder
 
   require Logger
 
@@ -42,7 +38,7 @@ defmodule Brain.Memory.Store do
   Add a new episode to the store.
   The episode is embedded and indexed for similarity search.
 
-  While the world's vocabulary is being rebuilt (`World.Embedder.build_vocabulary/2`)
+  While the world's vocabulary is being rebuilt (`Brain.Worlds.Embedder.build_vocabulary/2`)
   the world cannot embed: the episode is stored without an embedding, and is
   embedded and indexed with the rest of the world's episodes when the rebuild
   finishes (`vocabulary_rebuilt/1`).
@@ -64,7 +60,7 @@ defmodule Brain.Memory.Store do
   is re-embedded the way it was embedded when it was added: a fact with
   evidence episodes gets the mean of their new embeddings, its center; a fact
   with none gets its own text embedded with the rebuilt vocabulary. Each is
-  stored and re-indexed. `World.Embedder` calls it when a rebuild leaves the
+  stored and re-indexed. `Brain.Worlds.Embedder` calls it when a rebuild leaves the
   world's vocabulary ready.
 
   An embedding made with the old vocabulary has the old vector length, and is
@@ -94,7 +90,7 @@ defmodule Brain.Memory.Store do
     GenServer.call(__MODULE__, {:add_episode_direct, episode, world_id})
   end
 
-  @doc "Query for episodes similar to the given text.\nReturns top k episodes with similarity scores.\n\nWhile the world's vocabulary is being rebuilt the query waits for the rebuild\nto finish (`World.Embedder.await_ready/2`), and raises when it fails or does\nnot finish in time.\n\n## Options\n  - world_id: The world to query (required)\n  - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)\n"
+  @doc "Query for episodes similar to the given text.\nReturns top k episodes with similarity scores.\n\nWhile the world's vocabulary is being rebuilt the query waits for the rebuild\nto finish (`Brain.Worlds.Embedder.await_ready/2`), and raises when it fails or does\nnot finish in time.\n\n## Options\n  - world_id: The world to query (required)\n  - rerank: Whether to apply KG entity reranking (default: :auto, respects config; false to skip)\n"
   def query_similar(text, k \\ 5, opts) do
     world_id = world_id!(opts, :query_similar)
     rerank = Keyword.get(opts, :rerank, :auto)
@@ -106,7 +102,7 @@ defmodule Brain.Memory.Store do
 
   # A query embeds its text with the world's vocabulary, so while that
   # vocabulary is being rebuilt it waits for the rebuild to finish
-  # (`World.Embedder.await_ready/2`) and then runs. It waits before it starts,
+  # (`Brain.Worlds.Embedder.await_ready/2`) and then runs. It waits before it starts,
   # because the rebuild re-embeds the world's memory in this server
   # (`vocabulary_rebuilt/1`) and the query asks the server for its tables, and
   # again whenever the embedder answers `{:error, :vocabulary_building}`: a
@@ -249,7 +245,7 @@ defmodule Brain.Memory.Store do
   Query for semantic facts similar to the given text.
 
   While the world's vocabulary is being rebuilt the query waits for the rebuild
-  to finish (`World.Embedder.await_ready/2`), and raises when it fails or does
+  to finish (`Brain.Worlds.Embedder.await_ready/2`), and raises when it fails or does
   not finish in time.
 
   ## Options
