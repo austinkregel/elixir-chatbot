@@ -5,18 +5,17 @@ defmodule Brain.ML.WorldModelFile do
   (`path/2`, under `<world>/models/`), and the checked copy from one to the
   other (`copy!/2`).
 
-  The module that owns a model (`Brain.ML.EntityModel`, `World.Embedder`) reads
-  and checks the file and holds the loaded copy; this only places and copies it.
+  The module that owns a model (`Brain.ML.EntityModel`, `Brain.Worlds.Embedder`)
+  reads and checks the file and holds the loaded copy; this only places and
+  copies it.
   """
 
   alias Brain.Analysis.RunProvenance
 
-  @compile {:no_warn_undefined, World.Persistence}
-
   @doc "Where a world keeps its copy of the model saved as `file_name`."
   @spec path(String.t(), String.t()) :: Path.t()
   def path(world_id, file_name) when is_binary(world_id) and is_binary(file_name) do
-    Path.join([World.Persistence.world_path(world_id), "models", file_name])
+    Path.join([Brain.Worlds.world_path(world_id), "models", file_name])
   end
 
   @doc "Where training writes the model saved as `file_name` that worlds are seeded from."
