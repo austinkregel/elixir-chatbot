@@ -1,11 +1,13 @@
 defmodule World.TrainingWorldTest do
   use World.AtlasCase, async: false
-  import Brain.TestHelpers
+  import Brain.TestHelpers, except: [create_test_world: 1, create_test_world: 2, start_world_test_services: 0]
+  import World.TestWorlds
+
+  alias Brain.Worlds.TypeInferrer
 
   alias World.{
     TrainingWorld,
     EntityDiscoverer,
-    TypeInferrer,
     DocumentIngestor
   }
 
@@ -360,7 +362,7 @@ defmodule World.TrainingWorldTest do
       })
       Process.sleep(50)
       :ok = WorldManager.checkpoint(world.id)
-      world_path = WorldPersistence.world_path(world.id)
+      world_path = Brain.Worlds.world_path(world.id)
       assert File.exists?(world_path)
       WorldManager.destroy(world.id)
       assert {:error, :not_found} = WorldManager.get(world.id)
@@ -372,7 +374,7 @@ defmodule World.TrainingWorldTest do
     test "purge removes persisted world data from disk" do
       {:ok, world} = create_test_world("persistence_purge_test", mode: :persistent)
       :ok = WorldManager.checkpoint(world.id)
-      world_path = WorldPersistence.world_path(world.id)
+      world_path = Brain.Worlds.world_path(world.id)
       assert File.exists?(world_path)
 
       :ok = WorldManager.purge(world.id)
