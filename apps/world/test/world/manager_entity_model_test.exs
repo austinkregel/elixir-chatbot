@@ -10,7 +10,8 @@ defmodule World.ManagerEntityModelTest do
   it raises rather than running on a model the world no longer holds.
   """
   use World.AtlasCase, async: false
-  import Brain.TestHelpers
+  import Brain.TestHelpers, except: [create_test_world: 1, create_test_world: 2, start_world_test_services: 0]
+  import World.TestWorlds
 
   alias Brain.ML.EntityModel
   alias World.Manager, as: WorldManager
@@ -43,7 +44,7 @@ defmodule World.ManagerEntityModelTest do
 
     test "destroying it drops its loaded model" do
       {:ok, world} = create_test_world("entity_model_persistent_destroy", mode: :persistent)
-      on_exit(fn -> File.rm_rf!(World.Persistence.world_path(world.id)) end)
+      on_exit(fn -> File.rm_rf!(Brain.Worlds.world_path(world.id)) end)
 
       assert %{tag_vocabulary: _} = EntityModel.loaded!(world.id)
 
