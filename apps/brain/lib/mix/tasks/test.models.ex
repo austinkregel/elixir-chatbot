@@ -31,10 +31,10 @@ defmodule Mix.Tasks.Test.Models do
   ## The test world
 
   The suite runs in a real world, `default`, under the test environment's world
-  directory (`World.Persistence.base_path/0`). That world reads its own copy of
+  directory (`Brain.Worlds.base_path/0`). That world reads its own copy of
   each world-scoped model, so after promoting, this seeds the world with the
   promoted `entity_model.term` (`Brain.ML.EntityModel`), `embedder.term`
-  (`World.Embedder`), `poincare_embeddings.term` (`Brain.ML.Poincare.Embeddings`)
+  (`Brain.Worlds.Embedder`), `poincare_embeddings.term` (`Brain.ML.Poincare.Embeddings`)
   and `triple_scorer.term` (`Brain.ML.KnowledgeGraph.TripleScorer`).
 
   ## What is not promoted here
@@ -86,9 +86,6 @@ defmodule Mix.Tasks.Test.Models do
   use Mix.Task
 
   alias Brain.Analysis.RunProvenance
-
-  # World.Embedder is in a sibling umbrella app that depends on :brain.
-  @compile {:no_warn_undefined, World.Embedder}
 
   @requirements ["app.config"]
 
@@ -152,7 +149,7 @@ defmodule Mix.Tasks.Test.Models do
     Mix.Tasks.TrainSlotTypePreferences.start!([:telemetry, :nx, :exla], [])
 
     Brain.ML.EntityModel.seed!(@test_world_id)
-    World.Embedder.seed!(@test_world_id)
+    Brain.Worlds.Embedder.seed!(@test_world_id)
     Brain.ML.Poincare.Embeddings.seed!(@test_world_id)
     Brain.ML.KnowledgeGraph.TripleScorer.seed!(@test_world_id)
 
@@ -160,7 +157,7 @@ defmodule Mix.Tasks.Test.Models do
     Mix.shell().info("  copied    #{Enum.count(results, &(&1 == :copied))}")
     Mix.shell().info("  unchanged #{Enum.count(results, &(&1 == :unchanged))}")
     Mix.shell().info("  seeded world #{@test_world_id}: #{Brain.ML.EntityModel.path(@test_world_id)}")
-    Mix.shell().info("  seeded world #{@test_world_id}: #{World.Embedder.path(@test_world_id)}")
+    Mix.shell().info("  seeded world #{@test_world_id}: #{Brain.Worlds.Embedder.path(@test_world_id)}")
     Mix.shell().info("  seeded world #{@test_world_id}: #{Brain.ML.Poincare.Embeddings.path(@test_world_id)}")
     Mix.shell().info("  seeded world #{@test_world_id}: #{Brain.ML.KnowledgeGraph.TripleScorer.path(@test_world_id)}")
     Mix.shell().info("")
