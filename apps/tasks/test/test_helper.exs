@@ -13,7 +13,7 @@ try do
   {:ok, _} = Application.ensure_all_started(:brain)
   {:ok, _} = Application.ensure_all_started(:tasks)
 
-  Brain.Test.AtlasSandbox.allow_for_test_owner!(bootstrap_owner)
+  Brain.Test.AtlasSandbox.allow_for_test_owner!(bootstrap_owner, [World.Manager])
   Brain.Test.Database.verify_prepared!()
 after
   Ecto.Adapters.SQL.Sandbox.stop_owner(bootstrap_owner)
