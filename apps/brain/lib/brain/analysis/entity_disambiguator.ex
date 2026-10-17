@@ -1,15 +1,11 @@
 defmodule Brain.Analysis.EntityDisambiguator do
   @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **Candidate readings**: chosen by `Brain.Analysis.EntityTypeScorer` from how the word is used, how it was typed, the tag of the word before it, and the context's learned likelihood of each reading (`Brain.Analysis.SlotTypePreferences`)\n- **POS tags**: What part of speech precedes/follows the entity (introduction patterns)\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **ChunkProfile**: Domain from feature-vector classification, whose slot types, ranked by their learned weights (`Brain.Analysis.SlotTypePreferences`), widen an ambiguous-type entity's candidates\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
 
-  # World.TypeInferrer is in a sibling umbrella app that depends on :brain.
-  # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.TypeInferrer}
-
   alias Brain.Analysis
   require Logger
 
   alias Analysis.{ChunkProfile, EntityTypeScorer, TypeHierarchy}
-  alias World.TypeInferrer
+  alias Brain.Worlds.TypeInferrer
 
   @external_resource Path.join(:code.priv_dir(:brain), "analysis/entity_types.json")
   @ambiguous_types (
