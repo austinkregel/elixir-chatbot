@@ -7,12 +7,13 @@ defmodule World.EmbedderTest do
   # A rebuild reads the world's episodes from Atlas and writes their
   # embeddings back, inside this test's sandbox transaction (`World.AtlasCase`).
   use World.AtlasCase, async: false
-  import Brain.TestHelpers
+  import Brain.TestHelpers, except: [create_test_world: 1, create_test_world: 2, start_world_test_services: 0]
+  import World.TestWorlds
 
   alias Brain.Memory.Store
   alias Brain.Memory.Types.SemanticFact
   alias Brain.Memory.VectorIndex
-  alias World.Embedder
+  alias Brain.Worlds.Embedder
   alias World.Manager, as: WorldManager
 
   setup do
