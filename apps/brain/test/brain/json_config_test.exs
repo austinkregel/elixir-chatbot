@@ -36,12 +36,23 @@ defmodule Brain.JsonConfigTest do
   end
 
   describe "speech_act_intent_map.json" do
-    test "contains default key" do
+    # A speech act the map does not name determines no intent
+    # (`Brain.Analysis.Pipeline`): there is no "default" entry standing in a
+    # label for "no intent", and every intent it names is a registered one.
+    test "maps speech acts only to registered intents, with no default" do
       path = Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
       {:ok, data} = path |> File.read!() |> Jason.decode()
 
-      assert Map.has_key?(data, "default")
-      assert is_binary(data["default"])
+      {:ok, registry} =
+        Path.join(:code.priv_dir(:brain), "analysis/intent_registry.json") |> File.read!() |> Jason.decode()
+
+      assert map_size(data) > 0
+      refute Map.has_key?(data, "default")
+
+      for {speech_act, intent} <- data do
+        assert is_binary(intent)
+        assert Map.has_key?(registry, intent), "#{speech_act} maps to #{intent}, which is not registered"
+      end
     end
   end
 
