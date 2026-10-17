@@ -1,19 +1,15 @@
 defmodule World.Manager do
-  @moduledoc "Manages training world lifecycle - creation, destruction, checkpointing.\n\nThis GenServer maintains the registry of active training worlds and\ncoordinates their data isolation while sharing computational processes.\n"
+  @moduledoc "Manages training world lifecycle - creation, destruction, checkpointing.\n\nThis GenServer maintains the registry of active training worlds and\ncoordinates their data isolation while sharing computational processes.\n\nEach world it holds runs in brain as one process tree (`Brain.Worlds`), which\nthis server drives: a world it creates is created there and seeded by copy\n(`Brain.Worlds.create!/2`), one it loads is started there\n(`Brain.Worlds.start!/2`), and one it destroys or purges is stopped there\n(`Brain.Worlds.stop!/1`). What a world's turns learn for this server to record\n(entity candidates and world events) arrives as brain's reports\n(`Brain.Worlds.subscribe_reports/0`).\n"
 
-  alias Brain.EmbeddingCaches
   alias Brain.Epistemic.{BeliefStore, JTMS}
-  alias Brain.KnowledgeStore
-  alias Brain.ML.{EntityModel, Gazetteer}
-  alias Brain.ML.KnowledgeGraph.TripleScorer
-  alias Brain.ML.Poincare.Embeddings, as: PoincareEmbeddings
+  alias Brain.ML.Gazetteer
   alias Brain.Memory.Store, as: MemoryStore
   alias Brain.Services.{Dispatcher, LocalScheduler}
+  alias Brain.Worlds
+  alias Brain.Worlds.EntityCandidate
   use GenServer
   require Logger
 
-  alias World.Embedder, as: WorldEmbedder
-  alias World.EntityCandidate
   alias World.TrainingWorld
   alias World.Events, as: WorldEvents
   alias World.Metrics, as: WorldMetrics
@@ -39,7 +35,7 @@ defmodule World.Manager do
 
   # Written in the caller, after the server has created the world: a failure
   # raises here rather than crashing this server, whose restart would drop
-  # every other world's runtime state and the embedder tables it owns.
+  # every other world it holds.
   defp assign_local_scheduling!(world_id) do
     case Dispatcher.assign_scheduling_driver(world_id, LocalScheduler) do
       :ok ->
@@ -51,11 +47,12 @@ defmodule World.Manager do
     end
   end
 
-  # A world's graphs are refused while unscoped graphs exist
+  # A world's graphs, created in this server when its tree starts in brain
+  # (`Brain.Worlds.start!/2`), are refused while unscoped graphs exist
   # (`Atlas.Graph.ensure_world_graphs!/1`). The refusal is raised here, in the
   # caller, before the call: raised inside this server it would crash it, and
-  # its restart would drop every world's runtime state and the embedder tables
-  # it owns, then fail again in `init/1` while loading the persisted worlds.
+  # its restart would drop every world it holds, then fail again in `init/1`
+  # while loading the persisted worlds.
   defp refuse_unscoped_graphs_in_caller! do
     :ok = Atlas.Graph.refuse_unscoped_graphs!()
   end
@@ -99,7 +96,7 @@ defmodule World.Manager do
   #
   # It runs in the caller, before this server drops the world: a failure
   # raises there, rather than crashing this server, whose restart would drop
-  # every other world's runtime state and the embedder tables it owns.
+  # every other world it holds.
   defp purge_world_atlas_data!(world_id) do
     :ok = MemoryStore.clear(world_id: world_id)
     :ok = BeliefStore.clear(world_id)
@@ -228,12 +225,13 @@ defmodule World.Manager do
   @doc """
   Adds an entity candidate to a world's candidate pool.
 
-  The attributes are validated into a `World.EntityCandidate` here, in the
-  caller's process, before the cast. That placement is deliberate: this is a
-  cast, so raising inside the handler would take the Manager down with it, and
-  it is the one boundary every producer passes through -- two of the five live
-  in `:brain`, which cannot reference a `World` struct without inverting the
-  umbrella dependency.
+  The attributes are validated into a `Brain.Worlds.EntityCandidate` here, in
+  the caller's process, before the cast. That placement is deliberate: this is
+  a cast, so raising inside the handler would take the Manager down with it.
+  The producers in `:brain` cannot call this app, which depends on them; they
+  report their candidates instead (`Brain.Worlds.report_candidate!/2`), built
+  the same way in their own process, and this server records a reported
+  candidate as it records one added here.
 
   Raises `ArgumentError` on an incomplete candidate rather than storing one. A
   candidate with no `:context` used to reach `EntityPromoter` and kill it with a
@@ -304,6 +302,65 @@ defmodule World.Manager do
     end
   end
 
+  @doc "Returns training worlds status: the worlds held, their metrics and candidates, and how many are persisted.\n"
+  def training_worlds_status do
+    if Process.whereis(__MODULE__) do
+      try do
+        worlds = list_worlds()
+
+        world_summaries =
+          Enum.map(worlds, fn world ->
+            metrics =
+              case get_metrics(world.id) do
+                {:ok, m} -> WorldMetrics.summary(m)
+                _ -> nil
+              end
+
+            candidates_count = length(get_candidates(world.id, limit: 1000))
+
+            %{
+              id: world.id,
+              name: world.name,
+              mode: world.mode,
+              created_at: world.created_at,
+              metrics: metrics,
+              candidates_count: candidates_count
+            }
+          end)
+
+        persisted_count =
+          try do
+            WorldPersistence.list_persisted_worlds() |> length()
+          catch
+            _, _ -> 0
+          end
+
+        %{
+          manager_ready: ready?(),
+          active_worlds: length(worlds),
+          persisted_worlds: persisted_count,
+          worlds: world_summaries,
+          checked_at: DateTime.utc_now()
+        }
+      catch
+        :exit, _ ->
+          default_training_worlds_status()
+      end
+    else
+      default_training_worlds_status()
+    end
+  end
+
+  defp default_training_worlds_status do
+    %{
+      manager_ready: false,
+      active_worlds: 0,
+      persisted_worlds: 0,
+      worlds: [],
+      checked_at: DateTime.utc_now()
+    }
+  end
+
   @doc "Reloads persisted worlds from disk.\n\nUseful when worlds have been saved by another process (e.g., mix task)\nand you want the running server to pick them up.\n"
   def reload_persisted_worlds do
     refuse_unscoped_graphs_in_caller!()
@@ -318,12 +375,22 @@ defmodule World.Manager do
   @impl true
   def init(_opts) do
     create_tables()
-    # The worlds' embedders live in a table this process owns, so they last as
-    # long as the worlds do.
-    WorldEmbedder.init()
+    :ok = Worlds.subscribe_reports()
     do_load_persisted_worlds()
+    stop_unheld_world_trees()
     Logger.info("WorldManager started")
     {:ok, %{initialized: true}}
+  end
+
+  # A world's tree in brain outlives a restart of this server, which forgets
+  # every world it does not load again from disk (an ephemeral one). Such a
+  # world's tree is stopped, so brain runs exactly the worlds held here.
+  defp stop_unheld_world_trees do
+    for world_id <- Worlds.list(), :ets.lookup(@ets_worlds, world_id) == [] do
+      :ok = Worlds.stop!(world_id)
+    end
+
+    :ok
   end
 
   defp do_load_persisted_worlds do
@@ -340,7 +407,7 @@ defmodule World.Manager do
           [] ->
             case WorldPersistence.load(world_id) do
               {:ok, data} ->
-                Atlas.Graph.ensure_world_graphs!(world_id)
+                :ok = Worlds.start!(world_id, data.world.mode)
                 :ets.insert(@ets_worlds, {world_id, data.world})
                 :ets.insert(@ets_worlds, {{:metrics, world_id}, data.metrics})
                 :ets.insert(@ets_candidates, {world_id, data.candidates})
@@ -381,8 +448,6 @@ defmodule World.Manager do
   def handle_call({:create_world, name, opts}, _from, state) do
     world = TrainingWorld.new(name, opts)
     metrics = WorldMetrics.new()
-    # Each world has its own graphs of every per-world kind (`Atlas.Graph`).
-    Atlas.Graph.ensure_world_graphs!(world.id)
     :ets.insert(@ets_worlds, {world.id, world})
     :ets.insert(@ets_worlds, {{:metrics, world.id}, metrics})
     :ets.insert(@ets_candidates, {world.id, []})
@@ -421,20 +486,10 @@ defmodule World.Manager do
       end
     end
 
-    # A world starts with its own copy of each trained world-scoped model; an
-    # ephemeral world has no directory, so its copies are held in memory.
-    if world.mode == :persistent do
-      EntityModel.seed!(world.id)
-      WorldEmbedder.seed!(world.id)
-      PoincareEmbeddings.seed!(world.id)
-      TripleScorer.seed!(world.id)
-    else
-      EntityModel.seed_in_memory!(world.id)
-      WorldEmbedder.seed_in_memory!(world.id)
-      PoincareEmbeddings.seed_in_memory!(world.id)
-      TripleScorer.seed_in_memory!(world.id)
-      :ok = KnowledgeStore.keep_in_memory(world.id)
-    end
+    # The world's tree in brain, with its graphs and its own copy of each
+    # trained world-scoped model; an ephemeral world has no directory, so its
+    # copies are held in memory.
+    :ok = Worlds.create!(world.id, world.mode)
 
     Logger.info("Created training world", %{id: world.id, name: name, mode: world.mode})
     {:reply, {:ok, world}, state}
@@ -557,7 +612,7 @@ defmodule World.Manager do
   def handle_call({:load_world, world_id}, _from, state) do
     case WorldPersistence.load(world_id) do
       {:ok, data} ->
-        Atlas.Graph.ensure_world_graphs!(world_id)
+        :ok = Worlds.start!(world_id, data.world.mode)
         :ets.insert(@ets_worlds, {world_id, data.world})
         :ets.insert(@ets_worlds, {{:metrics, world_id}, data.metrics})
         :ets.insert(@ets_candidates, {world_id, data.candidates})
@@ -625,14 +680,37 @@ defmodule World.Manager do
 
   @impl true
   def handle_cast({:record_event, world_id, event_type, data, opts}, state) do
-    event = WorldEvents.new(world_id, event_type, data, opts)
-    append_event(world_id, event)
-    maybe_emit_telemetry(world_id, event)
+    record_world_event(world_id, event_type, data, opts)
     {:noreply, state}
   end
 
   @impl true
   def handle_cast({:add_candidate, world_id, candidate}, state) do
+    record_candidate(world_id, candidate)
+    {:noreply, state}
+  end
+
+  # Brain's reports (`Brain.Worlds.report_candidate!/2`, `report_event/3`),
+  # recorded as the casts above record theirs.
+  @impl true
+  def handle_info({:world_entity_candidate, world_id, %EntityCandidate{} = candidate}, state) do
+    record_candidate(world_id, candidate)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:world_event, world_id, event_type, data}, state) do
+    record_world_event(world_id, event_type, data, [])
+    {:noreply, state}
+  end
+
+  defp record_world_event(world_id, event_type, data, opts) do
+    event = WorldEvents.new(world_id, event_type, data, opts)
+    append_event(world_id, event)
+    maybe_emit_telemetry(world_id, event)
+  end
+
+  defp record_candidate(world_id, candidate) do
     case :ets.lookup(@ets_candidates, world_id) do
       [{^world_id, candidates}] ->
         candidate_value = Map.get(candidate, :value)
@@ -665,7 +743,7 @@ defmodule World.Manager do
         :ok
     end
 
-    {:noreply, state}
+    :ok
   end
 
   defp create_tables do
@@ -768,7 +846,7 @@ defmodule World.Manager do
     max_age_hours = Keyword.get(opts, :max_age_hours, 24)
     exclude = Keyword.get(opts, :exclude, ["default"])
 
-    base_path = WorldPersistence.base_path()
+    base_path = Worlds.base_path()
 
     if File.exists?(base_path) do
       case File.ls(base_path) do
@@ -863,11 +941,7 @@ defmodule World.Manager do
     :ets.delete(@ets_candidates, world_id)
     :ets.delete(@ets_events, world_id)
     Gazetteer.destroy_world_overlay(world_id)
-    EntityModel.drop(world_id)
-    WorldEmbedder.clear(world_id)
-    :ok = EmbeddingCaches.forget_world(world_id)
-    PoincareEmbeddings.drop(world_id)
-    TripleScorer.drop(world_id)
-    :ok = KnowledgeStore.drop_world(world_id)
+    # The world's tree in brain, and what is loaded for it there.
+    :ok = Worlds.stop!(world_id)
   end
 end
