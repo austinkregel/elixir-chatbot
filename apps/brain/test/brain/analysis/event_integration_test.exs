@@ -78,7 +78,6 @@ defmodule Brain.Analysis.EventIntegrationTest do
   describe "Memory integration" do
     # Episodes are written to a test world of their own, removed afterwards.
     setup do
-      ensure_started(World.Manager)
       setup_world_sandbox()
       {:ok, world} = create_test_world("events")
       %{world_id: world.id}
