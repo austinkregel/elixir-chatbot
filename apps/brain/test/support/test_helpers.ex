@@ -122,10 +122,9 @@ this is typically a no-op, but some tests call it directly as a safety check.
     TestWorldSandbox.create_test_world(name, opts)
   end
 
-  @doc "Starts test services including the WorldManager for world-related tests.\n"
+  @doc "Starts test services for world-related tests. Worlds' trees run in the brain application (`Brain.Worlds`), which `start_test_services/0` starts.\n"
   def start_world_test_services do
     start_test_services()
-    ensure_started(World.Manager)
     :ok
   end
 
