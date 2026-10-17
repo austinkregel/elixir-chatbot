@@ -85,7 +85,7 @@ defmodule Brain.Services.SystemStatus do
 
   @impl true
   def enrich(_intent, _slots, _credentials, world_id) do
-    health = safe_get_health_indicators()
+    health = safe_get_health_indicators(world_id)
     memory = safe_get_memory_status()
     models = safe_get_ml_summary()
 
@@ -100,7 +100,7 @@ defmodule Brain.Services.SystemStatus do
        ml_models_summary: models,
        memory_summary: memory,
        services_summary: safe_get_services_summary(world_id),
-       categories_summary: safe_get_categories_summary()
+       categories_summary: safe_get_categories_summary(world_id)
      }}
   end
 
@@ -117,8 +117,8 @@ defmodule Brain.Services.SystemStatus do
   # Data Fetchers (with graceful fallbacks)
   # ============================================================================
 
-  defp safe_get_health_indicators do
-    Brain.SystemStatus.get_health_indicators()
+  defp safe_get_health_indicators(world_id) do
+    Brain.SystemStatus.get_health_indicators(world_id)
   rescue
     _ ->
       %{
@@ -173,8 +173,8 @@ defmodule Brain.Services.SystemStatus do
     _ -> "unavailable"
   end
 
-  defp safe_get_categories_summary do
-    genservers = Brain.SystemStatus.get_all_genservers_status()
+  defp safe_get_categories_summary(world_id) do
+    genservers = Brain.SystemStatus.get_all_genservers_status(world_id)
     categories = Map.get(genservers, :categories, %{})
 
     categories
