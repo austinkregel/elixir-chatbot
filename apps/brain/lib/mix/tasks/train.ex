@@ -50,14 +50,14 @@ defmodule Mix.Tasks.Train do
 
   The TF-IDF bundle is written to the trained models directory
   (`:brain, :ml, :models_path`, or priv/ml_models/), where
-  `Brain.ML.EntityModel.trained_path/0` and `World.Embedder.trained_path/0`
+  `Brain.ML.EntityModel.trained_path/0` and `Brain.Worlds.Embedder.trained_path/0`
   read the files worlds are seeded from. The Poincare embeddings and the KG
   triple scorer are written there too (`Brain.ML.Poincare.Embeddings.trained_path/0`,
   `Brain.ML.KnowledgeGraph.TripleScorer.trained_path/0`); the triple scorer is
   also trained on the `--world` world's beliefs, so its trained copy reflects
   that world's beliefs (`mix train_kg_lstm`). Training does not seed:
   a world receives the retrained models through `mix world.seed_model`, or from
-  `World.Manager` when it creates the world.
+  `Brain.Worlds.create!/2` when the world is created.
 
   ## Training order (9 stages)
 
@@ -92,10 +92,6 @@ defmodule Mix.Tasks.Train do
       mix train --world star_trek           # Run the world-reading stages in star_trek
       mix train --list                      # List stages
   """
-
-  # World.Embedder is in a sibling umbrella app that depends on :brain.
-  # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Embedder}
 
   alias Brain.ML.Trainer
   alias Brain.ML.ModelStore
@@ -826,7 +822,7 @@ defmodule Mix.Tasks.Train do
   # world; seeding copies the trained files into one.
   defp trained_models_path do
     entity_dir = Path.dirname(Brain.ML.EntityModel.trained_path())
-    embedder_dir = Path.dirname(World.Embedder.trained_path())
+    embedder_dir = Path.dirname(Brain.Worlds.Embedder.trained_path())
 
     unless entity_dir == embedder_dir do
       Mix.raise(
