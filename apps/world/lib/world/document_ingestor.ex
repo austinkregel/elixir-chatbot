@@ -7,7 +7,8 @@ defmodule World.DocumentIngestor do
   require Logger
 
   alias ML.{Tokenizer, POSTagger}
-  alias World.{EntityDiscoverer, TypeInferrer}
+  alias Brain.Worlds.TypeInferrer
+  alias World.EntityDiscoverer
   alias World.Manager, as: WorldManager
   alias World.Metrics, as: WorldMetrics
   @code_extensions ~w(.c .h .cpp .cc .cxx .hpp .java .cs .php .py .pyw .rb .ex .exs .go)
