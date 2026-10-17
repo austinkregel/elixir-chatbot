@@ -60,7 +60,7 @@
       ]
     },
     "found_one_with_time": {
-      "when": {"alarm_count": 1},
+      "when": {"alarm_status": "set", "alarm_count": 1},
       "requires_enrichment": ["alarm_times"],
       "templates": [
         "You have one alarm, set for $alarm_times.",
@@ -68,7 +68,7 @@
       ]
     },
     "found_one": {
-      "when": {"alarm_count": 1},
+      "when": {"alarm_status": "set", "alarm_count": 1},
       "requires_enrichment": [],
       "templates": [
         "You have one alarm set.",
@@ -76,7 +76,7 @@
       ]
     },
     "found_several_with_times": {
-      "when": {"alarm_count": {"min": 2}},
+      "when": {"alarm_status": "set", "alarm_count": {"min": 2}},
       "requires_enrichment": ["alarm_count", "alarm_times"],
       "templates": [
         "You have $alarm_count alarms, set for $alarm_times.",
@@ -84,7 +84,7 @@
       ]
     },
     "found_several": {
-      "when": {"alarm_count": {"min": 2}},
+      "when": {"alarm_status": "set", "alarm_count": {"min": 2}},
       "requires_enrichment": ["alarm_count"],
       "templates": [
         "You have $alarm_count alarms set.",
