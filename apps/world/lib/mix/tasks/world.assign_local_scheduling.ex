@@ -3,7 +3,7 @@ defmodule Mix.Tasks.World.AssignLocalScheduling do
 
   @moduledoc """
   Stores `Brain.Services.LocalScheduler` as the scheduling driver of every
-  world persisted under `World.Persistence.base_path/0`
+  world persisted under `Brain.Worlds.base_path/0`
   (`World.Persistence.list_persisted_worlds/0`) that has no scheduling driver.
 
       mix world.assign_local_scheduling
@@ -29,7 +29,7 @@ defmodule Mix.Tasks.World.AssignLocalScheduling do
     {:ok, _} = Application.ensure_all_started(:atlas)
 
     worlds = Enum.map(Persistence.list_persisted_worlds(), & &1.id)
-    if worlds == [], do: Mix.raise("world.assign_local_scheduling: no worlds under #{Persistence.base_path()}")
+    if worlds == [], do: Mix.raise("world.assign_local_scheduling: no worlds under #{Brain.Worlds.base_path()}")
 
     Enum.each(worlds, fn world_id ->
       case Dispatcher.scheduling_driver(world_id) do
