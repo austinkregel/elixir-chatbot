@@ -4,9 +4,7 @@ defmodule Brain.Knowledge.Corroborator do
   alias Brain.Knowledge.Types
   require Logger
 
-  # World.Embedder is in a sibling umbrella app that depends on :brain.
-  @compile {:no_warn_undefined, World.Embedder}
-  alias World.Embedder, as: WorldEmbedder
+  alias Brain.Worlds.Embedder, as: WorldEmbedder
   alias Types.{Finding, ReviewCandidate, Hypothesis, Investigation}
   alias Brain.Telemetry
   @similarity_threshold 0.7
@@ -60,7 +58,7 @@ defmodule Brain.Knowledge.Corroborator do
     end
   end
 
-  @doc "Checks if two claims are semantically similar in the world's embedder.\n\nReturns {:ok, similarity_score} where score is 0.0-1.0. While the world's\nvocabulary is being rebuilt from its episodes, this waits for the rebuild to\nfinish (`World.Embedder.await_ready/2`) and compares the claims then. A world\nwhose embedder cannot embed, or whose rebuild does not finish, raises.\n"
+  @doc "Checks if two claims are semantically similar in the world's embedder.\n\nReturns {:ok, similarity_score} where score is 0.0-1.0. While the world's\nvocabulary is being rebuilt from its episodes, this waits for the rebuild to\nfinish (`Brain.Worlds.Embedder.await_ready/2`) and compares the claims then. A world\nwhose embedder cannot embed, or whose rebuild does not finish, raises.\n"
   @spec compare_claims(String.t(), String.t(), String.t()) :: {:ok, float()}
   def compare_claims(world_id, claim1, claim2)
       when is_binary(world_id) and is_binary(claim1) and is_binary(claim2) do
@@ -230,7 +228,7 @@ defmodule Brain.Knowledge.Corroborator do
 
   # A world's embedding comes from the world's embedder and nowhere else. While
   # the world's vocabulary is being rebuilt this waits for the rebuild to finish
-  # (`World.Embedder.await_ready/2`, which raises naming the world when it does
+  # (`Brain.Worlds.Embedder.await_ready/2`, which raises naming the world when it does
   # not) and embeds then. A world whose embedder has no copy, no vocabulary, or
   # no table raises.
   defp world_embedding!(world_id, text) do
