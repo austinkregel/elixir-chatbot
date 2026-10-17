@@ -41,6 +41,11 @@ defmodule Mix.Tasks.Test.Prepare do
 
       {:ok, _} = Application.ensure_all_started(:atlas)
 
+      # Emptying the tables under a run that is using them would fail it, so
+      # this takes the database the way a run does (`mix test` then keeps the
+      # claim in this same VM), and raises naming a run that has it.
+      :ok = Atlas.Repo.claim_test_database!("test.prepare")
+
       Mix.Task.run("atlas.bootstrap_age")
       Atlas.Repo.query!("CREATE SCHEMA IF NOT EXISTS atlas_test", [])
 
