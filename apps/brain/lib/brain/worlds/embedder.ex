@@ -160,7 +160,10 @@ defmodule Brain.Worlds.Embedder do
   `{:ok, :kept}` when the world has no episodes to rebuild from and keeps the
   vocabulary it had. A world with no episodes and no vocabulary returns
   `{:error, :no_data}`; one whose vocabulary was never loaded reads its seeded
-  copy, raising when it has none (`loaded!/1`).
+  copy, raising when it has none (`loaded!/1`). Episodes that weigh no word
+  above zero (each word in the vocabulary occurs in every episode, or no word
+  occurs often enough to be in it) would embed every text as the zero vector,
+  so a rebuild from them raises, naming the world and why.
 
   When the vocabulary is ready again, the world's embedding caches are
   forgotten (`Brain.EmbeddingCaches.forget_world/1`), and every episode and
@@ -568,6 +571,7 @@ defmodule Brain.Worlds.Embedder do
         |> Enum.into(%{})
 
       vocab_size = map_size(vocabulary)
+      weighs_some_word!(world_id, episode_count, idf_weights)
 
       set_state(world_id, %{
         ready: true,
@@ -584,6 +588,31 @@ defmodule Brain.Worlds.Embedder do
 
       vocabulary_ready!(world_id)
       {:ok, vocab_size}
+    end
+  end
+
+  # A vocabulary that weighs no word above zero embeds every text as the zero
+  # vector, whose similarity to anything is 0.0: the world's memory could
+  # never be searched by meaning. A word's weight is log(episodes / episodes
+  # it occurs in), so it is zero for a word in every episode; a vocabulary
+  # holds only the words that occur at least `@min_word_frequency` times.
+  # Either way the rebuilt vocabulary is unusable, and the rebuild fails
+  # naming why.
+  defp weighs_some_word!(world_id, episode_count, idf_weights) do
+    cond do
+      idf_weights == %{} ->
+        raise "Brain.Worlds.Embedder: world #{inspect(world_id)}'s #{episode_count} episode(s) give it an empty " <>
+                "vocabulary: no word in them occurs at least #{@min_word_frequency} times, so every text would " <>
+                "embed as the zero vector"
+
+      Enum.all?(idf_weights, fn {_word, idf} -> idf == 0.0 end) ->
+        raise "Brain.Worlds.Embedder: world #{inspect(world_id)}'s #{episode_count} episode(s) weigh none of " <>
+                "its #{map_size(idf_weights)} vocabulary words above zero: each word occurs in every episode " <>
+                "(#{idf_weights |> Map.keys() |> Enum.sort() |> inspect()}), so every text would embed as the " <>
+                "zero vector"
+
+      true ->
+        :ok
     end
   end
 
