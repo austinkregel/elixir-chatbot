@@ -4,6 +4,11 @@
 # of persisting. The lexicon the pages read is seeded by
 # `MIX_ENV=test mix test.prepare`, which the root `mix test` alias runs first.
 {:ok, _} = Application.ensure_all_started(:atlas)
+
+# The run has the test database to itself, or raises naming the run that has
+# it: two runs on one database hold up each other's writes.
+:ok = Atlas.Repo.claim_test_database!("chat_web")
+
 Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
 
 # A shared owner covers application boot until each test's ConnCase owner
