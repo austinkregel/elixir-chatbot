@@ -92,7 +92,6 @@ defmodule Brain.Knowledge.LearningTriggersTest do
 
   describe "a restart" do
     setup do
-      ensure_started(World.Manager)
       setup_world_sandbox()
     end
 
@@ -113,7 +112,6 @@ defmodule Brain.Knowledge.LearningTriggersTest do
 
   describe "set_auto_learning_world/2" do
     setup do
-      ensure_started(World.Manager)
       setup_world_sandbox()
     end
 
@@ -176,9 +174,8 @@ defmodule Brain.Knowledge.LearningTriggersTest do
 
     @tag :capture_log
     test "a triggered session raises naming the auto-learning world when it is not loaded" do
-      ensure_started(World.Manager)
       unloaded = "test_unloaded_auto_learning_#{System.unique_integer([:positive])}"
-      assert {:error, :not_found} = World.Manager.get(unloaded)
+      assert {:error, :not_found} = Brain.Worlds.fetch(unloaded)
 
       Atlas.Settings.put!(LearningTriggers.auto_learning_world_setting(), unloaded)
       name = :"learning_triggers_unloaded_#{System.unique_integer([:positive])}"
