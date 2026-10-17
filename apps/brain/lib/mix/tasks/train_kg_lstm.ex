@@ -42,8 +42,8 @@ defmodule Mix.Tasks.TrainKgLstm do
   from it receives a scorer trained on that world's beliefs. Pass
   `--no-include-beliefs` for a trained copy that reflects no world. A world
   receives a retrained scorer when it is seeded:
-  `mix world.seed_model triple_scorer`, or `World.Manager` when it creates the
-  world.
+  `mix world.seed_model triple_scorer`, or `Brain.Worlds.create!/2` when the
+  world is created.
 
   Predicates are normalized with the relation coverage of the trained scorer
   this run replaces, when there is one, so a verb lemma that scorer was trained
