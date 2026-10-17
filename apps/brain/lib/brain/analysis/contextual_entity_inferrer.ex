@@ -21,7 +21,7 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
 
   The four scoring signals are all data-driven (no string matching):
 
-  - **TypeInferrer**: Learned context patterns from World.TypeInferrer
+  - **TypeInferrer**: Learned context patterns from Brain.Worlds.TypeInferrer
   - **POS context**: POS tag sequence around the entity
   - **Syntactic role**: Position relative to the verb (object of imperative verb)
   - **Atlas context**: Entity neighborhood in knowledge_graph
@@ -30,9 +30,8 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
   alias Brain.Analysis.{TypeHierarchy, ChunkProfile, SlotDetector}
   alias Brain.Lattice
   alias Brain.ML.{POSTagger, Tokenizer}
+  alias Brain.Worlds.TypeInferrer
   require Logger
-
-  @compile {:no_warn_undefined, [World.TypeInferrer, World.Manager]}
 
   @doc """
   Run contextual type narrowing on entities using intent context.
@@ -50,8 +49,9 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
     replaces the current intent only when it scores higher than this; with
     `nil` there is nothing to compare against, so only the current intent's
     own hypothesis is applied and the intent never changes.
-  - `:side_effects` -- required boolean. Narrowings teach `World.TypeInferrer`
-    and become `World.Manager` entity candidates only when `true`; an
+  - `:side_effects` -- required boolean. Narrowings teach `Brain.Worlds.TypeInferrer`
+    and are reported as the world's entity candidates
+    (`Brain.Worlds.report_candidate!/2`) only when `true`; an
     evaluation or measurement run passes `false` and writes nothing.
   """
   def infer(text, entities, intent, intent_details, opts) do
@@ -261,22 +261,18 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
     tokens = Tokenizer.tokenize_words(text)
     tags = Enum.map(pos_tags, fn {_token, tag} -> tag end)
 
-    if Code.ensure_loaded?(World.TypeInferrer) and function_exported?(World.TypeInferrer, :infer_type, 4) do
-      try do
-        case World.TypeInferrer.infer_type(entity_value, tokens, tags, world_id) do
-          {inferred_type, confidence} when is_binary(inferred_type) and confidence > 0.3 ->
-            if inferred_type == narrowed_type, do: confidence, else: 0.0
+    try do
+      case TypeInferrer.infer_type(entity_value, tokens, tags, world_id) do
+        {inferred_type, confidence} when is_binary(inferred_type) and confidence > 0.3 ->
+          if inferred_type == narrowed_type, do: confidence, else: 0.0
 
-          _ ->
-            0.0
-        end
-      rescue
-        _ -> 0.0
-      catch
-        :exit, _ -> 0.0
+        _ ->
+          0.0
       end
-    else
-      0.0
+    rescue
+      _ -> 0.0
+    catch
+      :exit, _ -> 0.0
     end
   end
 
@@ -585,39 +581,33 @@ defmodule Brain.Analysis.ContextualEntityInferrer do
         if narrowing.score > 0.0 do
           entity_value = narrowing.entity[:value] || narrowing.entity[:match] || ""
 
-          if Code.ensure_loaded?(World.TypeInferrer) and
-               function_exported?(World.TypeInferrer, :learn_from_known_entity, 4) do
-            try do
-              World.TypeInferrer.learn_from_known_entity(
-                narrowing.narrowed_type, tokens, tags, world_id
-              )
-            rescue
-              _ -> :ok
-            catch
-              :exit, _ -> :ok
-            end
+          try do
+            TypeInferrer.learn_from_known_entity(
+              narrowing.narrowed_type, tokens, tags, world_id
+            )
+          rescue
+            _ -> :ok
+          catch
+            :exit, _ -> :ok
           end
 
-          if Code.ensure_loaded?(World.Manager) and
-               function_exported?(World.Manager, :add_candidate, 2) and
-               Process.whereis(World.Manager) != nil do
-            try do
-              World.Manager.add_candidate(world_id, %{
-                value: entity_value,
-                inferred_type: narrowing.narrowed_type,
-                confidence: narrowing.score,
-                # The text the narrowing was observed in. Omitting it is what
-                # killed World.EntityPromoter with a KeyError on every scan --
-                # this is the producer the crash traced to. Measured 2026-09-23.
-                context: text,
-                source: :type_narrowing,
-                original_type: narrowing.original_type
-              })
-            rescue
-              _ -> :ok
-            catch
-              :exit, _ -> :ok
-            end
+          try do
+            Brain.Worlds.report_candidate!(world_id, %{
+              value: entity_value,
+              inferred_type: narrowing.narrowed_type,
+              confidence: narrowing.score,
+              # The text the narrowing was observed in. Omitting it is what
+              # killed the world's entity promoter with a KeyError on every
+              # scan -- this is the producer the crash traced to. Measured
+              # 2026-09-23.
+              context: text,
+              source: :type_narrowing,
+              original_type: narrowing.original_type
+            })
+          rescue
+            _ -> :ok
+          catch
+            :exit, _ -> :ok
           end
         end
       end)
