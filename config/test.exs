@@ -167,8 +167,8 @@ config :brain,
   response_connectors_file:
     Path.expand("../apps/brain/test/fixtures/response_connectors.json", __DIR__)
 
-# World app test configuration
-config :world,
+# Test worlds' directories (Brain.Worlds.base_path/0)
+config :brain,
   # Enable test world sandbox for isolated test worlds
   test_world_sandbox: true,
   training_worlds_path: "test/training_worlds"
