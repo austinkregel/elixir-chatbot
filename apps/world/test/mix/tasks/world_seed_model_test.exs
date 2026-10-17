@@ -6,7 +6,8 @@ defmodule Mix.Tasks.World.SeedModelTest do
   named world holding a byte-identical copy of the trained model.
   """
   use World.AtlasCase, async: false
-  import Brain.TestHelpers
+  import Brain.TestHelpers, except: [create_test_world: 1, create_test_world: 2, start_world_test_services: 0]
+  import World.TestWorlds
 
   alias Brain.ML.EntityModel
   alias Mix.Tasks.World.SeedModel
@@ -86,7 +87,7 @@ defmodule Mix.Tasks.World.SeedModelTest do
   test "seeds the triple scorer in a VM that starts nothing else" do
     world_id = "test_seed_fresh_vm_#{System.unique_integer([:positive])}"
     path = Brain.ML.KnowledgeGraph.TripleScorer.path(world_id)
-    on_exit(fn -> File.rm_rf!(World.Persistence.world_path(world_id)) end)
+    on_exit(fn -> File.rm_rf!(Brain.Worlds.world_path(world_id)) end)
 
     code = ~s|Mix.Tasks.World.SeedModel.run(["triple_scorer", "--world", #{inspect(world_id)}])|
 
