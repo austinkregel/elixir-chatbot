@@ -24,6 +24,12 @@ try do
 
   Brain.Test.AtlasSandbox.allow_for_test_owner!(bootstrap_owner)
 
+  # The suite runs in the "default" world, whose copies `mix test.models`
+  # seeds. Brain runs a world only once its tree is started; nothing that
+  # manages worlds runs here, so the suite starts it, as a manager starts a
+  # world it loads.
+  :ok = Brain.Worlds.start!("default", :persistent)
+
   # The gazetteer loads its sources in init/1, so it must already be loaded
   # the moment the application has started. Checked here, before any test can
   # reload or modify the shared table and mask a regression.
