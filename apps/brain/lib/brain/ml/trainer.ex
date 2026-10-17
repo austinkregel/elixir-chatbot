@@ -31,7 +31,7 @@ defmodule Brain.ML.Trainer do
           optional(:sentiment_labels) => non_neg_integer()
         }
 
-  @doc "Main training function that loads data, trains all models, and saves them.\nReturns {:ok, stats} or {:error, reason}.\n\n## Options\n  - models_path: Override the default models output path\n"
+  @doc "Main training function that loads data, trains all models, and saves them.\nReturns {:ok, stats} or {:error, reason}.\n\n## Options\n  - models_path: Override the default models output path\n  - rows: The NER gold rows the entity model trains on, as `train_entity_model/2` takes them\n"
   def train_and_save(opts \\ []) do
     models_path =
       Keyword.get(opts, :models_path) ||
@@ -53,7 +53,7 @@ defmodule Brain.ML.Trainer do
 
     case result do
       :ok ->
-        stats = train_entity_model(stats, models_path: models_path)
+        stats = train_entity_model(stats, Keyword.put(Keyword.take(opts, [:rows]), :models_path, models_path))
         stats = train_sentiment_classifier(stats, models_path: models_path)
 
         Logger.info("Training pipeline completed", stats)
