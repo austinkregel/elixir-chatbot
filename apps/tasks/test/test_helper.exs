@@ -3,6 +3,11 @@
 # rolled back, and a write from a process holding no connection raises instead
 # of persisting.
 {:ok, _} = Application.ensure_all_started(:atlas)
+
+# The run has the test database to itself, or raises naming the run that has
+# it: two runs on one database hold up each other's writes.
+:ok = Atlas.Repo.claim_test_database!("tasks")
+
 Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
 
 # A shared owner covers application boot until each test's own owner takes
