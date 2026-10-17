@@ -66,17 +66,21 @@ defmodule Brain.Response.ChunkSegmenterTest do
     test "a chunk's embedding is the world's embedding of its sentence" do
       [chunk] = ChunkSegmenter.segment(@world_id, "The weather forecast shows sunny skies.")
 
-      assert {:ok, embedding} = World.Embedder.embed(@world_id, "The weather forecast shows sunny skies.")
+      assert {:ok, embedding} = Brain.Worlds.Embedder.embed(@world_id, "The weather forecast shows sunny skies.")
       assert chunk.embedding == embedding
     end
 
     test "embeds in the named world's embedder" do
-      ensure_started(World.Manager)
+      # Creating a world writes to Atlas (its graphs and its scheduling
+      # driver), in this process.
+      owner = Brain.Test.AtlasSandbox.checkout_allowed!()
+      on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
       setup_world_sandbox()
       {:ok, world} = create_test_world("chunk_segmenter_embedder")
 
       :ok =
-        World.Embedder.load_model(world.id, %{
+        Brain.Worlds.Embedder.load_model(world.id, %{
           vocabulary: %{"weather" => 0, "sunny" => 1},
           idf_weights: %{"weather" => 1.0, "sunny" => 1.0}
         })
@@ -88,8 +92,6 @@ defmodule Brain.Response.ChunkSegmenterTest do
     end
 
     test "raises for a world that holds no embedder" do
-      # World.Manager holds the table world embedders are loaded into.
-      ensure_started(World.Manager)
       world_id = "test_chunk_segmenter_no_embedder_#{System.unique_integer([:positive])}"
 
       assert_raise RuntimeError, ~r/world #{inspect(world_id)} has no embedder vocabulary/, fn ->
