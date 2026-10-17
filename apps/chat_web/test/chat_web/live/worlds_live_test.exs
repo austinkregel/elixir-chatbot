@@ -13,7 +13,7 @@ defmodule ChatWeb.WorldsLiveTest do
   setup do
     ensure_pubsub_started()
     ensure_started(World.Manager)
-    ensure_started(World.ModelRegistry)
+    ensure_started(Brain.Worlds.ModelRegistry)
 
     # A world the page lists. `World.Manager.list_worlds/0` leaves out worlds
     # marked as test worlds, so this one is created without that mark. Its id
