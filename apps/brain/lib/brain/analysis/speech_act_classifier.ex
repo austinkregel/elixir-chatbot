@@ -362,7 +362,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
   # The query is embedded by the world's embedder, inside `Store.query_similar/3`.
   # It runs in the caller and is not cut short: while the world's vocabulary is
   # being rebuilt it waits for the rebuild, whose own bound raises
-  # (`World.Embedder.await_ready/2`). A query that fails raises here.
+  # (`Brain.Worlds.Embedder.await_ready/2`). A query that fails raises here.
   defp query_memory_for_classification(text, world_id) do
     if Process.whereis(Brain.Memory.Store) == nil do
       raise "SpeechActClassifier: the memory voter needs Brain.Memory.Store, which is not running"
