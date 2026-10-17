@@ -13,7 +13,9 @@ defmodule ChatWeb.ChatLiveTest do
 
   # The time zone the message form's BrowserTimeZone hook sends with a
   # message (assets/js/app.js), as a browser in UTC sends it: no changes of
-  # offset from 2000 to 2100.
+  # offset from 2000 to 2100. The hook writes it into the form's hidden
+  # time_zone input as the form is submitted, so a test gives it to
+  # render_submit/2 as the hook's value; form/3 takes only what a person types.
   @browser_zone Jason.encode!(%{
                   "name" => "Etc/UTC",
                   "at" => DateTime.to_unix(~U[2026-10-14 12:00:00Z], :millisecond),
@@ -76,8 +78,8 @@ defmodule ChatWeb.ChatLiveTest do
 
       # Send a message
       view
-      |> form("#message-form", %{time_zone: @browser_zone, input: "Hello, Echo!"})
-      |> render_submit()
+      |> form("#message-form", %{input: "Hello, Echo!"})
+      |> render_submit(%{time_zone: @browser_zone})
 
       # The conversation is created and named in the header, the message is
       # shown, and the assistant's reply follows.
@@ -95,8 +97,8 @@ defmodule ChatWeb.ChatLiveTest do
 
       # Send a message to create conversation
       view
-      |> form("#message-form", %{time_zone: @browser_zone, input: "Test message"})
-      |> render_submit()
+      |> form("#message-form", %{input: "Test message"})
+      |> render_submit(%{time_zone: @browser_zone})
 
       html = render(view)
       assert html =~ "Conversation"
@@ -108,8 +110,8 @@ defmodule ChatWeb.ChatLiveTest do
 
       # Create conversation
       view
-      |> form("#message-form", %{time_zone: @browser_zone, input: "Test message"})
-      |> render_submit()
+      |> form("#message-form", %{input: "Test message"})
+      |> render_submit(%{time_zone: @browser_zone})
 
       # Ending a conversation writes shared state, so the trigger opens the
       # confirm panel and only its confirm button ends the conversation.
@@ -134,8 +136,8 @@ defmodule ChatWeb.ChatLiveTest do
 
       # Send message
       view
-      |> form("#message-form", %{time_zone: @browser_zone, input: "Hello there!"})
-      |> render_submit()
+      |> form("#message-form", %{input: "Hello there!"})
+      |> render_submit(%{time_zone: @browser_zone})
 
       # Should show user message
       assert has_element?(view, @user_bubble, "Hello there!")
@@ -150,8 +152,8 @@ defmodule ChatWeb.ChatLiveTest do
 
       # Send message
       view
-      |> form("#message-form", %{time_zone: @browser_zone, input: "Test input"})
-      |> render_submit()
+      |> form("#message-form", %{input: "Test input"})
+      |> render_submit(%{time_zone: @browser_zone})
 
       # Input should be cleared
       assert has_element?(view, "#message-input[value='']")
@@ -177,10 +179,10 @@ defmodule ChatWeb.ChatLiveTest do
 
       assert has_element?(view, "#message-form button[type='submit'][disabled]")
 
-      view |> form("#message-form", %{time_zone: @browser_zone, input: "   "}) |> render_change()
+      view |> form("#message-form", %{input: "   "}) |> render_change()
       assert has_element?(view, "#message-form button[type='submit'][disabled]")
 
-      view |> form("#message-form", %{time_zone: @browser_zone, input: "hi"}) |> render_change()
+      view |> form("#message-form", %{input: "hi"}) |> render_change()
       refute has_element?(view, "#message-form button[type='submit'][disabled]")
     end
 
@@ -208,7 +210,7 @@ defmodule ChatWeb.ChatLiveTest do
       render_submit(view, "send_message", %{"input" => "  "})
       assert has_element?(view, @error_caption, @blank_message_error)
 
-      view |> form("#message-form", %{time_zone: @browser_zone, input: "hello"}) |> render_change()
+      view |> form("#message-form", %{input: "hello"}) |> render_change()
       refute has_element?(view, @error_caption)
       refute has_element?(view, "#message-input[aria-invalid]")
     end
@@ -222,8 +224,8 @@ defmodule ChatWeb.ChatLiveTest do
       {:ok, view, _html} = live(conn, "/chat")
 
       view
-      |> form("#message-form", %{time_zone: @browser_zone, input: "Hello there!"})
-      |> render_submit()
+      |> form("#message-form", %{input: "Hello there!"})
+      |> render_submit(%{time_zone: @browser_zone})
 
       "/chat/" <> conversation_id = assert_patch(view)
       await_assistant_reply(view)
@@ -247,8 +249,8 @@ defmodule ChatWeb.ChatLiveTest do
       {:ok, view, _html} = live(conn, "/chat")
 
       view
-      |> form("#message-form", %{time_zone: @browser_zone, input: "Hello there!"})
-      |> render_submit()
+      |> form("#message-form", %{input: "Hello there!"})
+      |> render_submit(%{time_zone: @browser_zone})
 
       "/chat/" <> conversation_id = assert_patch(view)
       await_assistant_reply(view)
@@ -288,8 +290,8 @@ defmodule ChatWeb.ChatLiveTest do
       {:ok, view, _html} = live(conn, "/chat")
 
       view
-      |> form("#message-form", %{time_zone: @browser_zone, input: "Hello there!"})
-      |> render_submit()
+      |> form("#message-form", %{input: "Hello there!"})
+      |> render_submit(%{time_zone: @browser_zone})
 
       assert has_element?(view, ~s(#{@user_bubble} time[phx-hook="LocalTime"][data-format="time"][datetime]))
     end
