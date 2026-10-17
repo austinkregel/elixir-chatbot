@@ -7,7 +7,8 @@ defmodule World.ContextTest do
   use World.AtlasCase, async: false
 
   alias Brain.ML.Gazetteer
-  import Brain.TestHelpers
+  import Brain.TestHelpers, except: [create_test_world: 1, create_test_world: 2, start_world_test_services: 0]
+  import World.TestWorlds
 
   # Backward-compatible aliases
   alias World.Context, as: WorldContext
