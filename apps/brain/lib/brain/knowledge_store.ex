@@ -1,11 +1,7 @@
 defmodule Brain.KnowledgeStore do
   @moduledoc "Knowledge store for persistent storage of learned facts about users, pets, rooms, devices, etc.\nProvides functions to store and retrieve structured knowledge.\n\n## World Scoping\n\nSupports both legacy persona-based storage and new world-scoped storage.\nWorld-scoped knowledge is stored in `priv/training_worlds/{world_id}/knowledge.json`;\nan ephemeral world has no directory, and its knowledge is held in memory\n(`keep_in_memory/1`).\nPersona-based knowledge remains in `priv/knowledge/{persona}.json`.\n"
 
-  # World.Persistence is in a sibling umbrella app that depends on :brain.
-  # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Persistence}
-
-  alias World.Persistence
+  alias Brain.Worlds
   use GenServer
   require Logger
 
@@ -41,8 +37,8 @@ defmodule Brain.KnowledgeStore do
 
   @doc """
   Holds a world's knowledge in this process only, starting empty. An
-  ephemeral world has no directory, so `World.Manager` calls this when it
-  creates one; its knowledge lasts as long as the world, until `drop_world/1`.
+  ephemeral world has no directory, so `Brain.Worlds.create!/2` calls this when
+  one is created; its knowledge lasts as long as the world, until `drop_world/1`.
   Every other world's knowledge is its `knowledge.json`.
   """
   def keep_in_memory(world_id) when is_binary(world_id) and world_id != "" do
@@ -569,7 +565,7 @@ defmodule Brain.KnowledgeStore do
 
   @impl true
   def handle_call(:list_knowledge_worlds, _from, state) do
-    worlds_dir = Persistence.base_path()
+    worlds_dir = Worlds.base_path()
 
     on_disk =
       if File.dir?(worlds_dir) do
@@ -624,7 +620,7 @@ defmodule Brain.KnowledgeStore do
   end
 
   defp get_world_knowledge_path(world_id) do
-    Path.join(Persistence.world_path(world_id), "knowledge.json")
+    Path.join(Worlds.world_path(world_id), "knowledge.json")
   end
 
   # A world held in memory (`keep_in_memory/1`) is read from state, every
