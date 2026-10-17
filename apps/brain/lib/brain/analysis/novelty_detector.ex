@@ -14,9 +14,7 @@ defmodule Brain.Analysis.NoveltyDetector do
 
   alias Brain.ML.Tokenizer
 
-  # World.Embedder is in a sibling umbrella app that depends on :brain.
-  @compile {:no_warn_undefined, World.Embedder}
-  alias World.Embedder, as: WorldEmbedder
+  alias Brain.Worlds.Embedder, as: WorldEmbedder
 
   require Logger
 
@@ -257,7 +255,7 @@ defmodule Brain.Analysis.NoveltyDetector do
 
   # A world's embedding comes from the world's embedder and nowhere else. While
   # the world's vocabulary is being rebuilt this waits for the rebuild to finish
-  # (`World.Embedder.await_ready/2`, which raises naming the world when it does
+  # (`Brain.Worlds.Embedder.await_ready/2`, which raises naming the world when it does
   # not) and embeds then. A world whose embedder has no copy, no vocabulary, or
   # no table raises.
   defp world_embedding!(world_id, text) do
