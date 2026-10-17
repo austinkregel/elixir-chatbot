@@ -118,10 +118,15 @@ defmodule Brain.Lexicon.OwnedFactsTest do
   end
 
   describe "owned_facts/2" do
+    # The isolated store loads the facts seeded in Atlas when it starts, so the
+    # word's facts are those seeded ones and the one put here.
     test "returns the facts with their source", %{store: store} do
+      seeded = Lexicon.owned_facts("happy", store: store)
       {:ok, _} = UserDefined.put_fact(relation("happy", "synonym", "chuffed"), store)
 
-      assert [fact] = Lexicon.owned_facts("happy", store: store)
+      facts = Lexicon.owned_facts("happy", store: store)
+      assert [fact] = facts -- seeded
+      assert length(facts) == length(seeded) + 1
       assert fact.source == "seed:domain"
       assert fact.ref == "chuffed"
     end
