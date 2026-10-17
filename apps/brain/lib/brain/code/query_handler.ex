@@ -47,7 +47,7 @@ defmodule Brain.Code.QueryHandler do
       :not_found ->
         {:ok,
          "I couldn't find `#{symbol_name}` in the analyzed code. " <>
-           "Make sure the codebase has been analyzed with `World.DocumentIngestor.ingest_codebase/2`."}
+           "Make sure the codebase has been ingested into this world first."}
     end
   end
 
