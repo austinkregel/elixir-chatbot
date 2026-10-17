@@ -11,7 +11,8 @@ defmodule World.ManagerGraphModelsTest do
   them raises rather than answering from models the world no longer holds.
   """
   use World.AtlasCase, async: false
-  import Brain.TestHelpers
+  import Brain.TestHelpers, except: [create_test_world: 1, create_test_world: 2, start_world_test_services: 0]
+  import World.TestWorlds
 
   alias Brain.ML.KnowledgeGraph.TripleScorer
   alias Brain.ML.Poincare.Embeddings
@@ -54,7 +55,7 @@ defmodule World.ManagerGraphModelsTest do
 
     test "destroying it drops its loaded models" do
       {:ok, world} = create_test_world("graph_models_persistent_destroy", mode: :persistent)
-      on_exit(fn -> File.rm_rf!(World.Persistence.world_path(world.id)) end)
+      on_exit(fn -> File.rm_rf!(Brain.Worlds.world_path(world.id)) end)
 
       assert %{embeddings: %Nx.Tensor{}} = Embeddings.loaded!(world.id)
       assert %{model: %Axon{}} = TripleScorer.loaded!(world.id)
