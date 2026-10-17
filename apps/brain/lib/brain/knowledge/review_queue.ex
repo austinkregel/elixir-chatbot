@@ -772,8 +772,7 @@ defmodule Brain.Knowledge.ReviewQueue do
 
   # Only what a human reviewer approved teaches the gazetteer; an
   # auto-approval never does. Whatever type the reviewer approved is learned,
-  # in the finding's world's overlay, which World.Manager persists with the
-  # world.
+  # in the finding's world's overlay, which is checkpointed with the world.
   defp teach_gazetteer(world_id, %ReviewCandidate{status: :approved, finding: finding}) do
     entity = finding.entity
     type = finding.entity_type
