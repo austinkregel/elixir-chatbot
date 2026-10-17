@@ -16,7 +16,11 @@ defmodule Brain.Response.WorldEmbeddingIndexesTest do
   alias Brain.Response.{SemanticFactRetriever, TemplateBlender, TemplateStore}
 
   setup do
-    ensure_started(World.Manager)
+    # Creating a world and reading its facts go to Atlas, in this process and
+    # in the allowed workers.
+    owner = Brain.Test.AtlasSandbox.checkout_allowed!()
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
     setup_world_sandbox()
 
     {:ok, world_a} = create_test_world("response_indexes_a")
