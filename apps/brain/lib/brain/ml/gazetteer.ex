@@ -147,6 +147,11 @@ defmodule Brain.ML.Gazetteer do
   in that world only, and the overlay's reading of a name comes before the
   base gazetteer's.
 
+  A token whose key is empty once trimmed (a punctuation mark, as
+  `Brain.ML.EntityExtractor.gazetteer_key/1` keys one) adds nothing to a
+  phrase, so no span starts or ends on one: in "weather in Austin ?" the span
+  is "Austin", not "Austin ?".
+
   ## Options
     - `:world_id` (required) - the world whose overlay is consulted; a missing
       or malformed world raises `ArgumentError`
@@ -1111,27 +1116,34 @@ defmodule Brain.ML.Gazetteer do
     find_all_spans_raw(tokens, world_id, start_idx + 1, token_count, new_acc)
   end
 
+  # A span starting or ending on an empty token would be matched by the phrase
+  # of the tokens inside it, since joining and trimming drops the empty one;
+  # its extent would cover a token the phrase does not hold.
   defp find_all_matches_at(tokens, world_id, start_idx, max_span, acc) do
-    if max_span < 1 do
+    if max_span < 1 or empty_token?(Enum.at(tokens, start_idx)) do
       acc
     else
       max_span..1//-1
       |> Enum.reduce(acc, fn span_len, inner_acc ->
         span_tokens = Enum.slice(tokens, start_idx, span_len)
-        phrase = Enum.join(span_tokens, " ")
-        normalized = normalize(phrase)
 
-        case span_infos(normalized, world_id) do
-          [] ->
-            inner_acc
+        if empty_token?(List.last(span_tokens)) do
+          inner_acc
+        else
+          case span_infos(normalize(Enum.join(span_tokens, " ")), world_id) do
+            [] ->
+              inner_acc
 
-          entity_infos ->
-            end_idx = start_idx + span_len - 1
-            [{start_idx, end_idx, entity_infos} | inner_acc]
+            entity_infos ->
+              end_idx = start_idx + span_len - 1
+              [{start_idx, end_idx, entity_infos} | inner_acc]
+          end
         end
       end)
     end
   end
+
+  defp empty_token?(token) when is_binary(token), do: normalize(token) == ""
 
   # A phrase's readings in a world: the world's overlay first, then the base
   # gazetteer's readings of other types (`merge_entity_types/2`, as
