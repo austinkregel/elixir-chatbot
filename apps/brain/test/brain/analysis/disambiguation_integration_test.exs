@@ -383,11 +383,20 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       person_info = %{entity_type: "person", value: "Austin"}
       location_info = %{entity_type: "location", value: "Austin"}
 
+      # The sentence the tags are of, and Austin's offsets in it: the scorer
+      # reads from them whether the entity starts the sentence. Like every
+      # entity EntityExtractor gives the disambiguator, it carries a type and
+      # a confidence -- its first reading's -- which the scorer replaces with
+      # the selected reading's.
+      text = "What is the weather in Austin"
+
       entity = %{
         value: "Austin",
         match: "Austin",
-        start_pos: 20,
-        end_pos: 26,
+        start_pos: 23,
+        end_pos: 29,
+        entity_type: "person",
+        confidence: 0.5,
         types: [person_info, location_info]
       }
 
@@ -404,6 +413,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
         discourse: %{indicators: []},
         speech_act: %{category: :directive, sub_type: :question},
         intent: "weather.query",
+        original_text: text,
         world_id: @world_id
       }
 
