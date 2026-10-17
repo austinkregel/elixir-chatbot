@@ -109,21 +109,23 @@ defmodule Brain.Knowledge.CorroboratorTest do
     end
 
     test "compares in the named world's embedder" do
-      ensure_started(World.Manager)
+      # Creating a world writes to Atlas (its graphs and its scheduling
+      # driver), in this process.
+      owner = Brain.Test.AtlasSandbox.checkout_allowed!()
+      on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
       setup_world_sandbox()
       {:ok, world} = create_test_world("corroborator_embedder")
 
       # The world's vocabulary knows only "paris", so both claims embed as the
       # same vector. Token overlap ({paris, capital} against {paris, city})
       # would be 1/3.
-      :ok = World.Embedder.load_model(world.id, %{vocabulary: %{"paris" => 0}, idf_weights: %{"paris" => 1.0}})
+      :ok = Brain.Worlds.Embedder.load_model(world.id, %{vocabulary: %{"paris" => 0}, idf_weights: %{"paris" => 1.0}})
 
       assert {:ok, 1.0} = Corroborator.compare_claims(world.id, "Paris capital", "Paris city")
     end
 
     test "raises for a world that holds no embedder" do
-      # World.Manager holds the table world embedders are loaded into.
-      ensure_started(World.Manager)
       world_id = "test_corroborator_no_embedder_#{System.unique_integer([:positive])}"
 
       assert_raise RuntimeError, ~r/world #{inspect(world_id)} has no embedder vocabulary/, fn ->
@@ -134,17 +136,23 @@ defmodule Brain.Knowledge.CorroboratorTest do
 
   describe "test_hypotheses/3" do
     test "records the evidence in the named world's embedder and concludes" do
-      ensure_started(World.Manager)
+      # Creating a world writes to Atlas (its graphs and its scheduling
+      # driver), in this process.
+      owner = Brain.Test.AtlasSandbox.checkout_allowed!()
+      on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
       setup_world_sandbox()
-      {:ok, paris_world} = create_test_world("corroborator_hypotheses_paris_only")
-      {:ok, capital_city_world} = create_test_world("corroborator_hypotheses_capital_and_city")
+      # Short names: a world's graph names carry its id, and AGE allows a graph
+      # name 63 bytes ("knowledge_graph__" and the id).
+      {:ok, paris_world} = create_test_world("corroborator_paris_only")
+      {:ok, capital_city_world} = create_test_world("corroborator_capital_city")
 
       # In the first world "Paris capital" and "Paris city" are the same
       # vector; in the second they are orthogonal.
-      :ok = World.Embedder.load_model(paris_world.id, %{vocabulary: %{"paris" => 0}, idf_weights: %{"paris" => 1.0}})
+      :ok = Brain.Worlds.Embedder.load_model(paris_world.id, %{vocabulary: %{"paris" => 0}, idf_weights: %{"paris" => 1.0}})
 
       :ok =
-        World.Embedder.load_model(capital_city_world.id, %{
+        Brain.Worlds.Embedder.load_model(capital_city_world.id, %{
           vocabulary: %{"capital" => 0, "city" => 1},
           idf_weights: %{"capital" => 1.0, "city" => 1.0}
         })
