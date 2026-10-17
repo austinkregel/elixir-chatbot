@@ -10,14 +10,14 @@ defmodule Mix.Tasks.World.SeedModel do
       mix world.seed_model entity_model --world default --world ehi7tgxYguk
       mix world.seed_model entity_model --all
 
-  `--all` seeds every world persisted under `World.Persistence.base_path/0`
+  `--all` seeds every world persisted under `Brain.Worlds.base_path/0`
   (`World.Persistence.list_persisted_worlds/0`).
   One of `--world` or `--all` is required.
 
   ## Models
 
   - `entity_model` — `Brain.ML.EntityModel`, from `Brain.ML.EntityModel.trained_path/0`.
-  - `embedder` — `World.Embedder`, from `World.Embedder.trained_path/0`.
+  - `embedder` — `Brain.Worlds.Embedder`, from `Brain.Worlds.Embedder.trained_path/0`.
   - `poincare_embeddings` — `Brain.ML.Poincare.Embeddings`, from
     `Brain.ML.Poincare.Embeddings.trained_path/0`.
   - `triple_scorer` — `Brain.ML.KnowledgeGraph.TripleScorer`, from
@@ -31,7 +31,8 @@ defmodule Mix.Tasks.World.SeedModel do
   alias Brain.ML.EntityModel
   alias Brain.ML.KnowledgeGraph.TripleScorer
   alias Brain.ML.Poincare.Embeddings, as: PoincareEmbeddings
-  alias World.Embedder
+  alias Brain.Worlds
+  alias Brain.Worlds.Embedder
   alias World.Persistence
 
   @requirements ["app.config"]
@@ -66,7 +67,7 @@ defmodule Mix.Tasks.World.SeedModel do
         {_, true} -> Mix.raise("world.seed_model: pass --world or --all, not both")
       end
 
-    if worlds == [], do: Mix.raise("world.seed_model: no worlds under #{Persistence.base_path()}")
+    if worlds == [], do: Mix.raise("world.seed_model: no worlds under #{Worlds.base_path()}")
 
     # Seeding reads the model it copies: the triple scorer is rebuilt as an
     # Axon model on the EXLA backend, which reports to telemetry. Only those
