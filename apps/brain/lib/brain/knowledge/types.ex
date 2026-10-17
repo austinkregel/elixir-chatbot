@@ -378,9 +378,7 @@ defmodule Brain.Knowledge.Types do
     alias Brain.Lattice
     alias Brain.Lattice.Candidate, as: LatticeCandidate
 
-    # World.Embedder is in a sibling umbrella app that depends on :brain.
-    @compile {:no_warn_undefined, World.Embedder}
-    alias World.Embedder, as: WorldEmbedder
+    alias Brain.Worlds.Embedder, as: WorldEmbedder
 
     @type status :: :planning | :gathering_evidence | :evaluating | :concluded
     @type conclusion :: :hypotheses_supported | :hypotheses_falsified | :inconclusive | :mixed
@@ -461,7 +459,7 @@ defmodule Brain.Knowledge.Types do
     @doc """
     Records evidence and associates it with relevant hypotheses, comparing each
     finding's claim with each hypothesis's in `world_id`'s embedder
-    (`World.Embedder`). While the world's vocabulary is being rebuilt from its
+    (`Brain.Worlds.Embedder`). While the world's vocabulary is being rebuilt from its
     episodes this waits for the rebuild to finish; raises when it does not, and
     when the world cannot embed.
     """
@@ -651,7 +649,7 @@ defmodule Brain.Knowledge.Types do
 
     # A world's embedding comes from the world's embedder and nowhere else. While
     # the world's vocabulary is being rebuilt nothing can be embedded in it, so
-    # this waits for the rebuild to finish (`World.Embedder.await_ready/2`, which
+    # this waits for the rebuild to finish (`Brain.Worlds.Embedder.await_ready/2`, which
     # raises naming the world when it does not) and embeds then. Any other
     # reason the world cannot embed raises naming the world.
     defp world_embedding!(world_id, text) do
