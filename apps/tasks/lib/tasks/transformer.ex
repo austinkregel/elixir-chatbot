@@ -31,7 +31,7 @@ defmodule Tasks.Transformer do
           entity_candidates: [map()]
         }
 
-  @doc "Transforms a task file into training data.\n\nAutomatically selects the appropriate converter based on task category.\n\n## Options\n  - `:max_instances` - Maximum instances to process (default: 1000)\n  - `:include_examples` - Include positive/negative examples (default: true)\n  - `:extract_entities` - Run entity extraction on text (default: true)\n"
+  @doc "Transforms a task file into training data.\n\nAutomatically selects the appropriate converter based on task category.\n\n## Options\n  - `:max_instances` - Maximum instances to process (default: 1000)\n  - `:include_examples` - Include positive/negative examples (default: true)\n  - `:extract_entities` - Run entity extraction on text (default: true)\n  - `:world_id` - the world entities are extracted in. Required wherever\n    extraction runs: for training samples unless `:extract_entities` is false,\n    and always for the answer entity candidates of Question Answering tasks.\n    Absent there raises.\n"
   @spec transform_task(String.t(), keyword()) :: {:ok, transform_result()} | {:error, term()}
   def transform_task(file_path, opts \\ []) do
     max_instances = Keyword.get(opts, :max_instances, 1000)
@@ -83,13 +83,14 @@ defmodule Tasks.Transformer do
     {:ok, merged}
   end
 
-  @doc "Converts a text to a training sample with tokenization, POS tagging, and entity extraction.\n"
+  @doc "Converts a text to a training sample with tokenization, POS tagging, and entity extraction.\n\nUnless `:extract_entities` is false, `opts` must carry `:world_id`, the world entities are extracted in.\n"
   @spec text_to_training_sample(String.t(), String.t(), String.t(), keyword()) ::
           training_sample()
   def text_to_training_sample(text, intent, id, opts \\ []) do
     extract_entities = Keyword.get(opts, :extract_entities, true)
     metadata = Keyword.get(opts, :metadata, %{})
-    tokens = Tokenizer.tokenize_words(text)
+    positioned_tokens = Tokenizer.tokenize(text)
+    tokens = Enum.map(positioned_tokens, & &1.text)
 
     pos_tags =
       case POSTagger.load_model() do
@@ -99,20 +100,9 @@ defmodule Tasks.Transformer do
 
     entities =
       if extract_entities do
-        case EntityExtractor.extract_entities(text, skip_disambiguation: true) do
-          entities when is_list(entities) ->
-            Enum.map(entities, fn entity ->
-              %{
-                "text" => Map.get(entity, :value, ""),
-                "type" => Map.get(entity, :entity, "unknown"),
-                "start" => Map.get(entity, :start, 0),
-                "end" => Map.get(entity, :end, 0)
-              }
-            end)
-
-          _ ->
-            []
-        end
+        text
+        |> EntityExtractor.extract_entities(world_id: world_id!(opts), skip_disambiguation: true)
+        |> Enum.map(&entity_annotation!(&1, positioned_tokens))
       else
         []
       end
@@ -131,6 +121,7 @@ defmodule Tasks.Transformer do
   @doc "Converts Question Answering task instances.\n\nInput questions become training utterances for a \"factual_question\" intent.\nAnswers are stored as knowledge facts for retrieval.\n"
   def convert_qa(instances, metadata, _definition, opts) do
     task_id = metadata.task_id
+    world_id = world_id!(opts)
 
     {samples, facts, entities} =
       instances
@@ -162,7 +153,7 @@ defmodule Tasks.Transformer do
         answer_entities =
           outputs
           |> Enum.flat_map(fn output ->
-            extract_entity_candidates(output, task_id)
+            extract_entity_candidates(output, task_id, world_id)
           end)
 
         {[sample | s_acc], facts ++ f_acc, answer_entities ++ e_acc}
@@ -390,6 +381,60 @@ defmodule Tasks.Transformer do
     }
   end
 
+  @doc """
+  A training sample's annotation of one decided entity of
+  `Brain.ML.EntityExtractor.extract_entities/2`: its `:value` as `"text"`, its
+  `:entity_type` as `"type"`, and as `"start"` and `"end"` the indexes
+  (inclusive) of the first and last of `tokens` it spans, `tokens` being
+  `Brain.ML.Tokenizer.tokenize/1` of the text it was extracted from. The
+  sample's `tokens` are those tokens' texts, so the indexes point into them.
+
+  A decided entity carries `:value`, `:entity_type`, `:start_pos` and
+  `:end_pos`; an entity missing any of them, or whose span does not begin and
+  end on token boundaries, raises.
+  """
+  @spec entity_annotation!(map(), [map()]) :: map()
+  def entity_annotation!(entity, tokens) when is_map(entity) and is_list(tokens) do
+    {first, last} =
+      Tokenizer.token_range!(tokens, decided_field!(entity, :start_pos), decided_field!(entity, :end_pos))
+
+    %{
+      "text" => decided_field!(entity, :value),
+      "type" => decided_field!(entity, :entity_type),
+      "start" => first,
+      "end" => last
+    }
+  end
+
+  @doc """
+  An entity candidate from one decided entity of
+  `Brain.ML.EntityExtractor.extract_entities/2`: its `:value`, its
+  `:entity_type` as `:inferred_type`, its `:confidence`, and `source`, the task
+  it came from. A decided entity carries all three; an entity missing any of
+  them raises.
+  """
+  @spec entity_candidate!(map(), String.t()) :: map()
+  def entity_candidate!(entity, source) when is_map(entity) do
+    %{
+      value: decided_field!(entity, :value),
+      inferred_type: decided_field!(entity, :entity_type),
+      confidence: decided_field!(entity, :confidence),
+      source: source
+    }
+  end
+
+  defp decided_field!(entity, key) do
+    case entity do
+      %{^key => value} when not is_nil(value) ->
+        value
+
+      _ ->
+        raise ArgumentError,
+              "Tasks.Transformer: a decided entity of EntityExtractor.extract_entities/2 has no " <>
+                "#{inspect(key)}: #{inspect(entity, limit: 8)}"
+    end
+  end
+
   defp select_converter(category) do
     case category do
       "Question Answering" -> :qa
@@ -458,25 +503,27 @@ defmodule Tasks.Transformer do
     "unknown"
   end
 
-  defp extract_entity_candidates(text, source) when is_binary(text) do
-    case EntityExtractor.extract_entities(text, skip_disambiguation: true) do
-      entities when is_list(entities) ->
-        Enum.map(entities, fn entity ->
-          %{
-            value: Map.get(entity, :value, ""),
-            inferred_type: Map.get(entity, :entity, "unknown"),
-            confidence: Map.get(entity, :confidence, 0.8),
-            source: source
-          }
-        end)
-
-      _ ->
-        []
-    end
+  defp extract_entity_candidates(text, source, world_id) when is_binary(text) do
+    text
+    |> EntityExtractor.extract_entities(world_id: world_id, skip_disambiguation: true)
+    |> Enum.map(&entity_candidate!(&1, source))
   end
 
-  defp extract_entity_candidates(_, _) do
+  defp extract_entity_candidates(_, _, _world_id) do
     []
+  end
+
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "Tasks.Transformer option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "Tasks.Transformer needs :world_id, the world entities are extracted in"
+    end
   end
 
   defp empty_result do

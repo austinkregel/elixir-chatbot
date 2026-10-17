@@ -3,36 +3,6 @@ defmodule Brain.ML.Poincare.EmbeddingsGenServerTest do
 
   alias Brain.ML.Poincare.Embeddings
 
-  describe "GenServer lifecycle" do
-    test "starts and reports not ready without trained model" do
-      name = :"poincare_test_#{:rand.uniform(100_000)}"
-      world = "no_model_#{:rand.uniform(100_000)}"
-      {:ok, pid} = Embeddings.start_link(name: name, world_id: world)
-      assert Process.alive?(pid)
-      refute Embeddings.ready?(name)
-    end
-
-    test "ready? returns false for non-existent server" do
-      refute Embeddings.ready?(:"nonexistent_poincare_#{:rand.uniform(100_000)}")
-    end
-
-    test "lookup returns error when not ready" do
-      name = :"poincare_lookup_test_#{:rand.uniform(100_000)}"
-      world = "no_model_#{:rand.uniform(100_000)}"
-      {:ok, _pid} = Embeddings.start_link(name: name, world_id: world)
-
-      assert {:error, :not_ready} = Embeddings.lookup("test", name)
-    end
-
-    test "entity_distance returns error when not ready" do
-      name = :"poincare_dist_test_#{:rand.uniform(100_000)}"
-      world = "no_model_#{:rand.uniform(100_000)}"
-      {:ok, _pid} = Embeddings.start_link(name: name, world_id: world)
-
-      assert {:error, :not_ready} = Embeddings.entity_distance("a", "b", name)
-    end
-  end
-
   describe "train/2 edge cases" do
     test "trains with minimal pairs" do
       pairs = [{"child", "parent"}]
@@ -100,6 +70,38 @@ defmodule Brain.ML.Poincare.EmbeddingsGenServerTest do
     test "load returns error for missing file" do
       result = Embeddings.load("/tmp/nonexistent_poincare_#{:rand.uniform(100_000)}.term")
       assert {:error, _} = result
+    end
+  end
+
+  describe "determinism" do
+    # Enough entities that negative sampling has real choices to make.
+    @pairs for i <- 1..8, do: {"child_#{i}", "parent_#{rem(i, 3)}"}
+
+    test "the same pairs and seed always produce the same embeddings" do
+      {:ok, first, _, _} = Embeddings.train(@pairs, dim: 3, epochs: 5, seed: 9)
+      {:ok, second, _, _} = Embeddings.train(@pairs, dim: 3, epochs: 5, seed: 9)
+
+      assert Nx.to_flat_list(first) == Nx.to_flat_list(second)
+    end
+
+    test "leaves the calling process's random state untouched" do
+      :rand.seed(:exsss, {1, 2, 3})
+      expected = :rand.uniform()
+
+      :rand.seed(:exsss, {1, 2, 3})
+      Embeddings.train(@pairs, dim: 3, epochs: 2, seed: 9)
+
+      assert :rand.uniform() == expected
+    end
+
+    test "save records the seed when given one" do
+      {:ok, embeddings, to_idx, from_idx} = Embeddings.train(@pairs, dim: 3, epochs: 2, seed: 9)
+      path = Path.join(System.tmp_dir!(), "poincare_seed_#{System.unique_integer([:positive])}.term")
+      on_exit(fn -> File.rm(path) end)
+
+      :ok = Embeddings.save(embeddings, to_idx, from_idx, 3, path, training_seed: 9)
+
+      assert {:ok, %{training_seed: 9}} = Embeddings.load(path)
     end
   end
 end

@@ -7,9 +7,11 @@ defmodule Mix.Tasks.Evaluate.Classifiers do
 
   ## Usage
 
-      mix evaluate.classifiers              # Full comparison
-      mix evaluate.classifiers --verbose    # Show per-example disagreements
-      mix evaluate.classifiers --save       # Save results to evaluation store
+      mix evaluate.classifiers --world <id>              # Full comparison
+      mix evaluate.classifiers --world <id> --verbose    # Show per-example disagreements
+      mix evaluate.classifiers --world <id> --save       # Save results to evaluation store
+
+  `--world <id>` is required: the world the gold standard is analyzed in.
   """
 
   use Mix.Task
@@ -19,10 +21,16 @@ defmodule Mix.Tasks.Evaluate.Classifiers do
 
   @impl Mix.Task
   def run(args) do
+    {opts, _, _} = OptionParser.parse(args, strict: [verbose: :boolean, save: :boolean, world: :string])
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix evaluate.classifiers needs --world <id>, the world the gold standard is analyzed in")
+
     Mix.Task.run("app.start")
 
-    verbose? = "--verbose" in args
-    save? = "--save" in args
+    verbose? = Keyword.get(opts, :verbose, false)
+    save? = Keyword.get(opts, :save, false)
 
     gold = EvaluationStore.load_gold_standard("intent")
 
@@ -41,7 +49,7 @@ defmodule Mix.Tasks.Evaluate.Classifiers do
     IO.puts(String.duplicate("=", 70) <> "\n")
 
     start_time = System.monotonic_time(:millisecond)
-    results = evaluate_all(gold)
+    results = evaluate_all(gold, world_id)
     duration_ms = System.monotonic_time(:millisecond) - start_time
 
     print_summary(results, duration_ms)
@@ -59,7 +67,7 @@ defmodule Mix.Tasks.Evaluate.Classifiers do
     IO.puts("")
   end
 
-  defp evaluate_all(gold) do
+  defp evaluate_all(gold, world_id) do
     total = length(gold)
 
     examples =
@@ -71,7 +79,7 @@ defmodule Mix.Tasks.Evaluate.Classifiers do
         text = example["text"]
         expected = example["intent"]
 
-        {fv_intent, fv_confidence, pipeline_intent} = classify_both(text)
+        {fv_intent, fv_confidence, pipeline_intent} = classify_both(example, world_id)
 
         %{
           text: text,
@@ -93,29 +101,29 @@ defmodule Mix.Tasks.Evaluate.Classifiers do
     }
   end
 
-  defp classify_both(text) do
-    try do
-      analysis = Pipeline.analyze_chunk(text, side_effects: false)
-      pipeline_intent = to_string(analysis.intent || "unknown")
+  defp classify_both(%{"text" => text} = example, world_id) do
+    analysis =
+      Pipeline.analyze_chunk(text,
+        side_effects: false,
+        world_id: world_id,
+        active_contexts: Brain.Analysis.ActiveContexts.for_row(example)
+      )
 
-      {fv_intent, fv_confidence} =
-        try do
-          {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+    pipeline_intent = to_string(analysis.intent || "unknown")
 
-          case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
-            {:ok, label, confidence} -> {to_string(label), confidence}
-            _ -> {"unknown", 0.0}
-          end
-        rescue
+    {fv_intent, fv_confidence} =
+      try do
+        {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+
+        case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
+          {:ok, label, confidence} -> {to_string(label), confidence}
           _ -> {"unknown", 0.0}
         end
+      rescue
+        _ -> {"unknown", 0.0}
+      end
 
-      {fv_intent, fv_confidence, pipeline_intent}
-    rescue
-      _ -> {"unknown", 0.0, "unknown"}
-    catch
-      :exit, _ -> {"unknown", 0.0, "unknown"}
-    end
+    {fv_intent, fv_confidence, pipeline_intent}
   end
 
   defp print_summary(results, duration_ms) do

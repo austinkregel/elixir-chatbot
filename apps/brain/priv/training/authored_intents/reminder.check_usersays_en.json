@@ -1,0 +1,131 @@
+[
+  {
+    "data": [
+      {
+        "text": "Any reminders for this afternoon"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Check my reminders"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Did I set a reminder to "
+      },
+      {
+        "text": "call the bank",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Do I have any reminders today"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Have I got a reminder about "
+      },
+      {
+        "text": "Jake's birthday",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Is there a reminder for "
+      },
+      {
+        "text": "the meeting",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "List my reminders"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Read me my reminders"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Show me my reminders"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "What are my reminders"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "What do I need to be reminded about this week"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "What reminders do I have for tomorrow"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "What was the reminder I set for 5pm"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "When is my reminder to "
+      },
+      {
+        "text": "take medicine",
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "userDefined": true
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Which reminders are still pending"
+      }
+    ]
+  }
+]

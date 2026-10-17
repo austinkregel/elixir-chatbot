@@ -1,7 +1,7 @@
 defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   @moduledoc """
   Aggregates per-word features and existing analysis signals into a
-  per-chunk feature vector spanning 22 groups.
+  per-chunk feature vector spanning the groups below.
 
   ## Feature Groups
 
@@ -29,6 +29,12 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   22. **Speech-act × wh-target interaction grid** *(Tier 2, materializes joint
       that the linear centroid cannot learn on its own)*
   23. **Entity type semantics** *(parent concept histogram, coherence, KG coverage)*
+  24. **Lexical evidence** *(one value per intent: how strongly the chunk's 1- and
+      2-grams are associated with it in the training data; see
+      `Brain.Analysis.LexicalEvidence`)*
+  25. **Follow-up context** *(one value per conversational context some intent
+      continues from: 1.0 when the chunk's turn continues from it; see
+      `Brain.Analysis.ActiveContexts`)*
 
   Groups 15-22 are produced by
   `Brain.Analysis.FeatureExtractor.EnrichmentFeatures` and are
@@ -38,7 +44,9 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   """
 
   alias Brain.Analysis.FeatureExtractor.{WordFeatures, EnrichmentFeatures}
+  alias Brain.Analysis.{ActiveContexts, LexicalEvidence}
   alias Brain.Lexicon
+  alias Brain.Provenance
 
   @all_pos [:NOUN, :PROPN, :VERB, :AUX, :ADJ, :ADV, :PRON, :DET, :ADP, :CONJ, :PART, :NUM, :INTJ, :PUNCT, :SYM, :X]
 
@@ -63,9 +71,12 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   Extracts a full chunk feature vector from a ChunkAnalysis struct
   and its per-word features.
 
-  Returns a flat list of floats representing the ~140-dimension vector.
+  Returns a flat list of floats, named by `dimension_manifest/0`.
+
+  Options: `:lexical_evidence`, a `Brain.Analysis.LexicalEvidence` model used
+  in place of the one loaded for the analysis's language.
   """
-  def extract(%{} = analysis, word_features \\ nil) do
+  def extract(%{} = analysis, word_features \\ nil, opts \\ []) do
     tokens = extract_tokens(analysis)
     pos_tags = Map.get(analysis, :pos_tags) || []
 
@@ -84,7 +95,6 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
     group10 = lexical_semantic_fingerprint(word_feats)
     group11 = word_meaning_depth(word_feats)
     group12 = srl_frame_features(analysis)
-    group13 = memory_context_features(analysis)
     group14 = slot_completeness_features(analysis)
 
     # Enrichment groups (Tier 1). Appended at the tail so existing
@@ -108,13 +118,15 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
       )
 
     group23 = EnrichmentFeatures.entity_type_semantics(analysis)
+    group24 = lexical_evidence_features(analysis, opts)
+    group25 = followup_context_features(analysis)
 
     group1 ++ group2 ++ group3 ++ group4 ++ group5 ++ group6 ++
       group7 ++ group8 ++ group9 ++ group10 ++ group11 ++ group12 ++
-      group13 ++ group14 ++
+      group14 ++
       group15 ++ group16 ++ group17_verb ++ group17_noun ++ group17_adj ++
       group18 ++ group19 ++
-      group20 ++ group21 ++ group22 ++ group23
+      group20 ++ group21 ++ group22 ++ group23 ++ group24 ++ group25
   end
 
   # Builds `[{token, pos}]` pairs for `subcategorization_frame/1`. The
@@ -168,61 +180,262 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
   end
 
   @doc """
+  Names every dimension `extract/2` emits, in emission order.
+
+  This is the single source of truth for the vector's shape. `vector_dimension/0`
+  and `schema_fingerprint/0` both derive from it.
+
+  The width alone was already guarded — `chunk_features_test.exs` asserts
+  `length(extract(...)) == vector_dimension()`, so a group that changed size
+  without updating the total would fail. What was missing is *identity*: a
+  list of floats where nothing says which slot is which cannot be diffed,
+  snapshotted or attributed. When a value moves between two runs there was no
+  way to name the feature that moved, and when the width changes a total tells
+  you only that something did.
+
+  Each entry is `{group, name}`, where `group` is the emission group named in
+  `extract/2` and `name` is unique across the whole vector. `group_widths/0`
+  localises a width change to one group.
+
+  ## Two groups are sized at runtime
+
+  This is a function rather than a module attribute because two groups ask for
+  their width on every extraction:
+
+    * group 10 (`:lexical_domains`) calls `Lexicon.domain_atoms()`
+    * group 23 (`:entity_type_semantics`) calls `TypeHierarchy.parent_types()`
+
+  `EnrichmentFeatures` freezes the *same* domain list at compile time for the
+  group 17 supersenses, so groups 10 and 17 can legitimately disagree in width
+  if the Lexicon data changes without a recompile. That disagreement is now
+  detectable rather than silent — `schema_fingerprint/0` changes when either
+  side moves, and the extractor tests assert the two agree.
+  """
+  @spec dimension_manifest() :: [{atom(), atom()}]
+  def dimension_manifest do
+    in_group(:surface_lexical, [
+      :token_count,
+      :char_count,
+      :avg_word_length,
+      :type_token_ratio,
+      :punct_count,
+      :cap_ratio,
+      :contraction_count,
+      :has_url,
+      :has_quoted,
+      :oov_rate,
+      :content_count,
+      :unique_lemmas
+    ]) ++
+      in_group(:pos_distribution, Enum.map(@all_pos, &:"pos_#{&1}")) ++
+      in_group(:syntactic_structural, [
+        :verb_count,
+        :modal_aux_count,
+        :negation_count,
+        :question_mark,
+        :imperative_score,
+        :declarative_score,
+        :clause_depth,
+        :avg_clause_len,
+        :subordinate_flag,
+        :relative_flag
+      ]) ++
+      in_group(:pronoun_person, [
+        :pron_1st_singular,
+        :pron_1st_plural,
+        :pron_2nd,
+        :pron_3rd,
+        :pron_demonstrative,
+        :pron_interrogative,
+        :pron_reflexive,
+        :pron_possessive
+      ]) ++
+      in_group(:modality_certainty, [
+        :mod_can_could,
+        :mod_will_would,
+        :mod_may_might,
+        :mod_should_must,
+        :mod_conditional,
+        :mod_intensifier,
+        :mod_hedge,
+        :mod_certainty
+      ]) ++
+      in_group(
+        :speech_act,
+        Enum.map(@speech_act_categories, &:"sa_#{&1}") ++
+          Enum.map(@question_subtypes, &:"q_#{&1}") ++
+          [:sa_is_imperative, :sa_is_request]
+      ) ++
+      in_group(
+        :discourse,
+        Enum.map(@addressee_values, &:"addr_#{&1}") ++
+          [:disc_marker_count, :disc_greeting, :disc_farewell, :disc_backchannel]
+      ) ++
+      in_group(:sentiment, [
+        :sent_positive,
+        :sent_negative,
+        :sent_neutral,
+        :sent_confidence,
+        :sent_polarity_magnitude
+      ]) ++
+      in_group(
+        :entity,
+        [:ent_count, :ent_density] ++
+          Enum.map(@entity_types, &:"ent_type_#{&1}") ++
+          [:ent_has_named, :ent_new_entity]
+      ) ++
+      in_group(:lexical_domains, Enum.map(Lexicon.domain_atoms(), &:"ld_#{&1}")) ++
+      in_group(:word_meaning_depth, [
+        :wm_avg_depth,
+        :wm_max_depth,
+        :wm_avg_polysemy,
+        :wm_abstraction_range,
+        :wm_avg_similarity,
+        :wm_antonym_flag
+      ]) ++
+      in_group(
+        :srl_frames,
+        [:srl_frame_count] ++
+          Enum.map(@srl_roles, &:"role_#{&1}") ++
+          [:srl_coverage]
+      ) ++
+      in_group(:slot_completeness, [
+        :slot_required_count,
+        :slot_filled_count,
+        :slot_fill_ratio,
+        :slot_has_clarification,
+        :slot_missing_required_count,
+        :slot_optional_fill_ratio
+      ]) ++
+      in_group(:wh_target, EnrichmentFeatures.wh_names()) ++
+      in_group(:time_typology, EnrichmentFeatures.time_typology_names()) ++
+      in_group(:verb_supersenses, EnrichmentFeatures.verb_supersense_names()) ++
+      in_group(:noun_supersenses, EnrichmentFeatures.noun_supersense_names()) ++
+      in_group(:adj_adv_supersenses, EnrichmentFeatures.adj_adv_supersense_names()) ++
+      in_group(:conceptnet_edges, EnrichmentFeatures.conceptnet_edge_names()) ++
+      in_group(
+        :selectional_preferences,
+        EnrichmentFeatures.selectional_preference_names()
+      ) ++
+      in_group(
+        :subcategorization_frame,
+        EnrichmentFeatures.subcategorization_frame_names()
+      ) ++
+      in_group(:discourse_markers, EnrichmentFeatures.discourse_marker_names()) ++
+      in_group(
+        :speech_act_wh_interaction,
+        EnrichmentFeatures.speech_act_wh_interaction_names()
+      ) ++
+      in_group(
+        :entity_type_semantics,
+        EnrichmentFeatures.entity_type_semantics_names()
+      ) ++
+      in_group(:lexical_evidence, Enum.map(lexical_evidence_intents(), &String.to_atom("lex_" <> &1))) ++
+      in_group(:followup_context, ActiveContexts.names(ActiveContexts.loaded!()))
+  end
+
+  defp in_group(group, names), do: Enum.map(names, &{group, &1})
+
+  # The intents the lexical evidence group scores: those of the models loaded at
+  # boot, which every supported language's model must share, since one vector
+  # schema serves them all.
+  defp lexical_evidence_intents do
+    case Brain.Language.supported() |> Enum.map(&LexicalEvidence.loaded!(&1).intents) |> Enum.uniq() do
+      [intents] ->
+        intents
+
+      differing ->
+        raise "ChunkFeatures: the loaded lexical evidence models score #{length(differing)} different intent lists; " <>
+                "retrain them with `mix gen_micro_data --world <id>` so every language shares one vector schema"
+    end
+  end
+
+  # Group 24: what the chunk's words say about each intent. The model is the
+  # one loaded for the chunk's language unless `:lexical_evidence` supplies one
+  # (training passes each row's out-of-fold model), which must score the same
+  # intents in the same order.
+  defp lexical_evidence_features(analysis, opts) do
+    language =
+      case Map.get(analysis, :language) do
+        code when is_binary(code) -> code
+        other -> raise ArgumentError, "ChunkFeatures: the analysis has no language (got #{inspect(other)}); the pipeline sets it"
+      end
+
+    model =
+      case Keyword.fetch(opts, :lexical_evidence) do
+        {:ok, %LexicalEvidence{} = model} ->
+          unless model.intents == lexical_evidence_intents() do
+            raise ArgumentError, "ChunkFeatures: the :lexical_evidence model scores different intents than the loaded model"
+          end
+
+          model
+
+        {:ok, other} ->
+          raise ArgumentError, "ChunkFeatures: :lexical_evidence must be a LexicalEvidence model, got #{inspect(other, limit: 3)}"
+
+        :error ->
+          LexicalEvidence.loaded!(language)
+      end
+
+    LexicalEvidence.features(model, Map.fetch!(analysis, :text))
+  end
+
+  # Group 25: which conversational contexts the chunk continues from, one
+  # dimension per context some intent follows up on. The pipeline sets
+  # `active_contexts`; an analysis without them raises.
+  defp followup_context_features(analysis) do
+    case Map.get(analysis, :active_contexts) do
+      active when is_list(active) ->
+        ActiveContexts.features(active, ActiveContexts.loaded!())
+
+      other ->
+        raise ArgumentError,
+              "ChunkFeatures: the analysis has no active contexts (got #{inspect(other)}); the pipeline sets them"
+    end
+  end
+
+  @doc """
   Returns the total dimension count of the chunk feature vector.
 
-  Each summand below corresponds to the matching `defp` in this module so
-  the declared total stays in lockstep with what `extract/2` actually
-  produces. A regression test asserts `length(extract(...)) == vector_dimension()`.
+  Derived from `dimension_manifest/0` so the count cannot drift from the
+  names, and neither can drift from emission without a test failing.
   """
-  def vector_dimension do
-    # group 1 — surface/lexical
-    12 +
-      # group 2 — POS distribution (one-hot over @all_pos, 16 tags)
-      16 +
-      # group 3 — syntactic/structural
-      10 +
-      # group 4 — pronoun/person/target
-      8 +
-      # group 5 — modality/certainty
-      8 +
-      # group 6 — speech act: category one-hot + question-subtype one-hot + 2 flags
-      length(@speech_act_categories) + length(@question_subtypes) + 2 +
-      # group 7 — discourse: addressee one-hot + 4 indicator flags
-      length(@addressee_values) + 4 +
-      # group 8 — sentiment
-      5 +
-      # group 9 — entity: count + density + per-type counts + has_named + new_entity
-      2 + length(@entity_types) + 2 +
-      # group 10 — lexical-semantic fingerprint over domains
-      length(Lexicon.domain_atoms()) +
-      # group 11 — word-meaning depth/ambiguity
-      6 +
-      # group 12 — SRL frames: frame_count + per-role flags + coverage
-      1 + length(@srl_roles) + 1 +
-      # group 13 — memory/context
-      6 +
-      # group 14 — slot completeness
-      6 +
-      # group 15 — wh-target type
-      EnrichmentFeatures.wh_dimension() +
-      # group 16 — time-expression typology
-      EnrichmentFeatures.time_typology_dimension() +
-      # group 17 — POS-conditional supersense fingerprints (verb / noun / adj-adv)
-      EnrichmentFeatures.verb_supersense_dimension() +
-      EnrichmentFeatures.noun_supersense_dimension() +
-      EnrichmentFeatures.adj_adv_supersense_dimension() +
-      # group 18 — ConceptNet edge-type fingerprint
-      EnrichmentFeatures.conceptnet_edge_dimension() +
-      # group 19 — verb × argument selectional preferences
-      EnrichmentFeatures.selectional_preferences_dimension() +
-      # group 20 — subcategorization frame (POS-only)
-      EnrichmentFeatures.subcategorization_frame_dimension() +
-      # group 21 — discourse-marker semantic categories
-      EnrichmentFeatures.discourse_markers_dimension() +
-      # group 22 — speech-act × wh-target interaction grid
-      EnrichmentFeatures.speech_act_wh_interaction_dimension() +
-      # group 23 — entity type semantics (parent histogram + coherence + coverage)
-      EnrichmentFeatures.entity_type_semantics_dimension()
+  @spec vector_dimension() :: non_neg_integer()
+  def vector_dimension, do: length(dimension_manifest())
+
+  @doc """
+  Returns the per-group dimension widths as an ordered keyword list.
+
+  Useful for locating which group moved when `vector_dimension/0` changes:
+  a diff of two `group_widths/0` results names the group rather than just
+  reporting a different total.
+  """
+  @spec group_widths() :: [{atom(), non_neg_integer()}]
+  def group_widths do
+    dimension_manifest()
+    |> Enum.chunk_by(fn {group, _name} -> group end)
+    |> Enum.map(fn [{group, _} | _] = chunk -> {group, length(chunk)} end)
+  end
+
+  @doc """
+  Returns a stable digest of the vector's full ordered schema.
+
+  Two feature vectors are only comparable if they were produced under the
+  same fingerprint. Snapshot runs record it so a change in the vector's
+  shape is attributable rather than appearing as a drift in the values --
+  the same reason the sentence splitter's version is recorded alongside the
+  corpus it produced.
+
+  The digest covers names *and* order, so a reordering with identical widths
+  still changes it.
+  """
+  @spec schema_fingerprint() :: String.t()
+  def schema_fingerprint do
+    dimension_manifest()
+    |> Enum.map_join("\n", fn {group, name} -> "#{group}/#{name}" end)
+    |> then(&:crypto.hash(:sha256, &1))
+    |> Base.encode16(case: :lower)
+    |> binary_part(0, 16)
   end
 
   # -- Group 1: Surface/lexical (~12 dims) ------------------------------------
@@ -473,7 +686,33 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
     has_named = if Enum.any?(entities, fn e -> entity_type(e) in [:person, :location, :organization] end), do: 1.0, else: 0.0
 
     acc = get_accumulated_context(analysis)
-    familiarity = if acc, do: Map.get(acc, :entity_familiarity, 0.5), else: 0.5
+
+    # Three paths that all produced 0.5 and were indistinguishable in the
+    # vector: no accumulated context at all, context that carries no
+    # familiarity, and a real measurement that happens to be 0.5. `new_entity`
+    # below is derived from this, so a stand-in here silently decides a second
+    # dimension too.
+    familiarity =
+      cond do
+        is_nil(acc) ->
+          Provenance.record(["entity", "familiarity"], 0.5, :absent,
+            source: "ChunkFeatures.entity_features/1",
+            meta: %{"reason" => "this chunk carries no accumulated context"}
+          )
+
+        not Map.has_key?(acc, :entity_familiarity) ->
+          Provenance.record(["entity", "familiarity"], 0.5, :default,
+            source: "ChunkFeatures.entity_features/1",
+            meta: %{"reason" => "accumulated context holds no :entity_familiarity"}
+          )
+
+        true ->
+          Provenance.record(["entity", "familiarity"], Map.fetch!(acc, :entity_familiarity),
+            :computed,
+            source: "ChunkFeatures.entity_features/1"
+          )
+      end
+
     new_entity = if familiarity < 0.3 and total > 0, do: 1.0, else: 0.0
 
     [entity_count, entity_density] ++ type_counts ++ [has_named, new_entity]
@@ -573,52 +812,11 @@ defmodule Brain.Analysis.FeatureExtractor.ChunkFeatures do
     [frame_count] ++ role_flags ++ [coverage]
   end
 
-  # -- Group 13: Memory/context (~6 dims) --------------------------------------
-  #
-  # Sourced from the real fields on `Brain.Analysis.ContextAccumulator`:
-  #
-  #   - `:entity_familiarity`     (0.0..1.0)
-  #   - `:relevant_episodes`      (list)
-  #   - `:relevant_semantics`     (list)
-  #   - `:conversation_topics`    (list)
-  #   - `:combined_confidence`    (0.0..1.0)
-  #   - `:conflict_measure`       (0.0..1.0)
-  #   - `:signals`                (list)
-  #
-  # Each dim is normalized to 0.0..1.0 so it composes with the rest of the
-  # chunk feature vector. When `accumulated_context` is nil (no signals were
-  # accumulated for this turn), we fall back to a neutral midpoint vector so
-  # downstream classifiers don't read a spurious "perfectly familiar / no
-  # conflict" signal.
-
-  @memory_context_default [0.5, 0.0, 0.5, 0.0, 0.0, 0.0]
-
-  defp memory_context_features(analysis) do
-    case get_accumulated_context(analysis) do
-      nil ->
-        @memory_context_default
-
-      acc ->
-        familiarity = clamp01(Map.get(acc, :entity_familiarity, 0.5))
-        novelty = 1.0 - familiarity
-
-        episode_count = length(Map.get(acc, :relevant_episodes) || [])
-        semantic_count = length(Map.get(acc, :relevant_semantics) || [])
-        topic_count = length(Map.get(acc, :conversation_topics) || [])
-        _signal_count = length(Map.get(acc, :signals) || [])
-
-        similar_episodes = min((episode_count + semantic_count) / 10.0, 1.0)
-        graph_known = familiarity
-        topic_continuity = min(topic_count / 10.0, 1.0)
-        conflict = clamp01(Map.get(acc, :conflict_measure, 0.0))
-        combined_conf = clamp01(Map.get(acc, :combined_confidence, 0.5))
-
-        [novelty, similar_episodes, graph_known, topic_continuity, conflict, combined_conf]
-    end
-  end
-
-  defp clamp01(v) when is_number(v), do: min(max(v * 1.0, 0.0), 1.0)
-  defp clamp01(_), do: 0.5
+  # There is no group 13. The vector carries no dimension derived from accumulated
+  # memory state: `mix gen_micro_data` writes to the memory stores it reads
+  # features from, so any such dimension makes the training corpus differ between
+  # two runs over the same input. Entity familiarity reaches the vector only
+  # through `entity/ent_new_entity`.
 
   defp compute_avg_similarity(content_words) when length(content_words) < 2, do: 0.5
 

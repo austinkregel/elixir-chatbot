@@ -112,7 +112,16 @@ defmodule Brain.Analysis.FeatureExtractor.WordFeatures do
       {domain, false, hyp_depth, poly_count}
     end
   rescue
-    _ -> {nil, true, 0, 0}
+    # Never answer a lexicon failure with `{nil, true, 0, 0}`. That is the same
+    # value the OOV branch above returns, so a broken lookup would be
+    # indistinguishable from a word the lexicon legitimately does not hold, and
+    # the `is_oov` flag it sets is a feature the models train on.
+    e ->
+      reraise(
+        "word_features: lexicon lookup failed for #{inspect(word)} (pos #{inspect(pos)}): " <>
+          Exception.message(e),
+        __STACKTRACE__
+      )
   end
 
   defp build_feature_vector(pos, domain, hyp_depth, poly_count, is_oov, _position, token) do

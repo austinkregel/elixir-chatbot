@@ -1,5 +1,7 @@
 defmodule Brain.Services.CacheTest do
-  use ExUnit.Case, async: false
+  # The cache's hits and misses are counted by Brain.Metrics.Aggregator, in
+  # Atlas, inside each test's sandbox transaction.
+  use Brain.MetricsCase, async: false
 
   alias Brain.Services.Cache
 
@@ -123,14 +125,7 @@ defmodule Brain.Services.CacheTest do
   end
 
   describe "telemetry emission" do
-    setup do
-      # Reset metrics to get clean counts
-      if Process.whereis(Brain.Metrics.Aggregator) do
-        Brain.Metrics.Aggregator.reset()
-      end
-
-      :ok
-    end
+    # Each test starts in a new telemetry window, counted from zero.
 
     test "emits cache hit telemetry on successful get" do
       Cache.put(:telemetry_test, "hit_key", "value")
@@ -138,8 +133,7 @@ defmodule Brain.Services.CacheTest do
       # First get should be a hit
       assert {:ok, "value"} = Cache.get(:telemetry_test, "hit_key")
 
-      # Wait for telemetry processing
-      Process.sleep(50)
+      :ok = counted()
 
       metrics = Brain.Metrics.Aggregator.get_service_metrics()
       assert metrics.cache.hits >= 1
@@ -152,7 +146,7 @@ defmodule Brain.Services.CacheTest do
       # Get non-existent key
       assert :miss = Cache.get(:telemetry_test, "nonexistent_key_#{:rand.uniform(10000)}")
 
-      Process.sleep(50)
+      :ok = counted()
 
       metrics = Brain.Metrics.Aggregator.get_service_metrics()
       assert metrics.cache.misses >= 1
@@ -168,7 +162,7 @@ defmodule Brain.Services.CacheTest do
       # Get expired entry
       assert :miss = Cache.get(:telemetry_test, "expiring")
 
-      Process.sleep(50)
+      :ok = counted()
 
       metrics = Brain.Metrics.Aggregator.get_service_metrics()
       assert metrics.cache.misses >= 1

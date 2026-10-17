@@ -1,0 +1,86 @@
+[
+  {
+    "text": "could you wooow",
+    "tokens": [
+      "could",
+      "you",
+      "wooow"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-7cda4ea4",
+    "intent": "smalltalk.emotions.wow"
+  },
+  {
+    "text": "I want to woah",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "woah"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-dd1f5314",
+    "intent": "smalltalk.emotions.wow"
+  },
+  {
+    "text": "I'd like to wooow",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "wooow"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-293490d5",
+    "intent": "smalltalk.emotions.wow"
+  },
+  {
+    "text": "hey wow",
+    "tokens": [
+      "hey",
+      "wow"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-c5e5b96c",
+    "intent": "smalltalk.emotions.wow"
+  },
+  {
+    "text": "hey wow wow",
+    "tokens": [
+      "hey",
+      "wow",
+      "wow"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-81b4ce8e",
+    "intent": "smalltalk.emotions.wow"
+  }
+]

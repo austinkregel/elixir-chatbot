@@ -14,9 +14,9 @@ defmodule ChatWeb.PageControllerTest do
       assert redirected_to(conn) == "/settings"
     end
 
-    test "GET /worlds redirects to /explorer", %{conn: conn} do
+    test "GET /worlds is the worlds page, not a redirect", %{conn: conn} do
       conn = get(conn, "/worlds")
-      assert redirected_to(conn) == "/explorer"
+      assert html_response(conn, 200) =~ ~s(id="web-user-id")
     end
 
     test "GET /worlds/:world_id/entities redirects to /explorer", %{conn: conn} do

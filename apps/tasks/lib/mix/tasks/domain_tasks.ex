@@ -154,7 +154,7 @@ defmodule Mix.Tasks.DomainTasks.Transform do
   alias World.Persistence
   @shortdoc "Transforms domain tasks into chatbot training data"
 
-  @moduledoc "Transforms domain-specific NLP task files into training data for the chatbot.\n\nThis task reads NLP benchmark task files and converts them into:\n- Intent training samples (for classifier training)\n- Knowledge facts (for semantic memory)\n- Entity candidates (for gazetteer)\n\n## Usage\n\n    mix domain_tasks.transform [options]\n\n## Options\n\n  * `--world-id` - Target training world (default: \"default\")\n  * `--tasks-path` - Path to tasks directory (default: data/domain_specific_tasks)\n  * `--categories` - Comma-separated list of categories to include\n  * `--max-instances` - Maximum instances per task (default: 1000)\n  * `--max-tasks` - Maximum number of tasks to process (default: all)\n  * `--dry-run` - Preview without writing to disk\n  * `--output-dir` - Output directory for transformed data (default: data/training/domain_tasks)\n  * `--skip-entity-extraction` - Skip entity extraction for faster processing\n\n## Examples\n\n    # Process all useful tasks\n    mix domain_tasks.transform\n\n    # Process only Question Answering tasks with limit\n    mix domain_tasks.transform --categories \"Question Answering\" --max-instances 500\n\n    # Dry run to preview\n    mix domain_tasks.transform --dry-run --max-tasks 10\n"
+  @moduledoc "Transforms domain-specific NLP task files into training data for the chatbot.\n\nThis task reads NLP benchmark task files and converts them into:\n- Intent training samples (for classifier training)\n- Knowledge facts (for semantic memory)\n- Entity candidates (for gazetteer)\n\n## Usage\n\n    mix domain_tasks.transform [options]\n\n## Options\n\n  * `--world-id` - required: the world entities are extracted in and the results are\n    integrated into. It must be loaded.\n  * `--tasks-path` - Path to tasks directory (default: data/domain_specific_tasks)\n  * `--categories` - Comma-separated list of categories to include\n  * `--max-instances` - Maximum instances per task (default: 1000)\n  * `--max-tasks` - Maximum number of tasks to process (default: all)\n  * `--dry-run` - Preview without writing to disk\n  * `--output-dir` - Output directory for transformed data (default: data/training/domain_tasks)\n  * `--skip-entity-extraction` - Skip entity extraction for faster processing\n\n## Examples\n\n    # Process all useful tasks\n    mix domain_tasks.transform --world-id <id>\n\n    # Process only Question Answering tasks with limit\n    mix domain_tasks.transform --world-id <id> --categories \"Question Answering\" --max-instances 500\n\n    # Dry run to preview\n    mix domain_tasks.transform --world-id <id> --dry-run --max-tasks 10\n"
 
   use Mix.Task
 
@@ -183,7 +183,23 @@ defmodule Mix.Tasks.DomainTasks.Transform do
 
     Mix.Task.run("app.start")
 
-    world_id = Keyword.get(opts, :world_id, "default")
+    world_id =
+      Keyword.get(opts, :world_id) ||
+        Mix.raise("mix domain_tasks.transform needs --world-id <id>, the world the tasks are transformed for")
+
+    # Extraction runs in this world and the results are integrated into it, so it
+    # must be loaded before any task is read.
+    case Manager.get(world_id) do
+      {:ok, _world} ->
+        :ok
+
+      {:error, reason} ->
+        Mix.raise(
+          "mix domain_tasks.transform: world #{inspect(world_id)} is not available (#{inspect(reason)}); " <>
+            "create it first with: mix training_world.create #{world_id}"
+        )
+    end
+
     tasks_path = Keyword.get(opts, :tasks_path, "data/domain_specific_tasks")
     max_instances = Keyword.get(opts, :max_instances, 1000)
     max_tasks = Keyword.get(opts, :max_tasks, nil)
@@ -260,6 +276,7 @@ defmodule Mix.Tasks.DomainTasks.Transform do
         IO.write("  Processing: #{idx}/#{total} (#{progress}%) - #{task.task_id}")
 
         transform_opts = [
+          world_id: config.world_id,
           max_instances: config.max_instances,
           extract_entities: config.extract_entities
         ]
@@ -307,10 +324,7 @@ defmodule Mix.Tasks.DomainTasks.Transform do
       end
     else
       write_training_data(all_samples, all_facts, all_entities, config)
-
-      if config.world_id != "none" do
-        integrate_with_world(all_samples, all_facts, all_entities, config)
-      end
+      integrate_with_world(all_samples, all_facts, all_entities, config)
     end
 
     Mix.shell().info("=" |> String.duplicate(60))
@@ -413,6 +427,11 @@ defmodule Mix.Tasks.DomainTasks.Transform do
               value: entity.value,
               inferred_type: entity.inferred_type,
               confidence: entity.confidence,
+              # A bulk import has no observed sentence, so the context states the
+              # provenance instead. EntityPromoter shows this to whoever reviews
+              # the suggestion; "imported from X" is the truthful and useful
+              # thing to tell them, and inventing a sentence would not be.
+              context: "imported by mix domain_tasks from #{inspect(entity.source)}",
               source: :domain_tasks,
               metadata: %{original_source: entity.source},
               discovered_at: DateTime.utc_now()
@@ -441,9 +460,8 @@ defmodule Mix.Tasks.DomainTasks.Transform do
         Manager.checkpoint(world_id)
         Mix.shell().info("  World checkpoint saved")
 
-      {:error, :not_found} ->
-        Mix.shell().warning("  World '#{world_id}' not found. Skipping world integration.")
-        Mix.shell().info("  Create the world first with: mix training_world.create #{world_id}")
+      {:error, reason} ->
+        Mix.raise("mix domain_tasks.transform: world #{inspect(world_id)} is no longer available (#{inspect(reason)})")
     end
 
     Mix.shell().info("")

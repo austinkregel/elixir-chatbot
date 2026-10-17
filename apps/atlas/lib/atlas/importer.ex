@@ -85,7 +85,13 @@ defmodule Atlas.Importer do
   #     by_predicate: %{...},
   #     retracted: MapSet.t()
   #   }
+  #
+  # That file predates beliefs being held per world: its beliefs were held in
+  # the "default" world, and are imported into it explicitly, as the migration
+  # that added the world column assigned existing rows.
   # ============================================================================
+  @legacy_belief_world "default"
+
   defp import_beliefs(opts) do
     with_term_file(belief_store_path(), Belief, opts, fn data ->
       beliefs = data |> g(:beliefs, %{}) |> Map.values()
@@ -96,6 +102,7 @@ defmodule Atlas.Importer do
         |> Enum.reject(fn b -> MapSet.member?(retracted, g(b, :id)) end)
         |> Enum.map(fn b ->
           %{
+            world_id: @legacy_belief_world,
             subject: to_string(g(b, :subject)),
             predicate: to_string(g(b, :predicate)),
             object: to_string(g(b, :object)),
@@ -243,6 +250,8 @@ defmodule Atlas.Importer do
   # Semantic Facts (memory_store.term)
   #
   # SemanticFact struct has: id, timestamp, representation, embedding, evidence_ids, tags
+  # Its representation is in the form consolidation wrote, "Action: <action> |
+  # Examples: <examples>", which is split into the action and the content.
   # ============================================================================
   defp import_semantic_facts(opts) do
     with_term_file(memory_store_path(), SemanticFact, opts, fn data ->
@@ -253,9 +262,13 @@ defmodule Atlas.Importer do
           Enum.map(world_sems, fn {_id, sem} ->
             category = (g(sem, :tags) || []) |> List.first() || "general"
 
+            {action, content} =
+              SemanticFact.split_legacy_content(to_string(g(sem, :representation) || ""))
+
             %{
               world_id: world_id,
-              content: to_string(g(sem, :representation) || ""),
+              content: content,
+              action: action,
               category: category,
               confidence: 0.8,
               embedding: g(sem, :embedding) || [],
@@ -289,15 +302,29 @@ defmodule Atlas.Importer do
   # Review Candidates (review_queue.term)
   #
   # File shape: %{candidates: [{id, candidate_map_or_struct}, ...], stats: ...}
+  #
+  # A candidate belongs to its finding's world. A finding in that file that
+  # names no world predates candidates being held per world, and is imported
+  # into the "default" world explicitly, as the migration that added the world
+  # column assigned existing rows.
   # ============================================================================
+  @legacy_review_candidate_world "default"
+
   defp import_review_candidates(opts) do
     with_term_file(review_queue_path(), ReviewCandidate, opts, fn data ->
       candidates = g(data, :candidates, [])
 
       rows =
         Enum.map(candidates, fn {id, cand} ->
+          world_id =
+            case g(g(cand, :finding) || %{}, :world_id) do
+              world_id when is_binary(world_id) and world_id != "" -> world_id
+              _ -> @legacy_review_candidate_world
+            end
+
           %{
             id: id,
+            world_id: world_id,
             status: to_string(g(cand, :status) || :pending),
             finding: ensure_map(g(cand, :finding)),
             aggregate_confidence: g(cand, :aggregate_confidence) || 0.5,

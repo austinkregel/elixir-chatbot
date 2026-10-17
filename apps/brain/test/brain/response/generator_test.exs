@@ -4,16 +4,31 @@ defmodule Brain.Response.GeneratorTest do
   alias Brain.Response.Generator
   import Brain.TestHelpers
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @opts [world_id: "default"]
+
   setup do
     start_brain_services()
     :ok
   end
 
-  describe "generate/3" do
+  describe "generate/4" do
+    test "raises when opts name no world" do
+      assert_raise ArgumentError, ~r/requires :world_id/, fn ->
+        Generator.generate("weather.query", [], nil, [])
+      end
+    end
+
+    test "raises when the world is not a world id" do
+      assert_raise ArgumentError, ~r/requires :world_id/, fn ->
+        Generator.generate("weather.query", [], nil, world_id: "")
+      end
+    end
+
     test "generates weather response with location entity" do
       entities = [%{entity_type: "location", value: "New York"}]
 
-      {:ok, response, type} = Generator.generate("weather.query", entities, nil)
+      {:ok, response, type} = Generator.generate("weather.query", entities, nil, @opts)
 
       assert is_binary(response)
 
@@ -27,7 +42,7 @@ defmodule Brain.Response.GeneratorTest do
     test "generates weather clarification without location" do
       entities = []
 
-      {:ok, response, type} = Generator.generate("weather.query", entities, nil)
+      {:ok, response, type} = Generator.generate("weather.query", entities, nil, @opts)
 
       assert is_binary(response)
 
@@ -40,9 +55,9 @@ defmodule Brain.Response.GeneratorTest do
     end
 
     test "generates music response with artist entity" do
-      entities = [%{entity_type: "music-artist", value: "Taylor Swift"}]
+      entities = [%{entity_type: "music_artist", value: "Taylor Swift"}]
 
-      {:ok, response, type} = Generator.generate("music.play", entities, nil)
+      {:ok, response, type} = Generator.generate("music.play", entities, nil, @opts)
 
       assert is_binary(response)
 
@@ -60,7 +75,7 @@ defmodule Brain.Response.GeneratorTest do
         %{entity_type: "action", value: "turn on"}
       ]
 
-      {:ok, response, type} = Generator.generate("smarthome.lights.switch.on", entities, nil)
+      {:ok, response, type} = Generator.generate("smarthome.lights.switch.on", entities, nil, @opts)
 
       assert is_binary(response)
 
@@ -75,7 +90,7 @@ defmodule Brain.Response.GeneratorTest do
     test "generates fallback for unknown intent" do
       entities = []
 
-      {:ok, response, type} = Generator.generate("unknown.intent", entities, nil)
+      {:ok, response, type} = Generator.generate("unknown.intent", entities, nil, @opts)
 
       assert is_binary(response)
       assert type in [:fallback, :template, :synthesized]
@@ -84,10 +99,34 @@ defmodule Brain.Response.GeneratorTest do
     test "generates response for nil intent" do
       entities = []
 
-      {:ok, response, type} = Generator.generate(nil, entities, nil)
+      {:ok, response, type} = Generator.generate(nil, entities, nil, @opts)
 
       assert is_binary(response)
       assert type in [:fallback, :synthesized]
+    end
+  end
+
+  describe "generate_with_events/5" do
+    test "raises when opts name no world" do
+      assert_raise ArgumentError, ~r/Generator.generate_with_events requires :world_id/, fn ->
+        Generator.generate_with_events("weather.query", [], nil, [], [])
+      end
+    end
+  end
+
+  describe "generate_with_path/4" do
+    test "raises when opts name no world" do
+      assert_raise ArgumentError, ~r/Generator.generate_with_path requires :world_id/, fn ->
+        Generator.generate_with_path("weather.query", [], nil, [])
+      end
+    end
+  end
+
+  describe "generate_with_context/4" do
+    test "raises when the context names no world" do
+      assert_raise ArgumentError, ~r/Generator.generate_with_context requires :world_id/, fn ->
+        Generator.generate_with_context("weather.query", [], nil, %{confidence: 0.9})
+      end
     end
   end
 end

@@ -1,0 +1,106 @@
+[
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "Hello, pleased to meet you",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-c2cb2808",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "Hi there, it's nice to meet you",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-88f8d1da",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "My name is Sarah, nice to meet you",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-5fe6b325",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "I'm Austin, nice to meet you",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-8cd44a12",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "Hey, nice to meet you!",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-e2d50ffd",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "Hello! Nice to meet you",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-7e1e78d6",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "Hi, nice to meet you",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-e6cc9208",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "Hello, it is nice to meet you",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-586f7595",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  }
+]

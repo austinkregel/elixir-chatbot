@@ -1,0 +1,184 @@
+[
+  {
+    "data": [
+      {
+        "text": "Am I free "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "tomorrow afternoon"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Any events "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "tomorrow"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Any "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meetings"
+      },
+      {
+        "text": " "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "this week"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Check my availability"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Check my calendar"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Do I have any "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meetings"
+      },
+      {
+        "text": " "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "today"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Show me my "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "appointments"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Show my schedule for "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "tomorrow"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Show "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "today's"
+      },
+      {
+        "text": " schedule"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "What do I have scheduled"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "What "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meetings"
+      },
+      {
+        "text": " do I have"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "What's happening "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "this afternoon"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "What's my schedule look like"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "What's on my calendar "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "today"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "When is my next "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meeting"
+      }
+    ]
+  }
+]

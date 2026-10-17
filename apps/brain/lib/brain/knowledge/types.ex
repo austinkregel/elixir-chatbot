@@ -84,10 +84,14 @@ defmodule Brain.Knowledge.Types do
             confidence: float(),
             corroboration_group: String.t() | nil,
             embedding: [float()] | nil,
-            comprehension_profile_id: String.t() | nil
+            comprehension_profile_id: String.t() | nil,
+            world_id: String.t()
           }
 
-    @enforce_keys [:id, :claim, :entity, :source]
+    # A finding belongs to the world it was found for. Once approved, its
+    # fact, belief and knowledge graph nodes are held in that world, and its
+    # entity is added to that world's gazetteer overlay.
+    @enforce_keys [:id, :claim, :entity, :source, :world_id]
     defstruct [
       :id,
       :claim,
@@ -97,12 +101,18 @@ defmodule Brain.Knowledge.Types do
       :corroboration_group,
       :embedding,
       :comprehension_profile_id,
+      :world_id,
       raw_context: "",
       extracted_at: nil,
       confidence: 0.5
     ]
 
-    @doc "Creates a new Finding with a generated ID.\n"
+    @doc """
+    Creates a new Finding with a generated ID.
+
+    `:world_id` is required: the world the finding was found for. Absent or
+    not a world id raises `ArgumentError`.
+    """
     def new(claim, entity, source, opts \\ []) do
       %__MODULE__{
         id: generate_id(),
@@ -115,8 +125,22 @@ defmodule Brain.Knowledge.Types do
         confidence: Keyword.get(opts, :confidence, 0.5),
         corroboration_group: Keyword.get(opts, :corroboration_group),
         embedding: Keyword.get(opts, :embedding),
-        comprehension_profile_id: Keyword.get(opts, :comprehension_profile_id)
+        comprehension_profile_id: Keyword.get(opts, :comprehension_profile_id),
+        world_id: world_id!(opts)
       }
+    end
+
+    defp world_id!(opts) do
+      case Keyword.fetch(opts, :world_id) do
+        {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        {:ok, other} ->
+          raise ArgumentError, "Finding option :world_id must be a world id, got: #{inspect(other)}"
+
+        :error ->
+          raise ArgumentError, "Finding.new needs :world_id, the world the finding was found for"
+      end
     end
 
     defp generate_id do
@@ -343,9 +367,8 @@ defmodule Brain.Knowledge.Types do
       |> length()
     end
 
-    defp generate_id do
-      :crypto.strong_rand_bytes(12) |> Base.url_encode64(padding: false)
-    end
+    # A UUID: a hypothesis is stored in Atlas under this id.
+    defp generate_id, do: Ecto.UUID.generate()
   end
 
   defmodule Investigation do
@@ -354,6 +377,10 @@ defmodule Brain.Knowledge.Types do
     alias Types.{Hypothesis, Finding}
     alias Brain.Lattice
     alias Brain.Lattice.Candidate, as: LatticeCandidate
+
+    # World.Embedder is in a sibling umbrella app that depends on :brain.
+    @compile {:no_warn_undefined, World.Embedder}
+    alias World.Embedder, as: WorldEmbedder
 
     @type status :: :planning | :gathering_evidence | :evaluating | :concluded
     @type conclusion :: :hypotheses_supported | :hypotheses_falsified | :inconclusive | :mixed
@@ -431,14 +458,21 @@ defmodule Brain.Knowledge.Types do
       %{investigation | control_evidence: control_findings}
     end
 
-    @doc "Records evidence and associates it with relevant hypotheses.\n"
-    def record_evidence(%__MODULE__{} = investigation, findings) when is_list(findings) do
+    @doc """
+    Records evidence and associates it with relevant hypotheses, comparing each
+    finding's claim with each hypothesis's in `world_id`'s embedder
+    (`World.Embedder`). While the world's vocabulary is being rebuilt from its
+    episodes this waits for the rebuild to finish; raises when it does not, and
+    when the world cannot embed.
+    """
+    def record_evidence(world_id, %__MODULE__{} = investigation, findings)
+        when is_binary(world_id) and world_id != "" and is_list(findings) do
       updated_evidence = investigation.evidence ++ findings
 
       updated_hypotheses =
         investigation.hypotheses
         |> Enum.map(fn hypothesis ->
-          associate_evidence(hypothesis, findings)
+          associate_evidence(world_id, hypothesis, findings)
         end)
 
       %{
@@ -572,14 +606,13 @@ defmodule Brain.Knowledge.Types do
       question
     end
 
-    defp associate_evidence(%Hypothesis{} = hypothesis, findings) do
+    defp associate_evidence(world_id, %Hypothesis{} = hypothesis, findings) do
       Enum.reduce(findings, hypothesis, fn finding, hyp ->
         # Skip findings with empty claims
         if finding.claim == nil or finding.claim == "" do
           hyp
         else
-          # Use TF-IDF cosine similarity instead of token overlap
-          base_similarity = text_similarity(hyp.claim, finding.claim)
+          base_similarity = text_similarity(world_id, hyp.claim, finding.claim)
 
           # Entity-match boost: if finding entity matches hypothesis entity, add 0.15
           entity_boost =
@@ -606,28 +639,33 @@ defmodule Brain.Knowledge.Types do
       end)
     end
 
-    defp text_similarity(text_a, text_b) when is_binary(text_a) and is_binary(text_b) do
-      alias Brain.Memory.Embedder
-
-      if Embedder.ready?() do
-        with {:ok, vec_a} <- Embedder.embed(text_a),
-             {:ok, vec_b} <- Embedder.embed(text_b) do
-          Embedder.cosine_similarity(vec_a, vec_b)
-        else
-          _ -> token_overlap_similarity(text_a, text_b)
-        end
-      else
-        token_overlap_similarity(text_a, text_b)
-      end
+    # The cosine similarity of the two texts' embeddings in the world's embedder.
+    # Vectors of different lengths (the vocabulary was rebuilt between the two
+    # embeddings) raise rather than compare as 0.0.
+    defp text_similarity(world_id, text_a, text_b) when is_binary(text_a) and is_binary(text_b) do
+      FourthWall.Math.cosine_similarity!(
+        world_embedding!(world_id, text_a),
+        world_embedding!(world_id, text_b)
+      )
     end
 
-    defp token_overlap_similarity(text_a, text_b) do
-      tokens_a = text_a |> Brain.ML.Tokenizer.tokenize_words() |> MapSet.new()
-      tokens_b = text_b |> Brain.ML.Tokenizer.tokenize_words() |> MapSet.new()
-      overlap = MapSet.intersection(tokens_a, tokens_b) |> MapSet.size()
-      union = MapSet.union(tokens_a, tokens_b) |> MapSet.size()
+    # A world's embedding comes from the world's embedder and nowhere else. While
+    # the world's vocabulary is being rebuilt nothing can be embedded in it, so
+    # this waits for the rebuild to finish (`World.Embedder.await_ready/2`, which
+    # raises naming the world when it does not) and embeds then. Any other
+    # reason the world cannot embed raises naming the world.
+    defp world_embedding!(world_id, text) do
+      case WorldEmbedder.embed(world_id, text) do
+        {:ok, embedding} ->
+          embedding
 
-      if union > 0, do: overlap / union, else: 0.0
+        {:error, :vocabulary_building} ->
+          :ok = WorldEmbedder.await_ready(world_id)
+          world_embedding!(world_id, text)
+
+        {:error, reason} ->
+          raise "Investigation: world #{inspect(world_id)}'s embedder cannot embed: #{inspect(reason)}"
+      end
     end
 
     defp evidence_contradicts?(claim, finding_claim) do
@@ -657,9 +695,8 @@ defmodule Brain.Knowledge.Types do
       end
     end
 
-    defp generate_id do
-      :crypto.strong_rand_bytes(12) |> Base.url_encode64(padding: false)
-    end
+    # A UUID: an investigation is stored in Atlas under this id.
+    defp generate_id, do: Ecto.UUID.generate()
   end
 
   defmodule ResearchGoal do
@@ -721,11 +758,11 @@ defmodule Brain.Knowledge.Types do
 
     @doc """
     Builds a `Brain.Lattice` over competing hypotheses: a null triple (supported /
-    not supported / insufficient) plus non-contradicting priors from `BeliefStore`
-    for `subject: entity_value`.
+    not supported / insufficient) plus non-contradicting priors from `world_id`'s
+    `BeliefStore` beliefs for `subject: entity_value`.
     """
-    def formulate_competing_hypotheses(%__MODULE__{} = goal, entity_value)
-        when is_binary(entity_value) do
+    def formulate_competing_hypotheses(world_id, %__MODULE__{} = goal, entity_value)
+        when is_binary(world_id) and world_id != "" and is_binary(entity_value) do
       topic = goal.topic
 
       h_true =
@@ -756,7 +793,7 @@ defmodule Brain.Knowledge.Types do
         )
 
       priors =
-        case BeliefStore.query_beliefs(subject: entity_value, min_confidence: 0.5) do
+        case BeliefStore.query_beliefs(world_id, subject: entity_value, min_confidence: 0.5) do
           {:ok, beliefs} -> filter_non_contradicting_beliefs(beliefs)
           _ -> []
         end
@@ -884,9 +921,8 @@ defmodule Brain.Knowledge.Types do
       end
     end
 
-    defp generate_id do
-      :crypto.strong_rand_bytes(12) |> Base.url_encode64(padding: false)
-    end
+    # A UUID: a research goal is stored in Atlas under this id.
+    defp generate_id, do: Ecto.UUID.generate()
   end
 
   defmodule ReviewCandidate do
@@ -894,7 +930,10 @@ defmodule Brain.Knowledge.Types do
 
     alias Types.{Finding, SourceInfo}
 
-    @type status :: :pending | :approved | :rejected | :deferred
+    # :approved is a human decision; :auto_approved is the queue's own. They
+    # are kept apart because only what a human reviewed may teach the
+    # gazetteer.
+    @type status :: :pending | :approved | :auto_approved | :rejected | :deferred
 
     @type t :: %__MODULE__{
             id: String.t(),
@@ -923,8 +962,15 @@ defmodule Brain.Knowledge.Types do
       status: :pending
     ]
 
-    @doc "Creates a new ReviewCandidate from a finding.\n"
+    @doc """
+    Creates a new ReviewCandidate from a finding.
+
+    The candidate belongs to its finding's world (`finding.world_id`). A
+    finding that names no world raises `ArgumentError`.
+    """
     def new(%Finding{} = finding, opts \\ []) do
+      world_id!(finding)
+
       %__MODULE__{
         id: generate_id(),
         finding: finding,
@@ -937,9 +983,14 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    @doc "Marks a candidate as approved.\n"
+    @doc "Marks a candidate as approved by a human reviewer.\n"
     def approve(%__MODULE__{} = candidate, notes \\ nil) do
       %{candidate | status: :approved, reviewed_at: DateTime.utc_now(), reviewer_notes: notes}
+    end
+
+    @doc "Marks a candidate as approved by the queue itself, without a human.\n"
+    def auto_approve(%__MODULE__{} = candidate, notes \\ nil) do
+      %{candidate | status: :auto_approved, reviewed_at: DateTime.utc_now(), reviewer_notes: notes}
     end
 
     @doc "Marks a candidate as rejected.\n"
@@ -950,6 +1001,22 @@ defmodule Brain.Knowledge.Types do
     @doc "Marks a candidate as deferred for later review.\n"
     def defer(%__MODULE__{} = candidate, notes \\ nil) do
       %{candidate | status: :deferred, reviewed_at: DateTime.utc_now(), reviewer_notes: notes}
+    end
+
+    @doc """
+    The world the candidate belongs to: its finding's. A candidate whose
+    finding names no world raises `ArgumentError`.
+    """
+    @spec world_id!(t() | Finding.t()) :: String.t()
+    def world_id!(%__MODULE__{finding: finding}), do: world_id!(finding)
+
+    def world_id!(%Finding{world_id: world_id}) when is_binary(world_id) and world_id != "",
+      do: world_id
+
+    def world_id!(%Finding{} = finding) do
+      raise ArgumentError,
+            "review candidate finding #{inspect(finding.id)} (#{inspect(finding.entity)}) names no world, " <>
+              "got: #{inspect(finding.world_id)}"
     end
 
     defp generate_id do
@@ -977,7 +1044,8 @@ defmodule Brain.Knowledge.Types do
             hypotheses_supported: non_neg_integer(),
             hypotheses_falsified: non_neg_integer(),
             status: status(),
-            topic: String.t() | nil
+            topic: String.t() | nil,
+            world_id: String.t() | nil
           }
 
     @enforce_keys [:id, :started_at]
@@ -986,6 +1054,7 @@ defmodule Brain.Knowledge.Types do
       :started_at,
       :completed_at,
       :topic,
+      :world_id,
       goals: [],
       investigations: [],
       findings_count: 0,
@@ -997,15 +1066,16 @@ defmodule Brain.Knowledge.Types do
       status: :active
     ]
 
-    @doc "Creates a new LearningSession.\n"
-    def new(opts \\ []) do
+    @doc "Creates a new LearningSession.\n\n`opts` must carry `:world_id`, the world the session researches for.\n"
+    def new(opts) do
       %__MODULE__{
         id: generate_id(),
         goals: Keyword.get(opts, :goals, []),
         investigations: [],
         started_at: DateTime.utc_now(),
         status: :active,
-        topic: Keyword.get(opts, :topic)
+        topic: Keyword.get(opts, :topic),
+        world_id: Keyword.fetch!(opts, :world_id)
       }
     end
 
@@ -1073,9 +1143,9 @@ defmodule Brain.Knowledge.Types do
       }
     end
 
-    defp generate_id do
-      :crypto.strong_rand_bytes(12) |> Base.url_encode64(padding: false)
-    end
+    # A UUID: a session is stored in Atlas under this id, and later updates
+    # find its row by it.
+    defp generate_id, do: Ecto.UUID.generate()
   end
 
   defmodule SourceProfile do

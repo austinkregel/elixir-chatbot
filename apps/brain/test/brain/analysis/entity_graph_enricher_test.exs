@@ -3,15 +3,46 @@ defmodule Brain.Analysis.EntityGraphEnricherTest do
 
   alias Brain.Analysis.EntityGraphEnricher
 
-  describe "enrich/1" do
+  @world_id "default"
+
+  # `enrich/2` queries the knowledge graph, so these tests need a checked-out
+  # connection. Without one the query failed with a sandbox ownership error,
+  # which the enricher read as "the graph does not know this entity" — the
+  # tests passed on a broken lookup, and the miss was cached for every later
+  # reader (see .claude/findings/2026-09-19-test-failure-trace.md). The graph
+  # is empty here, so what they assert — that enrichment adds its fields and
+  # keeps the originals — now holds because the entity is genuinely absent.
+  setup tags do
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+    :ok
+  end
+
+  describe "enrich/2" do
     test "returns default enrichment for empty entity list" do
-      assert EntityGraphEnricher.enrich([]) == []
+      assert EntityGraphEnricher.enrich([], @world_id) == []
+    end
+
+    test "raises without a world, before any lookup" do
+      entities = [%{value: "Paris", entity_type: "location", confidence: 0.95}]
+
+      for world_id <- [nil, ""] do
+        assert_raise ArgumentError, ~r/EntityGraphEnricher.enrich needs the world/, fn ->
+          EntityGraphEnricher.enrich(entities, world_id)
+        end
+      end
+    end
+
+    test "raises without a world even for an empty entity list" do
+      assert_raise ArgumentError, ~r/EntityGraphEnricher.enrich needs the world/, fn ->
+        EntityGraphEnricher.enrich([], nil)
+      end
     end
 
     test "adds default graph fields when Atlas is unavailable" do
       entities = [%{value: "TestEntity", entity_type: "location", confidence: 0.9}]
 
-      enriched = EntityGraphEnricher.enrich(entities)
+      enriched = EntityGraphEnricher.enrich(entities, @world_id)
       assert length(enriched) == 1
 
       [entity] = enriched
@@ -25,7 +56,7 @@ defmodule Brain.Analysis.EntityGraphEnricherTest do
     test "preserves original entity fields" do
       entities = [%{value: "Paris", entity_type: "location", confidence: 0.95}]
 
-      enriched = EntityGraphEnricher.enrich(entities)
+      enriched = EntityGraphEnricher.enrich(entities, @world_id)
       [entity] = enriched
 
       assert entity.value == "Paris"

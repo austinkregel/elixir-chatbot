@@ -1,0 +1,195 @@
+{
+  "domain": "alarm",
+  "description": "Alarm management",
+  "response_frames": {
+    "time": [
+      "Alarm set for $time.",
+      "I've set an alarm for $time."
+    ],
+    "general": [
+      "Alarm has been set.",
+      "Done, your alarm is ready."
+    ],
+    "cancel": [
+      "Alarm cancelled.",
+      "I've cancelled the alarm."
+    ],
+    "check": [
+      "Let me check your alarms."
+    ]
+  },
+  "enriched_response_frames": {
+    "set_with_date_and_time": {
+      "when": {"alarm_status": "set", "alarm_count": null},
+      "requires_enrichment": ["alarm_date", "alarm_time"],
+      "templates": [
+        "Your alarm is set for $alarm_date at $alarm_time.",
+        "Alarm set for $alarm_date at $alarm_time."
+      ]
+    },
+    "set_with_time": {
+      "when": {"alarm_status": "set", "alarm_count": null},
+      "requires_enrichment": ["alarm_time"],
+      "templates": [
+        "Your alarm is set for $alarm_time.",
+        "Alarm set for $alarm_time."
+      ]
+    },
+    "set_with_date": {
+      "when": {"alarm_status": "set", "alarm_count": null},
+      "requires_enrichment": ["alarm_date"],
+      "templates": [
+        "Your alarm is set for $alarm_date.",
+        "Alarm set for $alarm_date."
+      ]
+    },
+    "set": {
+      "when": {"alarm_status": "set", "alarm_count": null},
+      "requires_enrichment": [],
+      "templates": [
+        "Your alarm is set.",
+        "Alarm set."
+      ]
+    },
+    "none_found": {
+      "when": {"alarm_count": 0},
+      "requires_enrichment": [],
+      "templates": [
+        "You have no alarms set.",
+        "There are no alarms set."
+      ]
+    },
+    "found_one_with_time": {
+      "when": {"alarm_count": 1},
+      "requires_enrichment": ["alarm_times"],
+      "templates": [
+        "You have one alarm, set for $alarm_times.",
+        "There's one alarm set, for $alarm_times."
+      ]
+    },
+    "found_one": {
+      "when": {"alarm_count": 1},
+      "requires_enrichment": [],
+      "templates": [
+        "You have one alarm set.",
+        "There's one alarm set."
+      ]
+    },
+    "found_several_with_times": {
+      "when": {"alarm_count": {"min": 2}},
+      "requires_enrichment": ["alarm_count", "alarm_times"],
+      "templates": [
+        "You have $alarm_count alarms, set for $alarm_times.",
+        "There are $alarm_count alarms set, for $alarm_times."
+      ]
+    },
+    "found_several": {
+      "when": {"alarm_count": {"min": 2}},
+      "requires_enrichment": ["alarm_count"],
+      "templates": [
+        "You have $alarm_count alarms set.",
+        "There are $alarm_count alarms set."
+      ]
+    },
+    "ringing_one_with_time": {
+      "when": {"alarm_status": "ringing", "alarm_count": 1},
+      "requires_enrichment": ["ringing_times"],
+      "templates": [
+        "Your $ringing_times alarm is ringing.",
+        "The $ringing_times alarm is ringing now."
+      ]
+    },
+    "ringing_one": {
+      "when": {"alarm_status": "ringing", "alarm_count": 1},
+      "requires_enrichment": [],
+      "templates": [
+        "Your alarm is ringing.",
+        "Your alarm is ringing now."
+      ]
+    },
+    "ringing_several_with_times": {
+      "when": {"alarm_status": "ringing", "alarm_count": {"min": 2}},
+      "requires_enrichment": ["alarm_count", "ringing_times"],
+      "templates": [
+        "You have $alarm_count alarms set, and ringing now: $ringing_times.",
+        "Of your $alarm_count alarms, ringing now: $ringing_times."
+      ]
+    },
+    "ringing_several": {
+      "when": {"alarm_status": "ringing", "alarm_count": {"min": 2}},
+      "requires_enrichment": ["alarm_count"],
+      "templates": [
+        "You have $alarm_count alarms set, and at least one is ringing.",
+        "Of your $alarm_count alarms, at least one is ringing now."
+      ]
+    },
+    "snoozed_with_time": {
+      "when": {"alarm_status": "snoozed"},
+      "requires_enrichment": ["alarm_times", "snooze_duration"],
+      "templates": [
+        "Snoozed your $alarm_times alarm for $snooze_duration.",
+        "Your $alarm_times alarm is snoozed for $snooze_duration."
+      ]
+    },
+    "snoozed": {
+      "when": {"alarm_status": "snoozed"},
+      "requires_enrichment": ["snooze_duration"],
+      "templates": [
+        "Alarm snoozed for $snooze_duration.",
+        "Snoozed for $snooze_duration."
+      ]
+    },
+    "cancelled_one_with_time": {
+      "when": {"cancelled_count": 1, "alarm_status": "cancelled", "alarm_count": null},
+      "requires_enrichment": ["alarm_times"],
+      "templates": [
+        "Your $alarm_times alarm is cancelled.",
+        "Cancelled your $alarm_times alarm."
+      ]
+    },
+    "cancelled_one": {
+      "when": {"cancelled_count": 1, "alarm_status": "cancelled", "alarm_count": null},
+      "requires_enrichment": [],
+      "templates": [
+        "Your alarm is cancelled.",
+        "Cancelled your alarm."
+      ]
+    },
+    "cancelled_several_with_times": {
+      "when": {"cancelled_count": {"min": 2}, "alarm_status": "cancelled", "alarm_count": null},
+      "requires_enrichment": ["cancelled_count", "alarm_times"],
+      "templates": [
+        "Cancelled $cancelled_count alarms, set for $alarm_times.",
+        "Your $cancelled_count alarms, set for $alarm_times, are cancelled."
+      ]
+    },
+    "cancelled_several": {
+      "when": {"cancelled_count": {"min": 2}, "alarm_status": "cancelled", "alarm_count": null},
+      "requires_enrichment": ["cancelled_count"],
+      "templates": [
+        "Cancelled $cancelled_count alarms.",
+        "Your $cancelled_count alarms are cancelled."
+      ]
+    }
+  },
+  "entity_verbalizations": {
+    "time": ["for $value", "at $value"]
+  },
+  "acknowledgment_prefixes": ["Sure,", "Done."],
+  "slot_requirements": {
+    "required": [],
+    "optional": ["time"]
+  },
+  "enrichment_service": "scheduling",
+  "enrichment_fields": {
+    "alarm_status": {"description": "\"set\" for an alarm set, or when a check finds alarms none of which is ringing; \"ringing\" when a check finds alarms one of which is; \"none\" when a check finds none; \"snoozed\" after a snooze; \"cancelled\" after a cancel", "source": "scheduling"},
+    "alarm_time": {"description": "The time an alarm was set for, as given; \"\" when none was given", "source": "scheduling"},
+    "alarm_date": {"description": "The date an alarm was set for, as given; \"\" when none was given", "source": "scheduling"},
+    "alarm_times": {"description": "The time of each alarm a check found, a snooze snoozed or a cancel removed, oldest first", "source": "scheduling"},
+    "alarm_dates": {"description": "The date of each alarm a check found, a snooze snoozed or a cancel removed, oldest first; null for an alarm stored without one", "source": "scheduling"},
+    "alarm_count": {"description": "How many alarms a check found", "source": "scheduling"},
+    "ringing_times": {"description": "The time of each alarm a check found that is ringing, oldest first; empty when none is", "source": "scheduling"},
+    "snooze_duration": {"description": "How long a snooze snoozed the ringing alarms for, as given", "source": "scheduling"},
+    "cancelled_count": {"description": "How many alarms a cancel removed", "source": "scheduling"}
+  }
+}

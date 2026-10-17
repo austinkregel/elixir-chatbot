@@ -1,0 +1,164 @@
+[
+  {
+    "text": "I'd like to turn off heating everywhere",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "turn",
+      "off",
+      "heating",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-a666b16b",
+    "intent": "smarthome.heating.switch.off"
+  },
+  {
+    "text": "I'd like to turn off heating in the living room",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "turn",
+      "off",
+      "heating",
+      "in",
+      "the",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "VERB",
+      "ADP",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-a5e7ae03",
+    "intent": "smarthome.heating.switch.off"
+  },
+  {
+    "text": "can you turn off heating",
+    "tokens": [
+      "can",
+      "you",
+      "turn",
+      "off",
+      "heating"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-1946346c",
+    "intent": "smarthome.heating.switch.off"
+  },
+  {
+    "text": "turn off heating the living room",
+    "tokens": [
+      "turn",
+      "off",
+      "heating",
+      "the",
+      "living",
+      "room"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-3d376ccf",
+    "intent": "smarthome.heating.switch.off"
+  },
+  {
+    "text": "could you turn off heating",
+    "tokens": [
+      "could",
+      "you",
+      "turn",
+      "off",
+      "heating"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-3e07d262",
+    "intent": "smarthome.heating.switch.off"
+  },
+  {
+    "text": "I'd like to turn off heating",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "turn",
+      "off",
+      "heating"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-48c685b4",
+    "intent": "smarthome.heating.switch.off"
+  },
+  {
+    "text": "hey turn off heating",
+    "tokens": [
+      "hey",
+      "turn",
+      "off",
+      "heating"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-311385f6",
+    "intent": "smarthome.heating.switch.off"
+  }
+]

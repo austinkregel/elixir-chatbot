@@ -1,0 +1,114 @@
+[
+  {
+    "text": "could you are you sure tonight",
+    "tokens": [
+      "could",
+      "you",
+      "are",
+      "you",
+      "sure",
+      "tonight"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-ef6e7dd2",
+    "intent": "smalltalk.agent.sure"
+  },
+  {
+    "text": "I'd like to are you sure now",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "are",
+      "you",
+      "sure",
+      "now"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-c5c83897",
+    "intent": "smalltalk.agent.sure"
+  },
+  {
+    "text": "are sure you right now",
+    "tokens": [
+      "are",
+      "sure",
+      "you",
+      "right",
+      "now"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "PRON",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-fcbb2d51",
+    "intent": "smalltalk.agent.sure"
+  },
+  {
+    "text": "can you are you sure",
+    "tokens": [
+      "can",
+      "you",
+      "are",
+      "you",
+      "sure"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-3d894ecd",
+    "intent": "smalltalk.agent.sure"
+  },
+  {
+    "text": "could you are you sure right now",
+    "tokens": [
+      "could",
+      "you",
+      "are",
+      "you",
+      "sure",
+      "right",
+      "now"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-9afb1f34",
+    "intent": "smalltalk.agent.sure"
+  }
+]

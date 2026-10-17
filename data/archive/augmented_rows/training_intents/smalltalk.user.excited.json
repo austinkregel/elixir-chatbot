@@ -1,0 +1,86 @@
+[
+  {
+    "text": "excited how I am",
+    "tokens": [
+      "excited",
+      "how",
+      "I",
+      "am"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "ADV",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-33944897",
+    "intent": "smalltalk.user.excited"
+  },
+  {
+    "text": "I'd like to i'm excited to start our friendship",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "i",
+      "'m",
+      "excited",
+      "to",
+      "start",
+      "our",
+      "friendship"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-91d9edd0",
+    "intent": "smalltalk.user.excited"
+  },
+  {
+    "text": "I excited am",
+    "tokens": [
+      "I",
+      "excited",
+      "am"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-a2ce579c",
+    "intent": "smalltalk.user.excited"
+  },
+  {
+    "text": "I 'm really excited",
+    "tokens": [
+      "I",
+      "'m",
+      "really",
+      "excited"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-b5871988",
+    "intent": "smalltalk.user.excited"
+  }
+]

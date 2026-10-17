@@ -7,6 +7,9 @@ defmodule Brain.Response.GeneratorIntegrationTest do
   alias Brain.Analysis.Pipeline
   alias Brain.Response.Generator
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup do
     start_test_services()
     :ok
@@ -14,22 +17,22 @@ defmodule Brain.Response.GeneratorIntegrationTest do
 
   describe "full pipeline to response" do
     test "greeting input produces greeting-classified response" do
-      analysis = Pipeline.process("Hello!")
+      analysis = Pipeline.process("Hello!", world_id: @world_id)
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
-      {:ok, response, _type} = Generator.generate(intent, entities, "Hello!")
+      {:ok, response, _type} = Generator.generate(intent, entities, "Hello!", world_id: @world_id)
       assert is_binary(response)
       assert byte_size(response) > 0
       assert_response_intent(response, "smalltalk")
     end
 
     test "weather query produces weather-classified response" do
-      analysis = Pipeline.process("What's the weather like in Seattle?")
+      analysis = Pipeline.process("What's the weather like in Seattle?", world_id: @world_id)
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
-      {:ok, response, _type} = Generator.generate(intent, entities, "What's the weather like in Seattle?")
+      {:ok, response, _type} = Generator.generate(intent, entities, "What's the weather like in Seattle?", world_id: @world_id)
       assert is_binary(intent)
       assert String.starts_with?(intent, "weather")
       assert is_binary(response)
@@ -37,7 +40,7 @@ defmodule Brain.Response.GeneratorIntegrationTest do
     end
 
     test "unknown intent produces non-empty fallback response" do
-      {:ok, response, _type} = Generator.generate("unknown.intent.xyz", [], nil)
+      {:ok, response, _type} = Generator.generate("unknown.intent.xyz", [], nil, world_id: @world_id)
       assert is_binary(response)
       assert byte_size(response) > 0
     end
@@ -51,21 +54,21 @@ defmodule Brain.Response.GeneratorIntegrationTest do
         "category" => "geography",
         "entities" => ["France", "Paris"]
       })
-      analysis = Pipeline.process("What is the capital of France?")
+      analysis = Pipeline.process("What is the capital of France?", world_id: @world_id)
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
-      {:ok, response, _type} = Generator.generate(intent, entities, "What is the capital of France?")
+      {:ok, response, _type} = Generator.generate(intent, entities, "What is the capital of France?", world_id: @world_id)
       assert is_binary(response)
       assert byte_size(response) > 0
     end
 
     test "sentiment-laden input produces empathetic response" do
-      analysis = Pipeline.process("I'm really frustrated")
+      analysis = Pipeline.process("I'm really frustrated", world_id: @world_id)
       first = List.first(analysis.analyses || [])
       intent = first && first.intent
       entities = (first && first.entities) || []
-      {:ok, response, _type} = Generator.generate(intent, entities, "I'm really frustrated")
+      {:ok, response, _type} = Generator.generate(intent, entities, "I'm really frustrated", world_id: @world_id)
       assert is_binary(response)
       assert byte_size(response) > 0
     end

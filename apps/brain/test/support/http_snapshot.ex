@@ -77,6 +77,26 @@ defmodule Brain.Test.HTTPSnapshot do
   end
 
   @doc """
+  Returns every currently loaded snapshot, for a caller that means to put them
+  back with `load_snapshots/1`.
+
+  The loaded set is global to the VM, so a test that loads one leaves it
+  visible to every later test; `Brain.Test.Singletons.use_http_snapshots!/1`
+  pairs this with `load_snapshots/1` to undo that.
+  """
+  def export_snapshots do
+    GenServer.call(__MODULE__, :export_snapshots)
+  end
+
+  @doc """
+  Replaces the loaded snapshots with `snapshots`, as returned by
+  `export_snapshots/0`. Anything loaded since is discarded.
+  """
+  def load_snapshots(snapshots) when is_list(snapshots) do
+    GenServer.call(__MODULE__, {:load_snapshots, snapshots})
+  end
+
+  @doc """
   Gets the response for a given URL from loaded snapshots.
   Returns {:ok, response} or {:error, :no_snapshot}.
   """
@@ -147,6 +167,18 @@ defmodule Brain.Test.HTTPSnapshot do
   @impl true
   def handle_call(:clear_snapshots, _from, state) do
     :ets.delete_all_objects(@table_name)
+    {:reply, :ok, state}
+  end
+
+  @impl true
+  def handle_call(:export_snapshots, _from, state) do
+    {:reply, :ets.tab2list(@table_name), state}
+  end
+
+  @impl true
+  def handle_call({:load_snapshots, snapshots}, _from, state) do
+    :ets.delete_all_objects(@table_name)
+    :ets.insert(@table_name, snapshots)
     {:reply, :ok, state}
   end
 

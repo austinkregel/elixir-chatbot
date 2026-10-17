@@ -8,12 +8,20 @@ defmodule Brain.Response.RealizationPacket do
   science, chat) in ChatML format -- never on structured JSON -- so the
   prompt must be readable prose, not a JSON blob.
 
-  Debug JSON dumps are still written to tmp/realization_packets/ for
-  diagnostics, but the actual prompt sent to Ouro is natural language.
+  The turn's recurring pattern (`Brain.Memory.RecurringPattern`), when the
+  unified context has one, is named ahead of the similar past interactions:
+  what the user says in it, and the reply it most often got across its
+  episodes. `recurring_pattern/1` is the pattern a packet names; building a
+  packet does not report the use, since a packet is built on each pass of a
+  refined turn. The realizer whose response the turn settles on reports it
+  (`Brain.Memory.RecurringPattern.used/3`).
+
+  Building a packet writes nothing.
   """
 
   alias Brain.Response.Primitive
   alias Brain.Analysis.{ChunkAnalysis, ChunkProfile}
+  alias Brain.Memory.RecurringPattern
 
   require Logger
 
@@ -36,8 +44,6 @@ defmodule Brain.Response.RealizationPacket do
     unified_context = Keyword.get(opts, :unified_context, %{})
     tone = extract_tone(analysis, opts)
 
-    dump_debug_json(primitives, analysis, unified_context)
-
     user_message =
       [
         render_analysis(analysis, unified_context),
@@ -51,10 +57,6 @@ defmodule Brain.Response.RealizationPacket do
       |> Enum.join("\n")
 
     Logger.info("RealizationPacket prompt: #{byte_size(user_message)} chars, #{length(primitives)} primitives")
-
-    dump_dir = Path.join([File.cwd!(), "tmp", "realization_packets"])
-    ts = System.system_time(:millisecond)
-    File.write(Path.join(dump_dir, "#{ts}_prompt.txt"), "=== SYSTEM ===\n#{@system_prompt}\n=== USER ===\n#{user_message}")
 
     [
       %{role: "system", content: @system_prompt},
@@ -222,8 +224,7 @@ defmodule Brain.Response.RealizationPacket do
       entities
       |> Enum.map(fn e ->
         value = Map.get(e, :value) || Map.get(e, "value") || "?"
-        type = Map.get(e, :entity_type) || Map.get(e, "entity_type") || ""
-        if type == "", do: value, else: "#{value} (#{type})"
+        "#{value} (#{entity_type!(e)})"
       end)
       |> Enum.reject(&(&1 == "" or &1 == "?"))
 
@@ -257,15 +258,22 @@ defmodule Brain.Response.RealizationPacket do
         parts =
           Enum.map(entities, fn e ->
             value = Map.get(e, :value) || Map.get(e, "value") || "?"
-            type = Map.get(e, :entity_type) || Map.get(e, :entity) || Map.get(e, "entity_type") || ""
             conf = Map.get(e, :confidence) || Map.get(e, "confidence")
 
             conf_str = if is_number(conf), do: ", confidence #{Float.round(conf * 1.0, 2)}", else: ""
-            "#{value} (#{type}#{conf_str})"
+            "#{value} (#{entity_type!(e)}#{conf_str})"
           end)
 
         ["Entities: #{Enum.join(parts, "; ")}."]
     end
+  end
+
+  # An entity's type is its `:entity_type`; an entity without one raises.
+  defp entity_type!(%{entity_type: type}) when (is_binary(type) and type != "") or (is_atom(type) and not is_nil(type)),
+    do: type
+
+  defp entity_type!(entity) do
+    raise ArgumentError, "RealizationPacket: entity has no :entity_type: #{inspect(entity)}"
   end
 
   defp render_speech_act(analysis) do
@@ -358,10 +366,35 @@ defmodule Brain.Response.RealizationPacket do
     lines = lines ++ render_enriched_data(unified_context)
     lines = lines ++ render_per_chunk_facts(unified_context)
     lines = lines ++ render_accumulator(unified_context)
+    lines = lines ++ render_recurring_pattern(unified_context)
     lines = lines ++ render_episodes(unified_context)
 
     lines
   end
+
+  defp render_recurring_pattern(unified_context) do
+    case recurring_pattern(unified_context) do
+      %RecurringPattern{} = pattern ->
+        [
+          "A recurring pattern from past conversations " <>
+            "(#{pattern.evidence_count} similar messages, similarity #{Float.round(pattern.similarity * 1.0, 2)}): " <>
+            "the user says things like \"#{pattern.fact.representation}\", and the reply " <>
+            "#{pattern.reply_count} of them got was \"#{pattern.reply}\"."
+        ]
+
+      nil ->
+        []
+    end
+  end
+
+  @doc """
+  The recurring pattern a packet built with `unified_context` names: the
+  turn's pattern (`Brain.Memory.RecurringPattern`) from the context's memory,
+  or `nil` for a turn with none or a context built without memory.
+  """
+  @spec recurring_pattern(map() | nil) :: RecurringPattern.t() | nil
+  def recurring_pattern(%{memory: %{recurring_pattern: %RecurringPattern{} = pattern}}), do: pattern
+  def recurring_pattern(_unified_context), do: nil
 
   defp render_per_chunk_facts(ctx) do
     facts_map = Map.get(ctx, :per_chunk_facts)
@@ -641,68 +674,10 @@ defmodule Brain.Response.RealizationPacket do
     lines
   end
 
-  # --- Debug JSON dumps (not sent to Ouro) ---
+  # --- Primitive serialization (for DecompressorCollector) ---
 
-  defp dump_debug_json(primitives, analysis, unified_context) do
-    analysis_data = serialize_analysis_for_debug(analysis)
-    context_data = serialize_context_for_debug(unified_context)
-    plan_data = Enum.map(primitives, &serialize_primitive_for_debug/1)
-
-    analysis_json = Jason.encode!(analysis_data, pretty: true)
-    context_json = Jason.encode!(context_data, pretty: true)
-    plan_json = Jason.encode!(plan_data, pretty: true)
-
-    dump_dir = Path.join([File.cwd!(), "tmp", "realization_packets"])
-    File.mkdir_p!(dump_dir)
-    ts = System.system_time(:millisecond)
-
-    File.write!(Path.join(dump_dir, "#{ts}_plan.json"), plan_json)
-    File.write!(Path.join(dump_dir, "#{ts}_analysis.json"), analysis_json)
-    File.write!(Path.join(dump_dir, "#{ts}_context.json"), context_json)
-
-    Logger.info(
-      "RealizationPacket debug dump: tmp/realization_packets/#{ts}_*.json | " <>
-        "plan=#{byte_size(plan_json)} analysis=#{byte_size(analysis_json)} " <>
-        "context=#{byte_size(context_json)}"
-    )
-  rescue
-    e -> Logger.warning("Failed to dump debug JSON: #{inspect(e)}")
-  end
-
-  defp serialize_analysis_for_debug(analysis) do
-    profile = safe_get(analysis, :profile)
-
-    base = %{
-      "text" => safe_get(analysis, :text),
-      "intent" => safe_get(analysis, :intent),
-      "confidence" => safe_get(analysis, :confidence, 0.5),
-      "response_strategy" => safe_get(analysis, :response_strategy) |> stringify_atom(),
-      "entities" => safe_get(analysis, :entities, []) |> Enum.map(&serialize_value/1),
-      "sentiment" => serialize_value(safe_get(analysis, :sentiment)),
-      "speech_act" => serialize_value(safe_get(analysis, :speech_act))
-    }
-
-    if match?(%ChunkProfile{}, profile) do
-      Map.put(base, "profile", %{
-        "derived_label" => profile.derived_label,
-        "domain" => stringify_atom(profile.domain),
-        "modality" => stringify_atom(profile.modality),
-        "response_posture" => stringify_atom(profile.response_posture),
-        "engagement_level" => stringify_atom(profile.engagement_level),
-        "confidence" => profile.confidence
-      })
-    else
-      base
-    end
-  end
-
-  defp serialize_context_for_debug(ctx) when ctx in [nil, %{}], do: nil
-  defp serialize_context_for_debug(ctx), do: serialize_value(ctx)
-
-  @doc "Serializes a primitive to a map for JSON encoding. Used by debug dumps and DecompressorCollector."
-  def serialize_primitive(%Primitive{} = p), do: serialize_primitive_for_debug(p)
-
-  defp serialize_primitive_for_debug(%Primitive{} = p) do
+  @doc "Serializes a primitive to a map for JSON encoding. Used by DecompressorCollector."
+  def serialize_primitive(%Primitive{} = p) do
     content =
       p.content
       |> Enum.map(fn {k, v} -> {to_string(k), serialize_value(v)} end)
@@ -715,7 +690,7 @@ defmodule Brain.Response.RealizationPacket do
     }
   end
 
-  # --- Value serialization (for debug dumps) ---
+  # --- Value serialization ---
 
   @doc false
   def serialize_value(v) when is_atom(v) and not is_nil(v) and not is_boolean(v), do: to_string(v)

@@ -1,5 +1,5 @@
 defmodule Brain do
-  @moduledoc "The Brain GenServer manages the AI personality, subprocesses, and global memory.\nThis is the core component that orchestrates all chat bot functionality.\n"
+  @moduledoc "The Brain GenServer manages the AI personality, conversations, and global memory.\nThis is the core component that orchestrates all chat bot functionality.\n"
 
   # World.Context and World.Manager are in a sibling umbrella app that depends on :brain.
   # They are available at runtime but not at compile time.
@@ -31,8 +31,7 @@ defmodule Brain do
     ResponseGate,
     SlotDetector,
     ChunkPriority,
-    ChunkProfile,
-    FeatureExtractor
+    ChunkProfile
   }
 
   alias Brain.Analysis.OutcomeLearner
@@ -54,6 +53,56 @@ defmodule Brain do
   end
 
   @doc """
+  Returns a path within the umbrella's top-level `data/` directory.
+
+  `data/` sits above `apps/`, so it cannot be reached through
+  `:code.priv_dir/1` and must not be reached through `File.cwd!/0`: an umbrella
+  run has two working directories, because Mix boots the applications from the
+  umbrella root and then runs each app's tests from `apps/<app>`. A relative
+  `"data/classifiers"` therefore names two different directories in one run —
+  the same trap `config/test.exs` documents at length for `learning_params_path`
+  and `Brain.SnapshotHelper` hit with its snapshots directory.
+
+  This walks up from the resolved priv directory instead, following the symlink
+  Mix creates in `_build` when there is one.
+
+  ## Examples
+
+      Brain.data_path("classifiers")
+      #=> "/path/to/umbrella/data/classifiers"
+  """
+  def data_path(subpath) when is_binary(subpath) do
+    Path.join(umbrella_root(), Path.join("data", subpath))
+  end
+
+  @doc """
+  The umbrella's root directory, resolved from the brain app's priv directory.
+
+  `_build/<env>/lib/brain/priv` is a symlink to `apps/brain/priv` in a normal
+  build, so the number of levels to walk up depends on which of the two the
+  path resolves to. Both cases are handled rather than assuming one.
+  """
+  def umbrella_root do
+    priv = priv_dir()
+
+    case File.read_link(priv) do
+      {:ok, target} ->
+        # `priv` is the _build symlink; follow it to apps/brain/priv, then up
+        # past apps/brain and apps.
+        priv
+        |> Path.dirname()
+        |> Path.join(target)
+        |> Path.expand()
+        |> Path.join("../../..")
+        |> Path.expand()
+
+      {:error, _} ->
+        # Not a symlink: this is _build/<env>/lib/brain/priv itself.
+        Path.expand(Path.join(priv, "../../../../.."))
+    end
+  end
+
+  @doc """
   Starts the Brain GenServer.
 
   ## Arguments
@@ -72,11 +121,49 @@ defmodule Brain do
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
     - `:timeout` - Call timeout in ms (default: 90_000)
+    - `:language` - the language code to analyze in, as `Brain.Language.resolve!/1`
+      gives it from the browser's `Accept-Language`. A caller with no browser
+      language names none, which means English (`Brain.Language`). An
+      unsupported code raises.
+    - `:time_zone` - required: the `Brain.Temporal.Zone` the turn's dates and
+      times are read in, as the person's browser gives it
+      (`Brain.Temporal.Zone.from_browser!/1`). A caller with no browser names
+      the zone its turns are read in (`Brain.Temporal.Zone.fixed!/2`). Absent,
+      or anything but a zone, raises: no zone is assumed.
+    - `:user_id` - the web user who says the turn; the alarms, reminders,
+      timers and calendar items the turn sets are theirs.
+
+  Whether the turn writes is the conversation's `:side_effects`, set by
+  `create_conversation/1`; passing `:side_effects` here raises.
   """
   def evaluate(conversation_id, input, opts \\ []) do
+    if Keyword.has_key?(opts, :side_effects) do
+      raise ArgumentError,
+            "Brain.evaluate does not take :side_effects; it is set for the whole conversation by Brain.create_conversation/1"
+    end
+
+    # Checked in the caller's process, so a turn without its zone raises there.
+    case Keyword.fetch(opts, :time_zone) do
+      {:ok, %Brain.Temporal.Zone{}} ->
+        :ok
+
+      other ->
+        raise ArgumentError,
+              "Brain.evaluate needs :time_zone, the Brain.Temporal.Zone the turn's dates and times are read in, " <>
+                "as the person's browser gives it (Brain.Temporal.Zone.from_browser!/1); a caller with no browser " <>
+                "names one (Brain.Temporal.Zone.fixed!/2). Got: #{inspect(other)}"
+    end
+
     server = Keyword.get(opts, :server, __MODULE__)
     timeout = Keyword.get(opts, :timeout, 90_000)
-    opts = opts |> Keyword.delete(:server) |> Keyword.delete(:timeout)
+    # Checked in the caller's process, so an unsupported language raises there.
+    language = opts |> Keyword.get(:language) |> Brain.Language.resolve!()
+
+    opts =
+      opts
+      |> Keyword.delete(:server)
+      |> Keyword.delete(:timeout)
+      |> Keyword.put(:language, language)
 
     Telemetry.span(:brain_evaluate, %{conversation_id: conversation_id}, fn ->
       GenServer.call(server, {:evaluate, conversation_id, input, opts}, timeout)
@@ -88,11 +175,59 @@ defmodule Brain do
 
   ## Options
     - `:server` - The server to call (default: `#{__MODULE__}`)
-    - `:world_id` - The training world to use for this conversation (default: "default")
+    - `:world_id` - required: the world the conversation runs in, one
+      `World.Manager` holds. Every turn is analyzed in it. Absent, or a world
+      that is not loaded (a purged one), raises.
+    - `:side_effects` - whether the conversation and its turns write what they
+      learn: graph nodes, beliefs, user-model facts, episodes, learner files,
+      entity candidates, Gazetteer preferences, Ouro debug and training data,
+      and service calls that change state, such as a Home Assistant action.
+      Defaults to `true`. A conversation created with `false` (a benchmark,
+      for one) writes none of them; a service call that would change state is
+      refused and reported as an enrichment failure. Any other value raises.
   """
   def create_conversation(opts \\ []) do
     server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, {:create_conversation, opts})
+    conversation_world!(opts)
+    side_effects = conversation_side_effects!(opts)
+    GenServer.call(server, {:create_conversation, Keyword.put(opts, :side_effects, side_effects)})
+  end
+
+  # Checked in the caller's process, so a missing world raises there. The world
+  # must be one `World.Manager` holds: a purged world's id (one a web user still
+  # has selected, say) names no world to run in.
+  defp conversation_world!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        case WorldManager.get(world_id) do
+          {:ok, _world} ->
+            world_id
+
+          {:error, reason} ->
+            raise ArgumentError,
+                  "Brain.create_conversation: world #{inspect(world_id)} is not loaded (#{inspect(reason)}); " <>
+                    "a conversation runs in a world World.Manager holds"
+        end
+
+      {:ok, other} ->
+        raise ArgumentError, "Brain.create_conversation option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "Brain.create_conversation needs :world_id, the world the conversation runs in"
+    end
+  end
+
+  # Checked in the caller's process, so a bad value raises there rather than
+  # inside the Brain server.
+  defp conversation_side_effects!(opts) do
+    case Keyword.get(opts, :side_effects, true) do
+      value when is_boolean(value) ->
+        value
+
+      other ->
+        raise ArgumentError,
+              "Brain.create_conversation option :side_effects must be true or false, got: #{inspect(other)}"
+    end
   end
 
   @doc """
@@ -162,61 +297,6 @@ defmodule Brain do
   end
 
   @doc """
-  Starts an HTTP subprocess.
-
-  ## Options
-    - `:server` - The server to call (default: `#{__MODULE__}`)
-  """
-  def start_http_subprocess(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, {:start_http_subprocess, opts})
-  end
-
-  @doc """
-  Starts a conversation subprocess.
-
-  ## Options
-    - `:server` - The server to call (default: `#{__MODULE__}`)
-  """
-  def start_conversation_subprocess(conversation_id, opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, {:start_conversation_subprocess, conversation_id, opts})
-  end
-
-  @doc """
-  Starts a CLI subprocess.
-
-  ## Options
-    - `:server` - The server to call (default: `#{__MODULE__}`)
-  """
-  def start_cli_subprocess(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, {:start_cli_subprocess, opts})
-  end
-
-  @doc """
-  Stops a subprocess.
-
-  ## Options
-    - `:server` - The server to call (default: `#{__MODULE__}`)
-  """
-  def stop_subprocess(subprocess_id, opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, {:stop_subprocess, subprocess_id})
-  end
-
-  @doc """
-  Lists all subprocesses.
-
-  ## Options
-    - `:server` - The server to call (default: `#{__MODULE__}`)
-  """
-  def list_subprocesses(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-    GenServer.call(server, :list_subprocesses)
-  end
-
-  @doc """
   Resets the Brain state. Useful for testing.
 
   ## Options
@@ -243,12 +323,7 @@ defmodule Brain do
       global_memory: memory,
       learning_queue: [],
       is_shutting_down: false,
-      pending_requests: %{},
-      subprocesses: %{
-        http: %{},
-        conversation: %{},
-        cli: %{}
-      }
+      pending_requests: %{}
     }
 
     Logger.info("Brain initialized", %{
@@ -279,11 +354,13 @@ defmodule Brain do
   @impl true
   def handle_call({:create_conversation, opts}, _from, state) do
     conversation_id = generate_conversation_id()
-    world_id = Keyword.get(opts, :world_id, "default")
+    world_id = Keyword.fetch!(opts, :world_id)
+    side_effects = Keyword.get(opts, :side_effects, true)
 
     conversation = %{
       id: conversation_id,
       world_id: world_id,
+      side_effects: side_effects,
       memory: [],
       active_context: nil,
       created_at: System.system_time(:millisecond),
@@ -300,14 +377,11 @@ defmodule Brain do
       world_id: world_id
     })
 
-    Brain.Graph.Writer.write_conversation(conversation)
+    if side_effects do
+      Brain.Graph.Writer.write_conversation(conversation)
+    end
 
     {:reply, {:ok, conversation_id}, updated_state}
-  end
-
-  @impl true
-  def handle_call(:create_conversation, from, state) do
-    handle_call({:create_conversation, []}, from, state)
   end
 
   @impl true
@@ -344,7 +418,7 @@ defmodule Brain do
       |> Enum.map(fn conv ->
         %{
           id: conv.id,
-          world_id: Map.get(conv, :world_id, "default"),
+          world_id: Map.fetch!(conv, :world_id),
           message_count: length(conv.memory),
           created_at: conv.created_at,
           last_activity: conv.last_activity
@@ -359,146 +433,6 @@ defmodule Brain do
       nil -> {:reply, {:error, "Conversation not found"}, state}
       conversation -> {:reply, {:ok, conversation}, state}
     end
-  end
-
-  @impl true
-  def handle_call({:start_http_subprocess, opts}, _from, state) do
-    memory_snapshot = %{
-      knowledge: state.persona.knowledge || %{},
-      global_memory: state.global_memory
-    }
-
-    case Brain.Subprocesses.Supervisor.start_http_subprocess(
-           Keyword.put(opts, :memory_snapshot, memory_snapshot)
-         ) do
-      {:ok, pid, subprocess_id} ->
-        updated_subprocesses = %{
-          state.subprocesses
-          | http:
-              Map.put(state.subprocesses.http, subprocess_id, %{
-                pid: pid,
-                started_at: System.system_time(:millisecond)
-              })
-        }
-
-        Logger.info("HTTP subprocess started", %{
-          subprocess_id: subprocess_id,
-          pid: pid
-        })
-
-        {:reply, {:ok, subprocess_id}, %{state | subprocesses: updated_subprocesses}}
-
-      {:error, reason} ->
-        Logger.error("Failed to start HTTP subprocess", %{reason: reason})
-        {:reply, {:error, reason}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:start_conversation_subprocess, conversation_id, opts}, _from, state) do
-    memory_snapshot = %{
-      knowledge: state.persona.knowledge || %{},
-      global_memory: state.global_memory
-    }
-
-    case Brain.Subprocesses.Supervisor.start_conversation_subprocess(
-           opts
-           |> Keyword.put(:conversation_id, conversation_id)
-           |> Keyword.put(:memory_snapshot, memory_snapshot)
-         ) do
-      {:ok, pid, subprocess_id} ->
-        updated_subprocesses = %{
-          state.subprocesses
-          | conversation:
-              Map.put(state.subprocesses.conversation, subprocess_id, %{
-                pid: pid,
-                conversation_id: conversation_id,
-                started_at: System.system_time(:millisecond)
-              })
-        }
-
-        Logger.info("Conversation subprocess started", %{
-          subprocess_id: subprocess_id,
-          conversation_id: conversation_id,
-          pid: pid
-        })
-
-        {:reply, {:ok, subprocess_id}, %{state | subprocesses: updated_subprocesses}}
-
-      {:error, reason} ->
-        Logger.error("Failed to start conversation subprocess", %{reason: reason})
-        {:reply, {:error, reason}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:start_cli_subprocess, opts}, _from, state) do
-    memory_snapshot = %{
-      knowledge: state.persona.knowledge || %{},
-      global_memory: state.global_memory
-    }
-
-    case Brain.Subprocesses.Supervisor.start_cli_subprocess(
-           Keyword.put(opts, :memory_snapshot, memory_snapshot)
-         ) do
-      {:ok, pid, subprocess_id} ->
-        updated_subprocesses = %{
-          state.subprocesses
-          | cli:
-              Map.put(state.subprocesses.cli, subprocess_id, %{
-                pid: pid,
-                started_at: System.system_time(:millisecond)
-              })
-        }
-
-        Logger.info("CLI subprocess started", %{
-          subprocess_id: subprocess_id,
-          pid: pid
-        })
-
-        {:reply, {:ok, subprocess_id}, %{state | subprocesses: updated_subprocesses}}
-
-      {:error, reason} ->
-        Logger.error("Failed to start CLI subprocess", %{reason: reason})
-        {:reply, {:error, reason}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:stop_subprocess, subprocess_id}, _from, state) do
-    subprocess_info = find_subprocess_by_id(state.subprocesses, subprocess_id)
-
-    case subprocess_info do
-      {type, info} ->
-        case Brain.Subprocesses.Supervisor.stop_subprocess(info.pid) do
-          :ok ->
-            updated_subprocesses = remove_subprocess(state.subprocesses, type, subprocess_id)
-            Logger.info("Subprocess stopped", %{type: type, subprocess_id: subprocess_id})
-            {:reply, :ok, %{state | subprocesses: updated_subprocesses}}
-
-          {:error, reason} ->
-            Logger.error("Failed to stop subprocess", %{
-              subprocess_id: subprocess_id,
-              reason: reason
-            })
-
-            {:reply, {:error, reason}, state}
-        end
-
-      nil ->
-        {:reply, {:error, "Subprocess not found"}, state}
-    end
-  end
-
-  @impl true
-  def handle_call(:list_subprocesses, _from, state) do
-    subprocesses = %{
-      http: Map.keys(state.subprocesses.http),
-      conversation: Map.keys(state.subprocesses.conversation),
-      cli: Map.keys(state.subprocesses.cli)
-    }
-
-    {:reply, subprocesses, state}
   end
 
   @impl true
@@ -606,6 +540,9 @@ defmodule Brain do
       entities: Map.get(context, :entities, []),
       slots: Map.get(context, :slots, %{}),
       missing_slots: Map.get(context, :missing_slots, []),
+      # Candidates a reply to a service's error asked the user to pick from
+      # (`FollowupDetector.awaiting_answer/1`).
+      pending_clarification: Map.get(context, :pending_clarification),
       speech_act: Map.get(context, :speech_act),
       timestamp: System.system_time(:millisecond)
     }
@@ -619,35 +556,6 @@ defmodule Brain do
       Map.put(result, :analysis_model, Map.get(context, :analysis_model))
     else
       result
-    end
-  end
-
-  defp find_subprocess_by_id(subprocesses, subprocess_id) do
-    cond do
-      Map.has_key?(subprocesses.http, subprocess_id) ->
-        {:http, Map.get(subprocesses.http, subprocess_id)}
-
-      Map.has_key?(subprocesses.conversation, subprocess_id) ->
-        {:conversation, Map.get(subprocesses.conversation, subprocess_id)}
-
-      Map.has_key?(subprocesses.cli, subprocess_id) ->
-        {:cli, Map.get(subprocesses.cli, subprocess_id)}
-
-      true ->
-        nil
-    end
-  end
-
-  defp remove_subprocess(subprocesses, type, subprocess_id) do
-    case type do
-      :http ->
-        %{subprocesses | http: Map.delete(subprocesses.http, subprocess_id)}
-
-      :conversation ->
-        %{subprocesses | conversation: Map.delete(subprocesses.conversation, subprocess_id)}
-
-      :cli ->
-        %{subprocesses | cli: Map.delete(subprocesses.cli, subprocess_id)}
     end
   end
 
@@ -675,8 +583,19 @@ defmodule Brain do
 
   defp do_evaluate(conversation_id, conversation, input, opts, state) do
     now = System.system_time(:millisecond)
-    world_id = Map.get(conversation, :world_id, "default")
-    opts_with_world = Keyword.put(opts, :world_id, world_id)
+    world_id = Map.fetch!(conversation, :world_id)
+    side_effects = Map.fetch!(conversation, :side_effects)
+
+    # The turn's time is the user message's timestamp: a date or time the
+    # message says ("tomorrow", "in 2 hours") is read against it, in the
+    # turn's :time_zone. What the turn sets belongs to the web user who said
+    # it.
+    opts_with_world =
+      opts
+      |> Keyword.put(:world_id, world_id)
+      |> Keyword.put(:side_effects, side_effects)
+      |> Keyword.put(:turn_time, DateTime.from_unix!(now, :millisecond))
+      |> Keyword.put(:web_user_id, Keyword.get(opts, :user_id))
     ml_config = Application.get_env(:brain, :ml) || Application.get_env(:chat_bot, :ml) || []
 
     {response, processing_method, context} =
@@ -722,12 +641,14 @@ defmodule Brain do
         {[user_message, assistant_message], response}
       end
 
-    Enum.each(new_messages, fn msg ->
-      analysis_for_msg =
-        if msg.role == "user", do: Map.get(context, :analysis_model), else: nil
+    if side_effects do
+      Enum.each(new_messages, fn msg ->
+        analysis_for_msg =
+          if msg.role == "user", do: Map.get(context, :analysis_model), else: nil
 
-      Brain.Graph.Writer.write_message(conversation_id, msg, analysis_for_msg)
-    end)
+        Brain.Graph.Writer.write_message(conversation_id, msg, analysis_for_msg, world_id)
+      end)
+    end
 
     updated_conversation =
       conversation
@@ -736,12 +657,13 @@ defmodule Brain do
       |> Map.put(:last_activity, System.system_time(:millisecond))
 
     updated_learning_queue =
-      if learning_response != nil do
+      if side_effects and learning_response != nil do
         learning_entry = %{
           conversation_id: conversation_id,
           world_id: world_id,
           timestamp: System.system_time(:millisecond),
           input: input,
+          intent: Map.get(context, :intent),
           response: learning_response
         }
 
@@ -752,14 +674,17 @@ defmodule Brain do
 
     user_id = Keyword.get(opts, :user_id)
     entities = Map.get(context, :entities, [])
-    extract_and_store_beliefs(input, entities, user_id, conversation_id)
-    feed_entities_to_world(entities, world_id)
 
-    if ml_config[:enabled] and entities != [] and Config.auto_extraction_enabled?() do
+    if side_effects do
+      extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id)
+      feed_entities_to_world(entities, world_id, input)
+    end
+
+    if side_effects and ml_config[:enabled] and entities != [] and Config.auto_extraction_enabled?() do
       Learner.learn_from_classical_extraction(state.persona.name, entities, input)
     end
 
-    if learning_response != nil and processing_method != :response_deferred do
+    if side_effects and learning_response != nil and processing_method != :response_deferred do
       Task.start(fn ->
         interpretation = build_interpretation_from_context(input, context)
 
@@ -812,7 +737,7 @@ defmodule Brain do
         previous_entities: length(previous_context[:entities] || [])
       })
 
-      handle_followup_message(persona, input, previous_context)
+      handle_followup_message(persona, input, previous_context, memory, opts)
     else
       process_new_message(persona, input, memory, opts)
     end
@@ -820,10 +745,13 @@ defmodule Brain do
 
   defp process_new_message(persona, input, memory, opts) do
     user_id = Keyword.get(opts, :user_id)
-    world_id = Keyword.get(opts, :world_id, "default")
-    Process.put(:current_world_id, world_id)
+    world_id = Keyword.fetch!(opts, :world_id)
 
-    if Config.enabled?() and SelfKnowledgeAnalyzer.is_self_knowledge_query?(input) do
+    if Config.enabled?() and
+         SelfKnowledgeAnalyzer.is_self_knowledge_query?(input,
+           world_id: world_id,
+           side_effects: Keyword.fetch!(opts, :side_effects)
+         ) do
       Progress.report(opts, :meta_cognitive_query, %{
         query_type: :self_knowledge
       })
@@ -979,8 +907,16 @@ defmodule Brain do
     end
   end
 
-  defp handle_followup_message(persona, input, previous_context) do
-    analysis_model = run_analysis_pipeline(input, [], []) |> materialize_profiles()
+  defp handle_followup_message(persona, input, previous_context, memory, opts) do
+    side_effects = Keyword.fetch!(opts, :side_effects)
+
+    analysis_model =
+      run_analysis_pipeline(input, [],
+        world_id: Keyword.fetch!(opts, :world_id),
+        side_effects: side_effects,
+        language: Keyword.fetch!(opts, :language)
+      )
+      |> materialize_profiles()
 
     best_analysis =
       analysis_model.analyses
@@ -997,7 +933,7 @@ defmodule Brain do
           }
         end)
       else
-        EntityExtractor.extract_entities(input)
+        EntityExtractor.extract_entities(input, world_id: Keyword.fetch!(opts, :world_id))
       end
 
     Logger.info("Extracted entities from follow-up", %{
@@ -1006,40 +942,117 @@ defmodule Brain do
       used_pipeline: best_analysis != nil
     })
 
-    carried = FollowupDetector.get_carried_context(input, previous_context)
-    merged_context = FollowupDetector.merge_with_previous(carried, entities)
+    pending = Map.get(previous_context, :pending_clarification)
 
-    Logger.info("Merged context", %{
-      intent: merged_context.intent,
-      all_filled: merged_context.all_required_filled,
-      missing: merged_context.missing_slots
-    })
+    pending_answer =
+      case pending do
+        %{} -> FollowupDetector.resolve_pending(%{text: input, entities: entities}, pending)
+        nil -> :unrelated
+      end
 
-    if merged_context.all_required_filled do
-      response = generate_intent_response(merged_context, persona)
+    case pending_answer do
+      {:resolved, candidate} ->
+        # The reply picked one of the candidates a reply to a service's error
+        # listed: the request is made again for that one.
+        slots = FollowupDetector.complete_pending(previous_context, candidate)
+        completed = %{intent: previous_context.intent, entities: entities, slots: slots}
+        complete_followup(completed, persona, side_effects, opts)
 
-      context = %{
-        intent: merged_context.intent,
-        entities: merged_context.entities,
-        slots: merged_context.slots,
-        missing_slots: [],
-        speech_act: Map.get(merged_context, :speech_act)
-      }
+      {:narrowed, candidates} ->
+        # The reply named some of the candidates but not one: the question is
+        # asked again with those.
+        reason = {:ambiguous, pending.item_kind, candidates}
 
-      {response, :followup_completed, context}
-    else
-      prompt = generate_followup_clarification(merged_context)
+        {:ok, prompt} =
+          reason
+          |> Brain.Response.DiscoursePlanner.enrichment_error_primitive(%{intent: previous_context.intent})
+          |> Map.fetch!(:content)
+          |> Brain.Response.Synthesizer.synthesize_service_reply()
 
-      context = %{
-        intent: merged_context.intent,
-        entities: merged_context.entities,
-        slots: merged_context.slots,
-        missing_slots: merged_context.missing_slots,
-        speech_act: Map.get(merged_context, :speech_act)
-      }
+        context = %{
+          intent: previous_context.intent,
+          entities: entities,
+          slots: previous_context.slots,
+          missing_slots: [],
+          pending_clarification: %{pending | candidates: candidates}
+        }
 
-      {prompt, :followup_needs_more, context}
+        report_followup_response(opts, :followup_needs_more, previous_context.intent, entities, reason)
+        {prompt, :followup_needs_more, context}
+
+      :unrelated when pending != nil ->
+        # The reply named none of the candidates it was asked to pick from:
+        # it is a message of its own (`FollowupDetector.is_followup?/2`).
+        process_new_message(persona, input, memory, opts)
+
+      :unrelated ->
+        carried = FollowupDetector.get_carried_context(input, previous_context)
+        merged_context = FollowupDetector.merge_with_previous(carried, entities)
+
+        Logger.info("Merged context", %{
+          intent: merged_context.intent,
+          all_filled: merged_context.all_required_filled,
+          missing: merged_context.missing_slots
+        })
+
+        if merged_context.all_required_filled do
+          complete_followup(merged_context, persona, side_effects, opts)
+        else
+          prompt = generate_followup_clarification(merged_context)
+
+          context = %{
+            intent: merged_context.intent,
+            entities: merged_context.entities,
+            slots: merged_context.slots,
+            missing_slots: merged_context.missing_slots,
+            speech_act: Map.get(merged_context, :speech_act)
+          }
+
+          report_followup_response(opts, :followup_needs_more, merged_context.intent, entities, nil)
+          {prompt, :followup_needs_more, context}
+        end
     end
+  end
+
+  # The follow-up gave what the request needed: the request is made with the
+  # slots it has now. A service error answering it may ask again
+  # (`FollowupDetector.awaiting_answer/1`).
+  defp complete_followup(completed, persona, side_effects, opts) do
+    turn = Keyword.take(opts, [:world_id, :turn_time, :time_zone, :web_user_id])
+    {response, enrichment} = generate_intent_response(completed, persona, side_effects, turn)
+
+    context =
+      Map.merge(
+        %{
+          intent: completed.intent,
+          entities: completed.entities,
+          slots: completed.slots,
+          missing_slots: [],
+          speech_act: Map.get(completed, :speech_act)
+        },
+        FollowupDetector.awaiting_answer(enrichment)
+      )
+
+    report_followup_response(
+      opts,
+      :followup_completed,
+      completed.intent,
+      completed.entities,
+      Map.get(enrichment, :enrichment_error)
+    )
+
+    {response, :followup_completed, context}
+  end
+
+  defp report_followup_response(opts, response_type, intent, entities, enrichment_error) do
+    Progress.report(opts, :response_generated, %{
+      response_type: response_type,
+      strategy: :followup,
+      method: :followup,
+      intent: intent,
+      entities_count: length(entities),
+      enrichment_error: enrichment_error
+    })
   end
 
   defp extract_context_from_analysis(analysis_model) do
@@ -1150,13 +1163,22 @@ defmodule Brain do
     %{}
   end
 
-  defp generate_intent_response(context, _persona) do
+  # The response to the request the follow-up completed, with the failure of
+  # its service when it returned an error (`Generator.generate/4`'s
+  # `{:service_reply, enrichment}`), or `%{}`.
+  # `turn` holds the turn's :world_id, :turn_time, :time_zone and :web_user_id.
+  defp generate_intent_response(context, _persona, side_effects, turn) do
     intent = context.intent
     entities = slots_to_entities(context.slots)
-    {:ok, response, _type} = Generator.generate(intent, entities, nil)
-    response
+
+    case Generator.generate(intent, entities, nil, [side_effects: side_effects] ++ turn) do
+      {:ok, response, {:service_reply, enrichment}} -> {response, enrichment}
+      {:ok, response, _type} -> {response, %{}}
+    end
   end
 
+  # Each slot as the entity that fills it; the generator reads a slot back
+  # from an entity's `:entity_type` (`Generator.generate/4`).
   defp slots_to_entities(slots) when is_map(slots) do
     Enum.map(slots, fn {k, v} ->
       value =
@@ -1165,7 +1187,7 @@ defmodule Brain do
           val -> val
         end
 
-      %{entity: k, value: value}
+      %{entity_type: to_string(k), value: value}
     end)
   end
 
@@ -1191,7 +1213,9 @@ defmodule Brain do
       |> Enum.filter(fn m ->
         Map.has_key?(m, :entities) or Map.has_key?(m, :context)
       end)
-      |> Enum.take(5)
+      # Memory is chronological; the five most recent turns, still in order.
+      # Active contexts are counted back from the last of them.
+      |> Enum.take(-5)
       |> Enum.map(fn m ->
         case Map.get(m, :context) do
           nil ->
@@ -1201,9 +1225,13 @@ defmodule Brain do
               timestamp: Map.get(m, :timestamp, 0)
             }
 
+          # The turn's entities as its analysis kept them, each with its
+          # `:entity_type`, `:value` and `:confidence`: slots are filled from
+          # them (`ContextResolver`) and references resolve to them
+          # (`AnaphoraResolver`), with the confidence they were found with.
           context ->
             %{
-              entities: build_entities_map(Map.get(context, :entities, [])),
+              entities: Map.fetch!(context, :entities),
               intent: Map.get(context, :intent),
               timestamp: Map.get(context, :timestamp, 0),
               missing_slots: Map.get(context, :missing_slots, [])
@@ -1229,27 +1257,6 @@ defmodule Brain do
     :ok
   rescue
     _ -> :ok
-  end
-
-  defp build_entities_map(entities) when is_list(entities) do
-    Enum.reduce(entities, %{}, fn entity, acc ->
-      entity_type = entity[:entity_type]
-      entity_value = entity[:value]
-
-      if entity_type do
-        Map.put(acc, entity_type, entity_value)
-      else
-        acc
-      end
-    end)
-  end
-
-  defp build_entities_map(entities) when is_map(entities) do
-    entities
-  end
-
-  defp build_entities_map(_) do
-    %{}
   end
 
   defp try_nlp_with_analysis(persona, input, _memory, analysis_model, opts) do
@@ -1315,9 +1322,11 @@ defmodule Brain do
         []
       end
 
-    world_id = Keyword.get(opts, :world_id, "default")
+    world_id = Keyword.fetch!(opts, :world_id)
 
     analysis_intent_confidence = get_analysis_intent_confidence(intent_analysis)
+
+    side_effects = Keyword.fetch!(opts, :side_effects)
 
     disambiguation_opts =
       if best_analysis do
@@ -1325,7 +1334,8 @@ defmodule Brain do
           discourse: Map.get(best_analysis, :discourse),
           speech_act: Map.get(best_analysis, :speech_act),
           world_id: world_id,
-          reuse_entities: analysis_entities
+          reuse_entities: analysis_entities,
+          side_effects: side_effects
         ]
 
         if analysis_intent && analysis_intent != "" do
@@ -1334,7 +1344,7 @@ defmodule Brain do
           base
         end
       else
-        [world_id: world_id]
+        [world_id: world_id, side_effects: side_effects]
       end
 
     all_analysis_entities = union_chunk_entities(analysis_model.analyses)
@@ -1455,17 +1465,21 @@ defmodule Brain do
       intent: intent
     }
 
-    Learner.learn_from_conversation(persona.name, input, analysis_for_learning)
+    if side_effects do
+      Learner.learn_from_conversation(persona.name, input, analysis_for_learning,
+        world_id: Keyword.fetch!(opts, :world_id)
+      )
 
-    Progress.report(opts, :learning_complete, %{
-      intent: intent,
-      entities_count: length(entities)
-    })
+      Progress.report(opts, :learning_complete, %{
+        intent: intent,
+        entities_count: length(entities)
+      })
 
-    conversation_id = Keyword.get(opts, :conversation_id)
-    track_stance(conversation_id, intent, best_analysis, opts)
+      conversation_id = Keyword.get(opts, :conversation_id)
+      track_stance(conversation_id, intent, best_analysis, opts)
+    end
 
-    {response, response_type} =
+    {response, response_type, enrichment} =
       generate_analysis_response_with_type(intent, entities, analysis_model, persona, input, opts)
 
     Progress.report(opts, :response_generated, %{
@@ -1474,10 +1488,15 @@ defmodule Brain do
       method: method,
       intent: intent,
       entities_count: length(entities),
-      response_path: build_response_path(method, response_type, intent, entities)
+      response_path: build_response_path(method, response_type, intent, entities),
+      # The service error the response answers, when the turn's service
+      # returned one (`Brain.Response.DiscoursePlanner`).
+      enrichment_error: enrichment.enrichment_error
     })
 
-    {response, method, context}
+    # A reply that asked the user something about the service's error waits
+    # for the answer in the conversation's context.
+    {response, method, Map.merge(context, FollowupDetector.awaiting_answer(enrichment))}
   end
 
   defp get_analysis_intent_confidence(nil), do: 0.0
@@ -1563,8 +1582,6 @@ defmodule Brain do
     %{
       event_frames: Enum.flat_map(analyses, &Map.get(&1, :event_frames, [])),
       srl_frames: Enum.flat_map(analyses, &Map.get(&1, :srl_frames, [])),
-      poincare_available: Brain.ML.Poincare.Embeddings.ready?(),
-      kg_lstm_available: Brain.ML.KnowledgeGraph.TripleScorer.ready?(),
       stance_tracker_available: Brain.Epistemic.StanceTracker.ready?()
     }
   rescue
@@ -1574,7 +1591,7 @@ defmodule Brain do
   defp track_stance(nil, _intent, _analysis, _opts), do: :ok
   defp track_stance(_conv_id, nil, _analysis, _opts), do: :ok
 
-  defp track_stance(conversation_id, intent, analysis, _opts) do
+  defp track_stance(conversation_id, intent, analysis, opts) do
     if Brain.Epistemic.StanceTracker.ready?() do
       sentiment = (analysis && analysis.sentiment) || %{}
       label = Map.get(sentiment, :label, :neutral)
@@ -1590,7 +1607,7 @@ defmodule Brain do
 
       if topic != nil do
         Brain.Epistemic.StanceTracker.record_stance(
-          conversation_id, topic, position, :user
+          conversation_id, topic, position, :user, world_id: Keyword.fetch!(opts, :world_id)
         )
       end
     end
@@ -1639,13 +1656,10 @@ defmodule Brain do
         ""
 
       [single_prompt] ->
-        transition = Synthesizer.get_transition_phrase(:additional_info)
-
-        "#{transition} #{String.downcase(String.first(single_prompt))}#{String.slice(single_prompt, 1..-1//1)}"
+        :additional_info |> Synthesizer.get_transition_phrase() |> Synthesizer.join_after(single_prompt)
 
       [first | _rest] ->
-        transition = Synthesizer.get_transition_phrase(:additional_info)
-        "#{transition} #{String.downcase(String.first(first))}#{String.slice(first, 1..-1//1)}"
+        :additional_info |> Synthesizer.get_transition_phrase() |> Synthesizer.join_after(first)
     end
   end
 
@@ -1665,26 +1679,34 @@ defmodule Brain do
       Brain.Response.ContextBuilder.build(analysis_model, opts)
 
     gen_opts = %{
+      world_id: Keyword.fetch!(opts, :world_id),
       user_id: Keyword.get(opts, :user_id),
       conversation_id: Keyword.get(opts, :conversation_id),
       unified_context: unified_context,
-      dry_run_ouro: Keyword.get(opts, :dry_run_ouro, false)
+      dry_run_ouro: Keyword.get(opts, :dry_run_ouro, false),
+      side_effects: Keyword.fetch!(opts, :side_effects),
+      # The response pipeline reports the recurring pattern it uses as a step
+      # of the turn (`Brain.Memory.RecurringPattern.used/3`).
+      progress: Keyword.get(opts, :progress)
     }
 
-    case Generator.generate_via_synthesis(analysis_model, intent, entities, query_text, gen_opts) do
-      {{:ouro_dry_run, _messages} = response, :ouro_dry_run} ->
-        {response, :ouro_dry_run}
+    {response, method} =
+      case Generator.generate_via_synthesis(analysis_model, intent, entities, query_text, gen_opts) do
+        {{:ouro_dry_run, _messages} = response, :ouro_dry_run} ->
+          {response, :ouro_dry_run}
 
-      {response, method} when is_binary(response) ->
-        {response, method}
+        {response, method} when is_binary(response) ->
+          {response, method}
 
-      {nil, :silence_preferred} ->
-        {nil, :silence_preferred}
+        {nil, :silence_preferred} ->
+          {nil, :silence_preferred}
 
-      {:error, reason} ->
-        Logger.warning("Synthesis failed, falling back: #{inspect(reason)}")
-        {Brain.Response.Synthesizer.get_cannot_respond_response(), :synthesis_fallback}
-    end
+        {:error, reason} ->
+          Logger.warning("Synthesis failed, falling back: #{inspect(reason)}")
+          {Brain.Response.Synthesizer.get_cannot_respond_response(), :synthesis_fallback}
+      end
+
+    {response, method, unified_context.enrichment}
   end
 
   defp simple_fallback_response(_persona, _input) do
@@ -2038,8 +2060,8 @@ defmodule Brain do
   defp store_in_cognitive_memory(entries) do
     if Process.whereis(Brain.Memory.Store) != nil do
       Enum.each(entries, fn entry ->
-        tags = extract_tags_for_memory(entry.input)
-        world_id = Map.get(entry, :world_id, "default")
+        tags = intent_tags(entry.intent)
+        world_id = Map.fetch!(entry, :world_id)
 
         WorldContext.add_episode(
           world_id,
@@ -2055,19 +2077,13 @@ defmodule Brain do
       Logger.warning("Failed to store in cognitive memory: #{inspect(e)}")
   end
 
-  defp extract_tags_for_memory(input) do
-    case Brain.ML.NLPPipeline.process(input) do
-      {:ok, %{intent: intent}} when is_binary(intent) and intent != "unknown" ->
-        [intent]
+  # An episode is tagged with the intent the turn already resolved. This used to
+  # run NLPPipeline on the input again, which repeated the turn's whole analysis
+  # in the Brain process, with writes on, after the reply had been sent.
+  defp intent_tags(intent) when is_binary(intent) and intent not in ["", "unknown"], do: [intent]
+  defp intent_tags(_intent), do: []
 
-      _ ->
-        []
-    end
-  rescue
-    _ -> []
-  end
-
-  defp handle_meta_cognitive_query(_persona, input, user_id, _opts) do
+  defp handle_meta_cognitive_query(_persona, input, user_id, opts) do
     Logger.info("Handling meta-cognitive query", %{input: input, user_id: user_id})
     assessment = SelfKnowledgeAnalyzer.build_self_knowledge_assessment(user_id)
 
@@ -2079,7 +2095,7 @@ defmodule Brain do
         }
       )
 
-    if user_id do
+    if user_id && Keyword.fetch!(opts, :side_effects) do
       disclosed_keys =
         (assessment.discloseable ++ assessment.inferred_uncertain)
         |> Enum.map(& &1.key)
@@ -2107,10 +2123,33 @@ defmodule Brain do
     {response, :epistemic_response, context}
   end
 
+  # The beliefs are held in the conversation's world, and every one of them is
+  # about the turn's user, whose user model they also update. A turn with no
+  # user (`user_id` nil) stores none: there is no one to hold them about, and
+  # no stand-in user is made up. Any failure raises; a user id that is no web
+  # user's raises at the user-model write (`UserModelStore`).
   @doc false
-  def extract_and_store_beliefs(input, entities, user_id, conversation_id) do
-    user_id = user_id || "anonymous"
+  def extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id)
+      when is_binary(world_id) and world_id != "" do
+    case user_id do
+      nil ->
+        :ok
 
+      user_id when is_binary(user_id) and user_id != "" ->
+        do_extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id)
+
+      other ->
+        raise ArgumentError,
+              "Brain.extract_and_store_beliefs needs the turn's user id or nil, got: #{inspect(other)}"
+    end
+  end
+
+  def extract_and_store_beliefs(world_id, _input, _entities, _user_id, _conversation_id) do
+    raise ArgumentError,
+          "Brain.extract_and_store_beliefs needs the world the beliefs are held in, got: #{inspect(world_id)}"
+  end
+
+  defp do_extract_and_store_beliefs(world_id, input, entities, user_id, conversation_id) do
     if Config.auto_extraction_enabled?() do
       Enum.each(entities, fn entity ->
         entity_type = entity[:entity_type]
@@ -2118,6 +2157,16 @@ defmodule Brain do
 
         if entity_type && entity_value do
           if is_user_fact?(entity_type) do
+            # The user model first: a user id that is no web user's raises
+            # there, before a belief is held about that user.
+            UserModelStore.update_fact(
+              user_id,
+              normalize_predicate(entity_type),
+              entity_value,
+              :explicit,
+              0.85
+            )
+
             belief =
               Belief.new(:user, normalize_predicate(entity_type), entity_value,
                 source: :explicit,
@@ -2129,15 +2178,7 @@ defmodule Brain do
                 ]
               )
 
-            BeliefStore.add_belief(belief)
-
-            UserModelStore.update_fact(
-              user_id,
-              normalize_predicate(entity_type),
-              entity_value,
-              :explicit,
-              0.85
-            )
+            BeliefStore.add_belief(world_id, belief)
 
             Logger.debug("Extracted belief from conversation", %{
               predicate: entity_type,
@@ -2148,14 +2189,17 @@ defmodule Brain do
         end
       end)
 
-      extract_self_referential_facts(input, user_id, conversation_id)
+      extract_self_referential_facts(world_id, input, user_id, conversation_id)
     end
-  rescue
-    e ->
-      Logger.warning("Failed to extract beliefs: #{inspect(e)}")
+
+    :ok
   end
 
-  defp feed_entities_to_world(entities, world_id) when is_list(entities) do
+  # `input` is the text the entities were extracted from, and becomes each
+  # candidate's `:context`. Without it World.EntityPromoter died with a KeyError
+  # while aggregating, and a reviewer would have had no text to judge the
+  # suggestion against. Measured 2026-09-23.
+  defp feed_entities_to_world(entities, world_id, input) when is_list(entities) do
     promotable_types = ~w(person location city country organization company place)
     now = DateTime.utc_now()
 
@@ -2171,6 +2215,7 @@ defmodule Brain do
           value: to_string(value),
           inferred_type: type_str,
           confidence: entity[:confidence] || entity["confidence"] || 0.5,
+          context: to_string(input),
           discovered_at: now,
           occurrences: 1
         }
@@ -2187,7 +2232,7 @@ defmodule Brain do
     :ok
   end
 
-  defp feed_entities_to_world(_, _), do: :ok
+  defp feed_entities_to_world(_, _, _), do: :ok
 
   defp is_user_fact?(entity_type) do
     entity_type_str = to_string(entity_type) |> String.downcase()
@@ -2213,73 +2258,73 @@ defmodule Brain do
     :unknown
   end
 
-  defp extract_self_referential_facts(input, user_id, conversation_id) do
+  defp extract_self_referential_facts(world_id, input, user_id, conversation_id) do
     expanded = Tokenizer.expand_contractions(input)
     tokens = Tokenizer.tokenize_normalized(expanded)
-    extract_location_facts(tokens, expanded, user_id, conversation_id)
-    extract_name_facts(tokens, expanded, user_id, conversation_id)
-    extract_preference_facts(tokens, expanded, user_id, conversation_id)
-    extract_work_facts(tokens, expanded, user_id, conversation_id)
+    extract_location_facts(world_id, tokens, user_id, conversation_id)
+    extract_name_facts(world_id, tokens, user_id, conversation_id)
+    extract_preference_facts(world_id, tokens, user_id, conversation_id)
+    extract_work_facts(world_id, tokens, user_id, conversation_id)
   end
 
-  defp extract_location_facts(tokens, _input, user_id, conversation_id) do
+  defp extract_location_facts(world_id, tokens, user_id, conversation_id) do
     cond do
       has_sequence?(tokens, ["i", "am", "from"]) ->
         value = extract_after_sequence(tokens, ["from"])
-        store_fact_if_valid(user_id, :location, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :location, value, conversation_id)
 
       has_sequence?(tokens, ["i", "live", "in"]) ->
         value = extract_after_sequence(tokens, ["in"])
-        store_fact_if_valid(user_id, :location, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :location, value, conversation_id)
 
       true ->
         :ok
     end
   end
 
-  defp extract_name_facts(tokens, _input, user_id, conversation_id) do
+  defp extract_name_facts(world_id, tokens, user_id, conversation_id) do
     cond do
       has_sequence?(tokens, ["my", "name", "is"]) ->
         value = extract_after_sequence(tokens, ["is"])
-        store_fact_if_valid(user_id, :name, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :name, value, conversation_id)
 
       has_sequence?(tokens, ["call", "me"]) ->
         value = extract_after_sequence(tokens, ["me"])
-        store_fact_if_valid(user_id, :name, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :name, value, conversation_id)
 
       true ->
         :ok
     end
   end
 
-  defp extract_preference_facts(tokens, _input, user_id, conversation_id) do
+  defp extract_preference_facts(world_id, tokens, user_id, conversation_id) do
     cond do
       has_sequence?(tokens, ["i", "like"]) ->
         value = extract_after_sequence(tokens, ["like"])
-        store_fact_if_valid(user_id, :likes, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :likes, value, conversation_id)
 
       has_sequence?(tokens, ["i", "prefer"]) ->
         value = extract_after_sequence(tokens, ["prefer"])
-        store_fact_if_valid(user_id, :preference, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :preference, value, conversation_id)
 
       has_sequence?(tokens, ["i", "love"]) ->
         value = extract_after_sequence(tokens, ["love"])
-        store_fact_if_valid(user_id, :likes, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :likes, value, conversation_id)
 
       true ->
         :ok
     end
   end
 
-  defp extract_work_facts(tokens, _input, user_id, conversation_id) do
+  defp extract_work_facts(world_id, tokens, user_id, conversation_id) do
     cond do
       has_sequence?(tokens, ["i", "work", "at"]) ->
         value = extract_after_sequence(tokens, ["at"])
-        store_fact_if_valid(user_id, :workplace, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :workplace, value, conversation_id)
 
       has_sequence?(tokens, ["i", "work", "for"]) ->
         value = extract_after_sequence(tokens, ["for"])
-        store_fact_if_valid(user_id, :workplace, value, conversation_id)
+        store_fact_if_valid(world_id, user_id, :workplace, value, conversation_id)
 
       true ->
         :ok
@@ -2324,7 +2369,7 @@ defmodule Brain do
     end)
   end
 
-  defp store_fact_if_valid(user_id, predicate, value, conversation_id) do
+  defp store_fact_if_valid(world_id, user_id, predicate, value, conversation_id) do
     clean_value =
       if value do
         String.trim(value)
@@ -2333,6 +2378,10 @@ defmodule Brain do
       end
 
     if String.length(clean_value) > 0 and String.length(clean_value) < 50 do
+      # The user model first: a user id that is no web user's raises there,
+      # before a belief is held about that user.
+      UserModelStore.update_fact(user_id, predicate, clean_value, :explicit, 0.9)
+
       belief =
         Belief.new(:user, predicate, clean_value,
           source: :explicit,
@@ -2341,8 +2390,7 @@ defmodule Brain do
           provenance: ["self_statement", "conversation:#{conversation_id}"]
         )
 
-      BeliefStore.add_belief(belief)
-      UserModelStore.update_fact(user_id, predicate, clean_value, :explicit, 0.9)
+      BeliefStore.add_belief(world_id, belief)
 
       Logger.debug("Extracted self-referential fact", %{
         predicate: predicate,
@@ -2351,24 +2399,20 @@ defmodule Brain do
     end
   end
 
+  # The pipeline gives every chunk its profile, built from the vector its intent
+  # was classified from. A chunk without one is a pipeline defect, so it raises
+  # rather than re-extracting a different vector here.
   defp materialize_profiles(analysis_model) do
     updated_analyses =
-      Enum.map(analysis_model.analyses, fn analysis ->
-        if analysis.profile != nil do
+      Enum.map(analysis_model.analyses, fn
+        %{profile: %ChunkProfile{}} = analysis ->
           reconcile_intent_with_profile(analysis)
-        else
-          {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
-          profile = ChunkProfile.materialize(analysis, feature_vector)
-          analysis = %{analysis | profile: profile, feature_vector: feature_vector}
-          reconcile_intent_with_profile(analysis)
-        end
+
+        analysis ->
+          raise "Brain: chunk #{inspect(analysis.chunk_index)} reached response generation without a profile"
       end)
 
     %{analysis_model | analyses: updated_analyses}
-  rescue
-    e ->
-      Logger.warning("Profile materialization failed: #{Exception.message(e)}")
-      analysis_model
   end
 
   defp reconcile_intent_with_profile(analysis) do

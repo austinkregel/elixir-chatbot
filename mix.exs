@@ -43,15 +43,20 @@ defmodule ChatBot.Umbrella.MixProject do
       setup: [
         "cmd mix setup",
         "atlas.setup",
-        "atlas.seed",
+        "atlas.seed --world default",
         "download_speech_act_corpus",
         "download_sentiment_corpus",
         "setup_lexicon",
         "ingest_framing_corpus",
         "gen_micro_data",
         "gen_framing_data --corpus gvfc",
-        "train",
+        "gen_lattice_data",
+        "train"
       ],
+
+      # The suites never write to the database outside a test transaction, so
+      # the schema, migrations and seeded lexicon they read are prepared first.
+      test: ["test.prepare", "test"],
 
       # Precommit runs format check, Credo, and tests
       precommit: ["format --check-formatted", "credo --strict", "test"],

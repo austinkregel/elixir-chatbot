@@ -1,0 +1,18 @@
+[
+  {
+    "value": "Home Assistant",
+    "synonyms": ["Home Assistant", "HomeAssistant", "home assistant"]
+  },
+  {
+    "value": "Jellyfin",
+    "synonyms": ["Jellyfin", "JellyFin", "jellyfin"]
+  },
+  {
+    "value": "Plex",
+    "synonyms": ["Plex", "plex"]
+  },
+  {
+    "value": "YouTube",
+    "synonyms": ["YouTube", "Youtube", "you tube", "youtube"]
+  }
+]

@@ -1,38 +1,54 @@
 defmodule Brain.Response.MemoryAugmented do
   @moduledoc "Generates contextually appropriate responses by:\n1. Finding similar past interactions via TF-IDF similarity\n2. Extracting successful response patterns from those interactions\n3. Adapting patterns to current context using slot filling\n\nThis module provides an alternative to template-based responses\nby leveraging episodic memory of past successful conversations.\n"
 
-  alias Brain.Memory.{Store, Embedder}
+  alias Brain.Memory.Store
   alias Brain.ML.Tokenizer
 
   require Logger
   @similarity_threshold 0.6
   @max_episodes 5
 
-  @doc "Attempts to generate a response from similar past interactions.\n\nReturns:\n- {:ok, response, metadata} - Successfully generated response\n- :no_memory_match - No suitable past interactions found\n- :embedder_not_ready - Embedder not available\n"
-  def generate(intent, entities, context \\ %{}) do
-    if Embedder.ready?() and Process.whereis(Store) do
-      do_generate(intent, entities, context)
+  @doc "Attempts to generate a response from similar past interactions.\n\nThe query is embedded by the world's embedder, inside `Store.query_similar/3`.\n\n## Options\n  - `:world_id` - Required. The world whose episodes are searched.\n\nReturns:\n- {:ok, response, metadata} - Successfully generated response\n- :no_memory_match - No suitable past interactions found\n- :store_not_running - `Brain.Memory.Store` is not running\n"
+  def generate(intent, entities, opts) do
+    world_id = world_id!(opts, :generate)
+
+    if Process.whereis(Store) do
+      do_generate(intent, entities, world_id)
     else
-      :embedder_not_ready
+      :store_not_running
     end
   end
 
-  @doc "Finds similar past interactions for debugging/inspection.\n"
-  def find_similar_episodes(intent, entities, limit \\ @max_episodes) do
+  @doc "Finds similar past interactions for debugging/inspection.\n\n## Options\n  - `:world_id` - Required. The world whose episodes are searched.\n  - `:limit` - Maximum episodes returned (default: #{@max_episodes})\n"
+  def find_similar_episodes(intent, entities, opts) do
+    world_id = world_id!(opts, :find_similar_episodes)
+    limit = Keyword.get(opts, :limit, @max_episodes)
     query = build_semantic_query(intent, entities)
 
-    case Store.query_similar(query, limit) do
+    case Store.query_similar(query, limit, world_id: world_id) do
       {:ok, episodes} -> {:ok, episodes}
       error -> error
     end
   end
 
-  defp do_generate(intent, entities, context) do
+  defp world_id!(opts, function) do
+    case Keyword.get(opts, :world_id) do
+      world_id when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      other ->
+        raise ArgumentError,
+              "MemoryAugmented.#{function} requires a :world_id option, the world whose episodes " <>
+                "are searched; got #{inspect(other)}"
+    end
+  end
+
+  defp do_generate(intent, entities, world_id) do
     query = build_semantic_query(intent, entities)
 
-    case Store.query_similar(query, @max_episodes) do
+    case Store.query_similar(query, @max_episodes, world_id: world_id) do
       {:ok, [_ | _] = episodes} ->
-        adapt_from_episodes(episodes, entities, context)
+        adapt_from_episodes(episodes, entities)
 
       _ ->
         :no_memory_match
@@ -57,7 +73,7 @@ defmodule Brain.Response.MemoryAugmented do
     end
   end
 
-  defp adapt_from_episodes(episodes, current_entities, _context) do
+  defp adapt_from_episodes(episodes, current_entities) do
     positive_episodes =
       episodes
       |> Enum.filter(fn {ep, sim} ->

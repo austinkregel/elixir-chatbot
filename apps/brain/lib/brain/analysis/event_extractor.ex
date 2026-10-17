@@ -88,6 +88,37 @@ defmodule Brain.Analysis.EventExtractor do
   end
 
   @doc """
+  The entities of `Brain.ML.EntityExtractor.extract_entities/2` in the shape
+  `extract/2` takes: `%{type, start, end}`, `:type` the entity's
+  `:entity_type` and `:start`/`:end` the indexes (inclusive) of the first and
+  last of `tokens` its `:start_pos`..`:end_pos` spans. `tokens` is
+  `Brain.ML.Tokenizer.tokenize/1` of the text the entities were extracted
+  from, whose token texts are the analysis's `:tokens`.
+
+  An entity anaphora resolution supplied (`source: :anaphora_resolution`) has
+  no position in the text, so no token is part of it and it is left out. Any
+  other entity without `:entity_type`, `:start_pos` or `:end_pos`, or whose
+  span does not begin and end on token boundaries, raises.
+  """
+  @spec token_entities([map()], [Brain.ML.Tokenizer.token()]) :: [map()]
+  def token_entities(entities, tokens) when is_list(entities) and is_list(tokens) do
+    Enum.flat_map(entities, fn
+      %{source: :anaphora_resolution} ->
+        []
+
+      %{entity_type: type, start_pos: start_pos, end_pos: end_pos}
+      when is_binary(type) and is_integer(start_pos) and is_integer(end_pos) ->
+        {first, last} = Brain.ML.Tokenizer.token_range!(tokens, start_pos, end_pos)
+        [%{type: type, start: first, end: last}]
+
+      other ->
+        raise ArgumentError,
+              "EventExtractor: an extracted entity carries :entity_type, :start_pos and :end_pos; " <>
+                "got #{inspect(other, limit: 8)}"
+    end)
+  end
+
+  @doc """
   Extract events from multiple chunks in parallel.
 
   Uses Task.async for parallel processing with early-exit on high confidence.
@@ -433,10 +464,14 @@ defmodule Brain.Analysis.EventExtractor do
   defp tag_to_type(tag), do: tag
 
   defp find_entity_at(entities, idx) do
-    Enum.find(entities, fn entity ->
-      start_idx = Map.get(entity, :start, Map.get(entity, "start", -1))
-      end_idx = Map.get(entity, :end, Map.get(entity, "end", -1))
-      idx >= start_idx and idx <= end_idx
+    Enum.find(entities, fn
+      %{start: start_idx, end: end_idx} when is_integer(start_idx) and is_integer(end_idx) ->
+        idx >= start_idx and idx <= end_idx
+
+      other ->
+        raise ArgumentError,
+              "EventExtractor: an entity is located by :start and :end, the indexes of the first and last " <>
+                "token it spans (see token_entities/2); got #{inspect(other, limit: 8)}"
     end)
   end
 

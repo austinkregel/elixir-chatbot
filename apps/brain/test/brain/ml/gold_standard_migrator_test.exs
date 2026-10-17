@@ -1,43 +1,29 @@
 defmodule Brain.ML.GoldStandardMigratorTest do
   use ExUnit.Case, async: false
 
+  alias Brain.Corpus.Label
   alias Brain.ML.GoldStandardMigrator
 
-  describe "exclude_context_variants option" do
-    test "preview with exclude_context_variants filters out context-bound usersays files" do
-      {examples, _entities, source_files} =
-        GoldStandardMigrator.preview(:all, exclude_context_variants: true)
+  describe "contextual variants" do
+    test "the export has no variant files, so no source or label names one" do
+      {examples, _entities, source_files} = GoldStandardMigrator.preview(:all)
 
-      context_sources =
-        Enum.filter(source_files, fn path ->
-          basename = Path.basename(path)
-          String.match?(basename, ~r/context_.*_usersays_en\.json$/)
-        end)
+      variant_sources = Enum.filter(source_files, &String.contains?(Path.basename(&1), " - "))
+      assert variant_sources == [], "contextual-variant source files remain: #{inspect(variant_sources)}"
 
-      assert context_sources == [],
-             "Expected no context-variant source files, got: #{inspect(context_sources)}"
-
-      context_intents =
+      variant_labels =
         examples
         |> Enum.map(& &1["intent"])
-        |> Enum.filter(&String.contains?(&1, " - context_"))
+        |> Enum.filter(&String.contains?(&1, " - "))
+        |> Enum.uniq()
 
-      assert context_intents == [],
-             "Expected no context-variant intent labels, got: #{inspect(Enum.uniq(context_intents))}"
+      assert variant_labels == [], "contextual-variant intent labels remain: #{inspect(variant_labels)}"
     end
 
-    test "preview without exclude_context_variants includes context-bound files" do
-      {_examples, _entities, source_files} =
-        GoldStandardMigrator.preview(:all, exclude_context_variants: false)
-
-      context_sources =
-        Enum.filter(source_files, fn path ->
-          basename = Path.basename(path)
-          String.match?(basename, ~r/context_.*_usersays_en\.json$/)
-        end)
-
-      assert length(context_sources) > 0,
-             "Expected some context-variant source files to be included by default"
+    test "a variant name raises instead of being filed under its base" do
+      assert_raise ArgumentError, ~r/contextual-variant name/, fn ->
+        Label.canonical("smarthome.device.volume - context_device_volume - comment_points")
+      end
     end
   end
 end

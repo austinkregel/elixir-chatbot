@@ -1,9 +1,16 @@
 defmodule Brain.Response.RefinementLoopTest do
   use ExUnit.Case, async: false
 
+  # Drives real Ouro generation through the refinement loop; excluded when
+  # the sidecar is disabled (OURO_ENABLED=false, e.g. CI).
+  @moduletag :requires_ouro
+
   alias Brain.Response.{RefinementLoop, Primitive}
   alias Brain.Response.ResponseEvaluator.Score
   alias Brain.Analysis.{InternalModel, ChunkAnalysis, SpeechActResult}
+
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
 
   defp build_model(text, opts) do
     speech_act = Keyword.fetch!(opts, :speech_act)
@@ -30,11 +37,12 @@ defmodule Brain.Response.RefinementLoopTest do
 
   describe "generate/2" do
     test "greeting produces social acknowledgment with evaluator convergence" do
-      model = build_model("Hello!",
-        speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
-      )
+      model =
+        build_model("Hello!",
+          speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
+        )
 
-      assert {:ok, response, metadata} = RefinementLoop.generate(model)
+      assert {:ok, response, metadata} = RefinementLoop.generate(model, world_id: @world_id)
 
       assert metadata.method == :synthesis_pipeline
       assert %Score{} = metadata.score
@@ -44,18 +52,21 @@ defmodule Brain.Response.RefinementLoopTest do
       primitive_types = Enum.map(metadata.primitives, & &1.type)
       assert :acknowledgment in primitive_types
 
-      social = Enum.find(metadata.primitives, &(&1.type == :acknowledgment and &1.variant == :social))
+      social =
+        Enum.find(metadata.primitives, &(&1.type == :acknowledgment and &1.variant == :social))
+
       assert social != nil
       assert social.rendered == response or String.contains?(response, social.rendered)
     end
 
     test "question plans informative framing and evaluator scores speech act alignment" do
-      model = build_model("What's the weather?",
-        speech_act: SpeechActResult.new(:directive, :question, 0.8, is_question: true),
-        intent: "weather.query"
-      )
+      model =
+        build_model("What's the weather?",
+          speech_act: SpeechActResult.new(:directive, :question, 0.8, is_question: true),
+          intent: "weather.query"
+        )
 
-      assert {:ok, _response, metadata} = RefinementLoop.generate(model)
+      assert {:ok, _response, metadata} = RefinementLoop.generate(model, world_id: @world_id)
 
       assert %Score{} = metadata.score
       assert metadata.score.speech_act_alignment >= 0.0
@@ -66,12 +77,13 @@ defmodule Brain.Response.RefinementLoopTest do
     end
 
     test "negative sentiment sharing includes attunement primitive" do
-      model = build_model("I had a terrible day",
-        speech_act: SpeechActResult.new(:assertive, :statement, 0.7),
-        sentiment: %{label: :negative, confidence: 0.8}
-      )
+      model =
+        build_model("I had a terrible day",
+          speech_act: SpeechActResult.new(:assertive, :statement, 0.7),
+          sentiment: %{label: :negative, confidence: 0.8}
+        )
 
-      assert {:ok, _response, metadata} = RefinementLoop.generate(model)
+      assert {:ok, _response, metadata} = RefinementLoop.generate(model, world_id: @world_id)
 
       primitive_types = Enum.map(metadata.primitives, & &1.type)
       assert :attunement in primitive_types
@@ -84,12 +96,13 @@ defmodule Brain.Response.RefinementLoopTest do
     end
 
     test "low confidence input produces hedging and appropriate confidence score" do
-      model = build_model("What is quantum decoherence?",
-        speech_act: SpeechActResult.new(:directive, :question, 0.3, is_question: true),
-        confidence: 0.2
-      )
+      model =
+        build_model("What is quantum decoherence?",
+          speech_act: SpeechActResult.new(:directive, :question, 0.3, is_question: true),
+          confidence: 0.2
+        )
 
-      assert {:ok, _response, metadata} = RefinementLoop.generate(model)
+      assert {:ok, _response, metadata} = RefinementLoop.generate(model, world_id: @world_id)
 
       primitive_types = Enum.map(metadata.primitives, & &1.type)
       assert :hedging in primitive_types
@@ -103,25 +116,27 @@ defmodule Brain.Response.RefinementLoopTest do
     test "empty analyses returns error tuple" do
       model = %InternalModel{raw_input: "", analyses: []}
 
-      assert {:error, :empty_analysis} = RefinementLoop.generate(model)
+      assert {:error, :empty_analysis} = RefinementLoop.generate(model, world_id: @world_id)
     end
 
     test "max_iterations is respected" do
-      model = build_model("Hello!",
-        speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
-      )
+      model =
+        build_model("Hello!",
+          speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
+        )
 
-      assert {:ok, _response, metadata} = RefinementLoop.generate(model, max_iterations: 1)
+      assert {:ok, _response, metadata} = RefinementLoop.generate(model, world_id: @world_id, max_iterations: 1)
       assert metadata.iterations <= 1
     end
 
     test "converged responses stop iterating early" do
-      model = build_model("Hello!",
-        speech_act: SpeechActResult.new(:expressive, :greeting, 0.9),
-        confidence: 0.9
-      )
+      model =
+        build_model("Hello!",
+          speech_act: SpeechActResult.new(:expressive, :greeting, 0.9),
+          confidence: 0.9
+        )
 
-      assert {:ok, _response, metadata} = RefinementLoop.generate(model, max_iterations: 5)
+      assert {:ok, _response, metadata} = RefinementLoop.generate(model, world_id: @world_id, max_iterations: 5)
 
       assert metadata.score.converged == true or metadata.iterations < 5
       assert metadata.score.overall >= 0.7
@@ -130,11 +145,12 @@ defmodule Brain.Response.RefinementLoopTest do
 
   describe "single_pass/2" do
     test "runs exactly one iteration and returns scored primitives" do
-      model = build_model("Hello!",
-        speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
-      )
+      model =
+        build_model("Hello!",
+          speech_act: SpeechActResult.new(:expressive, :greeting, 0.9)
+        )
 
-      assert {:ok, response, metadata} = RefinementLoop.single_pass(model)
+      assert {:ok, response, metadata} = RefinementLoop.single_pass(model, world_id: @world_id)
 
       assert is_binary(response), "Response should be a string"
       assert response != "", "Response should not be empty"

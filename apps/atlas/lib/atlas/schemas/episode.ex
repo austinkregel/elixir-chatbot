@@ -14,19 +14,21 @@ defmodule Atlas.Schemas.Episode do
   @primary_key {:id, :binary_id, autogenerate: true}
 
   schema "atlas_episodes" do
-    field :world_id, :string, default: "default"
+    field :world_id, :string
     field :state, :string
     field :action, :string
     field :outcome, :string
     field :tags, {:array, :string}, default: []
     field :embedding, {:array, :float}, default: []
     field :semantic_id, :binary_id
+    field :entity_names, {:array, :string}, default: []
 
     timestamps(type: :utc_datetime_usec)
   end
 
-  @required_fields ~w(state action)a
-  @optional_fields ~w(outcome world_id tags embedding semantic_id)a
+  # An episode belongs to the world it happened in; the caller names it.
+  @required_fields ~w(world_id state action)a
+  @optional_fields ~w(outcome tags embedding semantic_id entity_names)a
 
   @doc false
   def changeset(episode, attrs) do

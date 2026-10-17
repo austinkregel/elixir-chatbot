@@ -3,10 +3,14 @@ defmodule Atlas.SchemasTest do
 
   alias Atlas.Schemas.{Credential, Belief, Episode, SemanticFact, ReviewCandidate, LearnedFact}
 
+  # Rows are rolled back with the test's transaction; no world directory is
+  # created.
+  @world_id "test_atlas_schemas"
+
   describe "Credential" do
     test "inserts and retrieves a credential" do
       attrs = %{
-        world: "default",
+        world: @world_id,
         service: "weather",
         key: "api_key",
         encrypted_value: "encrypted_data_here"
@@ -21,11 +25,11 @@ defmodule Atlas.SchemasTest do
       assert credential.key == "api_key"
 
       found = Repo.get!(Credential, credential.id)
-      assert found.world == "default"
+      assert found.world == @world_id
     end
 
     test "enforces unique constraint on (world, service, key)" do
-      attrs = %{service: "weather", key: "api_key", encrypted_value: "v1"}
+      attrs = %{world: @world_id, service: "weather", key: "api_key", encrypted_value: "v1"}
 
       assert {:ok, _} =
                %Credential{} |> Credential.changeset(attrs) |> Repo.insert()
@@ -36,11 +40,32 @@ defmodule Atlas.SchemasTest do
       assert errors_on(changeset)[:world] || errors_on(changeset)[:service] ||
                errors_on(changeset)[:key]
     end
+
+    test "the same service and key may be stored in two worlds" do
+      attrs = %{service: "weather", key: "api_key", encrypted_value: "v1"}
+
+      assert {:ok, _} =
+               %Credential{} |> Credential.changeset(Map.put(attrs, :world, @world_id)) |> Repo.insert()
+
+      assert {:ok, _} =
+               %Credential{}
+               |> Credential.changeset(Map.put(attrs, :world, "#{@world_id}_other"))
+               |> Repo.insert()
+    end
+
+    test "requires a world" do
+      changeset =
+        Credential.changeset(%Credential{}, %{service: "weather", key: "api_key", encrypted_value: "v1"})
+
+      refute changeset.valid?
+      assert "can't be blank" in errors_on(changeset)[:world]
+    end
   end
 
   describe "Belief" do
     test "inserts and queries a belief" do
       attrs = %{
+        world_id: "test_schemas",
         subject: "Paris",
         predicate: "is_a",
         object: "city",
@@ -52,16 +77,29 @@ defmodule Atlas.SchemasTest do
                %Belief{} |> Belief.changeset(attrs) |> Repo.insert()
 
       assert belief.subject == "Paris"
+      assert belief.world_id == "test_schemas"
       assert belief.confidence == 0.95
 
       active_beliefs = Belief |> Belief.active() |> Repo.all()
       assert length(active_beliefs) >= 1
+    end
+
+    test "a belief names its world, and is found only in that world" do
+      attrs = %{subject: "Paris", predicate: "is_a", object: "city", confidence: 0.9, source: "conversation"}
+
+      refute Belief.changeset(%Belief{}, attrs).valid?
+
+      {:ok, _} = %Belief{} |> Belief.changeset(Map.put(attrs, :world_id, "test_belief_a")) |> Repo.insert()
+
+      assert [%Belief{world_id: "test_belief_a"}] = Belief |> Belief.in_world("test_belief_a") |> Repo.all()
+      assert [] = Belief |> Belief.in_world("test_belief_b") |> Repo.all()
     end
   end
 
   describe "Episode" do
     test "inserts and queries an episode" do
       attrs = %{
+        world_id: @world_id,
         state: "user asked about weather",
         action: "retrieved weather data",
         outcome: "provided forecast",
@@ -73,14 +111,40 @@ defmodule Atlas.SchemasTest do
 
       assert episode.tags == ["weather", "query"]
 
-      world_episodes = Episode |> Episode.for_world("default") |> Repo.all()
-      assert length(world_episodes) >= 1
+      world_episodes = Episode |> Episode.for_world(@world_id) |> Repo.all()
+      assert Enum.map(world_episodes, & &1.id) == [episode.id]
+    end
+
+    test "requires a world" do
+      changeset =
+        Episode.changeset(%Episode{}, %{state: "user asked about weather", action: "retrieved weather data"})
+
+      refute changeset.valid?
+      assert "can't be blank" in errors_on(changeset)[:world_id]
+    end
+
+    test "the table fills in no world for a row that leaves it out" do
+      now = DateTime.utc_now()
+
+      row = %{
+        id: Ecto.UUID.bingenerate(),
+        state: "user asked about weather",
+        action: "retrieved weather data",
+        outcome: "",
+        inserted_at: now,
+        updated_at: now
+      }
+
+      error = assert_raise Postgrex.Error, fn -> Repo.insert_all("atlas_episodes", [row]) end
+      assert error.postgres.code == :not_null_violation
+      assert error.postgres.column == "world_id"
     end
   end
 
   describe "SemanticFact" do
     test "inserts and queries a semantic fact" do
       attrs = %{
+        world_id: @world_id,
         content: "Weather queries are common in the afternoon",
         category: "patterns",
         confidence: 0.8
@@ -90,6 +154,85 @@ defmodule Atlas.SchemasTest do
                %SemanticFact{} |> SemanticFact.changeset(attrs) |> Repo.insert()
 
       assert fact.category == "patterns"
+      assert fact.world_id == @world_id
+    end
+
+    test "requires a world" do
+      changeset =
+        SemanticFact.changeset(%SemanticFact{}, %{
+          content: "Weather queries are common in the afternoon",
+          category: "patterns",
+          confidence: 0.8
+        })
+
+      refute changeset.valid?
+      assert "can't be blank" in errors_on(changeset)[:world_id]
+    end
+
+    test "stores the action beside the fact's text" do
+      attrs = %{
+        world_id: @world_id,
+        content: "is it raining | will it rain today",
+        action: "weather.query",
+        category: "consolidated",
+        confidence: 0.5
+      }
+
+      {:ok, fact} = %SemanticFact{} |> SemanticFact.changeset(attrs) |> Repo.insert()
+
+      assert %SemanticFact{content: "is it raining | will it rain today", action: "weather.query"} =
+               Repo.get!(SemanticFact, fact.id)
+    end
+  end
+
+  describe "a semantic fact stored in the single consolidated string" do
+    @migration Atlas.Repo.Migrations.AddActionToSemanticFacts
+
+    setup do
+      unless Code.ensure_loaded?(@migration) do
+        Code.require_file(
+          Application.app_dir(:atlas, "priv/repo/migrations/20261009180000_add_action_to_semantic_facts.exs")
+        )
+      end
+
+      :ok
+    end
+
+    # Rows as they were before the `action` column: the action inside the
+    # content, or a fact's own text with no action.
+    @rows [
+      {"Action: weather.query | Examples: is it raining | will it rain today", "weather.query",
+       "is it raining | will it rain today"},
+      {"Action: conversation | Examples: hello there", "conversation", "hello there"},
+      {"Action:  | Examples: hi", "", "hi"},
+      {"Action: | Examples: no space before the bar", nil, "Action: | Examples: no space before the bar"},
+      {"Action: greeting with no examples part", nil, "Action: greeting with no examples part"},
+      {"Weather queries are common in the afternoon", nil, "Weather queries are common in the afternoon"}
+    ]
+
+    test "is split by the migration into its action and its text, and every row is kept" do
+      ids =
+        for {content, _action, _text} <- @rows do
+          {:ok, fact} =
+            %SemanticFact{}
+            |> SemanticFact.changeset(%{world_id: @world_id, content: content, category: "consolidated", confidence: 0.5})
+            |> Repo.insert()
+
+          fact.id
+        end
+
+      Repo.query!(@migration.split_legacy_content_sql())
+
+      converted = Enum.map(ids, fn id -> Repo.get!(SemanticFact, id) end)
+
+      assert Enum.map(converted, &{&1.action, &1.content}) ==
+               Enum.map(@rows, fn {_content, action, text} -> {action, text} end)
+    end
+
+    test "is split the same way when read from a file written before the column" do
+      for {content, action, text} <- @rows do
+        assert SemanticFact.split_legacy_content(content) == {action, text}
+      end
     end
   end
 
@@ -97,6 +240,7 @@ defmodule Atlas.SchemasTest do
     test "inserts and queries a review candidate" do
       attrs = %{
         id: "review_#{System.unique_integer([:positive])}",
+        world_id: "default",
         status: "pending",
         finding: %{"topic" => "Elixir", "claim" => "is functional"},
         aggregate_confidence: 0.88
@@ -106,9 +250,51 @@ defmodule Atlas.SchemasTest do
                %ReviewCandidate{} |> ReviewCandidate.changeset(attrs) |> Repo.insert()
 
       assert candidate.status == "pending"
+      assert candidate.world_id == "default"
 
       pending = ReviewCandidate |> ReviewCandidate.pending() |> Repo.all()
       assert length(pending) >= 1
+    end
+
+    test "every status a reviewer or the queue can give is valid, and no other" do
+      for status <- ~w(pending approved rejected deferred auto_approved) do
+        attrs = %{
+          id: "review_#{System.unique_integer([:positive])}",
+          world_id: "default",
+          status: status,
+          finding: %{"claim" => "is functional"},
+          aggregate_confidence: 0.88
+        }
+
+        assert {:ok, %ReviewCandidate{status: ^status}} =
+                 %ReviewCandidate{} |> ReviewCandidate.changeset(attrs) |> Repo.insert()
+      end
+
+      changeset =
+        ReviewCandidate.changeset(%ReviewCandidate{}, %{
+          id: "review_#{System.unique_integer([:positive])}",
+          world_id: "default",
+          status: "postponed",
+          finding: %{"claim" => "is functional"},
+          aggregate_confidence: 0.88
+        })
+
+      refute changeset.valid?
+      assert {"is invalid", _} = changeset.errors[:status]
+    end
+
+    test "a candidate without a world is invalid" do
+      attrs = %{
+        id: "review_#{System.unique_integer([:positive])}",
+        status: "pending",
+        finding: %{"claim" => "is functional"},
+        aggregate_confidence: 0.88
+      }
+
+      changeset = ReviewCandidate.changeset(%ReviewCandidate{}, attrs)
+
+      refute changeset.valid?
+      assert {"can't be blank", _} = changeset.errors[:world_id]
     end
   end
 

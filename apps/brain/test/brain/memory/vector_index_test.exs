@@ -8,6 +8,25 @@ defmodule Brain.Memory.VectorIndexTest do
     {:ok, table: table}
   end
 
+  describe "search_scope/4" do
+    test "ranks only the scope's vectors, so other scopes cannot crowd them out", %{table: table} do
+      for i <- 1..20, do: VectorIndex.insert(table, {"crowd", "c#{i}"}, [1.0, 0.0])
+      VectorIndex.insert(table, {"own", "o1"}, [0.6, 0.8])
+      VectorIndex.insert(table, {"own", "o2"}, [0.0, 1.0])
+
+      assert [{{"own", "o1"}, similarity}, {{"own", "o2"}, 0.0}] =
+               VectorIndex.search_scope(table, "own", [1.0, 0.0], 2)
+
+      assert_in_delta similarity, 0.6, 1.0e-9
+    end
+
+    test "returns nothing for a scope with no vectors", %{table: table} do
+      VectorIndex.insert(table, {"crowd", "c1"}, [1.0, 0.0])
+
+      assert VectorIndex.search_scope(table, "own", [1.0, 0.0], 5) == []
+    end
+  end
+
   describe "basic operations" do
     test "insert and get", %{table: table} do
       embedding = [0.1, 0.2, 0.3]

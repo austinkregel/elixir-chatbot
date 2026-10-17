@@ -35,20 +35,31 @@ defmodule Brain.Analysis.ContextAccumulator do
   ## Options
     - `:user_id` - interlocutor ID for practical adaptations
     - `:conversation_id` - conversation for topic continuity
-    - `:world_id` - world scope for memory queries (default: "default")
+    - `:world_id` - required: world scope for memory queries. Absent raises.
     - `:memory_k` - number of similar memories to retrieve (default: 5)
   """
-  def new(text, opts \\ []) when is_binary(text) do
+  def new(text, opts) when is_binary(text) do
     user_id = Keyword.get(opts, :user_id)
     conversation_id = Keyword.get(opts, :conversation_id)
-    world_id = Keyword.get(opts, :world_id, "default")
+
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "ContextAccumulator.new requires a :world_id option, the world whose memory is " <>
+                  "queried; got #{inspect(other)}"
+      end
+
     memory_k = Keyword.get(opts, :memory_k, 5)
 
     %__MODULE__{
       relevant_episodes: query_episodes(text, memory_k, world_id),
       relevant_semantics: query_semantics(text, memory_k, world_id),
-      conversation_topics: fetch_conversation_topics(conversation_id),
-      interlocutor_adaptations: fetch_interlocutor_adaptations(user_id)
+      conversation_topics: fetch_conversation_topics(conversation_id, world_id),
+      interlocutor_adaptations: fetch_interlocutor_adaptations(user_id, world_id)
     }
   end
 
@@ -63,6 +74,19 @@ defmodule Brain.Analysis.ContextAccumulator do
   def add_signal(%__MODULE__{} = acc, source, value, confidence) when is_atom(source) do
     confidence = clamp(confidence, @min_confidence, @max_confidence)
     %{acc | signals: [{source, value, confidence} | acc.signals]}
+  end
+
+  @doc """
+  Sets the signal from `source`, replacing any signal already recorded from it.
+
+  Used to refine a turn-level accumulator with one chunk's own measurements:
+  each source then contributes once, where adding a second signal from the same
+  source would count it twice in `log_odds_combine/1`.
+  """
+  def put_signal(%__MODULE__{} = acc, source, value, confidence) when is_atom(source) do
+    acc
+    |> Map.update!(:signals, fn signals -> Enum.reject(signals, &(elem(&1, 0) == source)) end)
+    |> add_signal(source, value, confidence)
   end
 
   @doc """
@@ -248,19 +272,20 @@ defmodule Brain.Analysis.ContextAccumulator do
     _ -> []
   end
 
-  defp fetch_conversation_topics(nil), do: []
+  # The world was checked in `new/2`, before this rescue.
+  defp fetch_conversation_topics(nil, _world_id), do: []
 
-  defp fetch_conversation_topics(conversation_id) do
-    Reader.conversation_topics(to_string(conversation_id))
+  defp fetch_conversation_topics(conversation_id, world_id) do
+    Reader.conversation_topics(to_string(conversation_id), world_id: world_id)
   rescue
     _ -> []
   end
 
-  defp fetch_interlocutor_adaptations(nil), do: %{}
+  defp fetch_interlocutor_adaptations(nil, _world_id), do: %{}
 
-  defp fetch_interlocutor_adaptations(user_id) do
+  defp fetch_interlocutor_adaptations(user_id, world_id) do
     user_id
-    |> Reader.user_preferences()
+    |> Reader.user_preferences(world_id: world_id)
     |> Enum.reduce(%{}, fn pref, acc ->
       case pref do
         %{rel_type: "WANTS", topic: topic, properties: props} ->

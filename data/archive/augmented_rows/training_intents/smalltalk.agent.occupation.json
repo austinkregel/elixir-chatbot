@@ -1,0 +1,22 @@
+[
+  {
+    "text": "where is office your located",
+    "tokens": [
+      "where",
+      "is",
+      "office",
+      "your",
+      "located"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "NOUN",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-c03c6158",
+    "intent": "smalltalk.agent.occupation"
+  }
+]

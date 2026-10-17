@@ -84,7 +84,7 @@ defmodule Brain.Services.SystemStatus do
   end
 
   @impl true
-  def enrich(_intent, _slots, _credentials) do
+  def enrich(_intent, _slots, _credentials, world_id) do
     health = safe_get_health_indicators()
     memory = safe_get_memory_status()
     models = safe_get_ml_summary()
@@ -99,10 +99,13 @@ defmodule Brain.Services.SystemStatus do
        uptime: format_uptime(health.uptime_seconds),
        ml_models_summary: models,
        memory_summary: memory,
-       services_summary: safe_get_services_summary(),
+       services_summary: safe_get_services_summary(world_id),
        categories_summary: safe_get_categories_summary()
      }}
   end
+
+  @impl true
+  def writes?(_intent), do: false
 
   @impl true
   def health_check(_credentials) do
@@ -155,8 +158,8 @@ defmodule Brain.Services.SystemStatus do
     _ -> "unavailable"
   end
 
-  defp safe_get_services_summary do
-    services_status = Brain.SystemStatus.get_services_status()
+  defp safe_get_services_summary(world_id) do
+    services_status = Brain.SystemStatus.get_services_status(world_id)
     services = Map.get(services_status, :services, [])
     configured = Enum.count(services, & &1.configured)
     total = length(services)

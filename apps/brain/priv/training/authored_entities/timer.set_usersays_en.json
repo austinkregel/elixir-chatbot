@@ -1,0 +1,156 @@
+[
+  {
+    "data": [
+      {
+        "text": "Begin a "
+      },
+      {
+        "alias": "duration",
+        "meta": "@duration",
+        "text": "20 minute"
+      },
+      {
+        "text": " timer"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Count down "
+      },
+      {
+        "alias": "duration",
+        "meta": "@duration",
+        "text": "10 minutes"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Create a timer"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Set a "
+      },
+      {
+        "alias": "duration",
+        "meta": "@duration",
+        "text": "15 minute"
+      },
+      {
+        "text": " timer"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Set a timer"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Set a timer for "
+      },
+      {
+        "alias": "duration",
+        "meta": "@duration",
+        "text": "10 minutes"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Set a workout timer"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Set an egg timer"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Start a "
+      },
+      {
+        "alias": "duration",
+        "meta": "@duration",
+        "text": "5 minute"
+      },
+      {
+        "text": " timer"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Start a countdown"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Start a timer for cooking"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Start the timer"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Timer "
+      },
+      {
+        "alias": "duration",
+        "meta": "@duration",
+        "text": "3 minutes"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Timer for "
+      },
+      {
+        "alias": "duration",
+        "meta": "@duration",
+        "text": "2 hours"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Timer for "
+      },
+      {
+        "alias": "duration",
+        "meta": "@duration",
+        "text": "30 seconds"
+      }
+    ]
+  }
+]

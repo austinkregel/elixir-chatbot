@@ -138,48 +138,71 @@ defmodule Brain.ML.Gazetteer do
   end
 
   @doc """
-  Look up multiple potential entity spans from a list of tokens.
+  Look up multiple potential entity spans from a list of tokens, in a world.
   Returns a list of {start_index, end_index, entity_info} tuples.
   Prioritizes longer matches (multi-word entities).
 
+  Each phrase is looked up in the base gazetteer and in the world's overlay,
+  as `lookup_all_types/2` does: an entity the world's overlay holds is found
+  in that world only, and the overlay's reading of a name comes before the
+  base gazetteer's.
+
   ## Options
+    - `:world_id` (required) - the world whose overlay is consulted; a missing
+      or malformed world raises `ArgumentError`
     - `:domain` - Domain atom (e.g. `:weather`, `:music`) to rank multi-type results
     - `:intent` - Intent string (e.g. `"weather.query"`) for Poincare/domain scoring
-    - `:world_id` - World ID for overlay lookups
-  """
-  def lookup_spans(tokens, opts \\ [])
 
+  The gazetteer's tables must exist: a lookup before they are created raises
+  rather than reading as "no entities".
+  """
   def lookup_spans(tokens, opts) when is_list(tokens) do
+    world_id = spans_world_id!(opts, "lookup_spans")
+
     Telemetry.span(:gazetteer_lookup, %{token_count: length(tokens)}, fn ->
-      do_lookup_spans(tokens, opts)
+      do_lookup_spans(tokens, world_id, opts)
     end)
   end
 
   @doc """
-  Look up all span hypotheses including overlapping candidates with scores.
+  Look up all span hypotheses including overlapping candidates with scores,
+  in a world.
   Returns a list of {start_index, end_index, entity_infos, score} tuples.
   Overlapping spans are retained for the caller to resolve.
 
   ## Options
-    Same as `lookup_spans/2`.
+    Same as `lookup_spans/2`; `:world_id` is required.
   """
-  def lookup_spans_lattice(tokens, opts \\ []) when is_list(tokens) do
-      Telemetry.span(:gazetteer_lookup, %{token_count: length(tokens)}, fn ->
+  def lookup_spans_lattice(tokens, opts) when is_list(tokens) do
+    world_id = spans_world_id!(opts, "lookup_spans_lattice")
+
+    Telemetry.span(:gazetteer_lookup, %{token_count: length(tokens)}, fn ->
       token_count = length(tokens)
       domain = Keyword.get(opts, :domain)
       intent = Keyword.get(opts, :intent)
 
-      find_all_spans_raw(tokens, 0, token_count, [])
+      find_all_spans_raw(tokens, world_id, 0, token_count, [])
       |> Enum.map(fn {start_idx, end_idx, entity_infos} ->
         span_len = end_idx - start_idx + 1
-        ranked = rank_types_with_context(entity_infos, domain: domain, intent: intent)
-        score = compute_span_score(ranked, span_len, domain, intent)
+        ranked = rank_types_with_context(entity_infos, domain: domain, intent: intent, world_id: world_id)
+        score = compute_span_score(ranked, span_len, domain, intent, world_id)
         {start_idx, end_idx, ranked, score}
       end)
       |> Enum.sort_by(fn {start, _end, _infos, score} -> {-score, start} end)
     end)
-  rescue
-    ArgumentError -> []
+  end
+
+  defp spans_world_id!(opts, function) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "Gazetteer.#{function} option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "Gazetteer.#{function} needs :world_id, the world whose overlay is consulted"
+    end
   end
 
   @doc """
@@ -218,17 +241,17 @@ defmodule Brain.ML.Gazetteer do
     _ -> :error
   end
 
-  defp do_lookup_spans(tokens, opts) do
+  defp do_lookup_spans(tokens, world_id, opts) do
     token_count = length(tokens)
     domain = Keyword.get(opts, :domain)
     intent = Keyword.get(opts, :intent)
 
-    spans = find_all_spans_raw(tokens, 0, token_count, [])
+    spans = find_all_spans_raw(tokens, world_id, 0, token_count, [])
 
     ranked_spans =
       if domain != nil or intent != nil do
         Enum.map(spans, fn {start_idx, end_idx, entity_infos} ->
-          ranked = rank_types_with_context(entity_infos, domain: domain, intent: intent)
+          ranked = rank_types_with_context(entity_infos, domain: domain, intent: intent, world_id: world_id)
           {start_idx, end_idx, ranked}
         end)
       else
@@ -238,8 +261,6 @@ defmodule Brain.ML.Gazetteer do
     ranked_spans
     |> Enum.sort_by(fn {start, end_idx, _info} -> {-(end_idx - start), start} end)
     |> remove_overlapping_spans([])
-  rescue
-    ArgumentError -> []
   end
 
   @doc """
@@ -465,7 +486,7 @@ defmodule Brain.ML.Gazetteer do
   Adds an entity to a world's overlay (not the base gazetteer).
   """
   def add_to_world(world_id, text, entity_type, metadata \\ %{})
-      when is_binary(world_id) and is_binary(text) and is_binary(entity_type) do
+      when is_binary(world_id) and world_id != "" and is_binary(text) and is_binary(entity_type) do
     GenServer.call(__MODULE__, {:add_to_world, world_id, text, entity_type, metadata})
   end
 
@@ -482,11 +503,14 @@ defmodule Brain.ML.Gazetteer do
   end
 
   @doc """
-  Restores a world overlay from saved data.
+  Restores a world overlay from saved data, then adds every entity a
+  reviewer approved in the world, so an approval made after the overlay was
+  saved survives the restore. Raises when the approvals cannot be read.
   """
   def restore_world_overlay(world_id, overlay_data)
-      when is_binary(world_id) and is_list(overlay_data) do
-    GenServer.call(__MODULE__, {:restore_world_overlay, world_id, overlay_data}, 30_000)
+      when is_binary(world_id) and world_id != "" and is_list(overlay_data) do
+    approved = Enum.filter(reviewed_entities!(), fn {_name, _type, w} -> w == world_id end)
+    GenServer.call(__MODULE__, {:restore_world_overlay, world_id, overlay_data, approved}, 30_000)
   end
 
   @doc """
@@ -561,10 +585,18 @@ defmodule Brain.ML.Gazetteer do
     # Create ETS tables (with isolation support)
     create_tables(tables)
 
+    isolated = table_prefix != nil
+
+    # The global gazetteer loads its sources before init returns. Lookups read
+    # ETS directly, so loading afterwards would let callers started later in
+    # the supervision tree see an empty table. Isolated test instances start
+    # empty.
+    unless isolated, do: load_sources()
+
     state = %{
-      loaded: false,
+      loaded: not isolated,
       tables: tables,
-      isolated: table_prefix != nil
+      isolated: isolated
     }
 
     {:ok, state}
@@ -586,109 +618,8 @@ defmodule Brain.ML.Gazetteer do
 
   @impl true
   def handle_call(:load_all, _from, state) do
-    Logger.info("Loading all gazetteers...")
-
-    stats = %{
-      entities: 0,
-      prefixes: 0,
-      cities: 0,
-      artists: 0,
-      emojis: 0,
-      us_cities: 0,
-      entity_types: 0,
-      loaded: false,
-      load_time_ms: 0
-    }
-
-    start_time = System.monotonic_time(:millisecond)
-
-    # Load and index entities from JSON files
-    stats =
-      case DataLoaders.load_all_entities() do
-        {:ok, entities} ->
-          entity_lookup = DataLoaders.build_entity_lookup(entities)
-          indexed = index_entities(entity_lookup, "json_entity")
-          %{stats | entities: stats.entities + indexed, entity_types: map_size(entities)}
-
-        {:error, _} ->
-          stats
-      end
-
-    # Load and index world cities
-    stats =
-      case DataLoaders.load_cities() do
-        {:ok, cities} ->
-          city_lookup = DataLoaders.build_city_lookup(cities)
-          indexed = index_entities(city_lookup, :cities)
-          %{stats | entities: stats.entities + indexed, cities: length(cities)}
-
-        {:error, _} ->
-          stats
-      end
-
-    # Load and index US cities (comprehensive dataset)
-    stats =
-      case DataLoaders.load_us_cities() do
-        {:ok, us_cities} ->
-          us_city_lookup = DataLoaders.build_us_city_lookup(us_cities)
-          indexed = index_entities(us_city_lookup, :us_cities)
-          Logger.info("Loaded US cities", %{count: length(us_cities), indexed: indexed})
-          %{stats | entities: stats.entities + indexed, us_cities: length(us_cities)}
-
-        {:error, _} ->
-          stats
-      end
-
-    # Load and index artists
-    stats =
-      case DataLoaders.load_artists() do
-        {:ok, artists} ->
-          artist_lookup = DataLoaders.build_artist_lookup(artists)
-          indexed = index_entities(artist_lookup, "artist")
-          %{stats | entities: stats.entities + indexed, artists: length(artists)}
-
-        {:error, _} ->
-          stats
-      end
-
-    # Load and index emojis
-    stats =
-      case DataLoaders.load_emojis() do
-        {:ok, emojis} ->
-          emoji_lookup = DataLoaders.build_emoji_lookup(emojis)
-          indexed = index_entities(emoji_lookup, "emoji")
-          %{stats | entities: stats.entities + indexed, emojis: length(emojis)}
-
-        {:error, _} ->
-          stats
-      end
-
-    # Enrich from Atlas knowledge_graph entities
-    atlas_synced = sync_from_atlas()
-
-    stats = %{stats | entities: stats.entities + atlas_synced}
-
-    # Build prefix index
-    prefix_count = build_prefix_index()
-
-    end_time = System.monotonic_time(:millisecond)
-    load_time = end_time - start_time
-
-    final_stats = %{stats | prefixes: prefix_count, loaded: true, load_time_ms: load_time}
-
-    :ets.insert(@stats_table, {:stats, final_stats})
-
-    Logger.info("Gazetteers loaded", %{
-      entities: final_stats.entities,
-      prefixes: final_stats.prefixes,
-      cities: final_stats.cities,
-      artists: final_stats.artists,
-      emojis: final_stats.emojis,
-      atlas_synced: atlas_synced,
-      load_time_ms: load_time
-    })
-
-    {:reply, {:ok, final_stats}, %{state | loaded: true}}
+    stats = load_sources()
+    {:reply, {:ok, stats}, %{state | loaded: true}}
   end
 
   @impl true
@@ -858,53 +789,14 @@ defmodule Brain.ML.Gazetteer do
 
   @impl true
   def handle_call({:add_to_world, world_id, text, entity_type, metadata}, _from, state) do
-    normalized_key = normalize(text)
-    key = {world_id, normalized_key}
-
-    entity_info =
-      metadata
-      |> Map.put(:entity_type, entity_type)
-      |> Map.put(:type, entity_type)
-      |> Map.put(:value, text)
-      |> Map.put(:original_name, text)
-      |> Map.put(:source, :world_learning)
-      |> Map.put(:world_id, world_id)
-      |> Map.put(:added_at, System.system_time(:second))
-
-    # Check if entry already exists
-    case :ets.lookup(@world_overlay_table, key) do
-      [{^key, existing_infos}] when is_list(existing_infos) ->
-        # Check if this type already exists
-        already_has_type =
-          Enum.any?(existing_infos, fn info ->
-            (Map.get(info, :entity_type) || Map.get(info, :type)) == entity_type
-          end)
-
-        if already_has_type do
-          {:reply, {:error, {:duplicate, entity_type}}, state}
-        else
-          :ets.insert(@world_overlay_table, {key, [entity_info | existing_infos]})
-          {:reply, {:ok, normalized_key}, state}
-        end
-
-      [{^key, existing_info}] when is_map(existing_info) ->
-        existing_type = Map.get(existing_info, :entity_type) || Map.get(existing_info, :type)
-
-        if existing_type == entity_type do
-          {:reply, {:error, {:duplicate, entity_type}}, state}
-        else
-          :ets.insert(@world_overlay_table, {key, [entity_info, existing_info]})
-          {:reply, {:ok, normalized_key}, state}
-        end
-
-      [] ->
-        :ets.insert(@world_overlay_table, {key, [entity_info]})
-        {:reply, {:ok, normalized_key}, state}
-    end
+    {:reply, insert_world_entry(world_id, text, entity_type, metadata), state}
   end
 
+  # The saved overlay replaces what the world's overlay held; what reviewers
+  # approved in the world is then laid over it, so an approval made after the
+  # overlay was saved is not lost to the restore.
   @impl true
-  def handle_call({:restore_world_overlay, world_id, overlay_data}, _from, state) do
+  def handle_call({:restore_world_overlay, world_id, overlay_data, approved}, _from, state) do
     # First clean any existing overlay
     entries = :ets.match_object(@world_overlay_table, {{world_id, :_}, :_})
     Enum.each(entries, fn {key, _} -> :ets.delete(@world_overlay_table, key) end)
@@ -914,7 +806,14 @@ defmodule Brain.ML.Gazetteer do
       :ets.insert(@world_overlay_table, {{world_id, key}, info})
     end)
 
-    Logger.debug("Restored world overlay", %{world_id: world_id, entries: length(overlay_data)})
+    reviewed = load_reviewed(approved)
+
+    Logger.debug("Restored world overlay", %{
+      world_id: world_id,
+      entries: length(overlay_data),
+      reviewed: reviewed
+    })
+
     {:reply, :ok, state}
   end
 
@@ -937,79 +836,167 @@ defmodule Brain.ML.Gazetteer do
   # Private Functions
   # ============================================================================
 
-  defp sync_from_atlas do
-    case Brain.Graph.Training.collect_gazetteer_entries() do
-      {:ok, entries} ->
-        count =
-          Enum.count(entries, fn {name, entity_type, metadata} ->
-            insert_entry_direct(name, entity_type, metadata)
-          end)
+  # Loads and indexes every source into the global tables. Called from init/1,
+  # so the tables are full before any process started after this one can
+  # read them, and again by load_all/0 to reload.
+  defp load_sources do
+    Logger.info("Loading all gazetteers...")
 
-        Logger.debug("Gazetteer enriched from Atlas knowledge_graph (#{count} entries)")
-        count
+    stats = %{
+      entities: 0,
+      prefixes: 0,
+      cities: 0,
+      artists: 0,
+      emojis: 0,
+      us_cities: 0,
+      entity_types: 0,
+      loaded: false,
+      load_time_ms: 0
+    }
 
-      {:error, reason} ->
-        Logger.debug("Atlas Gazetteer sync skipped: #{inspect(reason)}")
-        0
-    end
-  rescue
-    e ->
-      Logger.debug("Atlas Gazetteer sync unavailable: #{inspect(e)}")
-      0
+    start_time = System.monotonic_time(:millisecond)
+
+    # Every source is required: one that cannot be loaded raises instead of
+    # leaving the gazetteer silently short of entries.
+
+    # Load and index entities from JSON files
+    entities = DataLoaders.load_all_entities() |> DataLoaders.require_source!(:entities)
+    indexed = entities |> DataLoaders.build_entity_lookup() |> index_entities("json_entity")
+    stats = %{stats | entities: stats.entities + indexed, entity_types: map_size(entities)}
+
+    # Load and index world cities
+    cities = DataLoaders.load_cities() |> DataLoaders.require_source!(:cities)
+    indexed = cities |> DataLoaders.build_city_lookup() |> index_entities(:cities)
+    stats = %{stats | entities: stats.entities + indexed, cities: length(cities)}
+
+    # Load and index US cities (comprehensive dataset)
+    us_cities = DataLoaders.load_us_cities() |> DataLoaders.require_source!(:us_cities)
+    indexed = us_cities |> DataLoaders.build_us_city_lookup(&DataLoaders.ordinary_word?(&1)) |> index_entities(:us_cities)
+    Logger.info("Loaded US cities", %{count: length(us_cities), indexed: indexed})
+    stats = %{stats | entities: stats.entities + indexed, us_cities: length(us_cities)}
+
+    # Load and index artists
+    artists = DataLoaders.load_artists() |> DataLoaders.require_source!(:artists)
+    indexed = artists |> DataLoaders.build_artist_lookup() |> index_entities("artist")
+    stats = %{stats | entities: stats.entities + indexed, artists: length(artists)}
+
+    # Load and index emojis
+    emojis = DataLoaders.load_emojis() |> DataLoaders.require_source!(:emojis)
+    indexed = emojis |> DataLoaders.build_emoji_lookup() |> index_entities("emoji")
+    stats = %{stats | entities: stats.entities + indexed, emojis: length(emojis)}
+
+    # Entities a human reviewer approved, each into its world's overlay
+    reviewed = load_reviewed(reviewed_entities!())
+
+    # Build prefix index
+    prefix_count = build_prefix_index()
+
+    end_time = System.monotonic_time(:millisecond)
+    load_time = end_time - start_time
+
+    final_stats = %{stats | prefixes: prefix_count, loaded: true, load_time_ms: load_time}
+
+    :ets.insert(@stats_table, {:stats, final_stats})
+
+    Logger.info("Gazetteers loaded", %{
+      entities: final_stats.entities,
+      prefixes: final_stats.prefixes,
+      cities: final_stats.cities,
+      artists: final_stats.artists,
+      emojis: final_stats.emojis,
+      reviewed: reviewed,
+      load_time_ms: load_time
+    })
+
+    final_stats
   end
 
-  defp insert_entry_direct(name, entity_type, metadata) when is_binary(name) and name != "" do
-    normalized_key = normalize(name)
+  # The gazetteer learns only what a human reviewer approved, and an approval
+  # belongs to the world its candidate is in: each approved entity is loaded
+  # into that world's overlay, as `ReviewQueue` teaches it when the approval
+  # is made. Returns `{entity, entity_type, world_id}` for every approval.
+  #
+  # Raises when Atlas cannot be read or an approval names no world. At boot
+  # it runs in `init/1`; for a restore it runs in the caller, before the
+  # call, so a failure raises there rather than crashing this server.
+  defp reviewed_entities! do
+    case Brain.AtlasIntegration.load_reviewed_entities() do
+      {:ok, entities} ->
+        Enum.each(entities, fn {name, _entity_type, world_id} ->
+          unless is_binary(world_id) and world_id != "" do
+            raise "Gazetteer: the approved entity #{inspect(name)} names no world " <>
+                    "(world_id #{inspect(world_id)}); an approval is learned in its world's overlay"
+          end
+        end)
+
+        entities
+
+      # No approvals is {:ok, []}; an error means Atlas could not be read,
+      # which is a failure like any other missing source.
+      {:error, reason} ->
+        raise "Gazetteer: could not read reviewed entities from Atlas: #{inspect(reason)}"
+    end
+  end
+
+  # Adds approved entities to their worlds' overlays; returns how many
+  # entries were added (an entity the overlay already holds under the
+  # approved type is not added again).
+  defp load_reviewed(entities) do
+    count =
+      Enum.count(entities, fn {name, entity_type, world_id} ->
+        match?({:ok, _}, insert_world_entry(world_id, name, entity_type, %{reviewed: true}))
+      end)
+
+    Logger.debug("Gazetteer loaded #{count} reviewed entities into world overlays")
+    count
+  end
+
+  # Adds a reading to a world's overlay. A name the overlay already holds
+  # under another type gains this one as a further reading; one it already
+  # holds under this type is `{:error, {:duplicate, entity_type}}`.
+  defp insert_world_entry(world_id, text, entity_type, metadata) do
+    normalized_key = normalize(text)
+    key = {world_id, normalized_key}
 
     entity_info =
       metadata
       |> Map.put(:entity_type, entity_type)
       |> Map.put(:type, entity_type)
-      |> Map.put(:value, name)
-      |> Map.put(:original_name, name)
-      |> Map.put(:source, :atlas)
+      |> Map.put(:value, text)
+      |> Map.put(:original_name, text)
+      |> Map.put(:source, :world_learning)
+      |> Map.put(:world_id, world_id)
       |> Map.put(:added_at, System.system_time(:second))
 
-    case :ets.lookup(@table_name, normalized_key) do
-      [{^normalized_key, existing}] ->
-        existing_list =
-          case existing do
-            l when is_list(l) -> l
-            m when is_map(m) -> [m]
-          end
-
+    case :ets.lookup(@world_overlay_table, key) do
+      [{^key, existing_infos}] when is_list(existing_infos) ->
         already_has_type =
-          Enum.any?(existing_list, fn entry ->
-            Map.get(entry, :entity_type) == entity_type
+          Enum.any?(existing_infos, fn info ->
+            (Map.get(info, :entity_type) || Map.get(info, :type)) == entity_type
           end)
 
         if already_has_type do
-          false
+          {:error, {:duplicate, entity_type}}
         else
-          :ets.insert(@table_name, {normalized_key, [entity_info | existing_list]})
-          true
+          :ets.insert(@world_overlay_table, {key, [entity_info | existing_infos]})
+          {:ok, normalized_key}
+        end
+
+      [{^key, existing_info}] when is_map(existing_info) ->
+        existing_type = Map.get(existing_info, :entity_type) || Map.get(existing_info, :type)
+
+        if existing_type == entity_type do
+          {:error, {:duplicate, entity_type}}
+        else
+          :ets.insert(@world_overlay_table, {key, [entity_info, existing_info]})
+          {:ok, normalized_key}
         end
 
       [] ->
-        :ets.insert(@table_name, {normalized_key, entity_info})
-
-        words = String.split(normalized_key)
-
-        if length(words) > 1 do
-          prefixes =
-            1..(length(words) - 1)
-            |> Enum.map(fn n -> Enum.take(words, n) |> Enum.join(" ") end)
-
-          Enum.each(prefixes, fn prefix ->
-            :ets.insert(@prefix_table, {prefix, true})
-          end)
-        end
-
-        true
+        :ets.insert(@world_overlay_table, {key, [entity_info]})
+        {:ok, normalized_key}
     end
   end
-
-  defp insert_entry_direct(_, _, _), do: false
 
   defp update_entity_count(delta) do
     case :ets.lookup(@stats_table, :stats) do
@@ -1113,18 +1100,18 @@ defmodule Brain.ML.Gazetteer do
     length(prefixes)
   end
 
-  defp find_all_spans_raw(_tokens, start_idx, token_count, acc) when start_idx >= token_count do
+  defp find_all_spans_raw(_tokens, _world_id, start_idx, token_count, acc) when start_idx >= token_count do
     acc
   end
 
-  defp find_all_spans_raw(tokens, start_idx, token_count, acc) do
+  defp find_all_spans_raw(tokens, world_id, start_idx, token_count, acc) do
     max_span = min(5, token_count - start_idx)
 
-    new_acc = find_all_matches_at(tokens, start_idx, max_span, acc)
-    find_all_spans_raw(tokens, start_idx + 1, token_count, new_acc)
+    new_acc = find_all_matches_at(tokens, world_id, start_idx, max_span, acc)
+    find_all_spans_raw(tokens, world_id, start_idx + 1, token_count, new_acc)
   end
 
-  defp find_all_matches_at(tokens, start_idx, max_span, acc) do
+  defp find_all_matches_at(tokens, world_id, start_idx, max_span, acc) do
     if max_span < 1 do
       acc
     else
@@ -1134,20 +1121,38 @@ defmodule Brain.ML.Gazetteer do
         phrase = Enum.join(span_tokens, " ")
         normalized = normalize(phrase)
 
-        case :ets.lookup(@table_name, normalized) do
-          [{^normalized, entity_infos}] when is_list(entity_infos) ->
-            end_idx = start_idx + span_len - 1
-            [{start_idx, end_idx, entity_infos} | inner_acc]
-
-          [{^normalized, entity_info}] when is_map(entity_info) ->
-            end_idx = start_idx + span_len - 1
-            [{start_idx, end_idx, [entity_info]} | inner_acc]
-
+        case span_infos(normalized, world_id) do
           [] ->
             inner_acc
+
+          entity_infos ->
+            end_idx = start_idx + span_len - 1
+            [{start_idx, end_idx, entity_infos} | inner_acc]
         end
       end)
     end
+  end
+
+  # A phrase's readings in a world: the world's overlay first, then the base
+  # gazetteer's readings of other types (`merge_entity_types/2`, as
+  # `lookup_all_types/2`). Neither table lookup is rescued: a missing table is
+  # an error, not an absence.
+  defp span_infos(normalized, world_id) do
+    overlay_infos =
+      case :ets.lookup(@world_overlay_table, {world_id, normalized}) do
+        [{_key, infos}] when is_list(infos) -> infos
+        [{_key, info}] when is_map(info) -> [info]
+        [] -> []
+      end
+
+    base_infos =
+      case :ets.lookup(@table_name, normalized) do
+        [{^normalized, infos}] when is_list(infos) -> infos
+        [{^normalized, info}] when is_map(info) -> [info]
+        [] -> []
+      end
+
+    merge_entity_types(overlay_infos, base_infos)
   end
 
   defp remove_overlapping_spans([], resolved), do: Enum.reverse(resolved)
@@ -1174,6 +1179,12 @@ defmodule Brain.ML.Gazetteer do
   @doc """
   Rank a list of entity type infos using contextual signals.
   Returns the same list reordered so the best match for the context is first.
+
+  ## Options
+    - `:domain` - domain atom to rank by
+    - `:intent` - intent string; ranking by it reads the Poincare embeddings of
+      a world, so it needs `:world_id` too and raises without one
+    - `:world_id` - the world whose Poincare embeddings rank by intent
   """
   def rank_types_with_context(infos, opts \\ [])
 
@@ -1182,6 +1193,7 @@ defmodule Brain.ML.Gazetteer do
   def rank_types_with_context(infos, opts) when is_list(infos) do
     domain = Keyword.get(opts, :domain)
     intent = Keyword.get(opts, :intent)
+    world_id = Keyword.get(opts, :world_id)
 
     if domain == nil and intent == nil do
       infos
@@ -1194,7 +1206,7 @@ defmodule Brain.ML.Gazetteer do
         source = Map.get(info, :source, :unknown) |> to_string()
 
         domain_score = domain_alignment_score(entity_type, domain)
-        poincare_score = poincare_proximity_score(entity_type, intent)
+        poincare_score = poincare_proximity_score(entity_type, intent, world_id)
         conceptnet_score = conceptnet_isa_score(entity_type, domain)
         learned_score = learned_preference_score(info, domain)
 
@@ -1224,24 +1236,16 @@ defmodule Brain.ML.Gazetteer do
     if matching_group, do: 1.0, else: 0.0
   end
 
-  defp poincare_proximity_score(_entity_type, nil), do: 0.0
+  # The proximity of the entity type to the intent in the world's Poincare
+  # embeddings. No intent, no score. A world without its copy of the
+  # embeddings raises (`Brain.ML.Poincare.Embeddings`), as does ranking by
+  # intent with no world.
+  defp poincare_proximity_score(_entity_type, nil, _world_id), do: 0.0
 
-  defp poincare_proximity_score(entity_type, intent) do
-    if Code.ensure_loaded?(Brain.ML.Poincare.Embeddings) and
-         function_exported?(Brain.ML.Poincare.Embeddings, :entity_distance, 2) do
-      try do
-        case Brain.ML.Poincare.Embeddings.entity_distance(entity_type, intent) do
-          {:ok, distance} when is_number(distance) ->
-            1.0 / (1.0 + distance)
-
-          _ ->
-            0.0
-        end
-      catch
-        _, _ -> 0.0
-      end
-    else
-      0.0
+  defp poincare_proximity_score(entity_type, intent, world_id) do
+    case Brain.ML.Poincare.Embeddings.entity_distance(world_id, entity_type, intent) do
+      {:ok, distance} -> 1.0 / (1.0 + distance)
+      {:error, :not_found} -> 0.0
     end
   end
 
@@ -1277,7 +1281,7 @@ defmodule Brain.ML.Gazetteer do
     min(count * 0.5, 2.0)
   end
 
-  defp compute_span_score(ranked_infos, span_len, domain, intent) do
+  defp compute_span_score(ranked_infos, span_len, domain, intent, world_id) do
     length_bonus = span_len * 0.5
 
     type_score =
@@ -1285,7 +1289,7 @@ defmodule Brain.ML.Gazetteer do
         [best | _] ->
           entity_type = Map.get(best, :entity_type) || Map.get(best, :type) || "unknown"
           domain_alignment_score(entity_type, domain) +
-            poincare_proximity_score(entity_type, intent) * 0.5
+            poincare_proximity_score(entity_type, intent, world_id) * 0.5
         [] -> 0.0
       end
 

@@ -3,6 +3,9 @@ defmodule Brain.Services.WeatherTest do
 
   alias Brain.Services.Weather
 
+  # The world the suite runs in; enrich/4 takes the world the request runs in.
+  @world "default"
+
   # These tests verify the Weather service behaviour without making real API calls.
   # Tests that would hit the API are either:
   # 1. Structured to fail before the HTTP call (e.g., missing location)
@@ -40,33 +43,33 @@ defmodule Brain.Services.WeatherTest do
     end
   end
 
-  describe "enrich/3 validation" do
+  describe "enrich/4 validation" do
     test "returns error when location is missing from empty slots" do
       slots = %{}
       credentials = %{api_key: "test_key"}
 
-      assert {:error, :missing_location} = Weather.enrich("weather.query", slots, credentials)
+      assert {:error, :missing_location} = Weather.enrich("weather.query", slots, credentials, @world)
     end
 
     test "returns error when location is nil" do
       slots = %{location: nil}
       credentials = %{api_key: "test_key"}
 
-      assert {:error, :missing_location} = Weather.enrich("weather.query", slots, credentials)
+      assert {:error, :missing_location} = Weather.enrich("weather.query", slots, credentials, @world)
     end
 
     test "returns error when location key is missing (atom key)" do
       slots = %{other_key: "value"}
       credentials = %{api_key: "test_key"}
 
-      assert {:error, :missing_location} = Weather.enrich("weather.query", slots, credentials)
+      assert {:error, :missing_location} = Weather.enrich("weather.query", slots, credentials, @world)
     end
 
     test "returns error when location key is missing (string key)" do
       slots = %{"other_key" => "value"}
       credentials = %{api_key: "test_key"}
 
-      assert {:error, :missing_location} = Weather.enrich("weather.query", slots, credentials)
+      assert {:error, :missing_location} = Weather.enrich("weather.query", slots, credentials, @world)
     end
   end
 
@@ -137,7 +140,7 @@ defmodule Brain.Services.WeatherTest do
       slots = %{location: "Test City"}
 
       # No API key provided - should fail with :missing_api_key, not :missing_location
-      result = Weather.enrich("weather.query", slots, %{})
+      result = Weather.enrich("weather.query", slots, %{}, @world)
 
       # :missing_api_key means location was found, API key validation came next
       assert result == {:error, :missing_api_key}
@@ -146,7 +149,7 @@ defmodule Brain.Services.WeatherTest do
     test "extracts location from string key" do
       slots = %{"location" => "Test City"}
 
-      result = Weather.enrich("weather.query", slots, %{})
+      result = Weather.enrich("weather.query", slots, %{}, @world)
 
       assert result == {:error, :missing_api_key}
     end
@@ -154,7 +157,7 @@ defmodule Brain.Services.WeatherTest do
     test "intent routing for weather.forecast" do
       slots = %{location: "Test"}
 
-      result = Weather.enrich("weather.forecast", slots, %{})
+      result = Weather.enrich("weather.forecast", slots, %{}, @world)
 
       # Proves the forecast intent path was taken (same error, just different internal route)
       assert result == {:error, :missing_api_key}
@@ -163,7 +166,7 @@ defmodule Brain.Services.WeatherTest do
     test "intent routing for weather.current" do
       slots = %{location: "Test"}
 
-      result = Weather.enrich("weather.current", slots, %{})
+      result = Weather.enrich("weather.current", slots, %{}, @world)
 
       assert result == {:error, :missing_api_key}
     end
@@ -171,7 +174,7 @@ defmodule Brain.Services.WeatherTest do
     test "default intent routing for unknown weather intent" do
       slots = %{location: "Test"}
 
-      result = Weather.enrich("weather.unknown", slots, %{})
+      result = Weather.enrich("weather.unknown", slots, %{}, @world)
 
       # Unknown intents fall back to current weather
       assert result == {:error, :missing_api_key}
@@ -183,18 +186,23 @@ defmodule Brain.Services.WeatherTest do
     # To update the snapshot, run: MIX_ENV=test mix snapshot.record --name weather/london --force
 
     setup do
-      # Geocode + current weather by lat/lon (OpenWeather uses imperial in fetch_current/2)
-      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("weather/geocode_london")
-      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("weather/london")
-      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("weather/london_lat_lon")
-      :ok
+      # Geocode + current weather by lat/lon (OpenWeather uses imperial in
+      # fetch_current/2). Loaded for these tests only: the snapshot server is
+      # global, `weather/london` and `weather/london_lat_lon` are both
+      # `/data/2.5/weather`, and leaving them loaded let them answer any later
+      # weather request in the run.
+      Brain.Test.Singletons.use_http_snapshots!([
+        "weather/geocode_london",
+        "weather/london",
+        "weather/london_lat_lon"
+      ])
     end
 
     test "fetches weather data from snapshot" do
       slots = %{location: "London"}
       credentials = %{api_key: "test_snapshot_key"}
 
-      result = Weather.enrich("weather.query", slots, credentials)
+      result = Weather.enrich("weather.query", slots, credentials, @world)
 
       case result do
         {:ok, data} ->
@@ -212,7 +220,7 @@ defmodule Brain.Services.WeatherTest do
       slots = %{location: "London"}
       credentials = %{api_key: "test_snapshot_key"}
 
-      case Weather.enrich("weather.query", slots, credentials) do
+      case Weather.enrich("weather.query", slots, credentials, @world) do
         {:ok, data} ->
           assert data.location_name == "London"
 

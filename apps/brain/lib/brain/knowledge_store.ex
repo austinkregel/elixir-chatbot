@@ -1,5 +1,5 @@
 defmodule Brain.KnowledgeStore do
-  @moduledoc "Knowledge store for persistent storage of learned facts about users, pets, rooms, devices, etc.\nProvides functions to store and retrieve structured knowledge.\n\n## World Scoping\n\nSupports both legacy persona-based storage and new world-scoped storage.\nWorld-scoped knowledge is stored in `priv/training_worlds/{world_id}/knowledge.json`.\nPersona-based knowledge remains in `priv/knowledge/{persona}.json`.\n"
+  @moduledoc "Knowledge store for persistent storage of learned facts about users, pets, rooms, devices, etc.\nProvides functions to store and retrieve structured knowledge.\n\n## World Scoping\n\nSupports both legacy persona-based storage and new world-scoped storage.\nWorld-scoped knowledge is stored in `priv/training_worlds/{world_id}/knowledge.json`;\nan ephemeral world has no directory, and its knowledge is held in memory\n(`keep_in_memory/1`).\nPersona-based knowledge remains in `priv/knowledge/{persona}.json`.\n"
 
   # World.Persistence is in a sibling umbrella app that depends on :brain.
   # It's available at runtime but not at compile time.
@@ -37,6 +37,25 @@ defmodule Brain.KnowledgeStore do
   @doc "Lists all worlds that have knowledge stored.\n"
   def list_knowledge_worlds do
     GenServer.call(__MODULE__, :list_knowledge_worlds)
+  end
+
+  @doc """
+  Holds a world's knowledge in this process only, starting empty. An
+  ephemeral world has no directory, so `World.Manager` calls this when it
+  creates one; its knowledge lasts as long as the world, until `drop_world/1`.
+  Every other world's knowledge is its `knowledge.json`.
+  """
+  def keep_in_memory(world_id) when is_binary(world_id) and world_id != "" do
+    GenServer.call(__MODULE__, {:keep_in_memory, world_id})
+  end
+
+  @doc """
+  Forgets the knowledge held in memory for a world (`keep_in_memory/1`).
+  A persisted world's `knowledge.json` is not touched: it goes with the
+  world's directory.
+  """
+  def drop_world(world_id) when is_binary(world_id) and world_id != "" do
+    GenServer.call(__MODULE__, {:drop_world, world_id})
   end
 
   @doc """
@@ -141,7 +160,8 @@ defmodule Brain.KnowledgeStore do
     File.mkdir_p!(knowledge_dir)
 
     Logger.info("Knowledge store started", %{knowledge_dir: knowledge_dir})
-    {:ok, %{}}
+    # `in_memory`: the knowledge of each world held in memory (`keep_in_memory/1`).
+    {:ok, %{in_memory: %{}}}
   end
 
   @impl true
@@ -152,12 +172,18 @@ defmodule Brain.KnowledgeStore do
       case File.read(file_path) do
         {:ok, content} ->
           case Jason.decode(content) do
-            {:ok, json} -> json
-            {:error, _} -> %{}
+            {:ok, json} when is_map(json) -> json
+            {:ok, _} -> raise "Invalid knowledge file #{file_path}: expected a JSON object"
+            {:error, reason} -> raise "Corrupt knowledge file #{file_path}: #{inspect(reason)}"
           end
 
-        {:error, _} ->
+        # A persona that has never been taught anything has no file yet; that
+        # is a verified legitimate cold start. Any other read error is not.
+        {:error, :enoent} ->
           %{}
+
+        {:error, reason} ->
+          raise "Cannot read knowledge file #{file_path}: #{inspect(reason)}"
       end
 
     Logger.debug("Loaded knowledge", %{persona_name: persona_name, size: map_size(knowledge)})
@@ -452,26 +478,36 @@ defmodule Brain.KnowledgeStore do
 
   @impl true
   def handle_call({:get_world_knowledge, world_id, nil}, _from, state) do
-    knowledge = load_world_knowledge_data(world_id)
+    knowledge = load_world_knowledge_data(state, world_id)
     {:reply, knowledge, state}
   end
 
   @impl true
   def handle_call({:get_world_knowledge, world_id, category}, _from, state) do
-    knowledge = load_world_knowledge_data(world_id)
+    knowledge = load_world_knowledge_data(state, world_id)
     category_data = Map.get(knowledge, category, %{})
     {:reply, category_data, state}
   end
 
   @impl true
   def handle_call({:save_world_knowledge, world_id, knowledge}, _from, state) do
-    result = save_world_knowledge_data(world_id, knowledge)
+    {result, state} = save_world_knowledge_data(state, world_id, knowledge)
     {:reply, result, state}
   end
 
   @impl true
+  def handle_call({:keep_in_memory, world_id}, _from, state) do
+    {:reply, :ok, %{state | in_memory: Map.put_new(state.in_memory, world_id, %{})}}
+  end
+
+  @impl true
+  def handle_call({:drop_world, world_id}, _from, state) do
+    {:reply, :ok, %{state | in_memory: Map.delete(state.in_memory, world_id)}}
+  end
+
+  @impl true
   def handle_call({:add_to_world, world_id, category, key, value}, _from, state) do
-    knowledge = load_world_knowledge_data(world_id)
+    knowledge = load_world_knowledge_data(state, world_id)
 
     category_data =
       case Map.get(knowledge, category, %{}) do
@@ -482,7 +518,7 @@ defmodule Brain.KnowledgeStore do
     updated_category = Map.put(category_data, key, value)
     updated_knowledge = Map.put(knowledge, category, updated_category)
 
-    result = save_world_knowledge_data(world_id, updated_knowledge)
+    {result, state} = save_world_knowledge_data(state, world_id, updated_knowledge)
 
     case result do
       :ok ->
@@ -501,13 +537,13 @@ defmodule Brain.KnowledgeStore do
 
   @impl true
   def handle_call({:remove_from_world, world_id, category, key}, _from, state) do
-    knowledge = load_world_knowledge_data(world_id)
+    knowledge = load_world_knowledge_data(state, world_id)
 
     category_data = Map.get(knowledge, category, %{})
     updated_category = Map.delete(category_data, key)
     updated_knowledge = Map.put(knowledge, category, updated_category)
 
-    result = save_world_knowledge_data(world_id, updated_knowledge)
+    {result, state} = save_world_knowledge_data(state, world_id, updated_knowledge)
     {:reply, result, state}
   end
 
@@ -526,7 +562,7 @@ defmodule Brain.KnowledgeStore do
       "facts" => []
     }
 
-    result = save_world_knowledge_data(world_id, empty_knowledge)
+    {result, state} = save_world_knowledge_data(state, world_id, empty_knowledge)
     Logger.info("Cleared knowledge for world", %{world_id: world_id})
     {:reply, result, state}
   end
@@ -535,7 +571,7 @@ defmodule Brain.KnowledgeStore do
   def handle_call(:list_knowledge_worlds, _from, state) do
     worlds_dir = Persistence.base_path()
 
-    worlds =
+    on_disk =
       if File.dir?(worlds_dir) do
         worlds_dir
         |> File.ls!()
@@ -547,7 +583,9 @@ defmodule Brain.KnowledgeStore do
         []
       end
 
-    {:reply, {:ok, worlds}, state}
+    in_memory = for {world_id, knowledge} <- state.in_memory, knowledge != %{}, do: world_id
+
+    {:reply, {:ok, on_disk ++ in_memory}, state}
   end
 
   defp get_knowledge_dir do
@@ -567,12 +605,16 @@ defmodule Brain.KnowledgeStore do
     case File.read(file_path) do
       {:ok, content} ->
         case Jason.decode(content) do
-          {:ok, json} -> json
-          {:error, _} -> %{}
+          {:ok, json} when is_map(json) -> json
+          {:ok, _} -> raise "Invalid knowledge file #{file_path}: expected a JSON object"
+          {:error, reason} -> raise "Corrupt knowledge file #{file_path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
+      {:error, :enoent} ->
         %{}
+
+      {:error, reason} ->
+        raise "Cannot read knowledge file #{file_path}: #{inspect(reason)}"
     end
   end
 
@@ -585,33 +627,49 @@ defmodule Brain.KnowledgeStore do
     Path.join(Persistence.world_path(world_id), "knowledge.json")
   end
 
-  defp load_world_knowledge_data(world_id) do
+  # A world held in memory (`keep_in_memory/1`) is read from state, every
+  # other world from its knowledge.json.
+  defp load_world_knowledge_data(%{in_memory: in_memory}, world_id) when is_map_key(in_memory, world_id) do
+    Map.fetch!(in_memory, world_id)
+  end
+
+  defp load_world_knowledge_data(_state, world_id) do
     file_path = get_world_knowledge_path(world_id)
 
     case File.read(file_path) do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, json} when is_map(json) -> json
-          {:ok, _non_map} -> %{}
-          {:error, _} -> %{}
+          {:ok, _} -> raise "Invalid world knowledge file #{file_path}: expected a JSON object"
+          {:error, reason} -> raise "Corrupt world knowledge file #{file_path}: #{inspect(reason)}"
         end
 
-      {:error, _} ->
+      {:error, :enoent} ->
         %{}
+
+      {:error, reason} ->
+        raise "Cannot read world knowledge file #{file_path}: #{inspect(reason)}"
     end
   end
 
-  defp save_world_knowledge_data(world_id, knowledge) do
+  # Returns `{result, state}`. A world held in memory never touches the disk:
+  # an ephemeral world has no directory to write it in.
+  defp save_world_knowledge_data(%{in_memory: in_memory} = state, world_id, knowledge)
+       when is_map_key(in_memory, world_id) do
+    {:ok, %{state | in_memory: Map.put(in_memory, world_id, knowledge)}}
+  end
+
+  defp save_world_knowledge_data(state, world_id, knowledge) do
     file_path = get_world_knowledge_path(world_id)
     file_path |> Path.dirname() |> File.mkdir_p!()
 
     case File.write(file_path, Jason.encode!(knowledge, pretty: true)) do
       :ok ->
-        :ok
+        {:ok, state}
 
       {:error, reason} ->
         Logger.error("Failed to save world knowledge", %{world_id: world_id, reason: reason})
-        {:error, reason}
+        {{:error, reason}, state}
     end
   end
 

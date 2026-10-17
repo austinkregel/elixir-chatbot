@@ -77,6 +77,29 @@ defmodule ChatWeb.BrainChannelTest do
     end
   end
 
+  describe "handle_in/3 - evaluate" do
+    test "an unsupported accept_language fails the request, naming the language" do
+      # Turns are evaluated as the socket's web user, which `ChatWeb.UserSocket`
+      # assigns on connect. The language is refused before any turn runs, so
+      # no user row is needed here.
+      {:ok, _, socket} =
+        socket(ChatWeb.UserSocket, "user_id", %{user_id: Ecto.UUID.generate()})
+        |> subscribe_and_join(BrainChannel, "brain:conversations")
+
+      Process.unlink(socket.channel_pid)
+      monitor = Process.monitor(socket.channel_pid)
+
+      push(socket, "evaluate", %{
+        "conversation_id" => "c1",
+        "input" => "bonjour",
+        "accept_language" => "fr-FR"
+      })
+
+      assert_receive {:DOWN, ^monitor, :process, _pid, {%ArgumentError{message: message}, _stack}}
+      assert message =~ ~s("fr" is not supported)
+    end
+  end
+
   describe "terminate/2" do
     test "handles disconnect gracefully" do
       {:ok, _, socket} =

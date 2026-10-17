@@ -19,11 +19,19 @@ defmodule Brain.AtlasGraphPipelineTest do
   alias Brain.Graph.{Writer, Reader}
   alias Atlas.Schemas.{Belief, LearnedFact}
 
+  # The world the test suite runs in, seeded by `mix test.models`: the pipeline
+  # runs in it and writes to its graphs. The graph seeds are in the test's own
+  # world, `:graph_world_id` (`Brain.Test.GraphCase`).
+  @world_id "default"
+
+  defp kg(world), do: Graph.world_graph("knowledge_graph", world)
+
   describe "graph-seeded pipeline analysis" do
     test "seeds knowledge graph then pipeline correctly analyzes a geography question" do
       {:ok, _} =
         %Belief{}
         |> Belief.changeset(%{
+          world_id: @world_id,
           subject: "Paris",
           predicate: "is_capital_of",
           object: "France",
@@ -43,9 +51,9 @@ defmodule Brain.AtlasGraphPipelineTest do
         })
         |> Atlas.Repo.insert()
 
-      {:ok, kg_before} = count_nodes("knowledge_graph")
+      {:ok, kg_before} = count_nodes(kg(@world_id))
 
-      model = Pipeline.process("What is the capital of France?")
+      model = Pipeline.process("What is the capital of France?", world_id: @world_id)
 
       assert model != nil
       assert model.raw_input == "What is the capital of France?"
@@ -66,8 +74,8 @@ defmodule Brain.AtlasGraphPipelineTest do
                :partial_response_with_clarification
              ]
 
-      # Graph should have seed data + any pipeline-written nodes
-      {:ok, kg_after} = count_nodes("knowledge_graph")
+      # The world's graph keeps what it had + any pipeline-written nodes
+      {:ok, kg_after} = count_nodes(kg(@world_id))
       assert kg_after >= kg_before
 
       # Relational data should still be queryable
@@ -77,7 +85,7 @@ defmodule Brain.AtlasGraphPipelineTest do
     end
 
     test "pipeline identifies greeting speech act" do
-      model = Pipeline.process("Hello there!")
+      model = Pipeline.process("Hello there!", world_id: @world_id)
 
       assert model != nil
       assert length(model.analyses) >= 1
@@ -88,8 +96,8 @@ defmodule Brain.AtlasGraphPipelineTest do
       assert best.intent != nil
     end
 
-    test "pipeline processes statement with user graph context" do
-      model = Pipeline.process("I really like jazz music")
+    test "pipeline processes statement with user graph context", %{graph_world_id: graph_world} do
+      model = Pipeline.process("I really like jazz music", world_id: @world_id)
 
       assert model != nil
       assert length(model.analyses) >= 1
@@ -99,12 +107,12 @@ defmodule Brain.AtlasGraphPipelineTest do
       assert best.speech_act.category in [:assertive, :expressive]
 
       # Seed data for user graph should still be there
-      prefs = Reader.user_preferences("test_user_1")
+      prefs = Reader.user_preferences("test_user_1", world_id: graph_world)
       assert Enum.any?(prefs, fn p -> p.topic == "jazz" end)
     end
 
-    test "multi-sentence input with entity extraction and graph verification" do
-      model = Pipeline.process("I love Elixir. What runtime does it use?")
+    test "multi-sentence input with entity extraction and graph verification", %{graph_world_id: graph_world} do
+      model = Pipeline.process("I love Elixir. What runtime does it use?", world_id: @world_id)
 
       assert model != nil
       assert length(model.chunks) >= 2
@@ -125,12 +133,12 @@ defmodule Brain.AtlasGraphPipelineTest do
       assert has_statement, "Expected at least one statement in multi-sentence input"
 
       # Graph adjacency should be extractable
-      {:ok, adjacency} = Graph.to_adjacency("knowledge_graph")
+      {:ok, adjacency} = Graph.to_adjacency(kg(graph_world))
       assert length(adjacency.node_ids) >= 2
     end
 
     test "directive speech act with graph-enriched domain" do
-      model = Pipeline.process("Turn off the lights in the living room")
+      model = Pipeline.process("Turn off the lights in the living room", world_id: @world_id)
 
       assert model != nil
       best = Enum.max_by(model.analyses, & &1.confidence)
@@ -140,20 +148,21 @@ defmodule Brain.AtlasGraphPipelineTest do
   end
 
   describe "graph triples as pipeline complement" do
-    test "knowledge triples can enrich pipeline entity context" do
-      {:ok, python} = Graph.add_node("knowledge_graph", "Language", %{name: "Python"})
-      {:ok, ml} = Graph.add_node("knowledge_graph", "Domain", %{name: "Machine Learning"})
-      {:ok, tensorflow} = Graph.add_node("knowledge_graph", "Framework", %{name: "TensorFlow"})
+    test "knowledge triples can enrich pipeline entity context", %{graph_world_id: graph_world} do
+      g = kg(graph_world)
+      {:ok, python} = Graph.add_node(g, "Language", %{name: "Python"})
+      {:ok, ml} = Graph.add_node(g, "Domain", %{name: "Machine Learning"})
+      {:ok, tensorflow} = Graph.add_node(g, "Framework", %{name: "TensorFlow"})
 
-      {:ok, _} = Graph.add_edge("knowledge_graph", python.id, ml.id, "used_for")
-      {:ok, _} = Graph.add_edge("knowledge_graph", tensorflow.id, python.id, "written_in")
-      {:ok, _} = Graph.add_edge("knowledge_graph", tensorflow.id, ml.id, "used_for")
+      {:ok, _} = Graph.add_edge(g, python.id, ml.id, "used_for")
+      {:ok, _} = Graph.add_edge(g, tensorflow.id, python.id, "written_in")
+      {:ok, _} = Graph.add_edge(g, tensorflow.id, ml.id, "used_for")
 
-      {:ok, triples} = Graph.to_triples("knowledge_graph")
+      {:ok, triples} = Graph.to_triples(g)
       # Seed data + new nodes = at least 3 triples from the new nodes
       assert length(triples) >= 3
 
-      model = Pipeline.process("What is TensorFlow used for?")
+      model = Pipeline.process("What is TensorFlow used for?", world_id: @world_id)
       assert model != nil
       best = Enum.max_by(model.analyses, & &1.confidence)
       assert best.speech_act.is_question == true
@@ -162,40 +171,40 @@ defmodule Brain.AtlasGraphPipelineTest do
   end
 
   describe "round-trip: write -> read -> respond" do
-    test "pipeline writes entities to graph that reader can retrieve" do
-      {:ok, kg_before} = count_nodes("knowledge_graph")
+    test "pipeline writes entities to graph that reader can retrieve", %{graph_world_id: graph_world} do
+      {:ok, kg_before} = count_nodes(kg(graph_world))
 
       entities = [
         %{entity_type: "location", value: "Barcelona", confidence: 0.9},
         %{entity_type: "location", value: "Spain", confidence: 0.85}
       ]
 
-      :ok = Writer.write_entities(entities)
+      :ok = Writer.write_entities(entities, graph_world)
       Process.sleep(300)
 
-      {:ok, kg_after} = count_nodes("knowledge_graph")
-      assert kg_after > kg_before
+      {:ok, kg_after} = count_nodes(kg(graph_world))
+      assert kg_after == kg_before + 2
 
-      context = Reader.entity_context([%{entity_type: "Location", value: "Barcelona"}])
+      context = Reader.entity_context([%{entity_type: "Location", value: "Barcelona"}], world_id: graph_world)
       assert [%{node: node}] = context
       assert node != nil
     end
 
-    test "pipeline writes conversation messages that reader can query" do
-      :ok = Writer.write_conversation(%{id: "roundtrip_conv", world_id: "default"})
+    test "pipeline writes conversation messages that reader can query", %{graph_world_id: graph_world} do
+      :ok = Writer.write_conversation(%{id: "roundtrip_conv", world_id: graph_world})
       Process.sleep(200)
 
-      :ok = Writer.write_message("roundtrip_conv", %{id: "rt_msg_1", role: "user", content: "Hello"}, %{intent: "smalltalk.greetings.hello"})
+      :ok = Writer.write_message("roundtrip_conv", %{id: "rt_msg_1", role: "user", content: "Hello"}, %{intent: "smalltalk.greetings.hello"}, graph_world)
       Process.sleep(200)
 
-      :ok = Writer.write_message("roundtrip_conv", %{id: "rt_msg_2", role: "assistant", content: "Hi!"}, nil)
+      :ok = Writer.write_message("roundtrip_conv", %{id: "rt_msg_2", role: "assistant", content: "Hi!"}, nil, graph_world)
       Process.sleep(200)
 
-      topics = Reader.conversation_topics("roundtrip_conv")
+      topics = Reader.conversation_topics("roundtrip_conv", world_id: graph_world)
       assert "smalltalk.greetings.hello" in topics
 
-      context = Reader.recent_context("roundtrip_conv", 5)
-      assert length(context) >= 2
+      context = Reader.recent_context("roundtrip_conv", world_id: graph_world, n: 5)
+      assert length(context) == 2
     end
 
     test "POS tag writes accumulate and are readable" do

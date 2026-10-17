@@ -13,13 +13,9 @@ defmodule Brain.KnowledgeStoreDataTest do
     ensure_pubsub_started()
     ensure_started(KnowledgeStore)
 
-    on_exit(fn ->
-      try do
-        KnowledgeStore.clear_world(@test_world_id)
-      catch
-        _, _ -> :ok
-      end
-    end)
+    # The world's knowledge is written to <world>/knowledge.json; remove the
+    # whole world directory rather than leaving an emptied one behind.
+    on_exit(fn -> Brain.TestWorldSandbox.delete_test_world_data!(@test_world_id) end)
 
     :ok
   end

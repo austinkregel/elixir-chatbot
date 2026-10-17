@@ -7,22 +7,22 @@
         {
           "type": "person",
           "value": "Austin",
-          "confidence": 0.73
+          "confidence": 0.78
         }
       ],
-      "response_strategy": "can_respond",
+      "response_strategy": "hedged_response",
+      "detected_intent": "smalltalk.user.introduction",
+      "speech_act_category": "expressive",
+      "speech_act_type": "greeting",
+      "speech_act_confidence": 1.0,
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false",
       "slots_filled": [
         "person"
       ],
-      "slots_missing": [],
-      "detected_intent": "smalltalk.user.introduction",
-      "speech_act_category": "assertive",
-      "speech_act_type": "statement",
-      "speech_act_confidence": 0.63,
-      "discourse_addressee": "bot",
-      "discourse_self_referential": "false"
+      "slots_missing": []
     }
   ],
-  "overall_strategy": "can_respond",
+  "overall_strategy": "hedged_response",
   "chunk_count": 1
 }

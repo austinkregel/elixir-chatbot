@@ -39,48 +39,55 @@ defmodule Brain.ML.TrainingData.Catalog do
     end
   end
 
-  @doc "Read records with pagination. Returns `{:ok, page, total}`."
+  @doc """
+  Read one page of a source, optionally narrowed by a case-insensitive
+  `:filter`. `offset` and `limit` page through the matching records.
+
+  Returns `{:ok, %{rows: rows, total: total, matching: matching}}`. Each row is
+  `{index, record}`, where `index` is the record's position in the unfiltered
+  source: the index `delete_record/2` and `update_record/3` take. For a
+  map-shaped source the record is its `{key, value}` entry. `total` counts
+  every record in the source; `matching` counts those the filter keeps, and
+  equals `total` when there is no filter.
+  """
   @spec read_source_page(atom(), non_neg_integer(), non_neg_integer(), keyword()) ::
-          {:ok, list(), non_neg_integer()} | {:error, term()}
+          {:ok, %{rows: [{non_neg_integer(), term()}], total: non_neg_integer(), matching: non_neg_integer()}}
+          | {:error, term()}
   def read_source_page(source_id, offset \\ 0, limit \\ 50, opts \\ []) do
     filter = Keyword.get(opts, :filter, "")
 
     case read_source(source_id) do
       {:ok, records} when is_list(records) ->
-        filtered =
-          if filter == "" do
-            records
-          else
-            down = String.downcase(filter)
-            Enum.filter(records, fn rec -> record_matches?(rec, down) end)
-          end
-
-        total = length(filtered)
-        page = Enum.slice(filtered, offset, limit)
-        {:ok, page, total}
+        {:ok, page_of(records, offset, limit, filter, &record_matches?/2)}
 
       {:ok, %{} = map} ->
-        entries = Map.to_list(map)
+        matches? = fn {k, v}, down ->
+          String.contains?(String.downcase(to_string(k)), down) or record_matches?(v, down)
+        end
 
-        filtered =
-          if filter == "" do
-            entries
-          else
-            down = String.downcase(filter)
-
-            Enum.filter(entries, fn {k, v} ->
-              String.contains?(String.downcase(to_string(k)), down) or
-                record_matches?(v, down)
-            end)
-          end
-
-        total = length(filtered)
-        page = Enum.slice(filtered, offset, limit)
-        {:ok, page, total}
+        {:ok, page_of(Map.to_list(map), offset, limit, filter, matches?)}
 
       err ->
         err
     end
+  end
+
+  defp page_of(records, offset, limit, filter, matches?) do
+    indexed = Enum.with_index(records, fn record, index -> {index, record} end)
+
+    matching =
+      if filter == "" do
+        indexed
+      else
+        down = String.downcase(filter)
+        Enum.filter(indexed, fn {_index, record} -> matches?.(record, down) end)
+      end
+
+    %{
+      rows: Enum.slice(matching, offset, limit),
+      total: length(indexed),
+      matching: length(matching)
+    }
   end
 
   @doc "Compute class/label distribution for a source."
@@ -92,7 +99,7 @@ defmodule Brain.ML.TrainingData.Catalog do
       nil ->
         {:error, :unknown_source}
 
-      %{record_kind: kind} when kind in [:registry_entry, :slot_schema_entry, :speech_act_map_entry, :entity_type_entry, :csv_row] ->
+      %{record_kind: kind} when kind in [:registry_entry, :speech_act_map_entry, :entity_type_entry, :csv_row] ->
         {:error, :not_applicable}
 
       _ ->
@@ -124,7 +131,7 @@ defmodule Brain.ML.TrainingData.Catalog do
     end
   end
 
-  # ── Write (Phase 2 — stub for now) ──────────────────────────────────
+  # ── Write ────────────────────────────────────────────────────────────
 
   @doc "Write records to a source file with validation and revision logging."
   @spec write_source(atom(), list() | map()) :: :ok | {:error, term()}
@@ -183,7 +190,7 @@ defmodule Brain.ML.TrainingData.Catalog do
             {:ok, records} when is_list(records) ->
               write_source(source_id, records ++ [record])
 
-            {:ok, %{} = map} when desc.record_kind in [:registry_entry, :slot_schema_entry, :speech_act_map_entry, :entity_type_entry] ->
+            {:ok, %{} = map} when desc.record_kind in [:registry_entry, :speech_act_map_entry, :entity_type_entry] ->
               {key, val} = record
               write_source(source_id, Map.put(map, key, val))
 

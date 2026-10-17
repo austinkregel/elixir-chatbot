@@ -14,6 +14,10 @@ defmodule Brain.Analysis.NoveltyDetector do
 
   alias Brain.ML.Tokenizer
 
+  # World.Embedder is in a sibling umbrella app that depends on :brain.
+  @compile {:no_warn_undefined, World.Embedder}
+  alias World.Embedder, as: WorldEmbedder
+
   require Logger
 
   @default_novelty_threshold 0.5
@@ -28,6 +32,9 @@ defmodule Brain.Analysis.NoveltyDetector do
   ## Options
     - `:novelty_threshold` - Maximum best_score to consider novel (default: 0.5)
     - `:margin_threshold` - Minimum margin required to avoid being novel (default: 0.2)
+    - `:text` - the utterance, compared against beliefs for the KG downweight
+    - `:world_id` - the world whose embedder embeds `:text` and the beliefs it is
+      compared against; required when `:text` is given
   """
   def is_novel?(best_score, margin, opts \\ []) do
     novelty_threshold = Keyword.get(opts, :novelty_threshold, @default_novelty_threshold)
@@ -49,7 +56,8 @@ defmodule Brain.Analysis.NoveltyDetector do
 
         text = Keyword.get(opts, :text, "")
         analysis_chunk = Keyword.get(opts, :analysis_chunk)
-        final_score = maybe_kg_downweight(raw_score, text, analysis_chunk)
+        world_id = Keyword.get(opts, :world_id)
+        final_score = maybe_kg_downweight(raw_score, text, analysis_chunk, world_id)
 
         {:novel, final_score}
 
@@ -108,23 +116,19 @@ defmodule Brain.Analysis.NoveltyDetector do
   end
 
   defp lexicon_content_weight(tokens) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      tokens
-      |> Enum.map(fn token ->
-        lower = String.downcase(token)
-        pos_tags = Brain.ML.Lexicon.pos(lower)
+    tokens
+    |> Enum.map(fn token ->
+      lower = String.downcase(token)
+      pos_tags = Brain.Lexicon.pos(lower)
 
-        cond do
-          :noun in pos_tags or :verb in pos_tags -> 1.0
-          :adj in pos_tags or :adj_satellite in pos_tags -> 0.7
-          :adv in pos_tags -> 0.3
-          true -> 0.1
-        end
-      end)
-      |> Enum.sum()
-    else
-      0.0
-    end
+      cond do
+        :noun in pos_tags or :verb in pos_tags -> 1.0
+        :adj in pos_tags or :adj_satellite in pos_tags -> 0.7
+        :adv in pos_tags -> 0.3
+        true -> 0.1
+      end
+    end)
+    |> Enum.sum()
   end
 
   defp has_researchable_entities?(entities) when is_list(entities) do
@@ -158,13 +162,9 @@ defmodule Brain.Analysis.NoveltyDetector do
     if normalized in ["person", "pronoun"] do
       false
     else
-      if Process.whereis(Brain.ML.Lexicon) do
-        chain = Brain.ML.Lexicon.hypernym_chain(normalized, :noun, max_depth: 8)
-        non_researchable = ~w(person pronoun function_word)
-        not Enum.any?(chain, &(&1 in non_researchable))
-      else
-        true
-      end
+      chain = Brain.Lexicon.hypernym_chain(normalized, :noun, max_depth: 8)
+      non_researchable = ~w(person pronoun function_word)
+      not Enum.any?(chain, &(&1 in non_researchable))
     end
   end
 
@@ -181,26 +181,36 @@ defmodule Brain.Analysis.NoveltyDetector do
   closely matches an existing high-scoring belief, but does NOT suppress it
   entirely. State changes (sentiment/tense/negation flip) are detected and
   bypass the downweight.
+
+  The text and the beliefs are embedded by the world's embedder; a non-empty
+  `text` without a world raises, as does a world whose embedder cannot embed.
   """
-  def maybe_kg_downweight(novelty_score, text, analysis_chunk) do
+  def maybe_kg_downweight(novelty_score, text, analysis_chunk, world_id) do
     config = Application.get_env(:brain, :kg_signals, [])
 
     unless Keyword.get(config, :enabled, true) and Keyword.get(config, :novelty_downweight, true) do
       novelty_score
     else
-      do_kg_downweight(novelty_score, text, analysis_chunk)
+      do_kg_downweight(novelty_score, text, analysis_chunk, world_id)
     end
   end
 
-  defp do_kg_downweight(novelty_score, text, _analysis_chunk) when text == "" or is_nil(text) do
+  defp do_kg_downweight(novelty_score, text, _analysis_chunk, _world_id) when text == "" or is_nil(text) do
     novelty_score
   end
 
-  defp do_kg_downweight(novelty_score, text, analysis_chunk) do
+  defp do_kg_downweight(_novelty_score, _text, _analysis_chunk, world_id)
+       when not is_binary(world_id) or world_id == "" do
+    raise ArgumentError,
+          "NoveltyDetector needs a :world_id, the world whose embedder compares the text " <>
+            "against beliefs, got: #{inspect(world_id)}"
+  end
+
+  defp do_kg_downweight(novelty_score, text, analysis_chunk, world_id) do
     unless Brain.Epistemic.BeliefStore.ready?() do
       novelty_score
     else
-      case find_matching_beliefs(text) do
+      case find_matching_beliefs(text, world_id) do
         [] ->
           novelty_score
 
@@ -212,7 +222,7 @@ defmodule Brain.Analysis.NoveltyDetector do
             :telemetry.execute([:brain, :novelty, :state_change_detected], %{similarity: similarity}, %{})
             novelty_score
           else
-            if belief_still_active?(belief) do
+            if belief_still_active?(belief, world_id) do
               downweight = similarity * 0.5
               downweighted = novelty_score * (1.0 - downweight)
               :telemetry.execute([:brain, :novelty, :downweighted], %{
@@ -227,38 +237,41 @@ defmodule Brain.Analysis.NoveltyDetector do
           end
       end
     end
-  rescue
-    _ -> novelty_score
   end
 
-  defp find_matching_beliefs(text) do
-    case Brain.Memory.Embedder.embed(text) do
-      {:ok, query_embedding} ->
-        beliefs = Brain.Epistemic.BeliefStore.query_beliefs()
+  defp find_matching_beliefs(text, world_id) do
+    query_embedding = world_embedding!(world_id, text)
+    {:ok, beliefs} = Brain.Epistemic.BeliefStore.query_beliefs(world_id)
 
-        beliefs
-        |> Enum.filter(fn b ->
-          b.subject != :system and b.predicate != :consolidated_knowledge
-        end)
-        |> Enum.flat_map(fn belief ->
-          belief_text = "#{belief.subject} #{belief.predicate} #{belief.object}"
+    beliefs
+    |> Enum.filter(fn b ->
+      b.subject != :system and b.predicate != :consolidated_knowledge
+    end)
+    |> Enum.flat_map(fn belief ->
+      belief_text = "#{belief.subject} #{belief.predicate} #{belief.object}"
+      sim = FourthWall.Math.cosine_similarity(query_embedding, world_embedding!(world_id, belief_text))
+      if sim >= 0.85, do: [{belief, sim}], else: []
+    end)
+    |> Enum.take(5)
+  end
 
-          case Brain.Memory.Embedder.embed(belief_text) do
-            {:ok, belief_embedding} ->
-              sim = FourthWall.Math.cosine_similarity(query_embedding, belief_embedding)
-              if sim >= 0.85, do: [{belief, sim}], else: []
+  # A world's embedding comes from the world's embedder and nowhere else. While
+  # the world's vocabulary is being rebuilt this waits for the rebuild to finish
+  # (`World.Embedder.await_ready/2`, which raises naming the world when it does
+  # not) and embeds then. A world whose embedder has no copy, no vocabulary, or
+  # no table raises.
+  defp world_embedding!(world_id, text) do
+    case WorldEmbedder.embed(world_id, text) do
+      {:ok, embedding} ->
+        embedding
 
-            _ ->
-              []
-          end
-        end)
-        |> Enum.take(5)
+      {:error, :vocabulary_building} ->
+        :ok = WorldEmbedder.await_ready(world_id)
+        world_embedding!(world_id, text)
 
-      _ ->
-        []
+      {:error, reason} ->
+        raise "NoveltyDetector: world #{inspect(world_id)}'s embedder cannot embed: #{inspect(reason)}"
     end
-  rescue
-    _ -> []
   end
 
   defp is_state_change?(belief, analysis_chunk) do
@@ -298,12 +311,13 @@ defmodule Brain.Analysis.NoveltyDetector do
 
   defp sentiment_polarity(_), do: :neutral
 
-  defp belief_still_active?(belief) do
+  # The belief was found in `world_id`, so its JTMS node is in that world's network.
+  defp belief_still_active?(belief, world_id) do
     config = Application.get_env(:brain, :kg_signals, [])
     window_days = Keyword.get(config, :novelty_retraction_window, 7)
 
     if belief.node_id do
-      case Brain.Epistemic.JTMS.get_node(belief.node_id) do
+      case Brain.Epistemic.JTMS.get_node(world_id, belief.node_id) do
         {:ok, node} ->
           label = Map.get(node, :label, :in)
           label == :in

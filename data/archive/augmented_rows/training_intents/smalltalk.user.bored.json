@@ -1,0 +1,38 @@
+[
+  {
+    "text": "I'd like to boring",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "boring"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-22715f18",
+    "intent": "smalltalk.user.bored"
+  },
+  {
+    "text": "can you boring",
+    "tokens": [
+      "can",
+      "you",
+      "boring"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-6a8fb426",
+    "intent": "smalltalk.user.bored"
+  }
+]

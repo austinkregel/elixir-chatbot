@@ -36,8 +36,10 @@ defmodule Atlas.Schemas.Investigation do
   @valid_statuses ~w(planning gathering evaluating concluded)
   @valid_conclusions ~w(hypotheses_supported hypotheses_falsified inconclusive mixed)
 
+  # The id is cast so an investigation created with the id the brain gave it is
+  # concluded by that id.
   @required_fields ~w(session_id topic)a
-  @optional_fields ~w(goal_id status conclusion independent_variable dependent_variable
+  @optional_fields ~w(id goal_id status conclusion independent_variable dependent_variable
     constants methodology_notes started_at concluded_at)a
 
   def changeset(investigation, attrs) do

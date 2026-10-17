@@ -20,7 +20,7 @@ defmodule Brain.Response.ConditionEvaluator do
 
   Compound expressions with AND / OR / NOT:
   - `has_entity:person AND confidence:high`
-  - `slot_missing:address OR slot_missing:date-time`
+  - `slot_missing:address OR slot_missing:date_time`
   - `slot_filled:location AND enriched:temperature`
   - `slot_filled:location AND NOT service_available:weather`
 
@@ -259,21 +259,39 @@ defmodule Brain.Response.ConditionEvaluator do
     else
       # Fall back to checking dispatcher
       alias Brain.Services.Dispatcher
-      world = Map.get(context, :world_id) || Map.get(context, :world, "default")
+      world =
+        case Map.get(context, :world_id) || Map.get(context, :world) do
+          world when is_binary(world) and world != "" ->
+            world
+
+          other ->
+            raise ArgumentError,
+                  "ConditionEvaluator: service_available:#{service_name} needs :world_id (or :world) " <>
+                    "in the context, the world whose service credentials are checked; got #{inspect(other)}"
+        end
+
       Dispatcher.service_available?(safe_atom(service_name), world: world)
     end
   end
 
   defp eval_condition("enrichment_failed", _value, context) do
-    # Check if enrichment was attempted but failed
     enrichment_status = Map.get(context, :enrichment_status)
     enrichment_status == :failed
   end
 
   defp eval_condition("enrichment_success", _value, context) do
-    # Check if enrichment succeeded
     enrichment_status = Map.get(context, :enrichment_status)
     enrichment_status == :success
+  end
+
+  defp eval_condition("service_missing", _value, context) do
+    enrichment_status = Map.get(context, :enrichment_status)
+    enrichment_status == :not_configured
+  end
+
+  defp eval_condition("service_error", _value, context) do
+    enrichment_status = Map.get(context, :enrichment_status)
+    enrichment_status == :failed
   end
 
   defp eval_condition(unknown_type, _value, _context) do

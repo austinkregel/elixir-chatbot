@@ -2,7 +2,8 @@ defmodule Brain.Analysis.FeatureExtractor do
   @moduledoc """
   Orchestrates per-word and per-chunk feature extraction.
 
-  Converts a ChunkAnalysis into a 326-dimension feature vector by:
+  Converts a ChunkAnalysis into a feature vector
+  (`ChunkFeatures.dimension_manifest/0` names its dimensions) by:
   1. Running per-word feature extraction (POS + lexicon lookup + WSD)
   2. Aggregating word features into chunk-level groups
   3. Combining with existing analysis signals (speech act, discourse, etc.)
@@ -16,18 +17,22 @@ defmodule Brain.Analysis.FeatureExtractor do
   Extracts the full feature vector for a ChunkAnalysis.
 
   Returns `{feature_vector, word_features}` where:
-  - `feature_vector` is a flat list of floats (326 dims, see ChunkFeatures.vector_dimension/0)
+  - `feature_vector` is a flat list of floats (see ChunkFeatures.vector_dimension/0)
   - `word_features` is the list of per-word feature maps
+
+  Options are passed to `ChunkFeatures.extract/3` (`:lexical_evidence`).
   """
-  def extract(%{pos_tags: pos_tags} = analysis) do
+  def extract(analysis, opts \\ [])
+
+  def extract(%{pos_tags: pos_tags} = analysis, opts) do
     word_feats = WordFeatures.extract(pos_tags || [])
-    chunk_vector = ChunkFeatures.extract(analysis, word_feats)
+    chunk_vector = ChunkFeatures.extract(analysis, word_feats, opts)
     {chunk_vector, word_feats}
   end
 
-  def extract(%{} = analysis) do
+  def extract(%{} = analysis, opts) do
     word_feats = WordFeatures.extract([])
-    chunk_vector = ChunkFeatures.extract(analysis, word_feats)
+    chunk_vector = ChunkFeatures.extract(analysis, word_feats, opts)
     {chunk_vector, word_feats}
   end
 

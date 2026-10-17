@@ -1,0 +1,82 @@
+[
+  {
+    "text": "I want to i feel lonely",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "i",
+      "feel",
+      "lonely"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-d6710f60",
+    "intent": "smalltalk.user.lonely"
+  },
+  {
+    "text": "I'd like to i feel lonely",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "i",
+      "feel",
+      "lonely"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-73801925",
+    "intent": "smalltalk.user.lonely"
+  },
+  {
+    "text": "'m I so lonely",
+    "tokens": [
+      "'m",
+      "I",
+      "so",
+      "lonely"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-2b2c721c",
+    "intent": "smalltalk.user.lonely"
+  },
+  {
+    "text": "I lonely am",
+    "tokens": [
+      "I",
+      "lonely",
+      "am"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-f9f1353e",
+    "intent": "smalltalk.user.lonely"
+  }
+]

@@ -25,8 +25,16 @@ defmodule Brain.Response.Enricher do
 
   After calling `prepare_context/3`, the context will include:
   - `:enriched_data` - Map of field names to values from services
-  - `:enrichment_status` - `:success`, `:failed`, or `:not_configured`
-  - `:enrichment_service` - Name of the service that provided data
+  - `:enrichment_status` - `:success`, `:failed`, or `:not_configured`.
+    `:not_configured` means no service handles the intent. A service that
+    handles it but whose credentials are not set in the world is `:failed`
+    with `:missing_credentials`.
+  - `:enrichment_error` - when `:failed`, the reason, as the service or the
+    dispatcher returned it; the response answers it
+    (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`), and a
+    reason with no planned response raises there
+  - `:enrichment_service` - Name of the service that provided the data, or
+    that failed
   - `:available_services` - List of configured services for this intent
   """
 
@@ -49,52 +57,67 @@ defmodule Brain.Response.Enricher do
   ## Parameters
     - intent: The classified intent
     - slots: Map of filled slots (e.g., %{location: "NYC"})
-    - context: Current generation context
+    - context: Current generation context. It must carry `:world_id` (or
+      `:world`), the world whose service credentials are used; absent raises.
 
   ## Returns
     Updated context map with enrichment information.
   """
   @spec prepare_context(String.t() | nil, map(), map()) :: map()
   def prepare_context(intent, slots, context) do
-    # Check which services are available for this intent
-    available_services = get_available_services(intent, context)
+    world = context_world!(context)
+    service = if intent, do: Dispatcher.find_service(intent, world)
 
     enriched =
-      if available_services == [] do
-        context
-        |> Map.put(:enrichment_status, :not_configured)
-        |> Map.put(:enriched_data, %{})
-        |> Map.put(:available_services, [])
-      else
-        case Dispatcher.dispatch(intent, slots, context) do
-          {:ok, enrichment_data} ->
-            context
-            |> Map.put(:enriched_data, enrichment_data)
-            |> Map.put(:enrichment_status, :success)
-            |> Map.put(:enrichment_service, get_enrichment_service(intent))
-            |> Map.put(:available_services, available_services)
+      case service && get_available_services(service, intent, world) do
+        # No service handles the intent: nothing to enrich with.
+        nil ->
+          context
+          |> Map.put(:enrichment_status, :not_configured)
+          |> Map.put(:enriched_data, %{})
+          |> Map.put(:available_services, [])
 
-          {:error, reason} ->
-            Logger.debug("Enrichment failed",
-              intent: intent,
-              reason: inspect(reason)
-            )
+        # A service handles the intent but its credentials are not set in this
+        # world: what the user asked for cannot be done, and the response says
+        # so (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`).
+        [] ->
+          failed(context, :missing_credentials, service, [])
 
-            context
-            |> Map.put(:enriched_data, %{})
-            |> Map.put(:enrichment_status, :failed)
-            |> Map.put(:enrichment_error, reason)
-            |> Map.put(:available_services, available_services)
+        available_services ->
+          case Dispatcher.dispatch(intent, slots, context) do
+            {:ok, enrichment_data} ->
+              context
+              |> Map.put(:enriched_data, enrichment_data)
+              |> Map.put(:enrichment_status, :success)
+              |> Map.put(:enrichment_service, service.name())
+              |> Map.put(:available_services, available_services)
 
-          :no_handler ->
-            context
-            |> Map.put(:enrichment_status, :not_configured)
-            |> Map.put(:enriched_data, %{})
-            |> Map.put(:available_services, [])
-        end
+            {:error, reason} ->
+              Logger.debug("Enrichment failed",
+                intent: intent,
+                reason: inspect(reason)
+              )
+
+              failed(context, reason, service, available_services)
+
+            :no_handler ->
+              context
+              |> Map.put(:enrichment_status, :not_configured)
+              |> Map.put(:enriched_data, %{})
+              |> Map.put(:available_services, [])
+          end
       end
 
     enrich_from_graph(enriched)
+  end
+
+  defp failed(context, reason, service, available_services) do
+    context
+    |> Map.put(:enriched_data, %{})
+    |> Map.put(:enrichment_status, :failed)
+    |> Map.put(:enrichment_error, reason)
+    |> Map.put(:enrichment_service, service.name())
+    |> Map.put(:available_services, available_services)
   end
 
   defp enrich_from_graph(context) do
@@ -209,41 +232,32 @@ defmodule Brain.Response.Enricher do
   # Private Functions
   # ============================================================================
 
-  defp get_available_services(nil, _context), do: []
-
-  defp get_available_services(intent, context) do
-    world = Map.get(context, :world_id) || Map.get(context, :world, "default")
-
-    exact_matches =
+  # The service the dispatcher routes the intent to in this world
+  # (`Dispatcher.find_service/2`: an exact intent match is its own first
+  # choice, and a scheduling intent goes to the world's chosen driver), when
+  # its credentials are set there; `[]` when they are not.
+  defp get_available_services(service_module, intent, world) do
+    result =
       Dispatcher.list_services(world: world)
       |> Enum.filter(fn service ->
-        service.configured and intent in service.supported_intents
+        service.configured and service.module == service_module
       end)
       |> Enum.map(& &1.name)
 
-    if exact_matches != [] do
-      exact_matches
-    else
-      case Dispatcher.find_service(intent) do
-        nil ->
-          []
-
-        service_module ->
-          all_services = Dispatcher.list_services(world: world)
-
-          all_services
-          |> Enum.filter(fn service ->
-            service.configured and service.module == service_module
-          end)
-          |> Enum.map(& &1.name)
-      end
-    end
+    Logger.info("Enricher: found service #{inspect(service_module)} for intent=#{intent}, configured=#{result != []}")
+    result
   end
 
-  defp get_enrichment_service(intent) do
-    case Dispatcher.find_service(intent) do
-      nil -> nil
-      service -> service.name()
+  # Service credentials are stored per world, so the context must name one.
+  defp context_world!(context) do
+    case Map.get(context, :world_id) || Map.get(context, :world) do
+      world when is_binary(world) and world != "" ->
+        world
+
+      other ->
+        raise ArgumentError,
+              "Enricher.prepare_context needs :world_id (or :world) in the context, the world " <>
+                "whose service credentials are used; got #{inspect(other)}"
     end
   end
 

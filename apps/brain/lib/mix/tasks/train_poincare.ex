@@ -9,11 +9,23 @@ defmodule Mix.Tasks.TrainPoincare do
 
   ## Options
 
-    * `--world` - World ID to scope training (default: "default")
     * `--dim` - Embedding dimension (default: 5)
     * `--epochs` - Number of training epochs (default: 50)
     * `--learning-rate` - Learning rate (default: 0.01)
     * `--verbose` - Print detailed progress
+    * `--publish` - Upload the embeddings to ModelStore after training
+
+  An option this task does not know raises.
+
+  ## Trained embeddings and worlds
+
+  The hierarchy pairs come from the shared analysis data (entity types, the
+  intent registry, domain response frames and templates), which no world owns, so
+  the embeddings are written to the trained models directory
+  (`Brain.ML.Poincare.Embeddings.trained_path/0`), not into any world. A world
+  receives retrained embeddings when it is seeded:
+  `mix world.seed_model poincare_embeddings`, or `World.Manager` when it creates
+  the world.
   """
 
   use Mix.Task
@@ -23,27 +35,27 @@ defmodule Mix.Tasks.TrainPoincare do
 
   @impl true
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args,
+    {opts, _, invalid} = OptionParser.parse(args,
       strict: [
-        world: :string,
         dim: :integer,
         epochs: :integer,
         learning_rate: :float,
         verbose: :boolean,
         publish: :boolean
       ],
-      aliases: [w: :world, d: :dim, e: :epochs, v: :verbose]
+      aliases: [d: :dim, e: :epochs, v: :verbose]
     )
+
+    if invalid != [], do: Mix.raise("train_poincare: unknown options #{inspect(invalid)}")
 
     Mix.Task.run("app.start")
 
-    world_id = Keyword.get(opts, :world, "default")
     dim = Keyword.get(opts, :dim, 5)
     epochs = Keyword.get(opts, :epochs, 50)
     lr = Keyword.get(opts, :learning_rate, 0.01)
     verbose = Keyword.get(opts, :verbose, false)
 
-    Mix.shell().info("Training Poincare embeddings for world: #{world_id}")
+    Mix.shell().info("Training Poincare embeddings")
 
     pairs = load_hierarchy_pairs()
 
@@ -63,19 +75,23 @@ defmodule Mix.Tasks.TrainPoincare do
 
     Mix.shell().info("Training (dim: #{dim}, epochs: #{epochs}, lr: #{lr})...")
 
+    seed = Brain.ML.TrainingSeed.get!()
+
     {:ok, embeddings, entity_to_idx, idx_to_entity} = Embeddings.train(pairs,
       dim: dim,
       epochs: epochs,
       learning_rate: lr,
-      verbose: true
+      verbose: true,
+      seed: seed
     )
 
-    output_path = model_path(world_id)
-    Embeddings.save(embeddings, entity_to_idx, idx_to_entity, dim, output_path)
+    output_path = Embeddings.trained_path()
+    Embeddings.save(embeddings, entity_to_idx, idx_to_entity, dim, output_path, training_seed: seed)
     Mix.shell().info("Embeddings saved to #{output_path}")
+    Mix.shell().info("Seed worlds with them: mix world.seed_model poincare_embeddings --all")
 
     if opts[:publish] do
-      remote_key = ModelStore.version_prefix() <> "#{world_id}/poincare/embeddings.term"
+      remote_key = ModelStore.version_prefix() <> Path.basename(output_path)
       ModelStore.publish(output_path, remote_key)
     end
 
@@ -156,31 +172,31 @@ defmodule Mix.Tasks.TrainPoincare do
   @context_consumer_patterns %{
     "heating" => "smarthome.heating.",
     "room" => "smarthome.",
-    "music-player-control" => "music.player.",
-    "play-music" => "music.",
-    "search-music" => "music.",
+    "music_player_control" => "music.player.",
+    "play_music" => "music.",
+    "search_music" => "music.",
     "schedule" => ".schedule.",
     "weather" => "weather.",
-    "device-brightness" => "smarthome.lights.brightness.",
-    "device-switch" => "smarthome.lights.switch.",
-    "device-volume" => "smarthome.device.volume.",
-    "text-context" => "communication.",
-    "calendar-context" => "calendar.",
-    "reminder-context" => "reminder.",
-    "alarm-context" => "alarm.",
-    "todo-context" => "todo.",
-    "websearch-followup" => "web.",
-    "web-search" => "web.",
+    "device_brightness" => "smarthome.lights.brightness.",
+    "device_switch" => "smarthome.lights.switch.",
+    "device_volume" => "smarthome.device.volume.",
+    "text_context" => "communication.",
+    "calendar_context" => "calendar.",
+    "reminder_context" => "reminder.",
+    "alarm_context" => "alarm.",
+    "todo_context" => "todo.",
+    "websearch_followup" => "web.",
+    "web_search" => "web.",
     "control_lists_web_search" => "web.",
-    "news-search" => "news.",
-    "newssearch-followup" => "news.",
+    "news_search" => "news.",
+    "newssearch_followup" => "news.",
     "balance" => "account.",
     "spending" => "account.",
     "earning" => "account.",
     "due_date" => "account.",
-    "call-context" => "communication.",
-    "volume-check" => "smarthome.device.volume.",
-    "timer-context" => "timer.",
+    "call_context" => "communication.",
+    "volume_check" => "smarthome.device.volume.",
+    "timer_context" => "timer.",
     "lock" => "smarthome.locks.",
     "unlock" => "smarthome.locks.",
     "open" => "smarthome.locks.",
@@ -390,11 +406,6 @@ defmodule Mix.Tasks.TrainPoincare do
     ]
 
     Enum.find(candidates, hd(candidates), &File.exists?/1)
-  end
-
-  defp model_path(world_id) do
-    priv = :code.priv_dir(:brain) |> to_string()
-    Path.join([priv, "ml_models", world_id, "poincare", "embeddings.term"])
   end
 
   defp evaluate_embeddings(embeddings, entity_to_idx, pairs) do

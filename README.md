@@ -3,26 +3,35 @@ This application was vibe coded with Claude and Cursor over the course of severa
 
 While this is my pet-project, I cannot guarantee that it works as intended or that it is free of bugs. It has significantly ballooned in scope since I started it, and I have left it unattended sometimes while implementing different parts. No one has permission to use this in a production environment, and no I wouldn't recommend it.
 
-## ChatBot (Elixir/Phoenix)
+## Retroduct (Elixir/Phoenix)
 
-This is a Phoenix LiveView chatbot application built around **classical NLP techniques** (no LLMs): TF-IDF vectorization, LSTM multi-task models (Axon/Nx), intent classification, entity extraction, sentiment analysis, and a cognitive memory + "epistemic" user-model system.
+The project is **Retroduct** — Peirce's word for abduction, reasoning backward from what is observed to the explanation that best accounts for it. The code is not yet renamed; some paths and module docs still say `chat_bot_llm` or ChatBot.
+
+This is a Phoenix LiveView application built around a **pipeline of specialized classical and local-neural analyzers** rather than a single hosted LLM. The analysis layer is TF-IDF and dense-centroid micro-classifiers (17 of them, feature-vector weights evolved by a genetic algorithm against a composite 50/50 raw+balanced-accuracy fitness). Surface text in the response layer is produced per-domain by one of a phrase-lattice beam-search realizer, the local **Ouro LoopLM 1.4B** (4 recurrence passes), or a template/domain-knowledge synthesizer — routed by `priv/response/system_config.json`. Candidate readings stay alive with their margins in a `Brain.Lattice`; every value's origin is recorded in `Brain.Provenance`'s closed vocabulary; a 9-dimension `ResponseEvaluator` scores each pass and drives up-to-3-iteration refinement. Memory is world-scoped episodic/semantic over Atlas; the epistemic layer is a per-world JTMS of beliefs with authority-aware confidence decay.
+
+For a thorough navigation map of the brain module — file paths, decision thresholds, hard-fail invariants, world-scoping, and the gotchas that bite — see `CLAUDE.md`, which loads at the start of every session.
 
 ### What you get
 
 - **Web UI**: LiveView chat at `/chat` with a processing inspector, plus dashboards for system monitoring (`/dashboard`), ML accuracy metrics (`/accuracy`), training world exploration (`/explorer`), settings management (`/settings`), and admin review panels for intents and knowledge.
-- **Classical NLP pipeline**: semantic chunking → discourse analysis → speech act classification → entity extraction → **`ChunkProfile`** (features + micro-classifiers + derived label) → slot detection → context resolution → comprehension assessment.
-- **LSTM deep learning**: Multi-task LSTM (Axon/Nx/EXLA) for legacy intent logits, NER, sentiment, speech act, POS. Runtime routing favors **`ChunkProfile`** and axis micro-classifiers over the old registry stack.
-- **Cognitive memory**: TF-IDF embeddings, vector similarity search, episodic/semantic memory with consolidation.
-- **Epistemic user model**: JTMS-backed belief store, user facts/beliefs extraction, contradiction handling.
+- **Analysis pipeline (two-pass per chunk)**: semantic chunking → pass 1 (discourse / speech act / sentiment in parallel Tasks, basic entity extraction, anaphora, POS tagging, event extraction, event linking, SRL, preliminary intent) → cross-chunk aggregation (`ChunkPriority`, `ContextAccumulator`) → pass 2 for substantive chunks (`:intent_full` micro-classifier, speech-act refinement, `ChunkProfile` materialization, lattice rerank, intent arbitration, entity retyping with profile, intent-aware span resolution, entity-type rescoring, contextual IS-A narrowing, slot detection, context resolution, fact verification, novelty detection).
+- **17 micro-classifiers**: TF-IDF centroid (`SimpleClassifier`) and dense-centroid (`FeatureVectorClassifier`) — see `Brain.ML.MicroClassifiers` for the full list. Per-dimension weights for feature-vector models evolved by `Brain.ML.WeightOptimizer`, a GA with EXLA JIT, Fisher seeding, adaptive mutation, and a composite fitness that refuses to trade majority accuracy for minority recall.
+- **Candidate lattice**: `Brain.Lattice` keeps N-best candidates with raw score, normalized confidence, margin, entropy, source and stage through reranks; empty lattices tombstone a reason (`:unknown_intent`, `:not_loaded`) rather than returning silently.
+- **Provenance**: `Brain.Provenance` closed vocabulary (`:computed | :declared | :default | :absent | :unavailable`); every recorded value names its `:source`.
+- **Response generation (4-stage iterative)**: `RefinementLoop` → `DiscoursePlanner` (data-driven backbone from `discourse_patterns.json`, with a 20+ reason→reply table for service errors) → `ContentSpecifier` → `SurfaceRealizer` (per-domain routed by `ResponseSystemRouter` to `:lattice | :ouro | :synthesizer | :template`) → `ResponseEvaluator` (9 dimensions, including belief grounding against JTMS and epistemic consistency; the realized text is analyzed with the full pipeline again to score it). Up to 3 iterations; the weakest dimension feeds back into the stage that owns it. Returns `nil` + `:silence_preferred` if even the best pass is below the silence threshold.
+- **Surface realizers**: a phrase-lattice beam search over typed fragments with cosine scoring (`PhraseLatticeRealizer`); the Ouro LoopLM 1.4B with 4 recurrence passes (`OuroRealizer`); and the domain-knowledge synthesizer with primitive composition and sense-aware entity substitution (`Synthesizer`).
+- **Memory**: world-scoped episodic/semantic store (`Brain.Memory.Store`) backed by Atlas as the primary store, VectorIndex as the similarity cache; KG-entity re-rank blends `tfidf * 0.7 + entity_cosine * 0.3`; 15-min consolidation clusters at cosine ≥ 0.8 into semantic facts that bridge to beliefs.
+- **Epistemic layer**: `Brain.Epistemic.JTMS` (classic Forbus/de Kleer, per-world networks, label propagation, contradiction handler), `BeliefStore` with authority-aware confidence decay and auto-retraction below 0.1, `UserModelStore` (per web user, cross-world), `StanceTracker` (bidirectional opinion drift from Jiang et al. CHI 2026), `DisclosurePolicy`, `ConsolidationBridge`.
+- **Owned lexicon with sense drift**: `Brain.Lexicon.UserDefined` holds sense facts in ETS, persisted in Atlas, EMA-blended centroids with weekly decay and archival; `SenseDrift` measures canonical-vs-observed cosine distance to flag words that may have shifted sense.
 - **Knowledge expansion**: Academic research integration (arXiv, Semantic Scholar, OpenAlex), source reliability tracking, multi-source corroboration, and human review workflows.
 - **Code analysis**: AST-based code parsing, symbol extraction, code gazetteer, and relationship mapping across multiple languages.
-- **Training & data tooling**: `mix` tasks for training (classical + LSTM), evaluation (precision/recall/F1/confusion matrices), entity dataset generation, experiment tracking with A/B comparisons, and gold standard management.
-- **Response generation**: Synthesizer-driven domain responses, memory-augmented fallback, LSTM response scoring/ranking, template blending, and multi-part response composition.
+- **Training & data tooling**: `mix` tasks for training, evaluation (precision/recall/F1/confusion matrices), entity dataset generation, experiment tracking with A/B comparisons, and gold standard management.
+- **Services**: External dispatch (`Brain.Services.Dispatcher`) to Weather, SystemStatus, HomeAssistant, and `LocalScheduler` (the only scheduling driver today); credentials and chosen scheduling driver are world-scoped in Atlas. `side_effects: false` refuses `writes?/1` intents with `{:error, :side_effects_off}`. Every service error maps to a planned reply in `DiscoursePlanner.enrichment_error_primitive/2`.
 - **Response templates**: Runtime-manageable via Settings UI (`/settings?section=templates`) with ETS caching and file persistence.
 - **Self-learning training worlds**: Isolated environments for entity discovery from large corpora (e.g., scripts, documents) with A/B testing, metrics comparison, and human review workflows.
-- **Autonomous learning**: Comprehension-gated knowledge acquisition, conversation-driven research triggers, auto-approval of high-confidence corroborated findings, runtime intent/entity learning, and incremental TF-IDF model updates -- all with configurable safety caps and kill switches.
+- **Autonomous learning**: Comprehension-gated knowledge acquisition, conversation-driven research triggers, auto-approval of high-confidence corroborated findings, runtime intent/entity learning, incremental TF-IDF updates. Training examples only buffer on **explicit user feedback**, never on the model's own high-activation output — a deliberate guard against self-confirmation.
 - **Comprehension assessment**: 8-dimension self-interrogation system that gates knowledge acquisition on text understanding. Dimension weights evolve via EMA based on approval/rejection outcomes.
-- **Services & subprocesses**: External service dispatch with credential vault and caching; HTTP, conversation, and CLI subprocess management.
+- **Fast paths**: `Brain.Analysis.RacingAnalyzer` runs six parallel analyzers (`:model, :structural, :keyword, :pattern_recognition, :memory_similarity, :self_knowledge`); early-exit at raw_score ≥ 0.9, pipeline-bypass fast-path at ≥ 0.85 for heuristic or memory match.
 - **Telemetry & metrics**: Instrumented telemetry across the pipeline with metrics aggregation and a monitoring dashboard.
 - **Code maintenance tooling**: Automated Credo fixers with AST-based transformations and corruption detection (`mix credo_fix`).
 
@@ -37,6 +46,7 @@ This is a Phoenix LiveView chatbot application built around **classical NLP tech
 - **Elixir** >= 1.18 (`.tool-versions` pins 1.19.5)
 - **Erlang/OTP** >= 27 (`.tool-versions` pins 28.3.3)
 - **PostgreSQL** — local install or the `apache/age` container via Docker Compose
+- **Node.js with npm** — `mix assets.setup` installs the web fonts from npm (`apps/chat_web/assets/package.json`)
 
 **Optional:**
 
@@ -116,28 +126,18 @@ iex -S mix phx.server
 
 ### Core flow
 
-1. **Input** arrives at `Brain` (GenServer in the brain app).
-2. The **analysis pipeline** (`Brain.Analysis.Pipeline`) runs:
-   - semantic chunking (multi-sentence handling)
-   - discourse + speech act classification (parallel, multi-pass voting + LSTM ensemble)
-   - anaphora resolution (uses recent conversation history)
-   - entity extraction (gazetteer + BIO tagging + LSTM NER)
-   - intent selection (TF-IDF + LSTM ensemble voting when confidence < 0.6)
-   - slot detection + context resolution (history + user model + user profile)
-   - comprehension assessment (query understanding evaluation)
-   - overall strategy decision (`:can_respond`, `:needs_clarification`, etc.)
-3. The **response** is generated via a multi-stage pipeline:
-   - synthesizer (domain knowledge response frames)
-   - memory-augmented retrieval
-   - template blending
-   - LSTM response scoring/ranking
-   - fallback generation
-4. Results are stored into:
+1. **Input** arrives at `Brain.evaluate/3` (GenServer in the brain app). Requires `:time_zone` (a `Brain.Temporal.Zone`); takes `:language`, `:user_id`. `:side_effects` is set once per conversation in `create_conversation/1`.
+2. `FollowupDetector.is_followup?` decides whether this turn resolves a pending clarification; if so it threads through `handle_followup_message` and either completes the request, re-asks for the one slot it narrowed, or (if the user didn't name a candidate) falls back to `process_new_message`.
+3. `SelfKnowledgeAnalyzer.is_self_knowledge_query?` short-circuits meta-cognitive queries about the bot's own knowledge.
+4. The **analysis pipeline** (`Brain.Analysis.Pipeline.process/2`) runs two passes per chunk. Pass 1 (every chunk, parallel): discourse / speech act / sentiment classification, basic entity extraction, anaphora resolution, POS tagging, event extraction and linking, SRL, preliminary intent via an empty lattice. Cross-chunk aggregation picks the primary and question chunks, folds speech-act / addressee / entity-familiarity into a `ContextAccumulator`. Pass 2 (substantive chunks only — primary, question, or assertive/directive with ≥1 entity): the `:intent_full` micro-classifier produces a `Brain.Lattice`, `SpeechActClassifier.refine_with_intent` splices the result into the speech-act voter, `ChunkProfile.materialize` builds the profile that reranks the lattice (+0.15 exact match, +0.05 domain prefix, registered intents only), `determine_intent` arbitrates (`@disambiguation_threshold = 0.5`, `@low_confidence_floor = 0.3`, trust the classifier only if its label is registered AND confidence ≥ 0.5 AND `:intent_domain` micro-classifier agrees — otherwise route through `infer_intent_from_speech_act` and tag `:speech_act_fallback`), entities retype with the profile, spans that were previously undecided get a second chance with `resolve_with_intent`, `EntityTypeScorer.rescore` then `ContextualEntityInferrer.infer` (multi-hypothesis IS-A narrowing with 4 signals), slot detection and context resolution, fact verification, novel-intent candidate recording.
+5. `ResponseGate.evaluate` decides `:respond | :optional | :defer` from speech-act history (gratitude loops, backchannels, continuations, rapid-fire detection, echo).
+6. The **response** is iteratively refined (up to 3 passes) by `Brain.Response.RefinementLoop`: `DiscoursePlanner.plan` picks a backbone of primitives from `discourse_patterns.json` (or collapses to one `enrichment_error_primitive` on a failed service enrichment), `ContentSpecifier.specify` fills each primitive from facts / beliefs / enrichment / entities / sentiment, `SurfaceRealizer.realize` routes per-domain to the phrase-lattice beam-search realizer, the Ouro LoopLM 1.4B, or the domain-knowledge synthesizer, and `ResponseEvaluator.evaluate` scores the realized text on 9 dimensions (speech-act alignment, confidence alignment, content coverage, content completeness, slot coverage, naturalness, echo avoidance, belief grounding against JTMS at weight 0.16, epistemic consistency). The weakest dimension drives which stage re-runs. If the best pass is below the silence threshold (<0.35), the response is withheld — the one exception is a service-error reply, which is never withheld.
+7. Results are stored into:
    - conversation memory
-   - cognitive memory store (episodes + consolidation into semantic facts)
-   - epistemic user model (JTMS-backed beliefs, optional)
-5. **Outcome learning** feeds back into calibration, heuristic tuning, and training example generation.
-6. **Autonomous learning loops** run in the background:
+   - cognitive memory store (episodes + 15-min consolidation at cosine ≥ 0.8 into semantic facts; `ConsolidationBridge` bridges them to beliefs)
+   - epistemic layer: `BeliefStore` (per world, each belief with a JTMS node — premise for `:explicit`, retractable assumption for `:inferred/:learned/:consolidated`, confidence decayed on a timer with authority-aware rate), `UserModelStore` (per web user, cross-world)
+8. **Outcome learning** (`Brain.Analysis.OutcomeLearner`) feeds back into racing-analyzer calibration, heuristic promotion (user 5 / cohort 4 / global 3 successes), and training example buffering — but only when `user_feedback == :positive`, not from the model's own prediction.
+9. **Autonomous learning loops** run in the background:
    - Conversation events flow to BeliefStore (via `extract_beliefs_from_event/2`) and JTMS nodes
    - Memory consolidation bridges semantic facts into beliefs (ConsolidationBridge)
    - NoveltyDetector publishes gaps to LearningTriggers, which auto-starts research sessions
@@ -160,15 +160,16 @@ This is an umbrella project with five apps:
 
 ### Notable subsystems
 
-- **ML/NLP** (`apps/brain/lib/brain/ml/`): TF-IDF classifiers, feature-vector classifiers (FeatureVectorClassifier + WeightOptimizer), MicroClassifiers GenServer, gazetteer (ETS-backed), tokenizer, entity extractor (BIO tagging), POS tagger, training server, corpus manager, training example buffer.
-- **Analysis** (`apps/brain/lib/brain/analysis/`): multi-stage pipeline orchestration, ChunkProfile (326-dim feature vectors), FeatureExtractor, slot schemas, context/anaphora resolution, racing analyzer (fast path), novelty detection (with PubSub gap publishing), comprehension assessment (8-dimension evaluators with EMA weight evolution), outcome learning.
-- **Memory** (`apps/brain/lib/brain/memory/`): TF-IDF embedder, vector index, episodic/semantic store, consolidation (with ConsolidationBridge to beliefs), high-level API (`Think`).
-- **Epistemic** (`apps/brain/lib/brain/epistemic/`): JTMS (Justification Truth Maintenance System), belief store (with confidence decay + event-driven extraction), user model, contradiction handler, disclosure policy, consolidation bridge.
-- **Response** (`apps/brain/lib/brain/response/`): generator orchestrator, synthesizer (domain frames), template store + blender, memory-augmented responses, response quality assessment, enricher.
+- **ML/NLP** (`apps/brain/lib/brain/ml/`): TF-IDF classifiers (`SimpleClassifier`), dense-centroid classifiers (`FeatureVectorClassifier` with `WeightOptimizer` GA), `MicroClassifiers` GenServer (17 named classifiers; `ready?/0` is false until all load; stale models surface in `stale/0` and raise if `Pipeline.process/2` is called), gazetteer (ETS-backed), tokenizer, entity extractor (gazetteer + system parsers + length readings + location hints + proper-noun hints + world BIO entity model + `Brain.Code.EntityReadings`, decided by `SpanReliability`), POS tagger, training server, corpus manager, training example buffer, KnowledgeGraph triple scorer and entity vector cache.
+- **Analysis** (`apps/brain/lib/brain/analysis/`): two-pass pipeline orchestration, `FeatureExtractor` (25-group feature vector whose shape is sized at runtime by `dimension_manifest/0`), `ChunkProfile` (profile domain, posture, derived label), slot detection (`intent_registry.json` + service schemas), `ContextualEntityInferrer` (multi-hypothesis IS-A narrowing), `ContextResolver` and `AnaphoraResolver`, `RacingAnalyzer` (fast path with heuristic / memory match / parallel analyzers), `AnalyzerCalibration` (10-bucket histogram per racing analyzer — note: does **not** calibrate the pipeline's micro-classifiers), novelty detection, comprehension assessment, outcome learning.
+- **Memory** (`apps/brain/lib/brain/memory/`): TF-IDF embedder (global), vector index, episodic/semantic store (world-scoped, Atlas-primary with VectorIndex cache), consolidation (`ConsolidationBridge` to beliefs), recurring-pattern aggregation.
+- **Epistemic** (`apps/brain/lib/brain/epistemic/`): JTMS (per-world networks, label propagation, contradiction handler), BeliefStore (confidence decay with authority-aware rate, auto-retraction below 0.1, Atlas write-through), UserModelStore (per web user, cross-world), SourceAuthority, ContradictionHandler, DisclosurePolicy, ConsolidationBridge, StanceTracker.
+- **Response** (`apps/brain/lib/brain/response/`): `RefinementLoop` (iterative, up to 3 passes), `DiscoursePlanner` (data-driven backbone + service-error reply table), `ContentSpecifier`, `SurfaceRealizer` (routed per domain by `ResponseSystemRouter`), `PhraseLatticeRealizer` + `LatticeScorer` (beam search over typed fragments), `OuroRealizer` (Ouro LoopLM 1.4B), `Synthesizer` (domain-knowledge frames + enriched frames + service replies), `ResponseEvaluator` (9-dimension scoring), `TemplateStore` + `TemplateBlender`, `SemanticFactRetriever`, `DecompressorCollector` (training data for Ouro's decompressor), `MemoryAugmented`, `ResponseQuality`, `Enricher`.
+- **Lexicon** (`apps/brain/lib/brain/lexicon/`): `UserDefined` (owned sense facts in ETS + Atlas, EMA centroid blending, weekly decay), `SenseDrift` (canonical vs observed cosine distance), `IntentDomains` (compile-time validated consolidation), `TypeAnchors`, `ConceptNet`, `Clitics`, `ClosedClass`, `Seeder`, `Loader`.
 - **Knowledge** (`apps/brain/lib/brain/knowledge/`): learning center, review queue (with auto-approval rules), source reliability, corroboration, research agent (with comprehension gate), learning triggers (conversation-driven auto-research), academic APIs (arXiv, Semantic Scholar, OpenAlex).
 - **Code** (`apps/brain/lib/brain/code/`): code analysis pipeline, AST parsing, symbol extraction, code gazetteer, relationship mapping, multi-language grammar support.
-- **Services** (`apps/brain/lib/brain/services/`): external service dispatch, credential vault, caching layer, weather service.
-- **Subprocesses** (`apps/brain/lib/brain/subprocesses/`): HTTP, conversation, and CLI subprocess management with supervisor.
+- **Services** (`apps/brain/lib/brain/services/`): `Dispatcher` (routes to Weather, SystemStatus, HomeAssistant, LocalScheduler), `CredentialVault` (world-scoped credentials), `Cache`, `SchedulingDriver` behavior, `LocalScheduler` (the one scheduling driver today — a world picks one via `Atlas.WorldServiceDrivers`), `HomeAssistant` with capability registry / entity mapper / discovery / state formatter.
+- **Temporal** (`apps/brain/lib/brain/temporal/`): `Zone`, `Vocabulary`, `Resolver` (reads durations and resolves temporal references against the turn's time), `Resolution`.
 - **Metrics** (`apps/brain/lib/brain/metrics/`): telemetry instrumentation and metrics aggregation.
 - **Fact Database** (`apps/brain/lib/brain/fact_database/`): structured fact storage and retrieval.
 - **World** (`apps/world/lib/world/`): training worlds, entity discovery (POS-based), type inference, document ingestion, per-world model registry, entity auto-promoter, persistence, world metrics.
@@ -191,13 +192,18 @@ For detailed documentation, see the `docs/` folder:
 
 | Concept | Description |
 |---------|-------------|
-| **Two-Tier Analysis** | RacingAnalyzer (fast path) vs Pipeline (deep analysis) |
-| **Ensemble Voting** | TF-IDF + LSTM predictions combined when confidence < 0.6 |
+| **Two-pass pipeline** | Pass 1 runs on every chunk (cheap: discourse, speech act, sentiment, basic entities, POS, events, SRL, preliminary intent); pass 2 only on substantive chunks (full `:intent_full` classification, retyping, slot detection, fact verification) |
+| **Fast path vs deep analysis** | `RacingAnalyzer` short-circuits on a heuristic or memory match at ≥ 0.85; otherwise the full `Pipeline` runs |
+| **Candidate lattice** | `Brain.Lattice` keeps every candidate alive with margins and sources through reranks; abstention is an empty lattice with an error tombstone |
+| **Multi-signal intent arbitration** | `determine_intent` trusts the classifier only when the label is registered AND confidence ≥ 0.5 AND the `:intent_domain` micro-classifier agrees; otherwise routes through `infer_intent_from_speech_act` (not simple ensemble voting) |
+| **Provenance as a closed vocabulary** | `:computed | :declared | :default | :absent | :unavailable`; per-process collection, off by default |
+| **Iterative response refinement** | `RefinementLoop` runs plan → specify → realize → evaluate up to 3 times; the 9-dim `ResponseEvaluator` analyzes the realized text through the full pipeline again to score belief grounding and epistemic consistency |
+| **Hard-fail invariants** | Pipelines refuse to run with stale classifiers, missing POS model, or POS/SRL tag drift; `Brain.evaluate/3` raises without `:time_zone`; `DiscoursePlanner` raises on an unmapped service-error reason |
 | **Comprehension Gating** | 8-dimension self-interrogation gates knowledge acquisition; text must be understood before it can be learned |
-| **Autonomous Learning** | Conversation gaps trigger research sessions; high-confidence findings auto-approve; intents/entities learn at runtime |
-| **World-Scoping** | Per-world isolated models, embeddings, and data via `World.Context` |
-| **Memory Types** | MemoryStore (persona) vs Memory.Store (episodic) vs semantic (consolidated) |
-| **Graceful Degradation** | System works without LSTM models, falling back to classical ML |
+| **Autonomous Learning** | Conversation gaps trigger research sessions; high-confidence findings auto-approve; intents/entities learn at runtime; training examples buffer only on explicit user feedback (never the model's own output) |
+| **World-Scoping** | Per-world isolated models, embeddings, entities, beliefs, JTMS networks, lexicon facts, service credentials, and scheduling driver choice (via `World.Context` + `Atlas`) |
+| **Owned lexicon with sense drift** | `Brain.Lexicon.UserDefined` learns sense facts (seeded from WordNet, extended from conversation) with EMA centroid blending; `SenseDrift` flags words whose canonical and observed centroids diverge |
+| **Memory Types** | `MemoryStore` (persona) vs `Memory.Store` (world-scoped episodic/semantic) vs semantic (consolidated at cosine ≥ 0.8) |
 | **No Regex for NLP** | All NLP uses classical ML / trained models, not string matching |
 
 ---
@@ -224,16 +230,22 @@ For detailed documentation, see the `docs/` folder:
 
 - **Intents**: `data/intents/*.json`
 - **Entities**: `data/entities/*.json` (plus generated `*_entries_en.json` files)
-- **Slot schemas**: `apps/brain/priv/analysis/slot_schemas.json`
-- **Response connectors**: `data/response_connectors.json`
-- **Tokenizer expansions**: `data/informal_expansions.json` (generated by Python script)
-- **Domain knowledge**: `apps/brain/priv/knowledge/domains/*.json`
-- **Gold standard evaluation data**: `apps/brain/priv/evaluation/{intent,ner,sentiment,speech_act}/gold_standard.json`
+- **Intent registry (slot schemas + clarification templates)**: `apps/brain/priv/analysis/intent_registry.json` — this is the single source of truth. Service modules (`HomeAssistant`, `LocalScheduler`, …) contribute additional schemas via `Dispatcher.service_schemas/0` which `SlotDetector` merges in at runtime. A `slot_schemas.json` reference you may find in older notes is stale; the file was removed because nothing generated it.
+- **Intent domain consolidation**: `apps/brain/priv/knowledge/intent_domains.json` (compile-time validated for idempotence and registry coverage; see `Brain.Lexicon.IntentDomains`)
+- **Discourse patterns**: `apps/brain/priv/response/discourse_patterns.json` (backbone selection for `DiscoursePlanner`)
+- **Response system config**: `apps/brain/priv/response/system_config.json` (per-domain `:lattice | :ouro | :synthesizer | :template` routing, tone vectors, lattice scorer weights)
+- **Response primitives**: `apps/brain/priv/knowledge/domains/primitives.json` (hedges, acknowledgments, correction invites, fallback responses, service reply templates, service item kinds)
+- **Entity type hierarchy and type mappings**: `apps/brain/priv/analysis/entity_types.json`, `apps/brain/priv/evaluation/ner/type_mappings.json`
 - **Response templates**: `apps/brain/priv/response/templates.json`
+- **Domain knowledge frames**: `apps/brain/priv/knowledge/domains/*.json`
+- **Pattern triggers** (fast-path heuristics): `data/pattern_triggers.json`
+- **Seeded heuristics**: `data/heuristics/seeded_heuristics.json`
+- **Tokenizer expansions**: `data/informal_expansions.json` (generated by Python script)
+- **Gold standard evaluation data**: `apps/brain/priv/evaluation/{intent,ner,sentiment,speech_act}/gold_standard.json`
 
 ### Outputs (generated / trained)
 
-- **Classical models**: `apps/brain/priv/ml_models/*.term` (intent classifier, entity model, gazetteer, embedder, POS tagger, sentiment classifier)
+- **Classical models**: `apps/brain/priv/ml_models/*.term` (intent classifier, entity model, embedder, POS tagger, sentiment classifier)
 - **Feature-vector micro-classifiers**: `apps/brain/priv/ml_models/micro/*.term` (intent_full, intent_domain, framing_class, tense_class, aspect_class, urgency, certainty_level, framing_neutral_centroid, ...)
 - **Knowledge-graph triple scorer**: `apps/brain/priv/ml_models/kg_lstm/<world_id>/*.term` (BiLSTM, trained per world via `mix train.kg_lstm`)
 - **Comprehension weights**: `apps/brain/priv/analysis/comprehension_weights.json` (EMA-evolved dimension weights)
@@ -355,9 +367,9 @@ Tests are tagged for CI optimization:
 
 Assets (aliases defined in `mix.exs`):
 
-- **`mix assets.setup`**: install Tailwind + esbuild if missing
-- **`mix assets.build`**: compile + build Tailwind + esbuild
-- **`mix assets.deploy`**: minify assets + `phx.digest` (for production)
+- **`mix assets.setup`**: install Tailwind + esbuild if missing, and the npm packages in `assets/package.json` (`npm ci`)
+- **`mix assets.build`**: compile + build Tailwind + esbuild, and publish the IBM Plex fonts to `priv/static/fonts` (`mix chat_web.fonts`)
+- **`mix assets.deploy`**: publish the fonts, minify assets + `phx.digest` (for production)
 
 ### Train ML models
 
@@ -375,8 +387,10 @@ Models are loaded on app boot; train them when you change intent/entity data.
 - **`mix train_models`**: train TF-IDF models; saves to `priv/ml_models/`
 - **`mix train_models --intent-only`**: train only intent classifier
 - **`mix train_models --entity-only`**: train only entity recognition model
-- **`mix train_models --gazetteer-only`**: build only gazetteer lookup tables
-- **`mix train_models --skip-gazetteer`**: train models but skip gazetteer build (faster / lower memory)
+
+The gazetteer is not a trained model. `Brain.ML.Gazetteer` builds it in memory
+from `data/entities/` and the city, artist and emoji CSVs every time the app
+starts, and the app will not start if any of those sources is missing.
 
 #### LSTM models (Axon/Nx)
 
@@ -391,21 +405,21 @@ Small `SimpleClassifier` models used for lightweight decisions and for projectin
 data lives under `data/classifiers/*.json`; axis JSON is generated from the intent
 gold standard.
 
-- **`mix gen_micro_data`**: (re)build the six axis JSON files from `apps/brain/priv/evaluation/intent/gold_standard.json`
+- **`mix gen_micro_data --world default`**: (re)build the six axis JSON files from `apps/brain/priv/evaluation/intent/gold_standard.json`
 - **`mix train_micro`**: train every micro-classifier listed in `Mix.Tasks.TrainMicro` → `priv/ml_models/micro/<name>.term`
 - **`mix train_micro --only intent_domain`**: train a single model
 - **`mix train_micro --list`**: show which JSON/model files exist
 
 Stage **9** of **`mix train`** runs `mix train_micro` unless you pass **`--skip-micro`**.
-Run **`mix gen_micro_data`** when you change gold data or axis heuristics **before** retraining micros.
+Run **`mix gen_micro_data --world default`** when you change gold data or axis heuristics **before** retraining micros.
 
 ### Evaluate models
 
-- **`mix evaluate`**: evaluate all tasks
-- **`mix evaluate.intent [--save] [--verbose]`**: intent classification evaluation
+- **`mix evaluate --world default`**: evaluate all tasks
+- **`mix evaluate.intent --world default [--save] [--verbose]`**: intent classification evaluation
 - **`mix evaluate.sentiment [--verbose]`**: sentiment analysis evaluation
 - **`mix evaluate.speech_act`**: speech act classification evaluation
-- **`mix evaluate.ner`**: named entity recognition evaluation
+- **`mix evaluate.ner --world default`**: named entity recognition evaluation
 
 ### Utility tasks
 
@@ -433,9 +447,9 @@ Available fixers: `trailing_whitespace`, `large_numbers`, `length_check`, `map_j
 - **`mix clear_knowledge --entities`**: clear only admin-added gazetteer entries
 - **`mix clear_knowledge --reload`**: clear and reload gazetteer from data files
 
-### Generate / refresh entity datasets (then rebuild gazetteer)
+### Generate / refresh entity datasets (then restart)
 
-These tasks download bounded datasets, write JSON into `data/entities/`, and cache remote responses in `priv/data_cache/`. After running any of them, typically run `mix train_models --gazetteer-only` and restart the app.
+These tasks download bounded datasets, write JSON into `data/entities/`, and cache remote responses in `priv/data_cache/`. After running any of them, restart the app; the gazetteer is rebuilt from `data/entities/` at startup.
 
 - **`mix generate_person_names`**
   - Source: US SSA baby names dataset (`names.zip`)
@@ -548,8 +562,9 @@ mix train --name "v2" --compare
 
 ### I generated new entity lists (SSA/countries/Wikidata/etc.)
 
+Restart the app; the gazetteer is rebuilt from `data/entities/` at startup.
+
 ```bash
-mix train_models --gazetteer-only
 mix phx.server
 ```
 
@@ -562,7 +577,7 @@ mix clear_knowledge
 ### I want to evaluate model accuracy
 
 ```bash
-mix evaluate --save --compare
+mix evaluate --world default --save --compare
 mix test --only benchmark
 ```
 

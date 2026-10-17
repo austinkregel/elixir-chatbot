@@ -7,7 +7,6 @@ defmodule Brain.SystemStatus do
             [World.ModelRegistry, World.Embedder, World.Manager, World.Persistence, World.Metrics]}
 
   alias Brain.Metrics.Aggregator
-  alias Brain.ML.EntityExtractor
   alias Brain.ML.EntityTrainer
   alias Brain.ML.MicroClassifiers
   alias Brain.ML.POSTagger
@@ -51,13 +50,11 @@ defmodule Brain.SystemStatus do
       {Brain.ML.MicroClassifiers, "Micro Classifiers", :has_ready},
       {Brain.ML.SentimentClassifierSimple, "Sentiment Classifier", :has_ready},
       {Brain.ML.SpeechActClassifierSimple, "Speech Act Classifier", :has_ready},
-      {Brain.ML.EntityExtractor, "Entity Extractor", :has_ready},
       {Brain.ML.TrainingExampleBuffer, "Training Example Buffer", :has_ready_and_stats},
       {Brain.ML.TrainingServer, "Training Server", :has_status},
-      {Brain.ML.KnowledgeGraph.TripleScorer, "Triple Scorer", :has_ready},
       {Brain.ML.KnowledgeGraph.EntityVectorCache, "Entity Vector Cache", :has_stats},
-      {Brain.ML.Poincare.Embeddings, "Poincare Embeddings", :has_ready},
       {Brain.ML.Lexicon, "Lexicon", :has_stats},
+      {Brain.Lexicon.UserDefined, "Owned Lexicon", :basic},
       {Brain.ML.WeightOptimizer.Tracker, "Weight Optimizer Tracker", :basic}
     ],
     response: [
@@ -140,15 +137,10 @@ defmodule Brain.SystemStatus do
         function_exported?(Brain.Analysis.TypeHierarchy, :ready?, 0) and
         Brain.Analysis.TypeHierarchy.ready?()
 
-    poincare_ready =
-      Code.ensure_loaded?(Brain.ML.Poincare.Embeddings) and
-        function_exported?(Brain.ML.Poincare.Embeddings, :ready?, 0) and
-        Brain.ML.Poincare.Embeddings.ready?()
-
-    triple_scorer_ready =
-      Code.ensure_loaded?(Brain.ML.KnowledgeGraph.TripleScorer) and
-        function_exported?(Brain.ML.KnowledgeGraph.TripleScorer, :ready?, 0) and
-        Brain.ML.KnowledgeGraph.TripleScorer.ready?()
+    # Each world holds its own copies of these, seeded from the trained ones;
+    # without the trained ones no world can be seeded.
+    poincare_ready = File.regular?(Brain.ML.Poincare.Embeddings.trained_path())
+    triple_scorer_ready = File.regular?(Brain.ML.KnowledgeGraph.TripleScorer.trained_path())
 
     atlas_reachable =
       case Brain.AtlasIntegration.ping() do
@@ -164,9 +156,15 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  @doc "Returns comprehensive status of all GenServers organized by category.\n"
-  def get_all_genservers_status do
+  @doc """
+  Returns comprehensive status of all GenServers organized by category, each
+  tracked one with its activity counted in `telemetry`, the node's telemetry
+  window read once (`Brain.Metrics.Aggregator.read_telemetry/0`); read here
+  when not given. Raises when Atlas cannot be read.
+  """
+  def get_all_genservers_status(telemetry \\ Aggregator.read_telemetry()) do
     started_at = System.monotonic_time(:millisecond)
+    durations = Aggregator.get_metrics(telemetry)
 
     categories =
       @genserver_categories
@@ -174,7 +172,7 @@ defmodule Brain.SystemStatus do
         statuses =
           servers
           |> Enum.map(fn {module, name, type} ->
-            {module, get_genserver_status(module, name, type)}
+            {module, get_genserver_status(module, name, type, durations)}
           end)
           |> Map.new()
 
@@ -182,34 +180,31 @@ defmodule Brain.SystemStatus do
       end)
       |> Map.new()
 
-    subprocess_status = get_subprocess_supervisor_status()
-
     elapsed = System.monotonic_time(:millisecond) - started_at
 
     %{
       categories: categories,
-      subprocess_supervisor: subprocess_status,
       checked_at: DateTime.utc_now(),
       check_duration_ms: elapsed
     }
   end
 
-  @doc "Returns performance metrics from the Metrics Aggregator.\n"
-  def get_performance_metrics do
-    if Code.ensure_loaded?(Brain.Metrics.Aggregator) do
-      try do
-        Aggregator.get_metrics()
-      catch
-        :exit, _ -> default_metrics()
-      end
-    else
-      default_metrics()
-    end
+  @doc """
+  Returns performance metrics from the Metrics Aggregator
+  (`Brain.Metrics.Aggregator.get_metrics/1`), from `telemetry`, the node's
+  telemetry window read once; read here when not given. Raises when Atlas
+  cannot be read.
+  """
+  def get_performance_metrics(telemetry \\ Aggregator.read_telemetry()) do
+    Aggregator.get_metrics(telemetry)
   end
 
-  @doc "Returns health indicators for the system.\n"
-  def get_health_indicators do
-    genserver_status = get_all_genservers_status()
+  @doc """
+  Returns health indicators for the system, from `telemetry` as
+  `get_all_genservers_status/1` takes it.
+  """
+  def get_health_indicators(telemetry \\ Aggregator.read_telemetry()) do
+    genserver_status = get_all_genservers_status(telemetry)
     supervisor_info = get_supervisor_info()
     {running, total} = count_genserver_health(genserver_status.categories)
 
@@ -451,11 +446,14 @@ defmodule Brain.SystemStatus do
     %{
       pos_model: get_model_file_status(models_path, "pos_model.term"),
       entity_model: get_model_file_status(models_path, "entity_model.term"),
-      gazetteer: get_model_file_status(models_path, "gazetteer.term"),
+      # The gazetteer is built in memory from its sources, not stored as a model
+      # file. Its process loads in init/1, so a running process is a loaded one.
+      gazetteer: get_agent_status(Brain.ML.Gazetteer),
       sentiment_classifier: get_model_file_status(models_path, "sentiment_classifier.term"),
       speech_act_classifier: get_model_file_status(models_path, "speech_act_classifier.term"),
       intent_classifier: get_intent_classifier_status(models_path),
-      entity_extractor: get_agent_status(Brain.ML.EntityExtractor),
+      # Entity extraction has no process of its own; it reads the gazetteer.
+      entity_extractor: get_agent_status(Brain.ML.Gazetteer),
       last_evaluation: get_last_evaluation(),
       checked_at: DateTime.utc_now()
     }
@@ -511,8 +509,22 @@ defmodule Brain.SystemStatus do
   - Dispatch metrics (success rate, avg latency)
   - Cache performance (hit rate)
   - Health check results
+
+  Credentials are stored per world, so "configured" is reported for
+  `world_id`; a missing world raises.
   """
-  def get_services_status do
+  def get_services_status(world_id, telemetry \\ Aggregator.read_telemetry()) do
+    unless is_binary(world_id) and world_id != "" do
+      raise ArgumentError,
+            "SystemStatus.get_services_status needs the world whose service credentials are checked, got: #{inspect(world_id)}"
+    end
+
+    services_status_in_world(world_id, Aggregator.get_service_metrics(telemetry))
+  end
+
+  # `all_metrics` is what the aggregator counted for every service, which
+  # names each service as it is stored in Atlas: as a string.
+  defp services_status_in_world(world_id, all_metrics) do
     alias Brain.Services.{Dispatcher, CredentialVault, Cache}
 
     # GenServer statuses
@@ -521,13 +533,11 @@ defmodule Brain.SystemStatus do
 
     # Get registered services info
     services =
-      Dispatcher.list_services()
+      Dispatcher.list_services(world: world_id)
       |> Enum.map(fn service_info ->
         service_name = service_info.name
 
-        # Get metrics for this service from aggregator
-        metrics = Aggregator.get_service_metrics()
-        service_metrics = get_in(metrics, [:by_service, service_name]) || %{}
+        service_metrics = get_in(all_metrics, [:by_service, to_string(service_name)]) || %{}
 
         Map.merge(service_info, %{
           total_dispatches: Map.get(service_metrics, :total_dispatches, 0),
@@ -540,7 +550,6 @@ defmodule Brain.SystemStatus do
       end)
 
     # Overall dispatch metrics
-    all_metrics = Aggregator.get_service_metrics()
     dispatch_metrics = Map.get(all_metrics, :dispatch, %{})
     cache_metrics = Map.get(all_metrics, :cache, %{})
 
@@ -733,9 +742,18 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  @doc "Returns readiness details for a specific world.\n\nOptions:\n  - `:world_id` - The world ID to check (default: \"default\")\n"
-  def get_readiness_details(opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, "default")
+  @doc "Returns readiness details for a specific world.\n\nOptions:\n  - `:world_id` - Required. The world ID to check; absent raises.\n"
+  def get_readiness_details(opts) do
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "SystemStatus.get_readiness_details requires a :world_id option, the world whose " <>
+                  "readiness is reported; got #{inspect(other)}"
+      end
 
     status = get_all()
     models = get_ml_models_status()
@@ -854,11 +872,7 @@ defmodule Brain.SystemStatus do
           end
 
         embedder = models[:embedder]
-        entity_model = models[:entity_model]
-        pos_model = models[:pos_model]
         embedder_vocab_size = extract_vocab_size(embedder, :vocabulary)
-        pos_model_tags = extract_vocab_size(pos_model, :tag_vocabulary)
-        entity_model_tags = extract_vocab_size(entity_model, :tag_vocabulary)
         has_embedder = embedder != nil and is_map(embedder) and map_size(embedder) > 0
 
         %{
@@ -875,12 +889,12 @@ defmodule Brain.SystemStatus do
           is_loaded: has_models,
           has_classifier: has_embedder,
           has_embedder: has_embedder,
-          has_entity_model: entity_model != nil and map_size(entity_model) > 0,
-          has_pos_model: pos_model != nil and map_size(pos_model) > 0,
+          # Whether the world holds its own copy (Brain.ML.EntityModel).
+          has_entity_model: File.regular?(Brain.ML.EntityModel.path(world_id)),
+          # POS tagging is shared by every world (Brain.ML.POSTagger).
+          has_pos_model: Brain.ML.POSTagger.model_exists?(),
           classifier_vocab_size: embedder_vocab_size,
           embedder_vocab_size: embedder_vocab_size,
-          entity_model_size: entity_model_tags,
-          pos_model_size: pos_model_tags,
           checked_at: DateTime.utc_now()
         }
       catch
@@ -906,8 +920,6 @@ defmodule Brain.SystemStatus do
       has_pos_model: false,
       classifier_vocab_size: 0,
       embedder_vocab_size: 0,
-      entity_model_size: 0,
-      pos_model_size: 0,
       checked_at: DateTime.utc_now()
     }
   end
@@ -1019,19 +1031,6 @@ defmodule Brain.SystemStatus do
       Brain.priv_path("ml_models")
   end
 
-  defp get_model_file_status(models_path, "gazetteer.term" = filename) do
-    path = Path.join(models_path, filename)
-
-    is_loaded =
-      try do
-        Gazetteer.loaded?()
-      catch
-        :exit, _ -> false
-      end
-
-    build_model_file_status(path, is_loaded)
-  end
-
   defp get_model_file_status(models_path, "pos_model.term" = filename) do
     path = Path.join(models_path, filename)
 
@@ -1091,35 +1090,6 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  defp get_agent_status(Brain.ML.EntityExtractor = module) do
-    pid = Process.whereis(module)
-
-    if pid do
-      process_info = get_process_info(pid)
-
-      is_loaded =
-        try do
-          EntityExtractor.is_loaded?()
-        catch
-          :exit, _ -> false
-        end
-
-      %{
-        loaded: is_loaded,
-        pid: pid,
-        memory_bytes: process_info[:memory],
-        message_queue_len: process_info[:message_queue_len]
-      }
-    else
-      %{
-        loaded: false,
-        pid: nil,
-        memory_bytes: nil,
-        message_queue_len: nil
-      }
-    end
-  end
-
   defp get_agent_status(module) do
     pid = Process.whereis(module)
 
@@ -1142,7 +1112,7 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  defp get_genserver_status(module, name, type) do
+  defp get_genserver_status(module, name, type, durations) do
     pid = Process.whereis(module)
 
     base_status = %{
@@ -1177,7 +1147,7 @@ defmodule Brain.SystemStatus do
 
       status_with_info
       |> enhance_status(module, type)
-      |> add_utilization_metrics(module)
+      |> add_utilization_metrics(module, durations)
     else
       base_status
     end
@@ -1200,22 +1170,6 @@ defmodule Brain.SystemStatus do
           vocabulary: embedder_status.vocabulary_size,
           progress: embedder_status.progress
         }
-    }
-  end
-
-  defp enhance_status(status, Brain.ML.EntityExtractor, :has_ready) do
-    ready =
-      try do
-        EntityExtractor.is_loaded?()
-      catch
-        :exit, _ -> false
-      end
-
-    %{
-      status
-      | ready: ready,
-        status: if(ready, do: :ready, else: :initializing),
-        label: if(ready, do: "Ready", else: "Initializing...")
     }
   end
 
@@ -1360,11 +1314,13 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  defp add_utilization_metrics(status, module) do
+  defp add_utilization_metrics(status, module, durations) do
     metric_name = Map.get(@module_metric_map, module)
 
     if metric_name do
-      metrics = get_metric_for_module(metric_name)
+      # Every tracked module's metric is a known duration metric, listed
+      # whether or not anything was counted.
+      metrics = Map.fetch!(durations, metric_name)
 
       utilization_status =
         classify_utilization(
@@ -1395,24 +1351,6 @@ defmodule Brain.SystemStatus do
     end
   end
 
-  defp get_metric_for_module(metric_name) do
-    try do
-      case Aggregator.get_metric(metric_name) do
-        nil ->
-          %{count: 0, rate_per_minute: 0.0, last_updated: nil}
-
-        data ->
-          %{
-            count: Map.get(data, :count, 0),
-            rate_per_minute: Map.get(data, :rate_per_minute, 0.0),
-            last_updated: Map.get(data, :last_updated)
-          }
-      end
-    catch
-      _, _ -> %{count: 0, rate_per_minute: 0.0, last_updated: nil}
-    end
-  end
-
   defp classify_utilization(memory_bytes, count, rate_per_minute, last_updated) do
     now = System.monotonic_time(:millisecond)
 
@@ -1434,38 +1372,6 @@ defmodule Brain.SystemStatus do
 
   defp estimate_window_count(rate_per_minute) do
     round(rate_per_minute * 5)
-  end
-
-  defp get_subprocess_supervisor_status do
-    supervisor = Brain.Subprocesses.Supervisor
-    pid = Process.whereis(supervisor)
-
-    if pid do
-      children =
-        try do
-          DynamicSupervisor.count_children(supervisor)
-        catch
-          :exit, _ -> %{active: 0, specs: 0, supervisors: 0, workers: 0}
-        end
-
-      %{
-        running: true,
-        pid: pid,
-        active_children: children[:active] || 0,
-        specs: children[:specs] || 0,
-        workers: children[:workers] || 0,
-        supervisors: children[:supervisors] || 0
-      }
-    else
-      %{
-        running: false,
-        pid: nil,
-        active_children: 0,
-        specs: 0,
-        workers: 0,
-        supervisors: 0
-      }
-    end
   end
 
   defp get_supervisor_info do
@@ -1535,29 +1441,19 @@ defmodule Brain.SystemStatus do
   end
 
   @doc "Returns response timing metrics from the aggregator.\n"
-  def get_response_timing do
-    try do
-      metrics = Aggregator.get_metrics()
-      brain_eval = Map.get(metrics, :brain_evaluate, %{})
-      pipeline = Map.get(metrics, :pipeline_process, %{})
+  # `telemetry` is the node's telemetry window read once
+  # (`Brain.Metrics.Aggregator.read_telemetry/0`); read here when not given.
+  # Raises when Atlas cannot be read.
+  def get_response_timing(telemetry \\ Aggregator.read_telemetry()) do
+    metrics = Aggregator.get_metrics(telemetry)
+    brain_eval = Map.fetch!(metrics, :brain_evaluate)
+    pipeline = Map.fetch!(metrics, :pipeline_process)
 
-      %{
-        brain_avg_ms: Map.get(brain_eval, :avg_ms, 0),
-        brain_count: Map.get(brain_eval, :count, 0),
-        pipeline_avg_ms: Map.get(pipeline, :avg_ms, 0),
-        pipeline_count: Map.get(pipeline, :count, 0)
-      }
-    catch
-      _, _ -> %{brain_avg_ms: 0, brain_count: 0, pipeline_avg_ms: 0, pipeline_count: 0}
-    end
-  end
-
-  defp default_metrics do
     %{
-      brain_evaluate: %{count: 0, avg_ms: 0, min_ms: 0, max_ms: 0},
-      pipeline_process: %{count: 0, avg_ms: 0, min_ms: 0, max_ms: 0},
-      memory_query: %{count: 0, avg_ms: 0, min_ms: 0, max_ms: 0},
-      errors: %{count: 0, rate_per_minute: 0.0}
+      brain_avg_ms: brain_eval.avg_ms,
+      brain_count: brain_eval.count,
+      pipeline_avg_ms: pipeline.avg_ms,
+      pipeline_count: pipeline.count
     }
   end
 

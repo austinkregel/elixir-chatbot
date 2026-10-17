@@ -1,0 +1,558 @@
+[
+  {
+    "value": "Paris",
+    "synonyms": ["Paris"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "country": "France"
+      }
+    ]
+  },
+  {
+    "value": "Austin",
+    "synonyms": ["Austin"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Texas",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Georgia",
+    "synonyms": ["Georgia"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "state",
+        "confidence": 0.4,
+        "country": "USA"
+      },
+      {
+        "entity_type": "country",
+        "confidence": 0.3
+      }
+    ]
+  },
+  {
+    "value": "Charlotte",
+    "synonyms": ["Charlotte"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "North Carolina",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Dallas",
+    "synonyms": ["Dallas"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Texas",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Brooklyn",
+    "synonyms": ["Brooklyn"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "borough",
+        "confidence": 0.5,
+        "city": "New York City",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Madison",
+    "synonyms": ["Madison"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Wisconsin",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Sydney",
+    "synonyms": ["Sydney"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "country": "Australia"
+      }
+    ]
+  },
+  {
+    "value": "Jordan",
+    "synonyms": ["Jordan"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "country",
+        "confidence": 0.5
+      }
+    ]
+  },
+  {
+    "value": "Orlando",
+    "synonyms": ["Orlando"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Florida",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Victoria",
+    "synonyms": ["Victoria"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.4,
+        "country": "Canada"
+      },
+      {
+        "entity_type": "state",
+        "confidence": 0.3,
+        "country": "Australia"
+      }
+    ]
+  },
+  {
+    "value": "Regina",
+    "synonyms": ["Regina"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "province": "Saskatchewan",
+        "country": "Canada"
+      }
+    ]
+  },
+  {
+    "value": "Florence",
+    "synonyms": ["Florence"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "country": "Italy"
+      }
+    ]
+  },
+  {
+    "value": "Savannah",
+    "synonyms": ["Savannah"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Georgia",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Phoenix",
+    "synonyms": ["Phoenix"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Arizona",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Chelsea",
+    "synonyms": ["Chelsea"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "neighborhood",
+        "confidence": 0.5,
+        "city": "London or New York City"
+      }
+    ]
+  },
+  {
+    "value": "Hudson",
+    "synonyms": ["Hudson"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.4,
+        "state": "New York",
+        "country": "USA"
+      },
+      {
+        "entity_type": "river",
+        "confidence": 0.4
+      }
+    ]
+  },
+  {
+    "value": "Lincoln",
+    "synonyms": ["Lincoln"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Nebraska",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Mason",
+    "synonyms": ["Mason"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Ohio",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Troy",
+    "synonyms": ["Troy"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Michigan or New York",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Eugene",
+    "synonyms": ["Eugene"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Oregon",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Helena",
+    "synonyms": ["Helena"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Montana",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Geneva",
+    "synonyms": ["Geneva"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "country": "Switzerland"
+      }
+    ]
+  },
+  {
+    "value": "Virginia",
+    "synonyms": ["Virginia"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "state",
+        "confidence": 0.5,
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Carolina",
+    "synonyms": ["Carolina"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "state",
+        "confidence": 0.5,
+        "country": "USA",
+        "note": "Refers to North or South Carolina"
+      }
+    ]
+  },
+  {
+    "value": "Dakota",
+    "synonyms": ["Dakota"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "state",
+        "confidence": 0.5,
+        "country": "USA",
+        "note": "Refers to North or South Dakota"
+      }
+    ]
+  },
+  {
+    "value": "Denver",
+    "synonyms": ["Denver"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Colorado",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Memphis",
+    "synonyms": ["Memphis"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Tennessee",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "London",
+    "synonyms": ["London"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "country": "UK"
+      }
+    ]
+  },
+  {
+    "value": "India",
+    "synonyms": ["India"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "country",
+        "confidence": 0.5
+      }
+    ]
+  },
+  {
+    "value": "Asia",
+    "synonyms": ["Asia"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "continent",
+        "confidence": 0.5
+      }
+    ]
+  },
+  {
+    "value": "Cheyenne",
+    "synonyms": ["Cheyenne"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Wyoming",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Sierra",
+    "synonyms": ["Sierra"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "mountain_range",
+        "confidence": 0.5
+      }
+    ]
+  },
+  {
+    "value": "Jackson",
+    "synonyms": ["Jackson"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Mississippi",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "value": "Montgomery",
+    "synonyms": ["Montgomery"],
+    "types": [
+      {
+        "entity_type": "person",
+        "confidence": 0.5
+      },
+      {
+        "entity_type": "city",
+        "confidence": 0.5,
+        "state": "Alabama",
+        "country": "USA"
+      }
+    ]
+  }
+]

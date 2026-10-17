@@ -351,10 +351,14 @@ defmodule Brain.Response.ResponseQuality do
   defp get_template_response(intent, _entities) do
     alias Brain.Response.Synthesizer
 
+    # get_random_template/1 returns a bare string or nil, never {:ok, _}. This
+    # matched on {:ok, response} and {:ok, %{text: text}}, so both clauses were
+    # unreachable and every call fell to the generic fallback -- the template was
+    # fetched and thrown away, leaving ResponseQuality.improve/3 with no real
+    # rewrite candidates.
     case TemplateStore.get_random_template(intent) do
-      {:ok, response} when is_binary(response) -> response
-      {:ok, %{text: text}} -> text
-      _ -> Synthesizer.get_quality_fallback()
+      response when is_binary(response) -> response
+      nil -> Synthesizer.get_quality_fallback()
     end
   end
 

@@ -1,0 +1,87 @@
+[
+  {
+    "data": [
+      {
+        "text": "Give me "
+      },
+      {
+        "alias": "duration",
+        "meta": "@duration",
+        "text": "5 more minutes"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Hit snooze"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Let me sleep more"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Snooze"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Snooze for "
+      },
+      {
+        "alias": "duration",
+        "meta": "@duration",
+        "text": "10 minutes"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Snooze for "
+      },
+      {
+        "alias": "duration",
+        "meta": "@duration",
+        "text": "5 minutes"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Snooze it"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Snooze the alarm"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Snooze the alarm please"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Stop the alarm and snooze"
+      }
+    ]
+  }
+]

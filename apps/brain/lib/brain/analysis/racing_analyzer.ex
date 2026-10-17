@@ -25,16 +25,31 @@ defmodule Brain.Analysis.RacingAnalyzer do
     Application.get_env(:brain, :pattern_triggers_file, @default_pattern_triggers_file)
   end
 
-  @doc "Races multiple analyzers to interpret the input.\n\nReturns an Interpretation with the winning intent and alternatives.\n\nOptions:\n- :user_id - User ID for user-scoped heuristics\n- :cohort_id - Cohort ID for cohort-scoped heuristics\n- :skip_heuristics - Skip heuristic fast path (for testing)\n- :skip_memory - Skip memory similarity check\n"
-  def race(text, opts \\ []) when is_binary(text) do
+  @doc "Races multiple analyzers to interpret the input.\n\nReturns an Interpretation with the winning intent and alternatives.\n\nOptions:\n- :world_id - required: the world the text is interpreted in. Absent raises.\n- :user_id - User ID for user-scoped heuristics\n- :cohort_id - Cohort ID for cohort-scoped heuristics\n- :skip_heuristics - Skip heuristic fast path (for testing)\n- :skip_memory - Skip memory similarity check\n"
+  def race(text, opts) when is_binary(text) do
+    world_id!(opts)
+
     Telemetry.span(:racing_analysis, %{text_length: String.length(text)}, fn ->
       do_race(text, opts)
     end)
   end
 
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "RacingAnalyzer option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "RacingAnalyzer.race needs :world_id, the world the text is interpreted in"
+    end
+  end
+
   defp do_race(text, opts) do
     start_time = System.monotonic_time(:millisecond)
-    world_id = Keyword.get(opts, :world_id, "default")
+    world_id = world_id!(opts)
     user_id = Keyword.get(opts, :user_id)
     cohort_id = Keyword.get(opts, :cohort_id)
 
@@ -135,7 +150,7 @@ defmodule Brain.Analysis.RacingAnalyzer do
         {:fast_path, interpretation}
 
       _ ->
-        case check_memory_similarity(text) do
+        case check_memory_similarity(text, world_id) do
           {:ok, intent, confidence} when confidence >= @fast_path_threshold ->
             interpretation = Interpretation.new(intent, text, confidence, :memory_match)
             {:fast_path, interpretation}
@@ -144,11 +159,6 @@ defmodule Brain.Analysis.RacingAnalyzer do
             :no_match
         end
     end
-  end
-
-  def check_fast_path(text, user_id, cohort_id) do
-    Logger.warning("check_fast_path/3 is deprecated, use check_fast_path/4 with world_id")
-    check_fast_path(text, "default", user_id, cohort_id)
   end
 
   defp check_heuristics(text, world_id, user_id, cohort_id) do
@@ -161,9 +171,9 @@ defmodule Brain.Analysis.RacingAnalyzer do
     _ -> {:error, :heuristic_error}
   end
 
-  defp check_memory_similarity(text) do
+  defp check_memory_similarity(text, world_id) do
     if Process.whereis(MemoryStore) do
-      case MemoryStore.query_similar(text, 3) do
+      case MemoryStore.query_similar(text, 3, world_id: world_id, rerank: false) do
         {:ok, [{episode, similarity} | _]} when similarity >= @fast_path_threshold ->
           intent = extract_intent_from_tags(episode.tags)
           {:ok, intent, similarity}
@@ -189,9 +199,10 @@ defmodule Brain.Analysis.RacingAnalyzer do
 
   defp run_analyzers_with_early_exit(text, opts) do
     user_id = Keyword.get(opts, :user_id)
+    world_id = world_id!(opts)
 
     analyzers = [
-      model: fn -> analyze_with_model(text) end,
+      model: fn -> analyze_with_model(text, world_id) end,
       structural: fn -> analyze_structure(text) end,
       keyword: fn -> analyze_keywords(text) end,
       pattern_recognition: fn -> analyze_patterns(text) end
@@ -206,7 +217,7 @@ defmodule Brain.Analysis.RacingAnalyzer do
 
     analyzers =
       unless Keyword.get(opts, :skip_epistemic, false) do
-        [{:self_knowledge, fn -> analyze_self_knowledge(text, user_id) end} | analyzers]
+        [{:self_knowledge, fn -> analyze_self_knowledge(text, user_id, world_id) end} | analyzers]
       else
         analyzers
       end
@@ -271,12 +282,12 @@ defmodule Brain.Analysis.RacingAnalyzer do
     end)
   end
 
-  defp analyze_with_model(text) do
+  defp analyze_with_model(text, world_id) do
     alias Brain.Analysis.{FeatureExtractor, Pipeline}
     alias Brain.ML.MicroClassifiers
 
     if MicroClassifiers.ready?() do
-      analysis = Pipeline.analyze_chunk(text)
+      analysis = Pipeline.analyze_chunk(text, world_id: world_id)
       {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
 
       case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
@@ -464,7 +475,7 @@ defmodule Brain.Analysis.RacingAnalyzer do
 
   defp analyze_memory(text, opts) do
     if Process.whereis(MemoryStore) do
-      case MemoryStore.query_similar(text, 5) do
+      case MemoryStore.query_similar(text, 5, world_id: world_id!(opts), rerank: false) do
         {:ok, [_ | _] = results} ->
           {best_episode, best_similarity} = hd(results)
           intent = extract_intent_from_tags(best_episode.tags)
@@ -507,8 +518,8 @@ defmodule Brain.Analysis.RacingAnalyzer do
     _ -> AnalyzerResult.new(:memory_similarity, nil, 0.0)
   end
 
-  defp analyze_self_knowledge(text, user_id) do
-    SelfKnowledgeAnalyzer.analyze(text, user_id: user_id)
+  defp analyze_self_knowledge(text, user_id, world_id) do
+    SelfKnowledgeAnalyzer.analyze(text, user_id: user_id, world_id: world_id)
   rescue
     _ -> AnalyzerResult.new(:self_knowledge, nil, 0.0)
   end

@@ -1,0 +1,124 @@
+[
+  {
+    "text": "please what are the steps for opening account",
+    "tokens": [
+      "please",
+      "what",
+      "are",
+      "the",
+      "steps",
+      "for",
+      "opening",
+      "account"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-43b08087",
+    "intent": "account.open"
+  },
+  {
+    "text": "want I to open an account",
+    "tokens": [
+      "want",
+      "I",
+      "to",
+      "open",
+      "an",
+      "account"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "PART",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-7ab92b67",
+    "intent": "account.open"
+  },
+  {
+    "text": "what are steps for opening account",
+    "tokens": [
+      "what",
+      "are",
+      "steps",
+      "for",
+      "opening",
+      "account"
+    ],
+    "pos_tags": [
+      "DET",
+      "VERB",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-482cf6b2",
+    "intent": "account.open"
+  },
+  {
+    "text": "I want to what are the steps for opening account",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "what",
+      "are",
+      "the",
+      "steps",
+      "for",
+      "opening",
+      "account"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-03548ac5",
+    "intent": "account.open"
+  },
+  {
+    "text": "how I do open an account",
+    "tokens": [
+      "how",
+      "I",
+      "do",
+      "open",
+      "an",
+      "account"
+    ],
+    "pos_tags": [
+      "ADV",
+      "PRON",
+      "VERB",
+      "VERB",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-a66f6be6",
+    "intent": "account.open"
+  }
+]

@@ -161,6 +161,7 @@ defmodule Brain.Analysis.ChunkAnalysis do
           profile: ChunkProfile.t() | nil,
           feature_vector: list(float()),
           entities: list(map()),
+          unresolved_spans: list(map()),
           slots: SlotResult.t(),
           missing_context: list(atom()),
           response_strategy: InternalModel.response_strategy(),
@@ -171,18 +172,33 @@ defmodule Brain.Analysis.ChunkAnalysis do
           fact_verification: fact_verification(),
           related_beliefs: list(map()),
           epistemic_status: epistemic_status(),
-          pass: pass()
+          pass: pass(),
+          language: String.t() | nil,
+          active_contexts: [String.t()] | nil
         }
 
+  # `language` is the code (`Brain.Language`) the chunk was analyzed in, and
+  # `active_contexts` the conversational contexts the turn continues from
+  # (`Brain.Analysis.ActiveContexts`). The pipeline sets both; feature
+  # extraction requires both.
+  #
+  # `entities` holds only the spans entity extraction decided;
+  # `unresolved_spans` the spans it could not decide
+  # (`Brain.ML.EntityExtractor.extract/2`), each with its readings, candidates
+  # and reason. An unresolved span is no entity, and only what reads
+  # `unresolved_spans` sees it.
   defstruct [
     :chunk_index,
     :text,
     :discourse,
     :speech_act,
+    :language,
+    :active_contexts,
     intent: nil,
     profile: nil,
     feature_vector: [],
     entities: [],
+    unresolved_spans: [],
     slots: nil,
     missing_context: [],
     response_strategy: :can_respond,
@@ -413,7 +429,7 @@ defmodule Brain.Analysis.SlotResult do
 
   @type slot_value :: %{
           value: any(),
-          source: :explicit | :conversation | :user_profile | :default | :inferred,
+          source: :explicit | :type_compatible | :captured | :conversation | :user_profile | :default | :inferred,
           confidence: float()
         }
 

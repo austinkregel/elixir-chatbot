@@ -42,29 +42,35 @@ defmodule ChatWeb.DashboardLive do
   @impl true
   def handle_params(_params, _uri, socket) do
     world_id = socket.assigns.current_world_id
+    # The node's telemetry window, read from Atlas once for every panel.
+    telemetry = Brain.Metrics.Aggregator.read_telemetry()
 
     socket =
       socket
-      |> assign(:genserver_status, load_genserver_status())
-      |> assign(:performance_metrics, load_performance_metrics())
-      |> assign(:health_indicators, load_health_indicators())
+      |> assign(:genserver_status, load_genserver_status(telemetry))
+      |> assign(:performance_metrics, load_performance_metrics(telemetry))
+      |> assign(:health_indicators, load_health_indicators(telemetry))
       |> assign(:ml_models_status, load_ml_models_status())
       |> assign(:readiness_details, load_readiness_details(world_id))
       |> assign(:training_worlds_status, load_training_worlds_status())
       |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+      |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
       |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:code_analysis_status, load_code_analysis_status())
-      |> assign(:services_status, load_services_status())
-      |> assign(:epistemic_metrics, load_epistemic_metrics())
-      |> assign(:knowledge_health, load_knowledge_health())
+      |> assign(:services_status, load_services_status(world_id, telemetry))
+      |> assign(:epistemic_metrics, load_epistemic_metrics(telemetry))
+      |> assign(:knowledge_health, load_knowledge_health(world_id, telemetry))
       |> assign(:micro_classifiers_status, load_micro_classifiers_status())
-      |> assign(:response_timing, load_response_timing())
+      |> assign(:response_timing, load_response_timing(telemetry))
       |> assign(:atlas_stats, load_atlas_stats())
       |> assign(:evaluation_summary, load_evaluation_summary())
-      |> assign(:kg_signals_status, load_kg_signals_status())
+      |> assign(:telemetry_health, load_telemetry_health(telemetry))
+      |> assign(:activity_metrics, Brain.Metrics.Aggregator.get_activity_metrics(telemetry))
+      |> assign(:kg_signals_status, load_kg_signals_status(world_id))
       |> assign(:last_updated, DateTime.utc_now())
       |> assign(:expanded_categories, MapSet.new(@default_expanded))
       |> assign(:auto_refresh, true)
+      |> assign(:semantic_fact_window_confirm_open, false)
 
     {:noreply, socket}
   end
@@ -99,26 +105,30 @@ defmodule ChatWeb.DashboardLive do
   def handle_info(:refresh_dashboard, socket) do
     if socket.assigns.auto_refresh do
       world_id = socket.assigns.current_world_id
+      telemetry = Brain.Metrics.Aggregator.read_telemetry()
 
       socket =
         socket
-        |> assign(:genserver_status, load_genserver_status())
-        |> assign(:performance_metrics, load_performance_metrics())
-        |> assign(:health_indicators, load_health_indicators())
+        |> assign(:genserver_status, load_genserver_status(telemetry))
+        |> assign(:performance_metrics, load_performance_metrics(telemetry))
+        |> assign(:health_indicators, load_health_indicators(telemetry))
         |> assign(:ml_models_status, load_ml_models_status())
         |> assign(:readiness_details, load_readiness_details(world_id))
         |> assign(:training_worlds_status, load_training_worlds_status())
         |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+        |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
         |> assign(:world_models_status, load_world_models_status(world_id))
         |> assign(:code_analysis_status, load_code_analysis_status())
-        |> assign(:services_status, load_services_status())
-        |> assign(:epistemic_metrics, load_epistemic_metrics())
-        |> assign(:knowledge_health, load_knowledge_health())
+        |> assign(:services_status, load_services_status(world_id, telemetry))
+        |> assign(:epistemic_metrics, load_epistemic_metrics(telemetry))
+        |> assign(:knowledge_health, load_knowledge_health(world_id, telemetry))
         |> assign(:micro_classifiers_status, load_micro_classifiers_status())
-        |> assign(:response_timing, load_response_timing())
+        |> assign(:response_timing, load_response_timing(telemetry))
         |> assign(:atlas_stats, load_atlas_stats())
         |> assign(:evaluation_summary, load_evaluation_summary())
-        |> assign(:kg_signals_status, load_kg_signals_status())
+        |> assign(:telemetry_health, load_telemetry_health(telemetry))
+        |> assign(:activity_metrics, Brain.Metrics.Aggregator.get_activity_metrics(telemetry))
+        |> assign(:kg_signals_status, load_kg_signals_status(world_id))
         |> assign(:last_updated, DateTime.utc_now())
 
       {:noreply, socket}
@@ -143,35 +153,31 @@ defmodule ChatWeb.DashboardLive do
 
   def handle_event("manual_refresh", _params, socket) do
     world_id = socket.assigns.current_world_id
+    telemetry = Brain.Metrics.Aggregator.read_telemetry()
 
     socket =
       socket
-      |> assign(:genserver_status, load_genserver_status())
-      |> assign(:performance_metrics, load_performance_metrics())
-      |> assign(:health_indicators, load_health_indicators())
+      |> assign(:genserver_status, load_genserver_status(telemetry))
+      |> assign(:performance_metrics, load_performance_metrics(telemetry))
+      |> assign(:health_indicators, load_health_indicators(telemetry))
       |> assign(:ml_models_status, load_ml_models_status())
       |> assign(:readiness_details, load_readiness_details(world_id))
       |> assign(:training_worlds_status, load_training_worlds_status())
       |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+      |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
       |> assign(:world_models_status, load_world_models_status(world_id))
       |> assign(:code_analysis_status, load_code_analysis_status())
-      |> assign(:services_status, load_services_status())
-      |> assign(:epistemic_metrics, load_epistemic_metrics())
-      |> assign(:knowledge_health, load_knowledge_health())
+      |> assign(:services_status, load_services_status(world_id, telemetry))
+      |> assign(:epistemic_metrics, load_epistemic_metrics(telemetry))
+      |> assign(:knowledge_health, load_knowledge_health(world_id, telemetry))
       |> assign(:micro_classifiers_status, load_micro_classifiers_status())
-      |> assign(:response_timing, load_response_timing())
+      |> assign(:response_timing, load_response_timing(telemetry))
       |> assign(:atlas_stats, load_atlas_stats())
       |> assign(:evaluation_summary, load_evaluation_summary())
+      |> assign(:telemetry_health, load_telemetry_health(telemetry))
+      |> assign(:activity_metrics, Brain.Metrics.Aggregator.get_activity_metrics(telemetry))
       |> assign(:last_updated, DateTime.utc_now())
 
-    {:noreply, socket}
-  end
-
-  def handle_event("switch_world", %{"world_id" => world_id}, socket) do
-    {:noreply, reload_world_data(socket, world_id)}
-  end
-
-  def handle_event("refresh_worlds", _params, socket) do
     {:noreply, socket}
   end
 
@@ -187,6 +193,31 @@ defmodule ChatWeb.DashboardLive do
       end
 
     {:noreply, assign(socket, :expanded_categories, new_expanded)}
+  end
+
+  def handle_event("open_semantic_fact_window_confirm", _params, socket) do
+    {:noreply, assign(socket, :semantic_fact_window_confirm_open, true)}
+  end
+
+  def handle_event("close_semantic_fact_window_confirm", _params, socket) do
+    {:noreply, assign(socket, :semantic_fact_window_confirm_open, false)}
+  end
+
+  # Ends the world's semantic-fact measurement window, keeping its counts, and
+  # starts a new one. A failure raises: the window is the baseline a retrain
+  # is compared against, so it is never reported as started when it was not.
+  def handle_event("start_semantic_fact_window", _params, socket) do
+    world_id = socket.assigns.current_world_id
+    window = Brain.Metrics.Aggregator.start_semantic_fact_window(world_id)
+
+    {:noreply,
+     socket
+     |> assign(:semantic_fact_window_confirm_open, false)
+     |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
+     |> put_flash(
+       :info,
+       "Started a new semantic fact measurement window for world #{world_id} at #{format_window_time(window.started_at)}"
+     )}
   end
 
   def handle_event("reload_training_worlds", _params, socket) do
@@ -205,22 +236,32 @@ defmodule ChatWeb.DashboardLive do
   end
 
   defp reload_world_data(socket, world_id) do
+    telemetry = Brain.Metrics.Aggregator.read_telemetry()
+
     socket
     |> assign(:world_memory_stats, load_world_memory_stats(world_id))
+    |> assign(:semantic_fact_metrics, load_semantic_fact_metrics(world_id))
+    |> assign(:semantic_fact_window_confirm_open, false)
     |> assign(:world_models_status, load_world_models_status(world_id))
     |> assign(:readiness_details, load_readiness_details(world_id))
+    |> assign(:services_status, load_services_status(world_id, telemetry))
+    |> assign(:knowledge_health, load_knowledge_health(world_id, telemetry))
+    |> assign(:kg_signals_status, load_kg_signals_status(world_id))
   end
 
-  defp load_genserver_status do
-    SystemStatus.get_all_genservers_status()
+  # `telemetry` below is the node's telemetry window, read from Atlas once
+  # per refresh (Brain.Metrics.Aggregator.read_telemetry/0), so every panel
+  # shows the same counts and the dashboard reads them once.
+  defp load_genserver_status(telemetry) do
+    SystemStatus.get_all_genservers_status(telemetry)
   end
 
-  defp load_performance_metrics do
-    SystemStatus.get_performance_metrics()
+  defp load_performance_metrics(telemetry) do
+    SystemStatus.get_performance_metrics(telemetry)
   end
 
-  defp load_health_indicators do
-    SystemStatus.get_health_indicators()
+  defp load_health_indicators(telemetry) do
+    SystemStatus.get_health_indicators(telemetry)
   end
 
   defp load_ml_models_status do
@@ -243,16 +284,23 @@ defmodule ChatWeb.DashboardLive do
     SystemStatus.get_code_analysis_status()
   end
 
-  defp load_services_status do
-    SystemStatus.get_services_status()
+  defp load_services_status(world_id, telemetry) do
+    SystemStatus.get_services_status(world_id, telemetry)
   end
 
-  defp load_epistemic_metrics do
-    metrics = Brain.Metrics.Aggregator.get_epistemic_metrics()
-    Map.put(metrics, :miss_reasons, Brain.Metrics.Aggregator.get_verification_miss_reasons())
+  # The world's semantic facts as responses draw on them, counted in its
+  # current measurement window, and in the window before it for comparison.
+  defp load_semantic_fact_metrics(world_id) do
+    Brain.Metrics.Aggregator.get_semantic_fact_windows(world_id)
   end
 
-  defp load_knowledge_health do
+  defp load_epistemic_metrics(telemetry) do
+    metrics = Brain.Metrics.Aggregator.get_epistemic_metrics(telemetry)
+    Map.put(metrics, :miss_reasons, Brain.Metrics.Aggregator.get_verification_miss_reasons(telemetry))
+  end
+
+  # The beliefs and justification network counted here are the world's own.
+  defp load_knowledge_health(world_id, telemetry) do
     fact_stats =
       try do
         if Brain.FactDatabase.ready?(), do: Brain.FactDatabase.stats(), else: %{}
@@ -262,7 +310,7 @@ defmodule ChatWeb.DashboardLive do
 
     jtms_stats =
       try do
-        if Brain.Epistemic.JTMS.ready?(), do: Brain.Epistemic.JTMS.stats(), else: %{}
+        if Brain.Epistemic.JTMS.ready?(), do: Brain.Epistemic.JTMS.stats(world_id), else: %{}
       catch
         :exit, _ -> %{}
       end
@@ -276,7 +324,7 @@ defmodule ChatWeb.DashboardLive do
 
     belief_count =
       try do
-        case Brain.Epistemic.BeliefStore.query_beliefs([]) do
+        case Brain.Epistemic.BeliefStore.query_beliefs(world_id, []) do
           {:ok, beliefs} -> length(beliefs)
           _ -> 0
         end
@@ -284,7 +332,7 @@ defmodule ChatWeb.DashboardLive do
         :exit, _ -> 0
       end
 
-    epistemic = Brain.Metrics.Aggregator.get_epistemic_metrics()
+    epistemic = Brain.Metrics.Aggregator.get_epistemic_metrics(telemetry)
     by_status = Map.get(epistemic, :by_status, %{})
     verified = Map.get(by_status, :verified, 0)
     total_checked = verified + Map.get(by_status, :uncertain, 0) + Map.get(by_status, :unchecked, 0)
@@ -292,7 +340,7 @@ defmodule ChatWeb.DashboardLive do
     verification_coverage =
       if total_checked > 0, do: Float.round(verified / total_checked * 100, 1), else: 0.0
 
-    enrichment = Brain.Metrics.Aggregator.get_enrichment_metrics()
+    enrichment = Brain.Metrics.Aggregator.get_enrichment_metrics(telemetry)
 
     %{
       curated_facts: Map.get(fact_stats, :curated_facts, 0),
@@ -324,8 +372,8 @@ defmodule ChatWeb.DashboardLive do
     SystemStatus.get_micro_classifiers_status()
   end
 
-  defp load_response_timing do
-    SystemStatus.get_response_timing()
+  defp load_response_timing(telemetry) do
+    SystemStatus.get_response_timing(telemetry)
   end
 
   defp load_atlas_stats do
@@ -342,19 +390,10 @@ defmodule ChatWeb.DashboardLive do
       }
   end
 
+  # The latest evaluation of each task, read from Brain.ML.EvaluationStore,
+  # which keeps every evaluation result in Atlas: the one record of them,
+  # whether the evaluation ran in this node or in a mix task of its own.
   defp load_evaluation_summary do
-    aggregator_data = Brain.Metrics.Aggregator.get_evaluation_metrics()
-
-    if aggregator_data == %{} do
-      load_evaluation_from_store()
-    else
-      aggregator_data
-    end
-  rescue
-    _ -> %{}
-  end
-
-  defp load_evaluation_from_store do
     ~w(intent ner sentiment speech_act)
     |> Enum.reduce(%{}, fn task, acc ->
       case Brain.ML.EvaluationStore.latest(task) do
@@ -363,34 +402,41 @@ defmodule ChatWeb.DashboardLive do
 
         result ->
           Map.put(acc, task, %{
-            accuracy: result["accuracy"] || 0.0,
-            macro_f1: result["macro_f1"] || 0.0,
-            weighted_f1: result["weighted_f1"] || 0.0,
-            total_examples: result["total_examples"] || 0,
+            accuracy: result["accuracy"],
+            macro_f1: result["macro_f1"],
+            weighted_f1: result["weighted_f1"],
+            total_examples: result["total_examples"],
             duration_ms: result["duration_ms"],
             completed_at: result["timestamp"]
           })
       end
     end)
-  rescue
-    _ -> %{}
   end
 
-  defp load_kg_signals_status do
+  # The events the metrics aggregator did not count, and the node-wide
+  # window its Atlas-kept metrics are counted in.
+  defp load_telemetry_health(telemetry) do
+    %{
+      missed: Brain.Metrics.Aggregator.get_missed_events(telemetry),
+      window: Brain.Metrics.Aggregator.get_telemetry_window(telemetry)
+    }
+  end
+
+  # The triple scorer shown is the world's own copy; a world that holds none
+  # shows as not loaded rather than reading another world's.
+  defp load_kg_signals_status(world_id) do
+    alias Brain.ML.KnowledgeGraph.TripleScorer
+
     config = Application.get_env(:brain, :kg_signals, [])
 
-    scorer_ready = Brain.ML.KnowledgeGraph.TripleScorer.ready?()
+    scorer_ready = TripleScorer.held?(world_id)
 
-    model_version =
-      case Brain.ML.KnowledgeGraph.TripleScorer.current_model_version() do
-        {:ok, v} -> v
-        _ -> "not loaded"
-      end
-
-    relation_count =
-      case Brain.ML.KnowledgeGraph.TripleScorer.relation_coverage() do
-        {:ok, coverage} when is_map(coverage) -> map_size(coverage)
-        _ -> 0
+    {model_version, relation_count} =
+      if scorer_ready do
+        {TripleScorer.current_model_version(world_id) || "none",
+         map_size(TripleScorer.relation_coverage(world_id))}
+      else
+        {"not loaded", 0}
       end
 
     cache_stats =
@@ -524,164 +570,88 @@ defmodule ChatWeb.DashboardLive do
     "hero-map"
   end
 
-  def category_icon(_) do
-    "hero-cube"
+  def category_icon(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.category_icon/1: no icon for category #{inspect(other)}"
   end
 
-  # Epistemic status helpers for dashboard display
-  def status_badge_class(:verified), do: "bg-success/20 text-success border border-success/30"
-  def status_badge_class(:contradicted), do: "bg-error/20 text-error border border-error/30"
-  def status_badge_class(:uncertain), do: "bg-warning/20 text-warning border border-warning/30"
-  def status_badge_class(:unchecked), do: "bg-base-300/50 text-base-content/60 border border-base-300"
-  def status_badge_class(_), do: "bg-base-300/50 text-base-content/60 border border-base-300"
+  # Epistemic status helpers for dashboard display. The statuses are the closed
+  # set Brain.Metrics.Aggregator.get_epistemic_metrics/0 counts.
+  def epistemic_status_variant(:verified), do: :success
+  def epistemic_status_variant(:contradicted), do: :error
+  def epistemic_status_variant(:uncertain), do: :warning
+  def epistemic_status_variant(:unchecked), do: :default
+
+  def epistemic_status_variant(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.epistemic_status_variant/1: no treatment for epistemic status #{inspect(other)}"
+  end
 
   def status_icon(:verified), do: "hero-check-circle"
   def status_icon(:contradicted), do: "hero-x-circle"
   def status_icon(:uncertain), do: "hero-question-mark-circle"
   def status_icon(:unchecked), do: "hero-minus-circle"
-  def status_icon(_), do: "hero-minus-circle"
+
+  def status_icon(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.status_icon/1: no icon for epistemic status #{inspect(other)}"
+  end
+
+  # Why the metrics aggregator did not count an event
+  # (Brain.Metrics.Aggregator.get_missed_events/0).
+  def missed_reason_label(:aggregator_not_running), do: "the aggregator was not running"
+  def missed_reason_label(:atlas_write_failed), do: "Atlas could not take the write"
+  def missed_reason_label(:malformed_event), do: "the event lacked what it is counted by"
+  def missed_reason_label(:aggregator_stopped), do: "it was waiting when the aggregator stopped"
+
+  def missed_reason_label(other) do
+    raise ArgumentError, "ChatWeb.DashboardLive.missed_reason_label/1: no label for #{inspect(other)}"
+  end
+
+  # The activity the metrics aggregator counted
+  # (Brain.Metrics.Aggregator.get_activity_metrics/1), as the Activity panel
+  # shows it: each kind with its total and its counts by name, largest first.
+  def activity_groups(activity) do
+    kg_rows =
+      activity.kg_signals
+      |> Enum.map(fn {event, signal} -> %{name: event, count: signal.count, detail: kg_signal_detail(signal)} end)
+      |> Enum.sort_by(&{-&1.count, &1.name})
+
+    [
+      %{id: "kg-signals", label: "KG signals", total: kg_rows |> Enum.map(& &1.count) |> Enum.sum(), rows: kg_rows},
+      activity_group("learning", "Learning events", activity.learning),
+      %{activity_group("consistency", "Consistency disagreements", activity.consistency.by_severity) | total: activity.consistency.total},
+      activity_group("racing-early-exits", "Racing early exits", activity.racing_early_exits),
+      activity_group("code-languages", "Code files by language", activity.code_languages)
+    ]
+  end
+
+  defp activity_group(id, label, counts) do
+    rows =
+      counts
+      |> Enum.map(fn {name, count} -> %{name: name, count: count, detail: nil} end)
+      |> Enum.sort_by(&{-&1.count, &1.name})
+
+    %{id: id, label: label, total: counts |> Map.values() |> Enum.sum(), rows: rows}
+  end
+
+  defp kg_signal_detail(%{items: items, duration: duration}) do
+    [
+      if(items > 0, do: "#{items} items"),
+      if(duration && duration.avg_ms, do: "avg #{format_ms(duration.avg_ms)}")
+    ]
+    |> Enum.reject(&is_nil/1)
+    |> case do
+      [] -> nil
+      parts -> Enum.join(parts, ", ")
+    end
+  end
 
   def reason_label(:no_subject), do: "No Subject"
   def reason_label(:no_facts), do: "No Facts"
   def reason_label(:no_beliefs), do: "No Beliefs"
   def reason_label(:low_confidence), do: "Low Confidence"
   def reason_label(other), do: to_string(other)
-
-  def status_color(:ready) do
-    "text-success"
-  end
-
-  def status_color(:running) do
-    "text-success"
-  end
-
-  def status_color(:initializing) do
-    "text-warning"
-  end
-
-  def status_color(:building_vocabulary) do
-    "text-warning"
-  end
-
-  def status_color(:tokenizing) do
-    "text-warning"
-  end
-
-  def status_color(:building_frequencies) do
-    "text-warning"
-  end
-
-  def status_color(:calculating_idf) do
-    "text-warning"
-  end
-
-  def status_color(:loading) do
-    "text-warning"
-  end
-
-  def status_color(:busy) do
-    "text-warning"
-  end
-
-  def status_color(:idle) do
-    "text-info"
-  end
-
-  def status_color(:not_started) do
-    "text-error"
-  end
-
-  def status_color(_) do
-    "text-base-content/50"
-  end
-
-  def status_dot_color(:ready) do
-    "bg-success"
-  end
-
-  def status_dot_color(:running) do
-    "bg-success"
-  end
-
-  def status_dot_color(:initializing) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:building_vocabulary) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:tokenizing) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:building_frequencies) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:calculating_idf) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:loading) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:busy) do
-    "bg-warning"
-  end
-
-  def status_dot_color(:idle) do
-    "bg-info"
-  end
-
-  def status_dot_color(:not_started) do
-    "bg-error"
-  end
-
-  def status_dot_color(_) do
-    "bg-base-content/50"
-  end
-
-  def health_status_color(:healthy) do
-    "text-success"
-  end
-
-  def health_status_color(:degraded) do
-    "text-warning"
-  end
-
-  def health_status_color(:warning) do
-    "text-warning"
-  end
-
-  def health_status_color(:critical) do
-    "text-error"
-  end
-
-  def health_status_color(_) do
-    "text-base-content/50"
-  end
-
-  def health_badge_class(:healthy) do
-    "badge-success"
-  end
-
-  def health_badge_class(:degraded) do
-    "badge-warning"
-  end
-
-  def health_badge_class(:warning) do
-    "badge-warning"
-  end
-
-  def health_badge_class(:critical) do
-    "badge-error"
-  end
-
-  def health_badge_class(_) do
-    "badge-ghost"
-  end
 
   def health_variant(:healthy) do
     :success
@@ -699,8 +669,9 @@ defmodule ChatWeb.DashboardLive do
     :error
   end
 
-  def health_variant(_) do
-    :default
+  def health_variant(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.health_variant/1: no treatment for health status #{inspect(other)}"
   end
 
   def format_bytes(nil) do
@@ -771,15 +742,31 @@ defmodule ChatWeb.DashboardLive do
     Calendar.strftime(dt, "%H:%M:%S")
   end
 
-  def accuracy_color(accuracy) when is_number(accuracy) do
-    cond do
-      accuracy >= 0.8 -> "text-success"
-      accuracy >= 0.6 -> "text-warning"
-      true -> "text-error"
-    end
+  # A measurement window's start or end, to the second, in UTC.
+  def format_window_time(%DateTime{} = dt) do
+    Calendar.strftime(dt, "%Y-%m-%d %H:%M:%S UTC")
   end
 
-  def accuracy_color(_), do: "text-base-content/50"
+  # An evaluation metric is a 0..1 rate shown as a percentage in ink. Its size
+  # never picks a color: no code declares an accuracy target, and the one
+  # declared criterion, the regression gate, speaks through its own verdict.
+  def evaluation_percent(value) when is_number(value) do
+    "#{Float.round(value * 100.0, 1)}%"
+  end
+
+  def evaluation_percent(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.evaluation_percent/1: a metric must be a number, got #{inspect(other)}. " <>
+            "A metric missing from the result is shown as missing, never formatted."
+  end
+
+  def examples_label(count) when is_integer(count), do: "#{count} examples"
+  def examples_label(nil), do: "no example count in this result"
+
+  def examples_label(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.examples_label/1: an example count must be an integer, got #{inspect(other)}"
+  end
 
   def category_servers(categories, category) do
     Map.get(categories, category, %{})
@@ -793,102 +780,6 @@ defmodule ChatWeb.DashboardLive do
 
   def count_total_in_category(categories, category) do
     Map.get(categories, category, %{}) |> map_size()
-  end
-
-  def category_bg_class(:core) do
-    "bg-primary/10"
-  end
-
-  def category_bg_class(:epistemic) do
-    "bg-secondary/10"
-  end
-
-  def category_bg_class(:analysis) do
-    "bg-accent/10"
-  end
-
-  def category_bg_class(:ml) do
-    "bg-warning/10"
-  end
-
-  def category_bg_class(:knowledge) do
-    "bg-cyan-500/10"
-  end
-
-  def category_bg_class(:learning) do
-    "bg-error/10"
-  end
-
-  def category_bg_class(:storage) do
-    "bg-info/10"
-  end
-
-  def category_bg_class(:metrics) do
-    "bg-success/10"
-  end
-
-  def category_bg_class(:code_analysis) do
-    "bg-violet-500/10"
-  end
-
-  def category_bg_class(:services) do
-    "bg-sky-500/10"
-  end
-
-  def category_bg_class(:atlas) do
-    "bg-teal-500/10"
-  end
-
-  def category_bg_class(_) do
-    "bg-base-200"
-  end
-
-  def category_text_class(:core) do
-    "text-primary"
-  end
-
-  def category_text_class(:epistemic) do
-    "text-secondary"
-  end
-
-  def category_text_class(:analysis) do
-    "text-accent"
-  end
-
-  def category_text_class(:ml) do
-    "text-warning"
-  end
-
-  def category_text_class(:knowledge) do
-    "text-cyan-500"
-  end
-
-  def category_text_class(:learning) do
-    "text-error"
-  end
-
-  def category_text_class(:storage) do
-    "text-info"
-  end
-
-  def category_text_class(:metrics) do
-    "text-success"
-  end
-
-  def category_text_class(:code_analysis) do
-    "text-violet-500"
-  end
-
-  def category_text_class(:services) do
-    "text-sky-500"
-  end
-
-  def category_text_class(:atlas) do
-    "text-teal-500"
-  end
-
-  def category_text_class(_) do
-    "text-base-content"
   end
 
   def status_badge_variant(:ready) do
@@ -932,11 +823,12 @@ defmodule ChatWeb.DashboardLive do
   end
 
   def status_badge_variant(:not_started) do
-    :error
+    :default
   end
 
-  def status_badge_variant(_) do
-    :default
+  def status_badge_variant(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.status_badge_variant/1: no treatment for GenServer status #{inspect(other)}"
   end
 
   def format_stat_value(value) when is_binary(value) do
@@ -987,8 +879,9 @@ defmodule ChatWeb.DashboardLive do
     :error
   end
 
-  def model_status_variant(_) do
-    :default
+  def model_status_variant(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.model_status_variant/1: model status has neither :exists nor :loaded: #{inspect(other)}"
   end
 
   def model_status_label(%{exists: true, loaded: true}) do
@@ -1043,8 +936,13 @@ defmodule ChatWeb.DashboardLive do
     :error
   end
 
-  def training_status_variant(_) do
+  def training_status_variant(nil) do
     :default
+  end
+
+  def training_status_variant(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.training_status_variant/1: no treatment for training status #{inspect(other)}"
   end
 
   def training_status_label(:completed) do
@@ -1107,18 +1005,37 @@ defmodule ChatWeb.DashboardLive do
     "Speech Act Classifier"
   end
 
+  # Training runs are read back from Atlas with their model named as a string.
+  for model <- [
+        :pos_model,
+        :entity_model,
+        :classifier,
+        :gazetteer,
+        :intent_classifier,
+        :entity_extractor,
+        :pos_tagger,
+        :entity_trainer,
+        :sentiment_classifier,
+        :speech_act_classifier
+      ] do
+    def model_name(unquote(Atom.to_string(model))), do: model_name(unquote(model))
+  end
+
   def model_name(other) do
     other |> to_string() |> String.replace("_", " ") |> String.capitalize()
   end
 
   def file_based_models(ml_models_status) do
-    [:pos_model, :entity_model, :gazetteer, :sentiment_classifier, :speech_act_classifier]
+    [:pos_model, :entity_model, :sentiment_classifier, :speech_act_classifier]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end
 
+  # The gazetteer is built in memory from its sources, so it has no file on disk;
+  # Brain.SystemStatus reports it as a process. Size-on-disk and modified-at are
+  # not meaningful for it, so it belongs with the runtime agents.
   def agent_based_models(ml_models_status) do
-    [:entity_extractor]
+    [:gazetteer, :entity_extractor]
     |> Enum.map(fn key -> {key, Map.get(ml_models_status, key)} end)
     |> Enum.filter(fn {_k, v} -> v != nil end)
   end
@@ -1219,8 +1136,14 @@ defmodule ChatWeb.DashboardLive do
     :warning
   end
 
-  def world_embedder_status_for_dot(_) do
+  def world_embedder_status_for_dot(%{phase: phase})
+      when phase in [:loading_episodes, :tokenizing, :building_frequencies, :calculating_idf] do
     :initializing
+  end
+
+  def world_embedder_status_for_dot(other) do
+    raise ArgumentError,
+          "ChatWeb.DashboardLive.world_embedder_status_for_dot/1: no treatment for world embedder status #{inspect(other)}"
   end
 
   @doc "Check if the world embedder is actively building vocabulary.\n"

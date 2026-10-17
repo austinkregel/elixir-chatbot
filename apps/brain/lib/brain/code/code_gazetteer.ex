@@ -246,6 +246,82 @@ defmodule Brain.Code.CodeGazetteer do
   end
 
   @doc """
+  The symbols of `world_id` each of `keys` names, by name or by qualified
+  name, compared lowercased as `lookup/2` and `lookup_qualified/2` compare
+  them: `%{key => [symbol]}`, holding only the keys that name a symbol.
+
+  Raises when the gazetteer's tables do not exist: a world whose code was
+  never analyzed names no symbol, but a gazetteer that was never started
+  cannot say so.
+  """
+  @spec symbols_named(String.t(), [String.t()]) :: %{String.t() => [symbol()]}
+  def symbols_named(world_id, keys) when is_binary(world_id) and is_list(keys) do
+    tables!()
+
+    Telemetry.span(:code_gazetteer_lookup, %{world_id: world_id, keys: length(keys)}, fn ->
+      keys
+      |> Enum.uniq()
+      |> Enum.reduce(%{}, fn key, acc ->
+        normalized = normalize_name(key)
+
+        by_name =
+          case :ets.lookup(@ets_symbols, {world_id, normalized}) do
+            [{_key, symbols}] when is_list(symbols) -> symbols
+            [{_key, symbol}] -> [symbol]
+            [] -> []
+          end
+
+        by_qualified =
+          case :ets.lookup(@ets_qualified, {world_id, normalized}) do
+            [{_key, symbol}] -> [symbol]
+            [] -> []
+          end
+
+        case Enum.uniq(by_name ++ by_qualified) do
+          [] -> acc
+          symbols -> Map.put(acc, key, symbols)
+        end
+      end)
+    end)
+  end
+
+  @doc """
+  The analyzed files of `world_id` by every name a mention can give one: the
+  path as it was analyzed and each run of its trailing path segments
+  (`lib/billing.ex`, `billing.ex`), lowercased: `%{name => [path]}`.
+
+  Raises when the gazetteer's tables do not exist, as `symbols_named/2` does.
+  """
+  @spec file_names(String.t()) :: %{String.t() => [String.t()]}
+  def file_names(world_id) when is_binary(world_id) do
+    tables!()
+
+    files =
+      case :ets.lookup(@ets_stats, world_id) do
+        [{^world_id, %{files: %MapSet{} = files}}] -> MapSet.to_list(files)
+        [] -> []
+      end
+
+    Enum.reduce(files, %{}, fn path, acc ->
+      segments = Path.split(path)
+
+      1..length(segments)//1
+      |> Enum.map(&(segments |> Enum.take(-&1) |> Path.join() |> normalize_name()))
+      |> Enum.reduce(acc, fn name, acc -> Map.update(acc, name, [path], &Enum.uniq([path | &1])) end)
+    end)
+  end
+
+  defp tables! do
+    case Enum.filter([@ets_symbols, @ets_qualified, @ets_stats], &(:ets.whereis(&1) == :undefined)) do
+      [] ->
+        :ok
+
+      missing ->
+        raise "CodeGazetteer: its tables #{inspect(missing)} do not exist; Brain.Code.CodeGazetteer was not started"
+    end
+  end
+
+  @doc """
   Adds a relationship between symbols.
 
   ## Relation types

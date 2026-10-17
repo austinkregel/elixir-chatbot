@@ -1,0 +1,16 @@
+{
+  "devices": {
+    "Test": {
+      "confidence": 0.9,
+      "name": "Test",
+      "type": "device"
+    }
+  },
+  "people": {
+    "John": {
+      "confidence": 0.9,
+      "name": "John",
+      "type": "person"
+    }
+  }
+}

@@ -3,8 +3,10 @@ defmodule ChatWeb.TestController do
   alias Brain.Learner
   use ChatWeb, :controller
 
-  def test_learning(conn, %{"input" => input}) do
-    {:ok, extracted_data} = Learner.learn_from_input("Echo", input)
+  # The request names the world its input is learned in; Learner raises when
+  # it does not.
+  def test_learning(conn, %{"input" => input} = params) do
+    {:ok, extracted_data} = Learner.learn_from_input("Echo", input, world_id: params["world_id"])
 
     json(conn, %{
       status: "success",

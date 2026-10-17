@@ -1,0 +1,477 @@
+[
+  {
+    "text": "turn brighter my table lamp at 11 pm",
+    "tokens": [
+      "turn",
+      "brighter",
+      "my",
+      "table",
+      "lamp",
+      "at",
+      "11",
+      "pm"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "PRON",
+      "ADJ",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "table lamp",
+        "type": "lights",
+        "start": 3,
+        "end": 4
+      },
+      {
+        "text": "11 pm",
+        "type": "date_time",
+        "start": 6,
+        "end": 7
+      }
+    ],
+    "id": "9f29638c-2fe5-45a3-844a-157e636a5e7b",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "turn brighter all the lights at 11 pm",
+    "tokens": [
+      "turn",
+      "brighter",
+      "all",
+      "the",
+      "lights",
+      "at",
+      "11",
+      "pm"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "ADV",
+      "DET",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 2,
+        "end": 2
+      },
+      {
+        "text": "at 11 pm",
+        "type": "date_time",
+        "start": 5,
+        "end": 7
+      }
+    ],
+    "id": "8db1c35c-e62f-433c-b16d-3ec6c62c0212",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "turn kitchen lights up at midnight",
+    "tokens": [
+      "turn",
+      "kitchen",
+      "lights",
+      "up",
+      "at",
+      "midnight"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "PART",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "kitchen",
+        "type": "room",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "at midnight",
+        "type": "date_time",
+        "start": 4,
+        "end": 5
+      }
+    ],
+    "id": "40b182eb-f2d1-4fcf-8721-ef2c69a26833",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "make red lights brighter when I leave",
+    "tokens": [
+      "make",
+      "red",
+      "lights",
+      "brighter",
+      "when",
+      "I",
+      "leave"
+    ],
+    "pos_tags": [
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [
+      {
+        "text": "red",
+        "type": "color",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "leave",
+        "type": "condition",
+        "start": 6,
+        "end": 6
+      }
+    ],
+    "id": "a11f5e3c-0050-4e0f-90e9-24e099e2ce48",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "turn all lights up everyday at 8 pm",
+    "tokens": [
+      "turn",
+      "all",
+      "lights",
+      "up",
+      "everyday",
+      "at",
+      "8",
+      "pm"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "ADV",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [
+      {
+        "text": "all",
+        "type": "all",
+        "start": 1,
+        "end": 1
+      },
+      {
+        "text": "everyday",
+        "type": "recurrence",
+        "start": 4,
+        "end": 4
+      },
+      {
+        "text": "at 8 pm",
+        "type": "date_time",
+        "start": 5,
+        "end": 7
+      }
+    ],
+    "id": "0f4c3934-5a8e-43c8-b3e0-38d1808f3452",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "make decorations when I leave",
+    "tokens": [
+      "make",
+      "decorations",
+      "when",
+      "I",
+      "leave"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "ADV",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-52e9346a",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "please turn kitchen tv up at midnight",
+    "tokens": [
+      "please",
+      "turn",
+      "kitchen",
+      "tv",
+      "up",
+      "at",
+      "midnight"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "ADJ",
+      "NOUN",
+      "ADV",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-7ea1e5a0",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "decorations make brighter when I leave",
+    "tokens": [
+      "decorations",
+      "make",
+      "brighter",
+      "when",
+      "I",
+      "leave"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADV",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-6f57f3fa",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "brighter turn all the decorations at 11 pm",
+    "tokens": [
+      "brighter",
+      "turn",
+      "all",
+      "the",
+      "decorations",
+      "at",
+      "11",
+      "pm"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-24fc3c7e",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "I want to turn brighter all the decorations at 11 pm",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "turn",
+      "brighter",
+      "all",
+      "the",
+      "decorations",
+      "at",
+      "11",
+      "pm"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PART",
+      "DET",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-3133d79d",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "turn my PC screen up everyday 8 pm",
+    "tokens": [
+      "turn",
+      "my",
+      "PC",
+      "screen",
+      "up",
+      "everyday",
+      "8",
+      "pm"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "ADV",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-e1b5ce1e",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "turn all lights up everyday at pm 8",
+    "tokens": [
+      "turn",
+      "all",
+      "lights",
+      "up",
+      "everyday",
+      "at",
+      "pm",
+      "8"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "ADV",
+      "ADP",
+      "NOUN",
+      "NUM"
+    ],
+    "entities": [],
+    "id": "augmented-5118c01e",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "turn lights kitchen up at midnight",
+    "tokens": [
+      "turn",
+      "lights",
+      "kitchen",
+      "up",
+      "at",
+      "midnight"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "PART",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-4425afb6",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "please turn all lights up everyday at 8 pm",
+    "tokens": [
+      "please",
+      "turn",
+      "all",
+      "lights",
+      "up",
+      "everyday",
+      "at",
+      "8",
+      "pm"
+    ],
+    "pos_tags": [
+      "VERB",
+      "VERB",
+      "DET",
+      "NOUN",
+      "PART",
+      "ADV",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-008ca077",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "hey turn brighter all the lights at 11 pm",
+    "tokens": [
+      "hey",
+      "turn",
+      "brighter",
+      "all",
+      "the",
+      "lights",
+      "at",
+      "11",
+      "pm"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "DET",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-b39cc4ec",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  },
+  {
+    "text": "brighter turn all the lights at 11 pm",
+    "tokens": [
+      "brighter",
+      "turn",
+      "all",
+      "the",
+      "lights",
+      "at",
+      "11",
+      "pm"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "DET",
+      "NOUN",
+      "ADP",
+      "NUM",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-feee134b",
+    "intent": "smarthome.lights.brightness.schedule.up"
+  }
+]

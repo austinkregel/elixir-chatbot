@@ -20,18 +20,18 @@ defmodule Brain.Analysis.SpeechActClassifier do
   feature extraction and `MicroClassifiers.classify_vector(:intent_full, ...)`
   in pass 2, then calls `refine_with_intent/3` to splice that intent vote
   back into the speech-act combiner. This keeps the model's runtime feature
-  distribution identical to its training distribution.
+  distribution identical to its training distribution. The intent's speech
+  act comes from `Brain.Analysis.SpeechActTable`.
 
   Results are combined using confidence-weighted voting.
   """
 
-  alias Brain.Analysis.SpeechActResult
+  alias Brain.Analysis.{SpeechActResult, SpeechActTable}
   alias Brain.Lattice
   alias Brain.Lattice.Candidate, as: LatticeCandidate
   alias Brain.ML.{POSTagger, Tokenizer}
 
   alias Brain.Memory.Store
-  alias Brain.Memory.Embedder
   require Logger
 
   @doc """
@@ -43,18 +43,19 @@ defmodule Brain.Analysis.SpeechActClassifier do
   full-features intent vote without re-running the cheap voters.
 
   ## Options
+    - `:world_id` - Required. The world whose episodic memory the memory voter reads.
     - `:entities` - Pre-extracted entities to use for arbitration (default: [])
   """
-  def classify(text, opts \\ []) when is_binary(text) do
+  def classify(text, opts) when is_binary(text) do
     entities = Keyword.get(opts, :entities, [])
-    analyses = run_all_analyses(text, entities)
+    analyses = run_all_analyses(text, entities, world_id!(opts, :classify))
     combine_analyses(analyses, text)
   end
 
-  @doc "Returns detailed analysis with all individual scores for debugging/learning.\n"
-  def analyze(text, opts \\ []) when is_binary(text) do
+  @doc "Returns detailed analysis with all individual scores for debugging/learning.\n\nTakes the same options as `classify/2`; `:world_id` is required.\n"
+  def analyze(text, opts) when is_binary(text) do
     entities = Keyword.get(opts, :entities, [])
-    analyses = run_all_analyses(text, entities)
+    analyses = run_all_analyses(text, entities, world_id!(opts, :analyze))
     result = combine_analyses(analyses, text)
 
     %{
@@ -68,26 +69,23 @@ defmodule Brain.Analysis.SpeechActClassifier do
   end
 
   @doc """
-  Refines a pass-1 `SpeechActResult` with an intent prediction obtained by
-  running `Brain.ML.MicroClassifiers.classify_vector(:intent_full, ...)` on a
-  full feature vector built from the complete chunk analysis (pass 2).
+  Refines a pass-1 `SpeechActResult` with the `:intent_full` lattice the
+  pipeline classified from the chunk's full feature vector (pass 2).
 
-  Splices the intent vote into the original analyses map (carried on
-  `:raw_analyses`) and re-runs `combine_analyses/2`. Returns a new
-  `SpeechActResult`.
+  The best intent's speech act is read from `table`, and that vote is spliced
+  into the original analyses map (carried on `:raw_analyses`) before
+  `combine_analyses/2` re-runs. Returns a new `SpeechActResult`. An intent the
+  table does not hold raises.
 
-  No-ops (returns the original result unchanged) when:
-  - `intent` is nil or an empty string,
-  - `confidence` is non-positive, or
-  - the result has no `:raw_analyses` (e.g. it was constructed manually for
-    testing rather than via `classify/2`).
+  Returns the original result unchanged when the lattice is empty or its best
+  candidate has no positive confidence.
   """
-  @spec refine_with_intent(SpeechActResult.t(), Lattice.t()) :: SpeechActResult.t()
-  def refine_with_intent(%SpeechActResult{} = result, %Lattice{} = lattice) do
-    if Lattice.empty?(lattice), do: result, else: lattice_best_refinement(result, lattice)
+  @spec refine_with_intent(SpeechActResult.t(), Lattice.t(), SpeechActTable.t()) :: SpeechActResult.t()
+  def refine_with_intent(%SpeechActResult{} = result, %Lattice{} = lattice, %SpeechActTable{} = table) do
+    if Lattice.empty?(lattice), do: result, else: lattice_best_refinement(result, lattice, table)
   end
 
-  defp lattice_best_refinement(%SpeechActResult{} = result, %Lattice{} = lattice) do
+  defp lattice_best_refinement(%SpeechActResult{} = result, %Lattice{} = lattice, table) do
     case Lattice.best(lattice) do
       nil ->
         result
@@ -97,93 +95,58 @@ defmodule Brain.Analysis.SpeechActClassifier do
 
       %LatticeCandidate{label: intent, confidence: conf} ->
         intent_str = if is_binary(intent), do: intent, else: to_string(intent)
-        refine_with_intent_from_lattice(result, intent_str, conf * 1.0, lattice)
+        refine_with_intent_from_lattice(result, intent_str, conf * 1.0, lattice, table)
     end
   end
-
-  @spec refine_with_intent(SpeechActResult.t(), String.t() | nil, number()) :: SpeechActResult.t()
-  def refine_with_intent(%SpeechActResult{} = result, nil, _conf), do: result
-  def refine_with_intent(%SpeechActResult{} = result, "", _conf), do: result
-  def refine_with_intent(%SpeechActResult{raw_analyses: nil} = result, _intent, _conf), do: result
-
-  def refine_with_intent(%SpeechActResult{raw_analyses: analyses} = result, intent, confidence)
-      when is_binary(intent) and is_number(confidence) do
-    if confidence <= 0 do
-      result
-    else
-      norm = normalize_text(Map.get(analyses, :original_text, ""))
-
-      if feature_intent_conflicts_strong_lexicon?(norm, intent) do
-        result
-      else
-        conf = confidence / 1
-        {category, sub_type} = intent_to_speech_act(intent)
-
-        intent_analysis = %{
-          intent: intent,
-          category: category,
-          sub_type: sub_type,
-          confidence: conf,
-          second_score: 0.0,
-          margin: conf,
-          top_k: [%{intent: intent, score: conf}],
-          source: :feature_vector
-        }
-
-        updated_analyses = Map.put(analyses, :intent, intent_analysis)
-        combine_analyses(updated_analyses, Map.get(analyses, :original_text, ""))
-      end
-    end
-  end
-
-  def refine_with_intent(%SpeechActResult{} = result, _intent, _conf), do: result
 
   defp refine_with_intent_from_lattice(
-         %SpeechActResult{raw_analyses: analyses} = result,
+         %SpeechActResult{raw_analyses: analyses},
          intent,
          confidence,
-         %Lattice{} = lattice
+         %Lattice{} = lattice,
+         table
        )
        when is_binary(intent) and is_number(confidence) do
-    if confidence <= 0 do
-      result
-    else
-      norm = normalize_text(Map.get(analyses, :original_text, ""))
+    {category, sub_type} = SpeechActTable.lookup!(table, intent)
+    second = Lattice.second(lattice)
 
-      if feature_intent_conflicts_strong_lexicon?(norm, intent) do
-        result
-      else
-        conf = confidence / 1
-        {category, sub_type} = intent_to_speech_act(intent)
-        second = Lattice.second(lattice)
+    second_score =
+      if second, do: second.confidence * 1.0, else: 0.0
 
-        second_score =
-          if second, do: second.confidence * 1.0, else: 0.0
+    margin = Lattice.margin(lattice)
 
-        margin = Lattice.margin(lattice)
+    top_k =
+      Lattice.to_top_k(lattice)
+      |> Enum.map(fn %{intent: i, score: s} -> %{intent: i, score: s} end)
 
-        top_k =
-          Lattice.to_top_k(lattice)
-          |> Enum.map(fn %{intent: i, score: s} -> %{intent: i, score: s} end)
+    intent_analysis = %{
+      intent: intent,
+      category: category,
+      sub_type: sub_type,
+      confidence: confidence,
+      second_score: second_score,
+      margin: margin,
+      top_k: top_k,
+      source: :feature_vector
+    }
 
-        intent_analysis = %{
-          intent: intent,
-          category: category,
-          sub_type: sub_type,
-          confidence: conf,
-          second_score: second_score,
-          margin: margin,
-          top_k: top_k,
-          source: :feature_vector
-        }
+    updated_analyses = Map.put(analyses, :intent, intent_analysis)
+    combine_analyses(updated_analyses, Map.get(analyses, :original_text, ""))
+  end
 
-        updated_analyses = Map.put(analyses, :intent, intent_analysis)
-        combine_analyses(updated_analyses, Map.get(analyses, :original_text, ""))
-      end
+  defp world_id!(opts, function) do
+    case Keyword.get(opts, :world_id) do
+      world_id when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      other ->
+        raise ArgumentError,
+              "SpeechActClassifier.#{function} requires a :world_id option, the world whose " <>
+                "memory the memory voter reads; got #{inspect(other)}"
     end
   end
 
-  defp run_all_analyses(text, _entities) do
+  defp run_all_analyses(text, _entities, world_id) do
     normalized = normalize_text(text)
 
     %{
@@ -192,7 +155,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
       structural: analyze_structure(text, normalized),
       keyword: analyze_keywords(normalized),
       pragmatic: analyze_pragmatics(text, normalized),
-      memory: analyze_with_memory(text)
+      memory: analyze_with_memory(text, world_id)
     }
   end
 
@@ -370,9 +333,11 @@ defmodule Brain.Analysis.SpeechActClassifier do
     }
   end
 
-  defp analyze_with_memory(text) do
-    case query_memory_for_classification(text) do
-      {:ok, [_ | _] = results} ->
+  # A world whose memory holds nothing like the text gives no vote; that is
+  # an answer, not a failure.
+  defp analyze_with_memory(text, world_id) do
+    case query_memory_for_classification(text, world_id) do
+      [_ | _] = results ->
         {category, sub_type, confidence} = vote_on_memory_results(results)
 
         %{
@@ -383,7 +348,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
           source: :memory
         }
 
-      _ ->
+      [] ->
         %{
           category: nil,
           sub_type: nil,
@@ -394,30 +359,22 @@ defmodule Brain.Analysis.SpeechActClassifier do
     end
   end
 
-  defp query_memory_for_classification(text) do
-    store_pid = Process.whereis(Brain.Memory.Store)
-    embedder_pid = Process.whereis(Brain.Memory.Embedder)
-
-    cond do
-      store_pid == nil ->
-        {:error, :store_not_running}
-
-      embedder_pid == nil ->
-        {:error, :embedder_not_running}
-
-      not Embedder.ready?() ->
-        {:error, :embedder_not_ready}
-
-      true ->
-        task = Task.async(fn -> Store.query_similar(text, 5) end)
-
-        case Task.yield(task, 500) || Task.shutdown(task, :brutal_kill) do
-          {:ok, result} -> result
-          nil -> {:error, :timeout}
-        end
+  # The query is embedded by the world's embedder, inside `Store.query_similar/3`.
+  # It runs in the caller and is not cut short: while the world's vocabulary is
+  # being rebuilt it waits for the rebuild, whose own bound raises
+  # (`World.Embedder.await_ready/2`). A query that fails raises here.
+  defp query_memory_for_classification(text, world_id) do
+    if Process.whereis(Brain.Memory.Store) == nil do
+      raise "SpeechActClassifier: the memory voter needs Brain.Memory.Store, which is not running"
     end
-  rescue
-    _ -> {:error, :not_available}
+
+    case Store.query_similar(text, 5, world_id: world_id, rerank: false) do
+      {:ok, results} ->
+        results
+
+      {:error, reason} ->
+        raise "SpeechActClassifier: the memory query in world #{inspect(world_id)} failed: #{inspect(reason)}"
+    end
   end
 
   defp vote_on_memory_results(results) do
@@ -500,25 +457,11 @@ defmodule Brain.Analysis.SpeechActClassifier do
   end
 
   defp collect_votes(analyses) do
-    normalized =
-      analyses
-      |> Map.get(:original_text, "")
-      |> normalize_text()
-
-    votes =
-      case lexicon_vote(normalized) do
-        nil -> []
-        vote -> [vote]
-      end
-
     votes =
       if analyses.intent.confidence > 0.2 and analyses.intent.category != nil do
-        vote =
-          {analyses.intent.category, analyses.intent.sub_type, analyses.intent.confidence, :model}
-
-        [vote | votes]
+        [{analyses.intent.category, analyses.intent.sub_type, analyses.intent.confidence, :model}]
       else
-        votes
+        []
       end
 
     votes =
@@ -590,86 +533,8 @@ defmodule Brain.Analysis.SpeechActClassifier do
     votes
   end
 
-  # High-precision surface cues that must not be overridden by a coarse TF-IDF
-  # centroid (trained on dialogue acts as strings) when that model misfires on
-  # short imperatives, greetings, or farewells.
-  # Do not let pass-2 `intent_full` overwrite clear greeting/farewell surface cues
-  # (short utterances where the centroid model often misfires).
-  defp feature_intent_conflicts_strong_lexicon?(norm, intent) when is_binary(norm) and is_binary(intent) do
-    domain =
-      case String.split(intent, ".", parts: 2) do
-        [d, _] -> d
-        _ -> intent
-      end
-
-    expressive_domains = ~w(smalltalk greeting)
-
-    (lexicon_surface_greeting?(norm) or lexicon_surface_farewell?(norm)) and
-      domain not in expressive_domains
-  end
-
-  defp feature_intent_conflicts_strong_lexicon?(_, _), do: false
-
-  defp lexicon_first_clause(norm) when is_binary(norm) do
-    norm
-    |> String.split("?", parts: 2)
-    |> hd()
-    |> String.trim()
-  end
-
-  defp lexicon_surface_greeting?(norm) when is_binary(norm) do
-    fc = lexicon_first_clause(norm)
-    String.length(fc) < 80 and Regex.match?(~r/^(hello|hi|hey)\b/, fc)
-  end
-
-  defp lexicon_surface_farewell?(norm) when is_binary(norm) do
-    String.length(norm) < 120 and
-      Regex.match?(
-        ~r/\b(bye|goodbye|see you|see ya|farewell|cya)\b/,
-        norm
-      )
-  end
-
-  defp lexicon_vote(norm) when is_binary(norm) do
-    t = String.trim(norm)
-    if t == "", do: nil, else: lexicon_vote_clauses(t)
-  end
-
-  defp lexicon_vote_clauses(t) do
-    first_clause =
-      t
-      |> String.split("?", parts: 2)
-      |> hd()
-      |> String.trim()
-
-    cond do
-      Regex.match?(~r/^play\b/, t) ->
-        {:directive, :command, 0.9, :lexicon}
-
-      Regex.match?(~r/^turn on\b|^set (a )?reminder\b|^remind me\b|^schedule\b/, t) ->
-        {:directive, :command, 0.88, :lexicon}
-
-      Regex.match?(~r/^find me\b.+\b(music|jazz|songs?|tracks?)\b/, t) ->
-        {:directive, :request_action, 0.85, :lexicon}
-
-      String.length(first_clause) < 80 and Regex.match?(~r/^(hello|hi|hey)\b/, first_clause) ->
-        {:expressive, :greeting, 0.86, :lexicon}
-
-      String.length(t) < 120 and
-          Regex.match?(
-            ~r/\b(bye|goodbye|see you|see ya|farewell|cya)\b/,
-            t
-          ) ->
-        {:expressive, :farewell, 0.87, :lexicon}
-
-      true ->
-        nil
-    end
-  end
-
   defp apply_weights(votes) do
     source_weights = %{
-      lexicon: 1.45,
       model: 1.5,
       memory: 1.4,
       keyword: 1.05,
@@ -848,17 +713,42 @@ defmodule Brain.Analysis.SpeechActClassifier do
     help explain describe calculate remember
   )
 
+  @imperative_verbs_cache :speech_act_imperative_verbs
+
+  # The seeds plus the synonyms sharing each seed's dominant verb sense.
+  #
+  # The criterion is the sense, not a count. `Brain.Lexicon.synonyms/3` flattens
+  # every sense of a polysemous verb together, so expanding through it reaches
+  # `check` -> `curb`, `chit`, `tick off` as readily as `verify`. Measured against
+  # the speech act corpus's directive labels, taking every synonym of every sense
+  # costs 9.6 points of precision (68.9% -> 59.3%) to gain 2.7 of recall.
+  #
+  # Memoised: the seeds are a compile-time constant and WordNet does not change
+  # between `mix atlas.seed` runs, but this is read once per utterance.
   defp expanded_imperative_verbs do
-    if Process.whereis(Brain.ML.Lexicon) do
-      @seed_imperative_verbs
-      |> Enum.flat_map(fn verb ->
-        syns = Brain.ML.Lexicon.synonyms(verb, :verb)
-        [verb | Enum.take(syns, 3)]
-      end)
-      |> MapSet.new()
-    else
-      MapSet.new(@seed_imperative_verbs)
+    table = imperative_verbs_table()
+
+    case :ets.lookup(table, :set) do
+      [{:set, set}] ->
+        set
+
+      [] ->
+        set =
+          @seed_imperative_verbs
+          |> Enum.flat_map(fn verb ->
+            [verb | Brain.Lexicon.dominant_sense_synonyms(verb, :verb)]
+          end)
+          |> MapSet.new()
+
+        :ets.insert(table, {:set, set})
+        set
     end
+  end
+
+  defp imperative_verbs_table do
+    :ets.new(@imperative_verbs_cache, [:set, :public, :named_table, read_concurrency: true])
+  rescue
+    ArgumentError -> @imperative_verbs_cache
   end
 
   defp has_continuation_structure?(text, _normalized) do
@@ -867,23 +757,4 @@ defmodule Brain.Analysis.SpeechActClassifier do
     trailing_ellipsis = Tokenizer.ends_with_ellipsis?(text)
     no_terminal and (ends_with_comma or trailing_ellipsis)
   end
-
-  defp intent_to_speech_act(intent) when is_binary(intent) do
-    domain =
-      case String.split(intent, ".", parts: 2) do
-        [d, _] -> d
-        _ -> intent
-      end
-
-    cond do
-      domain in ~w(greeting farewell thanks apology compliment) -> {:expressive, String.to_atom(domain)}
-      domain in ~w(question request query search) -> {:directive, :request_information}
-      domain in ~w(command action set turn) -> {:directive, :command}
-      domain in ~w(promise offer) -> {:commissive, :offer}
-      true -> {:assertive, :statement}
-    end
-  end
-
-  defp intent_to_speech_act(_), do: {:assertive, :statement}
-
 end

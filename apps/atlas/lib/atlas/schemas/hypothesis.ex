@@ -35,8 +35,10 @@ defmodule Atlas.Schemas.Hypothesis do
   @valid_statuses ~w(untested testing supported falsified inconclusive)
   @valid_confidence_levels ~w(none low moderate high very_high)
 
+  # The id is cast so a hypothesis created with the id the brain gave it is
+  # updated by that id.
   @required_fields ~w(investigation_id claim)a
-  @optional_fields ~w(entity derived_from prediction status confidence confidence_level
+  @optional_fields ~w(id entity derived_from prediction status confidence confidence_level
     source_count replication_count tested_at)a
 
   def changeset(hypothesis, attrs) do

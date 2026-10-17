@@ -1,5 +1,10 @@
 defmodule World.ContextTest do
-  use ExUnit.Case, async: false
+  # These tests write episodes through `Brain.Memory.Store`, which needs a
+  # checked-out sandbox connection to reach Atlas (`World.AtlasCase`). Without
+  # one the write fails; it used to be invisible because the store replied
+  # `{:ok, id}` for a write it knew had failed, so "writes to world-scoped
+  # store" passed while writing nothing.
+  use World.AtlasCase, async: false
 
   alias Brain.ML.Gazetteer
   import Brain.TestHelpers
@@ -12,8 +17,6 @@ defmodule World.ContextTest do
     # Ensure PubSub is started first
     ensure_pubsub_started()
 
-    # Start minimal required services - be lenient with failures
-    ensure_started({Registry, keys: :unique, name: Brain.SubprocessRegistry})
     ensure_started(Brain.ML.Gazetteer)
     ensure_started(Brain.Memory.Store)
     ensure_started(Brain.Memory.Embedder)
@@ -22,211 +25,183 @@ defmodule World.ContextTest do
     # Set up the test world sandbox for automatic cleanup
     setup_world_sandbox()
 
-    # Wait for WorldManager to be ready (with fallback)
-    try do
-      eventually(
-        fn -> WorldManager.ready?() end,
-        fn ready -> ready end,
-        50,
-        20
-      )
-    rescue
-      _ -> :ok
-    end
+    eventually(
+      fn -> WorldManager.ready?() end,
+      fn ready -> ready end,
+      50,
+      20
+    )
 
     :ok
   end
 
-  describe "default_world_id/0" do
-    test "returns the default world ID" do
-      assert WorldContext.default_world_id() == "default"
+  defp unknown_world_id, do: "test_unknown_world_#{System.unique_integer([:positive])}"
+
+  defp unique_name(prefix), do: "#{prefix}#{System.unique_integer([:positive])}"
+
+  # Every read names its world: there is no implicit one, and a world the
+  # manager does not know is an error, not an empty result.
+  @reads [
+    {"resolve/3", &__MODULE__.read_resolve/1},
+    {"lookup_entity/2", &__MODULE__.read_lookup_entity/1},
+    {"get_all_entities/1", &WorldContext.get_all_entities/1},
+    {"get_episodes/1", &WorldContext.get_episodes/1},
+    {"get_semantics/1", &WorldContext.get_semantics/1},
+    {"get_knowledge/2", &WorldContext.get_knowledge/1},
+    {"classify_intent/2", &__MODULE__.read_classify_intent/1},
+    {"query_similar/3", &__MODULE__.read_query_similar/1}
+  ]
+
+  def read_resolve(world_id), do: WorldContext.resolve(world_id, :entity, fn _ -> {:ok, :found} end)
+  def read_lookup_entity(world_id), do: WorldContext.lookup_entity(world_id, "anything")
+  def read_classify_intent(world_id), do: WorldContext.classify_intent(world_id, "Hello there")
+  def read_query_similar(world_id), do: WorldContext.query_similar(world_id, "anything", 3)
+
+  describe "a read with no world" do
+    for {label, read} <- @reads do
+      @read read
+      test "#{label} raises for a nil world" do
+        assert_raise ArgumentError, ~r/needs a world id, got nil/, fn -> @read.(nil) end
+      end
     end
   end
 
-  describe "get_inheritance_chain/1" do
-    test "returns [\"default\"] for nil" do
-      chain = WorldContext.get_inheritance_chain(nil)
-      assert chain == ["default"]
+  describe "a read in a world the manager does not know" do
+    for {label, read} <- @reads do
+      @read read
+      test "#{label} raises naming the world" do
+        world_id = unknown_world_id()
+
+        assert_raise ArgumentError, ~r/world "#{world_id}" is not known/, fn ->
+          @read.(world_id)
+        end
+      end
     end
 
-    test "returns single-element list for world without base" do
-      {:ok, world} = create_test_world("standalone_world")
+    test "is not read as the world's base world or as \"default\"" do
+      {:ok, parent} = create_test_world("unknown_base")
+      world_id = unknown_world_id()
 
-      chain = WorldContext.get_inheritance_chain(world.id)
+      assert_raise ArgumentError, ~r/is not known/, fn ->
+        WorldContext.resolve(world_id, :entity, fn wid ->
+          send(self(), {:looked_up, wid})
+          {:ok, :found}
+        end)
+      end
 
-      # Should just contain the world itself (no base_world)
-      assert world.id in chain
+      refute_received {:looked_up, _}
+      assert {:ok, _} = WorldManager.get(parent.id)
+    end
+  end
+
+  describe "resolve/3" do
+    test "looks only in the world it is given" do
+      {:ok, parent} = create_test_world("resolve_parent")
+      {:ok, child} = create_test_world("resolve_child", base_world: parent.id)
+
+      assert {:error, :not_found} =
+               WorldContext.resolve(child.id, :knowledge, fn wid ->
+                 send(self(), {:looked_up, wid})
+                 {:error, :not_found}
+               end)
+
+      child_id = child.id
+      assert_received {:looked_up, ^child_id}
+      refute_received {:looked_up, _}
     end
 
-    test "builds correct chain for world with base" do
-      # Create a parent world first
-      {:ok, parent} = create_test_world("parent_world")
+    test "returns the result with the world it was found in" do
+      {:ok, world} = create_test_world("resolve_found")
 
-      # Create a child world that inherits from parent
-      {:ok, child} =
-        WorldManager.create("child_world",
-          mode: :ephemeral,
-          base_world: parent.id,
-          metadata: %{test: true}
-        )
-
-      # Register for cleanup
-      on_exit(fn ->
-        WorldManager.destroy(child.id)
-      end)
-
-      chain = WorldContext.get_inheritance_chain(child.id)
-
-      # Chain should be [child, parent]
-      assert length(chain) >= 2
-      assert child.id in chain
-      assert parent.id in chain
-
-      # Child should come before parent in the chain
-      child_idx = Enum.find_index(chain, &(&1 == child.id))
-      parent_idx = Enum.find_index(chain, &(&1 == parent.id))
-      assert child_idx < parent_idx
-    end
-
-    test "handles non-existent world gracefully" do
-      chain = WorldContext.get_inheritance_chain("nonexistent_world_123")
-
-      # Should fall back to default
-      assert chain == ["default"]
+      assert {:ok, :found, world.id} ==
+               WorldContext.resolve(world.id, :entity, fn _ -> {:ok, :found} end)
     end
   end
 
   describe "lookup_entity/2" do
     test "finds entity in world overlay" do
       {:ok, world} = create_test_world("entity_lookup_test")
+      name = unique_name("TestEntity")
 
-      # Add entity to world overlay
-      {:ok, _} = Gazetteer.add_to_world(world.id, "TestEntity123", "test_type")
+      {:ok, _} = Gazetteer.add_to_world(world.id, name, "test_type")
 
-      # Should find it via WorldContext
-      result = WorldContext.lookup_entity(world.id, "TestEntity123")
-
-      case result do
-        {:ok, entity_info, found_world} ->
-          assert found_world == world.id or found_world == :base
-          assert entity_info != nil
-
-        _ ->
-          # Entity might not be found if Gazetteer isn't fully loaded
-          assert true
-      end
+      world_id = world.id
+      assert {:ok, [info], ^world_id} = WorldContext.lookup_entity(world.id, name)
+      assert info.entity_type == "test_type"
+      assert info.world_id == world.id
     end
 
-    test "falls back to base gazetteer for unknown entity in overlay" do
-      {:ok, world} = create_test_world("fallback_test")
+    test "does not find an entity that only the base world holds" do
+      {:ok, parent} = create_test_world("lookup_parent")
+      name = unique_name("ParentOnlyEntity")
+      {:ok, _} = Gazetteer.add_to_world(parent.id, name, "parent_type")
 
-      # Look up a common entity that should be in base gazetteer
-      result = WorldContext.lookup_entity(world.id, "New York")
+      {:ok, child} = create_test_world("lookup_child", base_world: parent.id)
 
-      case result do
-        {:ok, entity_info, found_world} ->
-          # Should be found in base gazetteer
-          assert entity_info != nil
-
-        :not_found ->
-          # Gazetteer might not have this entity
-          assert true
-
-        {:error, _} ->
-          # Error is acceptable if gazetteer not loaded
-          assert true
-      end
+      assert {:ok, _, _} = WorldContext.lookup_entity(parent.id, name)
+      assert WorldContext.lookup_entity(child.id, name) == :not_found
     end
   end
 
   describe "get_all_entities/1" do
-    test "returns map of entities for world" do
+    test "returns the entities in the world's overlay" do
       {:ok, world} = create_test_world("all_entities_test")
 
-      # Add some entities
-      Gazetteer.add_to_world(world.id, "Entity1", "type1")
-      Gazetteer.add_to_world(world.id, "Entity2", "type2")
+      {:ok, key1} = Gazetteer.add_to_world(world.id, unique_name("Entity"), "type1")
+      {:ok, key2} = Gazetteer.add_to_world(world.id, unique_name("Entity"), "type2")
 
       entities = WorldContext.get_all_entities(world.id)
 
-      assert is_map(entities)
+      assert [%{entity_type: "type1"}] = Map.fetch!(entities, key1)
+      assert [%{entity_type: "type2"}] = Map.fetch!(entities, key2)
     end
 
-    test "merges entities from inheritance chain" do
+    test "does not include the base world's entities" do
       {:ok, parent} = create_test_world("parent_entities")
-      Gazetteer.add_to_world(parent.id, "ParentEntity", "parent_type")
+      {:ok, parent_key} = Gazetteer.add_to_world(parent.id, unique_name("ParentEntity"), "parent_type")
 
-      {:ok, child} =
-        WorldManager.create("child_entities",
-          mode: :ephemeral,
-          base_world: parent.id,
-          metadata: %{test: true}
-        )
+      {:ok, child} = create_test_world("child_entities", base_world: parent.id)
 
-      on_exit(fn -> WorldManager.destroy(child.id) end)
-
-      Gazetteer.add_to_world(child.id, "ChildEntity", "child_type")
+      {:ok, child_key} = Gazetteer.add_to_world(child.id, unique_name("ChildEntity"), "child_type")
 
       entities = WorldContext.get_all_entities(child.id)
 
-      assert is_map(entities)
-      # Both entities should be accessible (if gazetteer is working)
+      assert Map.has_key?(entities, child_key)
+      refute Map.has_key?(entities, parent_key)
     end
   end
 
-  describe "get_episodes/2" do
+  describe "get_episodes/1" do
     test "returns episodes for world" do
       {:ok, world} = create_test_world("episodes_test")
 
-      # Add an episode
-      WorldContext.add_episode(world.id, "test state", "test action", "test outcome", ["test"])
-
-      # Give async operation time
-      Process.sleep(50)
+      {:ok, id} =
+        WorldContext.add_episode(world.id, "test state", "test action", "test outcome", ["test"])
 
       episodes = WorldContext.get_episodes(world.id)
 
-      assert is_list(episodes)
+      assert [%{id: ^id, state: "test state"}] = episodes
     end
 
-    test "with inherit: true collects from chain" do
+    test "does not include the base world's episodes" do
       {:ok, parent} = create_test_world("parent_episodes")
-      WorldContext.add_episode(parent.id, "parent state", "action", "outcome", ["parent"])
+      {:ok, _} = WorldContext.add_episode(parent.id, "parent state", "action", "outcome", ["parent"])
 
-      {:ok, child} =
-        WorldManager.create("child_episodes",
-          mode: :ephemeral,
-          base_world: parent.id,
-          metadata: %{test: true}
-        )
+      {:ok, child} = create_test_world("child_episodes", base_world: parent.id)
 
-      on_exit(fn -> WorldManager.destroy(child.id) end)
+      {:ok, _} = WorldContext.add_episode(child.id, "child state", "action", "outcome", ["child"])
 
-      WorldContext.add_episode(child.id, "child state", "action", "outcome", ["child"])
+      states = child.id |> WorldContext.get_episodes() |> Enum.map(& &1.state)
 
-      Process.sleep(50)
-
-      episodes = WorldContext.get_episodes(child.id, inherit: true)
-
-      assert is_list(episodes)
+      assert states == ["child state"]
     end
   end
 
-  describe "get_semantics/2" do
-    test "returns semantic facts for world" do
+  describe "get_semantics/1" do
+    test "returns no semantic facts for a new world" do
       {:ok, world} = create_test_world("semantics_test")
 
-      semantics = WorldContext.get_semantics(world.id)
-
-      assert is_list(semantics)
-    end
-
-    test "with inherit: true collects from chain" do
-      {:ok, world} = create_test_world("semantics_inherit_test")
-
-      semantics = WorldContext.get_semantics(world.id, inherit: true)
-
-      assert is_list(semantics)
+      assert WorldContext.get_semantics(world.id) == []
     end
   end
 
@@ -234,38 +209,23 @@ defmodule World.ContextTest do
     test "returns knowledge map for world" do
       {:ok, world} = create_test_world("knowledge_test")
 
-      # Add some knowledge
-      WorldContext.add_knowledge(world.id, "test_category", "test_key", "test_value")
+      :ok = WorldContext.add_knowledge(world.id, "test_category", "test_key", "test_value")
 
-      Process.sleep(50)
-
-      knowledge = WorldContext.get_knowledge(world.id)
-
-      assert is_map(knowledge)
+      assert WorldContext.get_knowledge(world.id) == %{
+               "test_category" => %{"test_key" => "test_value"}
+             }
     end
 
-    test "deep-merges from inheritance chain (child overrides parent)" do
+    test "does not include the base world's knowledge" do
       {:ok, parent} = create_test_world("parent_knowledge")
-      WorldContext.add_knowledge(parent.id, "shared", "key1", "parent_value")
-      WorldContext.add_knowledge(parent.id, "parent_only", "key2", "parent_only_value")
+      :ok = WorldContext.add_knowledge(parent.id, "shared", "key1", "parent_value")
+      :ok = WorldContext.add_knowledge(parent.id, "parent_only", "key2", "parent_only_value")
 
-      {:ok, child} =
-        WorldManager.create("child_knowledge",
-          mode: :ephemeral,
-          base_world: parent.id,
-          metadata: %{test: true}
-        )
+      {:ok, child} = create_test_world("child_knowledge", base_world: parent.id)
 
-      on_exit(fn -> WorldManager.destroy(child.id) end)
+      :ok = WorldContext.add_knowledge(child.id, "shared", "key1", "child_value")
 
-      WorldContext.add_knowledge(child.id, "shared", "key1", "child_value")
-
-      Process.sleep(50)
-
-      knowledge = WorldContext.get_knowledge(child.id)
-
-      assert is_map(knowledge)
-      # Child value should override parent for same key
+      assert WorldContext.get_knowledge(child.id) == %{"shared" => %{"key1" => "child_value"}}
     end
   end
 
@@ -273,17 +233,16 @@ defmodule World.ContextTest do
     test "writes to world-scoped store" do
       {:ok, world} = create_test_world("add_episode_test")
 
-      result =
-        WorldContext.add_episode(
-          world.id,
-          "user said hello",
-          "conversation",
-          "bot responded with greeting",
-          ["greeting", "test"]
-        )
+      assert {:ok, id} =
+               WorldContext.add_episode(
+                 world.id,
+                 "user said hello",
+                 "conversation",
+                 "bot responded with greeting",
+                 ["greeting", "test"]
+               )
 
-      # Should return :ok or {:ok, _}
-      assert result == :ok or match?({:ok, _}, result)
+      assert [%{id: ^id}] = WorldContext.get_episodes(world.id)
     end
   end
 
@@ -291,74 +250,50 @@ defmodule World.ContextTest do
     test "writes to specific world" do
       {:ok, world} = create_test_world("add_knowledge_test")
 
-      result = WorldContext.add_knowledge(world.id, "facts", "test_fact", "test_value")
+      assert :ok = WorldContext.add_knowledge(world.id, "facts", "test_fact", "test_value")
 
-      # Should succeed
-      assert result == :ok or match?({:ok, _}, result)
-
-      # Verify it was stored
-      Process.sleep(50)
-      knowledge = WorldContext.get_knowledge(world.id, "facts")
-      assert is_map(knowledge)
+      assert WorldContext.get_knowledge(world.id, "facts") == %{"test_fact" => "test_value"}
     end
   end
 
-  describe "query_similar/4" do
-    test "queries for similar episodes" do
-      {:ok, world} = create_test_world("query_similar_test")
+  describe "query_similar/3" do
+    test "returns only the world's own episodes" do
+      {:ok, parent} = create_test_world("query_parent")
 
-      # Add some episodes
-      WorldContext.add_episode(world.id, "weather query", "conversation", "weather response", [
-        "weather"
-      ])
+      {:ok, _} =
+        WorldContext.add_episode(parent.id, "parent weather query", "conversation", "weather response", [
+          "weather"
+        ])
 
-      WorldContext.add_episode(world.id, "greeting hello", "conversation", "hello response", [
-        "greeting"
-      ])
+      {:ok, child} = create_test_world("query_child", base_world: parent.id)
 
-      Process.sleep(100)
+      {:ok, _} =
+        WorldContext.add_episode(child.id, "child weather query", "conversation", "weather response", [
+          "weather"
+        ])
 
-      result = WorldContext.query_similar(world.id, "what's the weather", 3)
+      {:ok, _} =
+        WorldContext.add_episode(child.id, "child greeting hello", "conversation", "hello response", [
+          "greeting"
+        ])
 
-      case result do
-        {:ok, episodes} ->
-          assert is_list(episodes)
+      assert {:ok, results} = WorldContext.query_similar(child.id, "what's the weather", 3)
 
-        {:error, _} ->
-          # Error is acceptable if embedder not ready
-          assert true
-      end
-    end
-
-    test "with inherit: true queries inheritance chain" do
-      {:ok, world} = create_test_world("query_inherit_test")
-
-      result = WorldContext.query_similar(world.id, "test query", 3, inherit: true)
-
-      case result do
-        {:ok, episodes} ->
-          assert is_list(episodes)
-
-        {:error, _} ->
-          assert true
-      end
+      states = Enum.map(results, fn {episode, _score} -> episode.state end)
+      assert Enum.all?(states, &(&1 in ["child weather query", "child greeting hello"]))
+      refute "parent weather query" in states
     end
   end
 
   describe "classify_intent/2" do
-    test "uses world-specific model with fallback" do
+    test "classifies in the world it is given" do
       {:ok, world} = create_test_world("classify_test")
 
-      result = WorldContext.classify_intent(world.id, "Hello there")
+      assert {:ok, %{intent: intent, confidence: confidence}} =
+               WorldContext.classify_intent(world.id, "Hello there")
 
-      case result do
-        {:ok, classification} ->
-          assert Map.has_key?(classification, :intent) or Map.has_key?(classification, "intent")
-
-        {:error, :no_classifier} ->
-          # No world-specific classifier available
-          assert true
-      end
+      assert is_binary(intent)
+      assert is_number(confidence)
     end
   end
 end

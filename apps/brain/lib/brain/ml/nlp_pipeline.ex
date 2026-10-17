@@ -4,7 +4,7 @@ defmodule Brain.ML.NLPPipeline do
   alias Brain.ML
   require Logger
 
-  alias ML.{EntityExtractor, Gazetteer, Tokenizer}
+  alias ML.{EntityExtractor, Tokenizer}
 
   @type pipeline_result :: %{
           intent: String.t(),
@@ -14,41 +14,6 @@ defmodule Brain.ML.NLPPipeline do
           processing_method: :classical
         }
 
-  @doc "Initialize the NLP pipeline by loading all required models and data.\nShould be called at application startup.\n"
-  def init do
-    Logger.info("Initializing NLP pipeline...")
-
-    case Gazetteer.start_link() do
-      {:ok, _pid} ->
-        Logger.info("Gazetteer GenServer started")
-
-      {:error, {:already_started, _pid}} ->
-        Logger.debug("Gazetteer already running")
-
-      {:error, reason} ->
-        Logger.warning("Failed to start Gazetteer GenServer", %{reason: reason})
-    end
-
-    case Gazetteer.load_all() do
-      {:ok, stats} ->
-        Logger.info("Gazetteer loaded", stats)
-
-      {:error, reason} ->
-        Logger.warning("Gazetteer loading failed, will use fallback", %{reason: reason})
-    end
-
-    case EntityExtractor.load_entity_maps() do
-      {:ok, maps} ->
-        Logger.info("Entity maps loaded", %{count: map_size(maps)})
-
-      {:error, reason} ->
-        Logger.warning("Entity maps loading failed", %{reason: reason})
-    end
-
-    Logger.info("NLP pipeline initialization complete")
-    :ok
-  end
-
   @doc """
   Main entry point for text processing using classical NLP.
 
@@ -56,6 +21,7 @@ defmodule Brain.ML.NLPPipeline do
 
   ## Options
 
+  - `:world_id` - required: the world the text is processed in. Absent raises.
   - `:discourse` - Discourse analysis result for entity disambiguation
   - `:speech_act` - Speech act classification for entity disambiguation
   - `:reuse_intent` - `{intent_string, confidence}` tuple. When provided,
@@ -66,8 +32,11 @@ defmodule Brain.ML.NLPPipeline do
     produced a full-features intent in pass 2.
   - `:reuse_entities` - list of pre-extracted entities. When provided, skip
     `EntityExtractor.extract_entities/2`.
+  - `:side_effects` - passed to `Pipeline.analyze_chunk/2` when the intent is
+    classified here; `false` keeps that analysis from writing.
   """
-  def process(text, opts \\ []) do
+  def process(text, opts) do
+    world_id!(opts)
     Logger.debug("Processing text with classical NLP", %{text: text})
 
     try do
@@ -135,46 +104,32 @@ defmodule Brain.ML.NLPPipeline do
         {:ok, intent, confidence / 1}
 
       _ ->
-        classify_intent(text)
+        classify_intent(text, Keyword.take(opts, [:world_id, :side_effects]))
     end
   end
 
-  @doc "Process text with enhanced entity extraction using the BIO model.\nUse this for more thorough entity detection at the cost of speed.\n"
-  def process_enhanced(text) do
-    Logger.debug("Processing text with enhanced NLP", %{text: text})
+  # Checked before the processing's own rescue, so a missing world raises
+  # rather than coming back as a failed or unclassified result.
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
 
-    try do
-      tokens = Tokenizer.tokenize(text)
-      entities = EntityExtractor.extract_entities_with_model(text)
-      Logger.debug("Enhanced entity extraction", %{count: length(entities)})
+      {:ok, other} ->
+        raise ArgumentError, "NLPPipeline option :world_id must be a world id, got: #{inspect(other)}"
 
-      case classify_intent(text) do
-        {:ok, intent, confidence} ->
-          result = build_result(text, intent, confidence, entities, tokens)
-          {:ok, result}
-
-        {:error, _reason} ->
-          {:ok,
-           %{
-             confidence: 0.0,
-             intent: "unknown",
-             entities: entities,
-             fallback: true
-           }}
-      end
-    rescue
-      error ->
-        Logger.error("Enhanced NLP pipeline failed", %{error: inspect(error)})
-        {:error, "Pipeline processing failed: #{inspect(error)}"}
+      :error ->
+        raise ArgumentError, "NLPPipeline needs :world_id, the world the text is processed in"
     end
   end
 
-  @doc "Extract features from text (entities + intent) for learning.\n\nOptions:\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification result for entity disambiguation\n"
-  def extract_features(text, opts \\ []) do
+  @doc "Extract features from text (entities + intent) for learning.\n\nOptions:\n- `:world_id` - required: the world the text is processed in. Absent raises.\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification result for entity disambiguation\n"
+  def extract_features(text, opts) do
+    world_id = world_id!(opts)
     tokens = Tokenizer.tokenize(text)
     entities = EntityExtractor.extract_entities(text, opts)
 
-    case classify_intent(text) do
+    case classify_intent(text, world_id: world_id) do
       {:ok, intent, confidence} ->
         %{
           intent: intent,
@@ -211,18 +166,13 @@ defmodule Brain.ML.NLPPipeline do
     confidence >= threshold
   end
 
-  @doc "Check if the pipeline is ready (models loaded).\n"
-  def ready? do
-    Gazetteer.loaded?() or EntityExtractor.get_entity_maps() != %{}
-  end
-
-  defp classify_intent(text) do
+  defp classify_intent(text, pipeline_opts) do
     alias Brain.Analysis.{FeatureExtractor, Pipeline}
     alias Brain.ML.MicroClassifiers
 
     if MicroClassifiers.ready?() do
       try do
-        analysis = Pipeline.analyze_chunk(text)
+        analysis = Pipeline.analyze_chunk(text, pipeline_opts)
         {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
 
         case MicroClassifiers.classify_vector(:intent_full, feature_vector) do

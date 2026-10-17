@@ -11,41 +11,26 @@ defmodule Brain.Learner do
   alias Brain.FactDatabase.Integration
   alias Brain.Knowledge.ReviewQueue
 
-  @doc "Learn from user input using classical NLP entity extraction.\nExtracts entities and stores them in the knowledge store.\n\nOptions:\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification result for entity disambiguation\n- `:world_id` - World ID for world-scoped type inference (required for disambiguation)\n"
-  def learn_from_input(persona_name, input, opts \\ []) do
+  @doc "Learn from user input using classical NLP entity extraction.\nExtracts entities and stores them in the knowledge store.\n\nOptions:\n- `:world_id` - required: the world entities are extracted in. Absent raises.\n- `:discourse` - Discourse analysis result for entity disambiguation\n- `:speech_act` - Speech act classification result for entity disambiguation\n"
+  def learn_from_input(persona_name, input, opts) do
     Logger.debug("Learner.learn_from_input called", %{persona_name: persona_name, input: input})
+
+    unless is_binary(opts[:world_id]) and opts[:world_id] != "" do
+      raise ArgumentError,
+            "Learner.learn_from_input needs :world_id, the world entities are extracted in, got: #{inspect(opts[:world_id])}"
+    end
+
     discourse = Keyword.get(opts, :discourse)
     speech_act = Keyword.get(opts, :speech_act)
-    world_id = Keyword.get(opts, :world_id)
-    skip_disambiguation = is_nil(world_id)
 
     entity_opts =
       if discourse || speech_act do
-        opts ++ [skip_disambiguation: skip_disambiguation]
+        opts
       else
-        discourse_result =
-          try do
-            DiscourseAnalyzer.analyze(input, [])
-          rescue
-            _ -> nil
-          catch
-            _ -> nil
-          end
-
-        speech_act_result =
-          try do
-            SpeechActClassifier.classify(input)
-          rescue
-            _ -> nil
-          catch
-            _ -> nil
-          end
-
         opts ++
           [
-            discourse: discourse_result,
-            speech_act: speech_act_result,
-            skip_disambiguation: skip_disambiguation
+            discourse: DiscourseAnalyzer.analyze(input, []),
+            speech_act: SpeechActClassifier.classify(input, world_id: opts[:world_id])
           ]
       end
 
@@ -53,15 +38,7 @@ defmodule Brain.Learner do
 
     if entities != [] do
       extracted_data = %{
-        "entities" =>
-          Enum.map(entities, fn entity ->
-            %{
-              "name" => Map.get(entity, :value, ""),
-              "type" => Map.get(entity, :entity, "unknown"),
-              "properties" => %{},
-              "confidence" => Map.get(entity, :confidence, 0.9)
-            }
-          end),
+        "entities" => Enum.map(entities, &learned_entity!/1),
         "relationships" => [],
         "facts" => [],
         "context" => input
@@ -88,7 +65,7 @@ defmodule Brain.Learner do
         Enum.map(entities, fn entity ->
           %{
             "name" => get_entity_field(entity, [:value, "value"]),
-            "type" => get_entity_field(entity, [:entity, "entity", :type, "type"]),
+            "type" => entity_type!(entity),
             "properties" => %{},
             "confidence" => get_entity_field(entity, [:confidence, "confidence"]) || 0.9
           }
@@ -103,7 +80,19 @@ defmodule Brain.Learner do
   end
 
   @doc "Learn from a conversation turn with full analysis context.\n\nThis is the primary entry point for conversational learning. When a user makes\nan assertive statement (e.g., \"Paris is the capital of France\"), we extract\nthe claim as a learnable fact.\n\n## Parameters\n  - persona_name: The bot persona name\n  - input: The user's input text\n  - analysis: The full analysis result from the Pipeline\n  - opts: Options including :user_id for user-specific learning\n\n## Returns\n  - {:ok, %{entities: [...], facts: [...], learned: boolean}}\n"
-  def learn_from_conversation(persona_name, input, analysis, opts \\ []) do
+  def learn_from_conversation(persona_name, input, analysis, opts) do
+    # A learned fact is verified against, and recorded as a belief in, the
+    # world the conversation runs in.
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "Learner.learn_from_conversation needs :world_id, the world the conversation runs in, got: #{inspect(other)}"
+      end
+
     Logger.debug("Learner.learn_from_conversation called", %{
       persona_name: persona_name,
       input: input,
@@ -117,15 +106,7 @@ defmodule Brain.Learner do
       Enum.map(entities, fn entity ->
         %{
           "name" => get_entity_field(entity, [:value, "value"]),
-          "type" =>
-            get_entity_field(entity, [
-              :entity,
-              "entity",
-              :entity_type,
-              "entity_type",
-              :type,
-              "type"
-            ]),
+          "type" => entity_type!(entity),
           "properties" => %{},
           "confidence" => get_entity_field(entity, [:confidence, "confidence"]) || 0.9
         }
@@ -141,6 +122,7 @@ defmodule Brain.Learner do
     }
 
     process_extracted_data(persona_name, extracted_data, input)
+    process_facts(persona_name, extracted_facts, world_id)
 
     {:ok,
      %{
@@ -171,15 +153,7 @@ defmodule Brain.Learner do
       if primary_entity do
         entity_value = get_entity_field(primary_entity, [:value, "value"]) || ""
 
-        entity_type =
-          get_entity_field(primary_entity, [
-            :entity,
-            "entity",
-            :entity_type,
-            "entity_type",
-            :type,
-            "type"
-          ]) || "unknown"
+        entity_type = entity_type!(primary_entity) || "unknown"
 
         fact_text = String.trim(input)
         entity_confidence = get_entity_field(primary_entity, [:confidence, "confidence"]) || 0.5
@@ -234,6 +208,39 @@ defmodule Brain.Learner do
     end
   end
 
+  # Entities reach the Learner in the analysis shape, whose type is under
+  # :entity_type (EntityExtractor and Brain's chunk-entity normalization both
+  # build that key). An entity without it is a caller bug and raises.
+  defp entity_type!(entity), do: Map.fetch!(entity, :entity_type)
+
+  @doc """
+  What is learned from one decided entity of
+  `Brain.ML.EntityExtractor.extract_entities/2`: its `:value` as the name, its
+  `:entity_type` as the type, and its `:confidence`. A decided entity carries
+  all three; an entity missing any of them raises.
+  """
+  @spec learned_entity!(map()) :: map()
+  def learned_entity!(entity) when is_map(entity) do
+    %{
+      "name" => decided_field!(entity, :value),
+      "type" => decided_field!(entity, :entity_type),
+      "properties" => %{},
+      "confidence" => decided_field!(entity, :confidence)
+    }
+  end
+
+  defp decided_field!(entity, key) do
+    case entity do
+      %{^key => value} when not is_nil(value) ->
+        value
+
+      _ ->
+        raise ArgumentError,
+              "Learner: a decided entity of EntityExtractor.extract_entities/2 carries :value, :entity_type " <>
+                "and :confidence; this one has no #{inspect(key)}: #{inspect(entity, limit: 8)}"
+    end
+  end
+
   defp get_entity_field(entity, keys) when is_list(keys) do
     Enum.find_value(keys, fn key ->
       case entity do
@@ -243,6 +250,8 @@ defmodule Brain.Learner do
     end)
   end
 
+  # Facts are not processed here: they are verified against a world's beliefs,
+  # and only `learn_from_conversation/4`, which has the world, extracts any.
   defp process_extracted_data(persona_name, data, original_input) do
     entities = Map.get(data, "entities", [])
     relationships = Map.get(data, "relationships", [])
@@ -254,7 +263,6 @@ defmodule Brain.Learner do
     end)
 
     process_relationships(persona_name, relationships)
-    process_facts(persona_name, facts)
     store_context_memory(persona_name, original_input, data)
 
     Logger.info("Processed NLP extraction", %{
@@ -536,7 +544,7 @@ defmodule Brain.Learner do
     end)
   end
 
-  defp process_facts(persona_name, facts) do
+  defp process_facts(persona_name, facts, world_id) do
     Enum.each(facts, fn fact ->
       normalized = normalize_fact(fact)
       confidence = Map.get(normalized, "confidence", 0.5)
@@ -547,11 +555,11 @@ defmodule Brain.Learner do
         KnowledgeStore.add_fact(persona_name, entity, fact_text, confidence)
 
         if is_general_knowledge_fact?(entity, fact_text) do
-          case Integration.verify_fact(entity, fact_text) do
+          case Integration.verify_fact(world_id, entity, fact_text) do
             {:verified, verified_confidence} ->
               final_confidence = max(confidence, verified_confidence)
 
-              case Integration.add_fact(entity, fact_text,
+              case Integration.add_fact(world_id, entity, fact_text,
                      category: "learned",
                      verification_source: "conversation_learning",
                      confidence: final_confidence,
@@ -585,7 +593,7 @@ defmodule Brain.Learner do
               }
 
               Enum.each(conflicting_beliefs, fn belief ->
-                ReviewQueue.add_contradiction(new_fact, belief)
+                ReviewQueue.add_contradiction(world_id, new_fact, belief)
               end)
 
             {:uncertain, reason} ->

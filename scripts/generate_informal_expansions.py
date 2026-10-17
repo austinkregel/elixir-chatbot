@@ -72,21 +72,19 @@ def phonetic_similarity(ipa1: Optional[str], ipa2: Optional[str]) -> float:
 # =============================================================================
 
 # Contractions with apostrophes (standard)
+#
+# No contraction ending in 's or 'd: the UD English Web Treebank gives those
+# clitics more than one meaning ('s: possessive, is, has, us; 'd: would, had),
+# so expanding them would guess. The tokenizer splits them and the POS tagger
+# reads them in context. Brain.ML.InformalExpansions refuses to load a
+# dataset that has one (Brain.Lexicon.Clitics.ambiguous?/1).
 APOSTROPHE_CONTRACTIONS = {
     # Pronoun + be
     "i'm": "i am",
     "you're": "you are",
     "we're": "we are",
     "they're": "they are",
-    "he's": "he is",
-    "she's": "she is",
-    "it's": "it is",
-    "that's": "that is",
-    "what's": "what is",
-    "who's": "who is",
-    "there's": "there is",
-    "here's": "here is",
-    
+
     # Pronoun + will
     "i'll": "i will",
     "you'll": "you will",
@@ -96,16 +94,7 @@ APOSTROPHE_CONTRACTIONS = {
     "she'll": "she will",
     "it'll": "it will",
     "that'll": "that will",
-    
-    # Pronoun + would/had
-    "i'd": "i would",
-    "you'd": "you would",
-    "we'd": "we would",
-    "they'd": "they would",
-    "he'd": "he would",
-    "she'd": "she would",
-    "it'd": "it would",
-    
+
     # Pronoun + have
     "i've": "i have",
     "you've": "you have",
@@ -137,13 +126,6 @@ APOSTROPHE_CONTRACTIONS = {
     "mustn't": "must not",
     "needn't": "need not",
     "shan't": "shall not",
-    
-    # Other common
-    "let's": "let us",
-    "how's": "how is",
-    "where's": "where is",
-    "when's": "when is",
-    "why's": "why is",
 }
 
 # Informal phonetic reductions (no apostrophe)

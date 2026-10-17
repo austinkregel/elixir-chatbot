@@ -113,4 +113,246 @@ defmodule Brain.Response.DiscoursePlannerTest do
       assert length(primitives) >= 1
     end
   end
+
+  describe "plan/2 when the turn's service returned an error" do
+    alias Brain.Response.{ContentSpecifier, Primitive, ResponseEvaluator, SurfaceRealizer}
+
+    # Realizing a service's reply reads no world data; the world is only the
+    # one realization requires to be named.
+    @world_id "test_service_reply"
+
+    defp failed(reason, service, intent) do
+      [
+        unified_context: %{
+          enrichment: %{
+            enrichment_status: :failed,
+            enrichment_error: reason,
+            enrichment_service: service,
+            intent: intent,
+            slots: %{},
+            enriched_data: %{}
+          }
+        }
+      ]
+    end
+
+    defp model_for(text, intent) do
+      build_model(text,
+        speech_act: SpeechActResult.new(:directive, :command, 0.8, is_imperative: true),
+        intent: intent
+      )
+    end
+
+    # The plan, specified and realized as the refinement loop does.
+    defp respond(reason, service, intent, text \\ "do it") do
+      model = model_for(text, intent)
+      opts = failed(reason, service, intent)
+      [analysis] = model.analyses
+      plan = DiscoursePlanner.plan(model, opts)
+      specified = ContentSpecifier.specify(plan, analysis, opts)
+
+      {:ok, rendered, response, nil} =
+        SurfaceRealizer.realize(specified, [world_id: @world_id, analysis: analysis] ++ opts)
+
+      assert Enum.all?(rendered, &(&1.source == :service_reply and &1.rendered == response))
+      {plan, specified, response}
+    end
+
+    test "several matching events: the plan asks which one, and the reply lists each candidate with its day" do
+      events = [%{event: "Dentist", date: "Friday", time: "3 pm"}, %{event: "Standup", date: "", time: "5 pm"}]
+      reason = {:ambiguous, :calendar, events}
+
+      {plan, _specified, text} = respond(reason, :local_scheduler, "calendar.cancel")
+
+      assert [%Primitive{type: :follow_up, variant: :clarification, content: content}] = plan
+      assert content.reply == :ambiguous_item
+      assert content.ambiguity_type == :ambiguous_item
+      assert content.item_kind == :calendar
+      assert content.candidates == events
+      assert content.enrichment_error == reason
+      assert content.service_name == "Local Scheduler"
+
+      assert text =~ "Dentist on Friday at 3 pm or Standup at 5 pm"
+      assert String.ends_with?(text, "?")
+    end
+
+    test "three matching events are listed with the last after the conjunction" do
+      events = [%{event: "A", time: "1 pm", date: nil}, %{event: "B", time: nil, date: nil}, %{event: "C", time: "3 pm", date: nil}]
+
+      {_plan, _specified, text} = respond({:ambiguous, :calendar, events}, :local_scheduler, "calendar.cancel")
+
+      assert text =~ "A at 1 pm, B or C at 3 pm"
+    end
+
+    test "no event identified: the plan asks which event, listing every event the calendar has" do
+      events = [%{event: "Dentist", date: "Friday", time: "3 pm"}, %{event: "Standup", date: "", time: "5 pm"}]
+      reason = {:event_not_identified, events}
+
+      {plan, _specified, text} = respond(reason, :local_scheduler, "calendar.cancel")
+
+      assert [%Primitive{type: :follow_up, variant: :clarification, content: content}] = plan
+      assert content.reply == :ambiguous_item
+      assert content.item_kind == :calendar
+      assert content.candidates == events
+      assert content.enrichment_error == reason
+      refute Map.has_key?(content, :missing_slots)
+
+      assert text =~ "Dentist on Friday at 3 pm or Standup at 5 pm"
+      assert String.ends_with?(text, "?")
+    end
+
+    test "no event identified on a calendar with one event: the plan asks about that one" do
+      {_plan, _specified, text} =
+        respond({:event_not_identified, [%{event: "Dentist", date: "", time: "3 pm"}]}, :local_scheduler, "calendar.cancel")
+
+      assert text =~ "Dentist at 3 pm?"
+    end
+
+    test "nothing matched what was described: an action result naming the description, with its day" do
+      reason = {:no_matching_items, :calendar, %{event: "dentist", date: "friday", time: "3 pm"}}
+
+      {plan, specified, text} = respond(reason, :local_scheduler, "calendar.cancel")
+
+      assert [%Primitive{type: :content, variant: :action_result, content: content}] = plan
+      assert content.reply == :no_matching_items
+      assert content.result == :no_matching_items
+      assert content.criteria == %{event: "dentist", date: "friday", time: "3 pm"}
+      assert [%Primitive{content: %{action: "calendar.cancel", content_complete: true}}] = specified
+
+      assert text =~ "dentist on friday at 3 pm"
+    end
+
+    test "nothing of the kind at all: the reply says there are none" do
+      {plan, _specified, text} = respond({:no_matching_items, :alarm, %{}}, :local_scheduler, "alarm.cancel")
+
+      assert [%Primitive{type: :content, variant: :action_result, content: %{reply: :no_items}}] = plan
+      assert text =~ "alarms"
+    end
+
+    test "no ringing alarm: the reply says no alarm is ringing" do
+      {plan, _specified, text} = respond(:no_ringing_alarm, :local_scheduler, "alarm.snooze")
+
+      assert [%Primitive{type: :content, variant: :action_result, content: %{reply: :no_ringing_alarm}}] = plan
+      assert text =~ "alarm"
+      assert text =~ "snooze"
+    end
+
+    test "a snooze with no length said asks how long, with the intent's own prompt for its duration" do
+      {plan, _specified, text} = respond(:missing_duration, :local_scheduler, "alarm.snooze")
+
+      assert [%Primitive{type: :follow_up, variant: :clarification, content: content}] = plan
+      assert content.reply == :missing_slots
+      assert content.missing_slots == ["duration"]
+      assert text == Brain.Analysis.SlotDetector.get_clarification_prompt("duration", "alarm.snooze")
+    end
+
+    test "a missing location is asked for with the intent's own prompt" do
+      {plan, _specified, text} = respond(:missing_location, :weather, "weather.query")
+
+      assert [%Primitive{type: :follow_up, variant: :clarification, content: content}] = plan
+      assert content.reply == :missing_slots
+      assert content.missing_slots == ["location"]
+      assert text == Brain.Analysis.SlotDetector.get_clarification_prompt("location", "weather.query")
+    end
+
+    # Every reason a service or the dispatcher returns, with the primitive and
+    # reply it is planned with and a fragment of the reply's wording.
+    @planned [
+      {:location_not_found, :weather, {:follow_up, :clarification}, :location_not_found, "location"},
+      {:side_effects_off, :local_scheduler, {:content, :action_result}, :side_effects_off, "side effects"},
+      {:rate_limited, :weather, {:content, :action_result}, :rate_limited, "Weather"},
+      {:service_unavailable, :weather, {:content, :action_result}, :unavailable, "Weather"},
+      {{:connection_error, :timeout}, :home_assistant, {:content, :action_result}, :unavailable, "Home Assistant"},
+      {:service_error, :home_assistant, {:content, :action_result}, :service_failed, "Home Assistant"},
+      {{:api_error, 500}, :weather, {:content, :action_result}, :service_failed, "Weather"},
+      {{:http_error, 500, "oops"}, :home_assistant, {:content, :action_result}, :service_failed, "Home Assistant"},
+      {:unexpected_response, :home_assistant, {:content, :action_result}, :service_failed, "Home Assistant"},
+      {%Jason.DecodeError{position: 0, data: "x"}, :home_assistant, {:content, :action_result}, :service_failed,
+       "Home Assistant"},
+      {:entity_not_found, :home_assistant, {:content, :action_result}, :device_not_found, "device"},
+      {:missing_credentials, :home_assistant, {:framing, :boundary}, :not_configured, "set up"},
+      {:missing_api_key, :weather, {:framing, :boundary}, :not_configured, "set up"},
+      {:invalid_api_key, :weather, {:framing, :boundary}, :invalid_credentials, "credentials"},
+      {{:http_error, 401, "unauthorized"}, :home_assistant, {:framing, :boundary}, :invalid_credentials, "credentials"},
+      {:service_disabled, :local_scheduler, {:framing, :boundary}, :disabled, "Local Scheduler"},
+      {{:unsupported_intent, "smarthome.dance"}, :home_assistant, {:framing, :boundary}, :unsupported,
+       "Home Assistant"},
+      {:unsupported_intent, :local_scheduler, {:framing, :boundary}, :unsupported, "Local Scheduler"}
+    ]
+
+    for {reason, service, {type, variant}, reply, fragment} <- @planned do
+      @reason reason
+      @service service
+      @type_variant {type, variant}
+      @reply reply
+      @fragment fragment
+
+      test "#{inspect(reason)} is planned as a #{type} #{variant} replying #{reply}" do
+        {plan, specified, text} = respond(@reason, @service, "some.intent")
+        {type, variant} = @type_variant
+
+        assert [%Primitive{type: ^type, variant: ^variant, content: content}] = plan
+        assert content.reply == @reply
+        assert content.enrichment_error == @reason
+        assert [%Primitive{content: %{content_complete: true}}] = specified
+        assert text =~ @fragment
+        refute text =~ "$"
+      end
+    end
+
+    test "the error replaces every chunk's plan" do
+      model = model_for("cancel my meeting", "calendar.cancel")
+      two_chunks = %{model | analyses: model.analyses ++ [%{hd(model.analyses) | chunk_index: 1, text: "thanks"}]}
+
+      assert [%Primitive{type: :follow_up, variant: :clarification}] =
+               DiscoursePlanner.plan(
+                 two_chunks,
+                 failed({:event_not_identified, [%{event: "Dentist", date: "", time: ""}]}, :local_scheduler, "calendar.cancel")
+               )
+    end
+
+    test "an error with no planned response raises" do
+      model = model_for("cancel my meeting", "calendar.cancel")
+
+      assert_raise ArgumentError, ~r/no planned response for the service error :timeout/, fn ->
+        DiscoursePlanner.plan(model, failed(:timeout, :weather, "weather.query"))
+      end
+
+      assert_raise ArgumentError, ~r/no planned response for the service error \{:ambiguous, :calendar, \[/, fn ->
+        DiscoursePlanner.plan(
+          model,
+          failed({:ambiguous, :calendar, [%{event: "Dentist", time: "3 pm"}]}, :local_scheduler, "calendar.cancel")
+        )
+      end
+
+      assert_raise ArgumentError, ~r/no planned response for the service error \{:event_not_identified, \[\]\}/, fn ->
+        DiscoursePlanner.plan(model, failed({:event_not_identified, []}, :local_scheduler, "calendar.cancel"))
+      end
+    end
+
+    test "a failed enrichment with no error raises" do
+      assert_raise ArgumentError, ~r/carries no :enrichment_error/, fn ->
+        DiscoursePlanner.plan(model_for("cancel", "calendar.cancel"),
+          unified_context: %{enrichment: %{enrichment_status: :failed}}
+        )
+      end
+    end
+
+    test "an enrichment that did not fail plans as before" do
+      opts = [unified_context: %{enrichment: %{enrichment_status: :not_configured, enrichment_error: nil}}]
+
+      refute Enum.any?(
+               DiscoursePlanner.plan(model_for("cancel my meeting", "calendar.cancel"), opts),
+               &Map.has_key?(&1.content, :enrichment_error)
+             )
+    end
+
+    test "a service reply is never silenced, however low it scores" do
+      reply = DiscoursePlanner.plan(model_for("snooze", "alarm.snooze"), failed(:no_ringing_alarm, :local_scheduler, "alarm.snooze"))
+      ordinary = DiscoursePlanner.plan(model_for("snooze", "alarm.snooze"))
+
+      refute ResponseEvaluator.silence_preferred?(0.0, reply)
+      assert ResponseEvaluator.silence_preferred?(0.0, ordinary)
+    end
+  end
 end

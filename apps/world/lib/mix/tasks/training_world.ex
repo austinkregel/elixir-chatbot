@@ -830,6 +830,12 @@ defmodule Mix.Tasks.TrainingWorld.Import do
                 else
                   0.9
                 end,
+              # An import has no observed sentence. The context states where the
+              # entity came from, which is what a reviewer needs; a fabricated
+              # sentence would read as evidence it is not.
+              context:
+                Map.get(entity, "context") ||
+                  "imported into world #{world_id} by mix training_world",
               source: :import,
               metadata: Map.get(entity, "metadata", %{}),
               discovered_at: DateTime.utc_now()

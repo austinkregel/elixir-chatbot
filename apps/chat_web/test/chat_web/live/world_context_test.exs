@@ -24,7 +24,22 @@ defmodule ChatWeb.WorldContextTest do
     ensure_started(World.Manager)
     ensure_started(World.ModelRegistry)
 
+    setup_world_sandbox()
+
     :ok
+  end
+
+  # A world the world selector lists. `World.Manager.list_worlds/0` leaves out
+  # worlds marked as test worlds, and only listed worlds can be selected, so
+  # this one is created without that mark. Its id starts with `test_`, it is
+  # ephemeral, so nothing of it is on disk, and it is destroyed when the test
+  # ends. Create it before mounting a page: the selector offers the worlds
+  # loaded when the page mounted.
+  defp create_listed_world(name) do
+    world_id = "test_#{name}_#{System.unique_integer([:positive])}"
+    {:ok, world} = WorldManager.create(world_id, id: world_id, mode: :ephemeral)
+    on_exit(fn -> WorldManager.destroy(world.id) end)
+    world
   end
 
   describe "world selector on dashboard" do
@@ -142,50 +157,58 @@ defmodule ChatWeb.WorldContextTest do
       # Ensure dashboard is loaded
       {:ok, _view, _html} = live(conn, "/dashboard")
 
-      # Add an episode to default world
+      # A world of this test's own, created with its embedder, so nothing is
+      # written to a real world.
+      {:ok, world} = create_test_world("episode_store")
+
       unique_state = "Test episode #{:erlang.unique_integer([:positive])}"
 
-      MemoryStore.add_episode(
-        unique_state,
-        "test_action",
-        "test_outcome",
-        ["default", "test"],
-        world_id: "default"
-      )
+      assert {:ok, _id} =
+               MemoryStore.add_episode(
+                 unique_state,
+                 "test_action",
+                 "test_outcome",
+                 ["test"],
+                 world_id: world.id
+               )
 
-      # Query should find it
-      {:ok, episodes} = MemoryStore.all_episodes(world_id: "default")
-      assert Enum.any?(episodes, fn ep -> ep.state == unique_state end)
+      # The world holds that episode and nothing else.
+      {:ok, episodes} = MemoryStore.all_episodes(world_id: world.id)
+      assert [%{state: ^unique_state}] = episodes
     end
 
     test "episodes in world A are NOT visible in world B", %{conn: conn} do
       # Ensure dashboard is loaded
       {:ok, _view, _html} = live(conn, "/dashboard")
 
-      # Create a unique episode identifier
-      world_a_id = "test_world_a_#{:erlang.unique_integer([:positive])}"
-      world_b_id = "test_world_b_#{:erlang.unique_integer([:positive])}"
+      # Two worlds of this test's own, each created with its embedder.
+      {:ok, world_a} = create_test_world("world_a")
+      {:ok, world_b} = create_test_world("world_b")
+      world_a_id = world_a.id
+      world_b_id = world_b.id
 
       unique_state_a = "Episode only in world A #{:erlang.unique_integer([:positive])}"
       unique_state_b = "Episode only in world B #{:erlang.unique_integer([:positive])}"
 
       # Add episode to world A
-      MemoryStore.add_episode(
-        unique_state_a,
-        "test_action",
-        "test_outcome",
-        ["isolation_test"],
-        world_id: world_a_id
-      )
+      assert {:ok, _} =
+               MemoryStore.add_episode(
+                 unique_state_a,
+                 "test_action",
+                 "test_outcome",
+                 ["isolation_test"],
+                 world_id: world_a_id
+               )
 
       # Add episode to world B
-      MemoryStore.add_episode(
-        unique_state_b,
-        "test_action",
-        "test_outcome",
-        ["isolation_test"],
-        world_id: world_b_id
-      )
+      assert {:ok, _} =
+               MemoryStore.add_episode(
+                 unique_state_b,
+                 "test_action",
+                 "test_outcome",
+                 ["isolation_test"],
+                 world_id: world_b_id
+               )
 
       # Query world A - should find world_a episode, NOT world_b episode
       {:ok, episodes_a} = MemoryStore.all_episodes(world_id: world_a_id)
@@ -217,95 +240,136 @@ defmodule ChatWeb.WorldContextTest do
   end
 
   describe "switching between existing worlds" do
-    setup %{conn: conn} do
-      # Get list of available worlds
-      {:ok, _view, _html} = live(conn, "/dashboard")
-      worlds = WorldManager.list_worlds()
-
-      # Find a second world (if one exists besides default)
-      other_world =
-        worlds
-        |> Enum.find(fn w -> w.id != "default" end)
-
-      %{other_world: other_world}
+    setup do
+      %{other_world: create_listed_world("world_context_switch")}
     end
 
     test "can switch to another existing world", %{conn: conn, other_world: other_world} do
-      # Skip if no other world exists
-      if other_world do
-        {:ok, view, _html} = live(conn, "/dashboard")
+      {:ok, view, _html} = live(conn, "/dashboard")
 
-        # Switch to the other world
-        html =
-          view
-          |> form("form[phx-change=switch_world]", %{world_id: other_world.id})
-          |> render_change()
-
-        # UI should reflect the change
-        assert html =~ other_world.id
-      end
-    end
-
-    test "can switch back to default from another world", %{conn: conn, other_world: other_world} do
-      # Skip if no other world exists
-      if other_world do
-        {:ok, view, _html} = live(conn, "/dashboard")
-
-        # Switch to other world first
+      # Switch to the other world
+      html =
         view
         |> form("form[phx-change=switch_world]", %{world_id: other_world.id})
         |> render_change()
 
-        # Now switch back to default
-        html =
-          view
-          |> form("form[phx-change=switch_world]", %{world_id: "default"})
-          |> render_change()
+      # UI should reflect the change
+      assert html =~ other_world.id
+      assert has_element?(view, ~s(#world-select option[value="#{other_world.id}"][selected]))
+      refute has_element?(view, ~s(#world-select option[value="default"][selected]))
+    end
 
-        # Should show default
-        assert html =~ "default"
-      end
+    test "can switch back to default from another world", %{conn: conn, other_world: other_world} do
+      {:ok, view, _html} = live(conn, "/dashboard")
+
+      # Switch to other world first
+      view
+      |> form("form[phx-change=switch_world]", %{world_id: other_world.id})
+      |> render_change()
+
+      assert has_element?(view, ~s(#world-select option[value="#{other_world.id}"][selected]))
+
+      # Now switch back to default
+      view
+      |> form("form[phx-change=switch_world]", %{world_id: "default"})
+      |> render_change()
+
+      # Should show default
+      assert has_element?(view, ~s(#world-select option[value="default"][selected]))
+      refute has_element?(view, ~s(#world-select option[value="#{other_world.id}"][selected]))
     end
 
     test "switching worlds updates world models section", %{conn: conn, other_world: other_world} do
-      if other_world do
-        {:ok, view, _html} = live(conn, "/dashboard")
+      {:ok, view, _html} = live(conn, "/dashboard")
 
-        # Switch to other world
-        html =
-          view
-          |> form("form[phx-change=switch_world]", %{world_id: other_world.id})
-          |> render_change()
+      # Switch to other world
+      html =
+        view
+        |> form("form[phx-change=switch_world]", %{world_id: other_world.id})
+        |> render_change()
 
-        # World models section should reflect the change
-        assert html =~ "World Models"
-        assert html =~ other_world.id
+      # World models section should reflect the change
+      assert html =~ "World Models"
+      assert html =~ other_world.id
+    end
+  end
+
+  describe "the selected world belongs to one web user" do
+    setup do
+      %{other: create_listed_world("world_context_other")}
+    end
+
+    test "switching in one user's session leaves another user's world alone", %{other: other} do
+      alice = get(build_conn(), "/worlds")
+      bob = get(build_conn(), "/worlds")
+      bob_id = get_session(bob, "user_id")
+
+      {:ok, alice_view, _html} = live(alice)
+      {:ok, bob_view, _html} = live(bob)
+
+      initial = ChatWeb.Worlds.initial_world_id()
+      assert bob_view |> element("#web-user-world") |> render() =~ initial
+
+      alice_view |> element("#select-world-#{other.id}") |> render_click()
+
+      assert alice_view |> element("#web-user-world") |> render() =~ other.id
+      assert bob_view |> element("#web-user-world") |> render() =~ initial
+      refute bob_view |> element("#web-user-world") |> render() =~ other.id
+      assert Atlas.WebUsers.get!(bob_id).selected_world_id == initial
+    end
+
+    test "switching on one page moves the same user's other open pages", %{other: other} do
+      conn = get(build_conn(), "/worlds")
+
+      {:ok, first_page, _html} = live(conn)
+      {:ok, second_page, _html} = live(recycle(conn), "/worlds")
+
+      first_page |> element("#select-world-#{other.id}") |> render_click()
+
+      assert second_page |> element("#web-user-world") |> render() =~ other.id
+    end
+  end
+
+  describe "a selected world that was purged" do
+    test "is shown as not in the world list, and a conversation in it raises naming the world" do
+      conn = get(build_conn(), "/worlds")
+      user_id = get_session(conn, "user_id")
+
+      world_id = "test_world_context_purged_#{System.unique_integer([:positive])}"
+      {:ok, world} = WorldManager.create(world_id, id: world_id, mode: :ephemeral)
+      user_id |> Atlas.WebUsers.get!() |> Atlas.WebUsers.select_world!(world.id)
+
+      :ok = WorldManager.purge(world.id)
+      assert Atlas.WebUsers.get!(user_id).selected_world_id == world.id
+
+      {:ok, view, _html} = live(recycle(conn), "/dashboard")
+
+      assert view |> element("#selected-world") |> render() =~ "not in the world list"
+      assert has_element?(view, ~s(#world-select option[value="#{world.id}"][selected]), "(not in the world list)")
+
+      assert_raise ArgumentError, ~r/world "#{world.id}" is not loaded/, fn ->
+        Brain.create_conversation(world_id: world.id)
       end
     end
   end
 
   describe "flash messages" do
-    setup %{conn: conn} do
-      {:ok, _view, _html} = live(conn, "/dashboard")
-      worlds = WorldManager.list_worlds()
-      other_world = Enum.find(worlds, fn w -> w.id != "default" end)
-      %{other_world: other_world}
+    setup do
+      %{other_world: create_listed_world("world_context_flash")}
     end
 
     test "switching world shows confirmation flash", %{conn: conn, other_world: other_world} do
-      if other_world do
-        {:ok, view, _html} = live(conn, "/dashboard")
+      {:ok, view, _html} = live(conn, "/dashboard")
 
-        # Switch to another world
-        view
-        |> form("form[phx-change=switch_world]", %{world_id: other_world.id})
-        |> render_change()
+      # Switch to another world
+      view
+      |> form("form[phx-change=switch_world]", %{world_id: other_world.id})
+      |> render_change()
 
-        html = render(view)
+      html = render(view)
 
-        # Flash message should appear
-        assert html =~ "Switched to world:"
-      end
+      # Flash message should appear
+      assert html =~ "Switched to world: #{other_world.id}"
     end
   end
 end

@@ -1,0 +1,58 @@
+[
+  {
+    "text": "can I see you",
+    "tokens": [
+      "can",
+      "I",
+      "see",
+      "you"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-2b503c59",
+    "intent": "smalltalk.user.wants_to_see_agent_again"
+  },
+  {
+    "text": "I hope see you again",
+    "tokens": [
+      "I",
+      "hope",
+      "see",
+      "you",
+      "again"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-f1598349",
+    "intent": "smalltalk.user.wants_to_see_agent_again"
+  },
+  {
+    "text": "I miss 'll you",
+    "tokens": [
+      "I",
+      "miss",
+      "'ll",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "AUX",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-0a14ca64",
+    "intent": "smalltalk.user.wants_to_see_agent_again"
+  }
+]

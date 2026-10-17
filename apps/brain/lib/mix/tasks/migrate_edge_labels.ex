@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.MigrateEdgeLabels do
   @shortdoc "Migrate legacy edge labels to SCREAMING_SNAKE canonical form"
   @moduledoc """
-  One-shot migration that renames legacy edge types in AGE graphs
+  One-shot migration that renames legacy edge types in a world's AGE graphs
   to the canonical SCREAMING_SNAKE form defined in Atlas.Graph.EdgeLabels.
 
   Preserves all edge properties (count, source, etc.) during migration.
@@ -9,7 +9,7 @@ defmodule Mix.Tasks.MigrateEdgeLabels do
 
   ## Usage
 
-      mix migrate_edge_labels
+      mix migrate_edge_labels --world default
   """
 
   use Mix.Task
@@ -20,7 +20,14 @@ defmodule Mix.Tasks.MigrateEdgeLabels do
   ]
 
   @impl true
-  def run(_args) do
+  def run(args) do
+    {opts, _, invalid} = OptionParser.parse(args, strict: [world: :string])
+    if invalid != [], do: Mix.raise("migrate_edge_labels: unknown options #{inspect(invalid)}")
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("migrate_edge_labels needs --world <id>, the world whose graphs are migrated")
+
     Mix.Task.run("app.start")
 
     unless Brain.AtlasIntegration.available?() do
@@ -29,8 +36,8 @@ defmodule Mix.Tasks.MigrateEdgeLabels do
 
     Mix.shell().info("Atlas is reachable. Starting edge label migration...")
 
-    Enum.each(@migrations, fn {graph, old_label, new_label} ->
-      migrate_label(graph, old_label, new_label)
+    Enum.each(@migrations, fn {kind, old_label, new_label} ->
+      migrate_label(Atlas.Graph.world_graph(kind, world_id), old_label, new_label)
     end)
 
     Mix.shell().info("Edge label migration complete.")

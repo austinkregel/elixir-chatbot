@@ -56,9 +56,18 @@ defmodule Brain.Response.ResponseEvaluator do
   Evaluates the realized response against the analysis context.
 
   Returns a `%Score{}` with per-dimension scores and the overall score.
+
+  The response is itself run through the analysis pipeline. `opts` must carry
+  `:world_id`, the world the response is analyzed in, and may carry
+  `:side_effects`, which is passed to that run; `false` keeps the analysis of
+  the bot's own response from writing.
   """
-  def evaluate(primitives, response, %ChunkAnalysis{} = analysis) when is_list(primitives) do
-    response_analysis = analyze_response(response)
+  def evaluate(primitives, response, analysis, opts)
+
+  def evaluate(primitives, response, %ChunkAnalysis{} = analysis, opts) when is_list(primitives) do
+    world_id = world_id!(opts)
+    pipeline_opts = [world_id: world_id] ++ Keyword.take(opts, [:side_effects])
+    response_analysis = analyze_response(response, pipeline_opts)
 
     speech_act = score_speech_act_alignment(response_analysis, analysis)
     confidence = score_confidence_alignment(primitives, analysis)
@@ -67,8 +76,8 @@ defmodule Brain.Response.ResponseEvaluator do
     slots = score_slot_coverage(primitives, analysis)
     natural = score_naturalness(response)
     echo = score_echo_avoidance(response, analysis)
-    grounding = score_belief_grounding(response_analysis, primitives, analysis)
-    epistemic = score_epistemic_consistency(response_analysis, analysis)
+    grounding = score_belief_grounding(response_analysis, primitives, analysis, world_id)
+    epistemic = score_epistemic_consistency(response_analysis, analysis, world_id)
 
     overall = weighted_average([
       {speech_act, 0.12},
@@ -111,11 +120,23 @@ defmodule Brain.Response.ResponseEvaluator do
       overall: overall,
       weakest_dimension: weakest,
       converged: overall >= @convergence_threshold,
-      silence_preferred: overall < @silence_threshold
+      silence_preferred: silence_preferred?(overall, primitives)
     }
   end
 
-  def evaluate(_, _, _), do: %Score{converged: true, overall: 0.5}
+  def evaluate(_, _, _, _), do: %Score{converged: true, overall: 0.5}
+
+  @doc """
+  Whether a response scored `overall` is better left unsaid: when it scores
+  under the silence threshold, unless it answers a service's error
+  (`Brain.Response.SurfaceRealizer.service_reply?/1`). Such a reply tells the
+  user what they asked for was not done, or asks what is needed to do it, so
+  it is never withheld however it scores.
+  """
+  @spec silence_preferred?(float(), [Brain.Response.Primitive.t()]) :: boolean()
+  def silence_preferred?(overall, primitives) when is_number(overall) and is_list(primitives) do
+    overall < @silence_threshold and not Enum.any?(primitives, &Brain.Response.SurfaceRealizer.service_reply?/1)
+  end
 
   @doc "Maps a weak dimension to the pipeline stage that should be re-run."
   def dimension_to_stage(:speech_act_alignment), do: :discourse_planner
@@ -131,8 +152,8 @@ defmodule Brain.Response.ResponseEvaluator do
 
   # --- Response analysis ---
 
-  defp analyze_response(response) when is_binary(response) and response != "" do
-    Pipeline.process(response)
+  defp analyze_response(response, pipeline_opts) when is_binary(response) and response != "" do
+    Pipeline.process(response, pipeline_opts)
   rescue
     e ->
       Logger.debug("ResponseEvaluator: Pipeline.process on response failed: #{Exception.message(e)}")
@@ -141,7 +162,18 @@ defmodule Brain.Response.ResponseEvaluator do
     :exit, _ -> nil
   end
 
-  defp analyze_response(_), do: nil
+  defp analyze_response(_, _), do: nil
+
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      _ ->
+        raise ArgumentError,
+              "ResponseEvaluator.evaluate needs :world_id, the world the response is analyzed in, got: #{inspect(Keyword.get(opts, :world_id))}"
+    end
+  end
 
   # --- Dimension scorers ---
 
@@ -327,14 +359,15 @@ defmodule Brain.Response.ResponseEvaluator do
 
   # --- Belief grounding ---
 
-  defp score_belief_grounding(response_analysis, _primitives, _analysis) do
+  # The world is resolved by `evaluate/4`, outside the rescues below.
+  defp score_belief_grounding(response_analysis, _primitives, _analysis, world_id) do
     response_entities = extract_response_entities(response_analysis)
 
     if response_entities == [] do
       0.7
     else
       if epistemic_services_ready?() do
-        scores = Enum.map(response_entities, &score_entity_belief/1)
+        scores = Enum.map(response_entities, &score_entity_belief(&1, world_id))
         Enum.sum(scores) / max(length(scores), 1)
       else
         0.7
@@ -354,7 +387,7 @@ defmodule Brain.Response.ResponseEvaluator do
     end)
   end
 
-  defp score_entity_belief(entity) do
+  defp score_entity_belief(entity, world_id) do
     value = Map.get(entity, :value) || ""
     entity_type = Map.get(entity, :entity_type) || "unknown"
 
@@ -363,9 +396,9 @@ defmodule Brain.Response.ResponseEvaluator do
     else
       predicate = safe_to_atom(entity_type)
 
-      case BeliefStore.query_beliefs(subject: :world, predicate: predicate, min_confidence: 0.3) do
+      case BeliefStore.query_beliefs(world_id, subject: :world, predicate: predicate, min_confidence: 0.3) do
         {:ok, beliefs} when beliefs != [] ->
-          score_against_beliefs(value, beliefs)
+          score_against_beliefs(value, beliefs, world_id)
 
         _ ->
           0.7
@@ -377,7 +410,7 @@ defmodule Brain.Response.ResponseEvaluator do
     :exit, _ -> 0.7
   end
 
-  defp score_against_beliefs(claim_value, beliefs) do
+  defp score_against_beliefs(claim_value, beliefs, world_id) do
     scores = Enum.map(beliefs, fn belief ->
       belief_object = to_string(belief.object)
 
@@ -392,7 +425,7 @@ defmodule Brain.Response.ResponseEvaluator do
         not is_related ->
           0.7
 
-        is_related and check_belief_justified?(belief) ->
+        is_related and check_belief_justified?(belief, world_id) ->
           check_disclosure_score(belief)
 
         is_related ->
@@ -406,11 +439,11 @@ defmodule Brain.Response.ResponseEvaluator do
     if scores == [], do: 0.7, else: Enum.min(scores)
   end
 
-  defp check_belief_justified?(belief) do
+  defp check_belief_justified?(belief, world_id) do
     case belief.node_id do
       nil -> true
       node_id ->
-        case JTMS.is_in?(node_id) do
+        case JTMS.is_in?(world_id, node_id) do
           true -> true
           false -> false
           {:error, _} -> true
@@ -436,19 +469,19 @@ defmodule Brain.Response.ResponseEvaluator do
 
   # --- Epistemic consistency ---
 
-  defp score_epistemic_consistency(response_analysis, analysis) do
+  defp score_epistemic_consistency(response_analysis, analysis, world_id) do
     if not epistemic_services_ready?() do
       0.8
     else
-      consistency_score = check_jtms_consistency()
+      consistency_score = check_jtms_consistency(world_id)
       drift_score = check_stance_drift(response_analysis, analysis)
 
       consistency_score * 0.6 + drift_score * 0.4
     end
   end
 
-  defp check_jtms_consistency do
-    case JTMS.check_consistency() do
+  defp check_jtms_consistency(world_id) do
+    case JTMS.check_consistency(world_id) do
       {:ok, :consistent} -> 1.0
       {:error, {:contradiction, _node_id}} -> 0.2
       _ -> 0.8

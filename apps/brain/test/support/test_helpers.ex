@@ -3,9 +3,11 @@ defmodule Brain.TestHelpers do
 
   alias Brain.Analysis.Pipeline
   alias Brain.TestWorldSandbox
-  alias Brain.ML.EntityExtractor
   alias Brain.ML.Gazetteer
   import ExUnit.Callbacks
+
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
 
   @doc "Ensures a supervised process is started, handling already-started cases\nand race conditions during process shutdown/restart cycles.\n"
   def ensure_started(child_spec) do
@@ -33,6 +35,26 @@ defmodule Brain.TestHelpers do
 
   defp ensure_started(_child_spec, 0) do
     {:error, :max_retries_exceeded}
+  end
+
+  @doc """
+  Starts what tagging with `Brain.ML.POSTagger` needs when the application is
+  not running: EXLA, and `Brain.ML.Lexicon` and
+  `Brain.ML.POSTagger.LexicalFeatures` under the test's supervisor, each only
+  when it is not already running. Call it from `setup_all`.
+  """
+  def start_pos_tagger! do
+    {:ok, _} = Application.ensure_all_started(:exla)
+
+    for {name, child} <- [
+          {Brain.ML.Lexicon, Brain.ML.Lexicon},
+          {Brain.ML.POSTagger.LexicalFeatures, {Brain.ML.POSTagger.LexicalFeatures, []}}
+        ],
+        Process.whereis(name) == nil do
+      start_supervised!(child)
+    end
+
+    :ok
   end
 
   @doc "Repeatedly calls `get_fn` and checks the result with `check_fn` until it returns true\nor max_attempts is reached. Returns the value from get_fn when check succeeds.\n\n## Example\n\n    eventually(\n      fn -> render(view) end,\n      fn html -> String.contains?(html, \"expected\") end,\n      100\n    )\n"
@@ -72,8 +94,6 @@ which starts the full supervision tree.
       Gazetteer.load_all()
     end
 
-    EntityExtractor.load_entity_maps()
-
     Brain.Test.ModelFactory.train_and_load_test_models()
 
     :ok
@@ -92,7 +112,7 @@ this is typically a no-op, but some tests call it directly as a safety check.
     start_test_services()
   end
 
-  @doc "Sets up the test world sandbox for the current test.\n\nThis is a convenience wrapper around `Brain.TestWorldSandbox.setup_world_sandbox/0`.\nCall this in your test's `setup` block to enable automatic world cleanup.\n\n## Example\n\n    setup do\n      setup_world_sandbox()\n    end\n"
+  @doc "Sets up the test world sandbox for the current test.\n\nThis is a convenience wrapper around `Brain.TestWorldSandbox.setup_world_sandbox/0`.\nCall this in your test's `setup` block; it raises unless test worlds are written\nto the test world directory.\n\n## Example\n\n    setup do\n      setup_world_sandbox()\n    end\n"
   def setup_world_sandbox do
     TestWorldSandbox.setup_world_sandbox()
   end
@@ -109,9 +129,18 @@ this is typically a no-op, but some tests call it directly as a safety check.
     :ok
   end
 
-  @doc "Evaluates input and returns both the response and the analysis context.\n\nThis allows tests to assert on semantic meaning (intent, speech_act, entities)\nrather than response text, making tests resilient to dynamic response variations.\n\n## Example\n\n    {:ok, response, context} = evaluate_with_context(conv_id, \"Hello!\")\n    assert context.speech_act.sub_type == :greeting\n\n## Returns\n\n- `{:ok, response, context}` where context contains intent, speech_act, entities, etc.\n- `{:error, reason}` if evaluation fails\n"
+  @doc """
+  `Brain.evaluate/3` for a turn said in UTC. A test has no browser to give the
+  zone its turns' dates and times are read in, so it names UTC
+  (`Brain.Temporal.Zone.utc/0`); `opts` are the evaluation's other options.
+  """
+  def evaluate_in_utc(conversation_id, input, opts \\ []) do
+    Brain.evaluate(conversation_id, input, [time_zone: Brain.Temporal.Zone.utc()] ++ opts)
+  end
+
+  @doc "Evaluates input, said in UTC (`evaluate_in_utc/3`), and returns both the response and the analysis context.\n\nThis allows tests to assert on semantic meaning (intent, speech_act, entities)\nrather than response text, making tests resilient to dynamic response variations.\n\n## Example\n\n    {:ok, response, context} = evaluate_with_context(conv_id, \"Hello!\")\n    assert context.speech_act.sub_type == :greeting\n\n## Returns\n\n- `{:ok, response, context}` where context contains intent, speech_act, entities, etc.\n- `{:error, reason}` if evaluation fails\n"
   def evaluate_with_context(conversation_id, input, opts \\ []) do
-    case Brain.evaluate(conversation_id, input, opts) do
+    case evaluate_in_utc(conversation_id, input, opts) do
       {:ok, %{response: response, context: context}} ->
         {:ok, response, context || %{}}
 
@@ -283,9 +312,9 @@ this is typically a no-op, but some tests call it directly as a safety check.
            "Response should not match #{inspect(pattern)}, got: #{response}"
   end
 
-  @doc "Analyzes the bot's response using the Pipeline to interpret what intent it represents.\n\nThis allows tests to verify that the bot \"understands\" what it responded with\nby having it interpret its own output.\n\nReturns the analysis result from Pipeline.process/1.\n\n## Example\n\n    {:ok, response, _context} = evaluate_with_context(conv_id, \"Hello!\")\n    response_analysis = analyze_bot_response(response)\n    assert_response_is_greeting(response_analysis)\n"
+  @doc "Analyzes the bot's response using the Pipeline to interpret what intent it represents.\n\nThis allows tests to verify that the bot \"understands\" what it responded with\nby having it interpret its own output.\n\nReturns the analysis result from Pipeline.process/2, run in the world the\ntest suite runs in.\n\n## Example\n\n    {:ok, response, _context} = evaluate_with_context(conv_id, \"Hello!\")\n    response_analysis = analyze_bot_response(response)\n    assert_response_is_greeting(response_analysis)\n"
   def analyze_bot_response(response) when is_binary(response) do
-    Pipeline.process(response)
+    Pipeline.process(response, world_id: @world_id)
   end
 
   @doc "Asserts that the bot's response, when analyzed by Pipeline, indicates a greeting.\n\nThis uses the Pipeline to interpret the response and checks if it\nwould be classified as a greeting speech act. This verifies that\nBrain \"understands\" what it responded with.\n"
@@ -414,7 +443,6 @@ this is typically a no-op, but some tests call it directly as a safety check.
         Brain.ML.InformalExpansions,
         Brain.ML.Gazetteer,
         Brain.ML.SentimentClassifierSimple,
-        Brain.ML.EntityExtractor,
         Brain.Response.TemplateStore,
         Brain.Response.TemplateBlender,
         Brain.Analysis.AnalyzerCalibration
@@ -739,38 +767,23 @@ this is typically a no-op, but some tests call it directly as a safety check.
     end
   end
 
+  # Training rows only: this builds the answer key `classify_response_all/2`
+  # scores against, and it must not contain held-out rows.
   defp do_load_gold_standard_intents do
-    gold_standard_path =
-      case :code.priv_dir(:brain) do
-        {:error, _} -> Path.join(["apps", "brain", "priv", "evaluation", "intent", "gold_standard.json"])
-        priv_dir -> Path.join(priv_dir, "evaluation/intent/gold_standard.json")
-      end
+    "intent"
+    |> Brain.ML.EvaluationStore.load_gold_standard(:train)
+    |> Enum.group_by(fn item -> item["intent"] end)
+    |> Enum.map(fn {intent, items} ->
+      texts =
+        items
+        |> Enum.map(fn item -> item["text"] end)
+        |> Enum.filter(&is_binary/1)
+        |> Enum.filter(&(&1 != ""))
 
-    case File.read(gold_standard_path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, data} when is_list(data) ->
-            data
-            |> Enum.group_by(fn item -> item["intent"] end)
-            |> Enum.map(fn {intent, items} ->
-              texts =
-                items
-                |> Enum.map(fn item -> item["text"] end)
-                |> Enum.filter(&is_binary/1)
-                |> Enum.filter(&(&1 != ""))
-
-              {intent, texts}
-            end)
-            |> Enum.filter(fn {intent, texts} -> intent != nil and texts != [] end)
-            |> Map.new()
-
-          _ ->
-            %{}
-        end
-
-      {:error, _} ->
-        %{}
-    end
+      {intent, texts}
+    end)
+    |> Enum.filter(fn {intent, texts} -> intent != nil and texts != [] end)
+    |> Map.new()
   end
 
   defp merge_template_sources(templates, gold_standard) do
@@ -807,5 +820,44 @@ this is typically a no-op, but some tests call it directly as a safety check.
     else
       dot / (mag1 * mag2)
     end
+  end
+
+  @doc """
+  Up to `limit` NER gold training sentences, taken by a fixed stride, in which
+  entity extraction in `world_id` leaves a span undecided before any context
+  is weighed, as `{text, spans}`: the undecided spans whose text no decided
+  entity of the sentence shares. Any extraction of the sentence -- with
+  discourse, speech act or intent -- leaves them undecided too, so a test can
+  follow them through whatever runs on the sentence. Raises when no sentence
+  has one, since a test built on them would then exercise nothing.
+  """
+  def undecided_span_cases(world_id, limit) when is_binary(world_id) and is_integer(limit) and limit > 0 do
+    rows = Brain.ML.EvaluationStore.load_gold_standard("ner", :train)
+
+    cases =
+      rows
+      |> Enum.take_every(max(div(length(rows), 200), 1))
+      |> Enum.map(& &1["text"])
+      |> Enum.flat_map(fn text ->
+        %{entities: entities, unresolved_spans: unresolved} =
+          Brain.ML.EntityExtractor.extract(text, world_id: world_id, skip_disambiguation: true)
+
+        decided_values = MapSet.new(entities, &String.downcase(&1.value))
+
+        undecided =
+          Enum.filter(unresolved, fn span ->
+            span.unresolved_reason in [:insufficient_evidence, :no_measured_reading] and
+              not MapSet.member?(decided_values, String.downcase(span.value))
+          end)
+
+        if undecided == [], do: [], else: [{text, undecided}]
+      end)
+      |> Enum.take(limit)
+
+    if cases == [] do
+      raise "no NER gold sentence leaves a span undecided in world #{inspect(world_id)}; nothing would be exercised"
+    end
+
+    cases
   end
 end

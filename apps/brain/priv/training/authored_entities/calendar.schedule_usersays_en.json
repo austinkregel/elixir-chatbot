@@ -1,0 +1,224 @@
+[
+  {
+    "data": [
+      {
+        "text": "Add a "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meeting"
+      },
+      {
+        "text": " to my schedule"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Add an event to my calendar"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Book a "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meeting"
+      },
+      {
+        "text": " with the team"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Book an "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "appointment"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Book the conference room"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Create a calendar event"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Put a "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meeting"
+      },
+      {
+        "text": " on my calendar"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Schedule a "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "call"
+      },
+      {
+        "text": " with "
+      },
+      {
+        "alias": "person",
+        "meta": "@person",
+        "text": "Sarah"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Schedule a "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meeting"
+      },
+      {
+        "text": " for "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "next week"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Schedule a "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meeting"
+      },
+      {
+        "text": " "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "tomorrow"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Schedule a "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "one on one"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Schedule a "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "team sync"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Schedule "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "lunch"
+      },
+      {
+        "text": " with "
+      },
+      {
+        "alias": "person",
+        "meta": "@person",
+        "text": "John"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Set up a "
+      },
+      {
+        "alias": "time",
+        "meta": "@time",
+        "text": "3pm"
+      },
+      {
+        "text": " "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "meeting"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Set up a "
+      },
+      {
+        "alias": "event",
+        "meta": "@sys.any",
+        "text": "call"
+      },
+      {
+        "text": " for "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "Friday"
+      }
+    ]
+  }
+]

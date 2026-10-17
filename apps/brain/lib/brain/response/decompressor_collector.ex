@@ -18,7 +18,8 @@ defmodule Brain.Response.DecompressorCollector do
 
   use GenServer
 
-  alias Brain.Response.RealizationPacket
+  alias Brain.Lattice.FragmentVectorizer
+  alias Brain.Response.{ChunkSegmenter, PhraseInventory, RealizationPacket}
 
   require Logger
 
@@ -45,11 +46,12 @@ defmodule Brain.Response.DecompressorCollector do
   Records a primitive->text training pair.
 
   Called by the SurfaceRealizer after rendering a primitive.
-  Only collects pairs with meaningful rendered text.
+  Only collects pairs with meaningful rendered text. `world_id` is the world
+  the response was realized in; the pair's fragments are analyzed in it.
   """
-  def collect(primitive, rendered_text, name \\ __MODULE__)
-  def collect(%{type: type, variant: variant, content: content}, rendered_text, name)
-      when is_binary(rendered_text) do
+  def collect(primitive, rendered_text, world_id, name \\ __MODULE__)
+  def collect(%{type: type, variant: variant, content: content}, rendered_text, world_id, name)
+      when is_binary(rendered_text) and is_binary(world_id) do
     if String.length(rendered_text) > 3 do
       pair = %{
         primitive: %{
@@ -58,6 +60,7 @@ defmodule Brain.Response.DecompressorCollector do
           content: serialize_content(content)
         },
         output: rendered_text,
+        world_id: world_id,
         source: "runtime",
         collected_at: System.system_time(:millisecond)
       }
@@ -72,7 +75,43 @@ defmodule Brain.Response.DecompressorCollector do
     :ok
   end
 
-  def collect(_, _, _), do: :ok
+  def collect(_, _, world_id, _) when is_binary(world_id), do: :ok
+
+  @doc """
+  Records a primitive->text training pair with an associated analysis for feature vectors.
+
+  Called by the SurfaceRealizer after rendering a primitive when analysis context is available.
+  `world_id` is the world the response was realized in.
+  """
+  def collect_with_analysis(primitive, rendered_text, analysis, world_id, name \\ __MODULE__)
+
+  def collect_with_analysis(%{type: type, variant: variant, content: content}, rendered_text, analysis, world_id, name)
+      when is_binary(rendered_text) and is_binary(world_id) do
+    if String.length(rendered_text) > 3 do
+      pair = %{
+        primitive: %{
+          type: to_string(type),
+          variant: if(variant, do: to_string(variant)),
+          content: serialize_content(content)
+        },
+        output: rendered_text,
+        world_id: world_id,
+        source: "runtime",
+        collected_at: System.system_time(:millisecond),
+        feature_vector: extract_feature_vector(analysis)
+      }
+
+      try do
+        GenServer.cast(name, {:collect_primitive, pair})
+      catch
+        :exit, _ -> :ok
+      end
+    end
+
+    :ok
+  end
+
+  def collect_with_analysis(_, _, _, world_id, _) when is_binary(world_id), do: :ok
 
   @doc """
   Records a plan-level training example.
@@ -234,6 +273,10 @@ defmodule Brain.Response.DecompressorCollector do
         total
       end
 
+    if primitives != [] do
+      feed_to_phrase_inventory(primitives)
+    end
+
     {total, state}
   end
 
@@ -259,6 +302,58 @@ defmodule Brain.Response.DecompressorCollector do
     e ->
       Logger.warning("DecompressorCollector: write failed: #{inspect(e)}")
   end
+
+  defp feed_to_phrase_inventory(pairs) do
+    if Code.ensure_loaded?(PhraseInventory) and PhraseInventory.ready?() do
+      fragments =
+        pairs
+        |> Enum.flat_map(fn pair ->
+          text = Map.get(pair, :output, "")
+          prim = Map.get(pair, :primitive, %{})
+
+          chunks = ChunkSegmenter.segment(Map.fetch!(pair, :world_id), text)
+
+          Enum.map(chunks, fn chunk ->
+            prototype_vector =
+              case FragmentVectorizer.vectorize_fragment_text(chunk.text, Map.fetch!(pair, :world_id)) do
+                {:ok, fv} -> fv
+                _ -> []
+              end
+
+            %{
+              "text" => chunk.text,
+              "chunk_type" => to_string(chunk.type),
+              "primitive_type" => Map.get(prim, :type, "content"),
+              "primitive_variant" => Map.get(prim, :variant),
+              "tone" => "neutral",
+              "tone_vector" => List.duplicate(0.0, 10),
+              "prototype_vector" => prototype_vector,
+              "source_intent" => "runtime",
+              "slots" => [],
+              "enrichment_fields" => [],
+              "conditions" => %{},
+              "origin" => "decompressor"
+            }
+          end)
+        end)
+
+      if fragments != [] do
+        PhraseInventory.add_fragments(fragments)
+        Logger.debug("DecompressorCollector: fed #{length(fragments)} fragments to PhraseInventory")
+      end
+    end
+  rescue
+    _ -> :ok
+  end
+
+  defp extract_feature_vector(nil), do: []
+  defp extract_feature_vector(%{feature_vector: fv}) when is_list(fv), do: fv
+
+  defp extract_feature_vector(analysis) when is_struct(analysis) do
+    Map.get(analysis, :feature_vector, [])
+  end
+
+  defp extract_feature_vector(_), do: []
 
   defp serialize_content(content) when is_map(content) do
     Map.new(content, fn

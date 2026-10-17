@@ -10,7 +10,25 @@ defmodule Brain.Knowledge.LearningTriggers do
 
   Subscribes to PubSub `learning:novel_input` and `learning:investigation`.
   Rate-limited with per-domain and global daily caps.
+
+  ## Auto-learning world
+
+  A novelty-triggered session researches for the auto-learning world. It is
+  stored in Atlas as the setting named by `auto_learning_world_setting/0`, so
+  it survives a restart. When no stored value exists yet, the
+  `:auto_learning_world_id` setting of the `:brain` application supplies it and
+  is written to Atlas at start, so the stored value is the one read from then
+  on; `set_auto_learning_world/2` changes and stores it (the settings page
+  does). Starting with neither a stored value nor that application setting
+  raises, and a session that triggers while the auto-learning world is not
+  loaded raises naming it.
+  An uncertainty follow-up joins the session it follows up, so it researches
+  for that session's world.
   """
+
+  # World.Manager is in a sibling umbrella app that depends on :brain.
+  # It is available at runtime but not at compile time.
+  @compile {:no_warn_undefined, World.Manager}
 
   use GenServer
   require Logger
@@ -26,6 +44,11 @@ defmodule Brain.Knowledge.LearningTriggers do
   @cleanup_interval_ms 60 * 60 * 1000
   @uncertainty_margin_threshold 0.12
   @uncertainty_entropy_threshold 0.92
+  @auto_learning_world_setting "auto_learning_world_id"
+
+  @doc "The name of the Atlas setting the auto-learning world is stored under."
+  @spec auto_learning_world_setting() :: String.t()
+  def auto_learning_world_setting, do: @auto_learning_world_setting
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -35,6 +58,24 @@ defmodule Brain.Knowledge.LearningTriggers do
   @doc "Returns current trigger stats."
   def stats(name \\ __MODULE__) do
     GenServer.call(name, :stats)
+  end
+
+  @doc "The world auto-triggered learning sessions start in."
+  @spec auto_learning_world(GenServer.server()) :: String.t()
+  def auto_learning_world(name \\ __MODULE__) do
+    GenServer.call(name, :auto_learning_world)
+  end
+
+  @doc """
+  Sets the world auto-triggered learning sessions start in and stores it in
+  Atlas, so it is still the auto-learning world after a restart.
+
+  Returns `{:error, {:world_not_loaded, world_id, reason}}` when no world with
+  that id is loaded, and leaves the setting unchanged.
+  """
+  @spec set_auto_learning_world(String.t(), GenServer.server()) :: :ok | {:error, term()}
+  def set_auto_learning_world(world_id, name \\ __MODULE__) when is_binary(world_id) do
+    GenServer.call(name, {:set_auto_learning_world, world_id})
   end
 
   @doc "Checks if the GenServer is ready."
@@ -55,10 +96,13 @@ defmodule Brain.Knowledge.LearningTriggers do
 
     Process.send_after(self(), :cleanup, @cleanup_interval_ms)
 
-    Logger.info("LearningTriggers started")
+    auto_learning_world_id = stored_auto_learning_world!()
+
+    Logger.info("LearningTriggers started", auto_learning_world_id: auto_learning_world_id)
 
     {:ok,
      %{
+       auto_learning_world_id: auto_learning_world_id,
        novel_inputs: %{},
        sessions_per_domain: %{},
        sessions_total_today: 0,
@@ -86,6 +130,24 @@ defmodule Brain.Knowledge.LearningTriggers do
   @impl true
   def handle_call(:ready?, _from, state) do
     {:reply, true, state}
+  end
+
+  @impl true
+  def handle_call(:auto_learning_world, _from, state) do
+    {:reply, state.auto_learning_world_id, state}
+  end
+
+  @impl true
+  def handle_call({:set_auto_learning_world, world_id}, _from, state) do
+    case World.Manager.get(world_id) do
+      {:ok, _world} ->
+        Atlas.Settings.put!(@auto_learning_world_setting, world_id)
+        Logger.info("LearningTriggers: auto-learning world set", auto_learning_world_id: world_id)
+        {:reply, :ok, %{state | auto_learning_world_id: world_id}}
+
+      {:error, reason} ->
+        {:reply, {:error, {:world_not_loaded, world_id, reason}}, state}
+    end
   end
 
   @impl true
@@ -193,28 +255,26 @@ defmodule Brain.Knowledge.LearningTriggers do
       if length(recent) >= @novelty_cluster_threshold do
         topic = build_topic_from_inputs(domain, recent)
 
-        case trigger_learning_session(topic) do
-          :ok ->
-            Logger.info("LearningTriggers: auto-triggered session for domain #{inspect(domain)}",
-              topic: topic,
-              novel_input_count: length(recent)
-            )
+        world_id = state.auto_learning_world_id
+        trigger_learning_session!(topic, world_id)
 
-            new_novel_inputs = Map.delete(state.novel_inputs, domain)
+        Logger.info("LearningTriggers: auto-triggered session for domain #{inspect(domain)}",
+          topic: topic,
+          world_id: world_id,
+          novel_input_count: length(recent)
+        )
 
-            %{
-              state
-              | novel_inputs: new_novel_inputs,
-                triggered_sessions: [
-                  %{domain: domain, topic: topic, timestamp: now}
-                  | state.triggered_sessions
-                ]
-            }
-            |> consume_session_slot(dkey)
+        new_novel_inputs = Map.delete(state.novel_inputs, domain)
 
-          :error ->
-            state
-        end
+        %{
+          state
+          | novel_inputs: new_novel_inputs,
+            triggered_sessions: [
+              %{domain: domain, topic: topic, world_id: world_id, timestamp: now}
+              | state.triggered_sessions
+            ]
+        }
+        |> consume_session_slot(dkey)
       else
         state
       end
@@ -238,18 +298,59 @@ defmodule Brain.Knowledge.LearningTriggers do
     }
   end
 
-  defp trigger_learning_session(topic) do
-    if Code.ensure_loaded?(LearningCenter) and
-         function_exported?(LearningCenter, :start_session, 2) do
-      case LearningCenter.start_session(topic, source: :auto_trigger) do
-        {:ok, _} -> :ok
-        _ -> :error
-      end
-    else
-      :error
+  defp trigger_learning_session!(topic, world_id) do
+    auto_learning_world_loaded!(world_id)
+
+    case LearningCenter.start_session(topic, world_id: world_id, source: :auto_trigger) do
+      {:ok, _session} ->
+        :ok
+
+      {:error, reason} ->
+        raise "LearningTriggers: the auto-triggered learning session on #{inspect(topic)} " <>
+                "in world #{inspect(world_id)} did not start: #{inspect(reason)}"
     end
-  rescue
-    _ -> :error
+  end
+
+  defp auto_learning_world_loaded!(world_id) do
+    case World.Manager.get(world_id) do
+      {:ok, _world} ->
+        :ok
+
+      {:error, reason} ->
+        raise "LearningTriggers: the auto-learning world #{inspect(world_id)} is not loaded " <>
+                "(#{inspect(reason)}). Load that world, or choose a loaded one on the settings page."
+    end
+  end
+
+  # The stored auto-learning world. With none stored yet, the configured one is
+  # stored, so it is the explicit value from then on.
+  defp stored_auto_learning_world! do
+    case Atlas.Settings.fetch(@auto_learning_world_setting) do
+      {:ok, world_id} ->
+        world_id
+
+      :error ->
+        world_id = configured_auto_learning_world!()
+        Atlas.Settings.put!(@auto_learning_world_setting, world_id)
+        world_id
+    end
+  end
+
+  defp configured_auto_learning_world! do
+    case Application.fetch_env(:brain, :auto_learning_world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError,
+              "config :brain, :auto_learning_world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError,
+              "config :brain, :auto_learning_world_id is not set and no auto-learning world is " <>
+                "stored in Atlas: LearningTriggers needs the world its auto-triggered learning " <>
+                "sessions start in"
+    end
   end
 
   defp build_topic_from_inputs(domain, inputs) do

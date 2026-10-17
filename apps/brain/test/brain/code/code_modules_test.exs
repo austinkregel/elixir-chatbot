@@ -93,6 +93,55 @@ defmodule Brain.Code.CodeModulesTest do
     test "module is loadable" do
       assert Code.ensure_loaded?(Brain.Code.QueryHandler)
     end
+
+    test "every query raises without a world" do
+      alias Brain.Code.QueryHandler
+
+      assert_raise ArgumentError, ~r/QueryHandler.handle needs :world_id/, fn ->
+        QueryHandler.handle("code.explain", [], query_text: "what does parse do")
+      end
+
+      # The world is checked before the intent, so a non-code intent raises too.
+      assert_raise ArgumentError, ~r/QueryHandler.handle needs :world_id/, fn ->
+        QueryHandler.handle("smalltalk.greetings.hello", [], [])
+      end
+
+      assert_raise ArgumentError, ~r/QueryHandler.explain needs :world_id/, fn ->
+        QueryHandler.explain("parse", [])
+      end
+
+      assert_raise ArgumentError, ~r/QueryHandler.find_usages needs :world_id/, fn ->
+        QueryHandler.find_usages("parse", [])
+      end
+
+      assert_raise ArgumentError, ~r/QueryHandler.signature needs :world_id/, fn ->
+        QueryHandler.signature("parse", [])
+      end
+
+      assert_raise ArgumentError, ~r/QueryHandler.list_symbols needs :world_id/, fn ->
+        QueryHandler.list_symbols("Brain.Code", limit: 5)
+      end
+
+      assert_raise ArgumentError, ~r/QueryHandler.search needs :world_id/, fn ->
+        QueryHandler.search("parse", [])
+      end
+
+      assert_raise ArgumentError, ~r/QueryHandler.stats needs :world_id/, fn ->
+        QueryHandler.stats([])
+      end
+    end
+
+    test "a world option that is not a world id raises" do
+      alias Brain.Code.QueryHandler
+
+      assert_raise ArgumentError, ~r/QueryHandler.stats option :world_id must be a world id, got: nil/, fn ->
+        QueryHandler.stats(world_id: nil)
+      end
+
+      assert_raise ArgumentError, ~r/QueryHandler.explain option :world_id must be a world id, got: ""/, fn ->
+        QueryHandler.explain("parse", world_id: "")
+      end
+    end
   end
 
   describe "Brain.Code.LanguageGrammar" do

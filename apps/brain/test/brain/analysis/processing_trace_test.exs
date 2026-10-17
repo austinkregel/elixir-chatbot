@@ -1,14 +1,15 @@
 defmodule Brain.Analysis.ProcessingTraceTest do
-  alias Brain.ML.EntityExtractor
   alias Brain.Analysis
   use Brain.Test.GraphCase, async: false
 
   alias Analysis.{ProcessingTrace, Interpretation}
   import Brain.TestHelpers
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup _context do
     start_test_services()
-    EntityExtractor.load_entity_maps()
     :ok
   end
 
@@ -92,14 +93,14 @@ defmodule Brain.Analysis.ProcessingTraceTest do
 
   describe "trace_processing/2" do
     test "returns {trace, primary_interpretation} tuple" do
-      {trace, interpretation} = ProcessingTrace.trace_processing("Hello there!")
+      {trace, interpretation} = ProcessingTrace.trace_processing("Hello there!", world_id: @world_id)
 
       assert %ProcessingTrace{} = trace
       assert %Interpretation{} = interpretation
     end
 
     test "traces single chunk correctly" do
-      {trace, _interpretation} = ProcessingTrace.trace_processing("Hello!")
+      {trace, _interpretation} = ProcessingTrace.trace_processing("Hello!", world_id: @world_id)
 
       assert trace.chunk_count == 1
       assert length(trace.chunks) == 1
@@ -110,7 +111,7 @@ defmodule Brain.Analysis.ProcessingTraceTest do
     end
 
     test "traces each semantic chunk independently" do
-      {trace, _interpretation} = ProcessingTrace.trace_processing("Hello! What's the weather?")
+      {trace, _interpretation} = ProcessingTrace.trace_processing("Hello! What's the weather?", world_id: @world_id)
 
       assert trace.chunk_count >= 1
       assert is_list(trace.chunks)
@@ -123,7 +124,7 @@ defmodule Brain.Analysis.ProcessingTraceTest do
 
     test "determines overall strategy from chunk strategies" do
       {trace, _interpretation} =
-        ProcessingTrace.trace_processing("Hello! What's the weather in Paris?")
+        ProcessingTrace.trace_processing("Hello! What's the weather in Paris?", world_id: @world_id)
 
       assert trace.overall_strategy in [
                :can_respond,
@@ -135,10 +136,18 @@ defmodule Brain.Analysis.ProcessingTraceTest do
 
     test "finds primary chunk (prioritizes questions/commands over greetings)" do
       {trace, _interpretation} =
-        ProcessingTrace.trace_processing("Hello! What is the weather in NYC?")
+        ProcessingTrace.trace_processing("Hello! What is the weather in NYC?", world_id: @world_id)
 
       if trace.chunk_count > 1 do
         assert trace.primary_intent != nil
+      end
+    end
+
+    test "raises without a world" do
+      for opts <- [[], [world_id: nil], [world_id: ""]] do
+        assert_raise ArgumentError, ~r/ProcessingTrace.trace_processing needs :world_id/, fn ->
+          ProcessingTrace.trace_processing("Hello there!", opts)
+        end
       end
     end
   end
@@ -160,7 +169,7 @@ defmodule Brain.Analysis.ProcessingTraceTest do
     end
 
     test "includes chunk details for multi-chunk input" do
-      {trace, _interpretation} = ProcessingTrace.trace_processing("Hello! What's the weather?")
+      {trace, _interpretation} = ProcessingTrace.trace_processing("Hello! What's the weather?", world_id: @world_id)
 
       display_map = ProcessingTrace.to_display_map(trace)
 
@@ -210,14 +219,14 @@ defmodule Brain.Analysis.ProcessingTraceTest do
 
   describe "multi-chunk handling" do
     test "Hello! What's the weather? produces multiple chunk traces" do
-      {trace, _interpretation} = ProcessingTrace.trace_processing("Hello! What's the weather?")
+      {trace, _interpretation} = ProcessingTrace.trace_processing("Hello! What's the weather?", world_id: @world_id)
       assert trace.chunk_count >= 1
       assert length(trace.chunks) == trace.chunk_count
     end
 
     test "primary chunk is substantive content over greeting" do
       {trace, _interpretation} =
-        ProcessingTrace.trace_processing("Hi there! What's the weather in New York?")
+        ProcessingTrace.trace_processing("Hi there! What's the weather in New York?", world_id: @world_id)
 
       if trace.chunk_count > 1 do
         primary_domain =
@@ -238,7 +247,7 @@ defmodule Brain.Analysis.ProcessingTraceTest do
 
     test "each chunk trace has independent analysis" do
       {trace, _interpretation} =
-        ProcessingTrace.trace_processing("Hello! Play some music. What's the weather?")
+        ProcessingTrace.trace_processing("Hello! Play some music. What's the weather?", world_id: @world_id)
 
       Enum.each(trace.chunks, fn chunk ->
         assert is_binary(chunk.text) or is_nil(chunk.text)
@@ -254,7 +263,8 @@ defmodule Brain.Analysis.ProcessingTraceTest do
 
       {_trace, _interpretation} =
         ProcessingTrace.trace_processing(
-          "Hello! What's the weather in NYC? Play some jazz music."
+          "Hello! What's the weather in NYC? Play some jazz music.",
+          world_id: @world_id
         )
 
       elapsed = System.monotonic_time(:millisecond) - start_time

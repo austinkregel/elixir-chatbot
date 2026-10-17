@@ -1,0 +1,58 @@
+[
+  {
+    "text": "can you are you ready",
+    "tokens": [
+      "can",
+      "you",
+      "are",
+      "you",
+      "ready"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-3aa5f6f1",
+    "intent": "smalltalk.agent.ready"
+  },
+  {
+    "text": "please were you ready",
+    "tokens": [
+      "please",
+      "were",
+      "you",
+      "ready"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-1b5ebb9f",
+    "intent": "smalltalk.agent.ready"
+  },
+  {
+    "text": "hey were you ready",
+    "tokens": [
+      "hey",
+      "were",
+      "you",
+      "ready"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "PRON",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-ced116c0",
+    "intent": "smalltalk.agent.ready"
+  }
+]

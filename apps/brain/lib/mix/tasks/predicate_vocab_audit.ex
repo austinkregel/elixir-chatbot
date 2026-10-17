@@ -15,7 +15,10 @@ defmodule Mix.Tasks.PredicateVocab.Audit do
      at runtime (produced by `Graph.Writer` when KG signals are active)
   2. ConceptNet relation types from `Brain.Lexicon.ConceptNet`
   3. Epistemic belief predicates (static list of known atom predicates)
-  4. TripleScorer relation_coverage from the trained model
+  4. TripleScorer relation_coverage from the trained model worlds are seeded
+     from (`Brain.ML.KnowledgeGraph.TripleScorer.trained_path/0`); absent raises
+
+  Predicates are normalized with that coverage (`PredicateNormalizer.normalize/2`).
 
   ## Output
 
@@ -53,10 +56,12 @@ defmodule Mix.Tasks.PredicateVocab.Audit do
     Mix.shell().info("=== Predicate Vocabulary Audit ===\n")
     Mix.shell().info("Canonical relations in alias table: #{length(canonical)}")
 
-    srl_report = audit_srl_frequencies(verbose)
-    conceptnet_report = audit_conceptnet(verbose)
-    epistemic_report = audit_epistemic(verbose)
-    scorer_report = audit_scorer_coverage(verbose)
+    coverage = trained_relation_coverage()
+
+    srl_report = audit_srl_frequencies(coverage, verbose)
+    conceptnet_report = audit_conceptnet(coverage, verbose)
+    epistemic_report = audit_epistemic(coverage, verbose)
+    scorer_report = classify_predicates("Scorer", Map.keys(coverage), coverage, verbose)
 
     all_oov =
       (srl_report.oov ++ conceptnet_report.oov ++ epistemic_report.oov)
@@ -96,7 +101,15 @@ defmodule Mix.Tasks.PredicateVocab.Audit do
     Mix.shell().info("\nAudit complete.")
   end
 
-  defp audit_srl_frequencies(verbose) do
+  defp trained_relation_coverage do
+    alias Brain.ML.KnowledgeGraph.TripleScorer
+
+    TripleScorer.trained_path()
+    |> TripleScorer.read!(:trained)
+    |> Map.get(:relation_coverage, %{})
+  end
+
+  defp audit_srl_frequencies(coverage, verbose) do
     path = srl_frequencies_path()
 
     predicates =
@@ -111,10 +124,10 @@ defmodule Mix.Tasks.PredicateVocab.Audit do
           []
       end
 
-    classify_predicates("SRL", predicates, verbose)
+    classify_predicates("SRL", predicates, coverage, verbose)
   end
 
-  defp audit_conceptnet(verbose) do
+  defp audit_conceptnet(coverage, verbose) do
     relations =
       if function_exported?(Brain.Lexicon.ConceptNet, :relation_types, 1) and
            Brain.Lexicon.ConceptNet.has_data?("dog") do
@@ -127,29 +140,17 @@ defmodule Mix.Tasks.PredicateVocab.Audit do
       end
 
     relations = Enum.uniq(relations)
-    classify_predicates("ConceptNet", relations, verbose)
+    classify_predicates("ConceptNet", relations, coverage, verbose)
   end
 
-  defp audit_epistemic(verbose) do
-    classify_predicates("Epistemic", @known_epistemic_predicates, verbose)
+  defp audit_epistemic(coverage, verbose) do
+    classify_predicates("Epistemic", @known_epistemic_predicates, coverage, verbose)
   end
 
-  defp audit_scorer_coverage(verbose) do
-    relations =
-      case Brain.ML.KnowledgeGraph.TripleScorer.relation_coverage() do
-        {:ok, coverage} when is_map(coverage) -> Map.keys(coverage)
-        _ ->
-          if verbose, do: Mix.shell().info("\n[Scorer] TripleScorer not ready")
-          []
-      end
-
-    classify_predicates("Scorer", relations, verbose)
-  end
-
-  defp classify_predicates(source, predicates, verbose) do
+  defp classify_predicates(source, predicates, coverage, verbose) do
     results =
       Enum.map(predicates, fn p ->
-        {p, PredicateNormalizer.normalize(p)}
+        {p, PredicateNormalizer.normalize(p, coverage)}
       end)
 
     mapped =

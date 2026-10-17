@@ -1,0 +1,24 @@
+[
+  {
+    "text": "I'd like to love you",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "love",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-86bf7184",
+    "intent": "smalltalk.user.loves_agent"
+  }
+]

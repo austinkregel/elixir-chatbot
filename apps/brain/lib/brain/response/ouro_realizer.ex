@@ -27,6 +27,9 @@ defmodule Brain.Response.OuroRealizer do
   `primitives` is the list of content-specified `%Primitive{}` structs.
   `analysis` is the primary `%ChunkAnalysis{}` for constraint building.
   `opts` may contain `:unified_context` for rich context serialization.
+
+  The metadata carries `:recurring_pattern`, the turn's recurring pattern the
+  realization packet named (`RealizationPacket.recurring_pattern/1`), or `nil`.
   """
   def realize(primitives, analysis \\ %ChunkAnalysis{}, opts \\ [])
 
@@ -36,6 +39,7 @@ defmodule Brain.Response.OuroRealizer do
 
   def realize(primitives, analysis, opts) when is_list(primitives) do
     messages = RealizationPacket.build(primitives, analysis, opts)
+    recurring_pattern = RealizationPacket.recurring_pattern(Keyword.get(opts, :unified_context))
 
     if Keyword.get(opts, :dry_run_ouro, false) do
       Logger.info("OuroRealizer: dry_run_ouro=true, returning ChatML messages without calling Ouro")
@@ -44,7 +48,8 @@ defmodule Brain.Response.OuroRealizer do
        %{
          messages: messages,
          source: :dry_run,
-         primitive_count: length(primitives)
+         primitive_count: length(primitives),
+         recurring_pattern: recurring_pattern
        }}
     else
       gen_opts = [
@@ -53,15 +58,15 @@ defmodule Brain.Response.OuroRealizer do
         repetition_penalty: Keyword.get(opts, :repetition_penalty, 1.3)
       ]
 
-      do_generate(messages, gen_opts, primitives)
+      do_generate(messages, gen_opts, primitives, recurring_pattern)
     end
   end
 
-  defp do_generate(messages, gen_opts, primitives) do
+  defp do_generate(messages, gen_opts, primitives, recurring_pattern) do
     case OuroModel.generate(messages, gen_opts) do
       {:ok, text} ->
         Logger.info("OuroRealizer: generated #{String.length(text)} chars, validating structural constraints")
-        validate_and_return(text, primitives)
+        validate_and_return(text, primitives, recurring_pattern)
 
       :fallback ->
         Logger.error("OuroRealizer: Ouro model not loaded")
@@ -73,13 +78,14 @@ defmodule Brain.Response.OuroRealizer do
     end
   end
 
-  defp validate_and_return(text, primitives) do
+  defp validate_and_return(text, primitives, recurring_pattern) do
     case ConstraintEnforcer.validate(text, primitives) do
       {:ok, validated_text} ->
         metadata = %{
           source: :ouro,
           model: "ouro-1.4b",
-          primitive_count: length(primitives)
+          primitive_count: length(primitives),
+          recurring_pattern: recurring_pattern
         }
 
         {:ok, validated_text, metadata}

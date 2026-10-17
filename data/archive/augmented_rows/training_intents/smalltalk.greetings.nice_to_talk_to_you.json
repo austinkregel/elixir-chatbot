@@ -1,0 +1,80 @@
+[
+  {
+    "text": "could you nice to talk to you",
+    "tokens": [
+      "could",
+      "you",
+      "nice",
+      "to",
+      "talk",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "ADV",
+      "PART",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-2e5eb31a",
+    "intent": "smalltalk.greetings.nice_to_talk_to_you"
+  },
+  {
+    "text": "hey it is nice talking to you",
+    "tokens": [
+      "hey",
+      "it",
+      "is",
+      "nice",
+      "talking",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-a6e29681",
+    "intent": "smalltalk.greetings.nice_to_talk_to_you"
+  },
+  {
+    "text": "I want to it's nice to talk to you",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "it",
+      "'s",
+      "nice",
+      "to",
+      "talk",
+      "to",
+      "you"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "PART",
+      "VERB",
+      "PART",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-ca32ce20",
+    "intent": "smalltalk.greetings.nice_to_talk_to_you"
+  }
+]

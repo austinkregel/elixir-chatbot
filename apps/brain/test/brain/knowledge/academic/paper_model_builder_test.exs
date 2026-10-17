@@ -4,6 +4,9 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
 
   alias Academic.{Paper, PaperModelBuilder}
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   def sample_paper(opts \\ []) do
     Paper.new(
       id: Keyword.get(opts, :id, "test-paper-123"),
@@ -23,10 +26,10 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
     )
   end
 
-  describe "extract_claims/1" do
+  describe "extract_claims/2" do
     test "extracts claims from paper with abstract" do
       paper = sample_paper()
-      claims = PaperModelBuilder.extract_claims(paper)
+      claims = PaperModelBuilder.extract_claims(paper, @world_id)
 
       assert is_list(claims)
       assert claims != []
@@ -39,14 +42,14 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
 
     test "returns empty list for paper without abstract" do
       paper = sample_paper(abstract: nil)
-      claims = PaperModelBuilder.extract_claims(paper)
+      claims = PaperModelBuilder.extract_claims(paper, @world_id)
 
       assert claims == []
     end
 
     test "returns empty list for very short abstract" do
       paper = sample_paper(abstract: "Short.")
-      claims = PaperModelBuilder.extract_claims(paper)
+      claims = PaperModelBuilder.extract_claims(paper, @world_id)
 
       assert claims == []
     end
@@ -91,7 +94,7 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
     end
   end
 
-  describe "ingest_paper/1" do
+  describe "ingest_paper/2" do
     setup do
       case Process.whereis(Brain.Epistemic.JTMS) do
         nil ->
@@ -106,7 +109,7 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
     test "ingests paper and returns node IDs" do
       paper = sample_paper()
 
-      case PaperModelBuilder.ingest_paper(paper) do
+      case PaperModelBuilder.ingest_paper(paper, @world_id) do
         {:ok, node_ids} ->
           assert is_list(node_ids)
 
@@ -119,12 +122,12 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
     test "handles paper without abstract gracefully" do
       paper = sample_paper(abstract: nil)
 
-      {:ok, node_ids} = PaperModelBuilder.ingest_paper(paper)
+      {:ok, node_ids} = PaperModelBuilder.ingest_paper(paper, @world_id)
       assert node_ids == []
     end
   end
 
-  describe "ingest_papers/1" do
+  describe "ingest_papers/2" do
     test "ingests multiple papers" do
       papers = [
         sample_paper(id: "paper-1"),
@@ -132,7 +135,7 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
         sample_paper(id: "paper-3")
       ]
 
-      case PaperModelBuilder.ingest_papers(papers) do
+      case PaperModelBuilder.ingest_papers(papers, @world_id) do
         {:ok, node_ids} ->
           assert is_list(node_ids)
 
@@ -142,7 +145,7 @@ defmodule Brain.Knowledge.Academic.PaperModelBuilderTest do
     end
 
     test "handles empty list" do
-      {:ok, node_ids} = PaperModelBuilder.ingest_papers([])
+      {:ok, node_ids} = PaperModelBuilder.ingest_papers([], @world_id)
       assert node_ids == []
     end
   end

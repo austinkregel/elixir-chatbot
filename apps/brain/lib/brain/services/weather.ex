@@ -7,9 +7,10 @@ defmodule Brain.Services.Weather do
 
   ## Configuration
 
-  Requires an OpenWeatherMap API key stored via CredentialVault:
+  Requires an OpenWeatherMap API key stored via CredentialVault in the world
+  that uses it:
 
-      CredentialVault.store(:weather, :api_key, "your_api_key")
+      CredentialVault.store(:weather, :api_key, "your_api_key", world: world_id)
 
   ## Enrichment Fields
 
@@ -79,7 +80,7 @@ defmodule Brain.Services.Weather do
   end
 
   @impl true
-  def enrich(intent, slots, credentials) do
+  def enrich(intent, slots, credentials, _world_id) do
     location = Map.get(slots, :location) || Map.get(slots, "location")
 
     if location do
@@ -94,6 +95,9 @@ defmodule Brain.Services.Weather do
       {:error, :missing_location}
     end
   end
+
+  @impl true
+  def writes?(_intent), do: false
 
   @impl true
   def health_check(credentials) do

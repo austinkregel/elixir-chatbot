@@ -17,7 +17,14 @@ defmodule Brain.Test.AtlasSandbox do
     Brain.ML.Gazetteer,
     Brain,
     Brain.Epistemic.JTMS,
-    Brain.Analysis.ComprehensionAssessor
+    Brain.Analysis.ComprehensionAssessor,
+    Brain.Lexicon.UserDefined,
+    Brain.Knowledge.LearningTriggers,
+    Brain.Services.LocalScheduler,
+    # Writes each world's semantic-fact metric counts.
+    Brain.Metrics.Aggregator,
+    # Creates each world's graphs when it creates or loads the world.
+    World.Manager
   ]
 
   @task_supervisors [

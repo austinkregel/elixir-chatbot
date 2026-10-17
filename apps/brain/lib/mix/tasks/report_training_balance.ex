@@ -181,7 +181,7 @@ defmodule Mix.Tasks.ReportTrainingBalance do
 
           IO.puts(
             "    " <>
-              String.pad_trailing(intent.name, 35) <>
+              String.pad_trailing(intent.name, 44) <> "  " <>
               "gold: #{gold_count}  source: #{source_count}  gap: #{gap}  (#{sources})"
           )
         end
@@ -228,8 +228,8 @@ defmodule Mix.Tasks.ReportTrainingBalance do
 
     if total_below > 0 do
       IO.puts("\n  #{total_below} class(es) across all tasks have fewer than #{min_threshold} examples.")
-      IO.puts("  Use `mix migrate_gold_standard`, `mix download_sentiment_corpus`,")
-      IO.puts("  or `mix download_speech_act_corpus` to add more training data.")
+      IO.puts("  Add intent examples to data/intents/ then `mix rebuild_gold_standard --save`;")
+      IO.puts("  `mix download_sentiment_corpus` or `mix download_speech_act_corpus` for the rest.")
     else
       IO.puts("\n  All classes meet the minimum threshold of #{min_threshold} examples.")
     end

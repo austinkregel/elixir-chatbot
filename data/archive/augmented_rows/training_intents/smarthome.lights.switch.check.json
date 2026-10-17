@@ -1,0 +1,142 @@
+[
+  {
+    "text": "could you check the status of all the lights",
+    "tokens": [
+      "could",
+      "you",
+      "check",
+      "the",
+      "status",
+      "of",
+      "all",
+      "the",
+      "lights"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-0a9be3a8",
+    "intent": "smarthome.lights.switch.check"
+  },
+  {
+    "text": "lights kitchen status",
+    "tokens": [
+      "lights",
+      "kitchen",
+      "status"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-a9044ad9",
+    "intent": "smarthome.lights.switch.check"
+  },
+  {
+    "text": "I want to kitchen lights status",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "kitchen",
+      "lights",
+      "status"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-2ed6d9f5",
+    "intent": "smarthome.lights.switch.check"
+  },
+  {
+    "text": "hey check the status of all the lights",
+    "tokens": [
+      "hey",
+      "check",
+      "the",
+      "status",
+      "of",
+      "all",
+      "the",
+      "lights"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-ea22c8ad",
+    "intent": "smarthome.lights.switch.check"
+  },
+  {
+    "text": "I'd like to the blue lights status",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "the",
+      "blue",
+      "lights",
+      "status"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-23711b89",
+    "intent": "smarthome.lights.switch.check"
+  },
+  {
+    "text": "can you the blue lights status",
+    "tokens": [
+      "can",
+      "you",
+      "the",
+      "blue",
+      "lights",
+      "status"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "DET",
+      "ADJ",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-461e26ec",
+    "intent": "smarthome.lights.switch.check"
+  }
+]

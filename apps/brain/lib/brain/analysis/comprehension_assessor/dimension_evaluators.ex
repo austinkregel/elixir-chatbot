@@ -321,20 +321,16 @@ defmodule Brain.Analysis.ComprehensionAssessor.DimensionEvaluators do
   end
 
   defp compute_lexical_coverage(text) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      words =
-        text
-        |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 2)
-        |> Enum.reject(&(String.length(&1) < 2))
+    words =
+      text
+      |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 2)
+      |> Enum.reject(&(String.length(&1) < 2))
 
-      if words == [] do
-        0.0
-      else
-        known = Enum.count(words, &Brain.ML.Lexicon.known_word?/1)
-        known / length(words)
-      end
+    if words == [] do
+      0.0
     else
-      0.5
+      known = Enum.count(words, &Brain.Lexicon.known_word?/1)
+      known / length(words)
     end
   end
 

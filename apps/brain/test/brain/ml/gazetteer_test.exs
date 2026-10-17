@@ -4,9 +4,112 @@ defmodule Brain.ML.GazetteerTest do
   alias Brain.ML.Gazetteer
   import Brain.TestHelpers
 
-  setup do
+  # Loading reads the entities human reviewers approved from Atlas, so every
+  # test runs with a sandboxed Atlas connection the gazetteer process shares.
+  setup tags do
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
     ensure_started(Brain.ML.Gazetteer)
     :ok
+  end
+
+  # Span lookups are made in a world, whose overlay they consult. The
+  # base-gazetteer tests below use the world the suite runs in; the overlay
+  # tests use worlds of their own.
+  @world_id "default"
+
+  describe "lookup_spans/2 and lookup_spans_lattice/2 in a world" do
+    setup do
+      name = "Quilbrix#{System.unique_integer([:positive])}"
+      world = "test_spans_#{System.unique_integer([:positive])}"
+      other = "test_spans_other_#{System.unique_integer([:positive])}"
+
+      on_exit(fn ->
+        Gazetteer.destroy_world_overlay(world)
+        Gazetteer.destroy_world_overlay(other)
+      end)
+
+      %{name: name, key: String.downcase(name), world: world, other: other}
+    end
+
+    test "raise without a world" do
+      for opts <- [[], [world_id: nil], [world_id: ""], [domain: :weather]] do
+        assert_raise ArgumentError, ~r/world_id/, fn -> Gazetteer.lookup_spans(["paris"], opts) end
+        assert_raise ArgumentError, ~r/world_id/, fn -> Gazetteer.lookup_spans_lattice(["paris"], opts) end
+      end
+    end
+
+    test "find a world-overlay entity only in that world", %{name: name, key: key, world: world, other: other} do
+      {:ok, _} = Gazetteer.add_to_world(world, name, "person")
+
+      assert [{0, 0, [%{entity_type: "person"} | _]}] = Gazetteer.lookup_spans([key], world_id: world)
+      assert Gazetteer.lookup_spans([key], world_id: other) == []
+
+      assert [{0, 0, [%{entity_type: "person"} | _], _score}] =
+               Gazetteer.lookup_spans_lattice([key], world_id: world)
+
+      assert Gazetteer.lookup_spans_lattice([key], world_id: other) == []
+    end
+
+    test "a world's overlay reading comes before the base gazetteer's, which stays", %{
+      name: name,
+      key: key,
+      world: world,
+      other: other
+    } do
+      on_exit(fn -> Gazetteer.remove_entry(name) end)
+      {:ok, _} = Gazetteer.add_entry(name, "location")
+      {:ok, _} = Gazetteer.add_to_world(world, name, "person")
+
+      [{0, 0, infos}] = Gazetteer.lookup_spans([key], world_id: world)
+      assert Enum.map(infos, & &1.entity_type) == ["person", "location"]
+
+      [{0, 0, other_infos}] = Gazetteer.lookup_spans([key], world_id: other)
+      assert Enum.map(other_infos, & &1.entity_type) == ["location"]
+    end
+
+    test "an entity approved in a world is recognized in that world after a reload, and not in another",
+         %{name: name, key: key, world: world, other: other} do
+      %Atlas.Schemas.ReviewCandidate{}
+      |> Atlas.Schemas.ReviewCandidate.changeset(%{
+        id: "rc_#{System.unique_integer([:positive])}",
+        world_id: world,
+        status: "approved",
+        finding: %{"claim" => "#{name} is a person", "entity" => name, "entity_type" => "person"},
+        aggregate_confidence: 0.9
+      })
+      |> Atlas.Repo.insert!()
+
+      # Loading the gazetteer, as at boot, puts the approval in its world.
+      {:ok, _} = Gazetteer.load_all()
+
+      assert [{0, 0, [%{entity_type: "person", reviewed: true} | _]}] =
+               Gazetteer.lookup_spans([key], world_id: world)
+
+      assert Gazetteer.lookup_spans([key], world_id: other) == []
+      assert Gazetteer.lookup(name) == :not_found
+
+      # Restoring the world's saved overlay, which predates the approval,
+      # keeps it.
+      :ok = Gazetteer.destroy_world_overlay(world)
+      assert Gazetteer.lookup_spans([key], world_id: world) == []
+      :ok = Gazetteer.restore_world_overlay(world, [])
+
+      assert [{0, 0, [%{entity_type: "person", reviewed: true} | _]}] =
+               Gazetteer.lookup_spans([key], world_id: world)
+
+      assert Gazetteer.lookup_spans([key], world_id: other) == []
+    end
+
+    test "a multi-word overlay entity is found as one span", %{world: world, other: other} do
+      name = "Vexmoor Quarry #{System.unique_integer([:positive])}"
+      {:ok, _} = Gazetteer.add_to_world(world, name, "location")
+      tokens = name |> String.downcase() |> String.split(" ")
+
+      assert [{0, 2, [%{entity_type: "location"} | _]}] = Gazetteer.lookup_spans(tokens, world_id: world)
+      assert Gazetteer.lookup_spans(tokens, world_id: other) == []
+    end
   end
 
   describe "lookup/1" do
@@ -16,31 +119,32 @@ defmodule Brain.ML.GazetteerTest do
     end
 
     test "lookup is case-insensitive" do
-      if Gazetteer.loaded?() do
-        _result1 = Gazetteer.lookup("kitchen")
-        _result2 = Gazetteer.lookup("KITCHEN")
-        _result3 = Gazetteer.lookup("Kitchen")
-        assert true
-      else
-        assert true
-      end
+      name = "Zorblax#{System.unique_integer([:positive])}"
+      on_exit(fn -> Gazetteer.remove_entry(name) end)
+      {:ok, _} = Gazetteer.add_entry(name, "location")
+
+      found = Gazetteer.lookup(name)
+
+      assert {:ok, _} = found
+      assert Gazetteer.lookup(String.downcase(name)) == found
+      assert Gazetteer.lookup(String.upcase(name)) == found
     end
   end
 
-  describe "lookup_spans/1" do
+  describe "lookup_spans/2" do
     test "returns empty list for empty token list" do
-      spans = Gazetteer.lookup_spans([])
+      spans = Gazetteer.lookup_spans([], world_id: @world_id)
       assert spans == []
     end
 
     test "returns empty list when no matches found" do
-      spans = Gazetteer.lookup_spans(["xyzabc", "nonsense", "words"])
+      spans = Gazetteer.lookup_spans(["xyzabc", "nonsense", "words"], world_id: @world_id)
       assert is_list(spans)
     end
 
     test "finds multi-word entities" do
       if Gazetteer.loaded?() do
-        spans = Gazetteer.lookup_spans(["new", "york", "city"])
+        spans = Gazetteer.lookup_spans(["new", "york", "city"], world_id: @world_id)
         assert is_list(spans)
 
         if spans != [] do
@@ -128,7 +232,7 @@ defmodule Brain.ML.GazetteerTest do
 
     test "can find spans in token lists" do
       if Gazetteer.loaded?() do
-        spans = Gazetteer.lookup_spans(["turn", "on", "the", "kitchen", "lights"])
+        spans = Gazetteer.lookup_spans(["turn", "on", "the", "kitchen", "lights"], world_id: @world_id)
         assert is_list(spans)
       else
         assert true
@@ -235,7 +339,7 @@ defmodule Brain.ML.GazetteerTest do
 
     test "lookup_spans returns list of entity_infos for multi-type entries" do
       if Gazetteer.loaded?() do
-        spans = Gazetteer.lookup_spans(["austin"])
+        spans = Gazetteer.lookup_spans(["austin"], world_id: @world_id)
 
         for {_start, _end, entity_info} <- spans do
           assert is_list(entity_info) or is_map(entity_info)
@@ -302,7 +406,7 @@ defmodule Brain.ML.GazetteerTest do
     end
 
     test "lookup_spans with domain context ranks types", %{key: key} do
-      spans = Gazetteer.lookup_spans([key], domain: :weather)
+      spans = Gazetteer.lookup_spans([key], domain: :weather, world_id: @world_id)
 
       case spans do
         [{0, 0, entity_infos}] ->
@@ -319,6 +423,12 @@ defmodule Brain.ML.GazetteerTest do
     setup do
       table = :gazetteer_entities
 
+      # These keys hold real entries ("new" is a music_sort word, "New York" an
+      # ambiguous name/location). The table belongs to the running gazetteer,
+      # so put them back rather than leaving this test's readings in it.
+      Brain.Test.Singletons.preserve_ets_keys!(table, ["new", "new york"])
+      Brain.Test.Singletons.preserve_ets_keys!(:gazetteer_prefixes, ["new"])
+
       :ets.insert(table, {"new", [%{entity_type: "person", value: "New", source: :json}]})
       :ets.insert(table, {"new york", [%{entity_type: "location", value: "New York", source: :csv}]})
 
@@ -328,7 +438,7 @@ defmodule Brain.ML.GazetteerTest do
     end
 
     test "lookup_spans_lattice returns overlapping spans" do
-      lattice = Gazetteer.lookup_spans_lattice(["new", "york"])
+      lattice = Gazetteer.lookup_spans_lattice(["new", "york"], world_id: @world_id)
 
       assert length(lattice) >= 1
 
@@ -337,7 +447,7 @@ defmodule Brain.ML.GazetteerTest do
     end
 
     test "lookup_spans_lattice includes scores" do
-      lattice = Gazetteer.lookup_spans_lattice(["new", "york"])
+      lattice = Gazetteer.lookup_spans_lattice(["new", "york"], world_id: @world_id)
 
       for {_start, _end, _infos, score} <- lattice do
         assert is_number(score)
@@ -346,7 +456,7 @@ defmodule Brain.ML.GazetteerTest do
     end
 
     test "longer spans get higher scores in lattice" do
-      lattice = Gazetteer.lookup_spans_lattice(["new", "york"])
+      lattice = Gazetteer.lookup_spans_lattice(["new", "york"], world_id: @world_id)
 
       long_spans = Enum.filter(lattice, fn {s, e, _, _} -> e - s >= 1 end)
       short_spans = Enum.filter(lattice, fn {s, e, _, _} -> e - s == 0 end)
@@ -409,6 +519,51 @@ defmodule Brain.ML.GazetteerTest do
 
       primary = hd(ranked)
       assert Map.get(primary, :entity_type) == "location"
+    end
+  end
+
+  describe "loaded sources" do
+    alias Brain.ML.DataLoaders
+
+    # Other tests in this file modify the shared table, so these reload it
+    # first. That loading happens at startup is checked in test_helper.exs.
+    setup do
+      {:ok, _} = Gazetteer.load_all()
+      :ok
+    end
+
+    test "includes every artist and city in the sources" do
+      {:ok, artists} = DataLoaders.load_artists()
+      {:ok, cities} = DataLoaders.load_cities()
+      artist_keys = artists |> DataLoaders.build_artist_lookup() |> Map.keys()
+      city_keys = cities |> DataLoaders.build_city_lookup() |> Map.keys()
+
+      # Both sources are larger than the 10,000 rows the old build kept.
+      assert length(artist_keys) > 10_000
+      assert length(city_keys) > 10_000
+
+      missing_artists = Enum.reject(artist_keys, &has_type?(&1, "music_artist"))
+      missing_cities = Enum.reject(city_keys, &has_type?(&1, "location"))
+
+      assert missing_artists == [], "#{length(missing_artists)} artists missing"
+      assert missing_cities == [], "#{length(missing_cities)} cities missing"
+    end
+
+    test "keeps a candidate from each source when they share a surface form" do
+      # "door" is a device in the entity data and an emoji name.
+      assert has_type?("door", "device")
+      assert has_type?("door", "emoji")
+
+      # "thursday" is a date in the entity data and a band in the artist data.
+      assert has_type?("thursday", "sys_date")
+      assert has_type?("thursday", "music_artist")
+    end
+  end
+
+  defp has_type?(key, entity_type) do
+    case Gazetteer.lookup(key) do
+      {:ok, infos} -> infos |> List.wrap() |> Enum.any?(&(&1[:entity_type] == entity_type))
+      :not_found -> false
     end
   end
 end

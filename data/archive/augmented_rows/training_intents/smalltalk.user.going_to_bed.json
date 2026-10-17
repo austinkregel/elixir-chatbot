@@ -1,0 +1,28 @@
+[
+  {
+    "text": "I want to i'm going to bed",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "i",
+      "'m",
+      "going",
+      "to",
+      "bed"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "VERB",
+      "PART",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-3f950f56",
+    "intent": "smalltalk.user.going_to_bed"
+  }
+]

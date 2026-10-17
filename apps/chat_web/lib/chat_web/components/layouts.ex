@@ -35,26 +35,36 @@ defmodule ChatWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
+    <header class="flex items-center justify-between gap-space-lg h-14 px-space-lg border-b border-border bg-surface">
       <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
+        <a href="/" class="flex w-fit items-center gap-space-sm text-ink">
           <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
+          <span class="text-subheading">v{Application.spec(:phoenix, :vsn)}</span>
         </a>
       </div>
       <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
+        <ul class="flex items-center gap-space-lg px-space-xs">
           <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
+            <a href="https://phoenixframework.org/" class="text-body text-accent hover:underline">
+              Website
+            </a>
           </li>
           <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
+            <a
+              href="https://github.com/phoenixframework/phoenix"
+              class="text-body text-accent hover:underline"
+            >
+              GitHub
+            </a>
           </li>
           <li>
             <.theme_toggle />
           </li>
           <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
+            <a
+              href="https://hexdocs.pm/phoenix/overview.html"
+              class="inline-flex items-center gap-space-sm h-control-md px-space-md rounded-md bg-primary text-body font-semibold text-on-primary hover:bg-primary-hover"
+            >
               Get Started <span aria-hidden="true">&rarr;</span>
             </a>
           </li>
@@ -62,8 +72,8 @@ defmodule ChatWeb.Layouts do
       </div>
     </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+    <main class="px-space-lg py-space-3xl">
+      <div class="mx-auto max-w-2xl space-y-space-lg">
         {render_slot(@inner_block)}
       </div>
     </main>
@@ -116,37 +126,46 @@ defmodule ChatWeb.Layouts do
   end
 
   @doc """
-  Provides dark vs light theme toggle based on themes defined in app.css.
+  The system, light and dark theme switch.
 
-  See <head> in root.html.heex which applies the theme before page load.
+  A view switcher: the selected segment is accent with on-accent icons. Which
+  segment is selected follows the `data-theme` attribute that the inline script
+  in root.html.heex sets on `<html>` (none for system), so the switch is right
+  before LiveView connects.
   """
   def theme_toggle(assigns) do
     ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
+    <div class="relative inline-flex items-center rounded-md border border-border-strong bg-surface-sunk p-space-2xs">
+      <div class="absolute top-space-2xs bottom-space-2xs left-space-2xs w-8 rounded-sm bg-accent transition-transform [[data-theme=light]_&]:translate-x-8 [[data-theme=dark]_&]:translate-x-16" />
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        class="relative flex justify-center p-space-xs cursor-pointer w-8 text-ink-muted [:root:not([data-theme])_&]:text-on-accent"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="system"
+        title="System"
+        aria-label="System theme"
       >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-computer-desktop-micro" class="size-4" />
       </button>
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        class="relative flex justify-center p-space-xs cursor-pointer w-8 text-ink-muted [[data-theme=light]_&]:text-on-accent"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="light"
+        title="Light"
+        aria-label="Light theme"
       >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-sun-micro" class="size-4" />
       </button>
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        class="relative flex justify-center p-space-xs cursor-pointer w-8 text-ink-muted [[data-theme=dark]_&]:text-on-accent"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="dark"
+        title="Dark"
+        aria-label="Dark theme"
       >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-moon-micro" class="size-4" />
       </button>
     </div>
     """

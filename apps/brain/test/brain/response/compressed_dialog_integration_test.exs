@@ -20,6 +20,10 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
   """
   use ExUnit.Case, async: false
 
+  # Full generation path through SurfaceRealizer/RefinementLoop requires the
+  # Ouro sidecar; excluded when it is disabled (OURO_ENABLED=false, e.g. CI).
+  @moduletag :requires_ouro
+
   alias Brain.Analysis.Pipeline
   alias Brain.Response.{RefinementLoop, Primitive, DiscoursePlanner, ContentSpecifier}
   alias Brain.Response.ResponseEvaluator.Score
@@ -28,16 +32,19 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
 
   @min_response_words 3
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   # ──────────────────────────────────────────────────────────────────
   # Helpers
   # ──────────────────────────────────────────────────────────────────
 
   defp analyze(text, opts \\ []) do
-    Pipeline.process(text, opts)
+    Pipeline.process(text, [world_id: @world_id] ++ opts)
   end
 
   defp generate(model, opts \\ []) do
-    RefinementLoop.generate(model, opts)
+    RefinementLoop.generate(model, [world_id: @world_id] ++ opts)
   end
 
   defp primitive_types(metadata) do
@@ -389,7 +396,7 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       primary = List.first(model.analyses)
 
       plan = DiscoursePlanner.plan(model)
-      specified = ContentSpecifier.specify(plan, primary)
+      specified = ContentSpecifier.specify(plan, primary, world_id: @world_id)
 
       assert length(specified) == length(plan),
         "Specifier must preserve primitive count (plan: #{length(plan)}, specified: #{length(specified)})"
@@ -408,7 +415,7 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
       primary = List.first(model.analyses)
 
       plan = DiscoursePlanner.plan(model)
-      specified = ContentSpecifier.specify(plan, primary)
+      specified = ContentSpecifier.specify(plan, primary, world_id: @world_id)
 
       for p <- specified do
         refute Primitive.rendered?(p),
@@ -440,7 +447,7 @@ defmodule Brain.Response.CompressedDialogIntegrationTest do
     test "single_pass produces a coherent scored response" do
       input = "What time is it?"
       model = analyze(input)
-      assert {:ok, response, metadata} = RefinementLoop.single_pass(model)
+      assert {:ok, response, metadata} = RefinementLoop.single_pass(model, world_id: @world_id)
 
       assert_coherent_response(input, response, metadata)
 

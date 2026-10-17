@@ -1,12 +1,17 @@
 defmodule Brain.ML.KnowledgeGraph.EntityVectorCache do
   @moduledoc """
-  Caches 128-dimensional entity embeddings from `KnowledgeGraph.Embedder`.
+  Caches 128-dimensional entity and entity-type embeddings from
+  `KnowledgeGraph.Embedder`, per world.
 
-  Uses ETS for fast concurrent reads, keyed by `{world_id, entity_name}`.
-  Lazily computes embeddings on first access via `Embedder.encode_entity/4`.
+  A vector is computed from a world's own triple scorer
+  (`Brain.ML.KnowledgeGraph.TripleScorer.loaded!/1`), so every entry belongs to
+  the world whose scorer computed it: entities are keyed
+  `{world_id, {:entity, name}}` and types `{world_id, {:type, name}}`. A world
+  with no copy of the scorer raises when a vector is computed for it.
 
-  Subscribes to `world_models:status` and invalidates on TripleScorer reload,
-  since embeddings depend on the trained model weights.
+  Vectors are computed lazily, in the caller, on first access, and kept in a
+  public ETS table this process owns. Seeding or dropping a world's scorer
+  forgets that world's vectors (`forget_world/1`).
 
   LRU eviction at `@max_entries` (default 50_000) to bound memory.
   """
@@ -25,25 +30,83 @@ defmodule Brain.ML.KnowledgeGraph.EntityVectorCache do
   end
 
   @doc """
-  Get or compute the entity embedding vector.
+  Get or compute the world's embedding vector for an entity.
 
-  Returns `{:ok, tensor}` or `{:error, reason}`.
+  Returns `{:ok, tensor}`. Raises when the world has no copy of the triple
+  scorer, or when the cache is not started.
   """
-  def get_or_compute(world_id, entity_name, name \\ __MODULE__) do
-    key = {world_id, entity_name}
+  @spec get_or_compute(String.t(), String.t()) :: {:ok, Nx.Tensor.t()}
+  def get_or_compute(world_id, entity_name) when is_binary(world_id) do
+    get_or_compute_key({world_id, {:entity, entity_name}}, fn ->
+      {model, params, vocab} = extraction_model!(world_id)
+      Embedder.encode_entity(entity_name, model, params, vocab)
+    end)
+  end
 
-    case ets_lookup(key) do
-      {:ok, tensor} ->
-        update_access_time(key)
-        {:ok, tensor}
+  @doc """
+  Get or compute the world's concept vector for an entity type.
 
-      :miss ->
-        try do
-          GenServer.call(name, {:compute, world_id, entity_name}, 5_000)
-        catch
-          :exit, _ -> {:error, :not_ready}
-        end
+  Returns `{:ok, tensor}`. Raises when the world has no copy of the triple
+  scorer, or when the cache is not started.
+  """
+  @spec get_or_compute_type(String.t(), String.t()) :: {:ok, Nx.Tensor.t()}
+  def get_or_compute_type(world_id, type_name) when is_binary(world_id) do
+    get_or_compute_key({world_id, {:type, type_name}}, fn ->
+      {model, params, vocab} = extraction_model!(world_id)
+      parents = Brain.Analysis.TypeHierarchy.parents_of(type_name)
+      Embedder.encode_entity_type(type_name, parents, model, params, vocab)
+    end)
+  end
+
+  @doc """
+  Fast ETS-only lookup for the world's type vectors. Returns `{:ok, tensor}` or
+  `:miss`.
+
+  Does NOT compute on miss -- returns `:miss` immediately. Use this on hot
+  paths (intent scoring loops) where computing per iteration would kill
+  throughput.
+  """
+  @spec get_cached_type(String.t(), String.t()) :: {:ok, Nx.Tensor.t()} | :miss
+  def get_cached_type(world_id, type_name) when is_binary(world_id) do
+    key = {world_id, {:type, type_name}}
+
+    case :ets.lookup(table!(), key) do
+      [{^key, tensor, _access_time}] -> {:ok, tensor}
+      [] -> :miss
     end
+  end
+
+  @doc """
+  Pre-compute the world's type vectors for all entity types from the hierarchy.
+
+  Raises when the world has no copy of the triple scorer.
+  """
+  def warm_up_entity_types(world_id) when is_binary(world_id) do
+    types = Brain.Analysis.TypeHierarchy.all_types()
+
+    Enum.each(types, fn type_name ->
+      {:ok, _vector} = get_or_compute_type(world_id, type_name)
+    end)
+
+    Logger.info("EntityVectorCache: warmed up #{length(types)} type vectors for world #{world_id}")
+  end
+
+  @doc """
+  Forgets every vector computed for the world, for a world whose triple scorer
+  is seeded or dropped. When the cache is not started (a Mix task seeding
+  worlds), no vector has been computed in this VM, so there is nothing to forget.
+  """
+  @spec forget_world(String.t()) :: :ok
+  def forget_world(world_id) when is_binary(world_id) do
+    if :ets.whereis(@ets_table) != :undefined do
+      :ets.match_delete(@ets_table, {{world_id, :_}, :_, :_})
+
+      :telemetry.execute([:brain, :kg_signal, :cache_invalidated], %{reason: :world_scorer_replaced}, %{
+        world_id: world_id
+      })
+    end
+
+    :ok
   end
 
   @doc """
@@ -55,54 +118,6 @@ defmodule Brain.ML.KnowledgeGraph.EntityVectorCache do
     catch
       :exit, _ -> %{size: 0, ready: false}
     end
-  end
-
-  @doc """
-  Get or compute the type concept vector (globally cached, not per-world).
-
-  Type vectors use `{:global, {:type, type_name}}` keys to avoid
-  redundant computation across worlds.
-  """
-  def get_or_compute_type(type_name, name \\ __MODULE__) do
-    key = {:global, {:type, type_name}}
-
-    case ets_lookup(key) do
-      {:ok, tensor} ->
-        update_access_time(key)
-        {:ok, tensor}
-
-      :miss ->
-        try do
-          GenServer.call(name, {:compute_type, type_name}, 5_000)
-        catch
-          :exit, _ -> {:error, :not_ready}
-        end
-    end
-  end
-
-  @doc """
-  Pre-compute type vectors for all entity types from the hierarchy.
-
-  Requires TripleScorer to be loaded. Raises if not available.
-  """
-  def warm_up_entity_types(name \\ __MODULE__) do
-    unless TripleScorer.ready?() do
-      raise "TripleScorer must be loaded for entity type vector warm-up"
-    end
-
-    types =
-      if Code.ensure_loaded?(Brain.Analysis.TypeHierarchy) and
-           function_exported?(Brain.Analysis.TypeHierarchy, :all_types, 0) do
-        Brain.Analysis.TypeHierarchy.all_types()
-      else
-        []
-      end
-
-    Enum.each(types, fn type_name ->
-      get_or_compute_type(type_name, name)
-    end)
-
-    Logger.info("EntityVectorCache: warmed up #{length(types)} type vectors")
   end
 
   @doc """
@@ -123,59 +138,10 @@ defmodule Brain.ML.KnowledgeGraph.EntityVectorCache do
         :ets.new(@ets_table, [:named_table, :set, :public, read_concurrency: true])
       end
 
-    Phoenix.PubSub.subscribe(Brain.PubSub, "world_models:status")
-
     {:ok, %{table: table, hits: 0, misses: 0}}
   end
 
   @impl true
-  def handle_call({:compute, world_id, entity_name}, _from, state) do
-    key = {world_id, entity_name}
-
-    case ets_lookup(key) do
-      {:ok, tensor} ->
-        {:reply, {:ok, tensor}, %{state | hits: state.hits + 1}}
-
-      :miss ->
-        case compute_embedding(world_id, entity_name) do
-          {:ok, tensor} ->
-            maybe_evict(state.table)
-            :ets.insert(state.table, {key, tensor, System.monotonic_time()})
-            {:reply, {:ok, tensor}, %{state | misses: state.misses + 1}}
-
-          error ->
-            {:reply, error, %{state | misses: state.misses + 1}}
-        end
-    end
-  end
-
-  def handle_call({:compute_type, type_name}, _from, state) do
-    key = {:global, {:type, type_name}}
-
-    case ets_lookup(key) do
-      {:ok, tensor} ->
-        {:reply, {:ok, tensor}, %{state | hits: state.hits + 1}}
-
-      :miss ->
-        case get_scorer_internals("default") do
-          {:ok, model, params, vocab} ->
-            parent =
-              if Code.ensure_loaded?(Brain.Analysis.TypeHierarchy) and
-                   function_exported?(Brain.Analysis.TypeHierarchy, :parent_of, 1) do
-                Brain.Analysis.TypeHierarchy.parent_of(type_name)
-              end
-
-            vector = Embedder.encode_entity_type(type_name, parent, model, params, vocab)
-            maybe_evict(state.table)
-            :ets.insert(state.table, {key, vector, System.monotonic_time()})
-            {:reply, {:ok, vector}, %{state | misses: state.misses + 1}}
-
-          {:error, reason} ->
-            {:reply, {:error, reason}, %{state | misses: state.misses + 1}}
-        end
-    end
-  end
-
   def handle_call(:stats, _from, state) do
     size =
       try do
@@ -189,7 +155,7 @@ defmodule Brain.ML.KnowledgeGraph.EntityVectorCache do
       max_entries: @max_entries,
       hits: state.hits,
       misses: state.misses,
-      ready: TripleScorer.ready?()
+      ready: true
     }
 
     {:reply, stats, state}
@@ -201,84 +167,56 @@ defmodule Brain.ML.KnowledgeGraph.EntityVectorCache do
     {:noreply, %{state | hits: 0, misses: 0}}
   end
 
-  @impl true
-  def handle_info({:triple_scorer_reloaded, _old_version, _new_version}, state) do
-    Logger.info("EntityVectorCache: invalidating cache on TripleScorer reload")
-    :ets.delete_all_objects(state.table)
-    :telemetry.execute([:brain, :kg_signal, :cache_invalidated], %{reason: :model_reload}, %{})
-    {:noreply, %{state | hits: 0, misses: 0}}
-  end
+  def handle_cast(:hit, state), do: {:noreply, %{state | hits: state.hits + 1}}
+  def handle_cast(:miss, state), do: {:noreply, %{state | misses: state.misses + 1}}
 
+  @impl true
   def handle_info(_msg, state), do: {:noreply, state}
 
   # --- Private ---
 
-  defp ets_lookup(key) do
-    case :ets.lookup(@ets_table, key) do
+  defp get_or_compute_key(key, compute) do
+    table = table!()
+
+    case :ets.lookup(table, key) do
       [{^key, tensor, _access_time}] ->
         :telemetry.execute([:brain, :kg_signal, :cache_hit], %{}, %{})
+        GenServer.cast(__MODULE__, :hit)
+        :ets.update_element(table, key, {3, System.monotonic_time()})
         {:ok, tensor}
 
-      _ ->
+      [] ->
         :telemetry.execute([:brain, :kg_signal, :cache_miss], %{}, %{})
-        :miss
-    end
-  rescue
-    ArgumentError -> :miss
-  end
-
-  defp update_access_time(key) do
-    :ets.update_element(@ets_table, key, {3, System.monotonic_time()})
-  rescue
-    _ -> :ok
-  end
-
-  defp compute_embedding(world_id, entity_name) do
-    unless TripleScorer.ready?() do
-      {:error, :scorer_not_ready}
-    else
-      case TripleScorer.current_model_version() do
-        {:ok, _version} ->
-          case get_scorer_internals(world_id) do
-            {:ok, model, params, vocab} ->
-              embedding = Embedder.encode_entity(entity_name, model, params, vocab)
-              {:ok, embedding}
-
-            error ->
-              error
-          end
-
-        _ ->
-          {:error, :no_model_version}
-      end
-    end
-  rescue
-    e -> {:error, {:compute_failed, Exception.message(e)}}
-  end
-
-  defp get_scorer_internals(_world_id) do
-    path = scorer_model_path("default")
-
-    case TripleScorer.load_model(path) do
-      {:ok, data} ->
-        model =
-          Embedder.build_extraction_model(
-            data.config.vocab_size,
-            embedding_dim: data.config.embedding_dim,
-            hidden_dim: data.config.hidden_dim,
-            max_seq_length: Map.get(data.config, :max_seq_length, 32)
-          )
-
-        {:ok, model, data.params, data.vocab}
-
-      {:error, reason} ->
-        {:error, {:model_load_failed, reason}}
+        GenServer.cast(__MODULE__, :miss)
+        tensor = compute.()
+        maybe_evict(table)
+        :ets.insert(table, {key, tensor, System.monotonic_time()})
+        {:ok, tensor}
     end
   end
 
-  defp scorer_model_path(world_id) do
-    priv = :code.priv_dir(:brain) |> to_string()
-    Path.join([priv, "ml_models", world_id, "kg_lstm", "triple_scorer.term"])
+  # The world's scorer, cut at its `dense1` layer, which encodes an entity.
+  defp extraction_model!(world_id) do
+    scorer = TripleScorer.loaded!(world_id)
+
+    model =
+      Embedder.build_extraction_model(
+        scorer.config.vocab_size,
+        embedding_dim: scorer.config.embedding_dim,
+        hidden_dim: scorer.config.hidden_dim,
+        max_seq_length: Map.get(scorer.config, :max_seq_length, 32)
+      )
+
+    {model, scorer.params, scorer.vocab}
+  end
+
+  defp table! do
+    if :ets.whereis(@ets_table) == :undefined do
+      raise "EntityVectorCache: the #{inspect(@ets_table)} table does not exist; " <>
+              "Brain.ML.KnowledgeGraph.EntityVectorCache creates it when it starts"
+    end
+
+    @ets_table
   end
 
   defp maybe_evict(table) do

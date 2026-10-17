@@ -6,7 +6,19 @@ defmodule Brain.Analysis.FollowupDetector do
   @max_followup_words 5
   @context_timeout_ms 5 * 60 * 1000
 
-  @doc "Determines if the given text is a follow-up to a previous intent.\n\nReturns true if:\n- Previous context exists and has missing slots\n- The message looks like it's providing slot values\n- The message is short and starts with a preposition\n- The message looks like a bare location name\n"
+  @doc """
+  Determines if the given text is a follow-up to a previous intent.
+
+  Returns true, when the previous context has not expired, if:
+  - the previous reply asked the user to pick one of several candidates
+    (`awaiting_answer/1`'s `:pending_clarification`): the message is read
+    against them first, with the entities extracted from it
+    (`resolve_pending/2`), and taken as a new message when it names none
+  - the previous context has missing slots and the message looks like it
+    provides slot values
+  - the message is short and starts with a preposition
+  - the message looks like a bare location name
+  """
   def is_followup?(text, previous_context) do
     cond do
       is_nil(previous_context) ->
@@ -14,6 +26,9 @@ defmodule Brain.Analysis.FollowupDetector do
 
       context_expired?(previous_context) ->
         false
+
+      Map.get(previous_context, :pending_clarification) != nil ->
+        true
 
       has_missing_slots?(previous_context) and looks_like_slot_filler?(text, previous_context) ->
         true
@@ -28,6 +43,208 @@ defmodule Brain.Analysis.FollowupDetector do
         false
     end
   end
+
+  @doc """
+  What the conversation waits for after a turn whose service returned an
+  error, read from the turn's enrichment (`Brain.Response.ContextBuilder`):
+  the context fields to carry into the turn's snapshot, or `%{}` when the
+  reply asked nothing.
+
+  The reply planned for the error
+  (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`) decides:
+
+  - a clarification listing candidates (`:ambiguous_item`) waits for the user
+    to pick one: `:pending_clarification` holds the item kind, the
+    candidates, the service that named them and the intent it was asked
+    for, and the context keeps the intent and slots the service was asked
+    with;
+  - a clarification naming the slots that answer it (`missing_slots`) waits
+    for those slots, as a turn missing required slots does: the intent, the
+    slots asked with less those, and `:missing_slots`;
+  - any other reply waits for nothing.
+  """
+  @spec awaiting_answer(map()) :: map()
+  def awaiting_answer(%{enrichment_status: :failed, enrichment_error: reason} = enrichment) do
+    intent = Map.get(enrichment, :intent)
+    service = Map.get(enrichment, :enrichment_service)
+    slots = Map.new(Map.get(enrichment, :slots) || %{}, fn {slot, value} -> {to_string(slot), value} end)
+
+    planned = Brain.Response.DiscoursePlanner.enrichment_error_primitive(reason, %{service: service, intent: intent})
+
+    case planned do
+      %{type: :follow_up, content: %{reply: :ambiguous_item, item_kind: kind, candidates: candidates}} ->
+        %{
+          intent: intent,
+          slots: slots,
+          missing_slots: [],
+          pending_clarification: %{item_kind: kind, candidates: candidates, service: service, intent: intent}
+        }
+
+      %{type: :follow_up, content: %{missing_slots: [_ | _] = missing}} ->
+        %{intent: intent, slots: Map.drop(slots, missing), missing_slots: missing}
+
+      _ ->
+        %{}
+    end
+  end
+
+  def awaiting_answer(_enrichment), do: %{}
+
+  @doc """
+  Reads a reply, its `text` and the `entities` extracted from it, against
+  the candidates a clarification listed (`awaiting_answer/1`'s
+  `:pending_clarification`).
+
+  A candidate is told apart by the fields its driver identifies an item of
+  its kind by (`Brain.Services.SchedulingDriver.identifying_fields!/2`). The
+  reply names a field by:
+
+  - its words: the reply's tokens (`Brain.ML.Tokenizer.tokenize_normalized/1`)
+    that are among the field value's, so part of a value names it
+    ("dentist" names "Dentist appointment"). Closed-class words
+    (`Brain.Lexicon.ClosedClass`) and tokens every candidate's fields hold
+    tell no candidate apart, and are not counted;
+  - an entity: an entity of the reply filling the field's slot for the
+    pending intent (`Brain.Analysis.SlotDetector.detect/3`) with the field's
+    value, compared with case and whitespace ignored, so a time entity
+    "3pm" names the time "3 pm".
+
+  A field scores the more of the two; a candidate scores the sum over its
+  fields. The candidates with the top score above zero are the ones the reply
+  names: one is `{:resolved, candidate}`; fewer than were listed is
+  `{:narrowed, candidates}`, to ask again among them; none, or all of them,
+  is `:unrelated`, since the reply tells none apart.
+
+  A reply naming a candidate by position ("the first one", "the last one")
+  is `:unrelated`: no owned lexicon records which words are ordinals or what
+  position each names.
+
+  Raises when the pending clarification's service is not a scheduling driver.
+  """
+  @spec resolve_pending(%{text: String.t(), entities: [map()]}, map()) ::
+          {:resolved, map()} | {:narrowed, [map()]} | :unrelated
+  def resolve_pending(%{text: text, entities: entities}, %{
+        item_kind: kind,
+        candidates: [_ | _] = candidates,
+        service: service,
+        intent: intent
+      })
+      when is_binary(text) and is_list(entities) and is_binary(intent) do
+    fields = Brain.Services.SchedulingDriver.identifying_fields!(driver!(service), kind)
+    described = Enum.map(candidates, &described_fields(&1, fields))
+
+    shared =
+      case Enum.map(described, fn fields -> fields |> Enum.flat_map(&elem(&1, 2)) |> MapSet.new() end) do
+        [_only] -> MapSet.new()
+        token_sets -> Enum.reduce(token_sets, &MapSet.intersection/2)
+      end
+
+    reply_tokens =
+      text
+      |> Brain.ML.Tokenizer.tokenize_normalized()
+      |> Enum.reject(&Brain.Lexicon.ClosedClass.member?/1)
+      |> MapSet.new()
+      |> MapSet.difference(shared)
+
+    reply_slots = reply_slots(intent, entities)
+
+    scored =
+      candidates
+      |> Enum.zip(described)
+      |> Enum.map(fn {candidate, fields} ->
+        score =
+          fields
+          |> Enum.map(fn {slot, value, tokens} ->
+            by_words = tokens |> MapSet.new() |> MapSet.intersection(reply_tokens) |> MapSet.size()
+            by_entity = if same_value?(Map.get(reply_slots, slot), value), do: 1, else: 0
+            max(by_words, by_entity)
+          end)
+          |> Enum.sum()
+
+        {candidate, score}
+      end)
+
+    best = scored |> Enum.map(&elem(&1, 1)) |> Enum.max()
+    named = for {candidate, ^best} <- scored, best > 0, do: candidate
+
+    cond do
+      named == [] -> :unrelated
+      length(named) == 1 -> {:resolved, hd(named)}
+      length(named) < length(candidates) -> {:narrowed, named}
+      true -> :unrelated
+    end
+  end
+
+  @doc """
+  The slots that complete the pending request with the candidate the reply
+  picked: the slots it was asked with, and the candidate's own
+  (`Brain.Services.SchedulingDriver.item_slots/3`) over them.
+  """
+  @spec complete_pending(map(), map()) :: map()
+  def complete_pending(previous_context, candidate) do
+    %{item_kind: kind, service: service} = Map.fetch!(previous_context, :pending_clarification)
+
+    Map.merge(
+      Map.get(previous_context, :slots) || %{},
+      Brain.Services.SchedulingDriver.item_slots(driver!(service), kind, candidate)
+    )
+  end
+
+  # The driver a pending clarification's candidates came from.
+  defp driver!(service) do
+    case is_atom(service) and not is_nil(service) and Brain.Services.Dispatcher.find_service_by_name(service) do
+      module when is_atom(module) and module not in [nil, false] ->
+        module
+
+      _not_found ->
+        raise ArgumentError,
+              "FollowupDetector: the candidates a clarification listed came from #{inspect(service)}, " <>
+                "which is no registered service"
+    end
+  end
+
+  # Each identifying field the candidate gives a non-blank value, as the slot
+  # naming it, the value and the value's tokens.
+  defp described_fields(candidate, fields) do
+    Enum.flat_map(fields, fn {field, slot} ->
+      case Map.get(candidate, field) do
+        value when is_binary(value) ->
+          if String.trim(value) == "",
+            do: [],
+            else: [{Atom.to_string(slot), value, Brain.ML.Tokenizer.tokenize_normalized(value)}]
+
+        nil ->
+          []
+
+        other ->
+          raise ArgumentError,
+                "FollowupDetector: a candidate's #{field} must be a string to be matched, got: #{inspect(other)}"
+      end
+    end)
+  end
+
+  # The slots the reply's entities fill for the pending intent, each with the
+  # value an entity gave it; a slot filled by a default is not the reply's.
+  defp reply_slots(_intent, []), do: %{}
+
+  defp reply_slots(intent, entities) do
+    intent
+    |> Brain.Analysis.SlotDetector.detect(entities, side_effects: false)
+    |> Map.fetch!(:filled_slots)
+    |> Enum.flat_map(fn
+      {slot, %{source: source, value: value}} when source in [:explicit, :type_compatible] and is_binary(value) ->
+        [{slot, value}]
+
+      _other ->
+        []
+    end)
+    |> Map.new()
+  end
+
+  defp same_value?(nil, _value), do: false
+  defp same_value?(given, value), do: compact(given) == compact(value)
+
+  defp compact(text), do: text |> String.split() |> Enum.join() |> String.downcase()
 
   @doc "Returns the previous context with information about what to carry forward.\n"
   def get_carried_context(text, previous_context) do

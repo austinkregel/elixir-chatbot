@@ -1,5 +1,5 @@
 defmodule Brain.FactDatabase.Integration do
-  @moduledoc "Integration layer between FactDatabase and the epistemic system.\n\nThis module provides:\n1. Dynamic fact addition (learned facts can be added to the database)\n2. Integration with epistemic user model (facts as beliefs)\n3. Truth maintenance verification (facts registered with JTMS)\n"
+  @moduledoc "Integration layer between FactDatabase and the epistemic system.\n\nThis module provides:\n1. Dynamic fact addition (learned facts can be added to the database)\n2. Integration with epistemic user model (facts as beliefs)\n3. Truth maintenance verification (facts registered with JTMS)\n\nBeliefs and JTMS networks are held per world, so every function here takes\nthe world first: a fact's belief and JTMS node are created in that world, and\nverification reads only that world's beliefs. A missing world raises.\n"
 
   alias Brain.FactDatabase
   alias Brain.FactDatabase.Fact
@@ -8,7 +8,8 @@ defmodule Brain.FactDatabase.Integration do
   require Logger
 
   @doc "Adds a new fact to the database dynamically.\n\nThis allows the system to learn and grow its fact database.\nThe fact is also registered with the epistemic system for verification.\n\nOptions:\n- :category - Category for the fact (default: \"learned\")\n- :verification_source - Source of verification\n- :confidence - Confidence level (0.0-1.0, default: 0.8)\n- :register_with_jtms - Whether to register with JTMS (default: true)\n- :create_belief - Whether to create a belief (default: true)\n"
-  def add_fact(entity, fact_text, opts \\ []) do
+  def add_fact(world_id, entity, fact_text, opts \\ []) do
+    world_id = world_id!(world_id, "add_fact")
     category = Keyword.get(opts, :category, "learned")
     entity_type = Keyword.get(opts, :entity_type)
     verification_source = Keyword.get(opts, :verification_source, "learned_from_conversation")
@@ -32,13 +33,13 @@ defmodule Brain.FactDatabase.Integration do
 
     node_id =
       if register_with_jtms? do
-        register_fact_with_jtms(new_fact.id, entity, fact_text, confidence)
+        register_fact_with_jtms(world_id, new_fact.id, entity, fact_text, confidence)
       else
         nil
       end
 
     if create_belief? do
-      create_fact_belief(entity, fact_text, confidence, verification_source, node_id)
+      create_fact_belief(world_id, entity, fact_text, confidence, verification_source, node_id)
     end
 
     Logger.info("Added learned fact", %{
@@ -53,8 +54,10 @@ defmodule Brain.FactDatabase.Integration do
   end
 
   @doc "Verifies a fact against existing beliefs and the truth maintenance system.\n\nReturns:\n- {:verified, confidence} - Fact is consistent with existing beliefs\n- {:contradicted, conflicting_beliefs} - Fact contradicts existing beliefs\n- {:uncertain, reason} - Cannot verify (low confidence, no data, etc.)\n"
-  def verify_fact(entity, fact_text) do
-    case BeliefStore.query_beliefs(subject: :world, predicate: normalize_entity(entity)) do
+  def verify_fact(world_id, entity, fact_text) do
+    world_id = world_id!(world_id, "verify_fact")
+
+    case BeliefStore.query_beliefs(world_id, subject: :world, predicate: normalize_entity(entity)) do
       {:ok, [_ | _] = beliefs} ->
         contradictions = find_contradictions(fact_text, beliefs)
 
@@ -76,7 +79,7 @@ defmodule Brain.FactDatabase.Integration do
   end
 
   @doc """
-  Syncs facts from the FactDatabase to the epistemic system as beliefs.
+  Syncs facts from the FactDatabase to the world's epistemic system as beliefs.
 
   Curated facts are registered with `:curated_fact` source authority and as
   JTMS premises (unconditionally true, no decay). Learned facts use their
@@ -87,7 +90,8 @@ defmodule Brain.FactDatabase.Integration do
   - `:min_confidence` - Minimum confidence threshold (default: 0.7)
   - `:layer` - `:curated`, `:learned`, or `:all` (default: `:all`)
   """
-  def sync_facts_to_beliefs(opts \\ []) do
+  def sync_facts_to_beliefs(world_id, opts \\ []) do
+    world_id = world_id!(world_id, "sync_facts_to_beliefs")
     category = Keyword.get(opts, :category)
     min_confidence = Keyword.get(opts, :min_confidence, 0.7)
     layer = Keyword.get(opts, :layer, :all)
@@ -102,15 +106,15 @@ defmodule Brain.FactDatabase.Integration do
     created =
       Enum.map(verified_facts, fn fact ->
         is_curated = FactDatabase.curated?(fact.id)
-        sync_fact_to_belief(fact, is_curated)
+        sync_fact_to_belief(world_id, fact, is_curated)
       end)
       |> Enum.sum()
 
-    Logger.info("Synced facts to beliefs", %{facts_synced: created, layer: layer})
+    Logger.info("Synced facts to beliefs", %{facts_synced: created, layer: layer, world_id: world_id})
     {:ok, created}
   end
 
-  defp sync_fact_to_belief(fact, true = _is_curated) do
+  defp sync_fact_to_belief(world_id, fact, true = _is_curated) do
     verification_source = fact.verification_source || "curated_fact_database"
 
     belief =
@@ -126,13 +130,13 @@ defmodule Brain.FactDatabase.Integration do
         }
       )
 
-    case BeliefStore.add_belief(belief) do
+    case BeliefStore.add_belief(world_id, belief) do
       {:ok, belief_id} ->
-        case JTMS.create_premise("curated_fact:#{belief_id}",
+        case JTMS.create_premise(world_id, "curated_fact:#{belief_id}",
                metadata: %{fact_id: fact.id, immutable: true}
              ) do
           {:ok, node_id} ->
-            BeliefStore.link_to_node(belief_id, node_id)
+            BeliefStore.link_to_node(world_id, belief_id, node_id)
             1
 
           _ ->
@@ -144,7 +148,7 @@ defmodule Brain.FactDatabase.Integration do
     end
   end
 
-  defp sync_fact_to_belief(fact, false = _is_curated) do
+  defp sync_fact_to_belief(world_id, fact, false = _is_curated) do
     verification_source = fact.verification_source || "learned_fact_database"
 
     belief =
@@ -158,12 +162,12 @@ defmodule Brain.FactDatabase.Integration do
         }
       )
 
-    case BeliefStore.add_belief(belief) do
+    case BeliefStore.add_belief(world_id, belief) do
       {:ok, belief_id} ->
         if fact.confidence >= 0.9 do
-          case JTMS.create_premise("fact:#{belief_id}", metadata: %{fact_id: fact.id}) do
+          case JTMS.create_premise(world_id, "fact:#{belief_id}", metadata: %{fact_id: fact.id}) do
             {:ok, node_id} ->
-              BeliefStore.link_to_node(belief_id, node_id)
+              BeliefStore.link_to_node(world_id, belief_id, node_id)
               1
 
             _ ->
@@ -179,8 +183,10 @@ defmodule Brain.FactDatabase.Integration do
   end
 
   @doc "Checks if a fact contradicts any existing beliefs or facts.\n\nUses the JTMS to check for contradictions.\n"
-  def check_contradiction(entity, fact_text) do
-    case BeliefStore.query_beliefs(subject: :world, predicate: normalize_entity(entity)) do
+  def check_contradiction(world_id, entity, fact_text) do
+    world_id = world_id!(world_id, "check_contradiction")
+
+    case BeliefStore.query_beliefs(world_id, subject: :world, predicate: normalize_entity(entity)) do
       {:ok, beliefs} ->
         contradictions =
           Enum.filter(beliefs, fn belief ->
@@ -211,7 +217,7 @@ defmodule Brain.FactDatabase.Integration do
     end
   end
 
-  defp register_fact_with_jtms(fact_id, entity, fact_text, confidence) do
+  defp register_fact_with_jtms(world_id, fact_id, entity, fact_text, confidence) do
     if Process.whereis(JTMS) do
       node_type =
         if confidence >= 0.9 do
@@ -220,13 +226,13 @@ defmodule Brain.FactDatabase.Integration do
           :assumption
         end
 
-      case JTMS.create_node("fact:#{fact_id}",
+      case JTMS.create_node(world_id, "fact:#{fact_id}",
              node_type: node_type,
              metadata: %{entity: entity, fact: fact_text, fact_id: fact_id}
            ) do
         {:ok, node_id} ->
           if node_type == :assumption do
-            JTMS.enable_assumption(node_id)
+            JTMS.enable_assumption(world_id, node_id)
           end
 
           node_id
@@ -239,7 +245,7 @@ defmodule Brain.FactDatabase.Integration do
     end
   end
 
-  defp create_fact_belief(entity, fact_text, confidence, verification_source, node_id) do
+  defp create_fact_belief(world_id, entity, fact_text, confidence, verification_source, node_id) do
     belief =
       Belief.new(:world, normalize_entity(entity), fact_text,
         source: :learned,
@@ -249,7 +255,7 @@ defmodule Brain.FactDatabase.Integration do
         metadata: %{category: "learned"}
       )
 
-    case BeliefStore.add_belief(belief) do
+    case BeliefStore.add_belief(world_id, belief) do
       {:ok, _belief_id} ->
         :ok
 
@@ -285,5 +291,12 @@ defmodule Brain.FactDatabase.Integration do
 
   defp generate_id do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+  end
+
+  defp world_id!(world_id, _function) when is_binary(world_id) and world_id != "", do: world_id
+
+  defp world_id!(other, function) do
+    raise ArgumentError,
+          "FactDatabase.Integration.#{function} needs the world whose beliefs it uses, got: #{inspect(other)}"
   end
 end

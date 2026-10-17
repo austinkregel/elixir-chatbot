@@ -46,6 +46,17 @@ defmodule Brain.Memory.TypesTest do
       assert is_binary(fact.id)
       assert String.length(fact.id) == 36
       assert is_integer(fact.timestamp)
+      assert fact.action == nil
+    end
+
+    test "new/5 keeps the action apart from the fact's text" do
+      fact =
+        SemanticFact.new("hello there | hi friend", [0.1, 0.2], ["ep1", "ep2"], [],
+          action: "smalltalk.greetings.hello"
+        )
+
+      assert fact.representation == "hello there | hi friend"
+      assert fact.action == "smalltalk.greetings.hello"
     end
 
     test "new/4 generates unique ids" do

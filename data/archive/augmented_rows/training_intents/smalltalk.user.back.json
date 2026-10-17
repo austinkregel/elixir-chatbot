@@ -1,0 +1,70 @@
+[
+  {
+    "text": "came I back",
+    "tokens": [
+      "came",
+      "I",
+      "back"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "PART"
+    ],
+    "entities": [],
+    "id": "augmented-b9082a05",
+    "intent": "smalltalk.user.back"
+  },
+  {
+    "text": "I back am",
+    "tokens": [
+      "I",
+      "back",
+      "am"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-ceb56544",
+    "intent": "smalltalk.user.back"
+  },
+  {
+    "text": "here am I again",
+    "tokens": [
+      "here",
+      "am",
+      "I",
+      "again"
+    ],
+    "pos_tags": [
+      "ADV",
+      "VERB",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-2dcd8f69",
+    "intent": "smalltalk.user.back"
+  },
+  {
+    "text": "I 'm here again",
+    "tokens": [
+      "I",
+      "'m",
+      "here",
+      "again"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-6ac03d75",
+    "intent": "smalltalk.user.back"
+  }
+]

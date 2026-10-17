@@ -1,0 +1,32 @@
+{
+  "entity_type_to_slot": {
+    "location": "location",
+    "city": "location",
+    "place": "location",
+    "person": "person",
+    "name": "person",
+    "song": "music",
+    "music_artist": "music",
+    "artist": "music",
+    "device": "device",
+    "lights": "device",
+    "heating": "device",
+    "date": "when",
+    "time": "when"
+  },
+  "entity_type_to_slot_names": {
+    "location": ["location", "address", "place"],
+    "city": ["location", "address", "city"],
+    "sys.location": ["location", "address"],
+    "date": ["date", "date_time"],
+    "time": ["time", "date_time"],
+    "sys.date_time": ["date_time", "date", "time"],
+    "music_artist": ["artist", "music_artist"],
+    "sys.music_artist": ["artist", "music_artist"],
+    "song": ["song"],
+    "weather_condition": ["condition", "weather_condition"],
+    "topic": ["topic", "keyword", "category"],
+    "device": ["device"],
+    "action": ["action"]
+  }
+}

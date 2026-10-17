@@ -1,0 +1,41 @@
+[
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "can you is kitchen door closed",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-1da6d2b3",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "did I close everywhere door",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-b0bcd765",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "hey is kitchen door closed",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-5e75116d",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  }
+]

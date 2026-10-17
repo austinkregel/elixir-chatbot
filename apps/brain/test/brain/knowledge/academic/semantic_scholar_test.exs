@@ -18,11 +18,12 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
           source: :semantic_scholar
         )
 
-      finding = Paper.to_finding(paper)
+      finding = Paper.to_finding(paper, "papers_world")
 
       assert finding != nil
       assert finding.claim =~ "Transformer"
       assert finding.confidence >= 0.9
+      assert finding.world_id == "papers_world"
     end
 
     test "returns nil for paper without abstract" do
@@ -34,7 +35,7 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
           source: :semantic_scholar
         )
 
-      assert Paper.to_finding(paper) == nil
+      assert Paper.to_finding(paper, "papers_world") == nil
     end
 
     test "returns nil for paper with short abstract" do
@@ -46,7 +47,7 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
           source: :semantic_scholar
         )
 
-      assert Paper.to_finding(paper) == nil
+      assert Paper.to_finding(paper, "papers_world") == nil
     end
 
     test "formats author string correctly for single author" do
@@ -158,9 +159,10 @@ defmodule Brain.Knowledge.Academic.SemanticScholarTest do
 
   describe "search/2 (with snapshot)" do
     setup do
-      # Load the snapshot for this test (server is started globally in test_helper.exs)
-      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("semantic_scholar/search_transformer")
-      :ok
+      # Loaded for this test only: the snapshot server is global and its
+      # matcher is a substring match, so a snapshot left loaded would answer a
+      # later test's request with a stale body.
+      Brain.Test.Singletons.use_http_snapshots!(["semantic_scholar/search_transformer"])
     end
 
     test "returns papers for a valid query" do

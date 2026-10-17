@@ -1,0 +1,42 @@
+[
+  {
+    "text": "are you still",
+    "tokens": [
+      "are",
+      "you",
+      "still"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-7a921ade",
+    "intent": "smalltalk.agent.there"
+  },
+  {
+    "text": "I want to are you still there",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "are",
+      "you",
+      "still",
+      "there"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "ADV",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-9b781940",
+    "intent": "smalltalk.agent.there"
+  }
+]

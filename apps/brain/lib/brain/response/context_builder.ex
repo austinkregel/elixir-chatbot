@@ -18,6 +18,7 @@ defmodule Brain.Response.ContextBuilder do
   }
 
   alias Brain.Graph.Reader
+  alias Brain.Memory.RecurringPattern
   alias Brain.Response.{Enricher, FactRetriever}
 
   require Logger
@@ -31,10 +32,30 @@ defmodule Brain.Response.ContextBuilder do
   - Graph database context (justification chains, evidence chains,
     user preferences, conversation topics, recent context)
   - Enrichment data from external services
-  - Memory signals (similar episodes, entity familiarity)
+  - Memory signals (similar episodes, semantic facts and the recurring
+    pattern found among them, entity familiarity); the retrieved facts are
+    reported with `opts`' `:progress` (`Brain.Memory.RecurringPattern.retrieved/4`)
   - ContextAccumulator signals (combined confidence, conflict, hedging)
+
+  `opts` must carry `:world_id`, the world whose memory and service credentials
+  are read; absent raises. `:turn_time`, the moment of the turn (a
+  `DateTime`), and `:time_zone`, its `Brain.Temporal.Zone`, go with the
+  enrichment request; an intent of a scheduling domain cannot be dispatched
+  without them. `:web_user_id`, the web user who said the turn, goes with it
+  too.
   """
-  def build(%InternalModel{} = model, opts \\ []) do
+  def build(%InternalModel{} = model, opts) do
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "ContextBuilder.build requires a :world_id option, the world whose memory and " <>
+                  "service credentials are read; got #{inspect(other)}"
+      end
+
     analyses = model.analyses || []
     primary = select_primary_analysis(analyses)
     question_chunk = ChunkPriority.question_chunk(analyses)
@@ -42,9 +63,9 @@ defmodule Brain.Response.ContextBuilder do
     conversation_id = Keyword.get(opts, :conversation_id)
 
     analysis_context = extract_analysis_context(primary, analyses, model)
-    graph_context = extract_graph_context(analyses, user_id, conversation_id)
-    enrichment_context = extract_enrichment_context(primary, opts)
-    memory_context = extract_memory_context(primary, analyses)
+    graph_context = extract_graph_context(analyses, user_id, conversation_id, world_id)
+    enrichment_context = extract_enrichment_context(primary, opts, world_id)
+    memory_context = extract_memory_context(primary, analyses, world_id, opts)
     accumulator_context = extract_accumulator_context(primary)
     all_analyses_summary = build_all_analyses(analyses)
     per_chunk_facts = build_per_chunk_facts(analyses, question_chunk, opts)
@@ -222,22 +243,22 @@ defmodule Brain.Response.ContextBuilder do
   defp serialize_slots(s) when is_map(s), do: s
   defp serialize_slots(_), do: %{filled: %{}, missing_required: [], missing_optional: []}
 
-  defp extract_graph_context(analyses, user_id, conversation_id) do
+  defp extract_graph_context(analyses, user_id, conversation_id, world_id) do
     beliefs = analyses |> Enum.flat_map(&(Map.get(&1, :related_beliefs) || [])) |> Enum.uniq()
 
-    justification_chains = fetch_justification_chains(beliefs)
-    evidence_chains = fetch_evidence_chains(beliefs)
-    assumption_consequences = fetch_assumption_consequences(analyses, beliefs)
-    user_preferences = if user_id, do: Reader.user_preferences(user_id), else: []
+    justification_chains = fetch_justification_chains(beliefs, world_id)
+    evidence_chains = fetch_evidence_chains(beliefs, world_id)
+    assumption_consequences = fetch_assumption_consequences(analyses, beliefs, world_id)
+    user_preferences = if user_id, do: Reader.user_preferences(user_id, world_id: world_id), else: []
 
     conversation_topics =
       if conversation_id,
-        do: safe_call(fn -> Reader.conversation_topics(to_string(conversation_id)) end),
+        do: safe_call(fn -> Reader.conversation_topics(to_string(conversation_id), world_id: world_id) end),
         else: []
 
     recent_context =
       if conversation_id,
-        do: safe_call(fn -> Reader.recent_context(to_string(conversation_id)) end),
+        do: safe_call(fn -> Reader.recent_context(to_string(conversation_id), world_id: world_id) end),
         else: []
 
     %{
@@ -250,23 +271,26 @@ defmodule Brain.Response.ContextBuilder do
     }
   end
 
-  defp fetch_justification_chains(beliefs) do
+  defp fetch_justification_chains(beliefs, world_id) do
     beliefs
     |> Enum.flat_map(fn belief ->
       node_id = Map.get(belief, :node_id) || Map.get(belief, "node_id")
-      if node_id, do: safe_call(fn -> Reader.belief_justification_chain(to_string(node_id)) end), else: []
+
+      if node_id,
+        do: safe_call(fn -> Reader.belief_justification_chain(to_string(node_id), world_id: world_id) end),
+        else: []
     end)
   end
 
-  defp fetch_evidence_chains(beliefs) do
+  defp fetch_evidence_chains(beliefs, world_id) do
     beliefs
     |> Enum.flat_map(fn belief ->
       subject = Map.get(belief, :subject) || Map.get(belief, "subject")
-      if subject, do: safe_call(fn -> Reader.evidence_chain(to_string(subject)) end), else: []
+      if subject, do: safe_call(fn -> Reader.evidence_chain(to_string(subject), world_id: world_id) end), else: []
     end)
   end
 
-  defp fetch_assumption_consequences(analyses, beliefs) do
+  defp fetch_assumption_consequences(analyses, beliefs, world_id) do
     has_contradiction =
       Enum.any?(analyses, fn a -> Map.get(a, :epistemic_status) == :contradicted end)
 
@@ -274,29 +298,50 @@ defmodule Brain.Response.ContextBuilder do
       beliefs
       |> Enum.flat_map(fn belief ->
         node_id = Map.get(belief, :node_id) || Map.get(belief, "node_id")
-        if node_id, do: safe_call(fn -> Reader.assumption_consequences(to_string(node_id)) end), else: []
+        if node_id,
+          do: safe_call(fn -> Reader.assumption_consequences(to_string(node_id), world_id: world_id) end),
+          else: []
       end)
     else
       []
     end
   end
 
-  defp extract_enrichment_context(primary, _opts) do
+  defp extract_enrichment_context(primary, opts, world_id) do
     entities = primary.entities || []
     intent = primary.intent
     slots = extract_slot_values(primary.slots)
 
-    base_context = %{
-      entities: entities,
-      intent: intent
-    }
+    # The turn's time and zone and the web user who said it, when the caller
+    # gives them, go with the request: a scheduling intent's dates and times
+    # are read against the turn, dispatching one without its time or zone
+    # raises (`Brain.Services.Dispatcher.dispatch/3`), and what it sets is
+    # the web user's.
+    base_context =
+      Map.merge(
+        %{
+          entities: entities,
+          intent: intent,
+          side_effects: Keyword.get(opts, :side_effects, true),
+          world_id: world_id
+        },
+        Map.new(Keyword.take(opts, [:turn_time, :time_zone, :web_user_id]))
+      )
 
     enriched = Enricher.prepare_context(intent, slots, base_context)
     entity_familiarity = EntityGraphEnricher.familiarity_score(entities)
 
+    # A failed enrichment's error is what the response answers
+    # (`Brain.Response.DiscoursePlanner`), so it is carried as the service
+    # returned it, with the service that returned it and the intent and slots
+    # it was asked with, which a reply to a clarifying question completes.
     %{
       enriched_data: Map.get(enriched, :enriched_data, %{}),
       enrichment_status: Map.get(enriched, :enrichment_status, :not_configured),
+      enrichment_error: Map.get(enriched, :enrichment_error),
+      enrichment_service: Map.get(enriched, :enrichment_service),
+      intent: intent,
+      slots: slots,
       entity_familiarity: entity_familiarity,
       graph_enrichment: Map.get(enriched, :graph_enrichment, %{})
     }
@@ -327,7 +372,11 @@ defmodule Brain.Response.ContextBuilder do
 
   defp extract_slot_values(_), do: %{}
 
-  defp extract_memory_context(primary, analyses) do
+  # The semantic facts retrieved for the turn's chunks, each once at its
+  # highest similarity, most similar first, and the recurring pattern found
+  # among them (`Brain.Memory.RecurringPattern.find/2`), which the response
+  # draws on ahead of the similar episodes.
+  defp extract_memory_context(primary, analyses, world_id, opts) do
     accumulated_contexts =
       analyses
       |> Enum.map(&Map.get(&1, :accumulated_context))
@@ -341,7 +390,12 @@ defmodule Brain.Response.ContextBuilder do
     semantics =
       accumulated_contexts
       |> Enum.flat_map(&(Map.get(&1, :relevant_semantics) || []))
-      |> Enum.uniq()
+      |> Enum.group_by(fn {fact, _similarity} -> fact.id end)
+      |> Enum.map(fn {_id, matches} -> Enum.max_by(matches, fn {_fact, similarity} -> similarity end) end)
+      |> Enum.sort_by(fn {_fact, similarity} -> similarity end, :desc)
+
+    recurring_pattern = RecurringPattern.find(semantics, world_id)
+    :ok = RecurringPattern.retrieved(semantics, recurring_pattern, world_id, opts)
 
     query =
       [
@@ -356,7 +410,7 @@ defmodule Brain.Response.ContextBuilder do
       if episodes == [] and query != "" do
         safe_call(fn ->
           if Process.whereis(Brain.Memory.Store) do
-            case Brain.Memory.Store.query_similar(query, 5) do
+            case Brain.Memory.Store.query_similar(query, 5, world_id: world_id) do
               {:ok, results} -> results
               _ -> []
             end
@@ -370,7 +424,8 @@ defmodule Brain.Response.ContextBuilder do
 
     %{
       similar_episodes: fallback_episodes,
-      semantic_facts: semantics
+      semantic_facts: semantics,
+      recurring_pattern: recurring_pattern
     }
   end
 

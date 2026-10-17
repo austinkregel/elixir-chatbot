@@ -1,0 +1,7 @@
+{
+  "apology": "smalltalk.dialog.sorry",
+  "compliment": "smalltalk.user.likes_agent",
+  "farewell": "smalltalk.greetings.bye",
+  "greeting": "smalltalk.greetings.hello",
+  "thanks": "smalltalk.appraisal.thank_you"
+}

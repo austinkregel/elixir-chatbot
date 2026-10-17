@@ -11,7 +11,7 @@ defmodule ChatWeb.LayoutsTest do
       # Use render_component to test the component
       html = render_component(&Layouts.app/1, assigns)
 
-      assert html =~ "navbar"
+      assert html =~ "<header"
       assert html =~ "phoenixframework.org"
       assert html =~ "Get Started"
     end
