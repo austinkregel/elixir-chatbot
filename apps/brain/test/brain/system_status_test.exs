@@ -80,9 +80,9 @@ defmodule Brain.SystemStatusTest do
     end
   end
 
-  describe "get_all_genservers_status/0" do
+  describe "get_all_genservers_status/1" do
     test "returns categorized genserver status" do
-      result = SystemStatus.get_all_genservers_status()
+      result = SystemStatus.get_all_genservers_status("test_system_status")
 
       assert is_map(result)
       assert Map.has_key?(result, :categories)
@@ -90,6 +90,28 @@ defmodule Brain.SystemStatusTest do
       assert Map.has_key?(result, :check_duration_ms)
       assert is_integer(result.check_duration_ms)
       assert %DateTime{} = result.checked_at
+    end
+
+    test "reports the JTMS network and the beliefs of the world named" do
+      world_id = "test_system_status"
+      result = SystemStatus.get_all_genservers_status(world_id)
+      jtms = result.categories.epistemic[Brain.Epistemic.JTMS]
+      beliefs = result.categories.epistemic[Brain.Epistemic.BeliefStore]
+
+      assert jtms.ready
+      assert jtms.stats == Brain.Epistemic.JTMS.stats(world_id)
+      assert beliefs.ready
+      assert beliefs.stats == Brain.Epistemic.BeliefStore.stats(world_id)
+    end
+
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/SystemStatus.get_all_genservers_status needs the world/, fn ->
+        SystemStatus.get_all_genservers_status(nil)
+      end
+
+      assert_raise ArgumentError, ~r/SystemStatus.get_all_genservers_status needs the world/, fn ->
+        SystemStatus.get_all_genservers_status("")
+      end
     end
   end
 
@@ -127,9 +149,9 @@ defmodule Brain.SystemStatusTest do
     end
   end
 
-  describe "get_health_indicators/0" do
+  describe "get_health_indicators/1" do
     test "returns health indicators with score" do
-      result = SystemStatus.get_health_indicators()
+      result = SystemStatus.get_health_indicators("test_system_status")
 
       assert is_map(result)
       assert Map.has_key?(result, :genservers_running)
@@ -143,9 +165,9 @@ defmodule Brain.SystemStatusTest do
     end
   end
 
-  describe "get_utilization_report/0" do
+  describe "get_utilization_report/1" do
     test "returns utilization report with categories" do
-      result = SystemStatus.get_utilization_report()
+      result = SystemStatus.get_utilization_report("test_system_status")
 
       assert is_map(result)
       assert Map.has_key?(result, :idle)
@@ -210,19 +232,6 @@ defmodule Brain.SystemStatusTest do
       assert Map.has_key?(result, :running)
       assert Map.has_key?(result, :ready)
       assert Map.has_key?(result, :stats)
-    end
-  end
-
-  describe "get_training_worlds_status/0" do
-    test "returns training worlds status" do
-      result = SystemStatus.get_training_worlds_status()
-
-      assert is_map(result)
-      assert Map.has_key?(result, :manager_ready)
-      assert Map.has_key?(result, :active_worlds)
-      assert Map.has_key?(result, :persisted_worlds)
-      assert Map.has_key?(result, :worlds)
-      assert is_list(result.worlds)
     end
   end
 
