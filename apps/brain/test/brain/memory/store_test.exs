@@ -3,13 +3,9 @@ defmodule Brain.Memory.StoreTest do
   use Brain.Test.GraphCase, async: false
   import Brain.TestHelpers
 
-  # World.Embedder is in a sibling umbrella app that depends on :brain.
-  # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Embedder}
-
   alias Memory.Store
   alias Brain.Memory.Types.{Episode, SemanticFact}
-  alias World.Embedder, as: WorldEmbedder
+  alias Brain.Worlds.Embedder, as: WorldEmbedder
 
   # The world the test suite runs in, seeded by `mix test.models`. The store
   # embeds with this world's embedder, so embeddings a test builds by hand come
@@ -81,7 +77,6 @@ defmodule Brain.Memory.StoreTest do
 
   describe "a query in one world beside another world's similar memories" do
     setup do
-      ensure_started(World.Manager)
       setup_world_sandbox()
     end
 
