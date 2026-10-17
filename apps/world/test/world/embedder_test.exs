@@ -16,6 +16,19 @@ defmodule World.EmbedderTest do
   alias Brain.Worlds.Embedder
   alias World.Manager, as: WorldManager
 
+  # Episodes a world's vocabulary can be rebuilt from: every word occurs at
+  # least twice, and the city and the weather each vary across them, so those
+  # words weigh above zero. A word in every episode weighs zero, and a rebuild
+  # from episodes made only of such words raises. A rebuild that is to fail
+  # for another reason starts from these too, so that reason is the one it
+  # fails for.
+  @varied_weather [
+    "the weather in paris is sunny",
+    "the weather in london is rainy",
+    "is the weather in paris rainy",
+    "is the weather in london sunny"
+  ]
+
   setup do
     start_world_test_services()
     setup_world_sandbox()
@@ -237,7 +250,10 @@ defmodule World.EmbedderTest do
     test "a fact with no evidence episodes is re-embedded from its own text and found by it" do
       {:ok, world} = create_test_world("embedder_rebuild_textual_fact")
 
-      for text <- ["the weather in paris is sunny", "is the weather in paris sunny"] do
+      # Every word occurs at least twice, so each one is in the rebuilt
+      # vocabulary, and "paris" is not in every episode, so it weighs above
+      # zero and the fact's text embeds as a vector that is not zero.
+      for text <- @varied_weather do
         {:ok, _id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
       end
 
@@ -258,7 +274,7 @@ defmodule World.EmbedderTest do
     test "a fact whose evidence episodes are not in the world stops the rebuild, naming it" do
       {:ok, world} = create_test_world("embedder_rebuild_no_evidence")
 
-      for text <- ["the weather in paris is sunny", "is the weather in paris sunny"] do
+      for text <- @varied_weather do
         {:ok, _id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
       end
 
@@ -313,7 +329,7 @@ defmodule World.EmbedderTest do
     test "raises with the failure when the rebuild it waits for fails" do
       {:ok, world} = create_test_world("embedder_await_failed")
 
-      for text <- ["the weather in paris is sunny", "is the weather in paris sunny"] do
+      for text <- @varied_weather do
         {:ok, _id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
       end
 
@@ -360,19 +376,18 @@ defmodule World.EmbedderTest do
     test "wait for the rebuild and search the world's memory re-embedded with the rebuilt vocabulary" do
       {:ok, world} = create_test_world("embedder_store_query_waits")
 
-      # Every word occurs at least twice, so each one is in the rebuilt
-      # vocabulary.
-      [paris_sunny, _paris_rainy] = texts = ["the weather in paris is sunny", "is the weather in paris rainy"]
+      [paris_sunny, _london_rainy, _paris_rainy, _london_sunny] = texts = @varied_weather
 
-      [paris_sunny_id, _] =
+      [paris_sunny_id, _, paris_rainy_id, _] =
         ids =
         Enum.map(texts, fn text ->
           {:ok, id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
           id
         end)
 
-      episodes = Enum.map(ids, fn id -> elem(Store.get_episode(id, world_id: world.id), 1) end)
-      fact = SemanticFact.new("the weather in paris", VectorIndex.mean_vector(Enum.map(episodes, & &1.embedding)), ids, [])
+      paris_ids = [paris_sunny_id, paris_rainy_id]
+      paris = Enum.map(paris_ids, fn id -> elem(Store.get_episode(id, world_id: world.id), 1) end)
+      fact = SemanticFact.new("the weather in paris", VectorIndex.mean_vector(Enum.map(paris, & &1.embedding)), paris_ids, [])
       {:ok, fact_id} = Store.add_semantic(fact, world_id: world.id)
 
       resume = hold_rebuild!(world.id)
@@ -396,7 +411,7 @@ defmodule World.EmbedderTest do
     test "raise with the failure when the rebuild they wait for fails" do
       {:ok, world} = create_test_world("embedder_store_query_failed")
 
-      for text <- ["the weather in paris is sunny", "is the weather in paris sunny"] do
+      for text <- @varied_weather do
         {:ok, _id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
       end
 
@@ -425,7 +440,14 @@ defmodule World.EmbedderTest do
     test "waits for the rebuild, however long it takes, and votes from the world's memory" do
       {:ok, world} = create_test_world("embedder_speech_act_waits")
 
-      for text <- ["is the weather in paris sunny", "is the weather in paris rainy"] do
+      # Questions whose city and weather vary, so those words weigh above zero
+      # (`@varied_weather`).
+      for text <- [
+            "is the weather in paris sunny",
+            "is the weather in london rainy",
+            "is the weather in paris rainy",
+            "is the weather in london sunny"
+          ] do
         {:ok, _id} = Store.add_episode(text, "weather", "", ["question"], world_id: world.id)
       end
 
@@ -447,7 +469,7 @@ defmodule World.EmbedderTest do
     test "raises with the failure when the rebuild it waits for fails" do
       {:ok, world} = create_test_world("embedder_speech_act_failed")
 
-      for text <- ["the weather in paris is sunny", "is the weather in paris sunny"] do
+      for text <- @varied_weather do
         {:ok, _id} = Store.add_episode(text, "weather", "", [], world_id: world.id)
       end
 
