@@ -1,6 +1,7 @@
 defmodule World.ManagerTest do
   use World.AtlasCase, async: false
-  import Brain.TestHelpers
+  import Brain.TestHelpers, except: [create_test_world: 1, create_test_world: 2, start_world_test_services: 0]
+  import World.TestWorlds
 
   alias Brain.Epistemic.BeliefStore
   alias Brain.Memory.Store, as: MemoryStore
@@ -142,7 +143,7 @@ defmodule World.ManagerTest do
       assert :ok = Manager.purge(world.id)
 
       assert Manager.get(world.id) == {:error, :not_found}
-      refute File.exists?(World.Persistence.world_path(world.id))
+      refute File.exists?(Brain.Worlds.world_path(world.id))
       refute Enum.any?(Atlas.Graph.world_graphs(world.id), &Atlas.Graph.graph_exists?/1)
       assert Enum.all?(atlas_rows(world.id), fn {_schema, count} -> count == 0 end)
 
@@ -168,14 +169,16 @@ defmodule World.ManagerTest do
            "and can be purged again" do
       {:ok, world} = create_test_world("manager_purge_disk_fails", mode: :persistent)
       populate!(world.id)
-      path = World.Persistence.world_path(world.id)
+      path = Brain.Worlds.world_path(world.id)
       assert File.dir?(path)
 
-      # A directory that cannot be written: its files cannot be deleted.
+      # A directory that cannot be written: its files cannot be deleted. File.rm_rf/1
+      # (Erlang's :file.del_dir_r/1) reports the directory it could not remove
+      # because they are still in it, :eexist, not each file's :eacces.
       File.chmod!(path, 0o500)
       on_exit(fn -> File.chmod(path, 0o755) end)
 
-      assert {:error, {:disk_delete_failed, :eacces}} = Manager.purge(world.id)
+      assert {:error, {:disk_delete_failed, :eexist}} = Manager.purge(world.id)
 
       # Atlas went first; the world and its files are still there.
       assert Enum.all?(atlas_rows(world.id), fn {_schema, count} -> count == 0 end)
@@ -220,18 +223,18 @@ defmodule World.ManagerTest do
 
       assert :ok = Brain.KnowledgeStore.add_to_world(world.id, "people", "zed", %{"name" => "Zed"})
       assert %{"zed" => %{"name" => "Zed"}} = Brain.KnowledgeStore.get_world_knowledge(world.id, "people")
-      refute File.exists?(World.Persistence.world_path(world.id))
+      refute File.exists?(Brain.Worlds.world_path(world.id))
 
       assert :ok = Manager.destroy(world.id)
       assert Brain.KnowledgeStore.get_world_knowledge(world.id) == %{}
-      refute File.exists?(World.Persistence.world_path(world.id))
+      refute File.exists?(Brain.Worlds.world_path(world.id))
     end
 
     test "a persistent world's is its knowledge.json" do
       {:ok, world} = create_test_world("manager_persistent_knowledge", mode: :persistent)
 
       assert :ok = Brain.KnowledgeStore.add_to_world(world.id, "people", "zed", %{"name" => "Zed"})
-      assert File.exists?(Path.join(World.Persistence.world_path(world.id), "knowledge.json"))
+      assert File.exists?(Path.join(Brain.Worlds.world_path(world.id), "knowledge.json"))
     end
   end
 
@@ -254,7 +257,7 @@ defmodule World.ManagerTest do
     # it is gone when the test ends.
     test "creating or loading a world raises in the caller, and the manager and its worlds keep running" do
       {:ok, world} = create_test_world("manager_unscoped_kept")
-      assert {:ok, embedding} = World.Embedder.embed(world.id, "hello there")
+      assert {:ok, embedding} = Brain.Worlds.Embedder.embed(world.id, "hello there")
       manager = Process.whereis(Manager)
 
       Atlas.Repo.query!("SELECT ag_catalog.create_graph('knowledge_graph')", [])
@@ -270,7 +273,7 @@ defmodule World.ManagerTest do
       assert Manager.get("test_manager_unscoped_refused") == {:error, :not_found}
       assert {:ok, %{id: id}} = Manager.get(world.id)
       assert id == world.id
-      assert World.Embedder.embed(world.id, "hello there") == {:ok, embedding}
+      assert Brain.Worlds.Embedder.embed(world.id, "hello there") == {:ok, embedding}
     end
   end
 
@@ -295,7 +298,7 @@ defmodule World.ManagerTest do
 
   describe "cleanup_orphaned_worlds/1" do
     # The cleanup runs against a directory of this test's own: with
-    # `:test_world_sandbox` off, `World.Persistence.base_path/0` returns
+    # `:test_world_sandbox` off, `Brain.Worlds.base_path/0` returns
     # `:training_worlds_path`, which points there for the duration.
     setup do
       base_path =
@@ -303,11 +306,11 @@ defmodule World.ManagerTest do
 
       File.mkdir_p!(base_path)
 
-      original_sandbox = Application.fetch_env(:world, :test_world_sandbox)
-      original_path = Application.fetch_env(:world, :training_worlds_path)
+      original_sandbox = Application.fetch_env(:brain, :test_world_sandbox)
+      original_path = Application.fetch_env(:brain, :training_worlds_path)
 
-      Application.put_env(:world, :test_world_sandbox, false)
-      Application.put_env(:world, :training_worlds_path, base_path)
+      Application.put_env(:brain, :test_world_sandbox, false)
+      Application.put_env(:brain, :training_worlds_path, base_path)
 
       on_exit(fn ->
         restore_env(:test_world_sandbox, original_sandbox)
@@ -315,7 +318,7 @@ defmodule World.ManagerTest do
         File.rm_rf!(base_path)
       end)
 
-      assert World.Persistence.base_path() == base_path
+      assert Brain.Worlds.base_path() == base_path
 
       u = System.unique_integer([:positive])
 
@@ -375,6 +378,19 @@ defmodule World.ManagerTest do
     end
   end
 
-  defp restore_env(key, {:ok, value}), do: Application.put_env(:world, key, value)
-  defp restore_env(key, :error), do: Application.delete_env(:world, key)
+  describe "training_worlds_status/0" do
+    test "returns training worlds status" do
+      result = Manager.training_worlds_status()
+
+      assert is_map(result)
+      assert Map.has_key?(result, :manager_ready)
+      assert Map.has_key?(result, :active_worlds)
+      assert Map.has_key?(result, :persisted_worlds)
+      assert Map.has_key?(result, :worlds)
+      assert is_list(result.worlds)
+    end
+  end
+
+  defp restore_env(key, {:ok, value}), do: Application.put_env(:brain, key, value)
+  defp restore_env(key, :error), do: Application.delete_env(:brain, key)
 end
