@@ -1,7 +1,7 @@
 defmodule Brain.EmbeddingCaches do
   @moduledoc """
   The caches that hold vectors embedded with a world's vocabulary
-  (`World.Embedder`), built the first time the world uses them:
+  (`Brain.Worlds.Embedder`), built the first time the world uses them:
 
   - `Brain.Response.SemanticFactRetriever`: the world's fact index
   - `Brain.Response.ChunkSegmenter`: the world's chunk type centroids
@@ -21,9 +21,9 @@ defmodule Brain.EmbeddingCaches do
   alias Brain.Response.{ChunkSegmenter, SemanticFactRetriever, TemplateBlender, TemplateStore}
 
   @doc """
-  Forgets every cache's vectors for the world. `World.Embedder` calls it when a
-  rebuild leaves the world's vocabulary ready, and `World.Manager` when the
-  world is destroyed.
+  Forgets every cache's vectors for the world. `Brain.Worlds.Embedder` calls it
+  when a rebuild leaves the world's vocabulary ready, and `Brain.Worlds.stop!/1`
+  when the world's tree stops.
   """
   @spec forget_world(String.t()) :: :ok
   def forget_world(world_id) when is_binary(world_id) and world_id != "" do
