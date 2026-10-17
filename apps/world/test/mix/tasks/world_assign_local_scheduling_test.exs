@@ -9,7 +9,8 @@ defmodule Mix.Tasks.World.AssignLocalSchedulingTest do
   its rows for them are rolled back with the rest.
   """
   use World.AtlasCase, async: false
-  import Brain.TestHelpers
+  import Brain.TestHelpers, except: [create_test_world: 1, create_test_world: 2, start_world_test_services: 0]
+  import World.TestWorlds
   import Ecto.Query, only: [from: 2]
 
   alias Brain.Services.{Dispatcher, LocalScheduler}
