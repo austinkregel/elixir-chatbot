@@ -205,7 +205,12 @@ defmodule Brain.Analysis.EntityTypeScorerTest do
 
       assert entity.entity_type == "music_artist"
       assert entity.p_ordinary == 0.0
-      assert entity.confidence == EntityTypeScorer.base_confidence("coldplay", "music_artist")
+
+      # A decided entity's own confidence is the probability Brain.ML.SpanReliability
+      # combined its readings into; the scorer's confidence is the one its
+      # gazetteer reading carries.
+      gazetteer = Enum.find(entity.readings, &(&1.source == :gazetteer))
+      assert gazetteer.raw_confidence == EntityTypeScorer.base_confidence("coldplay", "music_artist")
     end
 
     test "a word only a name list offers, and used commonly, is dropped" do
@@ -310,7 +315,11 @@ defmodule Brain.Analysis.EntityTypeScorerTest do
 
       assert length(posteriors) > 1
       assert Enum.max(posteriors) < 0.5
-      assert entity.confidence == EntityTypeScorer.base_confidence("door", entity.entity_type)
+
+      # The scorer's confidence is its gazetteer reading's; the entity's own is
+      # the span decision's combined probability.
+      gazetteer = Enum.find(entity.readings, &(&1.source == :gazetteer))
+      assert gazetteer.raw_confidence == EntityTypeScorer.base_confidence("door", gazetteer.entity_type)
     end
   end
 
