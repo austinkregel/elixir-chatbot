@@ -17,8 +17,9 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorer do
   world holds its own copy at `<world>/models/triple_scorer.term` (`path/1`),
   seeded by copying the trained scorer:
 
-  - a persistent world is seeded when `World.Manager` creates it, and an existing
-    world, or every world after a retrain, with `mix world.seed_model triple_scorer`;
+  - a persistent world is seeded when it is created (`Brain.Worlds.create!/2`),
+    and an existing world, or every world after a retrain, with
+    `mix world.seed_model triple_scorer`;
   - an ephemeral world has no directory, so it is seeded in memory when it is
     created (`seed_in_memory!/1`) and dropped with it (`drop/1`).
 
