@@ -74,7 +74,8 @@ defmodule Brain.ML.ModelPreflight do
           {:"speech_act_table_#{code}", validate_language_artifact(Brain.Analysis.SpeechActTable, code)},
           {:"span_reliability_#{code}", validate_language_artifact(Brain.ML.SpanReliability, code)},
           {:"slot_type_preferences_#{code}", validate_language_artifact(Brain.Analysis.SlotTypePreferences, code)},
-          {:"free_text_capture_#{code}", validate_language_artifact(Brain.Analysis.FreeTextCapture, code)}
+          {:"free_text_capture_#{code}", validate_language_artifact(Brain.Analysis.FreeTextCapture, code)},
+          {:"intent_arbitration_#{code}", validate_language_artifact(Brain.Analysis.IntentArbitration, code)}
         ]
       end)
 
@@ -91,6 +92,7 @@ defmodule Brain.ML.ModelPreflight do
       %Brain.ML.SpanReliability{pairs: pairs} when map_size(pairs) > 0 -> :ok
       %Brain.Analysis.SlotTypePreferences{slot_counts: %{global: global}} when map_size(global) > 0 -> :ok
       %Brain.Analysis.FreeTextCapture{parameters: parameters} when map_size(parameters) > 0 -> :ok
+      %Brain.Analysis.IntentArbitration{overall: %{n: n}} when n > 0 -> :ok
       other -> {:error, "#{inspect(module)} #{code}: empty #{inspect(other.__struct__)}"}
     end
   rescue
