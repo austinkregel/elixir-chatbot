@@ -402,8 +402,7 @@ defmodule Mix.Tasks.GenFramingData do
     profiles =
       Enum.map(chunks, fn chunk_text ->
         analysis = batch_analyze(chunk_text, mode, world_id)
-        {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
-        ChunkProfile.materialize(analysis, feature_vector)
+        ChunkProfile.materialize(analysis, chunk_vector(analysis, mode))
       end)
 
     valid_profiles = Enum.filter(profiles, fn p -> p.feature_vector != [] end)
@@ -427,6 +426,23 @@ defmodule Mix.Tasks.GenFramingData do
         }
       end
     end
+  end
+
+  # A chunk's vector. The pipeline's analysis (`:full`) keeps the vector its
+  # intent was classified from, which the pipeline's own profile is built from
+  # at runtime; a vector extracted again from the finished analysis holds what
+  # pass 2 added after classifying. The batch analysis is built here without
+  # the pipeline and classifies nothing, so its vector is the extractor's.
+  defp chunk_vector(analysis, :full) do
+    case analysis.feature_vector do
+      [_ | _] = vector -> vector
+      other -> Mix.raise("gen_framing_data: the pipeline kept no classified feature vector for #{inspect(String.slice(analysis.text, 0, 60))}: #{inspect(other)}")
+    end
+  end
+
+  defp chunk_vector(analysis, _batch) do
+    {vector, _word_feats} = FeatureExtractor.extract(analysis)
+    vector
   end
 
   # Batch-safe analysis: includes all pure-computation subsystems from the
