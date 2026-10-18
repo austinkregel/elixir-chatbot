@@ -452,6 +452,9 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
   end
 
   describe "domain-aware disambiguation" do
+    # The gazetteer read "Owosso" as a room and as a location; the weather
+    # context weighs the two. (A room reading alone is kept: the context
+    # re-weighs readings a source gave and adds none.)
     test "picks location over room when profile.domain is :weather", %{world_id: world_id} do
       text = "What's the weather in Owosso?"
 
@@ -463,7 +466,8 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
         end_pos: 27,
         confidence: 0.79,
         source: :gazetteer,
-        tag: "PROPN"
+        tag: "PROPN",
+        types: [%{entity_type: "room", value: "Owosso"}, %{entity_type: "location", value: "Owosso"}]
       }
 
       pos_tagged = [
@@ -496,6 +500,50 @@ defmodule Brain.Analysis.EntityDisambiguatorTest do
       # prefers, not by TypeInferrer's patterns.
       assert result[:disambiguation_source] == :context_analysis
       assert result.type_posteriors["location"] > result.type_posteriors["room"]
+    end
+
+    # The slots of a weather query list a temperature unit, a date and a time
+    # among others; none is offered to a span no source read as one. (What
+    # `Brain.Worlds.TypeInferrer` infers for a lone reading is its own
+    # reading, and may still retype it.)
+    test "a lone person reading is offered no type the slots list", %{world_id: world_id} do
+      text = "What's the weather in Austin?"
+
+      entity = %{
+        entity_type: "person",
+        value: "Austin",
+        match: "Austin",
+        start_pos: 22,
+        end_pos: 27,
+        confidence: 0.9,
+        source: :entity_model,
+        tag: "PROPN",
+        readings: [%{source: :entity_model, entity_type: "person"}]
+      }
+
+      pos_tagged = [
+        {"What", "PRON"}, {"'s", "PUNCT"}, {"the", "DET"},
+        {"weather", "NOUN"}, {"in", "ADP"}, {"Austin", "PROPN"}, {"?", "PUNCT"}
+      ]
+
+      profile = %Brain.Analysis.ChunkProfile{domain: :weather, speech_act_category: :directive, speech_act_subtype: :request_information}
+
+      context = %{
+        discourse: %{indicators: []},
+        speech_act: %{category: :directive, sub_type: :request_information},
+        intent: "weather.query",
+        original_text: text,
+        world_id: world_id,
+        profile: profile
+      }
+
+      result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
+
+      # No candidate list was scored: with one reading there was nothing to
+      # weigh, and the type comes from the inferrer's reading, not from scoring
+      # slot types the span was never read as.
+      refute Map.has_key?(result, :type_posteriors)
+      assert result[:disambiguation_source] == :type_inferrer
     end
 
     test "keeps room type when domain is :smarthome", %{world_id: world_id} do
