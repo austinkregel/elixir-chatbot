@@ -5,6 +5,9 @@ defmodule Brain.FactDatabase.Integration do
   alias Brain.FactDatabase.Fact
   alias Brain.Epistemic.{BeliefStore, JTMS}
   alias Brain.Epistemic.Types.Belief
+  alias Brain.Lexicon.ClosedClass
+  alias Brain.LinguisticData
+  alias Brain.ML.{POSTagger, Tokenizer}
   require Logger
 
   @doc "Adds a new fact to the database dynamically.\n\nThis allows the system to learn and grow its fact database.\nThe fact is also registered with the epistemic system for verification.\n\nOptions:\n- :category - Category for the fact (default: \"learned\")\n- :verification_source - Source of verification\n- :confidence - Confidence level (0.0-1.0, default: 0.8)\n- :register_with_jtms - Whether to register with JTMS (default: true)\n- :create_belief - Whether to create a belief (default: true)\n"
@@ -201,6 +204,139 @@ defmodule Brain.FactDatabase.Integration do
 
       _ ->
         :no_data
+    end
+  end
+
+  @doc """
+  The predicate a fact's belief about `entity` is held under: the entity
+  lowercased, its spaces made underscores, as `sync_facts_to_beliefs/2`
+  keys it. `:none` when no atom of that name exists, so that no belief can be
+  held under it.
+  """
+  @spec belief_predicate(String.t()) :: {:ok, atom()} | :none
+  def belief_predicate(entity) when is_binary(entity) do
+    name = entity |> String.trim() |> String.downcase() |> String.replace(" ", "_")
+
+    try do
+      {:ok, String.to_existing_atom(name)}
+    rescue
+      ArgumentError -> :none
+    end
+  end
+
+  @doc """
+  How what is known answers a polar question: a statement that states the
+  question's proposition (`:confirming`) or states its negation
+  (`:disconfirming`), with that statement, or nil when no statement does.
+
+  `question_tags` are the question's words with their UD part-of-speech tags
+  (`Brain.ML.POSTagger.predict/2`), and `statements` the texts known about it
+  (`Brain.Analysis.ChunkAnalysis.statements/2`). A polar question opens with
+  an auxiliary ("Is Paris the capital of France?"); its proposition is said by
+  putting the auxiliary back after the subject. A statement divided in two by
+  that same auxiliary (`A aux B`) states the proposition when the question's
+  other words are A then B ("Paris is the capital of France"), or B then A
+  when A and B each name one thing, so that the statement says they are the
+  same thing, which is said either way round ("The capital of France is
+  Paris"). A phrase names one thing when it opens with the definite article
+  (`Brain.Lexicon.ClosedClass.definite_article?/1`) or is a name, every word
+  a proper noun. Words are compared whole, ignoring case and punctuation:
+  there is no partial match, synonym or paraphrase, so "France's capital is
+  Paris" states nothing about the question.
+
+  A statement that states it with a negation ("Paris is not the capital of
+  Germany") disconfirms the proposition, one without confirms it. A negated
+  question ("Isn't Paris the capital of France?") is answered by no
+  statement: which answer it expects is not read from its words. When
+  statements both confirm and disconfirm it, nothing decides between them,
+  and the alignment is nil.
+
+  Raises when the POS tagger cannot be loaded.
+  """
+  @spec polar_alignment(String.t(), [{String.t(), String.t()}], [String.t()]) ::
+          %{alignment: :confirming | :disconfirming, statement: String.t()} | nil
+  def polar_alignment(question, question_tags, statements)
+      when is_binary(question) and is_list(question_tags) and is_list(statements) do
+    case words(question_tags) do
+      [{auxiliary, "AUX"} | [_ | _] = rest] ->
+        if LinguisticData.has_negation?(question) do
+          nil
+        else
+          proposition = Enum.map(rest, &lowercase/1)
+          model = pos_model!()
+
+          statements
+          |> Enum.flat_map(fn statement ->
+            case statement_alignment(statement, auxiliary, proposition, model) do
+              nil -> []
+              alignment -> [{alignment, statement}]
+            end
+          end)
+          |> decided_alignment()
+        end
+
+      _not_polar ->
+        nil
+    end
+  end
+
+  defp decided_alignment(alignments) do
+    case alignments |> Enum.map(&elem(&1, 0)) |> Enum.uniq() do
+      [alignment] -> %{alignment: alignment, statement: alignments |> hd() |> elem(1)}
+      _none_or_both -> nil
+    end
+  end
+
+  defp statement_alignment(statement, auxiliary, proposition, model) when is_binary(statement) do
+    tagged =
+      statement
+      |> Tokenizer.expand_contractions()
+      |> Tokenizer.tokenize_words()
+      |> POSTagger.predict(model)
+      |> words()
+
+    {negations, core} = Enum.split_with(tagged, fn {word, _tag} -> LinguisticData.negation?(word) end)
+    auxiliary = String.downcase(auxiliary)
+    last = length(core) - 1
+
+    stated? =
+      core
+      |> Enum.with_index()
+      |> Enum.filter(fn {{word, tag}, index} ->
+        tag == "AUX" and String.downcase(word) == auxiliary and index > 0 and index < last
+      end)
+      |> Enum.any?(fn {_auxiliary, index} ->
+        {before, [_auxiliary | after_auxiliary]} = Enum.split(core, index)
+        words_before = Enum.map(before, &lowercase/1)
+        words_after = Enum.map(after_auxiliary, &lowercase/1)
+
+        proposition == words_before ++ words_after or
+          (proposition == words_after ++ words_before and names_one?(before) and names_one?(after_auxiliary))
+      end)
+
+    cond do
+      not stated? -> nil
+      negations == [] -> :confirming
+      true -> :disconfirming
+    end
+  end
+
+  defp names_one?([{first, _tag} | _] = phrase) do
+    ClosedClass.definite_article?(first) or Enum.all?(phrase, fn {_word, tag} -> tag == "PROPN" end)
+  end
+
+  defp words(tagged), do: Enum.reject(tagged, fn {_word, tag} -> tag == "PUNCT" end)
+
+  defp lowercase({word, _tag}), do: String.downcase(word)
+
+  defp pos_model! do
+    case POSTagger.get_model() do
+      {:ok, model} ->
+        model
+
+      {:error, reason} ->
+        raise "FactDatabase.Integration: the POS tagger could not be loaded to read a statement's " <>
+                "parts of speech, which decide whether it answers a polar question: #{inspect(reason)}"
     end
   end
 
