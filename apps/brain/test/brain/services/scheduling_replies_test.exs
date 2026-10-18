@@ -54,15 +54,18 @@ defmodule Brain.Services.SchedulingRepliesTest do
     fields
   end
 
-  # The reply to a dispatched intent, from the fields the driver returned, with
-  # the slots it was given as the turn's entities. Below a confidence of 0.7 no
-  # acknowledgment is put before it, so the reply is a template as filled.
+  # The reply to a dispatched intent, from the fields the driver returned and
+  # the operation it performed, kept in the unified context's enrichment as
+  # `Brain.Response.ContextBuilder` keeps them, with the slots it was given as
+  # the turn's entities. Below a confidence of 0.7 no acknowledgment is put
+  # before it, so the reply is a template as filled.
   defp reply(intent, slots, fields, confidence) do
     entities = for {slot, value} <- slots, do: %{entity_type: Atom.to_string(slot), value: value}
+    {:ok, operation} = SchedulingDriver.operation(intent)
 
     assert {:ok, text} =
              Synthesizer.synthesize_from_domain(intent_domain(intent), intent, entities, confidence,
-               context: %{enriched_data: fields}
+               context: %{enrichment: %{enrichment_status: :success, enriched_data: fields, enrichment_operation: operation}}
              )
 
     text
