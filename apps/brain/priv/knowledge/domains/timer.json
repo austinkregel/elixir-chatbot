@@ -17,6 +17,10 @@
       "Timer is running."
     ]
   },
+  "operation_frames": {
+    "cancel_timer": "cancel",
+    "set_timer": "set"
+  },
   "enriched_response_frames": {
     "running_with_time_left": {
       "when": {"timer_status": "running"},
