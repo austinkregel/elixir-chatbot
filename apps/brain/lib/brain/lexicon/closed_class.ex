@@ -13,7 +13,10 @@ defmodule Brain.Lexicon.ClosedClass do
   demonstratives, and the personal pronouns carry `Person`, `Gender` and
   `Reflex=Yes` (the reflexives) as the UD English Web Treebank annotates
   them; `Brain.Analysis.AnaphoraResolver` reads these to tell which pronouns
-  refer back to an earlier turn.
+  refer back to an earlier turn. `Definite=Def` marks the definite article
+  ("the") and `Definite=Ind` the indefinite ones ("a", "an"):
+  `Brain.FactDatabase.Integration.polar_alignment/3` reads whether a noun
+  phrase is definite, and so names one thing.
 
   The words written with a capital wherever they stand in a sentence, not
   only at its start, are declared as `capitalized` ("i", the pronoun "I",
@@ -103,6 +106,10 @@ defmodule Brain.Lexicon.ClosedClass do
   @doc "True when `word` is a total quantifier (UD `PronType=Tot`): all, every, each..."
   @spec total_quantifier?(String.t()) :: boolean()
   def total_quantifier?(word) when is_binary(word), do: features(word)["PronType"] == "Tot"
+
+  @doc "True when `word` is the definite article (UD `Definite=Def`): \"the\". Case-insensitive."
+  @spec definite_article?(String.t()) :: boolean()
+  def definite_article?(word) when is_binary(word), do: features(word)["Definite"] == "Def"
 
   @doc """
   True when `word` is written with a capital wherever it stands in a
