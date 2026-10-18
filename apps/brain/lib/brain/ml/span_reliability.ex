@@ -43,6 +43,37 @@ defmodule Brain.ML.SpanReliability do
   counts behind every rate are kept in the model (`pairs`, `sources`,
   `overall`).
 
+  ## The source's own confidence
+
+  A source that gives its readings a confidence of its own says more than
+  its type: the gazetteer's reading of a city that is also a common word ("of",
+  "check") carries the near-zero confidence `Brain.Analysis.EntityTypeScorer`
+  gives an ordinary word, its reading of "Denver" a high one, and the gold
+  standard agrees with the second and not the first. So the readings of each
+  `{source, type}` are counted apart by the confidence they carry, in
+  `confidence_bins` bins of equal width over [0, 1], and one more level of
+  smoothing pulls each bin toward its source's readings in the same bin:
+
+      source bin:  (agree_sb + k * source)     / (n_sb + k)
+      reading:     (agree_stb + k * source_bin) / (n_stb + k)
+
+  A reading's reliability is that of its source, type and bin. A bin its
+  pair never showed has no counts, so its rate is its source bin's, and a bin
+  its source never showed is its source's. The confidences are never
+  combined themselves: they say which of the learned reliabilities applies.
+
+  Whether a source reports a confidence is read from its training readings
+  (`reports_confidence`): one that gives a confidence, a number in [0, 1], on
+  every reading reports one, and one that gives it on none does not. A source
+  that gives it on some readings and not others raises when fitted, a reading
+  without a confidence from a source that reports one raises when decided, and
+  so does a reading with one from a source that reports none: the model was
+  fitted on what the source gave then. A source that reports none has every
+  reading in one bin, whose rate is its source's, so its readings' reliability
+  is its pair's. With one bin the same holds for every source. The counts are
+  kept (`source_bins`, `bins`), and the number of bins is chosen with the
+  prior strength (`select/2`).
+
   ## Measurable pairs
 
   A type is measurable when the gold labels can confirm it: some gold label of
@@ -109,7 +140,8 @@ defmodule Brain.ML.SpanReliability do
 
   The extent reliabilities and both pairs of thresholds are the model's
   `redecision`, chosen by `select_redecision/3`: #{5}-fold cross-validation on
-  the training rows, each fold's spans decided by type reliabilities fitted on
+  the training rows, folds assigned by template as `select/2` assigns them,
+  each fold's spans decided by type reliabilities fitted on
   the other folds and decided again with extent reliabilities and evidence
   fitted on the other folds, maximizing the span-level F1 of both decisions
   together. For each candidate extent prior strength the extent thresholds
@@ -145,17 +177,23 @@ defmodule Brain.ML.SpanReliability do
   again, 81.88 and 82.97 weighing the whole span, and 86.57 deciding the
   extent first.
 
-  ## Choosing the prior strength and the thresholds
+  ## Choosing the prior strength, the confidence bins and the thresholds
 
-  `select/2` compares candidate prior strengths and thresholds by
-  #{5}-fold cross-validation on the training rows: each fold's spans are
-  decided with reliabilities fitted on the other folds, and the choice
-  maximizes span-level F1 -- a decision is a true positive when a gold span has
+  `select/2` compares candidate prior strengths, numbers of confidence bins
+  and thresholds by #{5}-fold cross-validation on the training rows: each
+  fold's spans are decided with reliabilities fitted on the other folds, and
+  the choice maximizes span-level F1 (on equal F1, fewer bins, then the
+  smaller strength) -- a decision is a true positive when a gold span has
   its extent and a type that is or refines its label, any other decision is a
   false positive, and every gold span not decided correctly is a false
   negative, so abstaining costs recall and a wrong decision costs both. The
   thresholds tried are the scores and margins the folds produced. The
   held-out split is never read.
+
+  Folds are assigned by each example's `group`, the template of its row
+  (`Brain.ML.NerGold.template!/1`), so the rows of one template are decided
+  together, with reliabilities fitted on none of them (see
+  `Brain.ML.NerGold`'s templates).
 
   ## Language
 
@@ -169,11 +207,28 @@ defmodule Brain.ML.SpanReliability do
   alias Brain.Lattice
   alias Brain.Lattice.Candidate
 
-  @enforce_keys [:language, :prior_strength, :pairs, :unmeasurable, :sources, :overall, :gold_types, :fitted_rows]
+  @enforce_keys [
+    :language,
+    :prior_strength,
+    :confidence_bins,
+    :reports_confidence,
+    :pairs,
+    :source_bins,
+    :bins,
+    :unmeasurable,
+    :sources,
+    :overall,
+    :gold_types,
+    :fitted_rows
+  ]
   defstruct [
     :language,
     :prior_strength,
+    :confidence_bins,
+    :reports_confidence,
     :pairs,
+    :source_bins,
+    :bins,
     :unmeasurable,
     :sources,
     :overall,
@@ -187,10 +242,17 @@ defmodule Brain.ML.SpanReliability do
 
   @type pair :: {atom(), String.t()}
 
+  @typedoc "A confidence bin: its index from 0. A source that reports no confidence has one bin, 0."
+  @type bin :: non_neg_integer()
+
   @type t :: %__MODULE__{
           language: String.t(),
           prior_strength: number(),
+          confidence_bins: pos_integer(),
+          reports_confidence: %{atom() => boolean()},
           pairs: %{pair() => map()},
+          source_bins: %{{atom(), bin()} => map()},
+          bins: %{{atom(), String.t(), bin()} => map()},
           unmeasurable: %{pair() => %{n: pos_integer()}},
           sources: %{atom() => map()},
           overall: %{n: non_neg_integer(), agree: non_neg_integer(), rate: float()},
@@ -232,31 +294,46 @@ defmodule Brain.ML.SpanReliability do
   # that outweighs any pair the training split shows. Cross-validation picks
   # one; ties go to the smaller strength. On the NER training split (1,688
   # rows, 2026-10-09) cross-validated F1 peaked at 1,000 (0.849) and fell to
-  # 0.826 at 100,000, so the grid ends past that peak.
-  @prior_strengths [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10_000, 100_000]
+  # 0.826 at 100,000, so the grid ends past that peak. Measured 2026-10-17
+  # (1,828 rows, test environment) with folds by template and one confidence
+  # bin, the choice was 0.5, then the grid's smallest, so the grid was
+  # extended below it; with ten bins it is 0.1 (F1 0.8742, against 0.8738 at
+  # 0.05), inside it.
+  @prior_strengths [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10_000, 100_000]
+  # How many equal-width bins a source's confidences are counted in, from one
+  # (the confidence says nothing beyond the pair) to bins a twentieth wide.
+  # Measured 2026-10-17 at the chosen strength: F1 0.847 at one bin, 0.852 at
+  # two, 0.863 at five, 0.874 at ten and 0.874 at twenty, ten chosen.
+  @confidence_bins [1, 2, 5, 10, 20]
   @folds 5
 
   @doc """
   Fits the reliabilities from training examples, each `%{key: term, readings:
   [reading], gold: [%{type, start_pos, end_pos}]}`: a row's readings as
   `Brain.ML.EntityExtractor.readings/2` gives them and its gold spans as
-  `Brain.ML.NerGold.spans!/1` places them. `key` identifies the row for fold
-  assignment.
+  `Brain.ML.NerGold.spans!/1` places them. `key` identifies the row.
+  `select/2` and `select_redecision/3` take the same examples, each also with
+  its `group`, the template of its row (`Brain.ML.NerGold.template!/1`),
+  which folds are assigned by.
 
   Options: `:language`, `:prior_strength` (a positive pseudo-count),
-  `:canonical` (runtime type => gold label, as `load_type_mappings/0` gives
-  it) and `:hierarchy` (a module with `is_a?/2` and `parents_of/1`, as
+  `:confidence_bins` (a positive integer, see the moduledoc), `:canonical`
+  (runtime type => gold label, as `load_type_mappings/0` gives it) and
+  `:hierarchy` (a module with `is_a?/2` and `parents_of/1`, as
   `Brain.Analysis.TypeHierarchy`), all required. The thresholds are left unset;
-  `select/2` sets them.
+  `select/2` sets them. A source that gives a confidence on some of its
+  readings and not on others raises.
   """
   @spec fit([map()], keyword()) :: t()
   def fit([_ | _] = examples, opts) do
     language = Brain.Language.validate!(Keyword.fetch!(opts, :language))
     prior_strength = prior_strength!(Keyword.fetch!(opts, :prior_strength))
+    confidence_bins = confidence_bins!(Keyword.fetch!(opts, :confidence_bins))
     canonical = Keyword.fetch!(opts, :canonical)
     hierarchy = Keyword.fetch!(opts, :hierarchy)
 
     examples = Enum.map(examples, &example!/1)
+    reports = reports_confidence!(examples)
     gold_types = examples |> Enum.flat_map(& &1.gold) |> Enum.map(& &1.type) |> Enum.uniq() |> Enum.sort()
 
     if gold_types == [] do
@@ -274,19 +351,30 @@ defmodule Brain.ML.SpanReliability do
       examples
       |> Enum.flat_map(fn example ->
         Enum.map(example.readings, fn reading ->
-          {{reading.source, reading.entity_type}, outcome(reading, example.gold, canonical, hierarchy)}
+          {{reading.source, reading.entity_type}, bin_of(reading, confidence_bins, Map.fetch!(reports, reading.source)),
+           outcome(reading, example.gold, canonical, hierarchy)}
         end)
       end)
-      |> Enum.split_with(fn {{_source, type}, _outcome} -> Map.fetch!(measurable, type) end)
+      |> Enum.split_with(fn {{_source, type}, _bin, _outcome} -> Map.fetch!(measurable, type) end)
 
-    tallies = measured |> Enum.group_by(&elem(&1, 0), &elem(&1, 1)) |> Map.new(fn {pair, outs} -> {pair, tally(outs)} end)
+    tallies = measured |> Enum.group_by(&elem(&1, 0), &elem(&1, 2)) |> Map.new(fn {pair, outs} -> {pair, tally(outs)} end)
     overall = overall!(tallies, "measured readings agree with the gold standard")
     {sources, pairs} = smooth(tallies, prior_strength, overall, fn {source, _type} -> source end)
+
+    {source_bins, bins} =
+      measured
+      |> Enum.group_by(fn {{source, type}, bin, _outcome} -> {source, type, bin} end, &elem(&1, 2))
+      |> Map.new(fn {key, outs} -> {key, tally(outs)} end)
+      |> smooth_bins(prior_strength, sources, fn source -> if Map.fetch!(reports, source), do: confidence_bins, else: 1 end)
 
     %__MODULE__{
       language: language,
       prior_strength: prior_strength,
+      confidence_bins: confidence_bins,
+      reports_confidence: reports,
       pairs: pairs,
+      source_bins: source_bins,
+      bins: bins,
       unmeasurable: unmeasured |> Enum.frequencies_by(&elem(&1, 0)) |> Map.new(fn {pair, n} -> {pair, %{n: n}} end),
       sources: sources,
       overall: overall,
@@ -335,28 +423,34 @@ defmodule Brain.ML.SpanReliability do
   def fit_extent([], _opts), do: raise(ArgumentError, "SpanReliability: no training examples to fit extents from")
 
   @doc """
-  Picks the prior strength, `min_score` and `min_margin` by #{@folds}-fold
-  cross-validation on `examples` (see the moduledoc), then fits on all of
-  them. Returns `{model, report}`, where `report` maps each prior strength to
-  the best cross-validated F1 it reached and the thresholds and counts behind
-  it; the same report is kept in the model's `cross_validation`.
+  Picks the prior strength, the number of confidence bins, `min_score` and
+  `min_margin` by #{@folds}-fold cross-validation on `examples` (see the
+  moduledoc), then fits on all of them. Returns `{model, report}`, where
+  `report` maps each `{prior_strength, confidence_bins}` to the best
+  cross-validated F1 it reached and the thresholds and counts behind it, with
+  `folds`, each fold's decided, correct and gold counts at those thresholds,
+  fold 0 first; the same report is kept in the model's `cross_validation`.
 
-  Takes `fit/2`'s options except `:prior_strength`.
+  Takes `fit/2`'s examples, each with its `group`, and `fit/2`'s options
+  except `:prior_strength` and `:confidence_bins`.
   """
   @spec select([map()], keyword()) :: {t(), map()}
   def select([_ | _] = examples, opts) do
-    if Keyword.has_key?(opts, :prior_strength) do
-      raise ArgumentError, "SpanReliability.select/2 chooses the prior strength; do not pass :prior_strength"
+    for chosen <- [:prior_strength, :confidence_bins], Keyword.has_key?(opts, chosen) do
+      raise ArgumentError,
+            "SpanReliability.select/2 chooses the prior strength and the confidence bins; do not pass #{inspect(chosen)}"
     end
 
     canonical = Keyword.fetch!(opts, :canonical)
     hierarchy = Keyword.fetch!(opts, :hierarchy)
     examples = Enum.map(examples, &example!/1)
-    folds = Enum.map(examples, &:erlang.phash2(&1.key, @folds))
+    folds = group_folds!(examples)
     gold_total = examples |> Enum.map(&length(&1.gold)) |> Enum.sum()
 
+    candidates = for strength <- @prior_strengths, bins <- @confidence_bins, do: {strength, bins}
+
     report =
-      Map.new(@prior_strengths, fn strength ->
+      Map.new(candidates, fn {strength, bins} = candidate ->
         points =
           Enum.flat_map(0..(@folds - 1), fn k ->
             {held, training} = split_fold(examples, folds, k)
@@ -366,20 +460,21 @@ defmodule Brain.ML.SpanReliability do
                 raise ArgumentError, "SpanReliability: fold #{k} leaves no training examples; too few rows to cross-validate"
 
               _ ->
-                model = fit(training, Keyword.put(opts, :prior_strength, strength))
-                Enum.flat_map(held, &decision_points(&1, model, canonical, hierarchy))
+                model = fit(training, Keyword.merge(opts, prior_strength: strength, confidence_bins: bins))
+                held |> Enum.flat_map(&decision_points(&1, model, canonical, hierarchy)) |> Enum.map(&Map.put(&1, :fold, k))
             end
           end)
 
-        {strength, best_thresholds(points, gold_total)}
+        result = best_thresholds(points, gold_total)
+        {candidate, Map.put(result, :folds, fold_counts(points, examples, folds, result))}
       end)
 
-    {strength, chosen} =
-      Enum.max_by(report, fn {strength, result} -> {result.f1, -strength} end)
+    {{strength, bins}, chosen} =
+      Enum.max_by(report, fn {{strength, bins}, result} -> {result.f1, -bins, -strength} end)
 
     model =
       examples
-      |> fit(Keyword.put(opts, :prior_strength, strength))
+      |> fit(Keyword.merge(opts, prior_strength: strength, confidence_bins: bins))
       |> Map.merge(%{min_score: chosen.min_score, min_margin: chosen.min_margin, cross_validation: report})
 
     {model, report}
@@ -425,9 +520,12 @@ defmodule Brain.ML.SpanReliability do
     end
 
     examples = Enum.map(examples, &example!/1)
-    folds = Enum.map(examples, &:erlang.phash2(&1.key, @folds))
+    folds = group_folds!(examples)
     gold_total = examples |> Enum.map(&length(&1.gold)) |> Enum.sum()
-    fit_opts = Keyword.merge(opts, language: model.language, prior_strength: model.prior_strength) |> Keyword.delete(:evidence)
+    fit_opts =
+      opts
+      |> Keyword.merge(language: model.language, prior_strength: model.prior_strength, confidence_bins: model.confidence_bins)
+      |> Keyword.delete(:evidence)
 
     # Per fold: its training examples, and every span of its held-out examples
     # the first decision left for insufficient evidence, with the evidence
@@ -854,7 +952,10 @@ defmodule Brain.ML.SpanReliability do
   of any type until something decides it.
 
   Options: `:text` (the sentence the positions index), `:canonical` and
-  `:hierarchy` as for `fit/2`. Raises when the model has no thresholds.
+  `:hierarchy` as for `fit/2`. Raises when the model has no thresholds or
+  counts no readings by their confidence, and on a measured reading without a
+  confidence from a source that reports one, or with one from a source that
+  reports none (see the moduledoc).
   """
   @spec decide([map()], t(), keyword()) :: [map()]
   def decide(readings, %__MODULE__{} = model, opts) when is_list(readings) do
@@ -1075,6 +1176,114 @@ defmodule Brain.ML.SpanReliability do
     raise ArgumentError, "SpanReliability: :prior_strength must be a positive number, got #{inspect(other)}"
   end
 
+  defp confidence_bins!(bins) when is_integer(bins) and bins > 0, do: bins
+
+  defp confidence_bins!(other) do
+    raise ArgumentError, "SpanReliability: :confidence_bins must be a positive integer, got #{inspect(other)}"
+  end
+
+  # Whether each source of the examples' readings reports a confidence: true
+  # when every one of its readings carries one, false when none does. A source
+  # with some of each raises, naming how many of its readings carry one.
+  defp reports_confidence!(examples) do
+    examples
+    |> Enum.flat_map(& &1.readings)
+    |> Enum.group_by(& &1.source, &(Map.get(&1, :confidence) != nil))
+    |> Map.new(fn {source, carried} ->
+      case Enum.uniq(carried) do
+        [reports?] ->
+          {source, reports?}
+
+        _ ->
+          raise ArgumentError,
+                "SpanReliability: #{Enum.count(carried, & &1)} of #{length(carried)} training readings of " <>
+                  "#{inspect(source)} carry a confidence; a source reports a confidence on every reading or on none"
+      end
+    end)
+  end
+
+  # The bin a reading's own confidence falls in, of `bins` equal-width bins
+  # over [0, 1], the last closed, for a source that reports a confidence
+  # (`reports?`); a source that reports none has one bin. A reading that
+  # breaks its source's contract raises.
+  defp bin_of(reading, bins, true) do
+    case Map.get(reading, :confidence) do
+      confidence when is_number(confidence) and confidence >= 0 and confidence <= 1 ->
+        min(floor(confidence * bins), bins - 1)
+
+      nil ->
+        raise ArgumentError,
+              "SpanReliability: a reading of #{inspect(reading.source)} as #{inspect(reading.entity_type)} carries no confidence, " <>
+                "and #{inspect(reading.source)} gave one on every training reading"
+
+      other ->
+        raise ArgumentError,
+              "SpanReliability: a reading's confidence is a probability, got #{inspect(other)} from " <>
+                "#{inspect(reading.source)} for #{inspect(reading.entity_type)}"
+    end
+  end
+
+  defp bin_of(reading, _bins, false) do
+    case Map.get(reading, :confidence) do
+      nil ->
+        0
+
+      confidence ->
+        raise ArgumentError,
+              "SpanReliability: a reading of #{inspect(reading.source)} as #{inspect(reading.entity_type)} carries the confidence " <>
+                "#{inspect(confidence)}, and #{inspect(reading.source)} gave none on any training reading; retrain it with " <>
+                "`mix train_span_reliability --world <id>`"
+    end
+  end
+
+  # The bin levels' smoothed rates (see the moduledoc), from the `{source,
+  # type, bin}` tallies: each source bin toward its source, each reading's bin
+  # toward its source bin. A source of one bin (`bins_of`) has its one source
+  # bin at its own rate, so its readings' bins are its pairs.
+  defp smooth_bins(tallies, prior_strength, sources, bins_of) do
+    source_bins =
+      tallies
+      |> Enum.group_by(fn {{source, _type, bin}, _tally} -> {source, bin} end, &elem(&1, 1))
+      |> Map.new(fn {{source, _bin} = key, bin_tallies} ->
+        n = bin_tallies |> Enum.map(& &1.n) |> Enum.sum()
+        agree = bin_tallies |> Enum.map(& &1.agree) |> Enum.sum()
+        source_rate = Map.fetch!(sources, source).reliability
+
+        reliability =
+          if bins_of.(source) == 1,
+            do: source_rate,
+            else: (agree + prior_strength * source_rate) / (n + prior_strength)
+
+        {key, %{n: n, agree: agree, reliability: reliability}}
+      end)
+
+    bins =
+      Map.new(tallies, fn {{source, _type, bin} = key, tally} ->
+        prior = Map.fetch!(source_bins, {source, bin}).reliability
+        {key, Map.put(tally, :reliability, (tally.agree + prior_strength * prior) / (tally.n + prior_strength))}
+      end)
+
+    {source_bins, bins}
+  end
+
+  # A measured reading's reliability: its source, type and bin's. A bin with
+  # no counts smooths to its prior, so a bin its pair never showed is its
+  # source bin's rate, and a bin its source never showed is its source's.
+  defp reading_reliability(model, reading) do
+    bin = bin_of(reading, model.confidence_bins, Map.fetch!(model.reports_confidence, reading.source))
+
+    case Map.fetch(model.bins, {reading.source, reading.entity_type, bin}) do
+      {:ok, %{reliability: reliability}} ->
+        reliability
+
+      :error ->
+        case Map.fetch(model.source_bins, {reading.source, bin}) do
+          {:ok, %{reliability: reliability}} -> reliability
+          :error -> Map.fetch!(model.sources, reading.source).reliability
+        end
+    end
+  end
+
   defp example!(%{key: _key, readings: readings, gold: gold} = example) when is_list(readings) and is_list(gold) do
     %{example | readings: Enum.map(readings, &reading!/1), gold: Enum.map(gold, &gold_span!/1)}
   end
@@ -1190,6 +1399,33 @@ defmodule Brain.ML.SpanReliability do
     end)
   end
 
+  # Each fold's decided, correct and gold counts when its points are decided
+  # at `thresholds`' score and margin, fold 0 first.
+  defp fold_counts(points, examples, folds, thresholds) do
+    gold = examples |> Enum.zip(folds) |> Enum.group_by(&elem(&1, 1), fn {example, _fold} -> length(example.gold) end)
+
+    for k <- 0..(@folds - 1) do
+      decided =
+        Enum.filter(points, &(&1.fold == k and score_ok?(&1.score, thresholds.min_score) and margin_ok?(&1.margin, thresholds.min_margin)))
+
+      %{decided: length(decided), correct: Enum.count(decided, & &1.correct), gold: gold |> Map.get(k, []) |> Enum.sum()}
+    end
+  end
+
+  # Each example's fold, by its group: the examples of one group are always in
+  # one fold.
+  defp group_folds!(examples) do
+    Enum.map(examples, fn
+      %{group: group} ->
+        :erlang.phash2(group, @folds)
+
+      example ->
+        raise ArgumentError,
+              "SpanReliability: cross-validation assigns folds by an example's :group, the template of its row " <>
+                "(Brain.ML.NerGold.template!/1); got an example without one, keyed #{inspect(example.key, limit: 5)}"
+    end)
+  end
+
   defp split_fold(examples, folds, k) do
     examples
     |> Enum.zip(folds)
@@ -1278,14 +1514,29 @@ defmodule Brain.ML.SpanReliability do
 
   # -- deciding -----------------------------------------------------------------
 
-  defp thresholds!(%__MODULE__{min_score: score, min_margin: margin})
+  defp thresholds!(%__MODULE__{min_score: score, min_margin: margin} = model)
        when is_number(score) and (is_number(margin) or margin == :infinity),
-       do: :ok
+       do: binned!(model)
 
   defp thresholds!(%__MODULE__{min_score: score, min_margin: margin}) do
     raise ArgumentError,
           "SpanReliability: the model has no decision thresholds (min_score #{inspect(score)}, " <>
             "min_margin #{inspect(margin)}); fit it with select/2"
+  end
+
+  # A model read from a file written before readings were counted by their
+  # confidence has none of the fields that count them.
+  defp binned!(%__MODULE__{} = model) do
+    case Map.take(model, [:confidence_bins, :reports_confidence, :source_bins, :bins]) do
+      %{confidence_bins: bins, reports_confidence: reports, source_bins: source_bins, bins: reading_bins}
+      when is_integer(bins) and bins > 0 and is_map(reports) and is_map(source_bins) and is_map(reading_bins) ->
+        :ok
+
+      other ->
+        raise ArgumentError,
+              "SpanReliability: the model counts no readings by their confidence (#{inspect(other, limit: 3)}); " <>
+                "retrain it with `mix train_span_reliability --world <id>`"
+    end
   end
 
   # What `redecide/4` decides with: its thresholds, and the extent
@@ -1360,7 +1611,7 @@ defmodule Brain.ML.SpanReliability do
   defp summary(reading, model, canonical) do
     {reliability, evidence} =
       case Map.fetch(model.pairs, {reading.source, reading.entity_type}) do
-        {:ok, pair} -> {pair.reliability, pair.n}
+        {:ok, pair} -> {reading_reliability(model, reading), pair.n}
         :error -> {nil, 0}
       end
 
