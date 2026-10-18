@@ -54,10 +54,13 @@ defmodule Brain.Response.PrimitiveTypes do
 
   def required_content(:hedging, _), do: [:confidence_level]
 
+  # A factual primitive states `fact` and an explanatory one `explanation`,
+  # each the text of a statement known for the turn; a narrative one states
+  # `narrative`, the self-knowledge reply (`Brain.Response.ContentSpecifier`).
   def required_content(:content, :factual), do: [:fact]
-  def required_content(:content, :explanatory), do: [:topic]
+  def required_content(:content, :explanatory), do: [:topic, :explanation]
   def required_content(:content, :reflective), do: [:understood_meaning]
-  def required_content(:content, :narrative), do: [:beliefs]
+  def required_content(:content, :narrative), do: [:beliefs, :narrative]
   def required_content(:content, :creative), do: [:prompt_type]
   def required_content(:content, :action_result), do: [:action, :result]
   def required_content(:content, :enriched), do: [:available_placeholders]
