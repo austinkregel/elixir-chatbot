@@ -596,7 +596,7 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
       end
     end
 
-    test "chooses each smoothing value as the best cross-validated one of its grid, in order" do
+    test "chooses each smoothing value, in order, as the largest of its grid whose mean fold log-likelihood is within one standard error of the best" do
       {model, report} = SlotTypePreferences.select(examples() ++ weather_rows(true), @opts)
 
       assert SlotTypePreferences.smoothing_keys() ==
@@ -604,10 +604,17 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
                   ordinary_global ordinary_domain ordinary_intent)a
 
       for key <- SlotTypePreferences.smoothing_keys() do
-        scores = Map.fetch!(report, key)
-        best = scores |> Enum.map(&elem(&1, 1)) |> Enum.max()
-        {first_best, _} = Enum.find(scores, fn {_value, score} -> score == best end)
-        assert report.chosen[key] == first_best, "#{key}: #{inspect(scores)}"
+        rule = Map.fetch!(report.one_standard_error, key)
+        values = report |> Map.fetch!(key) |> Enum.map(&elem(&1, 0))
+        assert values |> Enum.sort() == rule.scores |> Map.keys() |> Enum.sort()
+
+        best_mean = rule.scores |> Map.values() |> Enum.map(& &1.mean) |> Enum.max()
+        assert rule.mean == best_mean, "#{key}: #{inspect(rule)}"
+        assert rule.threshold == best_mean - rule.scores[rule.best].standard_error
+        assert length(rule.scored_folds) >= 2
+
+        within = for {value, %{mean: mean}} <- rule.scores, mean >= rule.threshold, do: value
+        assert report.chosen[key] == Enum.max(within), "#{key}: #{inspect(rule)}"
       end
 
       assert model.smoothing == report.chosen
