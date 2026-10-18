@@ -41,6 +41,18 @@ defmodule Brain.Lexicon.ClosedClassTest do
     refute ClosedClass.total_quantifier?("the")
   end
 
+  test "the definite articles are exactly those declared Definite=Def, ignoring case", %{data: data} do
+    declared = data["features"]["Definite=Def"]
+
+    for word <- ClosedClass.words() do
+      assert ClosedClass.definite_article?(word) == (word in declared), word
+    end
+
+    assert ClosedClass.definite_article?("The")
+    refute ClosedClass.definite_article?("a")
+    refute ClosedClass.definite_article?("Paris")
+  end
+
   test "every word takes the features declared for it", %{data: data} do
     for {feature, words} <- data["features"], word <- words do
       [name, value] = String.split(feature, "=", parts: 2)
