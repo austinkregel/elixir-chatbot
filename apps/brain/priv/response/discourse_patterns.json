@@ -22,6 +22,7 @@
       "match": {
         "speech_act_category": "directive",
         "is_question": true,
+        "has_facts": true,
         "fact_alignment": "confirming"
       },
       "backbone": [
@@ -39,6 +40,7 @@
       "match": {
         "speech_act_category": "directive",
         "is_question": true,
+        "has_facts": true,
         "fact_alignment": "disconfirming"
       },
       "backbone": [
@@ -271,8 +273,8 @@
     "explanation_request_known": {
       "match": {
         "speech_act_category": "directive",
-        "is_question": true,
-        "intent_domain": "explanation",
+        "sub_type": "request_information",
+        "is_question": false,
         "has_facts": true
       },
       "backbone": [
@@ -375,7 +377,9 @@
     },
     "self_knowledge_query": {
       "match": {
-        "intent_domain": "self_knowledge"
+        "speech_act_category": "directive",
+        "intent_domain": "meta",
+        "intent": "meta.self_knowledge"
       },
       "backbone": [
         {
