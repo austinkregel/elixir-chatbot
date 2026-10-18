@@ -2,8 +2,30 @@ defmodule Mix.Tasks.GenLatticeData do
   @moduledoc """
   Generates the phrase inventory and transition scores for the lattice realizer.
 
-  Processes DialogFlow intent data, domain knowledge files, and response
-  primitives into typed fragments indexed by chunk type and primitive type.
+  Processes the intents' response templates (`priv/response/templates.json`),
+  domain knowledge files, and response primitives into typed fragments indexed
+  by chunk type and primitive type.
+
+  ## Primitive types
+
+  A fragment is addressed by the planner's primitive types
+  (`Brain.Response.PrimitiveTypes`): the `type:variant` keys
+  `Brain.Response.DiscoursePlanner` plans and `Brain.Response.PhraseLatticeRealizer`
+  looks fragments up by. Each section of `primitives.json` is mapped onto one
+  of them explicitly (`@primitive_sections`), or named as a pool something
+  other than the lattice words; a section or pool the table does not name, or
+  one whose shape is not a list of phrases, raises, so a pool added to the file
+  is never silently left out of the inventory.
+
+  A template sentence is typed by its chunk type (`@primitive_type_map`). The
+  smalltalk domain's frames keyed by an expressive sub-type are social
+  acknowledgments of it (`@social_frames`).
+
+  ## Conditions
+
+  A template's `condition` (`Brain.Response.ConditionEvaluator` syntax, such
+  as `has_entity:person`) is kept on each of its fragments as `"condition"`,
+  and the realizer considers the fragment only where it holds.
 
   ## Usage
 
@@ -26,18 +48,120 @@ defmodule Mix.Tasks.GenLatticeData do
 
   @shortdoc "Generate lattice phrase inventory from training data"
 
-  @intents_dir "data/intents"
+  @templates_path "apps/brain/priv/response/templates.json"
   @domains_dir "apps/brain/priv/knowledge/domains"
   @output_dir "apps/brain/priv/ml_models/lattice"
   @config_path "apps/brain/priv/response/system_config.json"
 
+  # A closing ("Goodbye!", "Take care!") answers a farewell, which the planner
+  # answers with a social acknowledgment (discourse_patterns.json's
+  # "farewell"); `:farewell` is no variant of `:follow_up`.
   @primitive_type_map %{
     "greeting" => {"acknowledgment", "social"},
     "acknowledgment" => {"acknowledgment", "action"},
     "body" => {"content", "enriched"},
     "offer" => {"follow_up", "continuation"},
     "clarification" => {"follow_up", "clarification"},
-    "closing" => {"follow_up", "farewell"}
+    "closing" => {"acknowledgment", "social"}
+  }
+
+  # The smalltalk domain's response frames are keyed by the expressive
+  # sub-type they answer (`Brain.Response.Synthesizer.synthesize_expressive/2`
+  # reads them by it): each is a social acknowledgment said when the turn's
+  # speech act is of that sub-type, and its "acknowledgment" frame is a general
+  # acknowledgment. Each frame's text is one fragment.
+  @social_frames %{
+    "smalltalk" => %{
+      "greeting" => {"acknowledgment", "social", "speech_act:greeting"},
+      "farewell" => {"acknowledgment", "social", "speech_act:farewell"},
+      "thanks" => {"acknowledgment", "social", "speech_act:thanks"},
+      "how_are_you" => {"acknowledgment", "social", "speech_act:how_are_you"},
+      "apology" => {"acknowledgment", "social", "speech_act:apology"},
+      "acknowledgment" => {"acknowledgment", "general", nil}
+    }
+  }
+
+  # Each section of primitives.json: the planner's `{type, variant}` its
+  # phrases are fragments of (a nil variant for a type without variants), a
+  # map of its pools to those, or `{:not_lattice, reason}` for a pool the
+  # lattice does not word.
+  @primitive_sections %{
+    "description" => {:not_lattice, "the file's description, not a pool"},
+    "hedges" => %{
+      "high_confidence" =>
+        {:not_lattice,
+         "a hedging primitive is planned only for low confidence (DiscoursePlanner.maybe_insert_hedging/2); " <>
+           "these phrases assert confidence"},
+      "medium_confidence" => {"hedging", nil},
+      "low_confidence" => {"hedging", nil}
+    },
+    "acknowledgments" => %{
+      "affirmative" => {"acknowledgment", "action"},
+      "neutral" => {"acknowledgment", "general"}
+    },
+    "clarification_requests" => %{
+      "missing_required" =>
+        {:not_lattice, "leads into the slot question Synthesizer.synthesize_clarification/4 words after it"},
+      "ambiguous" => {:not_lattice, "leads into the candidates a clarification names after it"},
+      "generic" => {"follow_up", "clarification"}
+    },
+    "service_replies" =>
+      {:not_lattice, "a service's error is worded by Synthesizer.synthesize_service_reply/1 (SurfaceRealizer.realize/2)"},
+    "service_items" => {:not_lattice, "describes the items a service reply names (Synthesizer.synthesize_service_reply/1)"},
+    "transition_phrases" => %{
+      "additional_info" => {"transition", nil},
+      "contrast" =>
+        {:not_lattice, "the planner's transition joins chunks without naming their relation; a contrast needs one"},
+      "conclusion" =>
+        {:not_lattice, "the planner's transition joins chunks without naming their relation; a conclusion needs one"}
+    },
+    "uncertainty_markers" => {:not_lattice, "clauses the synthesizer appends to a sentence, not sentences"},
+    "correction_invites" => {"follow_up", "correction_invite"},
+    "fallback_responses" => {:not_lattice, "no primitive is planned for them"},
+    "defer_responses" => {:not_lattice, "Brain's reply to a turn deferred to the user (Synthesizer.get_defer_response/0)"},
+    "cannot_respond" => {:not_lattice, "Brain's reply to a turn whose strategy is :cannot_respond"},
+    "empty_knowledge" =>
+      {:not_lattice, "the self-knowledge reply when nothing is known (Synthesizer.get_empty_knowledge_response/0)"},
+    "quality_fallback" => {:not_lattice, "ResponseQuality's reply (Synthesizer.get_quality_fallback/0)"},
+    "attunement" => %{
+      "empathy" => %{
+        "negative" => {"attunement", "empathy"},
+        "general" => {"attunement", "empathy"}
+      },
+      "validation" => {"attunement", "validation"},
+      "interest" => {"attunement", "interest"},
+      "concern" => {"attunement", "concern"}
+    },
+    "reflective_patterns" => {"content", "reflective"},
+    # An action's result is what the content specifier sets as a
+    # `content:action_result` primitive's `:result`, :pending or :incapable
+    # (ContentSpecifier.capability_to_result/1); only the incapable pool words
+    # a result it sets.
+    "action_responses" => %{
+      "success" => {:not_lattice, "no content specifier sets an action's result to success"},
+      "in_progress" => {:not_lattice, "no content specifier sets an action's result to in progress"},
+      "incapable" => {"content", "action_result"},
+      "failed" => {:not_lattice, "no content specifier sets an action's result to failed"}
+    },
+    "learning_acknowledgments" => {"acknowledgment", "learning"},
+    "learning_update_acknowledgments" => {"acknowledgment", "learning"},
+    "repair_acknowledgments" => {"acknowledgment", "repair"},
+    "boundary_frames" => %{
+      "general" => {"framing", "boundary"},
+      # Its phrases continue into $capability and $alternative as verb phrases
+      # ("perhaps I can help by $alternative"); a framing:boundary primitive's
+      # capability is a label (:unknown) and its alternative "ask about
+      # <domain>" (ContentSpecifier), which they cannot be said with.
+      "with_alternative" =>
+        {:not_lattice, "its phrases need verb phrases the boundary primitive's content does not hold"}
+    },
+    "reframe_patterns" => {"framing", "reframe"},
+    "contradiction_responses" => {"contradiction_response", nil},
+    "creative_engagement" => {"content", "creative"},
+    "elaboration_prompts" => {"follow_up", "elaboration"},
+    "context_probes" => {"follow_up", "context_probe"},
+    "novelty_responses" => {:not_lattice, "no primitive type words novelty"},
+    "continuation_prompts" => {"follow_up", "continuation"}
   }
 
   def run(args) do
@@ -64,11 +188,11 @@ defmodule Mix.Tasks.GenLatticeData do
 
     tone_vectors = load_tone_vectors()
 
-    dialogflow_fragments = process_dialogflow_intents(verbose)
+    template_fragments = process_response_templates(verbose)
     domain_fragments = process_domain_knowledge(verbose)
     primitive_fragments = process_primitives(verbose)
 
-    all_fragments = dialogflow_fragments ++ domain_fragments ++ primitive_fragments
+    all_fragments = template_fragments ++ domain_fragments ++ primitive_fragments
 
     all_fragments =
       Enum.map(all_fragments, fn frag ->
@@ -111,29 +235,23 @@ defmodule Mix.Tasks.GenLatticeData do
 
               Mix.Task.run("app.start")
 
-              case FragmentVectorizer.vectorize_fragments(needs, verbose: verbose, world_id: world_id) do
-                {:ok, vectorized} ->
-                  updated = merge_vectorized_fragments(flat, vectorized)
-                  by_chunk = Enum.group_by(updated, & &1["chunk_type"])
+              vectorized = FragmentVectorizer.vectorize_fragments(needs, verbose: verbose, world_id: world_id)
+              updated = merge_vectorized_fragments(flat, vectorized)
+              by_chunk = Enum.group_by(updated, & &1["chunk_type"])
 
-                  feature_dim = ensure_app_started_for_dimension!()
+              feature_dim = ensure_app_started_for_dimension!()
 
-                  new_inventory =
-                    Map.merge(inventory, %{
-                      "fragments" => by_chunk,
-                      "feature_dimension_count" => feature_dim,
-                      "generated_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-                    })
+              new_inventory =
+                Map.merge(inventory, %{
+                  "fragments" => by_chunk,
+                  "feature_dimension_count" => feature_dim,
+                  "generated_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+                })
 
-                  File.write!(path, Jason.encode!(new_inventory, pretty: true))
-                  write_scorer_weights_if_needed(Path.dirname(path))
-                  Mix.shell().info("  Written: #{path}")
-                  :ok
-
-                {:error, reason} ->
-                  Mix.shell().error("  Vectorization failed: #{reason}")
-                  System.halt(1)
-              end
+              File.write!(path, Jason.encode!(new_inventory, pretty: true))
+              write_scorer_weights_if_needed(Path.dirname(path))
+              Mix.shell().info("  Written: #{path}")
+              :ok
             end
 
           _ ->
@@ -190,13 +308,7 @@ defmodule Mix.Tasks.GenLatticeData do
 
   defp vectorize_fragments!(fragments, verbose, world_id) do
     ensure_app_started_for_dimension!()
-
-    case FragmentVectorizer.vectorize_fragments(fragments, verbose: verbose, world_id: world_id) do
-      {:ok, vectorized} -> vectorized
-      {:error, reason} ->
-        Mix.shell().error("  Fragment vectorization failed: #{reason}")
-        System.halt(1)
-    end
+    FragmentVectorizer.vectorize_fragments(fragments, verbose: verbose, world_id: world_id)
   end
 
   defp write_inventory_and_transitions(all_fragments, verbose) do
@@ -261,7 +373,7 @@ defmodule Mix.Tasks.GenLatticeData do
   defp fragment_id_prefix(origin, intent) do
     origin_short =
       case origin do
-        "dialogflow" -> "df"
+        "response_templates" -> "rt"
         "domain_knowledge" -> "dk"
         "primitives" -> "prim"
         other when is_binary(other) -> String.replace(other, " ", "_")
@@ -349,74 +461,41 @@ defmodule Mix.Tasks.GenLatticeData do
     end
   end
 
-  defp process_dialogflow_intents(verbose) do
-    case File.ls(@intents_dir) do
-      {:ok, files} ->
-        usersays_files = Enum.filter(files, &String.ends_with?(&1, "_usersays_en.json"))
+  # Every intent's response templates, the tracked reply store the registry's
+  # intents are reconciled with (`mix templates.reconcile`). It holds the
+  # DialogFlow replies of data/intents and the templates added since, with the
+  # condition each template is said under.
+  defp process_response_templates(verbose) do
+    templates = @templates_path |> File.read!() |> Jason.decode!()
 
-        if verbose do
-          Mix.shell().info("  Found #{length(usersays_files)} usersays files")
-        end
+    fragments =
+      templates
+      |> Enum.sort_by(&elem(&1, 0))
+      |> Enum.flat_map(fn
+        {intent, %{"templates" => [_ | _] = entries}} ->
+          Enum.flat_map(entries, fn
+            %{"text" => text, "condition" => condition} when is_binary(text) and (is_binary(condition) or is_nil(condition)) ->
+              if String.trim(text) == "" do
+                Mix.raise("gen_lattice_data: #{@templates_path} has a blank template for #{intent}")
+              end
 
-        usersays_files
-        |> Enum.flat_map(fn usersays_file ->
-          intent_name = String.replace(usersays_file, "_usersays_en.json", "")
-          intent_file = "#{intent_name}.json"
+              text
+              |> segment_template(intent, "response_templates")
+              |> Enum.map(&Map.put(&1, "condition", condition))
 
-          templates = load_intent_templates(Path.join(@intents_dir, intent_file))
+            other ->
+              Mix.raise("gen_lattice_data: #{@templates_path} has a template for #{intent} without text and condition: #{inspect(other)}")
+          end)
 
-          if templates == [] do
-            []
-          else
-            if verbose do
-              Mix.shell().info("    #{intent_name}: #{length(templates)} templates")
-            end
+        {intent, other} ->
+          Mix.raise("gen_lattice_data: #{@templates_path} has no templates for #{intent}: #{inspect(other, limit: 5)}")
+      end)
 
-            Enum.flat_map(templates, fn template ->
-              segment_template(template, intent_name, "dialogflow")
-            end)
-          end
-        end)
-
-      {:error, _} ->
-        Mix.shell().info("  Warning: #{@intents_dir} not found")
-        []
+    if verbose do
+      Mix.shell().info("    templates.json: #{map_size(templates)} intents, #{length(fragments)} fragments")
     end
-  end
 
-  defp load_intent_templates(path) do
-    case File.read(path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, data} ->
-            responses = Map.get(data, "responses", [])
-
-            responses
-            |> Enum.flat_map(fn response ->
-              messages = Map.get(response, "messages", [])
-
-              messages
-              |> Enum.flat_map(fn message ->
-                case message do
-                  %{"speech" => speeches} when is_list(speeches) ->
-                    Enum.filter(speeches, &is_binary/1)
-
-                  %{"speech" => speech} when is_binary(speech) ->
-                    [speech]
-
-                  _ ->
-                    []
-                end
-              end)
-            end)
-            |> Enum.filter(&(String.trim(&1) != ""))
-            |> Enum.uniq()
-
-          _ -> []
-        end
-
-      {:error, _} -> []
-    end
+    fragments
   end
 
   defp process_domain_knowledge(verbose) do
@@ -440,13 +519,22 @@ defmodule Mix.Tasks.GenLatticeData do
                   frames = Map.get(data, "response_frames", %{})
                   enriched_frames = Map.get(data, "enriched_response_frames", %{})
 
+                  social_frames = Map.get(@social_frames, domain, %{})
+
                   frame_fragments =
                     frames
-                    |> Enum.flat_map(fn {_key, templates} ->
-                      templates = if is_list(templates), do: templates, else: []
-                      Enum.flat_map(templates, fn template ->
-                        segment_template(template, "#{domain}.response", "domain_knowledge")
-                      end)
+                    |> Enum.flat_map(fn
+                      {key, templates} when is_list(templates) and is_map_key(social_frames, key) ->
+                        {type, variant, condition} = Map.fetch!(social_frames, key)
+                        Enum.map(templates, &social_frame_fragment(&1, domain, type, variant, condition, path))
+
+                      {_key, templates} when is_list(templates) ->
+                        Enum.flat_map(templates, fn template ->
+                          segment_template(template, "#{domain}.response", "domain_knowledge")
+                        end)
+
+                      {key, other} ->
+                        Mix.raise("gen_lattice_data: #{path}'s response frame #{key} is not a list of templates: #{inspect(other)}")
                     end)
 
                   enriched_fragments =
@@ -472,83 +560,114 @@ defmodule Mix.Tasks.GenLatticeData do
 
                   frame_fragments ++ enriched_fragments
 
-                _ -> []
+                {:error, reason} ->
+                  Mix.raise("gen_lattice_data: #{path} is not valid JSON: #{inspect(reason)}")
               end
 
-            {:error, _} -> []
+            {:error, reason} ->
+              Mix.raise("gen_lattice_data: cannot read #{path}: #{inspect(reason)}")
           end
         end)
 
-      {:error, _} ->
-        Mix.shell().info("  Warning: #{@domains_dir} not found")
-        []
+      {:error, reason} ->
+        Mix.raise("gen_lattice_data: cannot list #{@domains_dir}: #{inspect(reason)}")
     end
   end
 
+  defp social_frame_fragment(text, domain, type, variant, condition, path) when is_binary(text) do
+    if String.trim(text) == "" do
+      Mix.raise("gen_lattice_data: #{path} has a blank #{domain} frame")
+    end
+
+    %{
+      "text" => text,
+      "chunk_type" => infer_chunk_type_from_primitive(type),
+      "primitive_type" => type,
+      "primitive_variant" => variant,
+      "slots" => extract_slots(text),
+      "enrichment_fields" => [],
+      "prototype_vector" => [],
+      "source_intent" => "#{domain}.response",
+      "conditions" => %{},
+      "condition" => condition,
+      "origin" => "domain_knowledge"
+    }
+  end
+
+  defp social_frame_fragment(other, domain, _type, _variant, _condition, path) do
+    Mix.raise("gen_lattice_data: #{path} has a #{domain} frame that is not a string: #{inspect(other)}")
+  end
+
+  # Every section of primitives.json is mapped by `@primitive_sections`: its
+  # phrases become fragments of the planner primitive it names, or it is a pool
+  # the lattice does not word. A section or pool the table does not name raises.
   defp process_primitives(verbose) do
     path = Path.join(@domains_dir, "primitives.json")
+    data = path |> File.read!() |> Jason.decode!()
 
-    case File.read(path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, data} ->
-            fragments =
-              data
-              |> Enum.flat_map(fn {prim_type, variants_or_phrases} ->
-                cond do
-                  is_map(variants_or_phrases) ->
-                    Enum.flat_map(variants_or_phrases, fn {variant_or_level, phrases} ->
-                      phrases = if is_list(phrases), do: phrases, else: []
-                      Enum.map(phrases, fn phrase ->
-                        chunk_type = infer_chunk_type_from_primitive(prim_type)
-                        %{
-                          "text" => phrase,
-                          "chunk_type" => chunk_type,
-                          "primitive_type" => prim_type,
-                          "primitive_variant" => variant_or_level,
-                          "slots" => extract_slots(phrase),
-                          "enrichment_fields" => [],
-                          "prototype_vector" => [],
-                          "source_intent" => "primitives.#{prim_type}.#{variant_or_level}",
-                          "conditions" => %{},
-                          "origin" => "primitives"
-                        }
-                      end)
-                    end)
+    case Map.keys(data) -- Map.keys(@primitive_sections) do
+      [] -> :ok
+      unmapped -> Mix.raise("gen_lattice_data: #{path} has sections no primitive type is mapped for: #{inspect(Enum.sort(unmapped))}")
+    end
 
-                  is_list(variants_or_phrases) ->
-                    Enum.map(variants_or_phrases, fn phrase ->
-                      chunk_type = infer_chunk_type_from_primitive(prim_type)
-                      %{
-                        "text" => phrase,
-                        "chunk_type" => chunk_type,
-                        "primitive_type" => prim_type,
-                        "primitive_variant" => nil,
-                        "slots" => extract_slots(phrase),
-                        "enrichment_fields" => [],
-                        "prototype_vector" => [],
-                        "source_intent" => "primitives.#{prim_type}",
-                        "conditions" => %{},
-                        "origin" => "primitives"
-                      }
-                    end)
+    fragments =
+      data
+      |> Enum.sort_by(&elem(&1, 0))
+      |> Enum.flat_map(fn {section, pools} ->
+        primitive_fragments(Map.fetch!(@primitive_sections, section), pools, [section], path)
+      end)
 
-                  true ->
-                    []
-                end
-              end)
+    if verbose do
+      Mix.shell().info("    primitives.json: #{length(fragments)} fragments")
+    end
 
-            if verbose do
-              Mix.shell().info("    primitives.json: #{length(fragments)} fragments")
-            end
+    fragments
+  end
 
-            fragments
+  defp primitive_fragments({:not_lattice, _reason}, _pools, _keys, _path), do: []
 
-          _ -> []
+  defp primitive_fragments({type, variant}, phrases, keys, path) when is_list(phrases) do
+    Enum.map(phrases, fn
+      phrase when is_binary(phrase) ->
+        if String.trim(phrase) == "" do
+          Mix.raise("gen_lattice_data: #{path}'s #{Enum.join(keys, ".")} has a blank phrase")
         end
 
-      {:error, _} -> []
+        %{
+          "text" => phrase,
+          "chunk_type" => infer_chunk_type_from_primitive(type),
+          "primitive_type" => type,
+          "primitive_variant" => variant,
+          "slots" => extract_slots(phrase),
+          "enrichment_fields" => [],
+          "prototype_vector" => [],
+          "source_intent" => "primitives." <> Enum.join(keys, "."),
+          "conditions" => %{},
+          "condition" => nil,
+          "origin" => "primitives"
+        }
+
+      other ->
+        Mix.raise("gen_lattice_data: #{path}'s #{Enum.join(keys, ".")} holds a phrase that is not a string: #{inspect(other)}")
+    end)
+  end
+
+  defp primitive_fragments(table, pools, keys, path) when is_map(table) and is_map(pools) do
+    case Map.keys(pools) -- Map.keys(table) do
+      [] -> :ok
+      unmapped -> Mix.raise("gen_lattice_data: #{path}'s #{Enum.join(keys, ".")} has pools no primitive type is mapped for: #{inspect(Enum.sort(unmapped))}")
     end
+
+    pools
+    |> Enum.sort_by(&elem(&1, 0))
+    |> Enum.flat_map(fn {pool, phrases} -> primitive_fragments(Map.fetch!(table, pool), phrases, keys ++ [pool], path) end)
+  end
+
+  defp primitive_fragments(mapping, pools, keys, path) do
+    Mix.raise(
+      "gen_lattice_data: #{path}'s #{Enum.join(keys, ".")} is shaped #{inspect(pools, limit: 3)}, " <>
+        "which its mapping #{inspect(mapping)} does not describe"
+    )
   end
 
   defp segment_template(template, intent_name, origin) when is_binary(template) do
@@ -571,6 +690,7 @@ defmodule Mix.Tasks.GenLatticeData do
         "prototype_vector" => [],
         "source_intent" => intent_name,
         "conditions" => if(enrichment != [], do: %{"enriched" => enrichment}, else: %{}),
+        "condition" => nil,
         "origin" => origin
       }
     end)
@@ -640,12 +760,10 @@ defmodule Mix.Tasks.GenLatticeData do
     Enum.reject(slots, &MapSet.member?(@entity_slots, &1))
   end
 
+  # The chunk type a primitive's phrase is filed under, by the planner type
+  # it is mapped to.
   defp infer_chunk_type_from_primitive("acknowledgment"), do: "acknowledgment"
-  defp infer_chunk_type_from_primitive("hedges"), do: "body"
-  defp infer_chunk_type_from_primitive("attunement"), do: "body"
-  defp infer_chunk_type_from_primitive("closers"), do: "closing"
-  defp infer_chunk_type_from_primitive("openers"), do: "greeting"
-  defp infer_chunk_type_from_primitive("follow_ups"), do: "offer"
+  defp infer_chunk_type_from_primitive("follow_up"), do: "offer"
   defp infer_chunk_type_from_primitive(_), do: "body"
 
   @hedge_words MapSet.new(~w(maybe perhaps possibly might could probably))
