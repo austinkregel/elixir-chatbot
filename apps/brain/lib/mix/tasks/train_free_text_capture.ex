@@ -19,7 +19,8 @@ defmodule Mix.Tasks.TrainFreeTextCapture do
   training rows, and each slot's threshold is calibrated on the held-out rows.
 
   Printed: each slot's intents and row and span counts, the cross-validated
-  exact-span and token precision, recall and F1 of every candidate, the one
+  exact-span and token precision, recall and F1 of every candidate, the
+  one-standard-error rule's choice of the `:span_pos` strength, the one
   chosen, and per slot the held-out results with the best outcome taken and
   with the threshold applied, and every held-out row with its gold and
   captured span and the confidence.
@@ -79,6 +80,18 @@ defmodule Mix.Tasks.TrainFreeTextCapture do
     |> Enum.each(fn {{kind, smoothing}, counts} ->
       Mix.shell().info("  #{pad("#{kind} #{smoothing}", 22)} #{prf(counts.exact)} | #{prf(counts.tokens)}")
     end)
+
+    case model.report.strength do
+      nil ->
+        :ok
+
+      rule ->
+        Mix.shell().info(
+          "One-standard-error rule (span_pos strength): best #{rule.best} at fold mean F1 #{Float.round(rule.mean, 4)} " <>
+            "+- #{Float.round(rule.standard_error, 4)}, threshold #{Float.round(rule.threshold, 4)}, chosen #{rule.chosen}, " <>
+            "folds scored #{inspect(rule.scored_folds)}"
+        )
+    end
 
     Mix.shell().info("Chosen: #{model.kind}#{if model.smoothing, do: " strength #{model.smoothing}", else: ""}")
 
