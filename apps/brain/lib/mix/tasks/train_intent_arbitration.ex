@@ -13,8 +13,9 @@ defmodule Mix.Tasks.TrainIntentArbitration do
   The rows are folded as `Brain.Analysis.LexicalEvidence.fold_models/2` folds
   them, and for each fold the two classifiers are trained, as `mix
   train_micro` trains them, on the other folds' vectors. A row is then
-  analyzed only by models fitted without it: its fold's lexical evidence and
-  its fold's two classifiers.
+  analyzed only by models fitted without it: its fold's lexical evidence, its
+  fold's speech-act evidence (`Brain.Analysis.SpeechActTable.fold_evidence/3`)
+  and its fold's two classifiers.
 
   It runs in two stages:
 
@@ -25,7 +26,7 @@ defmodule Mix.Tasks.TrainIntentArbitration do
      without it, so the stage gives the second its boot.
   2. The application boots, and every row is analyzed by the pipeline
      (`Brain.Analysis.Pipeline.analyze_chunk/2`, side effects off) with its
-     fold's models (`:lexical_evidence`, `:intent_models`). Where the two
+     fold's models (`:lexical_evidence`, `:speech_act_evidence`, `:intent_models`). Where the two
      classifiers disagree the pipeline records what every route gave
      (`ChunkAnalysis.intent_arbitration`), the speech-act route among them,
      and the model of all three routes is chosen and written in place of the
@@ -36,7 +37,7 @@ defmodule Mix.Tasks.TrainIntentArbitration do
 
   use Mix.Task
 
-  alias Brain.Analysis.{ActiveContexts, IntentArbitration, LexicalEvidence, Pipeline}
+  alias Brain.Analysis.{ActiveContexts, IntentArbitration, LexicalEvidence, Pipeline, SlotDetector, SpeechActTable}
   alias Brain.Lexicon.IntentDomains
   alias Brain.ML.{EvaluationStore, FeatureVectorClassifier, MicroProvenance}
   alias Mix.Tasks.{TrainMicro, TrainSlotTypePreferences}
@@ -92,7 +93,11 @@ defmodule Mix.Tasks.TrainIntentArbitration do
     # Stage 2: every route, from the pipeline's own analysis of each row.
     Mix.Task.run("app.start")
 
+    {^folds, speech_act} =
+      SpeechActTable.fold_evidence(pairs, SlotDetector.registry(), SpeechActTable.read!(@gold_language))
+
     Enum.each(lexical, fn {k, model} -> :persistent_term.put({__MODULE__, :lexical, k}, model) end)
+    Enum.each(speech_act, fn {k, model} -> :persistent_term.put({__MODULE__, :speech_act, k}, model) end)
     Enum.each(models, fn {k, model} -> :persistent_term.put({__MODULE__, :intent, k}, model) end)
 
     Mix.shell().info("Analyzing #{length(rows)} rows with their out-of-fold models...")
@@ -160,6 +165,7 @@ defmodule Mix.Tasks.TrainIntentArbitration do
         world_id: world_id,
         active_contexts: ActiveContexts.for_row(row),
         lexical_evidence: :persistent_term.get({__MODULE__, :lexical, k}),
+        speech_act_evidence: :persistent_term.get({__MODULE__, :speech_act, k}),
         intent_models: :persistent_term.get({__MODULE__, :intent, k})
       )
 
