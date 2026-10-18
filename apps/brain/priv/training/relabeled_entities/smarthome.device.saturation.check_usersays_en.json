@@ -1,0 +1,74 @@
+[
+  {
+    "data": [
+      {
+        "text": "check red "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "is the green "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "light"
+      },
+      {
+        "text": " saturation 15 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "is the "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "light"
+      },
+      {
+        "text": " saturation 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's the saturation of kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's the saturation of "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " in bedroom"
+      }
+    ]
+  }
+]
