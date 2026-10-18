@@ -7,7 +7,7 @@
         {
           "type": "lights",
           "value": "light",
-          "confidence": 0.6
+          "confidence": 0.68
         },
         {
           "type": "room",
@@ -16,13 +16,16 @@
         }
       ],
       "response_strategy": "hedged_response",
-      "detected_intent": "smarthome.schedule_create",
       "speech_act_category": "directive",
+      "speech_act_confidence": 0.98,
+      "detected_intent": "smarthome.device.switch.on",
       "speech_act_type": "command",
-      "speech_act_confidence": 1.0,
       "discourse_addressee": "bot",
       "discourse_self_referential": "false",
-      "slots_filled": [],
+      "slots_filled": [
+        "device",
+        "room"
+      ],
       "slots_missing": []
     }
   ],
