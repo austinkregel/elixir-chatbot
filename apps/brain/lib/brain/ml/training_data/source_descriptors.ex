@@ -36,7 +36,7 @@ defmodule Brain.ML.TrainingData.SourceDescriptors do
         }
 
   defp brain_priv(rel), do: Path.join(Application.app_dir(:brain, "priv"), rel)
-  defp data_path(rel), do: Path.join(Application.get_env(:brain, :ml)[:training_data_path] || "data", rel)
+  defp data_path(rel), do: Brain.data_path(rel)
 
   @spec all() :: [t()]
   def all do
