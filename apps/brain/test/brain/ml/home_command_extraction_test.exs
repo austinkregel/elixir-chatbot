@@ -34,11 +34,13 @@ defmodule Brain.ML.HomeCommandExtractionTest do
       assert %{entity_type: "lights", number: :plural} = find(found, "lights")
     end
 
-    test "'Turn off all the lights' quantifies every light, and 'all' is no entity" do
+    # "all" is an entity of its own type: the NER gold standard labels it
+    # `all`, and every smart-home intent's schema has an `all` slot it fills.
+    test "'Turn off all the lights' quantifies every light, and 'all' is the all entity" do
       found = entities("Turn off all the lights")
 
       assert %{entity_type: "lights", number: :plural, quantifier: :total} = find(found, "lights")
-      refute find(found, "all")
+      assert %{entity_type: "all"} = find(found, "all")
     end
   end
 
