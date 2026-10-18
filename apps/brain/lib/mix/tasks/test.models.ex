@@ -78,6 +78,12 @@ defmodule Mix.Tasks.Test.Models do
   `mix train_free_text_capture`. Boot loads it; every free-text slot (a
   reminder's text) is captured with it.
 
+  ## Intent arbitration
+
+  Each supported language's `micro/intent_arbitration.<language>.term`, written by
+  `mix train_intent_arbitration`. Boot loads it; every disagreement between
+  the `:intent_full` and `:intent_domain` classifiers is resolved with it.
+
   The text micro-classifiers in the same directory are not promoted: the factory
   trains them from test fixtures and writes them there, which is why the test
   suite needs a writable models directory of its own rather than pointing at priv.
@@ -167,7 +173,8 @@ defmodule Mix.Tasks.Test.Models do
   # `mix gen_micro_data` trains, span reliability model, which
   # `mix train_span_reliability` trains, slot type preferences, which
   # `mix train_slot_type_preferences` trains, and free-text capture model, which
-  # `mix train_free_text_capture` trains; boot requires all five.
+  # `mix train_free_text_capture` trains, and intent arbitration, which
+  # `mix train_intent_arbitration` trains; boot requires all six.
   defp models do
     @models ++
       Enum.flat_map(Brain.Language.supported(), fn code ->
@@ -176,7 +183,8 @@ defmodule Mix.Tasks.Test.Models do
           "speech_act_table.#{code}.term",
           "span_reliability.#{code}.term",
           "slot_type_preferences.#{code}.term",
-          "free_text_capture.#{code}.term"
+          "free_text_capture.#{code}.term",
+          "micro/intent_arbitration.#{code}.term"
         ]
       end)
   end
