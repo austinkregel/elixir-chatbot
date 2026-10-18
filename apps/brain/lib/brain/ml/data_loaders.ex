@@ -698,10 +698,7 @@ defmodule Brain.ML.DataLoaders do
     |> String.replace(" ", ".")
   end
 
-  defp get_data_path(filename) do
-    base_path = Application.get_env(:brain, :ml)[:training_data_path] || "data"
-    Path.join(base_path, filename)
-  end
+  defp get_data_path(filename), do: Brain.data_path(filename)
 
   defp parse_csv(content, headers) do
     lines = String.split(content, "\n", trim: true)
