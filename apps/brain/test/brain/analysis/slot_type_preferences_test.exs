@@ -41,10 +41,12 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
   }
 
   # A span is `{type, tag, word, numeric}`, or `{type, tag}` for a span after
-  # "the" that is no number, where the word and the form do not matter.
+  # "the" that is no number, where the word and the form do not matter. These
+  # rows come from no template, so each is a group of its own for the folds.
   defp example(key, intent, spans, ordinary \\ [], gazetteer \\ []) do
     %{
       key: key,
+      group: key,
       intent: intent,
       spans:
         Enum.map(spans, fn
@@ -643,6 +645,12 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
         SlotTypePreferences.select(examples(), Keyword.put(@opts, :smoothing, @flat))
       end
     end
+
+    test "folds are assigned by group, so an example without one is refused" do
+      assert_raise ArgumentError, ~r/assigns folds by an example's :group.*keyed \{:weather, 1\}/, fn ->
+        SlotTypePreferences.select(Enum.map(examples(), &Map.delete(&1, :group)), @opts)
+      end
+    end
   end
 
   describe "example!/4" do
@@ -660,6 +668,7 @@ defmodule Brain.Analysis.SlotTypePreferencesTest do
 
       assert SlotTypePreferences.example!(@row, "smarthome.device.switch.on", tagger(), gazetteer) == %{
                key: "turn on the kitchen lights",
+               group: "turn on the <room> <device>",
                intent: "smarthome.device.switch.on",
                spans: [
                  %{type: "room", preceding_tag: "DET", preceding_word: "the", numeric: false},
