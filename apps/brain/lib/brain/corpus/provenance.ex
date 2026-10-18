@@ -36,6 +36,18 @@ defmodule Brain.Corpus.Provenance do
   `Brain.Analysis.FreeTextCapture` learns from. Only the annotations are
   authored: the texts are intent gold rows and keep the provenance the intent
   gold records for them.
+
+  ## Relabeled entity annotations
+
+  Entities added by hand to NER gold rows that have no tracked source -- the
+  rows first written from the Dialogflow export -- are kept in
+  `priv/training/relabeled_entities/` (`relabeled_entities_dir/0`), one
+  usersays file per intent, in the same format: each entry is the text of an
+  existing NER gold row, and each segment carrying `meta` and `alias` is an
+  entity added to it. The row keeps every entity it had. `mix
+  rebuild_ner_gold` applies them in place and labels the rows
+  `"relabeled"` (`relabeled/0`), so a relabeled row says where its labels
+  came from, and the annotations are the record of what was added.
   """
 
   # Ordered most genuine first. The integer is the comparison key, not an id.
@@ -50,6 +62,8 @@ defmodule Brain.Corpus.Provenance do
   @authored "authored"
   @authored_dir "training/authored_intents"
   @authored_entities_dir "training/authored_entities"
+  @relabeled "relabeled"
+  @relabeled_entities_dir "training/relabeled_entities"
 
   @synthetic_id ~r/^[a-z]+-[0-9a-f]{8}$/
 
@@ -88,6 +102,18 @@ defmodule Brain.Corpus.Provenance do
   """
   @spec authored_entities_dir() :: Path.t()
   def authored_entities_dir, do: Brain.priv_path(@authored_entities_dir)
+
+  @doc "The `labeled_by` of an NER gold row with entities added by a relabeled entity annotation."
+  @spec relabeled() :: String.t()
+  def relabeled, do: @relabeled
+
+  @doc """
+  Where the hand-written entity annotations that add entities to existing NER
+  gold rows are kept, one usersays file per intent. The rows they relabel are
+  labeled `relabeled/0`.
+  """
+  @spec relabeled_entities_dir() :: Path.t()
+  def relabeled_entities_dir, do: Brain.priv_path(@relabeled_entities_dir)
 
   @doc """
   The kind of a usersays row's `id`.
