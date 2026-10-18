@@ -41,8 +41,8 @@ defmodule Brain.Analysis.FreeTextCapture do
   ## The candidates
 
   Two models are fitted, and the one with the best exact-span F1 under
-  #{5}-fold cross-validation of the training rows is kept (ties go to the first
-  listed):
+  #{5}-fold cross-validation of the training rows, over every fold's rows, is
+  kept (ties go to the first listed):
 
   - `:span_pos` -- each candidate span `(i, j)` of a row, and the outcome that
     the row names no span, is scored, and the scores' softmax is the posterior of
@@ -60,7 +60,12 @@ defmodule Brain.Analysis.FreeTextCapture do
     The no-span outcome scores `log (1 - pi)`, with
     `pi = (rows with a span + s / 2) / (rows + s)`. A value no training token had
     says nothing and contributes 0. The strength `s` is chosen by the same
-    cross-validation.
+    cross-validation, with the one-standard-error rule
+    (`Brain.ML.OneStandardError`): each strength's score on a fold is the
+    exact-span F1 of that fold's rows, over the folds holding a gold span, and
+    of the strengths whose mean is within one standard error of the best
+    mean, the largest is kept. Fewer than two folds holding a gold span raise.
+    The rule is kept in the report's `strength`.
 
   - `:bio_lexical` -- `Brain.ML.EntityTrainer`'s constrained BIO tagger, trained
     on the spans as entities of the slot's type, its smoothing chosen by its own
@@ -93,7 +98,7 @@ defmodule Brain.Analysis.FreeTextCapture do
   """
 
   alias Brain.Corpus.{Export, Label, Provenance}
-  alias Brain.ML.{EntityTrainer, POSTagger, Tokenizer}
+  alias Brain.ML.{EntityTrainer, OneStandardError, POSTagger, Tokenizer}
   alias Brain.Temporal.{Resolver, Zone}
 
   @any_text "@sys.any"
@@ -322,11 +327,7 @@ defmodule Brain.Analysis.FreeTextCapture do
     end
 
     cross_validation = cross_validate(train)
-
-    {{kind, smoothing}, _counts} =
-      Enum.max_by(cross_validation, fn {{kind, smoothing}, counts} ->
-        {f1(counts.exact), -Enum.find_index(@kinds, &(&1 == kind)), -(smoothing || 0)}
-      end)
+    {{kind, smoothing}, strength_rule} = choose(cross_validation)
 
     parameters = fit(kind, smoothing, train)
     decisions = Enum.map(held, &{&1, decide(kind, parameters, &1.slot, &1, &1.temporal)})
@@ -354,7 +355,7 @@ defmodule Brain.Analysis.FreeTextCapture do
       smoothing: smoothing,
       parameters: parameters,
       thresholds: thresholds,
-      report: %{cross_validation: cross_validation, held_out: held_out}
+      report: %{cross_validation: cross_validation, strength: strength_rule, held_out: held_out}
     }
   end
 
@@ -397,14 +398,51 @@ defmodule Brain.Analysis.FreeTextCapture do
     candidates = [{:bio_lexical, nil} | Enum.map(@strengths, &{:span_pos, &1})]
 
     Map.new(candidates, fn {kind, smoothing} ->
-      pairs =
-        Enum.flat_map(splits, fn {rest, held} ->
+      by_fold =
+        Enum.map(splits, fn {rest, held} ->
           parameters = fit(kind, smoothing, rest)
           Enum.map(held, fn example -> {example, kind |> decide(parameters, example.slot, example, example.temporal) |> elem(0)} end)
         end)
 
-      {{kind, smoothing}, score(pairs)}
+      counts = by_fold |> Enum.concat() |> score()
+      {{kind, smoothing}, Map.put(counts, :folds, Enum.map(by_fold, &score(&1).exact))}
     end)
+  end
+
+  # The kind with the best exact-span F1 over every fold (ties to the first
+  # listed); for `:span_pos`, its strength by the one-standard-error rule over
+  # the exact-span F1 of each fold holding a gold span, a larger strength more
+  # regularized. Fewer than two such folds raise.
+  defp choose(cross_validation) do
+    {{kind, _smoothing}, _counts} =
+      Enum.max_by(cross_validation, fn {{kind, smoothing}, counts} ->
+        {f1(counts.exact), -Enum.find_index(@kinds, &(&1 == kind)), -(smoothing || 0)}
+      end)
+
+    case kind do
+      :bio_lexical ->
+        {{:bio_lexical, nil}, nil}
+
+      :span_pos ->
+        folds = cross_validation |> Map.fetch!({:span_pos, hd(@strengths)}) |> Map.fetch!(:folds)
+        scored_folds = for {{tp, _fp, fn_}, k} <- Enum.with_index(folds), tp + fn_ > 0, do: k
+
+        if length(scored_folds) < 2 do
+          raise ArgumentError,
+                "FreeTextCapture: only #{length(scored_folds)} of #{@folds} folds hold a gold span; " <>
+                  "the one-standard-error rule needs at least two scored folds"
+        end
+
+        rule =
+          @strengths
+          |> Enum.map(fn strength ->
+            fold_counts = cross_validation |> Map.fetch!({:span_pos, strength}) |> Map.fetch!(:folds)
+            {strength, Enum.map(scored_folds, &f1(Enum.at(fold_counts, &1)))}
+          end)
+          |> OneStandardError.choose(& &1)
+
+        {{:span_pos, rule.chosen}, Map.put(rule, :scored_folds, scored_folds)}
+    end
   end
 
   defp fit(:span_pos, smoothing, examples) do
