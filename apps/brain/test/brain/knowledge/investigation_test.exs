@@ -43,7 +43,7 @@ defmodule Brain.Knowledge.InvestigationTest do
   describe "record_evidence/3" do
     test "compares claims in the named world's embedder" do
       {:ok, paris_world} = create_test_world("investigation_paris_only")
-      {:ok, capital_city_world} = create_test_world("investigation_capital_and_city")
+      {:ok, capital_city_world} = create_test_world("investigation_capital_city")
       :ok = Embedder.load_model(paris_world.id, @paris_only)
       :ok = Embedder.load_model(capital_city_world.id, @capital_and_city)
 
