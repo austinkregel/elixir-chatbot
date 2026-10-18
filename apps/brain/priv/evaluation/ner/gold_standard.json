@@ -116,10 +116,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "switch the lights on in the kitchen"
   },
   {
@@ -247,10 +252,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "change_value",
         "value": "5"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make light level up by 5 points"
   },
   {
@@ -289,8 +299,13 @@
       {
         "type": "color",
         "value": "party"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "party light"
   },
   {
@@ -347,8 +362,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "check the status of all the lights"
   },
   {
@@ -407,10 +427,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "color",
         "value": "green"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn the lights green"
   },
   {
@@ -442,10 +467,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bathroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on lights in bathroom"
   },
   {
@@ -494,19 +524,29 @@
         "value": "green"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set the green lights level to 50"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "23"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights level down till 23"
   },
   {
@@ -525,10 +565,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on the light in my kitchen"
   },
   {
@@ -538,10 +583,15 @@
         "value": "red"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "23"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "red lights hue down till 23"
   },
   {
@@ -615,8 +665,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "kitchen lights off"
   },
   {
@@ -698,8 +753,13 @@
       {
         "type": "color",
         "value": "relaxing"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on relaxing lights"
   },
   {
@@ -775,10 +835,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights brightness down till 10 points"
   },
   {
@@ -811,10 +876,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on lights in kitchen"
   },
   {
@@ -913,8 +983,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "kitchen lights on"
   },
   {
@@ -999,10 +1074,15 @@
         "value": "red"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn red lights down by 50 percents"
   },
   {
@@ -1021,6 +1101,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "15"
       },
@@ -1029,6 +1113,7 @@
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights brightness down for 15 percents in the bedroom"
   },
   {
@@ -1105,10 +1190,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "darken lights till 40 percents please"
   },
   {
@@ -1241,10 +1331,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights brightness down by 50 points"
   },
   {
@@ -1272,10 +1367,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation down in the kitchen"
   },
   {
@@ -1364,10 +1464,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "what's the level of lights in bedroom"
   },
   {
@@ -1511,8 +1616,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn all lights up"
   },
   {
@@ -1557,10 +1667,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "15"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights brightness by 15 points"
   },
   {
@@ -1601,10 +1716,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "23"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue down till 23"
   },
   {
@@ -1665,8 +1785,13 @@
       {
         "type": "color",
         "value": "green"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lower brightness for green lights"
   },
   {
@@ -1713,8 +1838,13 @@
       {
         "type": "color",
         "value": "party"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "party lights"
   },
   {
@@ -1778,10 +1908,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set lights level to 10"
   },
   {
@@ -1858,10 +1993,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "can you turn off lights in the kitchen for me"
   },
   {
@@ -1869,8 +2009,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn all lights on"
   },
   {
@@ -2039,10 +2184,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "is the light hue 10 points"
   },
   {
@@ -2399,10 +2549,15 @@
         "value": "living room"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "all",
         "value": "all"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn the living room lights all the way up"
   },
   {
@@ -2430,10 +2585,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights hue up by 50 percents"
   },
   {
@@ -2441,8 +2601,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set brightness for red lights"
   },
   {
@@ -2635,10 +2800,15 @@
         "value": "white"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on white lights in the kitchen"
   },
   {
@@ -2672,8 +2842,13 @@
       {
         "type": "room",
         "value": "garage"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn garage lights on"
   },
   {
@@ -2692,10 +2867,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "is the light saturation 10 points"
   },
   {
@@ -2705,10 +2885,15 @@
         "value": "every"
       },
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "boiler room"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off every light in the boiler room"
   },
   {
@@ -2849,10 +3034,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights until 40 points"
   },
   {
@@ -3042,10 +3232,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "family room"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on all the lights in the family room"
   },
   {
@@ -3195,10 +3390,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "breakfast room"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off all the lights in the breakfast room"
   },
   {
@@ -3428,8 +3628,13 @@
       {
         "type": "room",
         "value": "bedroom"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on all bedroom lights"
   },
   {
@@ -3528,8 +3733,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "what's the hue of red lights"
   },
   {
@@ -3858,8 +4068,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "all of the lights brightness"
   },
   {
@@ -3938,10 +4153,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "check if lights are off in the bedroom"
   },
   {
@@ -4001,8 +4221,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "did I turn on the red lights"
   },
   {
@@ -4045,8 +4270,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "red lights are too bright"
   },
   {
@@ -4076,8 +4306,13 @@
       {
         "type": "color",
         "value": "romantic"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "romantic lights off"
   },
   {
@@ -4238,10 +4473,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on lights in bedroom"
   },
   {
@@ -4339,19 +4579,29 @@
   {
     "expected": [
       {
-        "type": "change_value",
-        "value": "20"
-      }
-    ],
-    "text": "turn lights down for 20 percents"
-  },
-  {
-    "expected": [
+        "type": "device",
+        "value": "lights"
+      },
       {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
+    "text": "turn lights down for 20 percents"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "lights"
+      },
+      {
+        "type": "change_value",
+        "value": "20"
+      }
+    ],
+    "labeled_by": "relabeled",
     "text": "make lights brighter for 20 percents"
   },
   {
@@ -4480,10 +4730,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "can you turn on the light in my kitchen"
   },
   {
@@ -4566,8 +4821,13 @@
       {
         "type": "color",
         "value": "green"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on green lights"
   },
   {
@@ -4870,8 +5130,13 @@
       {
         "type": "color",
         "value": "green"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off green lights"
   },
   {
@@ -4890,10 +5155,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on the lights in the kitchen please"
   },
   {
@@ -4998,8 +5268,13 @@
       {
         "type": "color",
         "value": "party"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on party lights"
   },
   {
@@ -5080,10 +5355,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "23"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights brightness down till 23"
   },
   {
@@ -5264,10 +5544,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights down by 50 points"
   },
   {
@@ -5348,10 +5633,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation down by 50 points"
   },
   {
@@ -5366,6 +5656,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       },
@@ -5374,6 +5668,7 @@
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make lights in the kitchen 10 less"
   },
   {
@@ -5381,8 +5676,13 @@
       {
         "type": "color",
         "value": "green"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "green lights"
   },
   {
@@ -5521,8 +5821,13 @@
       {
         "type": "room",
         "value": "garage"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off the garage light"
   },
   {
@@ -5667,10 +5972,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights until 40"
   },
   {
@@ -5768,10 +6078,15 @@
         "value": "romantic"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on romantic lights in the kitchen"
   },
   {
@@ -5817,10 +6132,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn up lights saturation to 10 points"
   },
   {
@@ -5835,10 +6155,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights brightness down by 10 points"
   },
   {
@@ -5906,8 +6231,13 @@
       {
         "type": "color",
         "value": "blue"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "check blue lights hue"
   },
   {
@@ -5933,8 +6263,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn saturation of red lights down"
   },
   {
@@ -6004,8 +6339,13 @@
       {
         "type": "room",
         "value": "bedroom"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "status of bedroom lights"
   },
   {
@@ -6015,19 +6355,29 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "office"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off all the lights in the office"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights saturation by 10 points"
   },
   {
@@ -6154,10 +6504,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue down by 50 percents"
   },
   {
@@ -6187,8 +6542,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on all lights"
   },
   {
@@ -6283,8 +6643,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn all lights down"
   },
   {
@@ -6343,10 +6708,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation down till 50"
   },
   {
@@ -6361,10 +6731,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make lights darker to 40 percents"
   },
   {
@@ -6407,8 +6782,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set red lights brightness"
   },
   {
@@ -6416,8 +6796,13 @@
       {
         "type": "color",
         "value": "sleep"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on sleep lights mode"
   },
   {
@@ -6449,10 +6834,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on all the lights in the kitchen"
   },
   {
@@ -6477,8 +6867,13 @@
       {
         "type": "room",
         "value": "garage"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on the garage lights"
   },
   {
@@ -6637,8 +7032,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off the kitchen lights"
   },
   {
@@ -6653,10 +7053,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights brightness up till 10 points"
   },
   {
@@ -6912,10 +7317,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "basement"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on all the lights in the basement"
   },
   {
@@ -7263,10 +7673,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make lights darker for 20 points"
   },
   {
@@ -7307,10 +7722,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights on in my bedroom"
   },
   {
@@ -7385,10 +7805,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make lights darker until 40 percents"
   },
   {
@@ -7516,10 +7941,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation up till 10 points"
   },
   {
@@ -7538,10 +7968,15 @@
         "value": "red"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "check red lights in the kitchen"
   },
   {
@@ -7623,17 +8058,27 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "kitchen lights are too bright"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "what's the saturation of lights in bedroom"
   },
   {
@@ -7905,10 +8350,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "5"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue up till 5 points"
   },
   {
@@ -7949,10 +8399,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights level up by 50"
   },
   {
@@ -8020,10 +8475,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights for 20 percent"
   },
   {
@@ -8114,17 +8574,27 @@
       {
         "type": "color",
         "value": "romantic"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "romantic lights"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off the light in the kitchen"
   },
   {
@@ -8167,8 +8637,13 @@
       {
         "type": "color",
         "value": "green"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "are the green lights on"
   },
   {
@@ -8279,10 +8754,15 @@
         "value": "green"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "23"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set the green lights brightness till 23"
   },
   {
@@ -8334,8 +8814,13 @@
       {
         "type": "color",
         "value": "normal"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on normal lights"
   },
   {
@@ -8382,8 +8867,13 @@
       {
         "type": "color",
         "value": "white"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "white light show"
   },
   {
@@ -8458,10 +8948,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "check if lights are on in the bedroom"
   },
   {
@@ -8542,10 +9037,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights shine 20 percents brighter"
   },
   {
@@ -8774,10 +9274,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights hue till 10 points"
   },
   {
@@ -8841,10 +9346,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights brighter for 20 percents"
   },
   {
@@ -8899,10 +9409,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights darker until 40 percents"
   },
   {
@@ -8949,8 +9464,13 @@
       {
         "type": "room",
         "value": "bathroom"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off bathroom lights"
   },
   {
@@ -9094,8 +9614,13 @@
       {
         "type": "room",
         "value": "bedroom"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off the master bedroom lights"
   },
   {
@@ -9189,10 +9714,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights darker to 40 percents"
   },
   {
@@ -9286,10 +9816,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "boardroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off all lights in the boardroom"
   },
   {
@@ -9357,10 +9892,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights until 40 percents"
   },
   {
@@ -9423,10 +9963,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "color",
         "value": "blue"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn the lights blue"
   },
   {
@@ -9515,10 +10060,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "23"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue up till 23 percents"
   },
   {
@@ -9537,6 +10087,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "15"
       },
@@ -9545,6 +10099,7 @@
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue up for 15 percents in the bedroom"
   },
   {
@@ -9634,10 +10189,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights lower for 20 percents"
   },
   {
@@ -9760,19 +10320,29 @@
         "value": "green"
       },
       {
-        "type": "room",
-        "value": "bedroom"
-      }
-    ],
-    "text": "are the green lights in bedroom on"
-  },
-  {
-    "expected": [
+        "type": "device",
+        "value": "lights"
+      },
       {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
+    "text": "are the green lights in bedroom on"
+  },
+  {
+    "expected": [
+      {
+        "type": "device",
+        "value": "lights"
+      },
+      {
+        "type": "room",
+        "value": "bedroom"
+      }
+    ],
+    "labeled_by": "relabeled",
     "text": "turn lights on in bedroom please"
   },
   {
@@ -9808,10 +10378,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bathroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on all the lights in bathroom"
   },
   {
@@ -9900,6 +10475,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "15"
       },
@@ -9908,6 +10487,7 @@
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights brightness up for 15 percents in the bedroom"
   },
   {
@@ -10085,8 +10665,13 @@
       {
         "type": "room",
         "value": "bathroom"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on bathroom light"
   },
   {
@@ -10174,10 +10759,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "color",
         "value": "sleep"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights in sleep mode"
   },
   {
@@ -10218,10 +10808,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "23"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights level up till 23"
   },
   {
@@ -10385,8 +10980,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set all lights level"
   },
   {
@@ -10420,8 +11020,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off all the lights at home"
   },
   {
@@ -10516,8 +11121,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set all lights brightness"
   },
   {
@@ -10563,6 +11173,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "change_value",
         "value": "5"
       },
@@ -10571,6 +11185,7 @@
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make light level up by 5 points in the kitchen"
   },
   {
@@ -10611,10 +11226,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make lights shine 20 percents brighter"
   },
   {
@@ -10695,8 +11315,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn all lights off"
   },
   {
@@ -10781,10 +11406,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights for 20 points"
   },
   {
@@ -10858,8 +11488,13 @@
       {
         "type": "room",
         "value": "garage"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn garage lights off"
   },
   {
@@ -11006,8 +11641,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off the kitchen light"
   },
   {
@@ -11253,6 +11893,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "5"
       },
@@ -11261,6 +11905,7 @@
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn the lights level up till 5 points in the kitchen"
   },
   {
@@ -11268,8 +11913,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "kitchen lights down"
   },
   {
@@ -11408,8 +12058,13 @@
       {
         "type": "color",
         "value": "sleep"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "sleep lights"
   },
   {
@@ -11537,10 +12192,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "30"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights brightness up till 30"
   },
   {
@@ -11566,8 +12226,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "dim all the lights"
   },
   {
@@ -11575,8 +12240,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "can you turn off kitchen lights for me"
   },
   {
@@ -11615,8 +12285,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "did I turn off the red lights"
   },
   {
@@ -11644,6 +12319,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "15"
       },
@@ -11652,6 +12331,7 @@
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation up to 15 percents in the bedroom"
   },
   {
@@ -11707,8 +12387,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "all lights saturation down"
   },
   {
@@ -11837,10 +12522,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "check if I forgot to turn lights on in bedroom"
   },
   {
@@ -11990,6 +12680,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "change_value",
         "value": "5"
       },
@@ -11998,6 +12692,7 @@
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make light level lower by 5 points in the kitchen"
   },
   {
@@ -12016,6 +12711,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "15"
       },
@@ -12024,6 +12723,7 @@
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights brightness up to 15 percents in the bedroom"
   },
   {
@@ -12053,8 +12753,13 @@
       {
         "type": "room",
         "value": "hallway"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on the hallway light"
   },
   {
@@ -12122,10 +12827,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "can you turn off the light in my kitchen"
   },
   {
@@ -12236,8 +12946,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set all red lights brightness"
   },
   {
@@ -12252,10 +12967,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn up lights hue till 10 points"
   },
   {
@@ -12301,10 +13021,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make lights 20 percents brighter"
   },
   {
@@ -12337,10 +13062,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "switch the lights on in the bedroom"
   },
   {
@@ -12439,10 +13169,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue up by 10 points"
   },
   {
@@ -12558,10 +13293,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "boardroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on all lights in the boardroom"
   },
   {
@@ -12835,10 +13575,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off all lights in the kitchen"
   },
   {
@@ -12875,10 +13620,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make lights shine 20 percents"
   },
   {
@@ -13014,17 +13764,27 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down all lights"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "is the light brightness 10 points"
   },
   {
@@ -13107,12 +13867,21 @@
       {
         "type": "color",
         "value": "yellow"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "kitchen yellow lights down"
   },
   {
     "expected": [
+      {
+        "type": "device",
+        "value": "lights"
+      },
       {
         "type": "final_value",
         "value": "10"
@@ -13122,6 +13891,7 @@
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set lights level to 10 in the kitchen"
   },
   {
@@ -13158,6 +13928,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "15"
       },
@@ -13166,6 +13940,7 @@
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue up to 15 percents in the bedroom"
   },
   {
@@ -13394,10 +14169,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "clean room"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off all the lights in the clean room"
   },
   {
@@ -13488,8 +14268,13 @@
       {
         "type": "room",
         "value": "bedroom"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off all bedroom lights"
   },
   {
@@ -13585,8 +14370,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "all lights hue down"
   },
   {
@@ -13603,8 +14393,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set the level of all lights"
   },
   {
@@ -13798,10 +14593,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights shine 20 percents"
   },
   {
@@ -13874,19 +14674,29 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "what's the hue of lights in bedroom"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn up lights hue by 10 points"
   },
   {
@@ -13925,8 +14735,13 @@
       {
         "type": "room",
         "value": "porch"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off porch light"
   },
   {
@@ -13941,10 +14756,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "25"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lower lights saturation to 25 points"
   },
   {
@@ -14156,10 +14976,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off lights in the kitchen"
   },
   {
@@ -14196,10 +15021,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make lights lower for 20 percents"
   },
   {
@@ -14220,8 +15050,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on the kitchen light"
   },
   {
@@ -14285,8 +15120,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off all lights"
   },
   {
@@ -14309,6 +15149,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "5"
       },
@@ -14317,6 +15161,7 @@
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn the lights level down till 5 points in the kitchen"
   },
   {
@@ -14492,8 +15337,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "red lights on"
   },
   {
@@ -14668,10 +15518,15 @@
         "value": "red"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on red lights on the kitchen"
   },
   {
@@ -14781,10 +15636,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "living room"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off the lights in the living room"
   },
   {
@@ -14854,10 +15714,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights darker till 40 percents"
   },
   {
@@ -14900,8 +15765,13 @@
       {
         "type": "room",
         "value": "garage"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn garage light off"
   },
   {
@@ -14942,10 +15812,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation up by 10 points"
   },
   {
@@ -14960,10 +15835,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights brightness up by 10 points"
   },
   {
@@ -15083,10 +15963,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "15"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights brightness till 15 points"
   },
   {
@@ -15143,17 +16028,27 @@
       {
         "type": "room",
         "value": "bedroom"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on the bedroom light"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation up by 50 points"
   },
   {
@@ -15386,19 +16281,29 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "all",
         "value": "all"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "are lights on in all the rooms"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights on in bedroom"
   },
   {
@@ -15406,8 +16311,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "kitchen lights up"
   },
   {
@@ -15422,6 +16332,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "15"
       },
@@ -15430,6 +16344,7 @@
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation down by 15 percents in the bedroom"
   },
   {
@@ -15461,10 +16376,15 @@
         "value": "blue"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on blue lights in bedroom"
   },
   {
@@ -15609,10 +16529,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "23"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights level down till 23 points"
   },
   {
@@ -15644,19 +16569,29 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "light on in the kitchen"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "darken lights to 40 percents"
   },
   {
@@ -15701,10 +16636,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "5"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation down till 5 points"
   },
   {
@@ -15745,19 +16685,29 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off the light in my kitchen"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "5"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn the lights level down till 5 points"
   },
   {
@@ -15785,10 +16735,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "darken lights till 40 percents"
   },
   {
@@ -15832,8 +16787,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "kitchen light off"
   },
   {
@@ -15989,10 +16949,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bathroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "can you turn off lights in the bathroom for me"
   },
   {
@@ -16067,19 +17032,29 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights until 40 percent"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bathroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off lights in bathroom"
   },
   {
@@ -16139,8 +17114,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "what is the status of kitchen lights"
   },
   {
@@ -16155,10 +17135,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "living room"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on lights in living room"
   },
   {
@@ -16254,8 +17239,13 @@
       {
         "type": "color",
         "value": "blue"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "the blue lights status"
   },
   {
@@ -16370,19 +17360,29 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue up by 50 percents"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "dim the light in the kitchen"
   },
   {
@@ -16412,8 +17412,13 @@
       {
         "type": "room",
         "value": "family room"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off the family room lights"
   },
   {
@@ -16770,8 +17775,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "are kitchen lights off"
   },
   {
@@ -16781,10 +17791,15 @@
         "value": "red"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on red lights in the kitchen"
   },
   {
@@ -16864,19 +17879,29 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn up lights brightness till 10 points"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bathroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn the lights on in the bathroom"
   },
   {
@@ -17152,10 +18177,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "light on in the bedroom"
   },
   {
@@ -17277,8 +18307,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "all lights saturation up"
   },
   {
@@ -17406,10 +18441,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights on in the kitchen"
   },
   {
@@ -17588,10 +18628,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "tell lights on in the kitchen"
   },
   {
@@ -17636,10 +18681,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "clean room"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on all the lights in the clean room"
   },
   {
@@ -17688,10 +18738,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "basement"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off all the lights in the basement"
   },
   {
@@ -17727,10 +18782,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights on in the kitchen"
   },
   {
@@ -17749,10 +18809,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on the lights in my kitchen"
   },
   {
@@ -17784,10 +18849,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "breakfast room"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on all the lights in the breakfast room"
   },
   {
@@ -17874,8 +18944,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "kitchen light on"
   },
   {
@@ -17916,10 +18991,15 @@
         "value": "pink"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "what's the brightness of pink lights in the bedroom"
   },
   {
@@ -17938,14 +19018,23 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "how bright are the lights in bedroom"
   },
   {
     "expected": [
+      {
+        "type": "device",
+        "value": "lights"
+      },
       {
         "type": "change_value",
         "value": "15"
@@ -17955,15 +19044,21 @@
         "value": "living room"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue down for 15 percents in the living room"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "23"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights down till 23"
   },
   {
@@ -17978,10 +19073,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights hue by 10 points"
   },
   {
@@ -18024,8 +19124,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "red lights off"
   },
   {
@@ -18135,10 +19240,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "family room"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off the lights in the family room"
   },
   {
@@ -18207,8 +19317,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "are kitchen lights on"
   },
   {
@@ -18227,6 +19342,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "15"
       },
@@ -18235,6 +19354,7 @@
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation up by 15 percents in the bedroom"
   },
   {
@@ -18265,10 +19385,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "23"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights level up till 23"
   },
   {
@@ -18360,17 +19485,27 @@
       {
         "type": "color",
         "value": "green"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "are the green lights off"
   },
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights for 20 percents"
   },
   {
@@ -18417,8 +19552,13 @@
       {
         "type": "color",
         "value": "green"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "all green lights level"
   },
   {
@@ -18513,8 +19653,13 @@
       {
         "type": "room",
         "value": "garage"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn garage light on"
   },
   {
@@ -18624,10 +19769,15 @@
         "value": "romantic"
       },
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on romantic light in the kitchen"
   },
   {
@@ -18734,6 +19884,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "room"
       },
@@ -18742,6 +19896,7 @@
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "can you please make lights in the room darker till 40 percents"
   },
   {
@@ -18849,10 +20004,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "check if I forgot to turn lights off in bedroom"
   },
   {
@@ -18882,8 +20042,13 @@
       {
         "type": "room",
         "value": "bedroom"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "status of my bedroom lights"
   },
   {
@@ -18999,10 +20164,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "45"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights brightness up by 45"
   },
   {
@@ -19038,10 +20208,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue up till 10 points"
   },
   {
@@ -19080,8 +20255,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn up all the lights"
   },
   {
@@ -19089,8 +20269,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "what's the brightness of kitchen lights"
   },
   {
@@ -19237,8 +20422,13 @@
       {
         "type": "color",
         "value": "romantic"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on romantic lights"
   },
   {
@@ -19275,10 +20465,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on light in the kitchen"
   },
   {
@@ -19297,10 +20492,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "all",
         "value": "all"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set light brightness in all rooms"
   },
   {
@@ -19401,10 +20601,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights down by 50 points"
   },
   {
@@ -19432,10 +20637,15 @@
         "value": "every"
       },
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "boiler room"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on every light in the boiler room"
   },
   {
@@ -19458,10 +20668,15 @@
         "value": "romantic"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "romantic lights in the kitchen"
   },
   {
@@ -19519,10 +20734,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn up the lights in the kitchen"
   },
   {
@@ -19532,10 +20752,15 @@
         "value": "green"
       },
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "value",
         "value": "15"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "is the green light saturation 15 points"
   },
   {
@@ -19554,10 +20779,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue down in the kitchen"
   },
   {
@@ -19598,10 +20828,15 @@
         "value": "living room"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "dim the living room lights to 20"
   },
   {
@@ -19639,8 +20874,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn up all red lights"
   },
   {
@@ -19730,10 +20970,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights hue down to 50"
   },
   {
@@ -19896,10 +21141,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "status of the lights in the kitchen"
   },
   {
@@ -19925,8 +21175,13 @@
       {
         "type": "room",
         "value": "garage"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on the garage light"
   },
   {
@@ -19967,10 +21222,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "all",
         "value": "all"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "are lights off in all the rooms"
   },
   {
@@ -19989,10 +21249,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights 20 percents brighter"
   },
   {
@@ -20056,8 +21321,13 @@
       {
         "type": "room",
         "value": "bathroom"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on bathroom lights"
   },
   {
@@ -20235,8 +21505,13 @@
       {
         "type": "color",
         "value": "red"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "check red lights brightness"
   },
   {
@@ -20340,10 +21615,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation up till 50"
   },
   {
@@ -20402,10 +21682,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn up lights brightness by 10 points"
   },
   {
@@ -20486,6 +21771,10 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "15"
       },
@@ -20494,6 +21783,7 @@
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lights saturation down to 15 percents in the bedroom"
   },
   {
@@ -20790,10 +22080,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "all",
         "value": "everywhere"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set lights brightness everywhere"
   },
   {
@@ -20931,10 +22226,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "color",
         "value": "sleep"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights in sleep mode"
   },
   {
@@ -21007,8 +22307,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "down all the lights"
   },
   {
@@ -21266,8 +22571,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "kitchen lights"
   },
   {
@@ -21299,10 +22609,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "change_value",
         "value": "5"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make light level lower by 5 points"
   },
   {
@@ -21513,8 +22828,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "kitchen lights status"
   },
   {
@@ -22001,10 +23321,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "what is the status of the lights in the kitchen"
   },
   {
@@ -22174,8 +23499,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "what's the hue of kitchen lights"
   },
   {
@@ -22244,8 +23574,13 @@
       {
         "type": "room",
         "value": "garage"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off the garage lights"
   },
   {
@@ -22312,10 +23647,15 @@
         "value": "green"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bedroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "are the green lights in bedroom off"
   },
   {
@@ -22339,10 +23679,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "23"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "set lights brightness to 23"
   },
   {
@@ -22517,10 +23862,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "20"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn down lights for 20"
   },
   {
@@ -22600,10 +23950,15 @@
         "value": "living room"
       },
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "all",
         "value": "everything"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on living room light everything"
   },
   {
@@ -22725,8 +24080,13 @@
       {
         "type": "room",
         "value": "family room"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on the family room lights"
   },
   {
@@ -22818,10 +24178,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "I need brighter light in the kitchen"
   },
   {
@@ -22880,10 +24245,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "5"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn the lights level up till 5 points"
   },
   {
@@ -22898,10 +24268,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "10"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn up lights saturation by 10 points"
   },
   {
@@ -22940,8 +24315,13 @@
       {
         "type": "color",
         "value": "sleep"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on sleep lights"
   },
   {
@@ -23018,10 +24398,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "light"
+      },
+      {
         "type": "room",
         "value": "bathroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "light on in the bathroom"
   },
   {
@@ -23337,10 +24722,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "final_value",
         "value": "40"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "make lights darker till 40 percents"
   },
   {
@@ -23348,8 +24738,13 @@
       {
         "type": "all",
         "value": "all"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "lower the brightness of all lights"
   },
   {
@@ -23442,10 +24837,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights brightness down by 50 points"
   },
   {
@@ -23535,8 +24935,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn on the kitchen lights"
   },
   {
@@ -23622,8 +25027,13 @@
       {
         "type": "room",
         "value": "living room"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "to turn off the living room lights"
   },
   {
@@ -23726,10 +25136,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "bathroom"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off all the lights in bathroom"
   },
   {
@@ -23783,10 +25198,15 @@
         "value": "all"
       },
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "room",
         "value": "kitchen"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "all lights on in the kitchen"
   },
   {
@@ -23839,8 +25259,13 @@
       {
         "type": "room",
         "value": "kitchen"
+      },
+      {
+        "type": "device",
+        "value": "lights"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "what's the saturation of kitchen lights"
   },
   {
@@ -23980,10 +25405,15 @@
   {
     "expected": [
       {
+        "type": "device",
+        "value": "lights"
+      },
+      {
         "type": "change_value",
         "value": "50"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn lights level up by 50"
   },
   {
@@ -24000,8 +25430,13 @@
       {
         "type": "room",
         "value": "bedroom"
+      },
+      {
+        "type": "device",
+        "value": "light"
       }
     ],
+    "labeled_by": "relabeled",
     "text": "turn off bedroom light"
   },
   {
@@ -24096,6 +25531,56 @@
     "expected": [],
     "labeled_by": "authored",
     "text": "Book the conference room"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Austin"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Call me Austin"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Dakota"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Call me Dakota"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Jolene"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Call me Jolene"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Mike"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Call me Mike"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Paris"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Call me Paris"
   },
   {
     "expected": [
@@ -24295,6 +25780,26 @@
   {
     "expected": [
       {
+        "type": "person",
+        "value": "Chris"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Everyone calls me Chris"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Madison"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Everyone calls me Madison"
+  },
+  {
+    "expected": [
+      {
         "type": "function",
         "value": "sort_items"
       }
@@ -24455,12 +25960,122 @@
   {
     "expected": [
       {
+        "type": "person",
+        "value": "Dallas"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Hello there, I'm Dallas"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Robert"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Hello, I'm Robert"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Orlando"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Hello, my name is Orlando"
+  },
+  {
+    "expected": [
+      {
         "type": "function",
         "value": "parse_json"
       }
     ],
     "labeled_by": "authored",
     "text": "help me understand parse_json"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Dakota"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Hey, I'm Dakota"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Georgia"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Hey, I'm Georgia"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Charlotte"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Hi there, I'm Charlotte"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Dakota"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Hi, I'm Dakota"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Jennifer"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Hi, I'm Jennifer"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Paris"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Hi, I'm Paris"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Austin"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Hi, my name is Austin"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Jordan"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Hi, my name is Jordan"
   },
   {
     "expected": [],
@@ -24528,9 +26143,129 @@
     "text": "how to use HttpClient"
   },
   {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Austin"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I am Austin"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Chelsea"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I am Chelsea"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Dakota"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I am Dakota"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Georgia"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I am Georgia"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Hudson"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I am Hudson"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Lincoln"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I am Lincoln"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Mason"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I am Mason"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Paris"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I am Paris"
+  },
+  {
     "expected": [],
     "labeled_by": "authored",
     "text": "I don't need the timer anymore"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Charlotte"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I go by Charlotte"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Georgia"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I go by Georgia"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Max"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I go by Max"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Alex"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I go by the name Alex"
   },
   {
     "expected": [
@@ -24541,6 +26276,316 @@
     ],
     "labeled_by": "authored",
     "text": "I want to understand the OrderService class"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Austin"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Austin"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Austin"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Austin, pleased to meet you"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Brooklyn"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Brooklyn"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Charlotte"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Charlotte"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Dakota"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Dakota"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Dallas"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Dallas"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Emily"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Emily"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Eugene"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Eugene"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Florence"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Florence"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Geneva"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Geneva"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Georgia"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Georgia"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Helena"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Helena"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "John"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm John"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Jolene"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Jolene"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Jordan"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Jordan"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Charlotte"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm known as Charlotte"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Georgia"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm known as Georgia"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Madison"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Madison"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Michael"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Michael"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Orlando"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Orlando"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Paris"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Paris"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Paris"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Paris, nice to meet you"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Phoenix"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Phoenix"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Regina"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Regina"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Sarah"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Sarah"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Savannah"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Savannah"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Sydney"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Sydney"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Troy"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Troy"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Victoria"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "I'm Victoria"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Dallas"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Just call me Dallas"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Taylor"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Just call me Taylor"
   },
   {
     "expected": [],
@@ -24573,9 +26618,209 @@
     "text": "method signature of save_to_database"
   },
   {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Austin"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My friends call me Austin"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Paris"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My friends call me Paris"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Austin"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is Austin"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Brooklyn"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is Brooklyn"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Charlotte"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is Charlotte"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Dakota"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is Dakota"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Dallas"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is Dallas"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "David"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is David"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Emma"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is Emma"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Georgia"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is Georgia"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Jolene"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is Jolene"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Madison"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is Madison"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Paris"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is Paris"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Sydney"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name is Sydney"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Paris"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "My name's Paris"
+  },
+  {
     "expected": [],
     "labeled_by": "authored",
     "text": "Never mind the timer"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Austin"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Nice to meet you, I'm Austin"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Paris"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Nice to meet you, I'm Paris"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Brooklyn"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "People call me Brooklyn"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Sam"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "People call me Sam"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Georgia"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "Pleased to meet you, my name is Georgia"
   },
   {
     "expected": [],
@@ -25025,6 +27270,36 @@
   {
     "expected": [
       {
+        "type": "person",
+        "value": "Austin"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "The name's Austin"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Dallas"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "They call me Dallas"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Jamie"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "They call me Jamie"
+  },
+  {
+    "expected": [
+      {
         "type": "duration",
         "value": "3 minutes"
       }
@@ -25441,5 +27716,35 @@
     ],
     "labeled_by": "authored",
     "text": "who uses fetch_api_data"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Charlotte"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "You can call me Charlotte"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Georgia"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "You can call me Georgia"
+  },
+  {
+    "expected": [
+      {
+        "type": "person",
+        "value": "Jordan"
+      }
+    ],
+    "labeled_by": "authored",
+    "text": "You can call me Jordan"
   }
 ]
