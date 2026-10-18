@@ -114,6 +114,72 @@ defmodule Brain.Response.DiscoursePlannerTest do
     end
   end
 
+  describe "plan/2 for what the system produces" do
+    alias Brain.Analysis.ChunkProfile
+    alias Brain.FactDatabase.Fact
+
+    defp plan_of(model), do: model |> DiscoursePlanner.plan() |> Enum.map(&{&1.type, &1.variant})
+
+    defp with_chunk(model, fields), do: %{model | analyses: Enum.map(model.analyses, &Map.merge(&1, fields))}
+
+    @photosynthesis %Fact{id: "sci_014", entity: "photosynthesis", fact: "Photosynthesis is a process", category: "science"}
+
+    # The intent registry's meta.self_knowledge, a directive requesting
+    # information, whose consolidated domain is meta (intent_domains.json).
+    test "a self-knowledge query of the meta domain is told what is known, whatever its sentiment" do
+      for sentiment <- [:neutral, :negative] do
+        model =
+          "What do you know about me?"
+          |> build_model(
+            speech_act: SpeechActResult.new(:directive, :request_information, 0.9, is_question: true),
+            intent: "meta.self_knowledge",
+            sentiment: %{label: sentiment, confidence: 0.5}
+          )
+          |> with_chunk(%{profile: %ChunkProfile{domain: :meta}})
+
+        assert plan_of(model) == [{:content, :narrative}, {:follow_up, :correction_invite}]
+      end
+    end
+
+    test "another meta intent is not planned as a self-knowledge query" do
+      model =
+        "how are your systems"
+        |> build_model(
+          speech_act: SpeechActResult.new(:directive, :request_information, 0.9, is_question: true),
+          intent: "status.report"
+        )
+        |> with_chunk(%{profile: %ChunkProfile{domain: :meta}})
+
+      refute {:content, :narrative} in plan_of(model)
+    end
+
+    # An explanation is asked for with an imperative ("Explain ..."), a
+    # directive requesting information that is no question.
+    test "a request for information that is no question, with something known, is explained" do
+      model =
+        "Explain how photosynthesis works"
+        |> build_model(speech_act: SpeechActResult.new(:directive, :request_information, 0.9, is_question: false))
+        |> with_chunk(%{related_facts: [@photosynthesis]})
+
+      assert plan_of(model) == [{:framing, :informative}, {:content, :explanatory}]
+    end
+
+    test "a question with something known is answered with it, and a polar one by its alignment" do
+      question = SpeechActResult.new(:directive, :request_information, 0.9, is_question: true)
+      known = %{related_facts: [@photosynthesis]}
+
+      assert "What is photosynthesis?" |> build_model(speech_act: question) |> with_chunk(known) |> plan_of() ==
+               [{:framing, :informative}, {:content, :factual}]
+
+      for {alignment, framing} <- [confirming: :affirmative, disconfirming: :negative] do
+        aligned = Map.put(known, :fact_alignment, %{alignment: alignment, statement: @photosynthesis.fact})
+
+        assert "Is photosynthesis a process?" |> build_model(speech_act: question) |> with_chunk(aligned) |> plan_of() ==
+                 [{:framing, framing}, {:content, :factual}]
+      end
+    end
+  end
+
   describe "plan/2 when the turn's service returned an error" do
     alias Brain.Response.{ContentSpecifier, Primitive, ResponseEvaluator, SurfaceRealizer}
 
@@ -345,6 +411,44 @@ defmodule Brain.Response.DiscoursePlannerTest do
                DiscoursePlanner.plan(model_for("cancel my meeting", "calendar.cancel"), opts),
                &Map.has_key?(&1.content, :enrichment_error)
              )
+    end
+
+    # No registered service returns a success with no data
+    # (`DiscoursePlanner.empty_result_primitive/1`); one that did is answered
+    # with what that means for the intent it served, never with a reply that
+    # claims a result.
+    test "a success with no data says the service did it, or returned nothing, as the intent writes or reads" do
+      empty = fn service, intent ->
+        [
+          unified_context: %{
+            enrichment: %{enrichment_status: :success, enriched_data: %{}, enrichment_service: service, intent: intent}
+          }
+        ]
+      end
+
+      for {service, intent, reply, wording} <- [
+            {:local_scheduler, "timer.cancel", :carried_out, ["Local Scheduler carried that out.", "Local Scheduler took care of that."]},
+            {:weather, "weather.query", :nothing_reported,
+             ["Weather returned nothing for that.", "I asked Weather, but it had nothing to report."]}
+          ] do
+        model = model_for("do it", intent)
+        [analysis] = model.analyses
+        opts = empty.(service, intent)
+
+        assert [%Primitive{type: :content, variant: :action_result, content: content}] =
+                 plan = DiscoursePlanner.plan(model, opts)
+
+        assert content.reply == reply
+        assert content.enrichment_result == :empty
+
+        specified = ContentSpecifier.specify(plan, analysis, opts)
+        assert [%Primitive{content: %{content_complete: true}}] = specified
+
+        {:ok, rendered, text, nil} = SurfaceRealizer.realize(specified, [world_id: @world_id, analysis: analysis] ++ opts)
+        assert Enum.all?(rendered, &(&1.source == :service_reply))
+        assert text in wording
+        refute ResponseEvaluator.silence_preferred?(0.0, plan)
+      end
     end
 
     test "a service reply is never silenced, however low it scores" do
