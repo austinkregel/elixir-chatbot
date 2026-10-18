@@ -190,6 +190,9 @@ defmodule Brain.Analysis.SlotTypePreferences do
   words given the label; whether a span is a number given the label; whether
   each gazetteer span is ordinary given the intent), with the earlier choices
   fixed. Ties go to the smaller value. The held-out splits are never read.
+  Folds are assigned by each example's `group`, the template of its row
+  (`Brain.ML.NerGold.template!/1`), so the rows of one template are held out
+  together.
 
   ## Language
 
@@ -252,8 +255,12 @@ defmodule Brain.Analysis.SlotTypePreferences do
 
   # Pseudo-counts from far below one observation to far above the training
   # split's size, and hierarchy weights from none to all. Cross-validation
-  # picks within them.
-  @strengths [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10_000]
+  # picks within them. Measured 2026-10-17 (1,828 rows, test environment):
+  # with folds by template, numeric_global and ordinary_domain chose 0.1, then
+  # the grid's smallest, so the grid was extended below it; both then chose
+  # 0.001, on a plateau whose held-out log-likelihood per observation is the
+  # same to four places from 0.001 to 0.5 (-0.4004 and -0.5899).
+  @strengths [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10_000]
   @hierarchy_weights [0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
   @folds 5
 
@@ -325,8 +332,9 @@ defmodule Brain.Analysis.SlotTypePreferences do
   the tag and the word before each and whether each is a number
   (`numeric_span?/1`), the tags before every token outside the spans, the
   outcome of every gazetteer span (`:ordinary` when no gold span overlaps it,
-  `:entity` when one does), and `intent` (`nil` when the row joins no usable
-  intent row).
+  `:entity` when one does), `intent` (`nil` when the row joins no usable
+  intent row), and `group`, the row's template (`Brain.ML.NerGold.template!/1`),
+  which `select/2` assigns folds by.
 
   `tag` takes the row's token texts and returns one UD tag per token, as
   `Brain.ML.EntityExtractor` tags them. `gazetteer` takes the same token texts
@@ -368,6 +376,7 @@ defmodule Brain.Analysis.SlotTypePreferences do
 
     %{
       key: text,
+      group: NerGold.template!(row),
       intent: intent,
       spans: spans,
       ordinary: for(index <- 0..(tuple_size(tags) - 1)//1, not MapSet.member?(covered, index), do: preceding(tags, index)),
@@ -423,7 +432,8 @@ defmodule Brain.Analysis.SlotTypePreferences do
   as the model's `cross_validation`, gives each stage's mean held-out
   log-likelihood per observation for every value tried.
 
-  Takes `fit/2`'s options except `:smoothing`.
+  Takes `fit/2`'s examples, each also with its `group` (`example!/4` sets
+  it), and `fit/2`'s options except `:smoothing`.
   """
   @spec select([map()], keyword()) :: {t(), map()}
   def select([_ | _] = examples, opts) do
@@ -433,7 +443,18 @@ defmodule Brain.Analysis.SlotTypePreferences do
 
     examples = Enum.map(examples, &example_shape!/1)
     full = base(examples, opts)
-    folds = Enum.map(examples, &:erlang.phash2(&1.key, @folds))
+
+    # The examples of one group, one template's rows, are always in one fold.
+    folds =
+      Enum.map(examples, fn
+        %{group: group} ->
+          :erlang.phash2(group, @folds)
+
+        example ->
+          raise ArgumentError,
+                "SlotTypePreferences: cross-validation assigns folds by an example's :group, the template of its row " <>
+                  "(Brain.ML.NerGold.template!/1); got an example without one, keyed #{inspect(example.key, limit: 5)}"
+      end)
 
     fold_data =
       Enum.map(0..(@folds - 1), fn k ->
