@@ -94,11 +94,14 @@ defmodule Brain.ML.EntityTrainerTest do
     # Eight templates, "frob the <device> <closer>", each naming devices of its
     # own (a prefix of its own, "qa", "qb", ...) twice each, and for every
     # template a sentence of no entity that says one of its devices as a plain
-    # word. A validation row whose template-mates are in training has seen its
-    # device as a device, and the smallest smoothing reads it best. Held out with
-    # its template, the device was seen only as the plain word, and the smallest
-    # smoothing lets those few sightings veto the device that "the" announces in
-    # every other template.
+    # word, after the same "the". A validation row whose template-mates are in
+    # training has seen its device as a device, and the smallest smoothing reads
+    # it best. Held out with its template, the device was seen only as the plain
+    # word, and the smallest smoothing lets those few sightings veto the device
+    # that "the" announces in every other template. (The plain word follows
+    # "the" as the devices do: a seen word is weighed by its form alone, so
+    # were "the" only ever before a device, it would veto the plain reading as
+    # surely as the form vetoes the device.)
     test "chooses its smoothing on held-out templates, not on rows whose template-mates it was trained on" do
       prefixes = ~w(qa qb qc qd qe qf qg qh)
       closers = ~w(alpha bravo charlie delta echo foxtrot golf hotel)
@@ -108,7 +111,7 @@ defmodule Brain.ML.EntityTrainerTest do
           %{"text" => "frob the #{device} #{closer}", "expected" => [%{"type" => "device", "value" => device}]}
         end
 
-      plain = for prefix <- prefixes, do: %{"text" => "say #{prefix}lamp now", "expected" => []}
+      plain = for prefix <- prefixes, do: %{"text" => "say the #{prefix}lamp now", "expected" => []}
 
       {:ok, model} = EntityTrainer.train(templated ++ plain)
       cv = model.cross_validation
