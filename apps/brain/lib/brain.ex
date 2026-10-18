@@ -1705,9 +1705,13 @@ defmodule Brain do
         {nil, :silence_preferred} ->
           {nil, :silence_preferred}
 
+        # The plan the turn was given could not be worded by any system its
+        # domain is realized by. A line picked at random from a pool of
+        # generic replies used to stand in for it, which said nothing about
+        # the turn and hid that its plan had no words.
         {:error, reason} ->
-          Logger.warning("Synthesis failed, falling back: #{inspect(reason)}")
-          {Brain.Response.Synthesizer.get_cannot_respond_response(), :synthesis_fallback}
+          raise "Brain: no response could be realized for #{inspect(query_text)} " <>
+                  "(intent #{inspect(intent)}): #{inspect(reason)}"
       end
 
     {response, method, unified_context.enrichment}
