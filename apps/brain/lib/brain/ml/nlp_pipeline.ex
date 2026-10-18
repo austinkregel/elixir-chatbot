@@ -55,38 +55,26 @@ defmodule Brain.ML.NLPPipeline do
             extracted
         end
 
-      case resolve_intent(text, opts) do
-        {:ok, intent, confidence} ->
-          Logger.debug("Classified intent", %{intent: intent, confidence: confidence})
+      {:ok, intent, confidence} = resolve_intent(text, opts)
+      Logger.debug("Classified intent", %{intent: intent, confidence: confidence})
 
-          if should_use_classical_result?(confidence) do
-            result = build_result(text, intent, confidence, entities, tokens)
-            {:ok, result}
-          else
-            Logger.debug("Low confidence, marked for fallback", %{
-              confidence: confidence,
-              threshold: get_confidence_threshold()
-            })
+      if should_use_classical_result?(confidence) do
+        result = build_result(text, intent, confidence, entities, tokens)
+        {:ok, result}
+      else
+        Logger.debug("Low confidence, marked for fallback", %{
+          confidence: confidence,
+          threshold: get_confidence_threshold()
+        })
 
-            {:ok,
-             %{
-               confidence: confidence,
-               intent: intent,
-               entities: entities,
-               fallback: true,
-               tokens: tokens
-             }}
-          end
-
-        {:error, _reason} ->
-          {:ok,
-           %{
-             confidence: 0.0,
-             intent: "unknown",
-             entities: entities,
-             fallback: true,
-             tokens: tokens
-           }}
+        {:ok,
+         %{
+           confidence: confidence,
+           intent: intent,
+           entities: entities,
+           fallback: true,
+           tokens: tokens
+         }}
       end
     rescue
       error ->
@@ -129,25 +117,15 @@ defmodule Brain.ML.NLPPipeline do
     tokens = Tokenizer.tokenize(text)
     entities = EntityExtractor.extract_entities(text, opts)
 
-    case classify_intent(text, world_id: world_id) do
-      {:ok, intent, confidence} ->
-        %{
-          intent: intent,
-          confidence: confidence,
-          entities: entities,
-          tokens: Enum.map(tokens, & &1.normalized),
-          text: text
-        }
+    {:ok, intent, confidence} = classify_intent(text, world_id: world_id)
 
-      {:error, _reason} ->
-        %{
-          intent: "unknown",
-          confidence: 0.0,
-          entities: entities,
-          tokens: Enum.map(tokens, & &1.normalized),
-          text: text
-        }
-    end
+    %{
+      intent: intent,
+      confidence: confidence,
+      entities: entities,
+      tokens: Enum.map(tokens, & &1.normalized),
+      text: text
+    }
   end
 
   @doc "Tokenize text using the pipeline's tokenizer.\nExposed for external use.\n"
@@ -166,27 +144,28 @@ defmodule Brain.ML.NLPPipeline do
     confidence >= threshold
   end
 
+  # The `:intent_full` classifier's answer for the vector the pipeline
+  # classified the text's intent from (`analysis.feature_vector`), the kind it
+  # was trained on; a vector extracted again from the finished analysis holds
+  # what pass 2 added after classifying. A classifier that is not ready, or
+  # cannot answer, raises.
   defp classify_intent(text, pipeline_opts) do
-    alias Brain.Analysis.{FeatureExtractor, Pipeline}
+    alias Brain.Analysis.Pipeline
     alias Brain.ML.MicroClassifiers
 
-    if MicroClassifiers.ready?() do
-      try do
-        analysis = Pipeline.analyze_chunk(text, pipeline_opts)
-        {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+    unless MicroClassifiers.ready?() do
+      raise "NLPPipeline: the intent classifier is not ready, so #{inspect(text)} cannot be classified"
+    end
 
-        case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
-          {:ok, intent, confidence} ->
-            {:ok, intent, confidence}
-
-          _ ->
-            {:error, :classification_failed}
-        end
-      rescue
-        _ -> {:error, :classification_failed}
+    feature_vector =
+      case Pipeline.analyze_chunk(text, pipeline_opts) do
+        %{feature_vector: [_ | _] = vector} -> vector
+        other -> raise "NLPPipeline: the pipeline kept no classified feature vector for #{inspect(text)}: #{inspect(Map.get(other, :feature_vector))}"
       end
-    else
-      {:error, :no_classifier_available}
+
+    case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
+      {:ok, intent, confidence} -> {:ok, intent, confidence}
+      other -> raise "NLPPipeline: intent classification of #{inspect(text)} failed: #{inspect(other)}"
     end
   end
 
