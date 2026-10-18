@@ -1168,8 +1168,20 @@ defmodule Brain.ML.EntityExtractor do
   # `B-` tag and is followed by `O`, a `B-` tag or the sentence's end
   # (`EntityTrainer.extract_entities_from_bio/1` raises on any other `I-`), so
   # how it was delimited says nothing about how far to trust its extent.
+  #
+  # The punctuation that ends a sentence is not tagged: of the NER gold
+  # standard's rows (2,846 with the held-out split, 2026-10-18) 7 end with it
+  # and no span ends at a punctuation token, so the model has hardly seen a span
+  # followed by it -- after "My name is Sarah" the period, unseen there, read
+  # the name as a code symbol continued by "." -- and no span can end there.
   defp extract_model_entities(text, tokens, model) do
-    tagged = tokens |> Enum.map(& &1.text) |> EntityTrainer.tag(model)
+    tagged =
+      tokens
+      |> Enum.reverse()
+      |> Enum.drop_while(&(&1.type == :punctuation))
+      |> Enum.reverse()
+      |> Enum.map(& &1.text)
+      |> EntityTrainer.tag(model)
 
     tagged
     |> EntityTrainer.extract_entities_from_bio()
