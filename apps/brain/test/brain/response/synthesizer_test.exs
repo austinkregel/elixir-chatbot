@@ -104,12 +104,14 @@ defmodule Brain.Response.SynthesizerTest do
       entities = [%{entity_type: "location", value: "NYC"}]
 
       context = %{
-        enrichment_status: :success,
-        enriched_data: %{
-          temperature: "72°F",
-          conditions: "sunny",
-          humidity: "45%",
-          wind_speed: "5 mph"
+        enrichment: %{
+          enrichment_status: :success,
+          enriched_data: %{
+            temperature: "72°F",
+            conditions: "sunny",
+            humidity: "45%",
+            wind_speed: "5 mph"
+          }
         }
       }
 
@@ -135,7 +137,7 @@ defmodule Brain.Response.SynthesizerTest do
 
     test "falls back to standard templates when no enrichment data" do
       entities = [%{entity_type: "location", value: "NYC"}]
-      context = %{enrichment_status: :not_configured, enriched_data: %{}}
+      context = %{enrichment: %{enrichment_status: :not_configured, enriched_data: %{}}}
 
       result =
         Synthesizer.synthesize_from_domain(
@@ -278,31 +280,96 @@ defmodule Brain.Response.SynthesizerTest do
   end
 
   describe "chosen_frame/3" do
+    defp enrichment(data, operation \\ nil), do: %{enriched_data: data, operation: operation}
+
     test "an enrichment a frame fires for chooses that enriched frame" do
       cancelled = %{timer_status: "cancelled", cancelled_count: 1, timer_durations: []}
-      assert Synthesizer.chosen_frame("timer", [], cancelled) == {:enriched, "cancelled_one"}
+      assert Synthesizer.chosen_frame("timer", [], enrichment(cancelled, :cancel_timer)) == {:enriched, "cancelled_one"}
 
       none = %{timer_status: "none", duration: "", time_left: []}
-      assert Synthesizer.chosen_frame("timer", [], none) == {:enriched, "none_found"}
+      assert Synthesizer.chosen_frame("timer", [], enrichment(none, :check_timer)) == {:enriched, "none_found"}
     end
 
     test "with no enrichment, the response frame the filled slots key" do
-      assert Synthesizer.chosen_frame("timer", [], %{}) == {:response, "general"}
+      assert Synthesizer.chosen_frame("timer", [], enrichment(%{})) == {:response, "general"}
 
       austin = [%{entity_type: "location", value: "Austin"}]
-      assert Synthesizer.chosen_frame("weather", austin, %{}) == {:response, "has_location"}
+      assert Synthesizer.chosen_frame("weather", austin, enrichment(%{})) == {:response, "has_location"}
     end
 
     test "a response frame keyed by no slot, such as an operation, is never chosen by slots" do
       duration = [%{entity_type: "duration", value: "5 minutes"}]
 
       for entities <- [[], duration], data <- [%{}, %{timer_status: "running", duration: "5 minutes", time_left: "4 minutes"}] do
-        refute match?({:response, key} when key in ["cancel", "check", "set"], Synthesizer.chosen_frame("timer", entities, data))
+        refute match?(
+                 {:response, key} when key in ["cancel", "check", "set"],
+                 Synthesizer.chosen_frame("timer", entities, enrichment(data))
+               )
       end
     end
 
+    # A cancel whose driver reported nothing an enriched frame words: the
+    # operation it performed chooses the frame that says it was done.
+    test "a cancel no enriched frame words is worded by the frame its operation names, and nothing else is" do
+      reported_nothing_worded = %{timer_status: "cancelled"}
+
+      assert Synthesizer.chosen_frame("timer", [], enrichment(reported_nothing_worded, :cancel_timer)) ==
+               {:response, "cancel"}
+
+      for operation <- [:check_timer, :set_timer, nil] do
+        refute Synthesizer.chosen_frame("timer", [], enrichment(reported_nothing_worded, operation)) == {:response, "cancel"},
+               "#{inspect(operation)} was worded as a cancel"
+      end
+
+      assert Synthesizer.chosen_frame("alarm", [], enrichment(%{alarm_status: "cancelled"}, :cancel_alarm)) ==
+               {:response, "cancel"}
+    end
+
+    test "an operation's frame is chosen only when the entities fill its placeholders" do
+      running = %{timer_status: "started"}
+      duration = [%{entity_type: "duration", value: "5 minutes"}]
+
+      assert Synthesizer.chosen_frame("timer", duration, enrichment(running, :set_timer)) == {:response, "set"}
+      assert Synthesizer.chosen_frame("timer", [], enrichment(running, :set_timer)) == nil
+    end
+
+    test "an operation the domain names no frame for is worded by no slot-keyed frame" do
+      assert Synthesizer.chosen_frame("timer", [], enrichment(%{timer_status: "unread"}, :check_timer)) == nil
+    end
+
     test "a domain with no knowledge has no frame" do
-      assert Synthesizer.chosen_frame("no_such_domain", [], %{}) == nil
+      assert Synthesizer.chosen_frame("no_such_domain", [], enrichment(%{})) == nil
+    end
+  end
+
+  describe "synthesize_from_domain/5 with the unified context" do
+    # The synthesizer fallback is given the unified context
+    # (`SurfaceRealizer.synthesizer_opts/2`), which keeps the enrichment under
+    # `:enrichment` (`ContextBuilder.build/2`).
+    test "the enrichment's data and operation choose the frame the reply is worded from" do
+      cancelled = %{timer_status: "cancelled", cancelled_count: 1, timer_durations: ["5 minutes"]}
+      context = %{enrichment: %{enrichment_status: :success, enriched_data: cancelled, enrichment_operation: :cancel_timer}}
+
+      replies =
+        for _draw <- 1..20, uniq: true do
+          {:ok, reply} = Synthesizer.synthesize_from_domain("timer", "timer.cancel", [], 0.5, context: context)
+          reply
+        end
+
+      assert Enum.sort(replies) ==
+               Enum.sort(["Cancelled the timer set for 5 minutes.", "The timer set for 5 minutes is cancelled."])
+    end
+
+    test "a list the enrichment holds is said joined, as the lattice says it" do
+      cancelled = %{timer_status: "cancelled", cancelled_count: 2, timer_durations: ["5 minutes", "10 minutes"]}
+      context = %{enrichment: %{enrichment_status: :success, enriched_data: cancelled, enrichment_operation: :cancel_timer}}
+
+      {:ok, reply} = Synthesizer.synthesize_from_domain("timer", "timer.cancel", [], 0.5, context: context)
+
+      assert reply in [
+               "Cancelled 2 timers, set for 5 minutes, 10 minutes.",
+               "The 2 timers set for 5 minutes, 10 minutes are cancelled."
+             ]
     end
   end
 
@@ -418,12 +485,14 @@ defmodule Brain.Response.SynthesizerTest do
 
       # Context with all detailed fields
       detailed_context = %{
-        enrichment_status: :success,
-        enriched_data: %{
-          temperature: "55°F",
-          conditions: "cloudy",
-          humidity: "80%",
-          wind_speed: "10 mph"
+        enrichment: %{
+          enrichment_status: :success,
+          enriched_data: %{
+            temperature: "55°F",
+            conditions: "cloudy",
+            humidity: "80%",
+            wind_speed: "10 mph"
+          }
         }
       }
 
@@ -455,10 +524,12 @@ defmodule Brain.Response.SynthesizerTest do
       entities = [%{entity_type: "location", value: "Seattle"}]
 
       context = %{
-        enrichment_status: :success,
-        enriched_data: %{
-          temperature: "48°F",
-          conditions: "rainy"
+        enrichment: %{
+          enrichment_status: :success,
+          enriched_data: %{
+            temperature: "48°F",
+            conditions: "rainy"
+          }
         }
       }
 
