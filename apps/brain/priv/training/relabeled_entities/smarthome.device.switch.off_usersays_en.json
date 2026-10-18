@@ -1,0 +1,548 @@
+[
+  {
+    "data": [
+      {
+        "text": "can you turn off kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " for me"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "can you turn off "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the bathroom for me"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "can you turn off "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the kitchen for me"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "can you turn off the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " in my kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " off"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " off"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "red "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " off"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "romantic "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " off"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "to turn off the living room "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn all "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " off"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn garage "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " off"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn garage "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " off"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off all bedroom "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off all "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off all "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the boardroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off all "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off all the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " at home"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off all the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in bathroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off all the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the basement"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off all the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the breakfast room"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off all the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the clean room"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off all the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the office"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off bathroom "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off bedroom "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off every "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " in the boiler room"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off green "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in bathroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off porch "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off the family room "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off the garage "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off the garage "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off the kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off the kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " in my kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the family room"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the living room"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn off the master bedroom "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  }
+]
