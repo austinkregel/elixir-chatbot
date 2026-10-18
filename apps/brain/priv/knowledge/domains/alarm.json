@@ -18,6 +18,10 @@
       "Let me check your alarms."
     ]
   },
+  "operation_frames": {
+    "cancel_alarm": "cancel",
+    "set_alarm": "general"
+  },
   "enriched_response_frames": {
     "set_with_date_and_time": {
       "when": {"alarm_status": "set", "alarm_count": null},
