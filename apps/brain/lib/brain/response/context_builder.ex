@@ -19,7 +19,7 @@ defmodule Brain.Response.ContextBuilder do
 
   alias Brain.Graph.Reader
   alias Brain.Memory.RecurringPattern
-  alias Brain.Response.{Enricher, FactRetriever}
+  alias Brain.Response.Enricher
 
   require Logger
 
@@ -68,7 +68,7 @@ defmodule Brain.Response.ContextBuilder do
     memory_context = extract_memory_context(primary, analyses, world_id, opts)
     accumulator_context = extract_accumulator_context(primary)
     all_analyses_summary = build_all_analyses(analyses)
-    per_chunk_facts = build_per_chunk_facts(analyses, question_chunk, opts)
+    per_chunk_facts = build_per_chunk_facts(analyses)
 
     %{
       analysis: analysis_context,
@@ -127,52 +127,17 @@ defmodule Brain.Response.ContextBuilder do
 
   defp normalize_entities_for_summary(_), do: []
 
-  defp build_per_chunk_facts(analyses, question_chunk, opts) do
-    if Keyword.get(opts, :skip_per_chunk_facts, false) do
-      %{}
-    else
-      analyses
-      |> Enum.filter(&should_lookup_facts?(&1, question_chunk))
-      |> Enum.reduce(%{}, fn analysis, acc ->
-        facts = lookup_facts_for_chunk(analysis)
-
-        if facts == [] do
-          acc
-        else
-          Map.put(acc, Map.get(analysis, :chunk_index), facts)
-        end
-      end)
-    end
-  end
-
-  defp should_lookup_facts?(analysis, question_chunk) do
-    is_question = is_question?(analysis)
-    is_target = question_chunk != nil and analysis == question_chunk
-
-    is_question or is_target
-  end
-
-  defp is_question?(analysis) do
-    case Map.get(analysis, :speech_act) do
-      sa when is_map(sa) ->
-        Map.get(sa, :is_question, false) == true and Map.get(sa, :category) == :directive
-
-      _ ->
-        false
-    end
-  end
-
-  defp lookup_facts_for_chunk(analysis) do
-    text = Map.get(analysis, :text) || ""
-    entities = Map.get(analysis, :entities, [])
-
-    if text == "" and entities == [] do
-      []
-    else
-      safe_call(fn -> FactRetriever.get_facts_for_query(text, entities) end)
-    end
-  rescue
-    _ -> []
+  # The statements known about each chunk (`ChunkAnalysis.known_statements/1`
+  # of the beliefs and facts the pipeline retrieved for it), keyed by its
+  # index; a chunk nothing is known about has none. They are what the reply
+  # states (`Brain.Response.ContentSpecifier`), so nothing is looked up again
+  # here.
+  defp build_per_chunk_facts(analyses) do
+    for analysis <- analyses,
+        statements = ChunkAnalysis.known_statements(analysis),
+        statements != [],
+        into: %{},
+        do: {Map.get(analysis, :chunk_index), statements}
   end
 
   defp extract_analysis_context(primary, analyses, model) do
@@ -334,12 +299,15 @@ defmodule Brain.Response.ContextBuilder do
     # A failed enrichment's error is what the response answers
     # (`Brain.Response.DiscoursePlanner`), so it is carried as the service
     # returned it, with the service that returned it and the intent and slots
-    # it was asked with, which a reply to a clarifying question completes.
+    # it was asked with, which a reply to a clarifying question completes. A
+    # successful one carries the operation the service performed, which the
+    # domain frame reporting it is chosen by (`Synthesizer.chosen_frame/3`).
     %{
       enriched_data: Map.get(enriched, :enriched_data, %{}),
       enrichment_status: Map.get(enriched, :enrichment_status, :not_configured),
       enrichment_error: Map.get(enriched, :enrichment_error),
       enrichment_service: Map.get(enriched, :enrichment_service),
+      enrichment_operation: Map.get(enriched, :enrichment_operation),
       intent: intent,
       slots: slots,
       entity_familiarity: entity_familiarity,
