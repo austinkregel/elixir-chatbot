@@ -116,7 +116,7 @@ defmodule Brain.EmbeddingCachesTest do
 
   describe "a use of the world's caches while its vocabulary is rebuilt" do
     test "waits for the rebuild, which the caches never hold up, and is answered in the rebuilt vocabulary" do
-      {:ok, world} = create_test_world("embedding_caches_during_rebuild")
+      {:ok, world} = create_test_world("caches_during_rebuild")
       intent = ranked_intent!()
 
       # Hold the rebuild while it reads the world's episodes: the world cannot
