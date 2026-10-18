@@ -1,0 +1,395 @@
+[
+  {
+    "data": [
+      {
+        "text": "I need brighter "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " up"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness up by 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness up by 45"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness up for 15 percents in the bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness up till 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness up till 30"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level up by 50"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level up till 23"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " level up by 5 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " level up by 5 points in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " 20 percents brighter"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brighter for 20 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " shine 20 percents brighter"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn all "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " up"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " 20 percents brighter"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brighter for 20 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level up by 50"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level up till 23"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " shine 20 percents brighter"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level up till 5 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level up till 5 points in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn the living room "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " all the way up"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn up all red "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn up all the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn up "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness by 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn up "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness till 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn up the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the kitchen"
+      }
+    ]
+  }
+]
