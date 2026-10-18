@@ -654,7 +654,7 @@ defmodule Brain.Analysis.Pipeline do
         |> Enum.uniq()
     })
 
-    fact_result = verify_facts_in_chunk(pass1.text, relevant_entities, refined_speech_act, opts)
+    fact_result = verify_facts_in_chunk(pass1.text, pass1.pos_tags, relevant_entities, refined_speech_act, opts)
 
     if debug_pass2?, do: Logger.info("  pass2:fact_verify=#{System.monotonic_time(:millisecond) - t0}ms")
 
@@ -674,7 +674,9 @@ defmodule Brain.Analysis.Pipeline do
             source: Map.get(belief, :source),
             node_id: Map.get(belief, :node_id)
           }
-        end)
+        end),
+      related_facts: Enum.map(fact_result.facts, &%{id: &1.id, entity: &1.entity, fact: &1.fact}),
+      fact_alignment: fact_result.fact_alignment
     })
 
     # A chunk no intent was determined for has no slot schema, so no slots.
@@ -745,6 +747,8 @@ defmodule Brain.Analysis.Pipeline do
       |> Map.put(:missing_context, resolved_slots.missing_required)
       |> Map.put(:fact_verification, fact_result.verification)
       |> Map.put(:related_beliefs, fact_result.beliefs)
+      |> Map.put(:related_facts, fact_result.facts)
+      |> Map.put(:fact_alignment, fact_result.fact_alignment)
       |> Map.put(:epistemic_status, fact_result.status)
       |> Map.put(:feature_vector, feature_vector)
       |> Map.put(:pass, 2)
@@ -2446,56 +2450,90 @@ defmodule Brain.Analysis.Pipeline do
   # Epistemic Fact Verification
   # ============================================================================
 
-  # Verifies factual claims in a chunk against existing beliefs.
-  # Only runs for assertive statements (observations, claims). Returns
-  # epistemic context that can influence response generation.
-  # Returns: %{verification: result, beliefs: list, status: atom}
-  defp verify_facts_in_chunk(text, entities, speech_act, opts) do
-    if speech_act.category == :assertive do
-      world_id = world_id!(opts)
-      subject = extract_subject_from_entities(entities, text)
+  # What is known that bears on a chunk, by what the chunk does:
+  #
+  #   * an assertive chunk's claim is verified against the world's beliefs
+  #     about its subject (`FactIntegration.verify_fact/3`), and its epistemic
+  #     status says how it stands;
+  #   * a chunk that asks -- a directive that is a question or requests
+  #     information, as `ChunkFeatures` reads a question -- is answered from
+  #     what is known: the world's beliefs about its subject and the facts
+  #     about what it names (`Brain.Response.FactRetriever.facts_named_in/1`). A
+  #     question makes no claim, so its status stays :unchecked, and how the
+  #     known statements answer a polar question is its fact alignment
+  #     (`FactIntegration.polar_alignment/3`). Asking writes nothing.
+  #
+  # Returns: %{verification:, beliefs:, facts:, fact_alignment:, status:}
+  defp verify_facts_in_chunk(text, pos_tags, entities, speech_act, opts) do
+    cond do
+      speech_act.category == :assertive -> verify_claim(text, entities, opts)
+      asks?(speech_act) -> answer_from_knowledge(text, pos_tags, entities, opts)
+      true -> nothing_known()
+    end
+  end
 
-      case subject do
-        nil ->
-          record_verification_miss(:no_subject)
-          %{verification: nil, beliefs: [], status: :unchecked}
+  defp nothing_known, do: %{verification: nil, beliefs: [], facts: [], fact_alignment: nil, status: :unchecked}
 
-        subject_text ->
-          start_time = System.monotonic_time(:millisecond)
+  defp asks?(%{category: :directive} = speech_act),
+    do: Map.get(speech_act, :is_question) == true or Map.get(speech_act, :sub_type) == :request_information
 
-          beliefs = query_related_beliefs(world_id, subject_text)
-          verification = safe_verify_fact(world_id, subject_text, text)
+  defp asks?(_speech_act), do: false
 
-          status =
-            case verification do
-              {:verified, _} -> :verified
-              {:contradicted, _} -> :contradicted
-              {:uncertain, _} -> :uncertain
-              _ -> :unchecked
-            end
-
-          miss_reason =
-            cond do
-              status in [:verified, :contradicted] -> nil
-              beliefs == [] -> :no_beliefs
-              status == :uncertain -> :no_facts
-              true -> nil
-            end
-
-          if miss_reason, do: record_verification_miss(miss_reason)
-
-          duration_ms = System.monotonic_time(:millisecond) - start_time
-
-          Telemetry.emit_fact_verification(status, subject_text, duration_ms, %{
-            beliefs_count: length(beliefs),
-            verification_result: verification,
-            miss_reason: miss_reason
-          })
-
-          %{verification: verification, beliefs: beliefs, status: status}
+  defp answer_from_knowledge(text, pos_tags, entities, opts) do
+    beliefs =
+      case extract_subject_from_entities(entities, text) do
+        nil -> []
+        subject_text -> query_related_beliefs(world_id!(opts), subject_text)
       end
-    else
-      %{verification: nil, beliefs: [], status: :unchecked}
+
+    facts = Brain.Response.FactRetriever.facts_named_in(text)
+    alignment = FactIntegration.polar_alignment(text, pos_tags, ChunkAnalysis.statements(facts, beliefs))
+
+    %{nothing_known() | beliefs: beliefs, facts: facts, fact_alignment: alignment}
+  end
+
+  defp verify_claim(text, entities, opts) do
+    world_id = world_id!(opts)
+    subject = extract_subject_from_entities(entities, text)
+
+    case subject do
+      nil ->
+        record_verification_miss(:no_subject)
+        nothing_known()
+
+      subject_text ->
+        start_time = System.monotonic_time(:millisecond)
+
+        beliefs = query_related_beliefs(world_id, subject_text)
+        verification = safe_verify_fact(world_id, subject_text, text)
+
+        status =
+          case verification do
+            {:verified, _} -> :verified
+            {:contradicted, _} -> :contradicted
+            {:uncertain, _} -> :uncertain
+            _ -> :unchecked
+          end
+
+        miss_reason =
+          cond do
+            status in [:verified, :contradicted] -> nil
+            beliefs == [] -> :no_beliefs
+            status == :uncertain -> :no_facts
+            true -> nil
+          end
+
+        if miss_reason, do: record_verification_miss(miss_reason)
+
+        duration_ms = System.monotonic_time(:millisecond) - start_time
+
+        Telemetry.emit_fact_verification(status, subject_text, duration_ms, %{
+          beliefs_count: length(beliefs),
+          verification_result: verification,
+          miss_reason: miss_reason
+        })
+
+        %{nothing_known() | verification: verification, beliefs: beliefs, status: status}
     end
   end
 
@@ -2542,26 +2580,19 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  # The world is resolved by the caller, outside this rescue.
+  # The world's beliefs about the subject, keyed as `FactIntegration` keys a
+  # fact's belief (`FactIntegration.belief_predicate/1`). A subject no belief's
+  # predicate names has none.
   defp query_related_beliefs(world_id, subject_text) do
-    predicate = normalize_predicate(subject_text)
+    case FactIntegration.belief_predicate(subject_text) do
+      {:ok, predicate} ->
+        {:ok, beliefs} = BeliefStore.query_beliefs(world_id, subject: :world, predicate: predicate, min_confidence: 0.5)
+        beliefs
 
-    case BeliefStore.query_beliefs(world_id, subject: :world, predicate: predicate, min_confidence: 0.5) do
-      {:ok, beliefs} -> beliefs
-      _ -> []
+      :none ->
+        []
     end
-  rescue
-    _ -> []
   end
-
-  defp normalize_predicate(text) when is_binary(text) do
-    normalized = text |> String.downcase() |> String.trim()
-    String.to_existing_atom(normalized)
-  rescue
-    ArgumentError -> :unknown
-  end
-
-  defp normalize_predicate(_), do: :unknown
 
   defp safe_verify_fact(world_id, subject, text) do
     FactIntegration.verify_fact(world_id, subject, text)
