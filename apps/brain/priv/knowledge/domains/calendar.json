@@ -14,6 +14,9 @@
       "Here's what I found on your calendar."
     ]
   },
+  "operation_frames": {
+    "schedule_event": "create"
+  },
   "enriched_response_frames": {
     "scheduled_with_event_date_and_time": {
       "when": {"event_count": null, "cancelled_count": null},
