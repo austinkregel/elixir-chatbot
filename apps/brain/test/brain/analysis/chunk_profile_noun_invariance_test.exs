@@ -38,7 +38,6 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
   use ExUnit.Case, async: false
 
   alias Brain.Analysis.ChunkProfile
-  alias Brain.Analysis.FeatureExtractor
   alias Brain.Analysis.FeatureExtractor.ChunkFeatures
   alias Brain.Analysis.Pipeline
   alias Brain.ML.MicroClassifiers
@@ -171,14 +170,17 @@ defmodule Brain.Analysis.ChunkProfileNounInvarianceTest do
     end
   end
 
+  # The profile the pipeline gave the chunk, materialized from the vector its
+  # intent was classified from -- the one every later stage reads
+  # (`Brain.materialize_profiles/1` raises without it). Re-extracting a vector
+  # from the finished analysis measured a profile no stage is given.
   defp profiles_for_template(prefix, suffix, fillers) when is_list(fillers) do
     Enum.map(fillers, fn filler ->
       text = prefix <> filler <> suffix
       model = Pipeline.process(text, world_id: "default")
 
-      [chunk | _] = model.analyses
-      {feature_vector, _word_feats} = FeatureExtractor.extract(chunk)
-      ChunkProfile.materialize(chunk, feature_vector)
+      [%{profile: %ChunkProfile{} = profile} | _] = model.analyses
+      profile
     end)
   end
 
