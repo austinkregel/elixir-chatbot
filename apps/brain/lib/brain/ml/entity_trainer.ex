@@ -50,10 +50,20 @@ defmodule Brain.ML.EntityTrainer do
   Folds are assigned by template (`Brain.ML.NerGold.template_folds/2`), so
   the rows of one template are validated together, on a model that saw none
   of them; assigned row by row, a template's rows were split across folds and
-  a validation row's sentence had been seen in training. The pair of
-  strengths with the best exact span-and-type F1 over the folds' pooled
-  counts is chosen, ties going to the smaller strengths, and the model keeps
-  every pair's counts per fold in `cross_validation`.
+  a validation row's sentence had been seen in training.
+
+  The pair of strengths is chosen by the one-standard-error rule
+  (`Brain.ML.OneStandardError`): each pair's score on a fold is the exact
+  span-and-type F1 of that fold's rows, over the folds that hold a gold span;
+  the best pair has the highest mean, and the chosen one is the most
+  regularized pair whose mean is within one standard error of the best's --
+  the largest emission smoothing, then the largest transition smoothing. The
+  F1 is flat across many smoothings, and the smallest of them, chosen when
+  the highest mean won, lets an unseen (feature, tag) pair veto a tag: one
+  prefix seen once under a type read a name as that type. Fewer than two
+  folds holding a gold span give no standard error and raise. The model keeps
+  every pair's counts per fold, pooled F1, mean F1 and standard error, and
+  the rule's best pair, threshold and scored folds, in `cross_validation`.
   """
 
   # Measured 2026-10-17 on the NER training split (1,828 rows, 1,601
@@ -63,14 +73,17 @@ defmodule Brain.ML.EntityTrainer do
   # template the choice fell on the smallest strengths of every grid tried, so
   # each grid was extended below it, until it is {1e-7, 1e-11} (F1 83.33),
   # inside this grid: 83.32 at {1e-8, 1e-12} and 83.29 at {1e-9, 1e-12}. The
-  # best F1 of every smoothing from 1e-9 to 1e-4 is within 0.26 of it. An unseen
-  # (feature, tag) pair stays close to a veto. Zero is not a candidate, since
-  # it makes such a pair impossible.
+  # best F1 of every smoothing from 1e-9 to 1e-4 is within 0.26 of it, and at
+  # such a smoothing an unseen (feature, tag) pair stays close to a veto. Zero
+  # is not a candidate, since it makes such a pair impossible. Measured
+  # 2026-10-18 (1,898 rows, 1,576 templates, development environment) with
+  # the one-standard-error rule: the best mean fold F1 is 83.22 at {1e-7,
+  # 1e-10}, standard error 0.42, and the rule chooses {0.1, 1e-9} (mean 82.89).
   @smoothing_candidates [1.0e-9, 1.0e-8, 1.0e-7, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0]
   @transition_smoothing_candidates [1.0e-12, 1.0e-11, 1.0e-10, 1.0e-9, 1.0e-8, 1.0e-7, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0, 10.0, 100.0]
   @folds 5
 
-  alias Brain.ML.{EvaluationStore, NerGold}
+  alias Brain.ML.{EvaluationStore, NerGold, OneStandardError}
   require Logger
 
   @type bio_tag :: String.t()
@@ -88,16 +101,32 @@ defmodule Brain.ML.EntityTrainer do
 
   @typedoc """
   How `train/1` chose the strengths: the number of folds and of templates the
-  rows fell in, the pair chosen, and for every pair tried `{smoothing,
-  transition_smoothing}` the F1 of the folds' pooled counts and each fold's
-  `{tp, fp, fn}` of exact spans, fold 0 first. A fold model
-  (`fold_models/2`) has none.
+  rows fell in, the pair chosen, the one-standard-error rule's best pair, its
+  mean F1 and standard error, the threshold the chosen pair's mean reaches
+  and the folds scored, and for every pair tried `{smoothing,
+  transition_smoothing}` the F1 of the folds' pooled counts, the mean and
+  standard error of the scored folds' F1, and each fold's `{tp, fp, fn}` of
+  exact spans, fold 0 first. A fold model (`fold_models/2`) has none.
   """
   @type cross_validation :: %{
           folds: pos_integer(),
           templates: pos_integer(),
           chosen: {float(), float()},
-          by_strengths: %{{float(), float()} => %{f1: float(), folds: [{non_neg_integer(), non_neg_integer(), non_neg_integer()}]}}
+          one_standard_error: %{
+            best: {float(), float()},
+            mean: float(),
+            standard_error: float(),
+            threshold: float(),
+            scored_folds: [non_neg_integer()]
+          },
+          by_strengths: %{
+            {float(), float()} => %{
+              f1: float(),
+              mean_f1: float(),
+              standard_error: float(),
+              folds: [{non_neg_integer(), non_neg_integer(), non_neg_integer()}]
+            }
+          }
         }
 
   @doc """
@@ -308,12 +337,13 @@ defmodule Brain.ML.EntityTrainer do
   end
 
   # The cross-validation report (`t:cross_validation/0`): the emission and
-  # transition smoothing strengths with the best exact span-and-type F1 over
-  # the folds' pooled counts, every pair of candidates tried, ties going to
-  # the smaller strengths, with every pair's counts per fold. Folds are
+  # transition smoothing strengths chosen by the one-standard-error rule over
+  # the exact span-and-type F1 of each fold that holds a gold span, every pair
+  # of candidates tried, with every pair's counts per fold. Folds are
   # assigned by template; every row is validated once, in its template's
   # fold, and a fold no template fell in validates nothing. A fold holding
-  # every row leaves nothing to train on and raises.
+  # every row leaves nothing to train on and raises, and so do fewer than two
+  # folds holding a gold span.
   defp select_smoothing(rows, sequences) do
     folds = NerGold.template_folds(rows, @folds)
     indexed = Enum.zip(sequences, folds)
@@ -341,19 +371,41 @@ defmodule Brain.ML.EntityTrainer do
         end
       end)
 
-    by_strengths =
+    counts_by_strengths =
       Map.new(hd(per_fold), fn {strengths, _counts} ->
-        fold_counts = Enum.map(per_fold, &Map.fetch!(&1, strengths))
-        {strengths, %{f1: fold_counts |> Enum.reduce(&add_counts/2) |> f1(), folds: fold_counts}}
+        {strengths, Enum.map(per_fold, &Map.fetch!(&1, strengths))}
       end)
 
-    {chosen, _result} =
-      Enum.max_by(by_strengths, fn {{smoothing, transition_smoothing}, result} -> {result.f1, -smoothing, -transition_smoothing} end)
+    # A fold is scored when it holds a gold span: its F1 is then defined, and
+    # which folds hold one does not depend on the strengths.
+    scored_folds =
+      for {{tp, _fp, fn_}, k} <- counts_by_strengths |> Map.values() |> hd() |> Enum.with_index(), tp + fn_ > 0, do: k
+
+    if length(scored_folds) < 2 do
+      raise ArgumentError,
+            "EntityTrainer: only #{length(scored_folds)} of #{@folds} folds hold a gold span; " <>
+              "the one-standard-error rule needs at least two scored folds"
+    end
+
+    # Larger is more regularized: the emission smoothing first, then the
+    # transition smoothing.
+    rule =
+      counts_by_strengths
+      |> Enum.sort()
+      |> Enum.map(fn {strengths, fold_counts} -> {strengths, scored_folds |> Enum.map(&Enum.at(fold_counts, &1)) |> Enum.map(&f1/1)} end)
+      |> OneStandardError.choose(& &1)
+
+    by_strengths =
+      Map.new(counts_by_strengths, fn {strengths, fold_counts} ->
+        %{mean: mean, standard_error: se} = Map.fetch!(rule.scores, strengths)
+        {strengths, %{f1: fold_counts |> Enum.reduce(&add_counts/2) |> f1(), mean_f1: mean, standard_error: se, folds: fold_counts}}
+      end)
 
     %{
       folds: @folds,
       templates: rows |> Enum.map(&NerGold.template!/1) |> Enum.uniq() |> length(),
-      chosen: chosen,
+      chosen: rule.chosen,
+      one_standard_error: Map.merge(Map.take(rule, [:best, :mean, :standard_error, :threshold]), %{scored_folds: scored_folds}),
       by_strengths: by_strengths
     }
   end
