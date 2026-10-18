@@ -1,0 +1,32 @@
+[
+  {
+    "data": [
+      {
+        "text": "kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " are too bright"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "red "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " are too bright"
+      }
+    ]
+  }
+]
