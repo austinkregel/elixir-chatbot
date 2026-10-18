@@ -9,12 +9,22 @@ defmodule Brain.Analysis.SpeechActClassifier do
   - Expressives: thanks, apologies, greetings
   - Declaratives: performatives
 
-  Uses four cheap analysis voters in pass 1 (this module's `classify/2`):
+  Uses five cheap analysis voters in pass 1 (this module's `classify/2`):
 
   1. Structural Analysis - sentence structure (questions, imperatives)
   2. Keyword Analysis - domain-specific keywords
   3. Pragmatic Markers - politeness, urgency, etc.
   4. Memory Analysis - similar prior episodes
+  5. Lexical Evidence - what the words say about the speech act, learned from
+     the intent training rows (`Brain.Analysis.SpeechActTable`'s `evidence`):
+     a one-word "Hello" is read as a greeting from every greeting intent's
+     utterances. It votes when the words are positively associated with a
+     speech act, with that association's strength.
+
+  The structural voter's exclamation and the keyword voter measure a category
+  only, so they vote for it without a sub-type; the winning category's
+  sub-type is that of its strongest vote naming one, and `:general` when no
+  vote does.
 
   The `:intent_full` model is **not** invoked here. The pipeline runs full
   feature extraction and `MicroClassifiers.classify_vector(:intent_full, ...)`
@@ -26,7 +36,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
   Results are combined using confidence-weighted voting.
   """
 
-  alias Brain.Analysis.{SpeechActResult, SpeechActTable}
+  alias Brain.Analysis.{LexicalEvidence, SpeechActResult, SpeechActTable}
   alias Brain.Lattice
   alias Brain.Lattice.Candidate, as: LatticeCandidate
   alias Brain.ML.{POSTagger, Tokenizer}
@@ -45,17 +55,22 @@ defmodule Brain.Analysis.SpeechActClassifier do
   ## Options
     - `:world_id` - Required. The world whose episodic memory the memory voter reads.
     - `:entities` - Pre-extracted entities to use for arbitration (default: [])
+    - `:language` - the `Brain.Language` code whose speech-act evidence the
+      lexical voter reads. Absent means English; an unsupported code raises.
+    - `:speech_act_evidence` - a `Brain.Analysis.LexicalEvidence` model used
+      in place of the loaded table's `evidence`. Training passes each row's
+      out-of-fold model (`Brain.Analysis.SpeechActTable.fold_evidence/3`).
   """
   def classify(text, opts) when is_binary(text) do
     entities = Keyword.get(opts, :entities, [])
-    analyses = run_all_analyses(text, entities, world_id!(opts, :classify))
+    analyses = run_all_analyses(text, entities, world_id!(opts, :classify), evidence!(opts))
     combine_analyses(analyses, text)
   end
 
   @doc "Returns detailed analysis with all individual scores for debugging/learning.\n\nTakes the same options as `classify/2`; `:world_id` is required.\n"
   def analyze(text, opts) when is_binary(text) do
     entities = Keyword.get(opts, :entities, [])
-    analyses = run_all_analyses(text, entities, world_id!(opts, :analyze))
+    analyses = run_all_analyses(text, entities, world_id!(opts, :analyze), evidence!(opts))
     result = combine_analyses(analyses, text)
 
     %{
@@ -64,8 +79,29 @@ defmodule Brain.Analysis.SpeechActClassifier do
       structural_analysis: analyses.structural,
       keyword_analysis: analyses.keyword,
       pragmatic_analysis: analyses.pragmatic,
-      memory_analysis: analyses.memory
+      memory_analysis: analyses.memory,
+      lexical_analysis: analyses.lexical
     }
+  end
+
+  defp evidence!(opts) do
+    case Keyword.fetch(opts, :speech_act_evidence) do
+      {:ok, %LexicalEvidence{} = evidence} ->
+        evidence
+
+      {:ok, other} ->
+        raise ArgumentError,
+              "SpeechActClassifier: :speech_act_evidence must be a LexicalEvidence model, got #{inspect(other, limit: 3)}"
+
+      :error ->
+        language =
+          case Keyword.fetch(opts, :language) do
+            {:ok, code} -> Brain.Language.validate!(code)
+            :error -> Brain.Language.resolve!(nil)
+          end
+
+        SpeechActTable.loaded!(language).evidence
+    end
   end
 
   @doc """
@@ -146,7 +182,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
     end
   end
 
-  defp run_all_analyses(text, _entities, world_id) do
+  defp run_all_analyses(text, _entities, world_id, evidence) do
     normalized = normalize_text(text)
 
     %{
@@ -155,8 +191,19 @@ defmodule Brain.Analysis.SpeechActClassifier do
       structural: analyze_structure(text, normalized),
       keyword: analyze_keywords(normalized),
       pragmatic: analyze_pragmatics(text, normalized),
-      memory: analyze_with_memory(text, world_id)
+      memory: analyze_with_memory(text, world_id),
+      lexical: analyze_lexical(text, evidence)
     }
+  end
+
+  defp analyze_lexical(text, evidence) do
+    case SpeechActTable.read(evidence, text) do
+      {:ok, {category, sub_type}, value} ->
+        %{category: category, sub_type: sub_type, confidence: value, source: :lexical}
+
+      :none ->
+        %{category: nil, sub_type: nil, confidence: 0.0, source: :lexical}
+    end
   end
 
   defp empty_intent_result do
@@ -198,8 +245,9 @@ defmodule Brain.Analysis.SpeechActClassifier do
         is_declarative and not is_question ->
           {:assertive, :statement, 0.7}
 
+        # An exclamation says the act is expressive, not which expressive.
         is_exclamatory ->
-          {:expressive, :general, 0.5}
+          {:expressive, nil, 0.5}
 
         true ->
           {:assertive, :statement, 0.2}
@@ -221,11 +269,12 @@ defmodule Brain.Analysis.SpeechActClassifier do
 
   defp analyze_keywords(normalized) do
     case Brain.ML.SpeechActClassifierSimple.classify(normalized) do
+      # The keyword classifier is trained on categories, so it names no sub-type.
       {:ok, %{label: label, confidence: confidence}} when confidence > 0.2 ->
         %{
           scores: %{label => confidence},
           category: label,
-          sub_type: :general,
+          sub_type: nil,
           confidence: confidence,
           source: :keyword
         }
@@ -530,15 +579,25 @@ defmodule Brain.Analysis.SpeechActClassifier do
         votes
       end
 
+    # The words' evidence votes whenever it is positive, with its strength.
+    votes =
+      if analyses.lexical.category != nil do
+        [{analyses.lexical.category, analyses.lexical.sub_type, analyses.lexical.confidence, :lexical} | votes]
+      else
+        votes
+      end
+
     votes
   end
 
   defp apply_weights(votes) do
+    # The lexical evidence's strength is taken as it is, unweighted.
     source_weights = %{
       model: 1.5,
       memory: 1.4,
       keyword: 1.05,
       structural: 1.0,
+      lexical: 1.0,
       pragmatic: 0.8
     }
 
@@ -566,8 +625,13 @@ defmodule Brain.Analysis.SpeechActClassifier do
       {winning_category, _} = Enum.max_by(category_scores, fn {_, score} -> score end)
       category_votes = Map.get(by_category, winning_category, [])
 
-      {_, winning_sub_type, _, _} =
-        Enum.max_by(category_votes, fn {_, _, conf, _} -> conf end)
+      # The sub-type of the category's strongest vote that names one; a vote
+      # that measures only the category names none.
+      winning_sub_type =
+        case Enum.filter(category_votes, fn {_, sub_type, _, _} -> sub_type != nil end) do
+          [] -> :general
+          naming -> naming |> Enum.max_by(fn {_, _, conf, _} -> conf end) |> elem(1)
+        end
 
       max_conf = Enum.max(Enum.map(weighted_votes, fn {_, _, conf, _} -> conf end))
 
@@ -640,8 +704,7 @@ defmodule Brain.Analysis.SpeechActClassifier do
 
     indicators =
       if analyses.keyword.confidence > 0.3 do
-        kw_st = Map.get(analyses.keyword, :sub_type, :none)
-        ["keyword:#{kw_st}" | indicators]
+        ["keyword:#{analyses.keyword.category}" | indicators]
       else
         indicators
       end
