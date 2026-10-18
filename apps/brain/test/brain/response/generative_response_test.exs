@@ -220,13 +220,12 @@ defmodule Brain.Response.GenerativeResponseTest do
       assert is_binary(response)
       assert String.length(response) > 0
 
-      assert type in [
-               :synthesized,
-               :memory_adapted,
-               :template,
-               :special_handler,
-               :fallback
-             ]
+      # The suite's world has no Weather credentials, so the weather intent is
+      # answered with the reply planned for the service's error
+      # (`{:service_reply, enrichment}`, generate/4's contract), asked with the
+      # entity's location.
+      assert {:service_reply,
+              %{enrichment_service: :weather, enrichment_error: :missing_credentials, slots: %{location: "Seattle"}}} = type
     end
 
     test "handles unknown intent gracefully" do
@@ -263,13 +262,16 @@ defmodule Brain.Response.GenerativeResponseTest do
     test "handles unusual location names" do
       entities = [%{entity_type: "location", value: "Timbuktu"}]
 
-      {:ok, response, _type} =
+      {:ok, response, type} =
         Generator.generate("weather.query", entities, "Weather in Timbuktu", @opts)
 
       assert is_binary(response)
 
-      assert String.contains?(response, "Timbuktu") or
-               String.contains?(String.downcase(response), "location")
+      # The suite's world has no Weather credentials: the unusual location is
+      # what the service was asked about, and the reply says the service is not
+      # set up (`{:service_reply, enrichment}`, generate/4's contract).
+      assert {:service_reply, %{enrichment_error: :missing_credentials, slots: %{location: "Timbuktu"}}} = type
+      assert response =~ "Weather"
     end
 
     test "handles multiple entities together" do
