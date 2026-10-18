@@ -26,15 +26,17 @@ defmodule Mix.Tasks.TrainSpanReliability do
   never read.
 
   Printed: the cross-validated F1 per prior strength and number of confidence
-  bins and the ones chosen with their thresholds, with each fold's counts at
-  them, which sources report a confidence, each source's readings per
+  bins, with the mean and standard error of its F1 per fold, the
+  one-standard-error rule's best pair and threshold, and the ones chosen with
+  their thresholds, with each fold's counts at them, which sources report a confidence, each source's readings per
   confidence bin, every measured `{source, type}` pair with its counts and
   reliability, every pair the gold standard cannot measure, with how many
   training readings it had, the cross-validated F1 of deciding unresolved
   spans again -- with no span, with the whole span's hypotheses under the
   first decision's thresholds and under thresholds of their own, and with
-  the extent decided first, per extent prior strength -- and every extent
-  pair with its counts and reliability.
+  the extent decided first, per extent prior strength, with the rule's choice
+  among those strengths -- and every extent pair with its counts and
+  reliability.
 
   ## Why the application is not started
 
@@ -189,11 +191,14 @@ defmodule Mix.Tasks.TrainSpanReliability do
     |> Enum.sort_by(&elem(&1, 0))
     |> Enum.each(fn {strength, r} ->
       Mix.shell().info(
-        "  #{pad(strength, 6)} F1 #{pct(r.f1)}  extent min_score #{fmt(r.extent_min_score)}  extent min_margin " <>
+        "  #{pad(strength, 6)} F1 #{pct(r.f1)}  fold mean #{pct(r.mean_f1)} +- #{pct(r.standard_error)}  " <>
+          "extent min_score #{fmt(r.extent_min_score)}  extent min_margin " <>
           "#{fmt(r.extent_min_margin)}  min_score #{fmt(r.min_score)}  min_margin #{fmt(r.min_margin)}  " <>
           "decided #{r.decided}, correct #{r.correct}, spans weighed #{r.extent_points}"
       )
     end)
+
+    print_rule("extent prior strength", cv.extent_prior_strength)
 
     Mix.shell().info(
       "Chosen: extent prior strength #{extent.prior_strength}, extent min_score #{fmt(extent.min_score)}, " <>
@@ -238,10 +243,13 @@ defmodule Mix.Tasks.TrainSpanReliability do
     |> Enum.sort_by(&elem(&1, 0))
     |> Enum.each(fn {{strength, bins}, r} ->
       Mix.shell().info(
-        "  #{pad(strength, 6)} bins #{pad(bins, 3)} F1 #{pct(r.f1)}  min_score #{fmt(r.min_score)}  min_margin #{fmt(r.min_margin)}  " <>
+        "  #{pad(strength, 6)} bins #{pad(bins, 3)} F1 #{pct(r.f1)}  fold mean #{pct(r.mean_f1)} +- #{pct(r.standard_error)}  " <>
+          "min_score #{fmt(r.min_score)}  min_margin #{fmt(r.min_margin)}  " <>
           "decided #{r.decided}, correct #{r.correct}, gold spans #{r.gold}"
       )
     end)
+
+    print_rule("prior strength and bins", model.selection)
 
     Mix.shell().info(
       "Chosen: prior strength #{model.prior_strength}, confidence bins #{model.confidence_bins}, " <>
@@ -292,8 +300,15 @@ defmodule Mix.Tasks.TrainSpanReliability do
     end
   end
 
+  defp print_rule(what, rule) do
+    Mix.shell().info(
+      "One-standard-error rule (#{what}): best #{inspect(rule.best)} at fold mean #{pct(rule.mean)} +- #{pct(rule.standard_error)}, " <>
+        "threshold #{pct(rule.threshold)}, chosen #{inspect(rule.chosen)}, folds scored #{inspect(rule.scored_folds)}"
+    )
+  end
+
   defp pad(value, width), do: value |> to_string() |> String.pad_trailing(width)
-  defp pct(rate), do: "#{Float.round(rate * 100, 1)}%"
+  defp pct(rate), do: "#{Float.round(rate * 100, 2)}%"
   defp fmt(:infinity), do: "infinity"
   defp fmt(value) when is_float(value), do: Float.round(value, 3) |> to_string()
   defp fmt(value), do: to_string(value)
