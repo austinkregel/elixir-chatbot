@@ -282,29 +282,31 @@ defmodule Brain.Analysis.RacingAnalyzer do
     end)
   end
 
+  # The `:intent_full` classifier's answer for the vector the pipeline
+  # classified the text's intent from (`analysis.feature_vector`), the kind it
+  # was trained on. A vector extracted again from the finished analysis holds
+  # what pass 2 added after classifying (its slots, its refined speech act),
+  # which no training vector holds. A classifier that cannot answer raises.
   defp analyze_with_model(text, world_id) do
-    alias Brain.Analysis.{FeatureExtractor, Pipeline}
+    alias Brain.Analysis.Pipeline
     alias Brain.ML.MicroClassifiers
 
-    if MicroClassifiers.ready?() do
-      analysis = Pipeline.analyze_chunk(text, world_id: world_id)
-      {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
-
-      case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
-        {:ok, intent, confidence} ->
-          AnalyzerResult.new(:model, intent, confidence,
-            confidence_estimate: confidence,
-            indicators: ["ml_model"]
-          )
-
-        _ ->
-          AnalyzerResult.new(:model, nil, 0.0)
+    feature_vector =
+      case Pipeline.analyze_chunk(text, world_id: world_id) do
+        %{feature_vector: [_ | _] = vector} -> vector
+        other -> raise "RacingAnalyzer: the pipeline kept no classified feature vector for #{inspect(text)}: #{inspect(Map.get(other, :feature_vector))}"
       end
-    else
-      AnalyzerResult.new(:model, nil, 0.0)
+
+    case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
+      {:ok, intent, confidence} ->
+        AnalyzerResult.new(:model, intent, confidence,
+          confidence_estimate: confidence,
+          indicators: ["ml_model"]
+        )
+
+      other ->
+        raise "RacingAnalyzer: the intent classifier could not classify #{inspect(text)}: #{inspect(other)}"
     end
-  rescue
-    _ -> AnalyzerResult.new(:model, nil, 0.0)
   end
 
   defp analyze_structure(text) do
