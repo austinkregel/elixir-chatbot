@@ -451,4 +451,32 @@ defmodule Brain.Response.ConditionEvaluatorTest do
              }
     end
   end
+
+  describe "validate!/1" do
+    test "nil, blank, and every condition type with the value it takes are :ok" do
+      for condition <- [
+            nil,
+            "",
+            "has_entity:person",
+            "missing_entity:location AND confidence:high",
+            "enrichment_success",
+            "NOT enrichment_success",
+            "slot_filled:location OR NOT enriched:temperature"
+          ] do
+        assert ConditionEvaluator.validate!(condition) == :ok, "#{inspect(condition)} should be accepted"
+      end
+    end
+
+    test "an unknown condition type raises, naming it" do
+      assert_raise ArgumentError, ~r/names "unknown_type", which is no condition type/, fn ->
+        ConditionEvaluator.validate!("has_entity:person AND unknown_type:value")
+      end
+    end
+
+    test "a type given the wrong value raises" do
+      assert_raise ArgumentError, ~r/gives has_entity no name/, fn -> ConditionEvaluator.validate!("has_entity:") end
+      assert_raise ArgumentError, ~r/it takes one of high, medium, low/, fn -> ConditionEvaluator.validate!("confidence:great") end
+      assert_raise ArgumentError, ~r/enrichment_success takes none/, fn -> ConditionEvaluator.validate!("enrichment_success:yes") end
+    end
+  end
 end
