@@ -3,18 +3,12 @@
     {
       "index": 0,
       "text": "Play some music",
-      "entities": [
-        {
-          "type": "given_name",
-          "value": "Play",
-          "confidence": 0.65
-        }
-      ],
+      "entities": [],
       "response_strategy": "hedged_response",
-      "detected_intent": "knowledge.capital",
       "speech_act_category": "directive",
+      "speech_act_confidence": 0.97,
+      "detected_intent": "music.play",
       "speech_act_type": "command",
-      "speech_act_confidence": 1.0,
       "discourse_addressee": "bot",
       "discourse_self_referential": "false",
       "slots_filled": [],
