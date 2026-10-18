@@ -22,6 +22,26 @@ defmodule Brain.Response.Formatting do
   def format_value(value), do: inspect(value)
 
   @doc """
+  The words a value is said as in a reply, or nil when it is none: a
+  non-blank string as it is, a number as written, and a non-empty list of
+  those joined as `format_value/1` joins one. `nil`, a blank string, `[]`, a
+  boolean, any other atom (a label, such as `capability: :unknown`), a map,
+  and a list holding anything else are not words.
+
+  The one rule both the synthesizer and the lattice realizer fill a
+  `$placeholder` by (`Brain.Response.Synthesizer`,
+  `Brain.Response.PhraseLatticeRealizer`).
+  """
+  @spec sayable(term()) :: String.t() | nil
+  def sayable(value) when is_list(value) do
+    if value != [] and Enum.all?(value, &(sayable(&1) != nil and not is_list(&1))), do: format_value(value)
+  end
+
+  def sayable(value) when is_binary(value), do: if(String.trim(value) == "", do: nil, else: value)
+  def sayable(value) when is_number(value), do: format_value(value)
+  def sayable(_value), do: nil
+
+  @doc """
   Substitutes enrichment placeholders ($key and @key) in text with values
   from the enriched_data map. Skips nested map values.
   """
