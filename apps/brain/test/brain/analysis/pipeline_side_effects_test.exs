@@ -38,6 +38,12 @@ defmodule Brain.Analysis.PipelineSideEffectsTest do
       assert_writes_nothing(fn -> Pipeline.process(@directive, world_id: @world_id, side_effects: false) end)
     end
 
+    test "a lattice fragment vectorized, as gen_lattice_data does it" do
+      assert_writes_nothing(fn ->
+        assert {:ok, _vector} = Brain.Lattice.FragmentVectorizer.vectorize_fragment_text(@directive, @world_id)
+      end)
+    end
+
     test "with a user_id", %{user_id: user_id} do
       Pipeline.analyze_chunk(@directive, world_id: @world_id, user_id: user_id, side_effects: false)
       Pipeline.process(@directive, world_id: @world_id, user_id: user_id, side_effects: false)
