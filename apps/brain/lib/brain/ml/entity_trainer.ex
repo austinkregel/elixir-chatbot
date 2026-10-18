@@ -39,7 +39,13 @@ defmodule Brain.ML.EntityTrainer do
   A token's features (its form, affixes, shape, neighbours) are combined as a
   naive Bayes product: `log P(tag) + Σ_f [log P(tag | f) - log P(tag)]`. A
   feature as common under every tag (`not_first`) adds nothing, and a decisive
-  one (`token:kitchen`) dominates. `P(tag | f)` is smoothed toward the tag prior
+  one (`token:kitchen`) dominates. The product is over the features that add
+  to one another (`informative_features/2`): the affixes and digit features
+  are functions of the lowercased form, so a form the training rows showed is
+  weighed alone, and an unseen one by its most specific seen prefix and
+  suffix. Counted beside the form they repeated its evidence, and a word's
+  spelling outvoted its neighbours: "Austin", seen only in introductions, was
+  read as a person after "the weather in". Training counts every feature. `P(tag | f)` is smoothed toward the tag prior
   with a Dirichlet of strength `smoothing`, chosen by 5-fold cross-validation
   on the training rows. (An earlier version averaged
   `P(tag | f)` over the features, which let the shape features outvote every
@@ -79,6 +85,10 @@ defmodule Brain.ML.EntityTrainer do
   # 2026-10-18 (1,898 rows, 1,576 templates, development environment) with
   # the one-standard-error rule: the best mean fold F1 is 83.22 at {1e-7,
   # 1e-10}, standard error 0.42, and the rule chooses {0.1, 1e-9} (mean 82.89).
+  # Measured 2026-10-18 on the same rows once the emission weighs only the
+  # features that add to one another (`informative_features/2`): the best mean
+  # fold F1 is 83.47 at {0.01, 0.001}, standard error 0.54, and the rule
+  # chooses {0.1, 100.0} (mean 83.26).
   @smoothing_candidates [1.0e-9, 1.0e-8, 1.0e-7, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0]
   @transition_smoothing_candidates [1.0e-12, 1.0e-11, 1.0e-10, 1.0e-9, 1.0e-8, 1.0e-7, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0, 10.0, 100.0]
   @folds 5
@@ -553,62 +563,58 @@ defmodule Brain.ML.EntityTrainer do
     {weights, totals}
   end
 
-  defp extract_token_features(token, all_tokens, idx) do
-    features = [
-      "token:#{String.downcase(token)}",
-      "prefix2:#{String.slice(String.downcase(token), 0, 2)}",
-      "prefix3:#{String.slice(String.downcase(token), 0, 3)}",
-      "suffix2:#{String.slice(String.downcase(token), -2, 2)}",
-      "suffix3:#{String.slice(String.downcase(token), -3, 3)}",
-      if(capitalized?(token)) do
-        "is_capitalized"
-      else
-        "not_capitalized"
-      end,
-      if(all_caps?(token)) do
-        "is_all_caps"
-      else
-        "not_all_caps"
-      end,
-      if(has_digit?(token)) do
-        "has_digit"
-      else
-        "no_digit"
-      end,
-      if(all_digits?(token)) do
-        "is_number"
-      else
-        "not_number"
-      end,
-      if(idx == 0) do
-        "is_first"
-      else
-        "not_first"
-      end,
-      if(idx == length(all_tokens) - 1) do
-        "is_last"
-      else
-        "not_last"
-      end
-    ]
+  # Every feature of a token, as training counts them.
+  defp extract_token_features(token, all_tokens, idx), do: token |> token_features(all_tokens, idx) |> Map.values()
 
-    prev_features =
-      if idx > 0 do
-        prev_token = Enum.at(all_tokens, idx - 1)
-        ["prev_token:#{String.downcase(prev_token)}"]
-      else
-        ["prev_token:<START>"]
-      end
+  # A token's features by kind. The form, its affixes and the digit features
+  # are read from the lowercased token; the case features from the token as
+  # written; the position and neighbour features from the sentence.
+  defp token_features(token, all_tokens, idx) do
+    form = String.downcase(token)
 
-    next_features =
-      if idx < length(all_tokens) - 1 do
-        next_token = Enum.at(all_tokens, idx + 1)
-        ["next_token:#{String.downcase(next_token)}"]
+    %{
+      form: "token:#{form}",
+      prefix2: "prefix2:#{String.slice(form, 0, 2)}",
+      prefix3: "prefix3:#{String.slice(form, 0, 3)}",
+      suffix2: "suffix2:#{String.slice(form, -2, 2)}",
+      suffix3: "suffix3:#{String.slice(form, -3, 3)}",
+      capitalized: if(capitalized?(token), do: "is_capitalized", else: "not_capitalized"),
+      all_caps: if(all_caps?(token), do: "is_all_caps", else: "not_all_caps"),
+      digit: if(has_digit?(token), do: "has_digit", else: "no_digit"),
+      number: if(all_digits?(token), do: "is_number", else: "not_number"),
+      first: if(idx == 0, do: "is_first", else: "not_first"),
+      last: if(idx == length(all_tokens) - 1, do: "is_last", else: "not_last"),
+      previous: if(idx > 0, do: "prev_token:#{all_tokens |> Enum.at(idx - 1) |> String.downcase()}", else: "prev_token:<START>"),
+      next:
+        if(idx < length(all_tokens) - 1, do: "next_token:#{all_tokens |> Enum.at(idx + 1) |> String.downcase()}", else: "next_token:<END>")
+    }
+  end
+
+  # The features a token's emission is weighed on: those that say something
+  # the others do not. The affixes and the digit features are functions of the
+  # lowercased form, and a two-letter affix of the three-letter one, so beside
+  # a form the training rows showed they repeat its evidence instead of adding
+  # to it: counted as independent, a word's spelling outvoted its neighbours
+  # four to one ("Austin", seen only in introductions, read as a person after
+  # "the weather in"). A seen form is weighed alone; an unseen one by its most
+  # specific seen prefix and suffix, and its digits. Case, position and
+  # neighbours are not functions of the form and are always weighed.
+  defp informative_features(features, model) do
+    seen? = &Map.has_key?(model.feature_weights, &1)
+
+    spelling =
+      if seen?.(features.form) do
+        [features.form]
       else
-        ["next_token:<END>"]
+        [
+          if(seen?.(features.prefix3), do: features.prefix3, else: features.prefix2),
+          if(seen?.(features.suffix3), do: features.suffix3, else: features.suffix2),
+          features.digit,
+          features.number
+        ]
       end
 
-    Enum.filter(features ++ prev_features ++ next_features, &(&1 != nil))
+    spelling ++ Map.values(Map.take(features, [:capitalized, :all_caps, :first, :last, :previous, :next]))
   end
 
   defp capitalized?(token) do
@@ -673,7 +679,7 @@ defmodule Brain.ML.EntityTrainer do
     tokens
     |> Enum.with_index()
     |> Enum.map(fn {token, idx} ->
-      features = extract_token_features(token, tokens, idx)
+      features = token |> token_features(tokens, idx) |> informative_features(model)
       Map.new(tags, &{&1, emission_log(features, &1, model)})
     end)
   end
