@@ -41,7 +41,7 @@ defmodule Brain.Analysis.Pipeline do
   alias Brain.Telemetry
   require Logger
 
-  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :world_id - required: the world the text is analyzed in. Brain passes its\n  conversation's world; any other caller names the world it analyzes for.\n  Absent raises.\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n- :language - the `Brain.Language` code to analyze in. Absent means the caller\n  named no language, which is English; an unsupported code raises.\n- :lexical_evidence - a `Brain.Analysis.LexicalEvidence` model used in place of\n  the one loaded for the language. Training passes each row's out-of-fold model.\n- :intent_models - `%{intent_full: model, intent_domain: model}`, the two\n  `Brain.ML.FeatureVectorClassifier` models used in place of the loaded\n  `:intent_full` and `:intent_domain` micro-classifiers. Training passes each\n  row's out-of-fold models (`mix train_intent_arbitration`).\n- :active_contexts - the conversational contexts the turn continues from. Absent\n  means they are derived from `:conversation_history` and the registry's output\n  contexts (`Brain.Analysis.ActiveContexts`); training and evaluation pass a\n  gold row's follow-up context. A name no intent continues from raises.\n\nReturns an InternalModel struct with complete analysis.\n"
+  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :world_id - required: the world the text is analyzed in. Brain passes its\n  conversation's world; any other caller names the world it analyzes for.\n  Absent raises.\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n- :language - the `Brain.Language` code to analyze in. Absent means the caller\n  named no language, which is English; an unsupported code raises.\n- :lexical_evidence - a `Brain.Analysis.LexicalEvidence` model used in place of\n  the one loaded for the language. Training passes each row's out-of-fold model.\n- :speech_act_evidence - a `Brain.Analysis.LexicalEvidence` model the pass-1\n  speech act's lexical voter reads in place of the loaded speech-act table's\n  `evidence` (`Brain.Analysis.SpeechActClassifier`). Training passes each row's\n  out-of-fold model (`Brain.Analysis.SpeechActTable.fold_evidence/3`).\n- :intent_models - `%{intent_full: model, intent_domain: model}`, the two\n  `Brain.ML.FeatureVectorClassifier` models used in place of the loaded\n  `:intent_full` and `:intent_domain` micro-classifiers. Training passes each\n  row's out-of-fold models (`mix train_intent_arbitration`).\n- :active_contexts - the conversational contexts the turn continues from. Absent\n  means they are derived from `:conversation_history` and the registry's output\n  contexts (`Brain.Analysis.ActiveContexts`); training and evaluation pass a\n  gold row's follow-up context. A name no intent continues from raises.\n\nReturns an InternalModel struct with complete analysis.\n"
   def process(text, opts \\ []) when is_binary(text) do
     world_id!(opts)
     side_effects?(opts)
@@ -241,9 +241,11 @@ defmodule Brain.Analysis.Pipeline do
 
     if debug_pass1?, do: Logger.info("pipeline:pass1 entities=#{System.monotonic_time(:millisecond) - t0}ms")
 
+    speech_act_opts = speech_act_opts(opts)
+
     speech_act_task =
       Task.async(fn ->
-        SpeechActClassifier.classify(chunk.text, entities: basic_entities, world_id: world_id!(opts))
+        SpeechActClassifier.classify(chunk.text, [entities: basic_entities] ++ speech_act_opts)
       end)
 
     sentiment_task =
@@ -274,7 +276,7 @@ defmodule Brain.Analysis.Pipeline do
       catch
         :exit, {:timeout, _} ->
           Task.shutdown(speech_act_task, :brutal_kill)
-          SpeechActClassifier.classify("", world_id: world_id!(opts))
+          SpeechActClassifier.classify("", speech_act_opts)
       end
 
     if debug_pass1?, do: Logger.info("pipeline:pass1 speech_act=#{System.monotonic_time(:millisecond) - t0}ms")
@@ -2112,6 +2114,13 @@ defmodule Brain.Analysis.Pipeline do
       {:ok, names} -> ActiveContexts.validate!(names, tables)
       :error -> opts |> Keyword.get(:conversation_history, []) |> ActiveContexts.from_history(tables)
     end
+  end
+
+  # What the pass-1 speech-act classifier reads: the world whose memory its
+  # memory voter reads, the language whose speech-act evidence its lexical voter
+  # reads, and the out-of-fold evidence training passes in its place.
+  defp speech_act_opts(opts) do
+    [world_id: world_id!(opts), language: language!(opts)] ++ Keyword.take(opts, [:speech_act_evidence])
   end
 
   # The language the turn is analyzed in: the code `Brain.evaluate` resolved from
