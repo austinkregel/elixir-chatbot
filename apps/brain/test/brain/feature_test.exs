@@ -26,8 +26,14 @@ defmodule Brain.FeatureTest do
     :ok
   end
 
+  # A world a manager creates schedules with the local scheduler
+  # (`World.Manager.create/2`, `mix world.assign_local_scheduling` for one that
+  # existed before), and "Remind me to call mom tomorrow" is a reminder intent
+  # dispatched to it; the suite's world gets the same driver, inside the test's
+  # transaction.
   setup _context do
     start_brain_services()
+    :ok = Brain.Services.Dispatcher.assign_scheduling_driver("default", Brain.Services.LocalScheduler)
     {:ok, conversation_id} = Brain.create_conversation(world_id: "default")
     %{conversation_id: conversation_id}
   end
