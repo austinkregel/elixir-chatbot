@@ -125,7 +125,11 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       # Accepting it meant this assertion passed whatever the disambiguator
       # decided. The loader now preserves the declared readings, so the junk
       # type no longer exists and the assertion means what it says.
-      assert entity_type in ["location", "city"],
+      # Location-like is what the type hierarchy says it is: `location` or a
+      # type under it. The NER gold standard labels a city `address`, which is
+      # under `location` in priv/analysis/entity_types.json, and the entity
+      # model reads one as the gold labels it.
+      assert entity_type == "location" or Brain.Analysis.TypeHierarchy.is_a?(entity_type, "location"),
              "Expected 'Austin' to be disambiguated as location-like type for weather query, " <>
                "got '#{entity_type}'. Full entity: #{inspect(austin_entity)}"
 
