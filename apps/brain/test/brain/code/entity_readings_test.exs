@@ -226,7 +226,7 @@ defmodule Brain.Code.EntityReadingsTest do
       assert train_types != []
 
       examples = annotated_examples(EvaluationStore.load_gold_standard("ner", :train))
-      model = SpanReliability.fit(examples, language: "en", canonical: canonical, hierarchy: TypeHierarchy, prior_strength: 1)
+      model = SpanReliability.fit(examples, language: "en", canonical: canonical, hierarchy: TypeHierarchy, prior_strength: 1, confidence_bins: 1)
 
       for type <- train_types do
         assert Map.has_key?(model.pairs, {:code_gazetteer, type}), "{:code_gazetteer, #{type}} is not measured"
@@ -276,7 +276,7 @@ defmodule Brain.Code.EntityReadingsTest do
       code = Enum.find(readings(text), &(&1.value == "calculate_tax"))
       number = %{source: :system, entity_type: "number", start_pos: 25, end_pos: 25, confidence: 0.9}
       canonical = EntityExtractor.load_type_mappings()
-      opts = [language: "en", canonical: canonical, hierarchy: TypeHierarchy, prior_strength: 1]
+      opts = [language: "en", canonical: canonical, hierarchy: TypeHierarchy, prior_strength: 1, confidence_bins: 1]
 
       examples = [
         %{key: 1, readings: [code, number], gold: [%{type: "number", start_pos: 25, end_pos: 25}]},
@@ -321,9 +321,11 @@ defmodule Brain.Code.EntityReadingsTest do
         {16, "render the scene in blue", [], :other}
       ]
 
+      # Each occurrence is an utterance of its own, so each is a group of its
+      # own for the folds.
       examples =
         for {n, text, gold, context} <- rows, i <- 1..n do
-          %{key: {text, i}, readings: readings(text, @world, ordinary_word?), gold: gold, context: context}
+          %{key: {text, i}, group: {text, i}, readings: readings(text, @world, ordinary_word?), gold: gold, context: context}
         end
 
       {model, _report} = SpanReliability.select(examples, language: "en", canonical: canonical, hierarchy: TypeHierarchy)
@@ -361,6 +363,6 @@ defmodule Brain.Code.EntityReadingsTest do
   defp annotated_readings(text), do: readings(text, @annotated_world)
 
   defp annotated_examples(rows) do
-    for row <- rows, do: %{key: row, readings: annotated_readings(row["text"]), gold: NerGold.spans!(row)}
+    for row <- rows, do: %{key: row, group: NerGold.template!(row), readings: annotated_readings(row["text"]), gold: NerGold.spans!(row)}
   end
 end
