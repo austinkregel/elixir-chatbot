@@ -28,6 +28,19 @@ defmodule Brain.Lattice.FragmentVectorizerTest do
   end
 
   test "vectorize_fragment_text rejects empty string" do
-    assert {:error, :empty_text} = FragmentVectorizer.vectorize_fragment_text("   ", @world_id)
+    assert_raise ArgumentError, ~r/a fragment's text is blank/, fn ->
+      FragmentVectorizer.vectorize_fragment_text("   ", @world_id)
+    end
+  end
+
+  @tag :integration
+  test "a fragment's vector is the one the pipeline classified the fragment from" do
+    Mix.Task.run("app.start")
+
+    text = "Hello! What is the weather like in Seattle this week?"
+    analysis = Brain.Analysis.Pipeline.analyze_chunk(text, world_id: @world_id, side_effects: false)
+
+    assert {:ok, fv} = FragmentVectorizer.vectorize_fragment_text(text, @world_id)
+    assert fv == analysis.feature_vector
   end
 end
