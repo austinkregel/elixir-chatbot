@@ -46,18 +46,15 @@ defmodule Brain do
   end
 
   @doc """
-  Returns a path within the umbrella's top-level `data/` directory.
+  Returns a path within the training data directory, `config :brain, :ml,
+  :training_data_path` (`ML_TRAINING_DATA_PATH`, else the umbrella's top-level
+  `data/`, as config/config.exs sets it).
 
-  `data/` sits above `apps/`, so it cannot be reached through
-  `:code.priv_dir/1` and must not be reached through `File.cwd!/0`: an umbrella
-  run has two working directories, because Mix boots the applications from the
-  umbrella root and then runs each app's tests from `apps/<app>`. A relative
-  `"data/classifiers"` therefore names two different directories in one run —
-  the same trap `config/test.exs` documents at length for `learning_params_path`
-  and `Brain.SnapshotHelper` hit with its snapshots directory.
-
-  This walks up from the resolved priv directory instead, following the symlink
-  Mix creates in `_build` when there is one.
+  The directory must be absolute: an umbrella run has two working directories,
+  because Mix boots the applications from the umbrella root and then runs each
+  app's tests from `apps/<app>`, so a relative `"data"` would name two
+  different directories in one run -- the same trap `config/test.exs`
+  documents for `learning_params_path`. A relative or missing setting raises.
 
   ## Examples
 
@@ -65,7 +62,21 @@ defmodule Brain do
       #=> "/path/to/umbrella/data/classifiers"
   """
   def data_path(subpath) when is_binary(subpath) do
-    Path.join(umbrella_root(), Path.join("data", subpath))
+    root =
+      case Application.fetch_env!(:brain, :ml) |> Keyword.fetch(:training_data_path) do
+        {:ok, path} when is_binary(path) ->
+          if Path.type(path) == :absolute do
+            path
+          else
+            raise "Brain.data_path/1: config :brain, :ml, :training_data_path (ML_TRAINING_DATA_PATH) is #{inspect(path)}; " <>
+                    "it must be an absolute path"
+          end
+
+        other ->
+          raise "Brain.data_path/1: config :brain, :ml has no :training_data_path, got #{inspect(other)}"
+      end
+
+    Path.join(root, subpath)
   end
 
   @doc """
