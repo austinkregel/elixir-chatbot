@@ -3,18 +3,12 @@
     {
       "index": 0,
       "text": "Hello!",
-      "entities": [
-        {
-          "type": "song",
-          "value": "Hello",
-          "confidence": 0.71
-        }
-      ],
+      "entities": [],
       "response_strategy": "hedged_response",
-      "detected_intent": "smalltalk.appraisal.welcome",
       "speech_act_category": "expressive",
-      "speech_act_type": "greeting",
       "speech_act_confidence": 1.0,
+      "detected_intent": "smalltalk.greetings.hello",
+      "speech_act_type": "greeting",
       "discourse_addressee": "bot",
       "discourse_self_referential": "false",
       "slots_filled": [],
@@ -25,10 +19,10 @@
       "text": "What's the weather?",
       "entities": [],
       "response_strategy": "needs_clarification",
-      "detected_intent": "weather.query",
       "speech_act_category": "directive",
-      "speech_act_type": "command",
-      "speech_act_confidence": 0.85,
+      "speech_act_confidence": 1.0,
+      "detected_intent": "weather.query",
+      "speech_act_type": "request_information",
       "discourse_addressee": "bot",
       "discourse_self_referential": "false",
       "slots_filled": [
