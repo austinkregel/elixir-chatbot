@@ -7,22 +7,19 @@
         {
           "type": "person",
           "value": "Austin",
-          "confidence": 0.84
-        },
-        {
-          "type": "song",
-          "value": "Hello",
-          "confidence": 0.71
+          "confidence": 0.78
         }
       ],
       "response_strategy": "hedged_response",
-      "detected_intent": "smalltalk.appraisal.welcome",
       "speech_act_category": "expressive",
-      "speech_act_type": "greeting",
       "speech_act_confidence": 1.0,
+      "detected_intent": "smalltalk.user.introduction",
+      "speech_act_type": "statement",
       "discourse_addressee": "bot",
       "discourse_self_referential": "false",
-      "slots_filled": [],
+      "slots_filled": [
+        "person"
+      ],
       "slots_missing": []
     },
     {
@@ -30,16 +27,16 @@
       "text": "What's the weather in Dallas?",
       "entities": [
         {
-          "type": "location",
+          "type": "address",
           "value": "Dallas",
-          "confidence": 0.79
+          "confidence": 0.93
         }
       ],
       "response_strategy": "hedged_response",
-      "detected_intent": "weather.query",
       "speech_act_category": "directive",
+      "speech_act_confidence": 1.0,
+      "detected_intent": "weather.query",
       "speech_act_type": "request_information",
-      "speech_act_confidence": 0.82,
       "discourse_addressee": "bot",
       "discourse_self_referential": "false",
       "slots_filled": [
