@@ -64,7 +64,7 @@ defmodule Mix.Tasks.GenFramingData do
   @corpus_language "en"
 
   @gvfc_default_path "data/framing/GVFC_extension_multimodal.csv"
-  @output_path "data/classifiers/framing_class.json"
+  @output_path "classifiers/framing_class.json"
 
   @speech_act_fallback %{
     category: :unknown, sub_type: :unknown, is_question: false,
@@ -566,13 +566,15 @@ defmodule Mix.Tasks.GenFramingData do
 
   # -- Output ------------------------------------------------------------
 
+  # Where `mix train_framing` reads it: under the configured training data
+  # directory (`Brain.data_path/1`).
   defp write_training_data(data) do
-    dir = Path.dirname(@output_path)
-    File.mkdir_p!(dir)
+    path = Brain.data_path(@output_path)
+    File.mkdir_p!(Path.dirname(path))
 
     json = Jason.encode!(data, pretty: true)
-    File.write!(@output_path, json)
-    Mix.shell().info("Wrote #{length(data)} records to #{@output_path}")
+    File.write!(path, json)
+    Mix.shell().info("Wrote #{length(data)} records to #{path}")
 
     write_environment()
   end
