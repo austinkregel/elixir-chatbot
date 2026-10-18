@@ -47,7 +47,11 @@ defmodule Brain.FactDatabase do
   - `:category` - Filter by category (e.g., "geography", "science")
   - `:entity` - Filter by entity name (e.g., "France", "water")
   - `:search` - Search in fact text
-  - `:limit` - Maximum number of results (default: 10)
+  - `:named_in` - Only the facts whose entity the text names: the entity's
+    words, in order, are words of the text, compared whole and ignoring case
+    (`Brain.ML.Tokenizer.tokenize_words/1`), so "Is Paris the capital of
+    France?" names France and not "time zones" or "Berlin Wall"
+  - `:limit` - Maximum number of results (default: 10); `:all` for every one
   - `:layer` - Filter by layer: `:curated`, `:learned`, or `:all` (default: `:all`)
   """
   def query(opts \\ []) do
@@ -161,6 +165,7 @@ defmodule Brain.FactDatabase do
       facts
       |> filter_by_category(opts[:category])
       |> filter_by_entity(opts[:entity])
+      |> filter_named_in(opts[:named_in])
       |> search_in_text(opts[:search])
       |> limit_results(opts[:limit] || 10)
 
@@ -391,6 +396,21 @@ defmodule Brain.FactDatabase do
   end
 
   defp filter_by_entity(facts, _), do: facts
+
+  defp filter_named_in(facts, nil), do: facts
+
+  defp filter_named_in(facts, text) when is_binary(text) do
+    words = lowercase_words(text)
+
+    Enum.filter(facts, fn fact ->
+      case lowercase_words(fact.entity) do
+        [] -> false
+        entity -> entity in Enum.chunk_every(words, length(entity), 1, :discard)
+      end
+    end)
+  end
+
+  defp lowercase_words(text), do: text |> Brain.ML.Tokenizer.tokenize_words() |> Enum.map(&String.downcase/1)
 
   defp search_in_text(facts, nil), do: facts
 
