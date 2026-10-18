@@ -125,24 +125,25 @@ defmodule World.Context do
     Store.query_similar(text, k, world_id: world_id)
   end
 
+  # The `:intent_full` classifier's answer for the vector the pipeline
+  # classified the text's intent from (`analysis.feature_vector`), the kind it
+  # was trained on; a vector extracted again from the finished analysis holds
+  # what pass 2 added after classifying. A classifier that is not ready, or
+  # cannot answer, raises rather than reading the text as "unknown".
   defp classify_with_world_model(world_id, text) do
-    if Code.ensure_loaded?(Brain.ML.MicroClassifiers) and Brain.ML.MicroClassifiers.ready?() do
-      try do
-        analysis = Brain.Analysis.Pipeline.analyze_chunk(text, world_id: world_id)
-        {feature_vector, _word_feats} = Brain.Analysis.FeatureExtractor.extract(analysis)
+    unless Brain.ML.MicroClassifiers.ready?() do
+      raise "World.Context: the intent classifier is not ready, so #{inspect(text)} cannot be classified"
+    end
 
-        case Brain.ML.MicroClassifiers.classify_vector(:intent_full, feature_vector) do
-          {:ok, intent, confidence} ->
-            {:ok, %{intent: intent, confidence: confidence}}
-
-          _ ->
-            {:ok, %{intent: "unknown", confidence: 0.0}}
-        end
-      rescue
-        _ -> {:ok, %{intent: "unknown", confidence: 0.0}}
+    feature_vector =
+      case Brain.Analysis.Pipeline.analyze_chunk(text, world_id: world_id) do
+        %{feature_vector: [_ | _] = vector} -> vector
+        other -> raise "World.Context: the pipeline kept no classified feature vector for #{inspect(text)}: #{inspect(Map.get(other, :feature_vector))}"
       end
-    else
-      {:ok, %{intent: "unknown", confidence: 0.0}}
+
+    case Brain.ML.MicroClassifiers.classify_vector(:intent_full, feature_vector) do
+      {:ok, intent, confidence} -> {:ok, %{intent: intent, confidence: confidence}}
+      other -> raise "World.Context: intent classification of #{inspect(text)} failed: #{inspect(other)}"
     end
   end
 end
