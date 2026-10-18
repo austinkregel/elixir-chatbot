@@ -586,7 +586,7 @@ defmodule Brain.ML.SpanReliabilityTest do
       assert {model.prior_strength, model.confidence_bins} in Map.keys(report)
       assert is_number(model.min_score)
       assert is_number(model.min_margin) or model.min_margin == :infinity
-      assert report[{model.prior_strength, model.confidence_bins}].f1 == report |> Map.values() |> Enum.map(& &1.f1) |> Enum.max()
+      assert model.selection.chosen == {model.prior_strength, model.confidence_bins}
       # Every reading here carries the same confidence, so more bins tell
       # nothing apart, and the tie goes to one.
       assert model.confidence_bins == 1
@@ -596,6 +596,30 @@ defmodule Brain.ML.SpanReliabilityTest do
           text: "50", canonical: @canonical, hierarchy: Hierarchy)
 
       assert %{resolved: true, entity_type: "final_value", source: :good} = span
+    end
+
+    test "chooses the largest prior strength whose mean fold F1 is within one standard error of the best, then that strength's best bins" do
+      {model, report} = SpanReliability.select(synthetic(), @opts)
+      rule = model.selection
+
+      gold_folds = for {f, k} <- Enum.with_index(report[rule.chosen].folds), f.gold > 0, do: k
+      assert rule.scored_folds == gold_folds
+
+      for {_candidate, r} <- report do
+        f1s = Enum.map(gold_folds, fn k -> r.folds |> Enum.at(k) |> then(&(2 * &1.correct / (&1.decided + &1.gold))) end)
+        assert_in_delta r.mean_f1, Enum.sum(f1s) / length(f1s), 1.0e-12
+      end
+
+      best_mean = report |> Map.values() |> Enum.map(& &1.mean_f1) |> Enum.max()
+      assert rule.mean == best_mean
+      assert rule.threshold == best_mean - report[rule.best].standard_error
+
+      within = for {candidate, r} <- report, r.mean_f1 >= rule.threshold, do: candidate
+      strength = within |> Enum.map(&elem(&1, 0)) |> Enum.max()
+      assert model.prior_strength == strength
+
+      at_strength = for {{^strength, _bins} = candidate, r} <- report, r.mean_f1 >= rule.threshold, do: {r.mean_f1, candidate}
+      assert report[{model.prior_strength, model.confidence_bins}].mean_f1 == at_strength |> Enum.map(&elem(&1, 0)) |> Enum.max()
     end
 
     test "select_redecision/3 decides extents first and keeps evidence that decides right, leaving evidence that does not" do
@@ -647,7 +671,16 @@ defmodule Brain.ML.SpanReliabilityTest do
       assert %{decided: 40, correct: 40} = cv.chosen
       assert cv.chosen.f1 > cv.without_extent.f1
       assert cv.chosen.f1 == cv.by_extent_prior_strength[extent.prior_strength].f1
-      assert cv.chosen.f1 == cv.by_extent_prior_strength |> Map.values() |> Enum.map(& &1.f1) |> Enum.max()
+      assert cv.extent_prior_strength.chosen == extent.prior_strength
+
+      # The extent prior strength is the largest whose mean fold F1 is within
+      # one standard error of the best.
+      rule = cv.extent_prior_strength
+      best_mean = cv.by_extent_prior_strength |> Map.values() |> Enum.map(& &1.mean_f1) |> Enum.max()
+      assert rule.mean == best_mean
+      assert rule.threshold == best_mean - cv.by_extent_prior_strength[rule.best].standard_error
+      within = for {strength, r} <- cv.by_extent_prior_strength, r.mean_f1 >= rule.threshold, do: strength
+      assert extent.prior_strength == Enum.max(within)
       assert min_score > 0.5 or min_margin > 1.0
       assert extent.fitted_rows == 70
       assert {extent.min_score, extent.min_margin} == {cv.chosen.extent_min_score, cv.chosen.extent_min_margin}
