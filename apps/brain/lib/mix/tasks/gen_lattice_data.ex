@@ -174,15 +174,34 @@ defmodule Mix.Tasks.GenLatticeData do
     },
     # An informative framing opens what the reply tells the user. It is planned
     # before a service's result (enrichable_question and enriched_directive in
-    # discourse_patterns.json, which match only a successful enrichment) and
+    # discourse_patterns.json, which match only a successful enrichment),
+    # before what is known about the chunk (factual_question and
+    # explanation_request_known, which match only when something is), and
     # before nothing but a follow-up (question_general and default_directive,
-    # when no service gave a result): a pool that introduces a result is said
-    # only after a successful enrichment, and one that says there is no answer
-    # only where there was none.
+    # when neither a service nor anything known gave an answer): a pool that
+    # introduces a result is said only after a successful enrichment, one that
+    # introduces what is known only where something is, and one that says
+    # there is no answer only where there was none.
     "informative_frames" => %{
       "with_result" => {"framing", "informative", "enrichment_success"},
-      "no_answer" => {"framing", "informative", "NOT enrichment_success"}
+      "with_facts" => {"framing", "informative", "facts_known"},
+      "no_answer" => {"framing", "informative", "NOT enrichment_success AND NOT facts_known"}
     },
+    # A polar question's answer, planned only for a chunk whose known
+    # statements confirm or disconfirm its proposition
+    # (polar_question_confirmed and polar_question_disconfirmed), before the
+    # statement that does.
+    "polar_answers" => %{
+      "affirmative" => {"framing", "affirmative"},
+      "negative" => {"framing", "negative"}
+    },
+    # What is known, said as stored: a factual primitive's `fact`, an
+    # explanatory one's `explanation` (Brain.Response.ContentSpecifier).
+    "fact_statements" => {"content", "factual"},
+    "explanations" => {"content", "explanatory"},
+    # A self-knowledge narrative's `narrative`, the self-knowledge reply
+    # (Synthesizer.synthesize_self_knowledge_response/2).
+    "self_knowledge_narratives" => {"content", "narrative"},
     "reframe_patterns" => {"framing", "reframe"},
     "contradiction_responses" => {"contradiction_response", nil},
     "creative_engagement" => {"content", "creative"},
