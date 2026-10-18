@@ -54,7 +54,7 @@ defmodule World.ManagerGraphModelsTest do
     end
 
     test "destroying it drops its loaded models" do
-      {:ok, world} = create_test_world("graph_models_persistent_destroy", mode: :persistent)
+      {:ok, world} = create_test_world("graph_persistent_destroy", mode: :persistent)
       on_exit(fn -> File.rm_rf!(Brain.Worlds.world_path(world.id)) end)
 
       assert %{embeddings: %Nx.Tensor{}} = Embeddings.loaded!(world.id)
@@ -86,7 +86,7 @@ defmodule World.ManagerGraphModelsTest do
     end
 
     test "destroying it drops its loaded models" do
-      {:ok, world} = create_test_world("graph_models_ephemeral_destroy")
+      {:ok, world} = create_test_world("graph_ephemeral_destroy")
       assert %{embeddings: %Nx.Tensor{}} = Embeddings.loaded!(world.id)
       assert %{model: %Axon{}} = TripleScorer.loaded!(world.id)
 
