@@ -174,7 +174,8 @@ defmodule Brain.Analysis.ChunkAnalysis do
           epistemic_status: epistemic_status(),
           pass: pass(),
           language: String.t() | nil,
-          active_contexts: [String.t()] | nil
+          active_contexts: [String.t()] | nil,
+          intent_arbitration: map() | nil
         }
 
   # `language` is the code (`Brain.Language`) the chunk was analyzed in, and
@@ -187,6 +188,11 @@ defmodule Brain.Analysis.ChunkAnalysis do
   # (`Brain.ML.EntityExtractor.extract/2`), each with its readings, candidates
   # and reason. An unresolved span is no entity, and only what reads
   # `unresolved_spans` sees it.
+  #
+  # `intent_arbitration` is nil unless the `:intent_full` and `:intent_domain`
+  # classifiers disagreed on the chunk; then it records how the disagreement
+  # was resolved (`Brain.Analysis.IntentArbitration`): the two domains, each
+  # route's intent and the decision.
   defstruct [
     :chunk_index,
     :text,
@@ -213,6 +219,7 @@ defmodule Brain.Analysis.ChunkAnalysis do
     srl_frames: [],
     pos_tags: [],
     intent_domain: nil,
+    intent_arbitration: nil,
     accumulated_context: nil,
     pass: 1
   ]
