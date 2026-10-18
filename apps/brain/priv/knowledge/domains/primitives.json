@@ -235,10 +235,10 @@
   },
 
   "reflective_patterns": [
-    "It sounds like $meaning.",
-    "So you're saying $meaning.",
-    "If I understand correctly, $meaning.",
-    "It seems like $meaning."
+    "It sounds like $understood_meaning.",
+    "So you're saying $understood_meaning.",
+    "If I understand correctly, $understood_meaning.",
+    "It seems like $understood_meaning."
   ],
 
   "action_responses": {
