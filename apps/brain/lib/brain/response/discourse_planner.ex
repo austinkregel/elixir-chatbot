@@ -23,7 +23,18 @@ defmodule Brain.Response.DiscoursePlanner do
   says why or asks what is needed. The error's reason is switched on as the
   structured term the service returned (`enrichment_error_primitive/2`); a
   reason with no planned response raises, and so does a failed enrichment
-  that carries no reason.
+  that carries no reason. A service that succeeded but returned no data is
+  answered the same way, with the one primitive that says so
+  (`empty_result_primitive/1`).
+
+  ## What is known
+
+  A chunk that asks is answered from what is known about it
+  (`Brain.Analysis.ChunkAnalysis.known_statements/1`): `has_facts` is whether
+  anything is, and `fact_alignment` how it answers a polar question
+  (`:confirming` or `:disconfirming`, nil when it does not), which the
+  patterns `polar_question_confirmed` and `polar_question_disconfirmed`
+  match.
   """
 
   alias Brain.Response.Primitive
@@ -49,16 +60,14 @@ defmodule Brain.Response.DiscoursePlanner do
   def plan(model, opts \\ [])
 
   def plan(%InternalModel{} = model, opts) do
-    case enrichment_failure(opts) do
+    case enrichment_outcome(opts) do
       {:failed, reason, enrichment} ->
-        [
-          enrichment_error_primitive(reason, %{
-            service: Map.get(enrichment, :enrichment_service),
-            intent: Map.get(enrichment, :intent)
-          })
-        ]
+        [enrichment_error_primitive(reason, origin(enrichment))]
 
-      :not_failed ->
+      {:empty, enrichment} ->
+        [empty_result_primitive(origin(enrichment))]
+
+      :planned_by_chunks ->
         model.analyses
         |> Enum.flat_map(&plan_chunk(&1, model, opts))
         |> insert_transitions(model.analyses)
@@ -188,9 +197,63 @@ defmodule Brain.Response.DiscoursePlanner do
     end
   end
 
-  # The error of the service the turn's intent was dispatched to, when it
-  # returned one (`Brain.Response.Enricher.prepare_context/3`).
-  defp enrichment_failure(opts) do
+  @doc """
+  The primitive a service's successful result that carries no data is
+  answered with: a `:content` `:action_result` whose `reply` (its wording in
+  primitives.json's `service_replies`) says what the result is, keeping
+  `enrichment_result: :empty`, with `origin`'s `intent` and `service` and the
+  service's display name as `service_name`.
+
+  No registered service returns such a result today: every operation of
+  `Brain.Services.LocalScheduler` returns the fields of the item it set,
+  cancelled or found; `Brain.Services.Weather` the conditions it fetched;
+  `Brain.Services.HomeAssistant` the device and action it carried out or the
+  state it read (`StateFormatter`); `Brain.Services.SystemStatus` its ten
+  health fields. A service that returned one would have done or found
+  nothing it reports, and the reply says only that:
+
+  | The intent | Reply |
+  | --- | --- |
+  | one the service `writes?/1` (a set, a cancel, a device action) | `:carried_out`: the service did it |
+  | one it only reads (a check, a query, a report) | `:nothing_reported`: the service returned nothing |
+
+  Raises for a service no registered service is named, and for an origin
+  with no intent.
+  """
+  @spec empty_result_primitive(%{service: atom(), intent: String.t()}) :: Primitive.t()
+  def empty_result_primitive(%{service: name, intent: intent}) when is_atom(name) and is_binary(intent) do
+    service =
+      case Brain.Services.Dispatcher.find_service_by_name(name) do
+        nil -> raise ArgumentError, "DiscoursePlanner: no registered service is named #{inspect(name)}"
+        service -> service
+      end
+
+    reply = if service.writes?(intent), do: :carried_out, else: :nothing_reported
+
+    Primitive.new(:content, :action_result, %{
+      reply: reply,
+      result: reply,
+      enrichment_result: :empty,
+      intent: intent,
+      service: name,
+      service_name: service.display_name()
+    })
+  end
+
+  def empty_result_primitive(origin) do
+    raise ArgumentError,
+          "DiscoursePlanner: a service's empty result is answered for the service and intent it came from; got #{inspect(origin)}"
+  end
+
+  defp origin(enrichment) do
+    %{service: Map.get(enrichment, :enrichment_service), intent: Map.get(enrichment, :intent)}
+  end
+
+  # What the service the turn's intent was dispatched to returned
+  # (`Brain.Response.Enricher.prepare_context/3`), when it decides the reply:
+  # an error, or a success with no data. Anything else is planned chunk by
+  # chunk.
+  defp enrichment_outcome(opts) do
     enrichment =
       case Keyword.get(opts, :unified_context, %{}) do
         %{enrichment: enrichment} when is_map(enrichment) -> enrichment
@@ -209,8 +272,11 @@ defmodule Brain.Response.DiscoursePlanner do
                     "so there is nothing to answer the failure with; got #{inspect(enrichment)}"
         end
 
+      :success ->
+        if Map.get(enrichment, :enriched_data) == %{}, do: {:empty, enrichment}, else: :planned_by_chunks
+
       _ ->
-        :not_failed
+        :planned_by_chunks
     end
   end
 
@@ -270,9 +336,13 @@ defmodule Brain.Response.DiscoursePlanner do
       related_beliefs: a.related_beliefs || [],
       accumulated_context: a.accumulated_context,
       has_enrichment: enrichment_status == :success and enriched_data != %{},
-      has_facts: (a.related_beliefs || []) != []
+      has_facts: ChunkAnalysis.known_statements(a) != [],
+      fact_alignment: alignment_of(a.fact_alignment)
     }
   end
+
+  defp alignment_of(nil), do: nil
+  defp alignment_of(%{alignment: alignment}) when alignment in [:confirming, :disconfirming], do: alignment
 
   defp select_backbone(signals) do
     pattern = find_matching_pattern(signals)
