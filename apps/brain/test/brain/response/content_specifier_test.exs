@@ -43,6 +43,49 @@ defmodule Brain.Response.ContentSpecifierTest do
     assert specified.content.belief_count == 0
   end
 
+  # The self-knowledge reply for a turn with no user: nothing is known of them
+  # (primitives.json's "empty_knowledge"), and the lattice says it as it is.
+  test "a narrative primitive states the self-knowledge reply, which the lattice words",
+       %{without_belief: world} do
+    narrative = Primitive.new(:content, :narrative, %{chunk_index: 0})
+    [specified] = ContentSpecifier.specify([narrative], %ChunkAnalysis{chunk_index: 0}, world_id: world)
+
+    assert specified.content.narrative in [
+               "I don't have much information about you yet. We're just getting to know each other.",
+               "I haven't learned much about you so far. Is there anything you'd like to share?",
+               "We haven't really talked much yet, so I don't have much to go on.",
+               "I'm still getting to know you. We haven't shared much yet."
+             ]
+
+    assert specified.content.content_complete
+
+    assert {:ok, _rendered, reply} =
+             Brain.Response.PhraseLatticeRealizer.realize([specified],
+               world_id: world,
+               analysis: %ChunkAnalysis{chunk_index: 0},
+               analyses: [%ChunkAnalysis{chunk_index: 0}]
+             )
+
+    assert reply == specified.content.narrative
+  end
+
+  # A factual primitive states the first statement known for the turn, the one
+  # that answers a polar question first, as it was stored; it is never given
+  # a statement nothing retrieved.
+  test "a factual primitive states the known statement, and none when nothing is known", %{without_belief: world} do
+    fact = %Brain.FactDatabase.Fact{id: "geo_001", entity: "France", fact: "The capital of France is Paris", category: "geography"}
+    known = %ChunkAnalysis{chunk_index: 0, related_facts: [fact]}
+
+    [specified] = ContentSpecifier.specify([Primitive.new(:content, :factual)], known, world_id: world)
+    assert specified.content.fact == "The capital of France is Paris"
+    assert specified.content.facts == ["The capital of France is Paris"]
+    assert specified.content.content_complete
+
+    [specified] = ContentSpecifier.specify([Primitive.new(:content, :factual)], %ChunkAnalysis{chunk_index: 0}, world_id: world)
+    refute Map.has_key?(specified.content, :fact)
+    refute specified.content.content_complete
+  end
+
   test "a narrative primitive without a world raises" do
     assert_raise KeyError, ~r/:world_id/, fn ->
       ContentSpecifier.specify([Primitive.new(:content, :narrative)], %ChunkAnalysis{}, [])
