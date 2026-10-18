@@ -58,7 +58,33 @@ defmodule World.EntityDiscoverer do
   @doc "Finds entities that appear multiple times across a list of discoveries.\n\nReturns entities sorted by occurrence count, useful for identifying\ncandidates that should be promoted to the gazetteer.\n"
   def aggregate_discoveries(discoveries) when is_list(discoveries) do
     discoveries
-    |> Enum.filter(&((Map.get(&1, :status) || :unknown) == :unknown))
+    |> Enum.filter(&(&1.status == :unknown))
+    |> aggregate_by_value()
+  end
+
+  @doc """
+  Aggregates `Brain.Worlds.EntityCandidate`s by value, the same way as discoveries.
+
+  Candidates are not discovery results: they carry no `:status`, because they
+  are already the narrowed thing the promoter accumulates rather than one
+  mention's classification.
+
+  `World.EntityPromoter` used to call `aggregate_discoveries/1` with candidates.
+  Two things went wrong at once. The status filter read
+  `Map.get(&1, :status) || :unknown`, so every candidate passed a gate meant to
+  select *unknown* discoveries -- the fallback hid the mismatch. And the
+  aggregation reads `&1.context`, which candidates from the type-narrowing path
+  did not set, so the promoter died with a `KeyError` on each scan. Measured
+  2026-09-23. The shape is now enforced by `Brain.Worlds.EntityCandidate` and the two
+  aggregations are separate functions.
+  """
+  @spec aggregate_candidates([Brain.Worlds.EntityCandidate.t()]) :: [map()]
+  def aggregate_candidates(candidates) when is_list(candidates) do
+    aggregate_by_value(candidates)
+  end
+
+  defp aggregate_by_value(observations) do
+    observations
     |> Enum.group_by(&String.downcase(&1.value))
     |> Enum.map(fn {normalized, occurrences} ->
       first = hd(occurrences)
@@ -173,7 +199,7 @@ defmodule World.EntityDiscoverer do
     {status, inferred_type, confidence} =
       case known_types do
         [] ->
-          {type, conf} = infer_type_from_context(pn, tokens, pos_predictions)
+          {type, conf} = infer_type_from_context(pn, world_id, tokens, pos_predictions)
           {:unknown, type, conf}
 
         [single] ->
@@ -202,25 +228,19 @@ defmodule World.EntityDiscoverer do
     result
   end
 
-  defp infer_type_from_context(pn, tokens, pos_predictions) do
+  # Types are inferred in the world the text is being discovered for.
+  defp infer_type_from_context(pn, world_id, tokens, pos_predictions) do
     context_tags = extract_context_tags(pn, pos_predictions)
-    world_id = World.Context.default_world_id()
 
-    if world_id do
-      case World.TypeInferrer.infer_type(pn.value, tokens, context_tags, world_id) do
-        {type, confidence} when is_binary(type) and is_float(confidence) ->
-          {type, confidence}
+    case Brain.Worlds.TypeInferrer.infer_type(pn.value, tokens, context_tags, world_id) do
+      {type, confidence} when is_binary(type) and is_float(confidence) ->
+        {type, confidence}
 
-        _ ->
-          # Fallback to local context confidence
-          confidence = calculate_context_confidence(context_tags)
-          inferred_type = infer_from_pos_context(context_tags, tokens, pn)
-          {inferred_type, confidence}
-      end
-    else
-      confidence = calculate_context_confidence(context_tags)
-      inferred_type = infer_from_pos_context(context_tags, tokens, pn)
-      {inferred_type, confidence}
+      _ ->
+        # Fallback to local context confidence
+        confidence = calculate_context_confidence(context_tags)
+        inferred_type = infer_from_pos_context(context_tags, tokens, pn)
+        {inferred_type, confidence}
     end
   end
 

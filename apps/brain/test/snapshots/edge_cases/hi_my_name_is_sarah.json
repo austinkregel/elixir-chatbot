@@ -7,28 +7,22 @@
         {
           "type": "person",
           "value": "Sarah",
-          "confidence": 0.7
-        },
-        {
-          "type": "slot_mappings",
-          "value": "name",
-          "confidence": 0.62
+          "confidence": 0.75
         }
       ],
-      "response_strategy": "defer_to_user",
-      "slots_filled": [
-        "person",
-        "slot_mappings"
-      ],
-      "slots_missing": [],
-      "detected_intent": "smalltalk.greetings.hello",
-      "speech_act_category": "directive",
-      "speech_act_type": "command",
-      "speech_act_confidence": 0.71,
+      "response_strategy": "hedged_response",
+      "speech_act_category": "expressive",
+      "speech_act_confidence": 1.0,
+      "detected_intent": "smalltalk.user.introduction",
+      "speech_act_type": "statement",
       "discourse_addressee": "ambiguous",
-      "discourse_self_referential": "false"
+      "discourse_self_referential": "false",
+      "slots_filled": [
+        "person"
+      ],
+      "slots_missing": []
     }
   ],
-  "overall_strategy": "defer_to_user",
+  "overall_strategy": "hedged_response",
   "chunk_count": 1
 }

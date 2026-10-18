@@ -1,11 +1,11 @@
 defmodule Brain.Response.SemanticFactRetriever do
-  @moduledoc "Semantic fact retrieval using TF-IDF embeddings.\n\nUnlike keyword matching, this module:\n- Embeds facts and queries using the same TF-IDF space\n- Uses cosine similarity to find semantically related facts\n- Handles synonyms and related concepts naturally\n- Works with learned facts that may have different phrasing\n\n## Example\n\n    # Query: \"What is an earthquake?\"\n    # Finds: \"earthquake causes: The shaking of the ground causes damage to buildings.\"\n    # Even though \"What is\" != \"causes\"\n"
+  @moduledoc "Semantic fact retrieval using TF-IDF embeddings.\n\nUnlike keyword matching, this module:\n- Embeds facts and queries using the same TF-IDF space\n- Uses cosine similarity to find semantically related facts\n- Handles synonyms and related concepts naturally\n- Works with learned facts that may have different phrasing\n\nThe TF-IDF space is a world's embedder (`Brain.Worlds.Embedder`), so the index is\nper world: a world's index embeds the FactDatabase's facts with that world's\nembedder, is built the first time the world searches, and is rebuilt with\n`rebuild_index/1` after facts change. When the world's vocabulary is rebuilt,\nor the world is destroyed, its index is forgotten (`forget_world/1`) and its\nnext search builds it with the world's vocabulary. A world whose embedder\ncannot embed raises, and so does a fact embedding whose length differs from\nthe query's. A rebuild of the world's vocabulary calls the retriever, so the\nretriever never waits for one: while the vocabulary is being rebuilt it\nreplies `{:error, :vocabulary_building}`, and `search/3` and `rebuild_index/1`\nwait in the caller for the rebuild to finish (`Brain.Worlds.Embedder.await_ready/2`)\nand ask again.\n\n## Example\n\n    # Query: \"What is an earthquake?\"\n    # Finds: \"earthquake causes: The shaking of the ground causes damage to buildings.\"\n    # Even though \"What is\" != \"causes\"\n"
 
   alias Brain.ML
   use GenServer
   require Logger
 
-  alias Brain.Memory.Embedder
+  alias Brain.Worlds.Embedder, as: WorldEmbedder
   alias Brain.FactDatabase
 
   @ets_table :semantic_fact_index
@@ -16,19 +16,49 @@ defmodule Brain.Response.SemanticFactRetriever do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc "Searches for facts semantically similar to the query.\n\nReturns facts ranked by cosine similarity to the query embedding.\n\n## Options\n  - `:threshold` - Minimum similarity score (default: 0.3)\n  - `:limit` - Maximum results (default: 5)\n  - `:category` - Filter by category before semantic search\n"
-  @spec search(String.t(), keyword()) :: [map()]
-  def search(query, opts \\ []) when is_binary(query) do
-    GenServer.call(__MODULE__, {:search, query, opts}, 10_000)
+  @doc "Searches the world's index for facts semantically similar to the query.\n\nReturns facts ranked by cosine similarity to the query embedding. The world's\nindex is built first when the world has none.\n\n## Options\n  - `:threshold` - Minimum similarity score (default: 0.3)\n  - `:limit` - Maximum results (default: 5)\n  - `:category` - Filter by category before semantic search\n"
+  @spec search(String.t(), String.t(), keyword()) :: [map()]
+  def search(world_id, query, opts \\ []) when is_binary(world_id) and is_binary(query) do
+    awaiting_rebuild(world_id, fn -> GenServer.call(__MODULE__, {:search, world_id, query, opts}, 60_000) end)
   end
 
-  @doc "Rebuilds the semantic index from current FactDatabase contents.\nCall after adding new facts.\n"
-  @spec rebuild_index() :: :ok
-  def rebuild_index do
-    GenServer.call(__MODULE__, :rebuild_index, 60_000)
+  @doc "Rebuilds the world's semantic index from current FactDatabase contents.\nCall after adding new facts.\n"
+  @spec rebuild_index(String.t()) :: :ok
+  def rebuild_index(world_id) when is_binary(world_id) do
+    awaiting_rebuild(world_id, fn -> GenServer.call(__MODULE__, {:rebuild_index, world_id}, 60_000) end)
   end
 
-  @doc "Checks if the semantic index is ready.\n"
+  # A rebuild of the world's vocabulary calls the retriever (`forget_world/1`),
+  # so the retriever never waits for one: it replies
+  # `{:error, :vocabulary_building}`, and the caller waits here for the rebuild
+  # to finish and asks again.
+  defp awaiting_rebuild(world_id, call) do
+    case call.() do
+      {:error, :vocabulary_building} ->
+        :ok = WorldEmbedder.await_ready(world_id)
+        awaiting_rebuild(world_id, call)
+
+      result ->
+        result
+    end
+  end
+
+  @doc """
+  Forgets the world's index, for a world whose vocabulary was rebuilt or that
+  is destroyed (`Brain.EmbeddingCaches.forget_world/1`); the world's next
+  search builds it with the world's vocabulary. A retriever that is not
+  running holds no index, so there is nothing to forget.
+  """
+  @spec forget_world(String.t()) :: :ok
+  def forget_world(world_id) when is_binary(world_id) do
+    if GenServer.whereis(__MODULE__) do
+      GenServer.call(__MODULE__, {:forget_world, world_id}, 60_000)
+    end
+
+    :ok
+  end
+
+  @doc "Checks if the retriever is running. Each world's index is built on its first search.\n"
   @spec ready?() :: boolean()
   def ready? do
     try do
@@ -38,7 +68,7 @@ defmodule Brain.Response.SemanticFactRetriever do
     end
   end
 
-  @doc "Gets stats about the semantic index.\n"
+  @doc "Gets stats about the semantic indexes: the worlds indexed, and their facts.\n"
   @spec stats() :: map()
   def stats do
     GenServer.call(__MODULE__, :stats)
@@ -47,38 +77,40 @@ defmodule Brain.Response.SemanticFactRetriever do
   @impl true
   def init(_opts) do
     :ets.new(@ets_table, [:named_table, :set, :public, read_concurrency: true])
-    send(self(), :build_initial_index)
 
-    {:ok, %{indexed_count: 0, last_indexed: nil, ready: false}}
+    {:ok, %{indexes: %{}, ready: true}}
   end
 
   @impl true
-  def handle_info(:build_initial_index, state) do
-    if Embedder.ready?() do
-      new_state = do_rebuild_index(state)
-      {:noreply, new_state}
-    else
-      Process.send_after(self(), :build_initial_index, 2000)
-      {:noreply, state}
+  def handle_call({:search, world_id, query, opts}, _from, state) do
+    case ensure_index(state, world_id) do
+      {:ok, state} ->
+        case do_search(world_id, query, opts) do
+          {:ok, results} ->
+            record_semantic_retrieval(length(results))
+            {:reply, results, state}
+
+          {:error, :vocabulary_building} = building ->
+            {:reply, building, state}
+        end
+
+      {{:error, :vocabulary_building} = building, state} ->
+        {:reply, building, state}
     end
   end
 
   @impl true
-  def handle_call({:search, query, opts}, _from, state) do
-    if state.ready and Embedder.ready?() do
-      results = do_search(query, opts)
-      record_semantic_retrieval(length(results))
-      {:reply, results, state}
-    else
-      record_semantic_retrieval(0)
-      {:reply, [], state}
+  def handle_call({:rebuild_index, world_id}, _from, state) do
+    case do_rebuild_index(state, world_id) do
+      {:ok, state} -> {:reply, :ok, state}
+      {{:error, :vocabulary_building} = building, state} -> {:reply, building, state}
     end
   end
 
   @impl true
-  def handle_call(:rebuild_index, _from, state) do
-    new_state = do_rebuild_index(state)
-    {:reply, :ok, new_state}
+  def handle_call({:forget_world, world_id}, _from, state) do
+    :ets.match_delete(@ets_table, {{world_id, :_}, :_, :_})
+    {:reply, :ok, %{state | indexes: Map.delete(state.indexes, world_id)}}
   end
 
   @impl true
@@ -89,8 +121,13 @@ defmodule Brain.Response.SemanticFactRetriever do
   @impl true
   def handle_call(:stats, _from, state) do
     stats = %{
-      indexed_count: state.indexed_count,
-      last_indexed: state.last_indexed,
+      worlds_indexed: map_size(state.indexes),
+      indexed_count: state.indexes |> Map.values() |> Enum.map(& &1.indexed_count) |> Enum.sum(),
+      last_indexed:
+        state.indexes
+        |> Map.values()
+        |> Enum.map(& &1.last_indexed)
+        |> Enum.max(DateTime, fn -> nil end),
       ready: state.ready
     }
 
@@ -98,63 +135,92 @@ defmodule Brain.Response.SemanticFactRetriever do
   end
 
   defp record_semantic_retrieval(result_count) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(Brain.Metrics.Aggregator, {:record_semantic_retrieval, result_count})
-    end
+    :ok = Brain.Metrics.Aggregator.record_semantic_retrieval(result_count)
   end
 
-  defp do_rebuild_index(state) do
-    Logger.info("Building semantic fact index...")
-    :ets.delete_all_objects(@ets_table)
+  defp ensure_index(state, world_id) do
+    if Map.has_key?(state.indexes, world_id), do: {:ok, state}, else: do_rebuild_index(state, world_id)
+  end
+
+  # While the world's vocabulary is being rebuilt from its episodes no fact can
+  # be embedded, so the world is left unindexed, and this is
+  # `{{:error, :vocabulary_building}, state}`: the caller waits for the rebuild
+  # and asks again, which builds it.
+  defp do_rebuild_index(state, world_id) do
+    Logger.info("Building semantic fact index for world #{world_id}...")
+    :ets.match_delete(@ets_table, {{world_id, :_}, :_, :_})
     facts = FactDatabase.query(limit: 10_000)
 
-    indexed_count =
-      facts
-      |> Enum.reduce(0, fn fact, count ->
-        search_text = build_search_text(fact)
-
-        case Embedder.embed(search_text) do
+    indexed =
+      Enum.reduce_while(facts, {:ok, 0}, fn fact, {:ok, count} ->
+        case world_embedding(world_id, build_search_text(fact)) do
           {:ok, embedding} ->
-            :ets.insert(@ets_table, {fact.id, fact, embedding})
-            count + 1
+            :ets.insert(@ets_table, {{world_id, fact.id}, fact, embedding})
+            {:cont, {:ok, count + 1}}
 
-          {:error, _} ->
-            count
+          :vocabulary_building ->
+            {:halt, :vocabulary_building}
         end
       end)
 
-    Logger.info("Semantic fact index built", indexed_count: indexed_count)
+    case indexed do
+      {:ok, indexed_count} ->
+        Logger.info("Semantic fact index built", world_id: world_id, indexed_count: indexed_count)
 
-    %{state | indexed_count: indexed_count, last_indexed: DateTime.utc_now(), ready: true}
+        entry = %{indexed_count: indexed_count, last_indexed: DateTime.utc_now()}
+        {:ok, %{state | indexes: Map.put(state.indexes, world_id, entry)}}
+
+      :vocabulary_building ->
+        :ets.match_delete(@ets_table, {{world_id, :_}, :_, :_})
+        {{:error, :vocabulary_building}, %{state | indexes: Map.delete(state.indexes, world_id)}}
+    end
   end
 
-  defp do_search(query, opts) do
+  defp do_search(world_id, query, opts) do
     threshold = Keyword.get(opts, :threshold, @similarity_threshold)
     limit = Keyword.get(opts, :limit, @max_results)
     category = Keyword.get(opts, :category)
 
-    case Embedder.embed(query) do
+    case world_embedding(world_id, query) do
       {:ok, query_embedding} ->
-        :ets.tab2list(@ets_table)
-        |> Enum.map(fn {_id, fact, fact_embedding} ->
-          similarity = cosine_similarity(query_embedding, fact_embedding)
-          {fact, similarity}
-        end)
-        |> Enum.filter(fn {fact, similarity} ->
-          similarity >= threshold and
-            (is_nil(category) or fact.category == category)
-        end)
-        |> Enum.sort_by(fn {_, similarity} -> -similarity end)
-        |> Enum.take(limit)
-        |> Enum.map(fn {fact, similarity} ->
-          %{
-            fact: fact,
-            similarity: similarity
-          }
-        end)
+        results =
+          :ets.match_object(@ets_table, {{world_id, :_}, :_, :_})
+          |> Enum.map(fn {_key, fact, fact_embedding} ->
+            similarity = FourthWall.Math.cosine_similarity!(query_embedding, fact_embedding)
+            {fact, similarity}
+          end)
+          |> Enum.filter(fn {fact, similarity} ->
+            similarity >= threshold and
+              (is_nil(category) or fact.category == category)
+          end)
+          |> Enum.sort_by(fn {_, similarity} -> -similarity end)
+          |> Enum.take(limit)
+          |> Enum.map(fn {fact, similarity} ->
+            %{
+              fact: fact,
+              similarity: similarity
+            }
+          end)
 
-      {:error, _} ->
-        []
+        {:ok, results}
+
+      :vocabulary_building ->
+        {:error, :vocabulary_building}
+    end
+  end
+
+  # A world's embedding comes from the world's embedder and nowhere else. A world
+  # whose embedder has no copy, no vocabulary, or no table raises.
+  defp world_embedding(world_id, text) do
+    case WorldEmbedder.embed(world_id, text) do
+      {:ok, embedding} ->
+        {:ok, embedding}
+
+      {:error, :vocabulary_building} ->
+        :vocabulary_building
+
+      {:error, reason} ->
+        raise "SemanticFactRetriever: world #{inspect(world_id)}'s embedder cannot embed: #{inspect(reason)}"
     end
   end
 
@@ -188,25 +254,5 @@ defmodule Brain.Response.SemanticFactRetriever do
 
   defp extract_content_words(text) do
     to_string(text)
-  end
-
-  defp cosine_similarity(vec1, vec2) when is_list(vec1) and is_list(vec2) do
-    if length(vec1) != length(vec2) do
-      0.0
-    else
-      dot_product = Enum.zip(vec1, vec2) |> Enum.reduce(0.0, fn {a, b}, acc -> acc + a * b end)
-      magnitude1 = :math.sqrt(Enum.reduce(vec1, 0.0, fn x, acc -> acc + x * x end))
-      magnitude2 = :math.sqrt(Enum.reduce(vec2, 0.0, fn x, acc -> acc + x * x end))
-
-      if magnitude1 == 0.0 or magnitude2 == 0.0 do
-        0.0
-      else
-        dot_product / (magnitude1 * magnitude2)
-      end
-    end
-  end
-
-  defp cosine_similarity(_, _) do
-    0.0
   end
 end

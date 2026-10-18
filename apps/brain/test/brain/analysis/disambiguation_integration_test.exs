@@ -11,6 +11,9 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
   alias ML.{EntityExtractor, Gazetteer, POSTagger}
   import Brain.TestHelpers
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   defmodule TelemetryCollector do
     use Agent
 
@@ -78,7 +81,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
   describe "introduction disambiguation" do
     test "Hello, I'm Austin - contains greeting and assertive introduction" do
       text = "Hello, I'm Austin"
-      result = Pipeline.process(text, [])
+      result = Pipeline.process(text, world_id: @world_id)
       assert result.analyses != []
 
       if length(result.analyses) > 1 do
@@ -95,7 +98,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     test "What's the weather in Austin - Austin disambiguated as location" do
       text = "What's the weather in Austin?"
 
-      result = Pipeline.process(text, [])
+      result = Pipeline.process(text, world_id: @world_id)
 
       assert result.analyses != []
       analysis = hd(result.analyses)
@@ -112,9 +115,21 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       assert austin_entity != nil,
              "Expected to find Austin entity, got: #{inspect(entities)}"
 
-      entity_type = austin_entity[:entity] || austin_entity[:entity_type]
+      entity_type = Map.fetch!(austin_entity, :entity_type)
+      refute Map.has_key?(austin_entity, :entity)
 
-      assert entity_type in ["location", "city", "ambiguous_name_location"],
+      # "ambiguous_name_location" used to be accepted here. It was never a
+      # reading of anything -- it was the *filename* of
+      # ambiguous_name_location_entries_en.json, which the loader used as the
+      # entity_type because it discarded each entry's declared `types` array.
+      # Accepting it meant this assertion passed whatever the disambiguator
+      # decided. The loader now preserves the declared readings, so the junk
+      # type no longer exists and the assertion means what it says.
+      # Location-like is what the type hierarchy says it is: `location` or a
+      # type under it. The NER gold standard labels a city `address`, which is
+      # under `location` in priv/analysis/entity_types.json, and the entity
+      # model reads one as the gold labels it.
+      assert entity_type == "location" or Brain.Analysis.TypeHierarchy.is_a?(entity_type, "location"),
              "Expected 'Austin' to be disambiguated as location-like type for weather query, " <>
                "got '#{entity_type}'. Full entity: #{inspect(austin_entity)}"
 
@@ -136,7 +151,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       speech_act = %{category: :expressive, sub_type: :greeting}
 
       entities =
-        EntityExtractor.extract_entities(text, discourse: discourse, speech_act: speech_act)
+        EntityExtractor.extract_entities(text, world_id: @world_id, discourse: discourse, speech_act: speech_act)
 
       austin =
         Enum.find(entities, fn e ->
@@ -144,7 +159,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
         end)
 
       if austin do
-        entity_type = austin[:entity] || austin[:entity_type]
+        entity_type = Map.fetch!(austin, :entity_type)
         disambiguation_source = austin[:disambiguation_source]
 
         cond do
@@ -152,9 +167,6 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
             assert entity_type != nil, "Expected TypeInferrer to provide a type, got nil"
 
           entity_type == "person" ->
-            :ok
-
-          entity_type in ["ambiguous_name_location"] ->
             :ok
 
           true ->
@@ -172,14 +184,14 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
   describe "response content verification" do
     setup do
       start_brain_services()
-      {:ok, conversation_id} = Brain.create_conversation()
+      {:ok, conversation_id} = Brain.create_conversation(world_id: @world_id)
       %{conversation_id: conversation_id}
     end
 
     test "Hello I'm Austin - response is a greeting, not weather", %{conversation_id: conv_id} do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Austin")
+          {:ok, %{response: response}} = evaluate_in_utc(conv_id, "Hello, I'm Austin")
           Logger.warning("Response to 'Hello, I'm Austin': #{response}")
 
           refute response =~ ~r/weather|temperature|forecast|degrees|rain|sunny|cloudy/i,
@@ -204,7 +216,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     } do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response}} = Brain.evaluate(conv_id, "I am Austin")
+          {:ok, %{response: response}} = evaluate_in_utc(conv_id, "I am Austin")
           Logger.warning("Response to 'I am Austin': #{response}")
 
           refute response =~ ~r/weather|temperature|forecast/i,
@@ -222,7 +234,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     test "My name is Austin - treated as introduction", %{conversation_id: conv_id} do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response}} = Brain.evaluate(conv_id, "My name is Austin")
+          {:ok, %{response: response}} = evaluate_in_utc(conv_id, "My name is Austin")
           Logger.warning("Response to 'My name is Austin': #{response}")
 
           refute response =~ ~r/weather|temperature|forecast|degrees/i,
@@ -239,7 +251,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     } do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response}} = Brain.evaluate(conv_id, "What's the weather in Austin?")
+          {:ok, %{response: response}} = evaluate_in_utc(conv_id, "What's the weather in Austin?")
           Logger.warning("Response to weather query: #{response}")
 
           is_weather_response =
@@ -261,14 +273,14 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     test "sequential conversation - introduction then weather query", %{conversation_id: conv_id} do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: intro_response}} = Brain.evaluate(conv_id, "Hi, I'm Austin")
+          {:ok, %{response: intro_response}} = evaluate_in_utc(conv_id, "Hi, I'm Austin")
           Logger.warning("Intro response: #{intro_response}")
 
           refute intro_response =~ ~r/weather|temperature|forecast/i,
                  "Introduction triggered weather response: #{intro_response}"
 
           {:ok, %{response: weather_response}} =
-            Brain.evaluate(conv_id, "What's the weather in Austin, Texas?")
+            evaluate_in_utc(conv_id, "What's the weather in Austin, Texas?")
 
           Logger.warning("Weather response: #{weather_response}")
           assert String.length(weather_response) > 0
@@ -285,7 +297,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       log =
         capture_log([level: :warning], fn ->
           {:ok, %{response: response}} =
-            Brain.evaluate(
+            evaluate_in_utc(
               conv_id,
               "Hello, I'm Austin. It is nice to meet you. Can you tell me about the weather?"
             )
@@ -312,10 +324,10 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     } do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response1}} = Brain.evaluate(conv_id, "Hello Austin")
+          {:ok, %{response: response1}} = evaluate_in_utc(conv_id, "Hello Austin")
           Logger.warning("Response to 'Hello Austin': #{response1}")
-          {:ok, conv_id2} = Brain.create_conversation()
-          {:ok, %{response: response2}} = Brain.evaluate(conv_id2, "Hello, I'm Austin")
+          {:ok, conv_id2} = Brain.create_conversation(world_id: @world_id)
+          {:ok, %{response: response2}} = evaluate_in_utc(conv_id2, "Hello, I'm Austin")
           Logger.warning("Response to 'Hello, I'm Austin': #{response2}")
 
           refute response1 =~ ~r/weather|temperature|forecast/i,
@@ -333,7 +345,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     test "introduction should not show 'location' in debug output", %{conversation_id: conv_id} do
       log =
         capture_log([level: :warning], fn ->
-          {:ok, %{response: response}} = Brain.evaluate(conv_id, "Hello, I'm Austin")
+          {:ok, %{response: response}} = evaluate_in_utc(conv_id, "Hello, I'm Austin")
           Logger.warning("Response: #{response}")
 
           refute response =~ ~r/weather|temperature|forecast|degrees|rain|sunny/i,
@@ -361,7 +373,8 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
 
       context = %{
         discourse: %{indicators: ["self_referential", "primarily_first_person"]},
-        speech_act: %{category: :expressive, sub_type: :greeting}
+        speech_act: %{category: :expressive, sub_type: :greeting},
+        world_id: @world_id
       }
 
       result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
@@ -374,11 +387,20 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       person_info = %{entity_type: "person", value: "Austin"}
       location_info = %{entity_type: "location", value: "Austin"}
 
+      # The sentence the tags are of, and Austin's offsets in it: the scorer
+      # reads from them whether the entity starts the sentence. Like every
+      # entity EntityExtractor gives the disambiguator, it carries a type and
+      # a confidence -- its first reading's -- which the scorer replaces with
+      # the selected reading's.
+      text = "What is the weather in Austin"
+
       entity = %{
         value: "Austin",
         match: "Austin",
-        start_pos: 20,
-        end_pos: 26,
+        start_pos: 23,
+        end_pos: 29,
+        entity_type: "person",
+        confidence: 0.5,
         types: [person_info, location_info]
       }
 
@@ -394,7 +416,9 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       context = %{
         discourse: %{indicators: []},
         speech_act: %{category: :directive, sub_type: :question},
-        intent: "weather.query"
+        intent: "weather.query",
+        original_text: text,
+        world_id: @world_id
       }
 
       result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
@@ -419,7 +443,8 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
 
       context = %{
         discourse: %{indicators: ["self_referential", "primarily_first_person"]},
-        speech_act: %{category: :expressive, sub_type: :greeting}
+        speech_act: %{category: :expressive, sub_type: :greeting},
+        world_id: @world_id
       }
 
       result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
@@ -444,19 +469,25 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       speech_act = %{category: :expressive, sub_type: :greeting}
 
       entities =
-        EntityExtractor.extract_entities(text, discourse: discourse, speech_act: speech_act)
+        EntityExtractor.extract_entities(text, world_id: @world_id, discourse: discourse, speech_act: speech_act)
 
       austin =
         Enum.find(entities, fn e ->
           String.downcase(e[:value] || "") == "austin"
         end)
 
-      if austin do
-        entity_type = austin[:entity] || austin[:entity_type]
+      # Previously `if austin do ... end` with no else, so the test passed
+      # green precisely when Austin was not extracted at all -- the regression
+      # it exists to catch. And "ambiguous_name_location" was the loader's
+      # filename-derived junk type, which made the assertion accept anything.
+      assert austin, "Austin was not extracted from the introduction: #{inspect(entities)}"
 
-        assert entity_type in ["person", "ambiguous_name_location"],
-               "Expected Austin to be disambiguated as person or ambiguous_name_location, got: #{entity_type}"
-      end
+      entity_type = Map.fetch!(austin, :entity_type)
+      refute Map.has_key?(austin, :entity)
+
+      assert entity_type == "person",
+             "Expected Austin to be disambiguated as a person in an introduction, got: " <>
+               "#{entity_type}. Full entity: #{inspect(austin)}"
     end
   end
 
@@ -502,7 +533,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
     test "emits telemetry events for disambiguation" do
       TelemetryCollector.clear()
       text = "What's the weather in Austin?"
-      _result = Pipeline.process(text, emit_telemetry: true)
+      _result = Pipeline.process(text, world_id: @world_id, emit_telemetry: true)
       Process.sleep(50)
 
       events = TelemetryCollector.get_events()
@@ -534,7 +565,7 @@ defmodule Brain.Analysis.DisambiguationIntegrationTest do
       speech_act = %{category: :expressive, sub_type: :greeting}
 
       _entities =
-        EntityExtractor.extract_entities(text, discourse: discourse, speech_act: speech_act)
+        EntityExtractor.extract_entities(text, world_id: @world_id, discourse: discourse, speech_act: speech_act)
 
       Process.sleep(50)
 

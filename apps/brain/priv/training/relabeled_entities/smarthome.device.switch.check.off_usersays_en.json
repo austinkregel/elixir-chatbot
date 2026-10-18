@@ -1,0 +1,104 @@
+[
+  {
+    "data": [
+      {
+        "text": "are kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " off"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "are "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " off in all the rooms"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "are the green "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in bedroom off"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "are the green "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " off"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "check if I forgot to turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " off in bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "check if "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " are off in the bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "did I turn off the red "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  }
+]

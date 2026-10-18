@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Evaluate.Intent do
   alias Brain.Analysis.Pipeline
   alias Brain.ML
   @shortdoc "Evaluate intent classification accuracy"
-  @moduledoc "Evaluate intent classification against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy.\n\n## Usage\n\n    mix evaluate.intent              # Run evaluation\n    mix evaluate.intent --save       # Save results\n    mix evaluate.intent --compare    # Compare with previous\n    mix evaluate.intent --verbose    # Show confusion matrix\n"
+  @moduledoc "Evaluate intent classification against gold standard data.\n\nUses the full production pipeline for evaluation to measure real-world accuracy.\n\n## Usage\n\n    mix evaluate.intent --world <id>              # Run evaluation\n    mix evaluate.intent --world <id> --save       # Save results\n    mix evaluate.intent --world <id> --compare    # Compare with previous\n    mix evaluate.intent --world <id> --verbose    # Show confusion matrix\n\n## Options\n\n    --world <id>   Required. The world the held-out rows are analyzed in.\n    --save         Save results\n    --compare      Compare with previous\n    --verbose      Show confusion matrix\n"
 
   use Mix.Task
 
@@ -10,34 +10,46 @@ defmodule Mix.Tasks.Evaluate.Intent do
 
   @impl Mix.Task
   def run(args) do
+    {opts, _, _} =
+      OptionParser.parse(args, strict: [save: :boolean, compare: :boolean, verbose: :boolean, world: :string])
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix evaluate.intent needs --world <id>, the world the held-out rows are analyzed in")
+
     Mix.Task.run("app.start")
 
-    save? = "--save" in args
-    compare? = "--compare" in args
-    verbose? = "--verbose" in args
+    save? = Keyword.get(opts, :save, false)
+    compare? = Keyword.get(opts, :compare, false)
+    verbose? = Keyword.get(opts, :verbose, false)
 
     IO.puts("\nAwaiting MicroClassifiers readiness...")
     ML.MicroClassifiers.await_ready(:infinity)
     IO.puts("MicroClassifiers ready.")
 
-    gold = EvaluationStore.load_gold_standard("intent")
+    # Held-out only. Evaluating on the full gold standard measures the model
+    # against the rows it was fitted to: every intent figure this repo has
+    # produced, including 43.5% and 38.4%, was training-set accuracy.
+    # `load_gold_standard/2` raises when no split exists rather than quietly
+    # falling back to the training set, which is the defect being closed.
+    gold = EvaluationStore.load_gold_standard("intent", :held_out)
 
     if gold == [] do
-      IO.puts("\nNo gold standard data for intent classification.")
-      IO.puts("Add annotated examples to: priv/evaluation/intent/gold_standard.json")
-      IO.puts("")
-      IO.puts("Format: [{\"text\": \"What's the weather?\", \"intent\": \"weather.query\"}, ...]")
-      IO.puts("")
-      exit(:normal)
+      Mix.raise("""
+      The held-out split for intent is empty: #{EvaluationStore.held_out_path("intent")}
+
+      An empty evaluation set cannot measure anything, which is not the same as
+      a model that scores zero. Re-carve it with `mix split.held_out intent`.
+      """)
     end
 
     IO.puts("\n" <> String.duplicate("=", 60))
-    IO.puts("INTENT CLASSIFICATION EVALUATION (#{length(gold)} examples)")
-    IO.puts("(Using production pipeline)")
+    IO.puts("INTENT CLASSIFICATION EVALUATION (#{length(gold)} held-out examples)")
+    IO.puts("(Using production pipeline; the model never saw these rows)")
     IO.puts(String.duplicate("=", 60) <> "\n")
 
     start_time = System.monotonic_time(:millisecond)
-    {predictions, actuals} = evaluate_all(gold)
+    {predictions, actuals} = evaluate_all(gold, world_id)
     duration_ms = System.monotonic_time(:millisecond) - start_time
 
     cm = Evaluation.confusion_matrix(predictions, actuals)
@@ -51,17 +63,12 @@ defmodule Mix.Tasks.Evaluate.Intent do
     IO.puts("Duration:         #{duration_ms}ms")
     IO.puts("")
 
+    report_by_provenance(gold, predictions, actuals)
+
     IO.puts(Evaluation.format_report(report))
     IO.puts("")
 
     broadcast_result(result, duration_ms)
-    Brain.Telemetry.emit_evaluation_complete("intent", %{
-      accuracy: result.accuracy,
-      macro_f1: result.macro_f1,
-      weighted_f1: result.weighted_f1,
-      total_examples: result.total_examples,
-      duration_ms: duration_ms
-    })
 
     if verbose? do
       IO.puts("\n--- Confusion Matrix ---\n")
@@ -69,7 +76,8 @@ defmodule Mix.Tasks.Evaluate.Intent do
     end
 
     if save? do
-      {:ok, path} = EvaluationStore.save(result)
+      # Saving emits the evaluation's completion (`Brain.ML.EvaluationStore.save/1`).
+      {:ok, path} = EvaluationStore.save(Map.put(result, :duration_ms, duration_ms))
       IO.puts("Results saved to: #{path}")
     end
 
@@ -99,26 +107,51 @@ defmodule Mix.Tasks.Evaluate.Intent do
     IO.puts("")
   end
 
-  defp evaluate_all(gold) do
+  defp evaluate_all(gold, world_id) do
+    total = length(gold)
+    IO.puts("Starting evaluation of #{total} examples...")
+
     {results, counts} =
-      Enum.reduce(gold, {[], %{ok: 0, unknown: 0, errored: 0}}, fn example, {acc, counts} ->
+      gold
+      |> Enum.with_index(1)
+      |> Enum.reduce({[], %{ok: 0, unknown: 0, errored: 0}}, fn {example, idx}, {acc, counts} ->
         text = example["text"]
         expected = example["intent"]
 
+        if rem(idx, 100) == 0 or idx == 1 do
+          elapsed = counts[:_started_at] && System.monotonic_time(:millisecond) - counts[:_started_at]
+          rate = if elapsed && elapsed > 0, do: " (#{Float.round(idx / (elapsed / 1000), 1)}/s)", else: ""
+          IO.puts("  [#{idx}/#{total}]#{rate} processing: #{String.slice(text || "", 0, 60)}")
+        end
+
+        counts = if idx == 1, do: Map.put(counts, :_started_at, System.monotonic_time(:millisecond)), else: counts
+
         {status, predicted} =
           try do
-            analysis = Pipeline.analyze_chunk(text, side_effects: false)
+            analysis =
+              Pipeline.analyze_chunk(text,
+                side_effects: false,
+                world_id: world_id,
+                active_contexts: Brain.Analysis.ActiveContexts.for_row(example)
+              )
+
             p = to_string(analysis.intent || "unknown")
             if p == "unknown", do: {:unknown, p}, else: {:ok, p}
           rescue
-            _ -> {:error, "unknown"}
+            e ->
+              if idx <= 3, do: IO.puts("  ERROR on example #{idx}: #{Exception.message(e)}")
+              {:error, "unknown"}
           catch
-            :exit, _ -> {:error, "unknown"}
+            :exit, reason ->
+              if idx <= 3, do: IO.puts("  EXIT on example #{idx}: #{inspect(reason)}")
+              {:error, "unknown"}
           end
 
         counts = Map.update!(counts, status_key(status), &(&1 + 1))
         {[{predicted, expected} | acc], counts}
       end)
+
+    counts = Map.delete(counts, :_started_at)
 
     error_rate = (counts.errored + counts.unknown) / max(length(gold), 1)
 
@@ -136,6 +169,49 @@ defmodule Mix.Tasks.Evaluate.Intent do
     results = Enum.reverse(results)
     {Enum.map(results, &elem(&1, 0)), Enum.map(results, &elem(&1, 1))}
   end
+
+  # The held-out split mixes genuine utterances with texts materialized back into
+  # the export, so an overall figure does not say what the model was scored on.
+  # Each kind is reported on its own, and each non-Dialogflow kind also reported
+  # excluded, so the score on genuine input is visible without a second run.
+  defp report_by_provenance(gold, predictions, actuals) do
+    rows = Enum.zip([gold, predictions, actuals])
+    kind = fn {example, _p, _a} -> Map.get(example, "labeled_by") || "unrecorded" end
+    groups = Enum.group_by(rows, kind)
+
+    if map_size(groups) > 1 do
+      IO.puts("--- Accuracy by provenance ---\n")
+
+      groups
+      |> Enum.sort_by(fn {_k, rs} -> -length(rs) end)
+      |> Enum.each(fn {k, rs} -> IO.puts("  " <> line(k, rs)) end)
+
+      groups
+      |> Map.keys()
+      |> Enum.reject(&(&1 == "dialogflow"))
+      |> Enum.sort()
+      |> Enum.each(fn excluded ->
+        kept = Enum.reject(rows, &(kind.(&1) == excluded))
+        IO.puts("  " <> line("excl. " <> excluded, kept))
+      end)
+
+      IO.puts("")
+    end
+  end
+
+  defp line(label, rows) do
+    result =
+      Evaluation.build_result(
+        "intent",
+        Enum.map(rows, fn {_e, p, _a} -> p end),
+        Enum.map(rows, fn {_e, _p, a} -> a end)
+      )
+
+    "#{String.pad_trailing(label, 20)} n=#{String.pad_leading(to_string(length(rows)), 5)}" <>
+      "  acc=#{pct(result.accuracy)}  macroF1=#{pct(result.macro_f1)}"
+  end
+
+  defp pct(value), do: String.pad_leading("#{Float.round(value * 100, 1)}%", 6)
 
   defp status_key(:ok), do: :ok
   defp status_key(:unknown), do: :unknown

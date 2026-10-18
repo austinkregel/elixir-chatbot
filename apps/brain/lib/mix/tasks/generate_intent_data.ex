@@ -26,6 +26,8 @@ defmodule Mix.Tasks.GenerateIntentData do
   require Logger
   import Bitwise
 
+  alias Brain.Services.SchedulingDriver
+
   @shortdoc "Generate intent training data from templates"
 
   @output_dir "data/training/intents"
@@ -64,30 +66,23 @@ defmodule Mix.Tasks.GenerateIntentData do
   defp generate_calendar_intents do
     Mix.shell().info("Generating calendar intents...")
 
+    # Each label is a scheduling operation's intent
+    # (`Brain.Services.SchedulingDriver`), so every example names something a
+    # driver performs.
     intents = [
-      {"calendar.event.create", calendar_event_create_templates()},
-      {"calendar.event.delete", calendar_event_delete_templates()},
-      {"calendar.event.update", calendar_event_update_templates()},
-      {"calendar.event.reschedule", calendar_event_reschedule_templates()},
-      {"calendar.event.check", calendar_event_check_templates()},
-      {"calendar.query.today", calendar_query_today_templates()},
-      {"calendar.query.tomorrow", calendar_query_tomorrow_templates()},
-      {"calendar.query.week", calendar_query_week_templates()},
-      {"calendar.query.date", calendar_query_date_templates()},
-      {"calendar.query.next", calendar_query_next_templates()},
-      {"calendar.query.between", calendar_query_between_templates()},
-      {"calendar.query.free_time", calendar_query_free_time_templates()},
-      {"calendar.event.add_attendee", calendar_event_add_attendee_templates()},
-      {"calendar.event.remove_attendee", calendar_event_remove_attendee_templates()},
-      {"calendar.event.set_location", calendar_event_set_location_templates()},
-      {"calendar.event.set_reminder", calendar_event_set_reminder_templates()},
-      {"calendar.event.set_recurring", calendar_event_set_recurring_templates()},
-      {"calendar.event.add_notes", calendar_event_add_notes_templates()},
-      {"calendar.meeting.schedule", calendar_meeting_schedule_templates()},
-      {"calendar.meeting.find_time", calendar_meeting_find_time_templates()},
-      {"calendar.meeting.cancel", calendar_meeting_cancel_templates()},
-      {"calendar.meeting.join", calendar_meeting_join_templates()},
-      {"calendar.meeting.check_conflicts", calendar_meeting_check_conflicts_templates()}
+      {"calendar.schedule", calendar_event_create_templates() ++ calendar_meeting_schedule_templates()},
+      {"calendar.cancel", calendar_event_delete_templates() ++ calendar_meeting_cancel_templates()},
+      {"calendar.query",
+       calendar_event_check_templates() ++
+         calendar_query_today_templates() ++
+         calendar_query_tomorrow_templates() ++
+         calendar_query_week_templates() ++
+         calendar_query_date_templates() ++
+         calendar_query_next_templates() ++
+         calendar_query_between_templates() ++
+         calendar_query_free_time_templates() ++
+         calendar_meeting_find_time_templates() ++
+         calendar_meeting_check_conflicts_templates()}
     ]
 
     Enum.each(intents, fn {intent_name, templates} ->
@@ -152,56 +147,6 @@ defmodule Mix.Tasks.GenerateIntentData do
       "clear {event_title} from my calendar",
       "erase the {event_title} event",
       "I don't need the {event_title} anymore"
-    ]
-  end
-
-  defp calendar_event_update_templates do
-    [
-      "update the {event_title} event",
-      "change the {event_title} details",
-      "modify my {event_title}",
-      "edit the {event_title} event",
-      "update {event_title} on my calendar",
-      "I need to change {event_title}",
-      "make changes to {event_title}",
-      "alter the {event_title} event",
-      "revise my {event_title}",
-      "update the details for {event_title}",
-      "change {event_title} information",
-      "edit my {event_title} appointment",
-      "modify the {event_title} details",
-      "I want to update {event_title}",
-      "can you edit {event_title}",
-      "adjust the {event_title}",
-      "change my {event_title} event",
-      "update my calendar event {event_title}",
-      "make an update to {event_title}",
-      "I need to modify {event_title}"
-    ]
-  end
-
-  defp calendar_event_reschedule_templates do
-    [
-      "reschedule {event_title} to {date_time}",
-      "move {event_title} to {date_time}",
-      "change {event_title} to {date_time}",
-      "reschedule my {event_title}",
-      "move the {event_title} event to {date_time}",
-      "I need to reschedule {event_title}",
-      "can you move {event_title} to {date_time}",
-      "push {event_title} to {date_time}",
-      "postpone {event_title} to {date_time}",
-      "delay {event_title} until {date_time}",
-      "shift {event_title} to {date_time}",
-      "change the time of {event_title} to {date_time}",
-      "move my {event_title} appointment to {date_time}",
-      "reschedule the {event_title} for {date_time}",
-      "I want to move {event_title} to {date_time}",
-      "bump {event_title} to {date_time}",
-      "relocate {event_title} to {date_time}",
-      "switch {event_title} to {date_time}",
-      "change when {event_title} is to {date_time}",
-      "move the time of {event_title}"
     ]
   end
 
@@ -405,156 +350,6 @@ defmodule Mix.Tasks.GenerateIntentData do
     ]
   end
 
-  defp calendar_event_add_attendee_templates do
-    [
-      "add {person} to {event_title}",
-      "invite {person} to {event_title}",
-      "include {person} in {event_title}",
-      "add {person} as an attendee to {event_title}",
-      "invite {person} to the {event_title} meeting",
-      "add {person} to the {event_title} event",
-      "include {person} in the {event_title}",
-      "I want to add {person} to {event_title}",
-      "can you invite {person} to {event_title}",
-      "put {person} on the {event_title} invite",
-      "add {person} to my {event_title}",
-      "invite {person} to my {event_title}",
-      "include {person} on {event_title}",
-      "add attendee {person} to {event_title}",
-      "add {person} to the invite for {event_title}",
-      "get {person} on the {event_title}",
-      "bring {person} into {event_title}",
-      "add {person} to the calendar invite for {event_title}",
-      "invite {person} to join {event_title}",
-      "add another person {person} to {event_title}"
-    ]
-  end
-
-  defp calendar_event_remove_attendee_templates do
-    [
-      "remove {person} from {event_title}",
-      "uninvite {person} from {event_title}",
-      "take {person} off {event_title}",
-      "remove {person} as an attendee from {event_title}",
-      "remove {person} from the {event_title} meeting",
-      "take {person} off the {event_title} event",
-      "remove {person} from the {event_title}",
-      "I want to remove {person} from {event_title}",
-      "can you uninvite {person} from {event_title}",
-      "take {person} off the {event_title} invite",
-      "remove {person} from my {event_title}",
-      "uninvite {person} from my {event_title}",
-      "remove {person} from the invite for {event_title}",
-      "delete {person} from {event_title}",
-      "remove attendee {person} from {event_title}",
-      "drop {person} from {event_title}",
-      "kick {person} from {event_title}",
-      "exclude {person} from {event_title}",
-      "cancel {person}'s invite to {event_title}",
-      "remove {person} from the guest list for {event_title}"
-    ]
-  end
-
-  defp calendar_event_set_location_templates do
-    [
-      "set location of {event_title} to {location}",
-      "change the location of {event_title} to {location}",
-      "add {location} as the location for {event_title}",
-      "set {event_title} location to {location}",
-      "move {event_title} to {location}",
-      "update the location for {event_title} to {location}",
-      "make {location} the location for {event_title}",
-      "add location {location} to {event_title}",
-      "set the venue for {event_title} to {location}",
-      "change where {event_title} is to {location}",
-      "set meeting location for {event_title} to {location}",
-      "put {location} as the place for {event_title}",
-      "update {event_title} location to {location}",
-      "add {location} to the {event_title} event",
-      "set the place for {event_title} to {location}",
-      "change {event_title} location to {location}",
-      "add venue {location} to {event_title}",
-      "set where {event_title} happens to {location}",
-      "update the venue for {event_title} to {location}",
-      "{event_title} should be at {location}"
-    ]
-  end
-
-  defp calendar_event_set_reminder_templates do
-    [
-      "add a reminder for {event_title}",
-      "set a reminder for {event_title} {duration} before",
-      "remind me about {event_title} {duration} before",
-      "add a {duration} reminder to {event_title}",
-      "set reminder for {event_title}",
-      "I want a reminder for {event_title}",
-      "notify me {duration} before {event_title}",
-      "add notification for {event_title}",
-      "alert me about {event_title} {duration} ahead",
-      "set up a reminder for {event_title}",
-      "remind me {duration} before {event_title}",
-      "add a heads up for {event_title}",
-      "set an alert for {event_title}",
-      "give me a reminder for {event_title}",
-      "remind me about the {event_title}",
-      "add {duration} advance notice for {event_title}",
-      "set a notification {duration} before {event_title}",
-      "create a reminder for {event_title}",
-      "remind me when {event_title} is coming up",
-      "add advance warning for {event_title}"
-    ]
-  end
-
-  defp calendar_event_set_recurring_templates do
-    [
-      "make {event_title} recurring",
-      "set {event_title} to repeat {recurrence}",
-      "make {event_title} repeat {recurrence}",
-      "set {event_title} as a recurring event",
-      "have {event_title} repeat {recurrence}",
-      "make {event_title} a {recurrence} event",
-      "set up {event_title} to recur {recurrence}",
-      "repeat {event_title} {recurrence}",
-      "make {event_title} happen {recurrence}",
-      "schedule {event_title} {recurrence}",
-      "set {event_title} to occur {recurrence}",
-      "have {event_title} happen {recurrence}",
-      "create a recurring {event_title}",
-      "make {event_title} repeat every week",
-      "set {event_title} to every {recurrence}",
-      "{event_title} should repeat {recurrence}",
-      "make {event_title} a regular thing {recurrence}",
-      "set up recurring {event_title}",
-      "have {event_title} occur {recurrence}",
-      "{event_title} repeats {recurrence}"
-    ]
-  end
-
-  defp calendar_event_add_notes_templates do
-    [
-      "add notes to {event_title}",
-      "add a description to {event_title}",
-      "put notes on {event_title}",
-      "add details to {event_title}",
-      "write notes for {event_title}",
-      "add a note to {event_title}",
-      "include notes in {event_title}",
-      "add information to {event_title}",
-      "put a description on {event_title}",
-      "add agenda to {event_title}",
-      "include details in {event_title}",
-      "add meeting notes to {event_title}",
-      "write a description for {event_title}",
-      "attach notes to {event_title}",
-      "add more details to {event_title}",
-      "update notes for {event_title}",
-      "put some notes on {event_title}",
-      "add context to {event_title}",
-      "include agenda in {event_title}",
-      "add event notes to {event_title}"
-    ]
-  end
-
   defp calendar_meeting_schedule_templates do
     [
       "schedule a meeting with {person}",
@@ -630,31 +425,6 @@ defmodule Mix.Tasks.GenerateIntentData do
     ]
   end
 
-  defp calendar_meeting_join_templates do
-    [
-      "join my meeting",
-      "join the {event_title} meeting",
-      "connect to my meeting",
-      "join the call",
-      "get me into my meeting",
-      "join the video call",
-      "connect me to the meeting",
-      "enter the {event_title} meeting",
-      "join my {date_time} meeting",
-      "open my meeting",
-      "launch the meeting",
-      "start my meeting",
-      "join the zoom call",
-      "connect to the {event_title}",
-      "get on the call",
-      "join the conference call",
-      "open the meeting link",
-      "join my next meeting",
-      "connect to the video meeting",
-      "take me to my meeting"
-    ]
-  end
-
   defp calendar_meeting_check_conflicts_templates do
     [
       "check for conflicts on {date_time}",
@@ -682,7 +452,7 @@ defmodule Mix.Tasks.GenerateIntentData do
 
   defp generate_calendar_negative_examples do
     negative_examples = [
-      %{text: "remind me to buy groceries", correct_intent: "reminder.set"},
+      %{text: "remind me to buy groceries", correct_intent: "reminder.create"},
       %{text: "set a timer for 10 minutes", correct_intent: "timer.set"},
       %{text: "add milk to my shopping list", correct_intent: "shopping.add"},
       %{text: "what's the weather today", correct_intent: "weather"},
@@ -701,7 +471,25 @@ defmodule Mix.Tasks.GenerateIntentData do
   # Helper Functions
   # ============================================================================
 
+  # An alarm, timer, reminder or calendar label must be the intent of an
+  # operation a scheduling driver performs (`SchedulingDriver.operation/1`,
+  # whose intents are all in `priv/analysis/intent_registry.json`); any other
+  # name in those domains would teach the classifier an intent that no driver
+  # handles, so it raises.
+  defp scheduling_label!(intent_name) do
+    if SchedulingDriver.domain?(intent_name) and SchedulingDriver.operation(intent_name) == :error do
+      Mix.raise(
+        "generate_intent_data: #{inspect(intent_name)} is in a scheduling domain but is not a scheduling " <>
+          "operation's intent; the operations' intents are #{inspect(SchedulingDriver.intents())}"
+      )
+    end
+
+    intent_name
+  end
+
   defp generate_intent_file(intent_name, templates) do
+    intent_name = scheduling_label!(intent_name)
+
     # Generate examples from templates
     examples = expand_templates(templates, intent_name)
 
@@ -855,6 +643,7 @@ defmodule Mix.Tasks.GenerateIntentData do
   end
 
   defp write_negative_examples(domain, examples) do
+    Enum.each(examples, &scheduling_label!(&1.correct_intent))
     file_name = "#{domain}_negative.json"
     path = Path.join(@negative_dir, file_name)
 
@@ -875,32 +664,20 @@ defmodule Mix.Tasks.GenerateIntentData do
   defp generate_reminder_intents do
     Mix.shell().info("Generating reminder intents...")
 
+    # Each label is a scheduling operation's intent
+    # (`Brain.Services.SchedulingDriver`), so every example names something a
+    # driver performs.
     intents = [
-      {"reminder.set", reminder_set_templates()},
-      {"reminder.set.location_based", reminder_location_templates()},
-      {"reminder.set.recurring", reminder_recurring_templates()},
+      {"reminder.create", reminder_set_templates() ++ reminder_location_templates() ++ reminder_recurring_templates()},
       {"reminder.cancel", reminder_cancel_templates()},
-      {"reminder.list", reminder_list_templates()},
-      {"reminder.check", reminder_check_templates()},
-      {"reminder.snooze", reminder_snooze_templates()},
-      {"reminder.mark_done", reminder_mark_done_templates()},
-      {"reminder.update", reminder_update_templates()},
-      {"alarm.set", alarm_set_templates()},
-      {"alarm.set.recurring", alarm_recurring_templates()},
-      {"alarm.cancel", alarm_cancel_templates()},
-      {"alarm.cancel.all", alarm_cancel_all_templates()},
+      {"reminder.check", reminder_list_templates() ++ reminder_check_templates()},
+      {"alarm.set", alarm_set_templates() ++ alarm_recurring_templates()},
+      {"alarm.cancel", alarm_cancel_templates() ++ alarm_cancel_all_templates()},
       {"alarm.snooze", alarm_snooze_templates()},
-      {"alarm.stop", alarm_stop_templates()},
-      {"alarm.list", alarm_list_templates()},
-      {"alarm.check", alarm_check_templates()},
-      {"timer.set", timer_set_templates()},
-      {"timer.set.named", timer_set_named_templates()},
+      {"alarm.check", alarm_list_templates() ++ alarm_check_templates()},
+      {"timer.set", timer_set_templates() ++ timer_set_named_templates()},
       {"timer.cancel", timer_cancel_templates()},
-      {"timer.pause", timer_pause_templates()},
-      {"timer.resume", timer_resume_templates()},
-      {"timer.check", timer_check_templates()},
-      {"timer.add_time", timer_add_time_templates()},
-      {"timer.list", timer_list_templates()}
+      {"timer.check", timer_check_templates() ++ timer_list_templates()}
     ]
 
     Enum.each(intents, fn {intent_name, templates} ->
@@ -1061,81 +838,6 @@ defmodule Mix.Tasks.GenerateIntentData do
     ]
   end
 
-  defp reminder_snooze_templates do
-    [
-      "snooze the reminder",
-      "snooze for {duration}",
-      "snooze reminder",
-      "remind me later",
-      "snooze this reminder",
-      "snooze it",
-      "remind me again in {duration}",
-      "push the reminder back",
-      "delay the reminder",
-      "snooze for a bit",
-      "snooze reminder for {duration}",
-      "postpone the reminder",
-      "remind me in {duration}",
-      "snooze {duration}",
-      "put off the reminder",
-      "delay for {duration}",
-      "snooze this",
-      "remind me later about this",
-      "push back the reminder {duration}",
-      "postpone {duration}"
-    ]
-  end
-
-  defp reminder_mark_done_templates do
-    [
-      "mark reminder as done",
-      "complete the reminder",
-      "I did {reminder_content}",
-      "reminder done",
-      "mark it as complete",
-      "I finished {reminder_content}",
-      "done with the reminder",
-      "mark reminder complete",
-      "finished the reminder",
-      "reminder completed",
-      "I've done {reminder_content}",
-      "mark as done",
-      "complete reminder",
-      "I completed {reminder_content}",
-      "tick off the reminder",
-      "check off reminder",
-      "did it",
-      "that's done",
-      "completed {reminder_content}",
-      "mark {reminder_content} as done"
-    ]
-  end
-
-  defp reminder_update_templates do
-    [
-      "update my reminder",
-      "change the reminder to {date_time}",
-      "update reminder time",
-      "modify my reminder",
-      "change my reminder",
-      "edit the reminder",
-      "update the reminder for {reminder_content}",
-      "change reminder to {reminder_content}",
-      "reschedule my reminder",
-      "move my reminder to {date_time}",
-      "update reminder to {date_time}",
-      "modify the reminder time",
-      "change when the reminder is",
-      "edit my reminder",
-      "update the {reminder_content} reminder",
-      "alter my reminder",
-      "change the {reminder_content} reminder",
-      "push the reminder to {date_time}",
-      "move reminder to {date_time}",
-      "reschedule reminder to {date_time}"
-    ]
-  end
-
   defp alarm_set_templates do
     [
       "set an alarm for {date_time}",
@@ -1258,31 +960,6 @@ defmodule Mix.Tasks.GenerateIntentData do
       "snooze for a bit",
       "let me snooze",
       "hit the snooze button"
-    ]
-  end
-
-  defp alarm_stop_templates do
-    [
-      "stop the alarm",
-      "turn off the alarm",
-      "stop alarm",
-      "dismiss alarm",
-      "turn it off",
-      "stop",
-      "alarm off",
-      "shut off the alarm",
-      "dismiss the alarm",
-      "silence the alarm",
-      "quiet the alarm",
-      "make it stop",
-      "enough",
-      "okay I'm up",
-      "stop ringing",
-      "turn off",
-      "kill the alarm",
-      "end alarm",
-      "disable alarm",
-      "shut up"
     ]
   end
 
@@ -1411,56 +1088,6 @@ defmodule Mix.Tasks.GenerateIntentData do
     ]
   end
 
-  defp timer_pause_templates do
-    [
-      "pause the timer",
-      "pause timer",
-      "hold the timer",
-      "pause my timer",
-      "stop the timer temporarily",
-      "freeze the timer",
-      "pause the {event_title} timer",
-      "hold timer",
-      "put timer on hold",
-      "suspend the timer",
-      "pause counting",
-      "stop counting temporarily",
-      "hold on the timer",
-      "freeze timer",
-      "pause the countdown",
-      "temporarily stop timer",
-      "halt the timer",
-      "pause time",
-      "stop the clock",
-      "timer pause"
-    ]
-  end
-
-  defp timer_resume_templates do
-    [
-      "resume the timer",
-      "resume timer",
-      "continue the timer",
-      "start the timer again",
-      "unpause timer",
-      "resume my timer",
-      "continue timer",
-      "restart the timer",
-      "resume the {event_title} timer",
-      "unpause the timer",
-      "keep the timer going",
-      "resume counting",
-      "continue counting",
-      "start timer again",
-      "go on with the timer",
-      "timer resume",
-      "continue the countdown",
-      "pick up the timer",
-      "bring back the timer",
-      "timer continue"
-    ]
-  end
-
   defp timer_check_templates do
     [
       "how much time is left",
@@ -1483,31 +1110,6 @@ defmodule Mix.Tasks.GenerateIntentData do
       "how many minutes left",
       "time on the timer",
       "when does the timer end"
-    ]
-  end
-
-  defp timer_add_time_templates do
-    [
-      "add {duration} to the timer",
-      "add more time to the timer",
-      "extend the timer by {duration}",
-      "give me {duration} more",
-      "add {duration} more",
-      "increase timer by {duration}",
-      "add time to timer",
-      "put {duration} more on the timer",
-      "extend timer {duration}",
-      "add {duration} to timer",
-      "{duration} more on the timer",
-      "increase the timer",
-      "extend the timer",
-      "add another {duration}",
-      "give me more time on the timer",
-      "bump the timer up {duration}",
-      "timer add {duration}",
-      "more time on timer",
-      "extend by {duration}",
-      "add {duration} extra"
     ]
   end
 
@@ -1538,8 +1140,8 @@ defmodule Mix.Tasks.GenerateIntentData do
 
   defp generate_reminder_negative_examples do
     negative_examples = [
-      %{text: "schedule a meeting tomorrow", correct_intent: "calendar.meeting.schedule"},
-      %{text: "what's on my calendar", correct_intent: "calendar.query.today"},
+      %{text: "schedule a meeting tomorrow", correct_intent: "calendar.schedule"},
+      %{text: "what's on my calendar", correct_intent: "calendar.query"},
       %{text: "add milk to my shopping list", correct_intent: "shopping.add"},
       %{text: "call mom", correct_intent: "call.make"},
       %{text: "what's the weather", correct_intent: "weather"},
@@ -2093,15 +1695,15 @@ defmodule Mix.Tasks.GenerateIntentData do
 
   defp generate_todo_negative_examples do
     negative_examples = [
-      %{text: "remind me to call mom", correct_intent: "reminder.set"},
+      %{text: "remind me to call mom", correct_intent: "reminder.create"},
       %{text: "set an alarm for 7am", correct_intent: "alarm.set"},
-      %{text: "schedule a meeting tomorrow", correct_intent: "calendar.meeting.schedule"},
+      %{text: "schedule a meeting tomorrow", correct_intent: "calendar.schedule"},
       %{text: "what's the weather", correct_intent: "weather"},
       %{text: "play some music", correct_intent: "music.play"},
       %{text: "send a message to John", correct_intent: "message.send"},
       %{text: "turn on the lights", correct_intent: "smarthome.lights.on"},
       %{text: "call mom", correct_intent: "call.make"},
-      %{text: "check my calendar", correct_intent: "calendar.query.today"},
+      %{text: "check my calendar", correct_intent: "calendar.query"},
       %{text: "set a timer", correct_intent: "timer.set"}
     ]
 
@@ -2622,14 +2224,14 @@ defmodule Mix.Tasks.GenerateIntentData do
 
   defp generate_communication_negative_examples do
     negative_examples = [
-      %{text: "remind me to call mom", correct_intent: "reminder.set"},
-      %{text: "schedule a meeting", correct_intent: "calendar.meeting.schedule"},
+      %{text: "remind me to call mom", correct_intent: "reminder.create"},
+      %{text: "schedule a meeting", correct_intent: "calendar.schedule"},
       %{text: "add milk to my list", correct_intent: "shopping.add"},
       %{text: "what's the weather", correct_intent: "weather"},
       %{text: "play some music", correct_intent: "music.play"},
       %{text: "turn on the lights", correct_intent: "smarthome.lights.on"},
       %{text: "set an alarm", correct_intent: "alarm.set"},
-      %{text: "what's on my calendar", correct_intent: "calendar.query.today"},
+      %{text: "what's on my calendar", correct_intent: "calendar.query"},
       %{text: "add task buy groceries", correct_intent: "todo.add"},
       %{text: "set a timer", correct_intent: "timer.set"}
     ]
@@ -2732,8 +2334,8 @@ defmodule Mix.Tasks.GenerateIntentData do
 
   defp generate_entertainment_negative_examples do
     negative_examples = [
-      %{text: "remind me to watch a movie", correct_intent: "reminder.set"},
-      %{text: "schedule movie night", correct_intent: "calendar.event.create"},
+      %{text: "remind me to watch a movie", correct_intent: "reminder.create"},
+      %{text: "schedule movie night", correct_intent: "calendar.schedule"},
       %{text: "what's the weather", correct_intent: "weather"},
       %{text: "play music", correct_intent: "music.play"},
       %{text: "turn on the TV", correct_intent: "smarthome.tv.on"},
@@ -2852,8 +2454,8 @@ defmodule Mix.Tasks.GenerateIntentData do
 
   defp generate_education_negative_examples do
     negative_examples = [
-      %{text: "remind me to study", correct_intent: "reminder.set"},
-      %{text: "schedule a class", correct_intent: "calendar.event.create"},
+      %{text: "remind me to study", correct_intent: "reminder.create"},
+      %{text: "schedule a class", correct_intent: "calendar.schedule"},
       %{text: "play educational music", correct_intent: "music.play"},
       %{text: "search for schools", correct_intent: "websearch.query"},
       %{text: "add homework to my list", correct_intent: "todo.add"},
@@ -2967,8 +2569,8 @@ defmodule Mix.Tasks.GenerateIntentData do
 
   defp generate_utilities_negative_examples do
     negative_examples = [
-      %{text: "set a reminder", correct_intent: "reminder.set"},
-      %{text: "schedule a meeting", correct_intent: "calendar.meeting.schedule"},
+      %{text: "set a reminder", correct_intent: "reminder.create"},
+      %{text: "schedule a meeting", correct_intent: "calendar.schedule"},
       %{text: "what's the weather", correct_intent: "weather"},
       %{text: "play music", correct_intent: "music.play"},
       %{text: "call someone", correct_intent: "call.make"},
@@ -3076,7 +2678,7 @@ defmodule Mix.Tasks.GenerateIntentData do
       %{text: "what time is it", correct_intent: "time.current"},
       %{text: "set the brightness", correct_intent: "device.brightness.set"},
       %{text: "search for images", correct_intent: "search.find_by_type"},
-      %{text: "show my calendar", correct_intent: "calendar.query.today"}
+      %{text: "show my calendar", correct_intent: "calendar.query"}
     ]
 
     write_negative_examples("display", negative_examples)

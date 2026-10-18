@@ -3,6 +3,15 @@ defmodule Brain.SystemStatusTest do
 
   alias Brain.SystemStatus
 
+  # The metrics counted by Brain.Metrics.Aggregator are read from Atlas, and a
+  # read that fails raises, so each test reads them inside its own sandbox.
+  setup tags do
+    {:ok, _apps} = Application.ensure_all_started(:atlas)
+    owner = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+    on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+    :ok
+  end
+
   describe "get_all/0" do
     test "returns a map with all expected keys" do
       result = SystemStatus.get_all()
@@ -71,17 +80,38 @@ defmodule Brain.SystemStatusTest do
     end
   end
 
-  describe "get_all_genservers_status/0" do
+  describe "get_all_genservers_status/1" do
     test "returns categorized genserver status" do
-      result = SystemStatus.get_all_genservers_status()
+      result = SystemStatus.get_all_genservers_status("test_system_status")
 
       assert is_map(result)
       assert Map.has_key?(result, :categories)
-      assert Map.has_key?(result, :subprocess_supervisor)
       assert Map.has_key?(result, :checked_at)
       assert Map.has_key?(result, :check_duration_ms)
       assert is_integer(result.check_duration_ms)
       assert %DateTime{} = result.checked_at
+    end
+
+    test "reports the JTMS network and the beliefs of the world named" do
+      world_id = "test_system_status"
+      result = SystemStatus.get_all_genservers_status(world_id)
+      jtms = result.categories.epistemic[Brain.Epistemic.JTMS]
+      beliefs = result.categories.epistemic[Brain.Epistemic.BeliefStore]
+
+      assert jtms.ready
+      assert jtms.stats == Brain.Epistemic.JTMS.stats(world_id)
+      assert beliefs.ready
+      assert beliefs.stats == Brain.Epistemic.BeliefStore.stats(world_id)
+    end
+
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/SystemStatus.get_all_genservers_status needs the world/, fn ->
+        SystemStatus.get_all_genservers_status(nil)
+      end
+
+      assert_raise ArgumentError, ~r/SystemStatus.get_all_genservers_status needs the world/, fn ->
+        SystemStatus.get_all_genservers_status("")
+      end
     end
   end
 
@@ -93,9 +123,35 @@ defmodule Brain.SystemStatusTest do
     end
   end
 
-  describe "get_health_indicators/0" do
+  describe "a telemetry window read once" do
+    test "is what the performance metrics and response timing answer from" do
+      telemetry = %{
+        window: nil,
+        values: %{
+          "duration:brain_evaluate:count" => 2,
+          "duration:brain_evaluate:sum_us" => 30_000,
+          "duration:brain_evaluate:le_ms:25" => 2,
+          "duration:pipeline_process:count" => 1,
+          "duration:pipeline_process:sum_us" => 5_000,
+          "duration:pipeline_process:le_ms:5" => 1
+        },
+        records: %{}
+      }
+
+      assert %{brain_evaluate: %{count: 2, avg_ms: 15.0}} = SystemStatus.get_performance_metrics(telemetry)
+
+      assert SystemStatus.get_response_timing(telemetry) == %{
+               brain_avg_ms: 15.0,
+               brain_count: 2,
+               pipeline_avg_ms: 5.0,
+               pipeline_count: 1
+             }
+    end
+  end
+
+  describe "get_health_indicators/1" do
     test "returns health indicators with score" do
-      result = SystemStatus.get_health_indicators()
+      result = SystemStatus.get_health_indicators("test_system_status")
 
       assert is_map(result)
       assert Map.has_key?(result, :genservers_running)
@@ -109,9 +165,9 @@ defmodule Brain.SystemStatusTest do
     end
   end
 
-  describe "get_utilization_report/0" do
+  describe "get_utilization_report/1" do
     test "returns utilization report with categories" do
-      result = SystemStatus.get_utilization_report()
+      result = SystemStatus.get_utilization_report("test_system_status")
 
       assert is_map(result)
       assert Map.has_key?(result, :idle)
@@ -179,22 +235,9 @@ defmodule Brain.SystemStatusTest do
     end
   end
 
-  describe "get_training_worlds_status/0" do
-    test "returns training worlds status" do
-      result = SystemStatus.get_training_worlds_status()
-
-      assert is_map(result)
-      assert Map.has_key?(result, :manager_ready)
-      assert Map.has_key?(result, :active_worlds)
-      assert Map.has_key?(result, :persisted_worlds)
-      assert Map.has_key?(result, :worlds)
-      assert is_list(result.worlds)
-    end
-  end
-
   describe "get_readiness_details/1" do
-    test "returns readiness details with defaults" do
-      result = SystemStatus.get_readiness_details()
+    test "returns readiness details for the suite's world" do
+      result = SystemStatus.get_readiness_details(world_id: "default")
 
       assert is_map(result)
       assert Map.has_key?(result, :core)
@@ -212,6 +255,42 @@ defmodule Brain.SystemStatusTest do
 
       assert result.world_embedder.world_id == "test_world"
       assert result.world_models.world_id == "test_world"
+    end
+
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/SystemStatus.get_readiness_details requires a :world_id option/, fn ->
+        SystemStatus.get_readiness_details([])
+      end
+
+      assert_raise ArgumentError, ~r/SystemStatus.get_readiness_details requires a :world_id option/, fn ->
+        SystemStatus.get_readiness_details(world_id: "")
+      end
+    end
+  end
+
+  describe "get_services_status/1" do
+    test "reports each registered service's configuration in the named world" do
+      result = SystemStatus.get_services_status("default")
+
+      assert is_map(result)
+      assert result.ready == true
+      assert result.genservers.credential_vault.ready == true
+
+      weather = Enum.find(result.services, &(&1.name == :weather))
+      assert weather != nil
+
+      assert weather.configured ==
+               Brain.Services.Dispatcher.service_available?(:weather, world: "default")
+    end
+
+    test "raises without a world" do
+      assert_raise ArgumentError, ~r/SystemStatus.get_services_status needs the world/, fn ->
+        SystemStatus.get_services_status(nil)
+      end
+
+      assert_raise ArgumentError, ~r/SystemStatus.get_services_status needs the world/, fn ->
+        SystemStatus.get_services_status("")
+      end
     end
   end
 

@@ -1,0 +1,50 @@
+[
+  {
+    "text": "garage is locked",
+    "tokens": [
+      "garage",
+      "is",
+      "locked"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-9dfd59e3",
+    "intent": "smarthome.locks.check.lock"
+  },
+  {
+    "text": "I want to did i lock the door in the kitchen",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "did",
+      "i",
+      "lock",
+      "the",
+      "door",
+      "in",
+      "the",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "NOUN",
+      "DET",
+      "NOUN",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-902964e5",
+    "intent": "smarthome.locks.check.lock"
+  }
+]

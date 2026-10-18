@@ -3,20 +3,23 @@ defmodule Brain.Epistemic.StanceTrackerExtendedTest do
 
   alias Brain.Epistemic.StanceTracker
 
+  # "default" is the world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup do
     name = :"stance_ext_test_#{:rand.uniform(100_000)}"
     {:ok, _pid} = StanceTracker.start_link(name: name)
-    {:ok, tracker: name}
+    {:ok, tracker: name, opts: [name: name, world_id: @world_id]}
   end
 
   describe "multi-topic tracking" do
-    test "tracks multiple topics independently", %{tracker: tracker} do
-      StanceTracker.record_stance("conv1", "climate", 0.5, :user, tracker)
-      StanceTracker.record_stance("conv1", "climate", 0.3, :system, tracker)
-      StanceTracker.record_stance("conv1", "taxes", -0.3, :user, tracker)
-      StanceTracker.record_stance("conv1", "taxes", -0.1, :system, tracker)
-      StanceTracker.record_stance("conv1", "climate", 0.6, :system, tracker)
-      StanceTracker.record_stance("conv1", "taxes", -0.5, :system, tracker)
+    test "tracks multiple topics independently", %{tracker: tracker, opts: opts} do
+      StanceTracker.record_stance("conv1", "climate", 0.5, :user, opts)
+      StanceTracker.record_stance("conv1", "climate", 0.3, :system, opts)
+      StanceTracker.record_stance("conv1", "taxes", -0.3, :user, opts)
+      StanceTracker.record_stance("conv1", "taxes", -0.1, :system, opts)
+      StanceTracker.record_stance("conv1", "climate", 0.6, :system, opts)
+      StanceTracker.record_stance("conv1", "taxes", -0.5, :system, opts)
 
       Process.sleep(50)
 
@@ -29,13 +32,13 @@ defmodule Brain.Epistemic.StanceTrackerExtendedTest do
       assert Map.has_key?(tax_result, :absolute_drift)
     end
 
-    test "different conversations are independent", %{tracker: tracker} do
-      StanceTracker.record_stance("conv_a", "topic1", 0.9, :user, tracker)
-      StanceTracker.record_stance("conv_a", "topic1", 0.1, :system, tracker)
-      StanceTracker.record_stance("conv_b", "topic1", -0.9, :user, tracker)
-      StanceTracker.record_stance("conv_b", "topic1", -0.2, :system, tracker)
-      StanceTracker.record_stance("conv_a", "topic1", 0.8, :system, tracker)
-      StanceTracker.record_stance("conv_b", "topic1", -0.5, :system, tracker)
+    test "different conversations are independent", %{tracker: tracker, opts: opts} do
+      StanceTracker.record_stance("conv_a", "topic1", 0.9, :user, opts)
+      StanceTracker.record_stance("conv_a", "topic1", 0.1, :system, opts)
+      StanceTracker.record_stance("conv_b", "topic1", -0.9, :user, opts)
+      StanceTracker.record_stance("conv_b", "topic1", -0.2, :system, opts)
+      StanceTracker.record_stance("conv_a", "topic1", 0.8, :system, opts)
+      StanceTracker.record_stance("conv_b", "topic1", -0.5, :system, opts)
 
       Process.sleep(50)
 
@@ -49,9 +52,9 @@ defmodule Brain.Epistemic.StanceTrackerExtendedTest do
   end
 
   describe "position clamping" do
-    test "extreme positive value clamped to 1.0", %{tracker: tracker} do
-      StanceTracker.record_stance("conv", "topic", 5.0, :user, tracker)
-      StanceTracker.record_stance("conv", "topic", 5.0, :system, tracker)
+    test "extreme positive value clamped to 1.0", %{tracker: tracker, opts: opts} do
+      StanceTracker.record_stance("conv", "topic", 5.0, :user, opts)
+      StanceTracker.record_stance("conv", "topic", 5.0, :system, opts)
       Process.sleep(50)
 
       {:ok, stances} = StanceTracker.conversation_stances("conv", tracker)
@@ -62,9 +65,9 @@ defmodule Brain.Epistemic.StanceTrackerExtendedTest do
       end
     end
 
-    test "extreme negative value clamped to -1.0", %{tracker: tracker} do
-      StanceTracker.record_stance("conv", "topic", -10.0, :user, tracker)
-      StanceTracker.record_stance("conv", "topic", -10.0, :system, tracker)
+    test "extreme negative value clamped to -1.0", %{tracker: tracker, opts: opts} do
+      StanceTracker.record_stance("conv", "topic", -10.0, :user, opts)
+      StanceTracker.record_stance("conv", "topic", -10.0, :system, opts)
       Process.sleep(50)
 
       {:ok, stances} = StanceTracker.conversation_stances("conv", tracker)
@@ -77,18 +80,18 @@ defmodule Brain.Epistemic.StanceTrackerExtendedTest do
   end
 
   describe "drift detection details" do
-    test "no drift when only one observation", %{tracker: tracker} do
-      StanceTracker.record_stance("conv", "topic", 0.5, :system, tracker)
+    test "no drift when only one observation", %{tracker: tracker, opts: opts} do
+      StanceTracker.record_stance("conv", "topic", 0.5, :system, opts)
       Process.sleep(50)
 
       {:ok, drift_result} = StanceTracker.check_drift("conv", "topic", tracker)
       assert drift_result == :no_drift
     end
 
-    test "drift between two system observations", %{tracker: tracker} do
-      StanceTracker.record_stance("conv", "topic", 0.2, :system, tracker)
-      StanceTracker.record_stance("conv", "topic", 0.8, :user, tracker)
-      StanceTracker.record_stance("conv", "topic", 0.7, :system, tracker)
+    test "drift between two system observations", %{tracker: tracker, opts: opts} do
+      StanceTracker.record_stance("conv", "topic", 0.2, :system, opts)
+      StanceTracker.record_stance("conv", "topic", 0.8, :user, opts)
+      StanceTracker.record_stance("conv", "topic", 0.7, :system, opts)
       Process.sleep(50)
 
       {:ok, drift_info} = StanceTracker.check_drift("conv", "topic", tracker)
@@ -103,9 +106,9 @@ defmodule Brain.Epistemic.StanceTrackerExtendedTest do
   end
 
   describe "stats" do
-    test "stats reflect recorded data", %{tracker: tracker} do
-      StanceTracker.record_stance("c1", "t1", 0.5, :user, tracker)
-      StanceTracker.record_stance("c2", "t2", -0.5, :user, tracker)
+    test "stats reflect recorded data", %{tracker: tracker, opts: opts} do
+      StanceTracker.record_stance("c1", "t1", 0.5, :user, opts)
+      StanceTracker.record_stance("c2", "t2", -0.5, :user, opts)
       Process.sleep(50)
 
       {:ok, stats} = StanceTracker.stats(tracker)

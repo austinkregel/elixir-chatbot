@@ -1,6 +1,8 @@
 defmodule Brain.Response.Synthesizer do
   @moduledoc "Generative response composition from primitives and domain knowledge.\n\nInstead of template-based responses, this module composes responses\nfrom primitives based on:\n- Domain knowledge (loaded from priv/knowledge/domains/*.json)\n- Confidence levels of the knowledge being shared\n- Speech act analysis\n- Entity slot filling\n- Disclosure policy decisions\n\nResponse primitives:\n- Acknowledgments - \"Sure,\", \"Of course,\"\n- Hedges - confidence-based language adjustments\n- Entity verbalizations - \"in $location\", \"by $artist\"\n- Response frames - domain-specific sentence structures\n- Uncertainty markers - \"but that's just my understanding\"\n\nThis enables novel, appropriate responses without massive training data.\n"
 
+  alias Brain.Analysis.SlotDetector
+  alias Brain.Memory.RecurringPattern
   alias Brain.Epistemic.Types.SelfKnowledgeAssessment
   alias Brain.Epistemic.DisclosurePolicy
 
@@ -10,16 +12,7 @@ defmodule Brain.Response.Synthesizer do
   @primitives_path "priv/knowledge/domains/primitives.json"
   @external_resource @primitives_path
 
-  @primitives (case File.read(@primitives_path) do
-                 {:ok, content} ->
-                   case Jason.decode(content) do
-                     {:ok, data} -> data
-                     {:error, _} -> %{}
-                   end
-
-                 {:error, _} ->
-                   %{}
-               end)
+  @primitives @primitives_path |> File.read!() |> Jason.decode!()
   @domain_files Path.wildcard(Path.join(@domains_path, "*.json"))
   @external_resource @domains_path
 
@@ -30,20 +23,9 @@ defmodule Brain.Response.Synthesizer do
   @domain_knowledge @domain_files
                     |> Enum.reject(&String.ends_with?(&1, "primitives.json"))
                     |> Enum.reduce(%{}, fn file, acc ->
-                      case File.read(file) do
-                        {:ok, content} ->
-                          case Jason.decode(content) do
-                            {:ok, data} ->
-                              domain = Map.get(data, "domain", Path.basename(file, ".json"))
-                              Map.put(acc, domain, data)
-
-                            {:error, _} ->
-                              acc
-                          end
-
-                        {:error, _} ->
-                          acc
-                      end
+                      data = file |> File.read!() |> Jason.decode!()
+                      domain = Map.get(data, "domain", Path.basename(file, ".json"))
+                      Map.put(acc, domain, data)
                     end)
   @soft_prefaces Map.get(@primitives, "hedges", %{})
                  |> Map.get("low_confidence", [
@@ -86,12 +68,47 @@ defmodule Brain.Response.Synthesizer do
   @frame_key_mappings Map.get(@frame_key_config, "slot_to_frame_key", %{})
   @frame_key_default Map.get(@frame_key_config, "default", "general")
 
-  @doc "Synthesizes a response for any intent using domain knowledge and primitives.\n\nThis is the primary entry point for generative response creation.\n\n## Parameters\n- `intent` - The classified intent (e.g., \"weather.query\")\n- `entities` - List of extracted entities\n- `opts` - Options including:\n  - `:confidence` - Classification confidence (0.0-1.0)\n  - `:speech_act` - Speech act analysis result\n  - `:similar_episodes` - Similar past interactions from memory\n  - `:semantic_facts` - Retrieved semantic facts\n\n## Returns\n`{:ok, response}` or `:not_synthesized`\n"
+  @doc """
+  Synthesizes a response for any intent using domain knowledge and primitives.
+
+  This is the primary entry point for generative response creation.
+
+  Unless the epistemic context answers first, a response is adapted from
+  memory before domain knowledge is tried: from the turn's recurring pattern
+  when there is one, its reply with the turn's entities filled in; otherwise
+  from the most similar single episode at least
+  `Brain.Memory.RecurringPattern.similarity_threshold/0` similar, its outcome
+  filled in the same way. The pattern comes first because its reply was given
+  across several matching messages, a single episode's only once.
+
+  Synthesizing reports nothing: a response is synthesized on each pass of a
+  refined turn, and only the one the turn settles on is its response. The
+  pattern a response was adapted from is returned, for the caller that settles
+  on the response to report (`Brain.Memory.RecurringPattern.used/3`).
+
+  ## Parameters
+  - `intent` - The classified intent (e.g., "weather.query")
+  - `entities` - List of extracted entities
+  - `opts` - Options including:
+    - `:confidence` - Classification confidence (0.0-1.0)
+    - `:speech_act` - Speech act analysis result
+    - `:similar_episodes` - Similar past interactions from memory
+    - `:recurring_pattern` - The turn's recurring pattern
+      (`Brain.Memory.RecurringPattern.find/2`), or `nil`
+
+  ## Returns
+  `{:ok, response, recurring_pattern}`, where `recurring_pattern` is the
+  `%Brain.Memory.RecurringPattern{}` the response was adapted from, or `nil`
+  for a response built from anything else; or `:not_synthesized`
+  """
+  @spec synthesize(String.t() | nil, list(), keyword()) ::
+          {:ok, String.t(), RecurringPattern.t() | nil} | :not_synthesized
   def synthesize(intent, entities, opts \\ []) do
     profile = Keyword.get(opts, :profile)
     domain = if profile, do: profile.domain, else: infer_domain(intent)
     confidence = Keyword.get(opts, :confidence, 0.7)
     similar_episodes = Keyword.get(opts, :similar_episodes, [])
+    recurring_pattern = Keyword.get(opts, :recurring_pattern)
     context = Keyword.get(opts, :context, %{})
 
     # Check epistemic context FIRST — contradictions and uncertainty should
@@ -102,16 +119,31 @@ defmodule Brain.Response.Synthesizer do
 
     case handle_epistemic_context(epistemic_context, entities, confidence) do
       {:ok, response} ->
-        {:ok, response}
+        {:ok, response, nil}
 
       :continue ->
-        case adapt_from_episodes(similar_episodes, entities) do
-          {:ok, response} ->
-            {:ok, response}
+        case adapt_from_memory(recurring_pattern, similar_episodes, entities) do
+          {:ok, response, adapted_from} ->
+            {:ok, response, adapted_from}
 
           :no_adaptation ->
-            synthesize_from_domain(domain, intent, entities, confidence, opts)
+            case synthesize_from_domain(domain, intent, entities, confidence, opts) do
+              {:ok, response} -> {:ok, response, nil}
+              :not_synthesized -> :not_synthesized
+            end
         end
+    end
+  end
+
+  # A recurring pattern outranks any single episode.
+  defp adapt_from_memory(%RecurringPattern{} = pattern, _similar_episodes, entities) do
+    {:ok, adapt_response_pattern(pattern.reply, entities), pattern}
+  end
+
+  defp adapt_from_memory(nil, similar_episodes, entities) do
+    case adapt_from_episodes(similar_episodes, entities) do
+      {:ok, response} -> {:ok, response, nil}
+      :no_adaptation -> :no_adaptation
     end
   end
 
@@ -135,33 +167,211 @@ defmodule Brain.Response.Synthesizer do
         {:ok, response}
 
       :continue ->
-        if map_size(domain_config) == 0 do
-          :not_synthesized
-        else
-          # Check if we have enriched data - if so, prefer enriched templates
-          case try_enriched_response(domain_config, entities, context, confidence) do
-            {:ok, response} ->
-              response = maybe_add_graph_context(response, context)
-              {:ok, response}
+        enrichment = frame_enrichment(context)
 
-            :not_enriched ->
-              # Fall back to standard response frames
-              frame_key = determine_frame_key(domain_config, entities)
-              frames = get_in(domain_config, ["response_frames", frame_key]) || []
+        case choose_frame(domain_config, entities, enrichment) do
+          {:enriched, frame_key} ->
+            frame_config = get_in(domain_config, ["enriched_response_frames", frame_key])
 
-              if frames == [] do
-                :not_synthesized
-              else
-                frame = Enum.random(frames)
-                filled_response = fill_entity_slots(frame, entities)
-                final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
-                final_response = maybe_add_graph_context(final_response, context)
+            {:ok, response} =
+              select_and_fill_enriched_frame(frame_key, frame_config, entities, enrichment.enriched_data, domain_config, confidence)
 
-                {:ok, final_response}
-              end
-          end
+            {:ok, maybe_add_graph_context(response, context)}
+
+          {:response, frame_key} ->
+            frames = get_in(domain_config, ["response_frames", frame_key])
+            slot_type_aliases = get_in(domain_config, ["slot_requirements", "slot_type_aliases"]) || %{}
+            frame = Enum.random(frames)
+            filled_response = fill_entity_slots(frame, entities, slot_type_aliases)
+            final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
+            final_response = maybe_add_graph_context(final_response, context)
+
+            {:ok, final_response}
+
+          nil ->
+            :not_synthesized
         end
     end
+  end
+
+  # The turn's enrichment as `chosen_frame/3` reads it, from the unified
+  # context (`Brain.Response.ContextBuilder`), which keeps it under
+  # `:enrichment`. A context that holds none, such as the generator's own,
+  # brought no data and no operation.
+  defp frame_enrichment(%{enrichment: %{} = enrichment}) do
+    %{
+      enriched_data: Map.get(enrichment, :enriched_data) || %{},
+      operation: Map.get(enrichment, :enrichment_operation)
+    }
+  end
+
+  defp frame_enrichment(context) when is_map(context), do: %{enriched_data: %{}, operation: nil}
+
+  @doc """
+  The frame of `domain`'s knowledge (`priv/knowledge/domains/<domain>.json`)
+  a reply is worded from, for the turn's entities and its enrichment:
+  `enriched_data`, what the service returned, and `operation`, the operation
+  it performed (`Brain.Services.SchedulingDriver.operation/1`), nil when
+  none was:
+
+    * `{:enriched, key}`, the enriched response frame `enriched_frame/3`
+      chooses, when the enrichment carries data and one of the domain's
+      enriched frames fires for it;
+    * otherwise, when an operation was performed, `{:response, key}`, the
+      response frame the domain's `operation_frames` names for it, when every
+      `$placeholder` its templates name is filled by an entity: the frame
+      that says the operation was done, for data no enriched frame words. A
+      frame keyed by filled slots was worded before anything was done, so
+      none says what an operation did;
+    * otherwise, when no operation was performed, `{:response, key}`, the
+      response frame the entities' filled slots key (`determine_frame_key/2`),
+      when the domain has frames under that key;
+    * nil when none of these: no frame of the domain is said for the turn,
+      and so is it for a domain with no knowledge file.
+
+  This is the one rule a domain frame is chosen by: `synthesize_from_domain/5`
+  words the reply from the frame it names, and
+  `Brain.Response.PhraseLatticeRealizer` offers a fragment of a domain frame
+  only for a turn this names that frame for. Raises when two enriched frames
+  fire at the top specificity (`enriched_frame/3`).
+  """
+  @spec chosen_frame(String.t(), list(), %{enriched_data: map(), operation: atom() | nil}) ::
+          {:enriched | :response, String.t()} | nil
+  def chosen_frame(domain, entities, %{enriched_data: enriched_data, operation: operation} = enrichment)
+      when is_binary(domain) and is_list(entities) and is_map(enriched_data) and is_atom(operation) do
+    choose_frame(Map.get(@domain_knowledge, domain, %{}), entities, enrichment)
+  end
+
+  defp choose_frame(domain_config, entities, %{enriched_data: enriched_data, operation: operation}) do
+    enriched_frames = Map.get(domain_config, "enriched_response_frames", %{})
+
+    enriched =
+      if enriched_data != %{} and map_size(enriched_frames) > 0,
+        do: enriched_frame(enriched_frames, entities, enriched_data)
+
+    case {enriched, operation} do
+      {{frame_key, _config}, _operation} ->
+        {:enriched, frame_key}
+
+      {nil, nil} ->
+        case determine_frame_key(domain_config, entities) do
+          nil ->
+            nil
+
+          frame_key ->
+            if Map.get(Map.get(domain_config, "response_frames", %{}), frame_key, []) == [],
+              do: nil,
+              else: {:response, frame_key}
+        end
+
+      {nil, operation} ->
+        case operation_frame(domain_config, entities, operation) do
+          nil -> nil
+          frame_key -> {:response, frame_key}
+        end
+    end
+  end
+
+  # The response frame the domain names for `operation` (its
+  # `"operation_frames"`), when every placeholder its templates name is filled
+  # by an entity (the type itself or one of the slot's aliases); nil
+  # otherwise.
+  defp operation_frame(domain_config, entities, operation) do
+    aliases = get_in(domain_config, ["slot_requirements", "slot_type_aliases"]) || %{}
+
+    case Map.fetch(Map.get(domain_config, "operation_frames", %{}), Atom.to_string(operation)) do
+      {:ok, frame_key} ->
+        filled? =
+          domain_config
+          |> get_in(["response_frames", frame_key])
+          |> Enum.all?(fn template ->
+            Enum.all?(template_placeholders(template), fn slot ->
+              find_entity_value_by_types(entities, Map.get(aliases, slot, [slot])) != nil
+            end)
+          end)
+
+        if filled?, do: frame_key
+
+      :error ->
+        nil
+    end
+  end
+
+  # Every domain's `"operation_frames"` maps an operation a scheduling driver
+  # performs (`Brain.Services.SchedulingDriver`) to one of the domain's
+  # response frames; a file that names anything else fails the build.
+  for {domain, config} <- @domain_knowledge, {operation, frame_key} <- Map.get(config, "operation_frames", %{}) do
+    Brain.Services.SchedulingDriver.intent!(String.to_atom(operation))
+
+    unless match?([_ | _], get_in(config, ["response_frames", frame_key])) do
+      raise "Synthesizer: #{domain}'s operation_frames names #{inspect(frame_key)} for #{operation}, " <>
+              "which is none of its response frames"
+    end
+  end
+
+  @doc """
+  Checks that `domain`'s knowledge holds the frame `{kind, key}` names, shaped
+  as `chosen_frame/3` reads it: a response frame is a non-empty list of
+  templates; an enriched frame has templates, its `requires_enrichment` is a
+  list of fields, and each `when` condition is a string, number, boolean or
+  null, or `{"min": n, "max": m}` bounds of numbers. Raises `ArgumentError`
+  naming what is wrong; returns `:ok`.
+  """
+  @spec validate_frame!(String.t(), :enriched | :response, String.t()) :: :ok
+  def validate_frame!(domain, kind, key) when is_binary(domain) and kind in [:enriched, :response] and is_binary(key) do
+    domain_config =
+      case Map.fetch(@domain_knowledge, domain) do
+        {:ok, config} -> config
+        :error -> raise ArgumentError, "Synthesizer: no domain knowledge is compiled for #{inspect(domain)}"
+      end
+
+    section = if kind == :enriched, do: "enriched_response_frames", else: "response_frames"
+
+    case get_in(domain_config, [section, key]) do
+      nil ->
+        raise ArgumentError,
+              "Synthesizer: #{domain}'s #{section} has no frame #{inspect(key)} (the compiled knowledge; " <>
+                "a domain file edited since it was compiled needs a recompile)"
+
+      [_ | _] = templates when kind == :response ->
+        Enum.each(templates, fn
+          template when is_binary(template) -> :ok
+          other -> raise ArgumentError, "Synthesizer: #{domain}'s response frame #{inspect(key)} holds #{inspect(other)}, not a template"
+        end)
+
+      config when kind == :enriched and is_map(config) ->
+        required_enrichment(config)
+        frame_templates(config, key)
+
+        Enum.each(frame_conditions(config), fn {field, expected} -> validate_condition!(key, field, expected) end)
+
+      other ->
+        raise ArgumentError, "Synthesizer: #{domain}'s #{section} frame #{inspect(key)} is shaped #{inspect(other, limit: 3)}"
+    end
+
+    :ok
+  end
+
+  defp validate_condition!(_frame_key, _field, expected)
+       when is_nil(expected) or is_binary(expected) or is_number(expected) or is_boolean(expected),
+       do: :ok
+
+  defp validate_condition!(frame_key, field, %{} = bounds) when bounds != %{} do
+    Enum.each(bounds, fn
+      {bound, value} when bound in ["min", "max"] and is_number(value) ->
+        :ok
+
+      {bound, value} ->
+        raise ArgumentError,
+              "the enriched frame #{inspect(frame_key)} bounds #{field} with #{bound} #{inspect(value)}; bounds are " <>
+                "\"min\" and/or \"max\", each a number"
+    end)
+  end
+
+  defp validate_condition!(frame_key, field, expected) do
+    raise ArgumentError,
+          "the enriched frame #{inspect(frame_key)} tests #{field} against #{inspect(expected)}; " <>
+            "a condition is a string, number, boolean or null, or {\"min\": n, \"max\": m}"
   end
 
   defp maybe_add_graph_context(response, context) do
@@ -203,108 +413,212 @@ defmodule Brain.Response.Synthesizer do
       "I think "
     ]
 
-    Enum.random(hedges) <> String.downcase(String.first(response)) <> String.slice(response, 1..-1//1)
+    hedges |> Enum.random() |> String.trim_trailing() |> join_after(response)
   end
 
-  # Try to build a response using enriched_response_frames if enrichment succeeded
-  defp try_enriched_response(domain_config, entities, context, confidence) do
-    enriched_data = Map.get(context, :enriched_data, %{})
-    enrichment_status = Map.get(context, :enrichment_status)
+  @doc """
+  The enriched frame, `{key, config}` of `enriched_frames` (a domain's
+  `enriched_response_frames`), that words a reply from `enriched_data` and
+  `entities`, or nil when none fires.
 
-    enriched_frames = Map.get(domain_config, "enriched_response_frames", %{})
+  A frame fires only when the enrichment and the entities give it everything
+  its templates say:
 
-    cond do
-      # Check for enrichment failure - use error templates
-      enrichment_status == :failed and Map.has_key?(enriched_frames, "service_error") ->
-        frames = get_in(enriched_frames, ["service_error", "templates"]) || []
-        select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence)
+    * every field its "requires_enrichment" names carries a sayable value: a
+      non-blank string, a number, or a non-empty list of those. A boolean is
+      never sayable, since it would read as "true" or "false": a frame that
+      requires one raises, and is to test it under "when" and word it in its
+      templates instead;
+    * every field its "when" names holds the value given there: a string,
+      number or boolean equal to the field's value, {"min": n, "max": m}
+      (either bound alone, both inclusive) around a number, or null for a
+      field the enrichment does not carry or carries as nil. A field the
+      enrichment does not carry meets no other condition. Null tells apart
+      what different operations return: a reminder created carries no
+      reminder_count, the reminders a check found do;
+    * every other `$placeholder` its templates name is filled by an entity of
+      that type with a non-blank value.
 
-      # Service not configured - use honest "not available" templates instead of "Let me check..."
-      Map.has_key?(enriched_frames, "service_not_configured") ->
-        frame_config = enriched_frames["service_not_configured"]
-        condition = Map.get(frame_config, "condition")
+  So a frame for "nothing was found" is chosen by the value that says so (a
+  count of 0), never by a field merely being present. Of the frames that
+  fire, the most specific is chosen (`frame_specificity/1`). Two or more
+  firing at the top specificity raise: nothing in the data says which of them
+  is meant, and picking by the order the frames happen to be read in would be
+  a silent guess.
+  """
+  @spec enriched_frame(map(), list(), map()) :: {String.t(), map()} | nil
+  def enriched_frame(enriched_frames, entities, enriched_data)
+      when is_map(enriched_frames) and is_list(entities) and is_map(enriched_data) do
+    firing =
+      enriched_frames
+      |> Enum.filter(fn {frame_key, config} -> frame_fires?(frame_key, config, entities, enriched_data) end)
+      |> Enum.group_by(fn {_key, config} -> frame_specificity(config) end)
 
-        if condition && Brain.Response.ConditionEvaluator.evaluate(condition, context) do
-          frames = Map.get(frame_config, "templates", [])
-          select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence)
-        else
-          :not_enriched
-        end
+    case Enum.max_by(firing, fn {specificity, _frames} -> specificity end, fn -> nil end) do
+      nil ->
+        nil
 
-      # No enriched data available
-      enriched_data == %{} or enriched_data == nil ->
-        :not_enriched
+      {_specificity, [frame]} ->
+        frame
 
-      # Try to find a matching enriched frame
-      map_size(enriched_frames) > 0 ->
-        case find_matching_enriched_frame(enriched_frames, entities, enriched_data) do
-          nil ->
-            :not_enriched
-
-          {_frame_key, frame_config} ->
-            frames = Map.get(frame_config, "templates", [])
-            select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence)
-        end
-
-      true ->
-        :not_enriched
+      {specificity, tied} ->
+        raise ArgumentError,
+              "the enriched frames #{inspect(tied |> Enum.map(&elem(&1, 0)) |> Enum.sort())} all fire, each " <>
+                "with specificity #{specificity}, for the enrichment #{inspect(enriched_data)}; one of them " <>
+                "must require or test more, or exclude the others with a \"when\" condition"
     end
   end
 
-  defp find_matching_enriched_frame(enriched_frames, entities, enriched_data) do
-    # Sort frames by specificity (more required fields = more specific)
-    enriched_frames
-    |> Enum.reject(fn {key, _} -> key == "service_error" or key == "service_not_configured" end)
-    |> Enum.sort_by(fn {_, config} ->
-      required = Map.get(config, "requires_enrichment", [])
-      -length(required)  # Negative for descending order (most specific first)
+  @doc """
+  How specific an enriched frame is: the fields its `requires_enrichment`
+  names and the conditions its `when` sets, together. Of the frames that fire
+  for an enrichment, the most specific is chosen, and two at the top raise.
+  """
+  @spec frame_specificity(map()) :: non_neg_integer()
+  def frame_specificity(config) when is_map(config) do
+    length(required_enrichment(config)) + map_size(frame_conditions(config))
+  end
+
+  defp frame_fires?(frame_key, config, entities, enriched_data) do
+    required = required_enrichment(config)
+
+    Enum.all?(required, &required_field_sayable?(frame_key, &1, enriched_data)) and
+      Enum.all?(frame_conditions(config), fn {field, expected} ->
+        condition_holds?(frame_key, field, fetch_enriched(enriched_data, field), expected)
+      end) and
+      config
+      |> frame_templates(frame_key)
+      |> Enum.flat_map(&template_placeholders/1)
+      |> Enum.reject(&(&1 in required))
+      |> Enum.all?(&(entity_value(entities, &1) != nil))
+  end
+
+  defp required_enrichment(config) do
+    case Map.get(config, "requires_enrichment", []) do
+      fields when is_list(fields) -> Enum.map(fields, &to_string/1)
+      other -> raise ArgumentError, "an enriched frame's requires_enrichment must be a list of fields, got: #{inspect(other)}"
+    end
+  end
+
+  defp frame_conditions(config) do
+    case Map.get(config, "when", %{}) do
+      conditions when is_map(conditions) -> conditions
+      other -> raise ArgumentError, "an enriched frame's \"when\" must map fields to values, got: #{inspect(other)}"
+    end
+  end
+
+  defp frame_templates(config, frame_key) do
+    case Map.get(config, "templates") do
+      [_ | _] = templates -> templates
+      other -> raise ArgumentError, "the enriched frame #{inspect(frame_key)} has no templates, got: #{inspect(other)}"
+    end
+  end
+
+  defp required_field_sayable?(frame_key, field, enriched_data) do
+    case fetch_enriched(enriched_data, field) do
+      {:ok, value} when is_boolean(value) ->
+        raise ArgumentError,
+              "the enriched frame #{inspect(frame_key)} requires #{field}, which holds the boolean #{value}; " <>
+                "a boolean is never said as text: test it under \"when\" and word it in the templates"
+
+      # A value worth saying is one `Brain.Response.Formatting.sayable/1`
+      # gives words for, the rule the lattice fills a placeholder by too.
+      {:ok, value} ->
+        Brain.Response.Formatting.sayable(value) != nil
+
+      :error ->
+        false
+    end
+  end
+
+  defp condition_holds?(_frame_key, _field, :error, nil), do: true
+  defp condition_holds?(_frame_key, _field, :error, _expected), do: false
+  defp condition_holds?(_frame_key, _field, {:ok, value}, nil), do: value == nil
+
+  defp condition_holds?(frame_key, field, {:ok, value}, %{} = bounds) do
+    case {Map.keys(bounds) -- ["min", "max"], value} do
+      {[], value} when bounds != %{} and is_number(value) ->
+        Enum.all?(bounds, fn
+          {"min", min} when is_number(min) -> value >= min
+          {"max", max} when is_number(max) -> value <= max
+          {bound, other} -> raise ArgumentError, "the enriched frame #{inspect(frame_key)} bounds #{field} with #{bound} #{inspect(other)}, which is not a number"
+        end)
+
+      _other ->
+        raise ArgumentError,
+              "the enriched frame #{inspect(frame_key)} bounds #{field} with #{inspect(bounds)}; bounds are " <>
+                "\"min\" and/or \"max\" around a number, and #{field} holds #{inspect(value)}"
+    end
+  end
+
+  defp condition_holds?(_frame_key, _field, {:ok, value}, expected)
+       when is_binary(expected) or is_number(expected) or is_boolean(expected),
+       do: value == expected
+
+  defp condition_holds?(frame_key, field, _value, expected) do
+    raise ArgumentError,
+          "the enriched frame #{inspect(frame_key)} tests #{field} against #{inspect(expected)}; " <>
+            "a condition is a string, number, boolean or null, or {\"min\": n, \"max\": m}"
+  end
+
+  # The enrichment's value for `field`, kept under its name as a string or an atom.
+  defp fetch_enriched(enriched_data, field) do
+    case Map.fetch(enriched_data, field) do
+      {:ok, value} ->
+        {:ok, value}
+
+      :error ->
+        Enum.find_value(enriched_data, :error, fn {key, value} ->
+          if is_atom(key) and Atom.to_string(key) == field, do: {:ok, value}
+        end)
+    end
+  end
+
+  @template_placeholder ~r/\$([a-z_][a-z0-9_]*)/
+
+  defp template_placeholders(template) do
+    @template_placeholder |> Regex.scan(template) |> Enum.map(fn [_whole, name] -> name end)
+  end
+
+  # The non-blank value of the first entity of `type`, or nil.
+  defp entity_value(entities, type) do
+    Enum.find_value(entities, fn entity ->
+      entity_type = to_string(entity[:entity_type] || entity["entity_type"] || "")
+      value = entity[:value] || entity["value"]
+
+      if entity_type == type and is_binary(value) and String.trim(value) != "", do: value
     end)
-    |> Enum.find(fn {_key, config} ->
-      required = Map.get(config, "requires_enrichment", [])
-      has_all_required_enrichment?(required, enriched_data) and has_required_entities?(config, entities)
-    end)
   end
 
-  defp has_all_required_enrichment?(required_fields, enriched_data) do
-    Enum.all?(required_fields, fn field ->
-      field_key = safe_field_atom(field)
-      field_str = to_string(field)
-      Map.has_key?(enriched_data, field_key) or Map.has_key?(enriched_data, field_str)
-    end)
-  end
+  # Each `$placeholder` is filled whole, so `$alarm_time` is never read as
+  # `$alarm` followed by "_time": a required field from the enrichment, any
+  # other name from the entity of that type (`enriched_frame/3`
+  # chose the frame because both are there). A template naming a field the
+  # enrichment carries but the frame does not require raises, since that field
+  # was never checked for a value worth saying.
+  defp select_and_fill_enriched_frame(frame_key, frame_config, entities, enriched_data, domain_config, confidence) do
+    required = required_enrichment(frame_config)
+    template = frame_config |> frame_templates(frame_key) |> Enum.random()
 
-  defp safe_field_atom(field) when is_atom(field), do: field
-  defp safe_field_atom(field) when is_binary(field) do
-    String.to_existing_atom(field)
-  rescue
-    ArgumentError -> field
-  end
-
-  defp has_required_entities?(_config, _entities) do
-    # For now, assume entities are available if we got this far
-    # Could be enhanced to check specific entity requirements
-    true
-  end
-
-  defp select_and_fill_enriched_frame([], _entities, _enriched_data, _domain_config, _confidence) do
-    :not_enriched
-  end
-
-  defp select_and_fill_enriched_frame(frames, entities, enriched_data, domain_config, confidence) do
-    frame = Enum.random(frames)
-
-    # Fill both entity slots and enrichment placeholders
     filled_response =
-      frame
-      |> fill_entity_slots(entities)
-      |> fill_enrichment_slots(enriched_data)
+      Regex.replace(@template_placeholder, template, fn _whole, name ->
+        cond do
+          name in required ->
+            {:ok, value} = fetch_enriched(enriched_data, name)
+            Brain.Response.Formatting.sayable(value)
+
+          fetch_enriched(enriched_data, name) != :error ->
+            raise ArgumentError,
+                  "the enriched frame #{inspect(frame_key)}'s template #{inspect(template)} names $#{name}, " <>
+                    "which the frame does not require"
+
+          true ->
+            entity_value(entities, name)
+        end
+      end)
 
     final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
     {:ok, final_response}
-  end
-
-  defp fill_enrichment_slots(text, enriched_data) when is_binary(text) do
-    Brain.Response.Formatting.substitute_placeholders(text, enriched_data)
   end
 
   @doc "Synthesizes a clarification request when required slots are missing.\n"
@@ -368,6 +682,139 @@ defmodule Brain.Response.Synthesizer do
     Enum.random(pool)
   end
 
+  @doc """
+  The reply to a service's error, from the content of the primitive planned
+  for it (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`).
+
+  A `:missing_slots` reply asks for the first missing slot with the intent's
+  own clarification prompt (`SlotDetector.get_clarification_prompt/2`). Any
+  other reply is one of primitives.json's `service_replies` templates for
+  the content's `reply`, with its placeholders filled: `$service` is the
+  content's `service_name`; for an `item_kind`, primitives.json's
+  `service_items` entry for the kind gives `$item_noun` and `$item_plural`,
+  and `$candidates` lists each of the content's `candidates` and
+  `$description` describes the content's `criteria`, as the kind's
+  `description` segments describe an item, each segment kept only when the
+  item gives its field a non-blank value.
+
+  Raises when there are no templates for the reply or no `service_items`
+  entry for the kind, when a template names a placeholder the content does
+  not fill, or when an item gives none of its kind's description fields a
+  value, since it could not be told apart.
+  """
+  @spec synthesize_service_reply(map()) :: {:ok, String.t()}
+  def synthesize_service_reply(%{reply: :missing_slots, missing_slots: [slot | _], intent: intent})
+      when is_binary(intent) do
+    {:ok, SlotDetector.get_clarification_prompt(slot, intent)}
+  end
+
+  def synthesize_service_reply(%{reply: reply} = content) when is_atom(reply) do
+    templates =
+      case get_in(@primitives, ["service_replies", Atom.to_string(reply)]) do
+        [_ | _] = templates ->
+          templates
+
+        other ->
+          raise ArgumentError,
+                "primitives.json has no service_replies templates for #{inspect(reply)}, got: #{inspect(other)}"
+      end
+
+    values =
+      %{}
+      |> maybe_put_value("service", content, :service_name, & &1)
+      |> put_item_values(content)
+
+    {:ok, fill_service_template!(Enum.random(templates), values)}
+  end
+
+  defp put_item_values(values, %{item_kind: item_kind} = content) when is_atom(item_kind) do
+    items = Map.fetch!(@primitives, "service_items")
+    kind = service_item_kind!(items, item_kind)
+
+    values
+    |> Map.merge(%{"item_noun" => Map.fetch!(kind, "singular"), "item_plural" => Map.fetch!(kind, "plural")})
+    |> maybe_put_value("candidates", content, :candidates, fn candidates ->
+      candidates
+      |> Enum.map(&describe_service_item!(&1, kind, item_kind))
+      |> join_candidates(items)
+    end)
+    |> maybe_put_value("description", content, :criteria, &describe_service_item!(&1, kind, item_kind))
+  end
+
+  defp put_item_values(values, _content), do: values
+
+  defp item_field(item, field), do: Enum.find_value(item, fn {key, value} -> if to_string(key) == field, do: value end)
+
+  defp service_item_kind!(items, item_kind) do
+    case get_in(items, ["kinds", Atom.to_string(item_kind)]) do
+      %{"singular" => _, "plural" => _, "description" => [_ | _]} = kind ->
+        kind
+
+      other ->
+        raise ArgumentError,
+              "primitives.json's service_items has no complete entry for the item kind #{inspect(item_kind)}, got: #{inspect(other)}"
+    end
+  end
+
+  defp maybe_put_value(values, name, content, key, describe) do
+    case Map.fetch(content, key) do
+      {:ok, value} -> Map.put(values, name, describe.(value))
+      :error -> values
+    end
+  end
+
+  # An item as its kind's description segments describe it; a segment whose
+  # field the item leaves blank is left out.
+  defp describe_service_item!(item, kind, item_kind) when is_map(item) do
+    kind
+    |> Map.fetch!("description")
+    |> Enum.flat_map(fn %{"field" => field, "text" => text} ->
+      case item_field(item, field) do
+        value when is_binary(value) ->
+          if String.trim(value) == "", do: [], else: [String.replace(text, "$value", value)]
+
+        nil ->
+          []
+
+        other ->
+          raise ArgumentError,
+                "the #{item_kind} item's #{field} must be a string to be described, got: #{inspect(other)}"
+      end
+    end)
+    |> case do
+      [] ->
+        raise ArgumentError,
+              "the #{item_kind} item #{inspect(item)} gives none of the fields it is described by a value"
+
+      segments ->
+        Enum.join(segments, " ")
+    end
+  end
+
+  defp join_candidates([only], _items), do: only
+
+  defp join_candidates(descriptions, items) do
+    {last, rest} = List.pop_at(descriptions, -1)
+
+    Enum.join(rest, Map.fetch!(items, "candidate_separator")) <>
+      Map.fetch!(items, "candidate_conjunction") <> last
+  end
+
+  # Every placeholder the template names must be filled.
+  defp fill_service_template!(template, values) do
+    Regex.replace(~r/\$([a-z_]+)/, template, fn placeholder, name ->
+      case Map.fetch(values, name) do
+        {:ok, value} ->
+          value
+
+        :error ->
+          raise ArgumentError,
+                "the service clarification #{inspect(template)} names #{placeholder}, which nothing fills; " <>
+                  "filled: #{inspect(Map.keys(values))}"
+      end
+    end)
+  end
+
   @doc "Gets a transition phrase for adding additional information.\n"
   def get_transition_phrase(type \\ :additional_info) do
     type_str = to_string(type)
@@ -404,7 +851,8 @@ defmodule Brain.Response.Synthesizer do
     best_episode =
       episodes
       |> Enum.filter(fn {episode, similarity} ->
-        similarity >= 0.7 and episode.outcome != nil and episode.outcome != ""
+        similarity >= RecurringPattern.similarity_threshold() and episode.outcome != nil and
+          episode.outcome != ""
       end)
       |> Enum.max_by(fn {_ep, sim} -> sim end, fn -> nil end)
 
@@ -439,46 +887,70 @@ defmodule Brain.Response.Synthesizer do
     ""
   end
 
+  # The frame for the slots the entities fill, looked up in this order:
+  #
+  #   1. a missing required slot gives "missing_<slot>" ("missing_both" for more);
+  #   2. the domain's own frame keyed by every filled slot, required and
+  #      optional ("device,room");
+  #   3. the domain's own frame keyed by the filled required slots ("device");
+  #   4. a frame whose key names an entity's graph type;
+  #   5. the shared slot-to-frame mapping, for either key;
+  #   6. the domain's "general" frame, only when no slot is filled at all.
+  #
+  # A candidate counts only if the domain has frames under it. Nil when none
+  # does: the caller answers :not_synthesized rather than a generic frame that
+  # ignores the slots that were filled.
   defp determine_frame_key(domain_config, entities) do
     slot_requirements = Map.get(domain_config, "slot_requirements", %{})
     required_slots = Map.get(slot_requirements, "required", [])
+    optional_slots = Map.get(slot_requirements, "optional", [])
+    slot_type_aliases = Map.get(slot_requirements, "slot_type_aliases", %{})
+    frames = Map.get(domain_config, "response_frames", %{})
 
-    filled_required =
-      Enum.filter(required_slots, fn slot ->
-        find_entity_value(entities, slot) != nil
-      end)
+    filled? = fn slot ->
+      find_entity_value_by_types(entities, Map.get(slot_type_aliases, slot, [slot])) != nil
+    end
 
+    filled_required = Enum.filter(required_slots, filled?)
+    filled_optional = Enum.filter(optional_slots, filled?)
     missing_required = required_slots -- filled_required
 
-    graph_type_key = infer_frame_from_graph_types(entities, domain_config)
+    if missing_required != [] do
+      case missing_required do
+        [single] -> "missing_#{single}"
+        _ -> "missing_both"
+      end
+    else
+      all_key = slot_key(filled_required ++ filled_optional)
+      required_key = slot_key(filled_required)
 
-    cond do
-      missing_required != [] ->
-        case missing_required do
-          [single] -> "missing_#{single}"
-          _ -> "missing_both"
-        end
+      no_slot_filled =
+        if filled_required == [] and filled_optional == [], do: [@frame_key_default], else: []
 
-      graph_type_key != nil ->
-        graph_type_key
-
-      filled_required == [] ->
-        "general"
-
-      true ->
-        sorted_key = filled_required |> Enum.sort() |> Enum.join(",")
-        Map.get(@frame_key_mappings, sorted_key, @frame_key_default)
+      [
+        all_key,
+        required_key,
+        infer_frame_from_graph_types(entities, domain_config),
+        Map.get(@frame_key_mappings, all_key),
+        Map.get(@frame_key_mappings, required_key)
+      ]
+      |> Kernel.++(no_slot_filled)
+      |> Enum.find(fn key -> is_binary(key) and Map.get(frames, key, []) != [] end)
     end
   end
+
+  defp slot_key(slots), do: slots |> Enum.uniq() |> Enum.sort() |> Enum.join(",")
 
   defp infer_frame_from_graph_types(entities, domain_config) do
     response_frames = Map.get(domain_config, "response_frames", %{})
     frame_keys = Map.keys(response_frames)
 
+    # An empty graph type (a node with no type or label) names nothing; kept,
+    # it is a substring of every key and picked whichever frame came first.
     graph_types =
       entities
       |> Enum.map(&Map.get(&1, :graph_type))
-      |> Enum.reject(&is_nil/1)
+      |> Enum.reject(&(&1 in [nil, ""]))
       |> Enum.map(&String.downcase/1)
 
     Enum.find(frame_keys, fn key ->
@@ -486,16 +958,42 @@ defmodule Brain.Response.Synthesizer do
     end)
   end
 
-  defp fill_entity_slots(frame, entities) do
-    Enum.reduce(entities, frame, fn entity, acc ->
-      entity_type = entity[:entity_type] || entity["entity_type"] || ""
-      entity_value = entity[:value] || entity["value"] || ""
+  # Every entity first fills the placeholder named by its own type, and only then
+  # do aliases fill what is left. Filling both in one pass let an entity reach a
+  # slot it is merely an alias for before the entity that is that slot's own type
+  # got there: smarthome aliases "room" to $device, so "$device in the $room"
+  # could come out as "the kitchen in the kitchen".
+  defp fill_entity_slots(frame, entities, slot_type_aliases) do
+    reverse_alias_map = build_reverse_alias_map(slot_type_aliases)
 
-      if entity_type != "" and entity_value != "" do
-        String.replace(acc, "$#{entity_type}", entity_value)
-      else
-        acc
-      end
+    typed =
+      for entity <- entities,
+          type = to_string(entity[:entity_type] || entity["entity_type"] || ""),
+          value = entity[:value] || entity["value"] || "",
+          type != "" and value != "",
+          do: {type, value}
+
+    exact = Enum.reduce(typed, frame, fn {type, value}, acc -> String.replace(acc, "$#{type}", value) end)
+
+    Enum.reduce(typed, exact, fn {type, value}, acc ->
+      reverse_alias_map
+      |> Map.get(type, [])
+      |> Enum.reduce(acc, fn slot_name, inner_acc -> String.replace(inner_acc, "$#{slot_name}", value) end)
+    end)
+  end
+
+  defp build_reverse_alias_map(slot_type_aliases) do
+    Enum.reduce(slot_type_aliases, %{}, fn {slot_name, type_list}, acc ->
+      Enum.reduce(type_list, acc, fn type, inner_acc ->
+        type_str = to_string(type)
+        existing = Map.get(inner_acc, type_str, [])
+
+        if slot_name in existing do
+          inner_acc
+        else
+          Map.put(inner_acc, type_str, [slot_name | existing])
+        end
+      end)
     end)
   end
 
@@ -504,7 +1002,7 @@ defmodule Brain.Response.Synthesizer do
       ack_prefixes = Map.get(domain_config, "acknowledgment_prefixes", [])
 
       if ack_prefixes != [] and :rand.uniform() > 0.5 do
-        "#{Enum.random(ack_prefixes)} #{String.downcase(String.first(response))}#{String.slice(response, 1..-1//1)}"
+        join_after(Enum.random(ack_prefixes), response)
       else
         response
       end
@@ -513,37 +1011,69 @@ defmodule Brain.Response.Synthesizer do
     end
   end
 
-  defp get_slot_clarification(intent, missing_slots, _domain_config) do
-    templates = load_clarification_templates(intent)
+  # The UD tag the POS tagger gives a proper noun (`Brain.ML.POSTagger.valid_tags/0`).
+  @proper_noun_tag "PROPN"
 
-    case missing_slots do
-      [slot] ->
-        Map.get(templates, slot) || get_generic_clarification()
+  @doc """
+  `sentence` said after `prefix`, a phrase put before it ("Sure,", "Done.",
+  "Also,"), separated by a space.
+
+  A prefix that ends a sentence ("Done.") leaves `sentence` as written. One
+  that continues it ("Sure,") lowercases the sentence's first letter, which
+  was capitalized only for starting a sentence, unless its first word is
+  written capitalized wherever it stands: a proper noun, as the POS tagger
+  tags it in `sentence`, or a word the closed-class lexicon declares
+  capitalized (`Brain.Lexicon.ClosedClass.capitalized?/1`), the pronoun "I".
+
+  Raises for an empty sentence, and when the POS tagger cannot be loaded.
+  """
+  @spec join_after(String.t(), String.t()) :: String.t()
+  def join_after(prefix, sentence) when is_binary(prefix) and is_binary(sentence) do
+    "#{prefix} #{continue_after(prefix, sentence)}"
+  end
+
+  defp continue_after(prefix, sentence) do
+    cond do
+      Brain.ML.Tokenizer.ends_with_terminal_punctuation?(prefix) -> sentence
+      keeps_capital?(sentence) -> sentence
+      true -> String.downcase(String.first(sentence)) <> String.slice(sentence, 1..-1//1)
+    end
+  end
+
+  defp keeps_capital?(sentence) do
+    case Brain.ML.Tokenizer.tokenize_words(sentence) do
+      [] ->
+        raise ArgumentError, "Synthesizer: there is no sentence to put after a prefix, got: #{inspect(sentence)}"
+
+      [first | _] = words ->
+        Brain.Lexicon.ClosedClass.capitalized?(first) or proper_noun_first?(words)
+    end
+  end
+
+  defp proper_noun_first?([first | _] = words) do
+    case Brain.ML.POSTagger.load_model() do
+      {:ok, model} ->
+        match?([{_word, @proper_noun_tag} | _], Brain.ML.POSTagger.predict(words, model))
+
+      {:error, reason} ->
+        raise "Synthesizer: the POS tagger could not be loaded to tell whether #{inspect(first)} is a proper " <>
+                "noun, which decides whether it keeps its capital after a prefix: #{inspect(reason)}"
+    end
+  end
+
+  # Clarification prompts live in priv/analysis/intent_registry.json and are
+  # owned by SlotDetector. This module used to load a parallel
+  # priv/analysis/slot_schemas.json -- a file nothing ever generated -- which
+  # silently compiled to %{}, so every missing slot got the generic prompt.
+  defp get_slot_clarification(intent, missing_slots, _domain_config) do
+    case {missing_slots, intent} do
+      {[slot], intent} when is_binary(intent) ->
+        SlotDetector.get_clarification_prompt(slot, intent)
 
       _ ->
         get_generic_clarification()
     end
   end
-
-  @slot_schemas_path Path.join(:code.priv_dir(:brain), "analysis/slot_schemas.json")
-  @external_resource @slot_schemas_path
-  @slot_schemas (case File.read(@slot_schemas_path) do
-                   {:ok, content} ->
-                     case Jason.decode(content) do
-                       {:ok, data} -> data
-                       _ -> %{}
-                     end
-                   _ -> %{}
-                 end)
-
-  defp load_clarification_templates(intent) when is_binary(intent) do
-    case Map.get(@slot_schemas, intent) do
-      %{"clarification_templates" => templates} when is_map(templates) -> templates
-      _ -> %{}
-    end
-  end
-
-  defp load_clarification_templates(_), do: %{}
 
   defp build_partial_acknowledgment(entities, _domain_config, _opts) do
     filled_values =
@@ -558,11 +1088,13 @@ defmodule Brain.Response.Synthesizer do
     end
   end
 
-  defp find_entity_value(entities, entity_type) do
-    Enum.find_value(entities, fn entity ->
-      type = entity[:entity_type] || entity["entity_type"]
+  defp find_entity_value_by_types(entities, acceptable_types) do
+    type_strings = Enum.map(acceptable_types, &to_string/1)
 
-      if type == entity_type do
+    Enum.find_value(entities, fn entity ->
+      type = to_string(entity[:entity_type] || entity["entity_type"] || "")
+
+      if type in type_strings do
         entity[:value] || entity["value"]
       else
         nil
@@ -650,25 +1182,18 @@ defmodule Brain.Response.Synthesizer do
   end
 
   defp expand_phrases(phrases) when is_list(phrases) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      original_set = MapSet.new(phrases)
+    original_set = MapSet.new(phrases)
 
-      expanded =
-        phrases
-        |> Enum.flat_map(fn phrase ->
-          variant = paraphrase_phrase(phrase)
-          if variant != phrase and not MapSet.member?(original_set, variant) do
-            [phrase, variant]
-          else
-            [phrase]
-          end
-        end)
-        |> Enum.uniq()
-
-      expanded
-    else
-      phrases
-    end
+    phrases
+    |> Enum.flat_map(fn phrase ->
+      variant = paraphrase_phrase(phrase)
+      if variant != phrase and not MapSet.member?(original_set, variant) do
+        [phrase, variant]
+      else
+        [phrase]
+      end
+    end)
+    |> Enum.uniq()
   end
 
   defp paraphrase_phrase(phrase) do
@@ -678,8 +1203,8 @@ defmodule Brain.Response.Synthesizer do
       Enum.map(words, fn word ->
         lower = String.downcase(word)
 
-        if String.length(lower) >= 4 and Brain.ML.Lexicon.known_word?(lower) do
-          case Brain.ML.Lexicon.synonyms(lower) do
+        if String.length(lower) >= 4 and Brain.Lexicon.known_word?(lower) do
+          case Brain.Lexicon.synonyms(lower) do
             [] -> word
             [syn | _] ->
               if String.length(syn) >= 3 and not String.contains?(syn, "_") do

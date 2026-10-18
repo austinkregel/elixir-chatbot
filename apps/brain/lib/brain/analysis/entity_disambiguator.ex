@@ -1,17 +1,11 @@
 defmodule Brain.Analysis.EntityDisambiguator do
-  @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **POS tags**: What part of speech precedes/follows the entity\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **Intent hints**: What domain does the intent belong to?\n- **ChunkProfile**: Domain from feature-vector classification for entity type expectations\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
-
-  # World.TypeInferrer is in a sibling umbrella app that depends on :brain.
-  # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.TypeInferrer}
+  @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **Candidate readings**: chosen by `Brain.Analysis.EntityTypeScorer` from how the word is used, how it was typed, the tag of the word before it, and the context's learned likelihood of each reading (`Brain.Analysis.SlotTypePreferences`)\n- **POS tags**: What part of speech precedes/follows the entity (introduction patterns)\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **ChunkProfile**: Domain from feature-vector classification, whose slot types' learned likelihoods (`Brain.Analysis.SlotTypePreferences`) re-weigh the readings an ambiguous-type entity's sources gave; no reading is added that no source gave\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
 
   alias Brain.Analysis
-  alias Brain.Graph.Reader
   require Logger
 
-  alias Analysis.{ChunkProfile, TypeHierarchy}
-  alias Brain.Analysis.Pipeline
-  alias World.TypeInferrer
+  alias Analysis.{ChunkProfile, EntityTypeScorer, TypeHierarchy}
+  alias Brain.Worlds.TypeInferrer
 
   @external_resource Path.join(:code.priv_dir(:brain), "analysis/entity_types.json")
   @ambiguous_types (
@@ -23,12 +17,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
     |> List.flatten()
     |> MapSet.new()
   )
-
-  @external_resource Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
-  @context_preferences Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
-                       |> File.read!()
-                       |> Jason.decode!()
-                       |> Enum.into(%{}, fn {k, v} -> {String.to_atom(k), v} end)
 
   @type entity_candidate :: %{
           value: String.t(),
@@ -124,7 +112,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
 
     name_type = %{
       entity_type: default_type,
-      entity: default_type,
       value: Map.get(entity, :value) || Map.get(entity, "value"),
       confidence: intro_confidence,
       disambiguation_reason: "introduction_pattern"
@@ -133,60 +120,96 @@ defmodule Brain.Analysis.EntityDisambiguator do
     select_type(entity, name_type)
   end
 
-  defp expand_with_domain_candidates(entity, current_type, context) do
-    profile = Map.get(context, :profile)
+  # The readings the span's sources gave, offered beside the entity's own type:
+  # every reading of the span (`:readings`, a losing hypothesis's among them --
+  # the gazetteer's place beside the entity model's person) and the
+  # candidates of its gazetteer reading (`:types`). Context re-weighs these
+  # (`score_and_select/4`); it never adds a reading no source gave. Offering
+  # every type the context's slots list made one -- "Austin" after "weather
+  # in", read as a person, scored as a temperature unit -- and rescoring picked
+  # it. With one reading there is nothing to weigh, and the entity keeps it.
+  defp expand_with_domain_candidates(entity, current_type, _context) do
+    entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
 
-    expected_types =
-      case profile do
-        %ChunkProfile{domain: domain} when domain != :unknown ->
-          Pipeline.expected_entity_types_from_domain(domain)
+    original = %{entity_type: current_type, value: entity_value, confidence: Map.get(entity, :confidence, 0.5), source: :original}
 
-        _ ->
-          intent = Map.get(context, :intent, "")
-          Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
+    read =
+      for %{entity_type: type} = reading <- Map.get(entity, :readings, []), type != current_type do
+        %{entity_type: type, value: entity_value, source: Map.fetch!(reading, :source)}
       end
 
-    if expected_types != [] and current_type not in expected_types do
-      entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+    gazetteer = entity |> get_entity_types() |> Enum.reject(&(get_type_name(&1) == current_type))
 
-      original = %{
-        entity_type: current_type,
-        value: entity_value,
-        confidence: Map.get(entity, :confidence, 0.5),
-        source: :original
-      }
-
-      alternatives =
-        expected_types
-        |> Enum.reject(&(&1 == current_type))
-        |> Enum.map(fn expected ->
-          %{
-            entity_type: expected,
-            value: entity_value,
-            confidence: 0.3,
-            source: :domain_expansion
-          }
-        end)
-
-      [original | alternatives]
-    else
-      get_entity_types(entity)
+    case Enum.uniq_by([original | read ++ gazetteer], &get_type_name/1) do
+      [_only] -> get_entity_types(entity)
+      candidates -> candidates
     end
   end
 
+  # Weighs every candidate reading with EntityTypeScorer: how the word is
+  # used, how it was typed, the word before it, and the context's learned
+  # likelihood of each reading -- the context whose listed types the domain
+  # expansion ranked by. The entity takes the winner's type, value and
+  # confidence, and keeps its candidates so it can be scored again once the
+  # intent is known.
   defp score_and_select(entity, types, pos_tagged, context) do
-    features = extract_features(entity, pos_tagged, context)
+    text =
+      case Map.get(context, :original_text) do
+        text when is_binary(text) -> text
+        other -> raise ArgumentError, "EntityDisambiguator: context has no :original_text (#{inspect(other)})"
+      end
 
-    scored_types =
-      Enum.map(types, fn type_info ->
-        score = score_type(type_info, features, context)
-        {type_info, score}
-      end)
-
-    {best_type, _score} = Enum.max_by(scored_types, fn {_, score} -> score end)
-
-    select_type(entity, best_type)
+    entity
+    |> Map.put(:types, types)
+    |> Map.put_new_lazy(:tag, fn -> head_tag(entity, pos_tagged) end)
+    |> Map.put_new_lazy(:preceding_tag, fn -> preceding_tag(entity, pos_tagged) end)
+    |> EntityTypeScorer.mark_position(text)
+    |> EntityTypeScorer.apply_to(slot_preferences(context))
+    |> Map.put(:disambiguation_source, :context_analysis)
   end
+
+  # The tag of the entity's head word (its last word) in the sentence's tags,
+  # for an entity that was not extracted with one; nil when the head word is
+  # not among the tagged tokens.
+  defp head_tag(entity, pos_tagged) when is_list(pos_tagged) do
+    head =
+      (Map.get(entity, :match) || Map.get(entity, :value) || "")
+      |> String.split()
+      |> List.last()
+      |> Kernel.||("")
+      |> String.downcase()
+
+    Enum.find_value(pos_tagged, fn
+      {token, tag} when is_binary(token) and is_binary(tag) ->
+        if String.downcase(token) == head, do: tag
+
+      _ ->
+        nil
+    end)
+  end
+
+  defp head_tag(_entity, _pos_tagged), do: nil
+
+  # The tag of the word before the entity's first word in the sentence's
+  # tags, `:sentence_start` when the first word opens the sentence, and nil
+  # for an entity that was not extracted with one and whose first word is not
+  # among the tagged tokens.
+  defp preceding_tag(entity, [{_token, _tag} | _] = pos_tagged) do
+    first =
+      (Map.get(entity, :match) || Map.get(entity, :value) || "")
+      |> String.split()
+      |> List.first()
+      |> Kernel.||("")
+      |> String.downcase()
+
+    case Enum.find_index(pos_tagged, fn {token, _tag} -> is_binary(token) and String.downcase(token) == first end) do
+      nil -> nil
+      0 -> :sentence_start
+      index -> pos_tagged |> Enum.at(index - 1) |> elem(1)
+    end
+  end
+
+  defp preceding_tag(_entity, _pos_tagged), do: nil
 
   @doc """
   Check if an entity type requires context-based disambiguation.
@@ -207,18 +230,26 @@ defmodule Brain.Analysis.EntityDisambiguator do
   def infer_type_with_type_inferrer(entity, pos_tagged, context) do
     entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
     original_type = Map.get(entity, :entity_type) || ""
-    intent = Map.get(context, :intent, "")
-    world_id = Map.get(context, :world_id) || "default"
-    profile = Map.get(context, :profile)
+    world_id =
+      case Map.get(context, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
 
-    expected_types =
-      case profile do
-        %ChunkProfile{domain: domain} when domain != :unknown ->
-          Pipeline.expected_entity_types_from_domain(domain)
-
-        _ ->
-          Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
+        other ->
+          raise ArgumentError,
+                "EntityDisambiguator.infer_type_with_type_inferrer needs :world_id in the context, " <>
+                  "the world types are inferred in; got #{inspect(other)}"
       end
+
+    # The types the context's slots list, with their learned weights; none
+    # when there is no context.
+    expected =
+      case slot_preferences(context) do
+        nil -> %{}
+        %EntityTypeScorer.Expected{} = preferences -> EntityTypeScorer.Expected.weights(preferences)
+      end
+
+    ranked = expected |> Enum.sort_by(fn {type, weight} -> {-weight, type} end) |> Enum.map(&elem(&1, 0))
 
     {context_tokens, context_tags} =
       case pos_tagged do
@@ -236,19 +267,17 @@ defmodule Brain.Analysis.EntityDisambiguator do
 
     final_type =
       cond do
-        inferred_type in expected_types ->
+        Map.has_key?(expected, inferred_type) ->
           inferred_type
 
-        original_type in expected_types ->
+        Map.has_key?(expected, original_type) ->
           original_type
 
-        expected_types != [] ->
-          compatible = Enum.find(expected_types, fn et ->
-            TypeHierarchy.compatible?(inferred_type, et) or
-              TypeHierarchy.compatible?(original_type, et)
-          end)
-
-          compatible || hd(expected_types)
+        # A listed type the inferred or the original type is compatible with
+        # in the hierarchy; a listed type neither is would be a reading no
+        # source gave, so none is taken (the clauses below keep a source's).
+        (compatible = Enum.find(ranked, &(TypeHierarchy.compatible?(inferred_type, &1) or TypeHierarchy.compatible?(original_type, &1)))) != nil ->
+          compatible
 
         inferred_type in ["unknown", ""] or inferred_type == nil ->
           if original_type != "" and original_type != "unknown", do: original_type, else: inferred_type
@@ -258,7 +287,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
       end
 
     entity
-    |> Map.put(:entity, final_type)
     |> Map.put(:entity_type, final_type)
     |> Map.put(:disambiguation_source, :type_inferrer)
     |> Map.put(:disambiguation_confidence, type_confidence)
@@ -317,27 +345,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
     primary_score = max(intent_score, pron_verb_score)
     score = primary_score + self_ref_score + greeting_score
     Float.round(min(score, 1.0), 4)
-  end
-
-  defp extract_features(_entity, _pos_tagged, context) do
-    intent = Map.get(context, :intent, "")
-    profile = Map.get(context, :profile)
-
-    {domain, expected_types} =
-      case profile do
-        %ChunkProfile{domain: d} when d != :unknown ->
-          {d, Pipeline.expected_entity_types_from_domain(d)}
-
-        _ ->
-          d = domain_from_intent(intent)
-          {d, Pipeline.expected_entity_types_from_domain(d)}
-      end
-
-    %{
-      expected_entity_types: expected_types,
-      intent: intent,
-      domain: domain
-    }
   end
 
   defp get_entity_position(entity, pos_tagged) when is_list(pos_tagged) do
@@ -415,162 +422,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
   end
 
 
-  defp score_type(type_info, features, context) do
-    entity_type = get_type_name(type_info)
-    domain = features.domain
-    expected_types = Map.get(features, :expected_entity_types, [])
-
-    dynamic_score =
-      if entity_type in expected_types do
-        0.8
-      else
-        0.0
-      end
-
-    preferences = Map.get(@context_preferences, domain, @context_preferences.default)
-    static_score = Map.get(preferences, entity_type, 0.3)
-
-    base_score =
-      if expected_types != [] and dynamic_score > 0 do
-        dynamic_score
-      else
-        static_score
-      end
-
-    atlas_boost = atlas_co_occurrence_boost(type_info, context)
-    lexicon_boost = lexicon_sense_boost(type_info, context)
-
-    base_score + atlas_boost + lexicon_boost
-  end
-
-  defp lexicon_sense_boost(type_info, context) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      entity_value = Map.get(type_info, :value) || ""
-      entity_type = get_type_name(type_info)
-      original_text = Map.get(context, :original_text, "")
-
-      if entity_value == "" or original_text == "" do
-        0.0
-      else
-        senses = Brain.ML.Lexicon.senses(entity_value)
-
-        if senses == [] do
-          0.0
-        else
-          context_words =
-            original_text
-            |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
-            |> MapSet.new()
-
-          best_match =
-            senses
-            |> Enum.map(fn sense ->
-              defn_words =
-                sense.definition
-                |> Brain.ML.Tokenizer.tokenize_normalized(min_length: 3)
-                |> MapSet.new()
-
-              overlap = MapSet.intersection(context_words, defn_words) |> MapSet.size()
-
-              chain = Brain.ML.Lexicon.hypernym_chain(entity_value, sense.pos, max_depth: 5)
-              type_match = if entity_type in chain, do: 1, else: 0
-
-              overlap + type_match * 2
-            end)
-            |> Enum.max(fn -> 0 end)
-
-          cond do
-            best_match >= 3 -> 0.2
-            best_match >= 1 -> 0.1
-            true -> 0.0
-          end
-        end
-      end
-    else
-      0.0
-    end
-  end
-
-  defp atlas_co_occurrence_boost(type_info, context) do
-    entity_value = Map.get(type_info, :value) || ""
-    entity_type = get_type_name(type_info)
-
-    if entity_value == "" do
-      0.0
-    else
-      entity = %{entity_type: entity_type, value: entity_value}
-
-      case Reader.entity_context([entity]) do
-        [%{node: node, neighbors: neighbors}] when node != nil ->
-          intent = Map.get(context, :intent, "")
-          profile = Map.get(context, :profile)
-
-          expected_types =
-            case profile do
-              %ChunkProfile{domain: domain} when domain != :unknown ->
-                Pipeline.expected_entity_types_from_domain(domain)
-
-              _ ->
-                Pipeline.expected_entity_types_from_domain(domain_from_intent(intent))
-            end
-          neighbor_count = length(neighbors)
-
-          # Check if neighbor labels/types align with what the intent expects.
-          # e.g., for weather.query expecting ["location"], if "Austin" as location
-          # has neighbors whose labels include Location-related types, that's a signal.
-          intent_aligned =
-            if expected_types != [] do
-              Enum.count(neighbors, fn neighbor ->
-                neighbor_labels = Map.get(neighbor, :labels, [])
-                neighbor_props = Map.get(neighbor, :properties, %{})
-                neighbor_type = Map.get(neighbor_props, "type", "")
-
-                neighbor_type_indicators =
-                  [neighbor_type | neighbor_labels]
-                  |> Enum.map(&String.downcase(to_string(&1)))
-
-                Enum.any?(expected_types, fn et ->
-                  et_lower = String.downcase(et)
-                  Enum.any?(neighbor_type_indicators, fn ind ->
-                    ind == et_lower or String.contains?(ind, et_lower)
-                  end)
-                end)
-              end)
-            else
-              0
-            end
-
-          # Intent-aligned neighbors are a strong disambiguation signal:
-          # Atlas confirms this entity type co-occurs with the intent's expected types
-          intent_boost =
-            cond do
-              intent_aligned >= 3 -> 0.35
-              intent_aligned >= 1 -> 0.25
-              true -> 0.0
-            end
-
-          # General existence in Atlas is a weaker but still useful signal
-          existence_boost =
-            cond do
-              neighbor_count >= 5 -> 0.15
-              neighbor_count >= 2 -> 0.1
-              neighbor_count >= 1 -> 0.05
-              true -> 0.0
-            end
-
-          max(intent_boost, existence_boost)
-
-        _ ->
-          0.0
-      end
-    end
-  rescue
-    _ -> 0.0
-  catch
-    :exit, _ -> 0.0
-  end
-
-
   defp get_type_name(type_info) when is_map(type_info) do
     Map.get(type_info, :entity_type, "unknown")
   end
@@ -581,7 +432,6 @@ defmodule Brain.Analysis.EntityDisambiguator do
 
   defp select_type(entity, selected_type) when is_map(selected_type) do
     base_merge = %{
-      entity: get_type_name(selected_type),
       entity_type: get_type_name(selected_type),
       value:
         Map.get(selected_type, :value) || Map.get(entity, :value) || Map.get(entity, "value"),
@@ -605,12 +455,13 @@ defmodule Brain.Analysis.EntityDisambiguator do
     entity
   end
 
-  defp domain_from_intent(nil), do: nil
-  defp domain_from_intent(intent) when is_binary(intent) do
-    case String.split(intent, ".", parts: 2) do
-      [d, _] -> String.to_atom(d)
-      _ -> nil
+  # What the context expects (`EntityTypeScorer.Expected`): the profile's
+  # domain when a profile is known, or else the intent. `nil` when there is no
+  # context.
+  defp slot_preferences(context) do
+    case Map.get(context, :profile) do
+      %ChunkProfile{domain: domain} when domain != :unknown -> EntityTypeScorer.domain_expected_types(domain)
+      _ -> EntityTypeScorer.expected_types(Map.get(context, :intent))
     end
   end
-  defp domain_from_intent(_), do: nil
 end

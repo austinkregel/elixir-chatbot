@@ -1,0 +1,42 @@
+[
+  {
+    "text": "could you don't rush",
+    "tokens": [
+      "could",
+      "you",
+      "do",
+      "n't",
+      "rush"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-ef45a72f",
+    "intent": "smalltalk.dialog.hold_on"
+  },
+  {
+    "text": "I want to wait please",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "wait",
+      "please"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-adda5898",
+    "intent": "smalltalk.dialog.hold_on"
+  }
+]

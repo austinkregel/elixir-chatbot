@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "tone": {
+    "dimension_names": ["positive", "negative", "neutral", "confidence",
+                        "polarity_magnitude", "arousal", "warmth",
+                        "formality", "playfulness", "directness"],
+    "tone_vectors": {
+      "enthusiastic":   [1.0, 0.0, 0.0, 0.95, 1.0, 1.0, 0.7, 0.2, 0.6, 0.7],
+      "cheery":         [0.9, 0.0, 0.1, 0.8,  0.9, 0.7, 0.8, 0.3, 0.5, 0.5],
+      "playful":        [0.7, 0.0, 0.3, 0.6,  0.7, 0.8, 0.7, 0.1, 1.0, 0.4],
+      "mischievous":    [0.6, 0.1, 0.3, 0.7,  0.5, 0.8, 0.5, 0.1, 0.9, 0.7],
+      "dramatic":       [0.6, 0.2, 0.2, 0.9,  0.6, 1.0, 0.5, 0.3, 0.7, 0.8],
+      "warm":           [0.6, 0.0, 0.4, 0.7,  0.6, 0.4, 1.0, 0.3, 0.3, 0.4],
+      "encouraging":    [0.8, 0.0, 0.2, 0.7,  0.8, 0.6, 0.9, 0.3, 0.3, 0.5],
+      "sincere":        [0.5, 0.1, 0.4, 0.8,  0.5, 0.4, 0.9, 0.4, 0.1, 0.6],
+      "reassuring":     [0.5, 0.1, 0.4, 0.8,  0.4, 0.3, 0.9, 0.4, 0.1, 0.5],
+      "patient":        [0.3, 0.0, 0.7, 0.5,  0.3, 0.2, 0.8, 0.4, 0.2, 0.3],
+      "neutral":        [0.0, 0.0, 1.0, 0.5,  0.0, 0.4, 0.4, 0.5, 0.2, 0.5],
+      "calm":           [0.3, 0.0, 0.7, 0.6,  0.3, 0.2, 0.6, 0.5, 0.2, 0.4],
+      "professional":   [0.1, 0.0, 0.9, 0.8,  0.1, 0.4, 0.3, 0.9, 0.0, 0.6],
+      "matter_of_fact": [0.0, 0.0, 1.0, 0.9,  0.0, 0.3, 0.2, 0.7, 0.0, 0.9],
+      "curious":        [0.4, 0.0, 0.6, 0.4,  0.4, 0.6, 0.6, 0.3, 0.5, 0.4],
+      "dry":            [0.0, 0.1, 0.9, 0.7,  0.1, 0.1, 0.1, 0.6, 0.3, 0.7],
+      "deadpan":        [0.0, 0.1, 0.9, 0.8,  0.1, 0.0, 0.1, 0.5, 0.6, 0.9],
+      "blunt":          [0.0, 0.2, 0.8, 0.9,  0.2, 0.4, 0.0, 0.4, 0.0, 1.0],
+      "sardonic":       [0.1, 0.4, 0.5, 0.8,  0.4, 0.3, 0.1, 0.4, 0.7, 0.8],
+      "resigned":       [0.0, 0.5, 0.5, 0.6,  0.5, 0.1, 0.2, 0.4, 0.2, 0.7],
+      "gentle":         [0.2, 0.2, 0.6, 0.4,  0.1, 0.2, 0.8, 0.4, 0.1, 0.2],
+      "empathetic":     [0.1, 0.4, 0.5, 0.7,  0.3, 0.3, 1.0, 0.3, 0.0, 0.4],
+      "wistful":        [0.2, 0.3, 0.5, 0.5,  0.2, 0.2, 0.6, 0.4, 0.1, 0.3],
+      "somber":         [0.0, 0.7, 0.3, 0.8,  0.7, 0.1, 0.4, 0.5, 0.0, 0.5],
+      "apologetic":     [0.0, 0.5, 0.5, 0.6,  0.5, 0.2, 0.7, 0.5, 0.0, 0.4],
+      "cautious":       [0.0, 0.3, 0.7, 0.3,  0.3, 0.2, 0.5, 0.6, 0.0, 0.2]
+    },
+    "mirror_coefficient": 0.4,
+    "default_tone_bias": "calm"
+  },
+  "lattice": {
+    "feature_weight": 0.55,
+    "tone_weight": 0.45,
+    "intent_match_boost": 0.10,
+    "intent_domain_bonus": 0.05
+  },
+  "domains": {
+    "smalltalk": {
+      "system": "lattice",
+      "fallback": "template",
+      "tone_bias": "warm",
+      "mirror_coefficient": 0.5
+    },
+    "weather": {
+      "system": "lattice",
+      "fallback": "template",
+      "tone_bias": "cheery",
+      "mirror_coefficient": 0.3
+    },
+    "status": {
+      "system": "lattice",
+      "fallback": "template",
+      "tone_bias": "professional",
+      "mirror_coefficient": 0.2
+    },
+    "factual": {
+      "system": "lattice",
+      "fallback": "template",
+      "tone_bias": "matter_of_fact",
+      "mirror_coefficient": 0.3
+    },
+    "smarthome": {
+      "system": "lattice",
+      "fallback": "synthesizer",
+      "tone_bias": "calm",
+      "mirror_coefficient": 0.4
+    },
+    "device": {
+      "system": "lattice",
+      "fallback": "synthesizer",
+      "tone_bias": "calm",
+      "mirror_coefficient": 0.4
+    },
+    "music": {
+      "system": "lattice",
+      "fallback": "synthesizer",
+      "tone_bias": "cheery",
+      "mirror_coefficient": 0.3
+    },
+    "reminder": {
+      "system": "lattice",
+      "fallback": "synthesizer",
+      "tone_bias": "warm",
+      "mirror_coefficient": 0.4
+    },
+    "alarm": {
+      "system": "lattice",
+      "fallback": "synthesizer",
+      "tone_bias": "calm",
+      "mirror_coefficient": 0.3
+    },
+    "timer": {
+      "system": "lattice",
+      "fallback": "synthesizer",
+      "tone_bias": "calm",
+      "mirror_coefficient": 0.3
+    },
+    "calendar": {
+      "system": "lattice",
+      "fallback": "synthesizer",
+      "tone_bias": "professional",
+      "mirror_coefficient": 0.2
+    },
+    "_default": {
+      "system": "lattice",
+      "fallback": "synthesizer",
+      "tone_bias": "calm",
+      "mirror_coefficient": 0.4
+    }
+  }
+}

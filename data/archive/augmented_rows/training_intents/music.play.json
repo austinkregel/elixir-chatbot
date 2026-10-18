@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Play Bohemian Rhapsody",
+    "tokens": [
+      "Play",
+      "Bohemian",
+      "Rhapsody"
+    ],
+    "pos_tags": [
+      "PROPN",
+      "PROPN",
+      "PROPN"
+    ],
+    "entities": [],
+    "id": "augmented-13441edb",
+    "intent": "music.play"
+  }
+]

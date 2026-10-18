@@ -1,0 +1,128 @@
+defmodule Brain.ML.NerGold do
+  @moduledoc """
+  Turns rows of the NER gold standard (`priv/evaluation/ner/gold_standard.json`)
+  into token-aligned spans and BIO tag sequences.
+
+  A gold row gives its entities as `{type, value}` pairs in the order they occur,
+  with no positions. A value is placed where it matches the text
+  case-insensitively and starts and ends on a token boundary of
+  `Brain.ML.Tokenizer.tokenize/1`, each entity after the previous one. A row whose
+  entities have no such placement, or more than one, raises naming the row:
+  choosing between placements would be a guess. Every row in the corpus had
+  exactly one placement when this was written (2026-10-08, 2,110 rows).
+
+  ## Templates
+
+  Many rows are one sentence with other values put in its entity slots:
+  "turn off the lights in the kitchen" and "turn off the radio in the
+  bedroom" are both `"turn off the <device> in the <room>"`. A row records no
+  template id, nor does the export entry it came from, so a row's template is
+  read from its own annotation (`template!/1`): its text with every entity
+  replaced by its type. Rows of one template teach a model the same words
+  around the slots, so a cross-validation that puts one in training and
+  another in validation measures how well the model has remembered the
+  sentence, not how it reads a sentence it never saw. Every cross-validation
+  over these rows assigns folds by template.
+  """
+
+  alias Brain.Corpus.Export
+  alias Brain.ML.Tokenizer
+
+  @type span :: %{type: String.t(), value: String.t(), start_pos: non_neg_integer(), end_pos: non_neg_integer()}
+
+  @doc "The row's entities with grapheme positions (`end_pos` inclusive), in text order."
+  @spec spans!(map()) :: [span()]
+  def spans!(%{"text" => text, "expected" => expected} = row) when is_binary(text) and is_list(expected) do
+    tokens = Tokenizer.tokenize(text)
+
+    case placements(String.downcase(text), tokens, expected, 0) do
+      [placement] ->
+        Enum.zip_with(expected, placement, fn %{"type" => type, "value" => value}, {start_pos, end_pos} ->
+          %{type: type, value: value, start_pos: start_pos, end_pos: end_pos}
+        end)
+
+      [] ->
+        raise ArgumentError, "NerGold: no token-aligned placement of #{inspect(values(expected))} in #{inspect(row["text"])}"
+
+      many ->
+        raise ArgumentError,
+              "NerGold: #{length(many)} token-aligned placements of #{inspect(values(expected))} in #{inspect(row["text"])}"
+    end
+  end
+
+  @doc """
+  The row's tokens and BIO tags: `B-<type>` on an entity's first token, `I-<type>`
+  on the rest, `O` elsewhere. Returns `%{tokens: [token text], tags: [tag]}`.
+  """
+  @spec sequence!(map()) :: %{tokens: [String.t()], tags: [String.t()]}
+  def sequence!(%{"text" => text} = row) do
+    spans = spans!(row)
+    tokens = Tokenizer.tokenize(text)
+
+    tags =
+      Enum.map(tokens, fn token ->
+        case Enum.find(spans, &(token.start_pos >= &1.start_pos and token.end_pos <= &1.end_pos)) do
+          nil -> "O"
+          %{start_pos: start, type: type} when token.start_pos == start -> "B-" <> type
+          %{type: type} -> "I-" <> type
+        end
+      end)
+
+    %{tokens: Enum.map(tokens, & &1.text), tags: tags}
+  end
+
+  @doc """
+  The row's template (see the moduledoc): its text with each entity, placed as
+  `spans!/1` places it, replaced by `<` its type `>`, normalized as
+  `Brain.Corpus.Export.normalise/1`. "Turn off the lights in the Kitchen"
+  (device "lights", room "Kitchen") is `"turn off the <device> in the <room>"`.
+  """
+  @spec template!(map()) :: String.t()
+  def template!(%{"text" => text} = row) do
+    {parts, rest_from} =
+      row
+      |> spans!()
+      |> Enum.reduce({[], 0}, fn span, {parts, from} ->
+        {["<#{span.type}>", String.slice(text, from, span.start_pos - from) | parts], span.end_pos + 1}
+      end)
+
+    [String.slice(text, rest_from..-1//1) | parts]
+    |> Enum.reverse()
+    |> Enum.join()
+    |> Export.normalise()
+  end
+
+  @doc """
+  The fold of each of `rows` among `folds` folds, by template (`template!/1`):
+  rows of one template are always in one fold.
+  """
+  @spec template_folds([map()], pos_integer()) :: [non_neg_integer()]
+  def template_folds(rows, folds) when is_list(rows) and is_integer(folds) and folds > 0,
+    do: Enum.map(rows, &:erlang.phash2(template!(&1), folds))
+
+  # Every ordered, non-overlapping placement of `entities` at or after `from`.
+  defp placements(_text, _tokens, [], _from), do: [[]]
+
+  defp placements(text, tokens, [%{"value" => value} | rest], from) do
+    text
+    |> occurrences(tokens, String.downcase(value))
+    |> Enum.filter(fn {start_pos, _end_pos} -> start_pos >= from end)
+    |> Enum.flat_map(fn {_start_pos, end_pos} = here ->
+      text |> placements(tokens, rest, end_pos + 1) |> Enum.map(&[here | &1])
+    end)
+  end
+
+  # Where `value` matches starting at a token start and ending at a token end.
+  defp occurrences(text, tokens, value) do
+    length = String.length(value)
+    ends = MapSet.new(tokens, & &1.end_pos)
+
+    for %{start_pos: start_pos} <- tokens,
+        end_pos = start_pos + length - 1,
+        MapSet.member?(ends, end_pos),
+        String.slice(text, start_pos, length) == value,
+        do: {start_pos, end_pos}
+  end
+
+  defp values(expected), do: Enum.map(expected, & &1["value"])
+end

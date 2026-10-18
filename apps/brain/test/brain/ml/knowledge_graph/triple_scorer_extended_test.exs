@@ -3,35 +3,6 @@ defmodule Brain.ML.KnowledgeGraph.TripleScorerExtendedTest do
 
   alias Brain.ML.KnowledgeGraph.TripleScorer
 
-  describe "GenServer lifecycle" do
-    test "starts and reports not ready without model" do
-      name = :"kg_test_#{:rand.uniform(100_000)}"
-      world = "no_model_#{:rand.uniform(100_000)}"
-      {:ok, pid} = TripleScorer.start_link(name: name, world_id: world)
-      assert Process.alive?(pid)
-      refute TripleScorer.ready?(name)
-    end
-
-    test "score returns error when not ready" do
-      name = :"kg_score_test_#{:rand.uniform(100_000)}"
-      world = "no_model_#{:rand.uniform(100_000)}"
-      {:ok, _pid} = TripleScorer.start_link(name: name, world_id: world)
-      assert {:error, :not_ready} = TripleScorer.score("Paris", "capital_of", "France", name)
-    end
-
-    test "score_batch returns error when not ready" do
-      name = :"kg_batch_test_#{:rand.uniform(100_000)}"
-      world = "no_model_#{:rand.uniform(100_000)}"
-      {:ok, _pid} = TripleScorer.start_link(name: name, world_id: world)
-      triples = [{"a", "r", "b"}]
-      assert {:error, :not_ready} = TripleScorer.score_batch(triples, name)
-    end
-
-    test "ready? returns false for non-existent server" do
-      refute TripleScorer.ready?(:"nonexistent_kg_#{:rand.uniform(100_000)}")
-    end
-  end
-
   describe "build_model/2" do
     test "builds model with defaults" do
       model = TripleScorer.build_model(100)

@@ -7,11 +7,13 @@ defmodule Mix.Tasks.TrainKgLstm do
 
   ## Usage
 
-      mix train_kg_lstm [options]
+      mix train_kg_lstm --world <id> [options]
+      mix train_kg_lstm --no-include-beliefs [options]
 
   ## Options
 
-    * `--world` - World ID (default: "default")
+    * `--world` - the world whose beliefs are trained on; required while
+      beliefs are included
     * `--epochs` - Number of training epochs (default: 50)
     * `--neg-ratio` - Negative samples per positive (default: 5)
     * `--verbose` - Print detailed progress
@@ -19,12 +21,33 @@ defmodule Mix.Tasks.TrainKgLstm do
     * `--max-conceptnet` - Max ConceptNet triples to include (default: 50000)
     * `--include-srl` - Include SRL corpus triples (default: true)
     * `--include-conceptnet` - Include ConceptNet triples (default: true)
-    * `--include-beliefs` - Include BeliefStore triples (default: true)
+    * `--include-beliefs` - Include the `--world` world's BeliefStore triples
+      (default: true)
+
+  An option this task does not know raises, as does including beliefs without
+  `--world`.
 
   ## Preconditions
 
   ConceptNet data must be ingested before training (unless `--no-include-conceptnet`).
   Run `mix download_wordnet && mix ingest_lexicon` if ConceptNet is missing.
+
+  ## Trained scorer and worlds
+
+  The scorer is written to the trained models directory
+  (`Brain.ML.KnowledgeGraph.TripleScorer.trained_path/0`), not into any world.
+  The hierarchy, knowledge, ConceptNet and SRL corpus sources belong to no
+  world. Beliefs are held per world, so when they are included the trained copy
+  also reflects the `--world` world's beliefs, and every world later seeded
+  from it receives a scorer trained on that world's beliefs. Pass
+  `--no-include-beliefs` for a trained copy that reflects no world. A world
+  receives a retrained scorer when it is seeded:
+  `mix world.seed_model triple_scorer`, or `Brain.Worlds.create!/2` when the
+  world is created.
+
+  Predicates are normalized with the relation coverage of the trained scorer
+  this run replaces, when there is one, so a verb lemma that scorer was trained
+  on passes through (`PredicateNormalizer.normalize/2`).
   """
 
   use Mix.Task
@@ -41,7 +64,7 @@ defmodule Mix.Tasks.TrainKgLstm do
 
   @impl true
   def run(args) do
-    {opts, _, _} =
+    {opts, _, invalid} =
       OptionParser.parse(args,
         strict: [
           world: :string,
@@ -57,24 +80,40 @@ defmodule Mix.Tasks.TrainKgLstm do
         aliases: [w: :world, e: :epochs, v: :verbose]
       )
 
+    if invalid != [], do: Mix.raise("train_kg_lstm: unknown options #{inspect(invalid)}")
+
+    include_beliefs = Keyword.get(opts, :include_beliefs, true)
+
+    belief_world =
+      if include_beliefs do
+        Keyword.get(opts, :world) ||
+          Mix.raise(
+            "mix train_kg_lstm needs --world <id>, the world whose beliefs it trains on " <>
+              "(or --no-include-beliefs)"
+          )
+      end
+
     Mix.Task.run("app.start")
 
-    world_id = Keyword.get(opts, :world, "default")
     epochs = Keyword.get(opts, :epochs, 50)
     neg_ratio = Keyword.get(opts, :neg_ratio, 5)
     verbose = Keyword.get(opts, :verbose, false)
     include_conceptnet = Keyword.get(opts, :include_conceptnet, true)
     include_srl = Keyword.get(opts, :include_srl, true)
-    include_beliefs = Keyword.get(opts, :include_beliefs, true)
     max_conceptnet = Keyword.get(opts, :max_conceptnet, 50_000)
 
     if include_conceptnet do
       check_conceptnet_precondition!()
     end
 
-    Mix.shell().info("Training KG-LSTM triple scorer for world: #{world_id}")
+    if belief_world do
+      Mix.shell().info("Training KG-LSTM triple scorer, with the beliefs of world: #{belief_world}")
+    else
+      Mix.shell().info("Training KG-LSTM triple scorer")
+    end
 
-    triples = load_triples(opts, world_id, include_conceptnet, include_srl, include_beliefs, max_conceptnet)
+    coverage = replaced_relation_coverage()
+    triples = load_triples(coverage, include_conceptnet, include_srl, belief_world, max_conceptnet)
 
     if Enum.empty?(triples) do
       Mix.shell().error("No triples found. Cannot train.")
@@ -102,7 +141,7 @@ defmodule Mix.Tasks.TrainKgLstm do
         verbose: verbose
       )
 
-    output_path = model_path(world_id)
+    output_path = TripleScorer.trained_path()
 
     TripleScorer.save_model(params, vocab, config, output_path,
       relation_coverage: relation_coverage,
@@ -112,10 +151,21 @@ defmodule Mix.Tasks.TrainKgLstm do
     Mix.shell().info("Model saved to #{output_path}")
     Mix.shell().info("Model version: #{model_version}")
     Mix.shell().info("Relations trained: #{map_size(relation_coverage)}")
+    Mix.shell().info("Seed worlds with it: mix world.seed_model triple_scorer --all")
 
     if opts[:publish] do
-      remote_key = ModelStore.version_prefix() <> "#{world_id}/kg_lstm/triple_scorer.term"
+      remote_key = ModelStore.version_prefix() <> Path.basename(output_path)
       ModelStore.publish(output_path, remote_key)
+    end
+  end
+
+  # The relation coverage of the trained scorer this run replaces. Before the
+  # first training there is none, and only the alias table normalizes.
+  defp replaced_relation_coverage do
+    if File.regular?(TripleScorer.trained_path()) do
+      TripleScorer.read!(TripleScorer.trained_path(), :trained) |> Map.get(:relation_coverage, %{})
+    else
+      %{}
     end
   end
 
@@ -138,13 +188,13 @@ defmodule Mix.Tasks.TrainKgLstm do
     end
   end
 
-  defp load_triples(opts, world_id, include_conceptnet, include_srl, include_beliefs, max_conceptnet) do
+  defp load_triples(coverage, include_conceptnet, include_srl, belief_world, max_conceptnet) do
     hierarchy_triples = load_hierarchy_triples()
     knowledge_triples = load_knowledge_triples()
 
     conceptnet_triples =
       if include_conceptnet do
-        loaded = load_conceptnet_triples(max_conceptnet)
+        loaded = load_conceptnet_triples(max_conceptnet, coverage)
         Mix.shell().info("  ConceptNet: #{length(loaded)} triples")
         loaded
       else
@@ -163,28 +213,26 @@ defmodule Mix.Tasks.TrainKgLstm do
       end
 
     belief_triples =
-      if include_beliefs do
-        loaded = load_belief_triples(world_id)
-        Mix.shell().info("  Beliefs: #{length(loaded)} triples")
+      if belief_world do
+        loaded = load_belief_triples(belief_world)
+        Mix.shell().info("  Beliefs (world #{belief_world}): #{length(loaded)} triples")
         loaded
       else
         Mix.shell().info("  Beliefs: skipped")
         []
       end
 
-    _ = opts
-
     Mix.shell().info("  Hierarchy: #{length(hierarchy_triples)} triples")
     Mix.shell().info("  Knowledge: #{length(knowledge_triples)} triples")
 
     (hierarchy_triples ++ knowledge_triples ++ conceptnet_triples ++ srl_triples ++ belief_triples)
-    |> normalize_all_predicates()
+    |> normalize_all_predicates(coverage)
     |> Enum.uniq()
   end
 
-  defp normalize_all_predicates(triples) do
+  defp normalize_all_predicates(triples, coverage) do
     Enum.map(triples, fn {h, r, t} ->
-      case PredicateNormalizer.normalize(r) do
+      case PredicateNormalizer.normalize(r, coverage) do
         {:ok, canonical, _kind} -> {h, canonical, t}
         {:error, _} -> {h, r, t}
       end
@@ -244,7 +292,7 @@ defmodule Mix.Tasks.TrainKgLstm do
     |> Enum.flat_map(&extract_triples_from_knowledge/1)
   end
 
-  defp load_conceptnet_triples(max_entries) do
+  defp load_conceptnet_triples(max_entries, coverage) do
     sample_concepts = ~w(
       dog cat car house person city water food music book
       computer phone tree animal bird fish school time money
@@ -264,14 +312,15 @@ defmodule Mix.Tasks.TrainKgLstm do
             Enum.flat_map(rels, fn {rel_type, related_list} ->
               related = if is_list(related_list), do: related_list, else: []
 
-              normalized_rel = PredicateNormalizer.normalize(to_string(rel_type))
-              if normalized_rel in @canonical_relations or to_string(rel_type) in @canonical_relations do
-                Enum.map(related, fn target ->
-                  target_str = if is_binary(target), do: target, else: to_string(target)
-                  {concept, normalized_rel, target_str}
-                end)
-              else
-                []
+              case conceptnet_relation(to_string(rel_type), coverage) do
+                nil ->
+                  []
+
+                relation ->
+                  Enum.map(related, fn target ->
+                    target_str = if is_binary(target), do: target, else: to_string(target)
+                    {concept, relation, target_str}
+                  end)
               end
             end)
           else
@@ -285,6 +334,23 @@ defmodule Mix.Tasks.TrainKgLstm do
       end
 
     triples
+  end
+
+  @doc """
+  The relation a ConceptNet relation name (`"IsA"`, `"PartOf"`, ...) trains
+  as: the canonical name `PredicateNormalizer.normalize/2` gives it, or the
+  name itself when the normalizer has none, as `normalize_all_predicates/2`
+  does. `nil` when that relation is not one this scorer trains on.
+  """
+  @spec conceptnet_relation(String.t(), map()) :: String.t() | nil
+  def conceptnet_relation(raw_relation, coverage) when is_binary(raw_relation) and is_map(coverage) do
+    relation =
+      case PredicateNormalizer.normalize(raw_relation, coverage) do
+        {:ok, canonical, _kind} -> canonical
+        {:error, _} -> raw_relation
+      end
+
+    if relation in @canonical_relations or raw_relation in @canonical_relations, do: relation
   end
 
   defp load_srl_corpus_triples do
@@ -301,27 +367,42 @@ defmodule Mix.Tasks.TrainKgLstm do
     |> filter_by_frequency(5)
   end
 
-  defp load_belief_triples(_world_id) do
-    if Brain.Epistemic.BeliefStore.ready?() do
-      case Brain.Epistemic.BeliefStore.query_beliefs() do
-        beliefs when is_list(beliefs) ->
-          beliefs
-          |> Enum.filter(fn b ->
-            b.subject != :system and b.predicate != :consolidated_knowledge
-          end)
-          |> Enum.map(fn b ->
-            {to_string(b.subject), to_string(b.predicate), to_string(b.object)}
-          end)
-          |> Enum.reject(fn {s, _p, o} -> s == "" or o == "" end)
+  @doc """
+  The `{subject, predicate, object}` training triples held as beliefs in the
+  world: `Brain.Epistemic.BeliefStore.query_beliefs/2` for the world, through
+  `belief_triples/1`. A store that cannot answer raises; a reply that is not
+  `{:ok, beliefs}` raises naming the world.
+  """
+  @spec load_belief_triples(String.t()) :: [{String.t(), String.t(), String.t()}]
+  def load_belief_triples(world_id) do
+    case Brain.Epistemic.BeliefStore.query_beliefs(world_id) do
+      {:ok, beliefs} when is_list(beliefs) ->
+        belief_triples(beliefs)
 
-        _ ->
-          []
-      end
-    else
-      []
+      other ->
+        Mix.raise(
+          "train_kg_lstm: BeliefStore.query_beliefs for world #{inspect(world_id)} returned #{inspect(other)}"
+        )
     end
-  rescue
-    _ -> []
+  end
+
+  @doc """
+  Converts beliefs to `{subject, predicate, object}` training triples, each
+  part as a string. The system's own consolidation records
+  (`subject: :system` or `predicate: :consolidated_knowledge`) are not
+  knowledge about the world and give no triple, nor does a belief whose
+  subject or object is empty.
+  """
+  @spec belief_triples([Brain.Epistemic.Types.Belief.t()]) :: [{String.t(), String.t(), String.t()}]
+  def belief_triples(beliefs) when is_list(beliefs) do
+    beliefs
+    |> Enum.filter(fn b ->
+      b.subject != :system and b.predicate != :consolidated_knowledge
+    end)
+    |> Enum.map(fn b ->
+      {to_string(b.subject), to_string(b.predicate), to_string(b.object)}
+    end)
+    |> Enum.reject(fn {s, _p, o} -> s == "" or o == "" end)
   end
 
   defp load_hard_negatives do
@@ -360,28 +441,45 @@ defmodule Mix.Tasks.TrainKgLstm do
     _ -> []
   end
 
+  # This carried two defects that cancelled into silence: it tested Penn
+  # Treebank tags against a tagger that emits Universal Dependencies, and it
+  # matched `tag in [...]` against the `{token, tag}` tuples `predict/2`
+  # actually returns. Neither could ever match, so `--include-srl` contributed
+  # no triples, and three separate `"NN"` fallbacks hid a missing model.
+  # Measured 2026-09-23.
   defp generate_minimal_bio_tags(tokens) do
-    pos_tags =
-    if Brain.ML.POSTagger.model_exists?() do
+    model =
       case Brain.ML.POSTagger.load_model() do
         {:ok, model} ->
-          tags = Brain.ML.POSTagger.predict(tokens, model)
-          if is_list(tags) and length(tags) == length(tokens), do: tags, else: Enum.map(tokens, fn _ -> "NN" end)
+          model
 
-        _ ->
-          Enum.map(tokens, fn _ -> "NN" end)
+        {:error, reason} ->
+          Mix.raise("""
+          train_kg_lstm: no usable POS model at #{Brain.ML.POSTagger.model_path()}
+
+          #{reason}
+
+          SRL triples are derived from part-of-speech tags. Without them every
+          sentence yields no predicate and --include-srl contributes nothing.
+          Train one with `mix pos.train`.
+          """)
       end
-    else
-      Enum.map(tokens, fn _ -> "NN" end)
+
+    tagged = Brain.ML.POSTagger.predict(tokens, model)
+
+    unless length(tagged) == length(tokens) do
+      Mix.raise(
+        "train_kg_lstm: POSTagger returned #{length(tagged)} tags for #{length(tokens)} tokens"
+      )
     end
 
-    pos_tags
+    tagged
     |> Enum.with_index()
-    |> Enum.map(fn {tag, idx} ->
+    |> Enum.map(fn {{_token, tag}, idx} ->
       cond do
-        tag in ["VB", "VBD", "VBG", "VBN", "VBP", "VBZ"] -> if idx == 0, do: "B-V", else: "B-V"
+        tag == "VERB" -> "B-V"
         idx == 0 -> "B-ARG0"
-        tag in ["NN", "NNS", "NNP", "NNPS", "PRP"] -> "B-ARG1"
+        tag in ["NOUN", "PROPN", "PRON"] -> "B-ARG1"
         true -> "O"
       end
     end)
@@ -546,10 +644,5 @@ defmodule Mix.Tasks.TrainKgLstm do
       true ->
         "data/kg/hard_negatives.json"
     end
-  end
-
-  defp model_path(world_id) do
-    priv = :code.priv_dir(:brain) |> to_string()
-    Path.join([priv, "ml_models", world_id, "kg_lstm", "triple_scorer.term"])
   end
 end

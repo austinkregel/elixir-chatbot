@@ -1,0 +1,251 @@
+[
+  {
+    "data": [
+      {
+        "text": "all green "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "all of the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " shine 20 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set all "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set all "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set all red "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set brightness for red "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " brightness in all rooms"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness everywhere"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness to 23"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level to 10"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level to 10 in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set red "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set the green "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness till 23"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set the green "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level to 50"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "set the level of all "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " shine 20 percents"
+      }
+    ]
+  }
+]

@@ -40,6 +40,21 @@ defmodule Brain.Memory.VectorIndex do
     |> Enum.take(k)
   end
 
+  @doc """
+  Search only the vectors whose ID is `{scope, _id}`, returning the top `k` of
+  those as `{id, similarity}` tuples sorted by similarity descending.
+
+  Ranking is done among the scope's own vectors, so vectors outside the scope
+  can never crowd them out of the top `k`.
+  """
+  def search_scope(table, scope, query_embedding, k) when is_list(query_embedding) and is_integer(k) do
+    table
+    |> :ets.match_object({{scope, :_}, :_})
+    |> Enum.map(fn {id, embedding} -> {id, cosine_similarity(query_embedding, embedding)} end)
+    |> Enum.sort_by(fn {_id, sim} -> -sim end)
+    |> Enum.take(k)
+  end
+
   @doc "Remove a vector by ID from the index.\n"
   def delete(table, id) do
     :ets.delete(table, id)

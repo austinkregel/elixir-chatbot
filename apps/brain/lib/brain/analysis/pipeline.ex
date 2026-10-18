@@ -2,6 +2,7 @@ defmodule Brain.Analysis.Pipeline do
   @moduledoc "Orchestrates the text analysis pipeline.\n\nThe pipeline processes user input through multiple stages:\n1. Semantic chunking (break input into utterances)\n2. Parallel analysis (discourse + speech act classification)\n3. Sequential analysis (slot detection + context resolution)\n4. Internal model building (combine all results)\n\nEach stage builds on the previous, creating a comprehensive\nunderstanding of the user's input.\n"
 
   alias Brain.Analysis.{
+    ActiveContexts,
     InternalModel,
     Chunk,
     ChunkAnalysis,
@@ -11,6 +12,7 @@ defmodule Brain.Analysis.Pipeline do
     SemanticChunker,
     DiscourseAnalyzer,
     SpeechActClassifier,
+    SpeechActTable,
     SlotDetector,
     ContextResolver,
     AnaphoraResolver,
@@ -27,9 +29,11 @@ defmodule Brain.Analysis.Pipeline do
 
   alias Brain.Lattice
   alias Brain.Lattice.Candidate, as: LatticeCandidate
-  alias Brain.ML.{EntityExtractor, MicroClassifiers, POSTagger, Tokenizer}
+  alias Brain.Analysis.IntentArbitration
+  alias Brain.Lexicon.IntentDomains
+  alias Brain.ML.{EntityExtractor, FeatureVectorClassifier, MicroClassifiers, POSTagger, Tokenizer}
 
-  alias Brain.Memory.Embedder
+  alias Brain.Worlds.Embedder, as: WorldEmbedder
 
   alias Brain.FactDatabase.Integration, as: FactIntegration
   alias Brain.Epistemic.BeliefStore
@@ -37,11 +41,42 @@ defmodule Brain.Analysis.Pipeline do
   alias Brain.Telemetry
   require Logger
 
-  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n\nReturns an InternalModel struct with complete analysis.\n"
+  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :world_id - required: the world the text is analyzed in. Brain passes its\n  conversation's world; any other caller names the world it analyzes for.\n  Absent raises.\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n- :language - the `Brain.Language` code to analyze in. Absent means the caller\n  named no language, which is English; an unsupported code raises.\n- :lexical_evidence - a `Brain.Analysis.LexicalEvidence` model used in place of\n  the one loaded for the language. Training passes each row's out-of-fold model.\n- :speech_act_evidence - a `Brain.Analysis.LexicalEvidence` model the pass-1\n  speech act's lexical voter reads in place of the loaded speech-act table's\n  `evidence` (`Brain.Analysis.SpeechActClassifier`). Training passes each row's\n  out-of-fold model (`Brain.Analysis.SpeechActTable.fold_evidence/3`).\n- :intent_models - `%{intent_full: model, intent_domain: model}`, the two\n  `Brain.ML.FeatureVectorClassifier` models used in place of the loaded\n  `:intent_full` and `:intent_domain` micro-classifiers. Training passes each\n  row's out-of-fold models (`mix train_intent_arbitration`).\n- :active_contexts - the conversational contexts the turn continues from. Absent\n  means they are derived from `:conversation_history` and the registry's output\n  contexts (`Brain.Analysis.ActiveContexts`); training and evaluation pass a\n  gold row's follow-up context. A name no intent continues from raises.\n\nReturns an InternalModel struct with complete analysis.\n"
   def process(text, opts \\ []) when is_binary(text) do
+    world_id!(opts)
+    side_effects?(opts)
+    refuse_stale_classifiers!()
+
     Telemetry.span(:pipeline_process, %{text_length: String.length(text)}, fn ->
       do_process(text, opts)
     end)
+  end
+
+  # `process/2` produces an intent, and a rejected classifier cannot produce one.
+  # Continuing would return an analysis whose intent is absent for a reason the
+  # caller cannot see, which is how six classifiers served predictions built on
+  # inverted features.
+  #
+  # Only rejection raises, not `ready?/0` being false: a model still loading is
+  # transient, while a model whose provenance does not match is permanent until an
+  # operator retrains it.
+  #
+  # `analyze_chunk/2` deliberately does not check. It is the analysis primitive
+  # `mix gen_micro_data` uses to build training vectors, and the feature vector
+  # does not depend on any classifier, so regenerating a corpus must work while
+  # the models trained from the previous one are still on disk.
+  defp refuse_stale_classifiers! do
+    case MicroClassifiers.stale() do
+      empty when empty == %{} ->
+        :ok
+
+      rejected ->
+        raise """
+        Pipeline.process/2 cannot run: #{map_size(rejected)} classifier(s) were rejected at load.
+
+        #{Enum.map_join(rejected, "\n\n", fn {name, message} -> "#{name}:\n#{message}" end)}
+        """
+    end
   end
 
   defp do_process(text, opts) do
@@ -109,17 +144,22 @@ defmodule Brain.Analysis.Pipeline do
       elapsed_ms: elapsed
     })
 
-    record_pipeline_result(model)
+    if side_effects?(opts) do
+      record_pipeline_result(model)
+      Brain.Graph.Writer.write_analysis(model, world_id!(opts))
+    end
 
-    Brain.Graph.Writer.write_analysis(model)
+    Brain.Graph.ContextCache.purge_process_entries()
 
     Progress.report(opts, :pipeline_complete, %{elapsed_ms: elapsed})
 
     model
   end
 
-  @doc "Processes a single chunk through the analysis pipeline.\n\nUseful for testing or when you already have chunks. Internally runs the\nfull two-pass analysis (pass 1 + cross-chunk aggregation + pass 2) on a\nlist of one chunk so the public contract is identical to the multi-chunk\npath.\n"
+  @doc "Processes a single chunk through the analysis pipeline.\n\nUseful for testing or when you already have chunks. Internally runs the\nfull two-pass analysis (pass 1 + cross-chunk aggregation + pass 2) on a\nlist of one chunk so the public contract is identical to the multi-chunk\npath.\n\nRequires `:world_id` as `process/2` does, and takes the same `:side_effects`\noption as `process/2`: it defaults to\n`true`, and with `false` the run writes nothing.\n"
   def analyze_chunk(chunk_text, opts \\ []) when is_binary(chunk_text) do
+    world_id!(opts)
+    side_effects?(opts)
     chunk = Chunk.new(chunk_text, 0, 0, String.length(chunk_text) - 1)
     [analysis] = analyze_chunks([chunk], opts)
     analysis
@@ -173,7 +213,7 @@ defmodule Brain.Analysis.Pipeline do
       if substantive?(pass1, cross_context) do
         refine_chunk_pass2(pass1, cross_context, opts)
       else
-        finalize_pass1(pass1, opts)
+        finalize_pass1(pass1, cross_context, opts)
       end
     end)
     |> Enum.sort_by(& &1.chunk_index)
@@ -183,6 +223,8 @@ defmodule Brain.Analysis.Pipeline do
     participants = Keyword.get(opts, :participants, [:user, :bot])
     bot_names = Keyword.get(opts, :bot_names, [])
     history = Keyword.get(opts, :conversation_history, [])
+    t0 = System.monotonic_time(:millisecond)
+    debug_pass1? = Keyword.get(opts, :debug_timing, false) or Application.get_env(:brain, :debug_pipeline_timing, false)
 
     Progress.report(opts, :chunk_start, %{
       chunk_index: chunk.index,
@@ -195,18 +237,15 @@ defmodule Brain.Analysis.Pipeline do
         DiscourseAnalyzer.analyze(chunk.text, participants: participants, bot_names: bot_names)
       end)
 
-    basic_entities =
-      try do
-        EntityExtractor.extract_entities(chunk.text)
-      rescue
-        _ -> []
-      catch
-        :exit, _ -> []
-      end
+    basic_entities = EntityExtractor.extract_entities(chunk.text, world_id: world_id!(opts))
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 entities=#{System.monotonic_time(:millisecond) - t0}ms")
+
+    speech_act_opts = speech_act_opts(opts)
 
     speech_act_task =
       Task.async(fn ->
-        SpeechActClassifier.classify(chunk.text, entities: basic_entities)
+        SpeechActClassifier.classify(chunk.text, [entities: basic_entities] ++ speech_act_opts)
       end)
 
     sentiment_task =
@@ -229,14 +268,18 @@ defmodule Brain.Analysis.Pipeline do
           DiscourseAnalyzer.analyze("")
       end
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 discourse=#{System.monotonic_time(:millisecond) - t0}ms")
+
     speech_act_result =
       try do
         Task.await(speech_act_task, 3000)
       catch
         :exit, {:timeout, _} ->
           Task.shutdown(speech_act_task, :brutal_kill)
-          SpeechActClassifier.classify("")
+          SpeechActClassifier.classify("", speech_act_opts)
       end
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 speech_act=#{System.monotonic_time(:millisecond) - t0}ms")
 
     sentiment_result =
       try do
@@ -248,6 +291,8 @@ defmodule Brain.Analysis.Pipeline do
           Logger.warning("Sentiment classification timed out. Using neutral fallback.")
           %{label: :neutral, score: 0.5}
       end
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 sentiment=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :discourse_complete, %{
       chunk_index: chunk.index,
@@ -272,6 +317,8 @@ defmodule Brain.Analysis.Pipeline do
     {resolved_text, anaphora_entities} =
       resolve_anaphora(chunk.text, history, chunk.index, opts)
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 anaphora=#{System.monotonic_time(:millisecond) - t0}ms")
+
     speech_act_intent = extract_intent_from_speech_act(speech_act_result)
     speech_act_domain = extract_domain_from_intent(speech_act_intent)
 
@@ -284,16 +331,27 @@ defmodule Brain.Analysis.Pipeline do
           intent: speech_act_intent
         ]
 
-    entities = extract_entities(resolved_text, entity_opts)
+    # Only decided spans are entities. The spans extraction could not decide
+    # travel apart, on the analysis's `unresolved_spans`, so no stage that acts
+    # on entities sees one. The candidates are kept for pass 2, which
+    # disambiguates them again once the chunk's profile is known.
+    %{entities: entities, unresolved_spans: unresolved_spans, candidates: entity_candidates} =
+      extract_entities(resolved_text, entity_opts)
+
     entities = merge_anaphora_entities(entities, anaphora_entities)
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 extract_entities=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :entities_extracted, %{
       chunk_index: chunk.index,
       entity_count: length(entities),
-      entities: entities |> Enum.take(25) |> Enum.map(&entity_to_dev_map/1)
+      entities: entities |> Enum.take(25) |> Enum.map(&entity_to_dev_map/1),
+      unresolved_spans: Enum.map(unresolved_spans, &unresolved_span_to_dev_map/1)
     })
 
-    entities = EntityGraphEnricher.enrich(entities)
+    entities = EntityGraphEnricher.enrich(entities, world_id!(opts))
+
+    if debug_pass1?, do: Logger.info("pipeline:pass1 graph_enrich=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :entities_graph_enriched, %{
       chunk_index: chunk.index,
@@ -303,7 +361,9 @@ defmodule Brain.Analysis.Pipeline do
 
     pos_result = get_pos_tags(resolved_text)
 
-    events = extract_events(pos_result, entities, opts)
+    if debug_pass1?, do: Logger.info("pipeline:pass1 pos_tags=#{System.monotonic_time(:millisecond) - t0}ms")
+
+    events = extract_events(pos_result, resolved_text, entities, opts)
 
     Progress.report(opts, :events_extracted, %{
       chunk_index: chunk.index,
@@ -320,6 +380,8 @@ defmodule Brain.Analysis.Pipeline do
 
     srl_frames = run_srl(pos_result, entities, opts)
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 srl=#{System.monotonic_time(:millisecond) - t0}ms")
+
     Progress.report(opts, :srl_complete, %{
       chunk_index: chunk.index,
       srl_frame_count: length(srl_frames)
@@ -327,16 +389,17 @@ defmodule Brain.Analysis.Pipeline do
 
     pass1_analysis =
       ChunkAnalysis.new(chunk.index, chunk.text)
+      |> Map.put(:language, language!(opts))
+      |> Map.put(:active_contexts, active_contexts!(opts))
       |> Map.put(:discourse, discourse_result)
       |> Map.put(:speech_act, speech_act_result)
       |> Map.put(:sentiment, sentiment_result)
       |> Map.put(:entities, entities)
+      |> Map.put(:unresolved_spans, unresolved_spans)
       |> ChunkAnalysis.with_events(events)
       |> Map.put(:event_frames, event_frames)
       |> Map.put(:srl_frames, srl_frames)
       |> Map.put(:pos_tags, pos_result_to_tags(pos_result))
-
-    pass1_domain = classify_intent_domain_lightweight(pass1_analysis)
 
     {prelim_intent, intent_method, prelim_intent_conf, prelim_intent_details} =
       determine_intent(
@@ -348,20 +411,23 @@ defmodule Brain.Analysis.Pipeline do
         nil
       )
 
+    if debug_pass1?, do: Logger.info("pipeline:pass1 determine_intent=#{System.monotonic_time(:millisecond) - t0}ms")
+
     Progress.report(opts, :intent_determined, %{
       chunk_index: chunk.index,
       intent: prelim_intent,
       intent_method: intent_method,
       intent_confidence: prelim_intent_conf,
+      original_intent: Map.get(prelim_intent_details, :original_intent),
+      original_score: Map.get(prelim_intent_details, :original_score),
       margin: Map.get(prelim_intent_details, :margin, 0.0),
-      pass: 1,
-      domain: pass1_domain
+      pass: 1
     })
 
     pass1_analysis
     |> Map.put(:intent, prelim_intent)
-    |> Map.put(:intent_domain, pass1_domain)
     |> Map.put(:pass, 1)
+    |> Map.put(:_entity_candidates, entity_candidates)
     |> Map.put(
       :_prelim_intent,
       %{
@@ -371,23 +437,6 @@ defmodule Brain.Analysis.Pipeline do
         details: prelim_intent_details
       }
     )
-  end
-
-  defp classify_intent_domain_lightweight(analysis) do
-    if MicroClassifiers.ready?() do
-      try do
-        {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
-
-        case MicroClassifiers.classify_vector(:intent_domain, feature_vector) do
-          {:ok, domain, _confidence} -> to_string(domain)
-          _ -> nil
-        end
-      rescue
-        _ -> nil
-      end
-    else
-      nil
-    end
   end
 
   # Builds the cross-chunk context that pass 2 uses to enrich each
@@ -467,21 +516,45 @@ defmodule Brain.Analysis.Pipeline do
     cat in [:directive, :assertive] and length(ents || []) > 0
   end
 
-  # For non-substantive chunks: don't run pass 2, but do compute confidence
-  # + response_strategy from the pass-1 data so downstream components see a
-  # complete `ChunkAnalysis` regardless of pass.
-  defp finalize_pass1(%ChunkAnalysis{} = pass1, opts) do
+  # For non-substantive chunks ("hi" in "hi, can you play jazz"): the intent is
+  # still classified, so a greeting chunk is read as one, but the substantive
+  # work -- entity inference, slot detection, fact verification, novelty and
+  # belief extraction -- is skipped.
+  defp finalize_pass1(%ChunkAnalysis{} = pass1, cross_context, opts) do
     Progress.report(opts, :chunk_pass2_skipped, %{
       chunk_index: pass1.chunk_index,
       reason: :non_substantive,
       speech_act: Map.get(pass1.speech_act || %{}, :category)
     })
 
+    pass1_with_context = Map.put(pass1, :accumulated_context, cross_context.accumulator)
+
+    {refined_speech_act, intent, _intent_method, _intent_confidence, intent_details, _profile,
+     feature_vector} =
+      classify_intent_full_and_refine(pass1_with_context, opts)
+
     pass1
     |> Map.delete(:_prelim_intent)
+    |> Map.delete(:_entity_candidates)
+    |> Map.put(:speech_act, refined_speech_act)
+    |> Map.put(:intent, intent)
+    |> Map.put(:intent_arbitration, Map.get(intent_details, :arbitration))
     |> Map.put(:slots, default_empty_slots())
-    |> calculate_confidence()
+    |> Map.put(:feature_vector, feature_vector)
+    |> calculate_confidence(cross_context.accumulator)
+    |> put_final_profile()
     |> ChunkAnalysis.determine_response_strategy()
+  end
+
+  # The chunk's profile, from its final analysis and the vector its intent was
+  # classified from: the axes match what the classifiers saw, and the posture
+  # reflects the final confidence. Its domain is the chunk's intent domain.
+  defp put_final_profile(%ChunkAnalysis{feature_vector: [_ | _] = vector} = analysis) do
+    profile = ChunkProfile.materialize(analysis, vector)
+
+    analysis
+    |> Map.put(:profile, profile)
+    |> Map.put(:intent_domain, if(profile.domain == :unknown, do: nil, else: to_string(profile.domain)))
   end
 
   defp default_empty_slots do
@@ -497,11 +570,16 @@ defmodule Brain.Analysis.Pipeline do
   defp refine_chunk_pass2(%ChunkAnalysis{} = pass1, cross_context, opts) do
     history = Keyword.get(opts, :conversation_history, [])
     profile = Keyword.get(opts, :user_profile, %{})
+    debug_pass2? = Application.get_env(:brain, :debug_pipeline_timing, false)
+    t0 = if debug_pass2?, do: System.monotonic_time(:millisecond)
 
     pass1_with_context = Map.put(pass1, :accumulated_context, cross_context.accumulator)
 
-    {refined_speech_act, intent, intent_method, intent_confidence, intent_details, chunk_profile} =
+    {refined_speech_act, intent, intent_method, intent_confidence, intent_details, chunk_profile,
+     feature_vector} =
       classify_intent_full_and_refine(pass1_with_context, opts)
+
+    if debug_pass2?, do: Logger.info("  pass2:classify_intent_full=#{System.monotonic_time(:millisecond) - t0}ms")
 
     intent_details =
       if chunk_profile,
@@ -513,26 +591,58 @@ defmodule Brain.Analysis.Pipeline do
       intent: intent,
       intent_method: intent_method,
       intent_confidence: intent_confidence,
+      # The label and score determine_intent/6 overrode, when it overrode one.
+      # :speech_act_fallback is returned by three different branches of that
+      # function, and these two are what tell them apart.
+      original_intent: Map.get(intent_details, :original_intent),
+      original_score: Map.get(intent_details, :original_score),
       margin: Map.get(intent_details, :margin, 0.0),
       top_k: Map.get(intent_details, :top_k, []),
       lattice: Map.get(intent_details, :lattice) && Brain.Lattice.to_map(Map.get(intent_details, :lattice)),
       pass: 2
     })
 
+    # The chunk's profile is known now: the entities are disambiguated again
+    # with it, and take only the types that gives them.
+    retyped_entities = retype_with_profile(pass1, refined_speech_act, chunk_profile, opts)
+
+    # The intent is known now too: each span extraction could not decide is
+    # weighed again with what the intent says about its readings' types. A
+    # span that evidence decides is an entity from here on; the rest stay on
+    # the analysis's `unresolved_spans`.
+    %{entities: intent_resolved, unresolved_spans: unresolved_spans} =
+      resolve_spans_with_intent(pass1, intent, opts)
+
+    # Then each entity's candidate readings are weighed against the entity
+    # types the intent's slot schema expects.
+    rescored_entities =
+      Brain.Analysis.EntityTypeScorer.rescore(retyped_entities ++ intent_resolved, intent,
+        language: Map.fetch!(pass1, :language)
+      )
+
     {entities_after_inference, intent, intent_details} =
       Brain.Analysis.ContextualEntityInferrer.infer(
         pass1.text,
-        pass1.entities,
+        rescored_entities,
         intent,
         intent_details,
-        world_id: Keyword.get(opts, :world_id, "default")
+        world_id: world_id!(opts),
+        intent_confidence: intent_confidence,
+        side_effects: side_effects?(opts)
       )
+
+    if debug_pass2?, do: Logger.info("  pass2:entity_inference=#{System.monotonic_time(:millisecond) - t0}ms")
 
     relevant_entities =
       entities_after_inference
       |> filter_entities_by_intent(intent)
       |> maybe_retype_pos_music_artists(pass1.text)
-      |> Brain.ML.EntityExtractor.refine_entity_types(to_string(intent))
+      |> Brain.ML.EntityExtractor.refine_entity_types(to_string(intent),
+        text: entity_text(pass1),
+        language: Map.fetch!(pass1, :language)
+      )
+
+    if debug_pass2?, do: Logger.info("  pass2:entity_filter+refine=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :entities_filtered, %{
       chunk_index: pass1.chunk_index,
@@ -544,7 +654,9 @@ defmodule Brain.Analysis.Pipeline do
         |> Enum.uniq()
     })
 
-    fact_result = verify_facts_in_chunk(pass1.text, relevant_entities, refined_speech_act, opts)
+    fact_result = verify_facts_in_chunk(pass1.text, pass1.pos_tags, relevant_entities, refined_speech_act, opts)
+
+    if debug_pass2?, do: Logger.info("  pass2:fact_verify=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :fact_verification, %{
       chunk_index: pass1.chunk_index,
@@ -562,10 +674,27 @@ defmodule Brain.Analysis.Pipeline do
             source: Map.get(belief, :source),
             node_id: Map.get(belief, :node_id)
           }
-        end)
+        end),
+      related_facts: Enum.map(fact_result.facts, &%{id: &1.id, entity: &1.entity, fact: &1.fact}),
+      fact_alignment: fact_result.fact_alignment
     })
 
-    slot_result = SlotDetector.detect(intent, relevant_entities)
+    # A chunk no intent was determined for has no slot schema, so no slots.
+    # Free-text slots are captured from the text the entities' positions index.
+    slot_result =
+      case intent do
+        nil ->
+          default_empty_slots()
+
+        intent ->
+          SlotDetector.detect(intent, relevant_entities,
+            side_effects: side_effects?(opts),
+            text: entity_text(pass1),
+            language: Map.fetch!(pass1, :language)
+          )
+      end
+
+    if debug_pass2?, do: Logger.info("  pass2:slot_detect=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :slots_detected, %{
       chunk_index: pass1.chunk_index,
@@ -582,6 +711,8 @@ defmodule Brain.Analysis.Pipeline do
         user_profile: profile,
         user_id: user_id
       )
+
+    if debug_pass2?, do: Logger.info("  pass2:context_resolve=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :context_resolved, %{
       chunk_index: pass1.chunk_index,
@@ -606,20 +737,28 @@ defmodule Brain.Analysis.Pipeline do
     analysis =
       pass1
       |> Map.delete(:_prelim_intent)
+      |> Map.delete(:_entity_candidates)
       |> Map.put(:speech_act, refined_speech_act)
       |> Map.put(:intent, intent)
+      |> Map.put(:intent_arbitration, Map.get(intent_details, :arbitration))
       |> Map.put(:entities, relevant_entities)
+      |> Map.put(:unresolved_spans, unresolved_spans)
       |> Map.put(:slots, resolved_slots)
       |> Map.put(:missing_context, resolved_slots.missing_required)
       |> Map.put(:fact_verification, fact_result.verification)
       |> Map.put(:related_beliefs, fact_result.beliefs)
+      |> Map.put(:related_facts, fact_result.facts)
+      |> Map.put(:fact_alignment, fact_result.fact_alignment)
       |> Map.put(:epistemic_status, fact_result.status)
-      |> Map.put(:accumulated_context, cross_context.accumulator)
+      |> Map.put(:feature_vector, feature_vector)
       |> Map.put(:pass, 2)
-      |> calculate_confidence()
+      |> calculate_confidence(cross_context.accumulator)
+      |> put_final_profile()
       |> ChunkAnalysis.determine_response_strategy()
 
     maybe_extract_beliefs_from_events(pass1.events, opts)
+
+    if debug_pass2?, do: Logger.info("  pass2:total=#{System.monotonic_time(:millisecond) - t0}ms")
 
     Progress.report(opts, :chunk_complete, %{
       chunk_index: pass1.chunk_index,
@@ -638,12 +777,16 @@ defmodule Brain.Analysis.Pipeline do
   # on the refined speech act. A lightweight ChunkProfile is materialized so
   # determine_intent can prefer `derived_label` when intent_full is uncertain.
   defp classify_intent_full_and_refine(pass1_with_context, opts) do
-    lattice = classify_intent_full(pass1_with_context)
+    {lattice, feature_vector} = classify_intent_full(pass1_with_context, opts)
 
     refined_speech_act =
-      SpeechActClassifier.refine_with_intent(pass1_with_context.speech_act, lattice)
+      SpeechActClassifier.refine_with_intent(
+        pass1_with_context.speech_act,
+        lattice,
+        SpeechActTable.loaded!(pass1_with_context.language)
+      )
 
-    profile = materialize_early_profile(pass1_with_context)
+    profile = ChunkProfile.materialize(pass1_with_context, feature_vector, profile_models(opts))
     lattice = apply_profile_rerank(lattice, profile)
 
     {intent, intent_method, intent_confidence, intent_details} =
@@ -656,7 +799,7 @@ defmodule Brain.Analysis.Pipeline do
         profile
       )
 
-    {refined_speech_act, intent, intent_method, intent_confidence, intent_details, profile}
+    {refined_speech_act, intent, intent_method, intent_confidence, intent_details, profile, feature_vector}
   end
 
   # Exact-match boost is only applied to candidates whose label is a *registered*
@@ -670,8 +813,6 @@ defmodule Brain.Analysis.Pipeline do
   # final action verb.
   @profile_domain_boost 0.05
 
-  defp apply_profile_rerank(lattice, nil), do: lattice
-
   defp apply_profile_rerank(lattice, %ChunkProfile{} = profile) do
     derived = profile.derived_label
     domain = profile_domain_string(profile)
@@ -683,8 +824,6 @@ defmodule Brain.Analysis.Pipeline do
       true -> do_profile_rerank(lattice, label_match, domain)
     end
   end
-
-  defp apply_profile_rerank(lattice, _), do: lattice
 
   defp do_profile_rerank(%Lattice{} = lattice, label_match, domain) do
     Lattice.rerank(lattice, fn %LatticeCandidate{label: lab} ->
@@ -702,17 +841,52 @@ defmodule Brain.Analysis.Pipeline do
     end)
   end
 
-  defp materialize_early_profile(analysis) do
-    {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
-    ChunkProfile.materialize(analysis, feature_vector)
-  rescue
-    _ -> nil
+  # Returns the lattice and the feature vector it was classified from. The vector
+  # is kept on the analysis, so training data and the profile are built from
+  # exactly what the classifier saw. `:lexical_evidence` replaces the loaded
+  # model; `mix gen_micro_data` passes each training row's out-of-fold model.
+  defp classify_intent_full(pass1_with_context, opts) do
+    {feature_vector, _word_feats} =
+      FeatureExtractor.extract(pass1_with_context, Keyword.take(opts, [:lexical_evidence]))
+
+    lattice =
+      case intent_models!(opts) do
+        %{intent_full: model} ->
+          case FeatureVectorClassifier.classify(feature_vector, model) do
+            {:ok, label, score, details} ->
+              Lattice.from_classifier({:ok, label, score, details}, stage: :intent_full, source: :feature_vector)
+
+            :error ->
+              raise ArgumentError, "Pipeline: the :intent_models intent_full model does not take a #{length(feature_vector)}-dimensional vector"
+          end
+
+        nil ->
+          loaded_intent_full_lattice(feature_vector)
+      end
+
+    {lattice, feature_vector}
   end
 
-  defp classify_intent_full(pass1_with_context) do
-    if MicroClassifiers.ready?() do
-      {feature_vector, _word_feats} = FeatureExtractor.extract(pass1_with_context)
+  # The `:intent_models` option: both models or neither.
+  defp intent_models!(opts) do
+    case Keyword.fetch(opts, :intent_models) do
+      :error -> nil
+      {:ok, %{intent_full: %{kind: :feature_vector}, intent_domain: %{kind: :feature_vector}} = models} -> models
+      {:ok, other} -> raise ArgumentError, "Pipeline: :intent_models must hold an intent_full and an intent_domain feature-vector model, got #{inspect(other, limit: 3)}"
+    end
+  end
 
+  # The models `ChunkProfile.materialize/3` classifies the profile's axes with
+  # in place of the loaded ones.
+  defp profile_models(opts) do
+    case intent_models!(opts) do
+      %{intent_domain: model} -> [models: %{intent_domain: model}]
+      nil -> []
+    end
+  end
+
+  defp loaded_intent_full_lattice(feature_vector) do
+    if MicroClassifiers.ready?() do
       case MicroClassifiers.classify_vector_detailed(:intent_full, feature_vector) do
         {:ok, %Lattice{} = lattice} ->
           case Lattice.best_label(lattice) do
@@ -732,23 +906,114 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
+  # The text pass 1's entity positions index: the text extraction read (the
+  # chunk with its anaphora substituted), or, when no extraction ran
+  # (`extract_entities/2`), the chunk's text, which the caller's entities
+  # index.
+  defp entity_text(pass1) do
+    case Map.fetch!(pass1, :_entity_candidates) do
+      %{text: text} when is_binary(text) -> text
+      nil -> pass1.text
+    end
+  end
+
+  # `%{entities: decided, unresolved_spans: undecided, candidates: candidates}`.
+  # When extraction is skipped, or the caller passed its entities, no
+  # extraction ran: no span was left undecided, and there are no candidates to
+  # disambiguate again (`candidates: nil`).
   defp extract_entities(text, opts) do
     cond do
       Keyword.get(opts, :skip_entity_extraction, false) ->
-        []
+        %{entities: [], unresolved_spans: [], candidates: nil}
 
       Keyword.has_key?(opts, :entities) ->
-        Keyword.get(opts, :entities, [])
+        %{entities: Keyword.fetch!(opts, :entities), unresolved_spans: [], candidates: nil}
 
       true ->
-        try do
-          EntityExtractor.extract_entities(text, opts)
-        rescue
-          _ -> []
-        catch
-          :exit, _ -> []
-        end
+        EntityExtractor.extract(text, opts)
     end
+  end
+
+  # Pass 1's entities with the types disambiguation gives their candidates
+  # once the chunk's profile is known (`EntityExtractor.disambiguate/3`, with
+  # the refined speech act). Only the type fields are written back, matched by
+  # offsets (`EntityExtractor.put_types/2`): pass 1's values, confidences and
+  # graph enrichment stay. With no candidates -- no extraction ran -- the
+  # entities are pass 1's.
+  defp retype_with_profile(pass1, speech_act, %ChunkProfile{} = profile, opts) do
+    case Map.fetch!(pass1, :_entity_candidates) do
+      nil ->
+        pass1.entities
+
+      candidates ->
+        retyped =
+          EntityExtractor.disambiguate(
+            candidates,
+            %{discourse: pass1.discourse, speech_act: speech_act, profile: profile},
+            opts
+          )
+
+        entities = EntityExtractor.put_types(pass1.entities, retyped)
+
+        Progress.report(opts, :entities_retyped, %{
+          chunk_index: pass1.chunk_index,
+          profile_domain: profile.domain,
+          changes:
+            pass1.entities
+            |> Enum.zip(entities)
+            |> Enum.filter(fn {before, now} -> Map.get(before, :entity_type) != Map.get(now, :entity_type) end)
+            |> Enum.map(fn {before, now} ->
+              %{
+                value: Map.get(now, :value),
+                start_pos: Map.get(now, :start_pos),
+                end_pos: Map.get(now, :end_pos),
+                from: Map.get(before, :entity_type),
+                to: Map.get(now, :entity_type),
+                disambiguation_source: Map.get(now, :disambiguation_source)
+              }
+            end)
+        })
+
+        entities
+    end
+  end
+
+  # The spans pass 1 left unresolved, decided again with what the intent says
+  # about their readings' types (`EntityExtractor.resolve_with_intent/3`). The
+  # spans it decides are entities, enriched from the graph as pass 1's were;
+  # what became of every span, and why, is reported.
+  defp resolve_spans_with_intent(pass1, intent, opts) do
+    %{entities: resolved, unresolved_spans: rest, outcomes: outcomes} =
+      EntityExtractor.resolve_with_intent(
+        pass1.unresolved_spans,
+        intent,
+        opts
+        |> Keyword.take([:min_confidence])
+        |> Keyword.put(:language, Map.fetch!(pass1, :language))
+        |> Keyword.put(:text, entity_text(pass1))
+      )
+
+    Progress.report(opts, :unresolved_spans_resolved, %{
+      chunk_index: pass1.chunk_index,
+      intent: intent,
+      resolved_count: length(resolved),
+      outcomes: Enum.map(outcomes, &span_outcome_to_dev_map/1)
+    })
+
+    resolved = if resolved == [], do: [], else: EntityGraphEnricher.enrich(resolved, world_id!(opts))
+    %{entities: resolved, unresolved_spans: rest}
+  end
+
+  # What the inspector shows of pass 2's attempt on an unresolved span: the
+  # outcome, the type it decided or led with, its score and margin in summed
+  # log-odds, and what the intent said about each hypothesis label.
+  defp span_outcome_to_dev_map(outcome) do
+    outcome
+    |> Map.update(:evidence, [], fn evidence ->
+      evidence
+      |> Enum.sort_by(fn {type, log_ratio} -> {-log_ratio, type} end)
+      |> Enum.map(fn {type, log_ratio} -> %{type: type, log_ratio: log_ratio} end)
+    end)
   end
 
   defp entity_to_dev_map(entity) when is_map(entity) do
@@ -771,39 +1036,86 @@ defmodule Brain.Analysis.Pipeline do
     %{value: inspect(other)}
   end
 
-  defp extract_events(pos_result, entities, opts) do
+  # What the inspector shows of a span extraction could not decide: its text
+  # and extent, why it was left undecided, the type its readings share (nil
+  # when none), the types its measured readings supported, and every reading
+  # with its source, the source's own confidence and the reliability the data
+  # gives that source for that type (nil when unmeasured).
+  defp unresolved_span_to_dev_map(%{resolved: false, readings: readings, candidates: %Lattice{} = candidates} = span) do
+    %{
+      value: span.value,
+      start_pos: span.start_pos,
+      end_pos: span.end_pos,
+      reason: Map.fetch!(span, :unresolved_reason),
+      common_type: span.entity_type,
+      candidate_types:
+        Enum.map(candidates.candidates, fn %LatticeCandidate{label: {_start_pos, _end_pos, type}, score: score} ->
+          %{type: type, score: score}
+        end),
+      readings:
+        Enum.map(readings, fn reading ->
+          %{
+            source: reading.source,
+            entity_type: reading.entity_type,
+            raw_confidence: reading.raw_confidence,
+            reliability: reading.reliability
+          }
+        end)
+    }
+  end
+
+  # `entities` are extracted from `text`, and `pos_result`'s tokens are the
+  # texts of its `Tokenizer.tokenize/1` tokens, so each entity's positions
+  # name the tokens it spans.
+  defp extract_events(pos_result, text, entities, opts) do
     if Keyword.get(opts, :skip_event_extraction, false) do
       []
     else
-      case pos_result do
-        {:ok, pos_tags, tokens} ->
-          analysis_input = %{
-            pos_tags: pos_tags,
-            entities: entities,
-            tokens: tokens
-          }
+      {:ok, pos_tags, tokens} = pos_result
 
-          case EventExtractor.extract(analysis_input, opts) do
-            {:ok, events} -> events
-            {:error, _reason} -> []
-          end
+      analysis_input = %{
+        pos_tags: pos_tags,
+        entities: EventExtractor.token_entities(entities, Tokenizer.tokenize(text)),
+        tokens: tokens
+      }
 
-        {:error, _reason} ->
-          []
+      case EventExtractor.extract(analysis_input, opts) do
+        {:ok, events} -> events
+        {:error, _reason} -> []
       end
     end
   end
 
+  # The tagger is required, not optional. `pos_tags` feeds WordFeatures, and
+  # WordFeatures feeds every WordNet group (supersenses, lexical domains,
+  # selectional preferences, subcategorization, meaning depth), ConceptNet
+  # edges and pos_distribution -- 169 feature dimensions.
+  #
+  # This used to return `{:error, reason}` and the callers turned that into
+  # `[]`, so an unloadable model produced a *constant* feature vector instead
+  # of a wrong one: `mix gen_micro_data` wrote 4,869 half-empty training rows
+  # and `mix train_micro` trained on them, both reporting success. Measured
+  # 2026-09-23. A missing tagger now stops the analysis.
   defp get_pos_tags(text) do
     tokens = Tokenizer.tokenize_words(text)
 
     case POSTagger.get_model() do
       {:ok, model} ->
-        pos_tags = POSTagger.predict(tokens, model)
-        {:ok, pos_tags, tokens}
+        {:ok, POSTagger.predict(tokens, model), tokens}
 
       {:error, reason} ->
-        {:error, reason}
+        raise """
+        POSTagger: no usable model at #{POSTagger.model_path()}
+
+        #{reason}
+
+        Analysis cannot continue without part-of-speech tags: they feed 169
+        feature dimensions, so proceeding would yield a constant feature
+        vector rather than a wrong one.
+
+        Train one with `mix pos.train`, or install an existing run with
+        `Brain.Training.POSRuns.promote!(run_id, "best", :production)`.
+        """
     end
   end
 
@@ -833,20 +1145,16 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp link_events(events, entities, pos_result, _opts) do
-    case pos_result do
-      {:ok, pos_tags_tuples, tokens} ->
-        tag_strings = extract_tag_strings(pos_tags_tuples)
+    {:ok, pos_tags_tuples, tokens} = pos_result
+    tag_strings = extract_tag_strings(pos_tags_tuples)
 
-        token_maps = Enum.map(tokens, fn t ->
-          %{text: t, normalized: String.downcase(t)}
-        end)
+    token_maps =
+      Enum.map(tokens, fn t ->
+        %{text: t, normalized: String.downcase(t)}
+      end)
 
-        frames = EventLinker.link(events, entities, token_maps, tag_strings)
-        {frames, tag_strings}
-
-      {:error, _} ->
-        {[], []}
-    end
+    frames = EventLinker.link(events, entities, token_maps, tag_strings)
+    {frames, tag_strings}
   rescue
     e ->
       Logger.warning("EventLinker failed: #{Exception.message(e)}")
@@ -854,15 +1162,10 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp run_srl(pos_result, entities, _opts) do
-    case pos_result do
-      {:ok, pos_tags_tuples, tokens} ->
-        tag_strings = extract_tag_strings(pos_tags_tuples)
-        bio_tags = generate_srl_bio_tags(tokens, tag_strings, entities)
-        SemanticRoleLabeler.label(tokens, bio_tags, entities)
-
-      {:error, _} ->
-        []
-    end
+    {:ok, pos_tags_tuples, tokens} = pos_result
+    tag_strings = extract_tag_strings(pos_tags_tuples)
+    bio_tags = generate_srl_bio_tags(tokens, tag_strings, entities)
+    SemanticRoleLabeler.label(tokens, bio_tags, entities: entities)
   rescue
     e ->
       Logger.warning("SemanticRoleLabeler failed: #{Exception.message(e)}")
@@ -870,7 +1173,6 @@ defmodule Brain.Analysis.Pipeline do
   end
 
   defp pos_result_to_tags({:ok, pos_tags, _tokens}), do: pos_tags
-  defp pos_result_to_tags(_), do: []
 
   defp extract_tag_strings(pos_tags) do
     Enum.map(pos_tags, fn
@@ -880,32 +1182,76 @@ defmodule Brain.Analysis.Pipeline do
     end)
   end
 
+  # Predicates are content verbs only. In UD a copula or auxiliary is `AUX`
+  # ("is going" -> AUX + VERB), and treating those as predicates would invent a
+  # frame per auxiliary. `VERB` alone is the predicate.
+  @srl_predicate_tags ~w(VERB)
+  @srl_arg0_tags ~w(NOUN PROPN PRON)
+  @srl_nominal_tags ~w(NOUN PROPN)
+
+  # These tags come from `POSTagger.predict/2`, which emits Universal
+  # Dependencies (`POSTagger.valid_tags/0`). This used to test Penn Treebank
+  # tags -- "VB", "VBD", "NN", "NNP" -- none of which a UD tagger can produce.
+  # So "B-V" was never emitted, `extract_spans/1` found no predicate, and every
+  # chunk got zero SRL frames: 10 feature dimensions constant across all 4,869
+  # training rows, with no exception and no log line. Measured 2026-09-23.
   defp generate_srl_bio_tags(tokens, pos_tags, entities) do
     entity_spans = build_entity_spans(tokens, entities)
 
     tokens
     |> Enum.with_index()
-    |> Enum.map(fn {_token, idx} ->
-      pos = Enum.at(pos_tags, idx, "NN")
+    |> Enum.map(fn {token, idx} ->
+      pos = srl_pos_at!(pos_tags, idx, token)
       entity_role = Map.get(entity_spans, idx)
 
       cond do
-        pos in ["VB", "VBD", "VBG", "VBN", "VBP", "VBZ"] ->
+        pos in @srl_predicate_tags ->
           "B-V"
 
         entity_role != nil ->
           entity_role
 
-        idx == 0 and pos in ["NN", "NNP", "NNS", "NNPS", "PRP"] ->
+        idx == 0 and pos in @srl_arg0_tags ->
           "B-ARG0"
 
-        pos in ["NN", "NNP", "NNS", "NNPS"] ->
+        pos in @srl_nominal_tags ->
           "B-ARG1"
 
+        # A known tag that carries no semantic role -- DET, ADP, PUNCT and the
+        # rest. This is the one branch that may legitimately produce nothing.
         true ->
           "O"
       end
     end)
+  end
+
+  # A tag outside the tagger's own vocabulary means the two sides have drifted
+  # apart again, which is exactly the failure this function shipped with. It is
+  # not a token we can label, so it stops here rather than becoming an "O".
+  defp srl_pos_at!(pos_tags, idx, token) do
+    case Enum.at(pos_tags, idx) do
+      nil ->
+        raise """
+        SRL: no POS tag for token #{inspect(token)} at index #{idx} \
+        (#{length(pos_tags)} tags for a longer token list).
+        Tags and tokens must line up one to one.
+        """
+
+      tag ->
+        if tag in POSTagger.valid_tags() do
+          tag
+        else
+          raise """
+          SRL: #{inspect(tag)} is not a tag POSTagger emits, so it cannot be \
+          mapped to a semantic role.
+
+          POSTagger.valid_tags/0: #{Enum.join(POSTagger.valid_tags(), " ")}
+
+          A tag from another scheme here means the tagger and this function have \
+          drifted apart.
+          """
+        end
+    end
   end
 
   defp build_entity_spans(tokens, entities) do
@@ -950,7 +1296,10 @@ defmodule Brain.Analysis.Pipeline do
   defp entity_type_to_srl_role(type) do
     downcased = String.downcase(type)
     cond do
-      downcased in ["person", "user", "agent"] -> "ARG0"
+      # `given_name` / `last_name` come from EntityExtractor's person splitting
+      # (entity_extractor.ex:196-202). Without them a person entity lands in the
+      # catch-all below and is labelled ARG1 -- a patient rather than an agent.
+      downcased in ["person", "user", "agent", "given_name", "last_name"] -> "ARG0"
       downcased in ["location", "place", "city", "country", "geo"] -> "ARGM-LOC"
       downcased in ["temporal", "date", "time", "datetime"] -> "ARGM-TMP"
       true -> "ARG1"
@@ -959,6 +1308,14 @@ defmodule Brain.Analysis.Pipeline do
 
   @disambiguation_threshold 0.5
   @low_confidence_floor 0.3
+
+  @doc "The classifier confidence at or above which `determine_intent/6` trusts the label outright."
+  @spec disambiguation_threshold() :: float()
+  def disambiguation_threshold, do: @disambiguation_threshold
+
+  @doc "The classifier confidence below which a no-opinion from Atlas falls through to the speech act."
+  @spec low_confidence_floor() :: float()
+  def low_confidence_floor, do: @low_confidence_floor
 
   @external_resource Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
   @speech_act_intent_map Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
@@ -988,6 +1345,14 @@ defmodule Brain.Analysis.Pipeline do
                       }}
                    end)
   @registered_intent_set @intent_metadata |> Map.keys() |> MapSet.new()
+
+  # Every intent the speech-act map names is a registered one: the map never
+  # stands in a label for "no intent".
+  for {speech_act, intent} <- @speech_act_intent_map, not MapSet.member?(@registered_intent_set, intent) do
+    raise "Pipeline: speech_act_intent_map.json maps #{inspect(speech_act)} to #{inspect(intent)}, " <>
+            "which intent_registry.json does not register"
+  end
+
   @known_domain_set @intent_metadata
                     |> Map.values()
                     |> Enum.map(& &1.domain)
@@ -1016,21 +1381,19 @@ defmodule Brain.Analysis.Pipeline do
     base = intent_details_base_from_lattice(lattice)
 
     classifier_registered? = classifier_intent != nil and registered_intent?(classifier_intent)
-    domain_conflict? = classifier_domain_conflicts_with_profile?(classifier_intent, profile)
+    profile_domain = profile_domain_string(profile)
 
     cond do
-      # Two trained classifiers disagree: `:intent_full` says one thing, but the
-      # `:intent_domain` micro-classifier says the chunk is in a different
-      # domain. Route through the multi-signal scorer rather than blindly
-      # trusting whichever model happened to fire louder.
-      classifier_registered? and domain_conflict? ->
-        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
-
-        {inferred, :speech_act_fallback, nil,
-         Map.merge(base, %{
-           original_intent: classifier_intent,
-           original_score: best_score
-         })}
+      # The two trained classifiers disagree: `:intent_full`'s intent lies in
+      # another domain than the one `:intent_domain` gives the chunk. Neither
+      # wins by rule: the route the disagreement is resolved by is the one the
+      # out-of-fold data says is most often right for it (`IntentArbitration`).
+      # Both sides are consolidated (`Brain.Lexicon.IntentDomains`), the
+      # vocabulary `:intent_domain` is trained on: compared by raw prefix,
+      # "alarm" never matched "reminder" and every alarm intent disagreed.
+      classifier_registered? and profile_domain != nil and
+          IntentDomains.consolidate(classifier_intent) != IntentDomains.consolidate(profile_domain) ->
+        arbitrate(classifier_intent, best_score, speech_act, lattice, entities, text, opts, profile, base)
 
       classifier_registered? and best_score >= @disambiguation_threshold ->
         {classifier_intent, :classifier, best_score, base}
@@ -1045,7 +1408,7 @@ defmodule Brain.Analysis.Pipeline do
              })}
 
           :no_opinion when best_score < @low_confidence_floor ->
-            inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
+            inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
 
             {inferred, :speech_act_fallback, nil,
              Map.merge(base, %{
@@ -1062,7 +1425,7 @@ defmodule Brain.Analysis.Pipeline do
       # classifier output as just one more signal and let the registry-aware
       # scorer pick a real intent that matches the full signal stack.
       classifier_intent != nil ->
-        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
+        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
 
         {inferred, :speech_act_fallback, nil,
          Map.merge(base, %{
@@ -1071,38 +1434,60 @@ defmodule Brain.Analysis.Pipeline do
          })}
 
       speech_act.category == :expressive ->
-        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
+        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
         {inferred, :speech_act, nil, base}
 
       true ->
-        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities)
+        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
         {inferred, :speech_act, nil, base}
     end
   end
 
-  # True when the trained `:intent_full` output and the trained `:intent_domain`
-  # micro-classifier output assign the chunk to different domains. This is a
-  # signal we should respect — the domain classifier is a small, focused model
-  # that's far more reliable than the 232-class intent_full centroid.
-  defp classifier_domain_conflicts_with_profile?(nil, _), do: false
+  # Every route's intent (`IntentArbitration.routes/0`), the route the loaded
+  # arbitration takes for the pair of domains, and its record in the details
+  # (`:arbitration`), which training reads back: what each route gave, so the
+  # training rows measure every route whichever one is taken.
+  defp arbitrate(classifier_intent, best_score, speech_act, lattice, entities, text, opts, profile, base) do
+    classifier_domain = IntentDomains.consolidate(classifier_intent)
+    profile_domain = IntentDomains.consolidate(profile_domain_string(profile))
 
-  defp classifier_domain_conflicts_with_profile?(classifier_intent, profile) when is_binary(classifier_intent) do
-    case profile_domain_string(profile) do
-      nil ->
-        false
+    routes = %{
+      classifier: classifier_intent,
+      domain: best_intent_in_domain(lattice, profile_domain),
+      speech_act: infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
+    }
 
-      profile_domain ->
-        classifier_domain =
-          case Map.get(@intent_metadata, classifier_intent) do
-            %{domain: d} when is_binary(d) and d != "" -> d
-            _ -> intent_domain_prefix(classifier_intent)
-          end
+    model = IntentArbitration.loaded!(language!(opts))
+    decision = IntentArbitration.decide(model, classifier_domain, profile_domain)
 
-        classifier_domain != "" and classifier_domain != profile_domain
+    record = %{
+      classifier_domain: classifier_domain,
+      profile_domain: profile_domain,
+      routes: routes,
+      decision: decision
+    }
+
+    details = Map.merge(base, %{original_intent: classifier_intent, original_score: best_score, arbitration: record})
+
+    case decision do
+      {:route, :classifier, _p} -> {classifier_intent, :arbitrated_classifier, best_score, details}
+      {:route, :domain, _p} -> {routes.domain, :arbitrated_domain, nil, details}
+      {:route, :speech_act, _p} -> {routes.speech_act, :speech_act_fallback, nil, details}
+      {:abstain, _p} -> {nil, :arbitration_abstained, nil, details}
     end
   end
 
-  defp classifier_domain_conflicts_with_profile?(_, _), do: false
+  @doc """
+  The most probable of `lattice`'s candidates that is a registered intent in
+  `domain`, a consolidated domain (`Brain.Lexicon.IntentDomains`); nil when no
+  candidate is one. `Brain.Analysis.IntentArbitration`'s `:domain` route.
+  """
+  @spec best_intent_in_domain(Lattice.t(), String.t()) :: String.t() | nil
+  def best_intent_in_domain(%Lattice{candidates: candidates}, domain) when is_binary(domain) do
+    candidates
+    |> Enum.map(&to_string(&1.label))
+    |> Enum.find(&(registered_intent?(&1) and IntentDomains.consolidate(&1) == domain))
+  end
 
   defp intent_details_base_from_lattice(%Lattice{} = lattice) do
     if Lattice.empty?(lattice) do
@@ -1129,12 +1514,13 @@ defmodule Brain.Analysis.Pipeline do
   defp disambiguate_with_atlas(classifier_intent, %Lattice{} = lattice, entities, _text, opts, profile) do
     conversation_id = Keyword.get(opts, :conversation_id)
 
-    recent_topics = graph_recent_topics(conversation_id)
-    entity_neighborhoods = graph_entity_neighborhoods(entities)
+    world_id = world_id!(opts)
+    recent_topics = graph_recent_topics(conversation_id, world_id)
+    entity_neighborhoods = graph_entity_neighborhoods(entities, world_id)
 
     reranked =
       Lattice.rerank(lattice, fn %LatticeCandidate{label: intent} ->
-        score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile)
+        score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile, world_id)
       end)
 
     case Lattice.best(reranked) do
@@ -1152,31 +1538,41 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp graph_recent_topics(nil), do: []
+  defp graph_recent_topics(nil, _world_id), do: []
 
-  defp graph_recent_topics(conversation_id) do
-    Brain.Graph.Reader.conversation_topics(conversation_id)
+  # The world is resolved by the caller, outside this rescue, so a missing
+  # world raises rather than reading as no recent topics.
+  defp graph_recent_topics(conversation_id, world_id) do
+    Brain.Graph.Reader.conversation_topics(conversation_id, world_id: world_id)
   rescue
     _ -> []
   end
 
-  defp graph_entity_neighborhoods(entities) when is_list(entities) do
-    Brain.Graph.Reader.entity_context(entities, depth: 1)
+  # The world is resolved by the caller, outside this rescue, so a missing
+  # world raises rather than reading as an empty neighborhood.
+  defp graph_entity_neighborhoods(entities, world_id) when is_list(entities) do
+    Brain.Graph.Reader.entity_context(entities, depth: 1, world_id: world_id)
   rescue
     _ -> []
   end
 
-  defp graph_entity_neighborhoods(_), do: []
+  defp graph_entity_neighborhoods(_, _world_id), do: []
 
   @doc false
-  defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile) do
+  defp score_intent_with_graph_context(intent, entity_neighborhoods, recent_topics, profile, world_id) do
+    # The entity types the intent registry's slot schemas expect: every intent
+    # in the profile's domain, or else the intent's own. Only which types are
+    # listed counts here, not their learned weights.
     expected_types =
       case profile do
         %ChunkProfile{domain: domain} when domain != :unknown ->
-          expected_entity_types_from_domain(domain)
+          domain |> SlotDetector.entity_types_for_domain() |> MapSet.to_list()
 
         _ ->
-          expected_entity_types_from_domain(extract_domain_from_intent(intent))
+          case Brain.Analysis.EntityTypeScorer.expected_types(intent) do
+            nil -> []
+            expected -> Brain.Analysis.EntityTypeScorer.Expected.types(expected)
+          end
       end
 
     graph_entity_types =
@@ -1223,7 +1619,7 @@ defmodule Brain.Analysis.Pipeline do
           end
 
         if intent_domain != "" do
-          topic_similarity = compute_topic_similarity(intent_domain, recent_topics)
+          topic_similarity = topic_similarity(intent_domain, recent_topics, world_id)
           topic_similarity * 0.15
         else
           0.0
@@ -1235,25 +1631,46 @@ defmodule Brain.Analysis.Pipeline do
     min(entity_type_overlap + topic_overlap, 0.3)
   end
 
-  defp compute_topic_similarity(domain, topics) do
-    if Embedder.ready?() do
-      domain_vec = Embedder.embed(domain)
+  @doc """
+  The cosine similarity of the closest of the recent `topics` to the intent's
+  `domain`, both embedded with the world's embedder (`Brain.Worlds.Embedder.embed/2`);
+  0.0 when there are no topics. The domain and every topic are embedded with
+  the same vocabulary, so vectors of different lengths raise
+  (`FourthWall.Math.cosine_similarity!/2`), as does a world whose embedder
+  cannot embed.
+  """
+  @spec topic_similarity(String.t(), [String.t()], String.t()) :: float()
+  def topic_similarity(domain, topics, world_id) do
+    domain_vec = world_embedding!(world_id, domain)
 
-      similarities =
-        Enum.map(topics, fn topic ->
-          topic_vec = Embedder.embed(topic)
-          FourthWall.Math.cosine_similarity(domain_vec, topic_vec)
-        end)
+    similarities =
+      Enum.map(topics, fn topic ->
+        FourthWall.Math.cosine_similarity!(domain_vec, world_embedding!(world_id, topic))
+      end)
 
-      case similarities do
-        [] -> 0.0
-        sims -> Enum.max(sims)
-      end
-    else
-      0.0
+    case similarities do
+      [] -> 0.0
+      sims -> Enum.max(sims)
     end
-  rescue
-    _ -> 0.0
+  end
+
+  # A world's embedding comes from the world's embedder and nowhere else. While
+  # the world's vocabulary is being rebuilt this waits for the rebuild to finish
+  # (`Brain.Worlds.Embedder.await_ready/2`, which raises naming the world when it does
+  # not) and embeds then. A world whose embedder has no copy, no vocabulary, or
+  # no table raises.
+  defp world_embedding!(world_id, text) do
+    case WorldEmbedder.embed(world_id, text) do
+      {:ok, embedding} ->
+        embedding
+
+      {:error, :vocabulary_building} ->
+        :ok = WorldEmbedder.await_ready(world_id)
+        world_embedding!(world_id, text)
+
+      {:error, reason} ->
+        raise "Pipeline: world #{inspect(world_id)}'s embedder cannot embed: #{inspect(reason)}"
+    end
   end
 
   defp extract_classifier_intent(speech_act) do
@@ -1268,8 +1685,9 @@ defmodule Brain.Analysis.Pipeline do
 
   # Resolves an intent label when the `:intent_full` classifier produced no
   # registered top candidate. **Never** fabricates labels — every returned value
-  # is either a registered intent (validated against `intent_registry.json`) or
-  # a canonical entry from `speech_act_intent_map.json`.
+  # is a registered intent (validated against `intent_registry.json`; the
+  # entries of `speech_act_intent_map.json` are checked against it when this
+  # module compiles), or nil when no intent was determined.
   #
   # Strategy: run a multi-signal scorer over every registered intent, blending
   # all the signals the pipeline has already produced from trained classifiers
@@ -1285,7 +1703,7 @@ defmodule Brain.Analysis.Pipeline do
   # The registry contributes structural metadata (domain/category/speech_act/
   # entity_mappings) — not training signal — so each registered intent can be
   # scored against the union of trained outputs without any text-string rules.
-  defp infer_intent_from_speech_act(speech_act, _text, profile, lattice, entities) do
+  defp infer_intent_from_speech_act(speech_act, _text, profile, lattice, entities, world_id) do
     profile_label = profile_derived_label(profile)
 
     cond do
@@ -1293,7 +1711,7 @@ defmodule Brain.Analysis.Pipeline do
         profile_label
 
       true ->
-        case best_intent_by_signals(speech_act, profile, lattice, entities) do
+        case best_intent_by_signals(speech_act, profile, lattice, entities, world_id) do
           {:ok, intent} -> intent
           :no_match -> speech_act_map_fallback(speech_act)
         end
@@ -1326,14 +1744,9 @@ defmodule Brain.Analysis.Pipeline do
 
   @entity_scoring_weights_path Path.join(:code.priv_dir(:brain), "analysis/entity_scoring_weights.json")
   @external_resource @entity_scoring_weights_path
-  @entity_scoring_weights (
-    case File.read(@entity_scoring_weights_path) do
-      {:ok, json} -> Jason.decode!(json)
-      _ -> %{}
-    end
-  )
+  @entity_scoring_weights @entity_scoring_weights_path |> File.read!() |> Jason.decode!()
 
-  defp best_intent_by_signals(speech_act, profile, lattice, entities) do
+  defp best_intent_by_signals(speech_act, profile, lattice, entities, world_id) do
     profile_domain = profile_domain_string(profile)
     speech_act_subtype = to_string(Map.get(speech_act, :sub_type, ""))
     speech_act_category = to_string(Map.get(speech_act, :category, ""))
@@ -1352,7 +1765,8 @@ defmodule Brain.Analysis.Pipeline do
       target: target,
       lattice_scores: lattice_scores,
       bare_domain: bare_domain_signal,
-      entity_types: entity_types
+      entity_types: entity_types,
+      world_id: world_id
     }
 
     ranked =
@@ -1366,6 +1780,8 @@ defmodule Brain.Analysis.Pipeline do
           true -> a_intent <= b_intent
         end
       end)
+
+    flush_entity_layer_telemetry()
 
     case ranked do
       [{intent, _} | _] -> {:ok, intent}
@@ -1419,7 +1835,7 @@ defmodule Brain.Analysis.Pipeline do
           sig.entity_types
           |> MapSet.to_list()
           |> Enum.map(fn etype ->
-            best_entity_type_match(etype, meta.entity_types, intent, w)
+            best_entity_type_match(etype, meta.entity_types, intent, w, sig.world_id)
           end)
 
         min(Enum.sum(per_etype_scores), Map.get(w, "entity_cap", @score_entity_cap))
@@ -1436,11 +1852,10 @@ defmodule Brain.Analysis.Pipeline do
         parents =
           sig.entity_types
           |> MapSet.to_list()
-          |> Enum.map(&TypeHierarchy.parent_of/1)
-          |> Enum.reject(&is_nil/1)
+          |> Enum.flat_map(&TypeHierarchy.parents_of/1)
           |> Enum.uniq()
 
-        if parents != [] and Process.whereis(Brain.ML.Lexicon) != nil do
+        if parents != [] do
           max_sim =
             for p <- parents, anchor <- domain_anchors, reduce: 0.0 do
               acc -> max(acc, Brain.Lexicon.word_similarity(p, anchor) || 0.0)
@@ -1472,7 +1887,7 @@ defmodule Brain.Analysis.Pipeline do
       modality_score + target_score + total_entity_signal + lattice_score
   end
 
-  defp best_entity_type_match(etype, expected_types, intent, w) do
+  defp best_entity_type_match(etype, expected_types, intent, w, world_id) do
     cond do
       MapSet.member?(expected_types, etype) ->
         emit_entity_layer_telemetry(intent, etype, :exact, true)
@@ -1483,11 +1898,11 @@ defmodule Brain.Analysis.Pipeline do
         emit_entity_layer_telemetry(intent, etype, :hierarchy, true)
         Map.get(w, "entity_hierarchy_match", 0.07)
 
-      poincare_close?(etype, intent, w) ->
+      poincare_close?(etype, intent, w, world_id) ->
         emit_entity_layer_telemetry(intent, etype, :poincare, true)
         Map.get(w, "entity_poincare_proximity", 0.05)
 
-      vector_similar?(etype, expected_types, w) ->
+      vector_similar?(etype, expected_types, w, world_id) ->
         emit_entity_layer_telemetry(intent, etype, :vector, true)
         Map.get(w, "entity_vector_similarity", 0.04)
 
@@ -1497,57 +1912,61 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp poincare_close?(etype, intent, w) do
-    if Code.ensure_loaded?(Brain.ML.Poincare.Embeddings) and
-         function_exported?(Brain.ML.Poincare.Embeddings, :entity_distance, 2) do
-      case Brain.ML.Poincare.Embeddings.entity_distance(etype, intent) do
-        distance when is_number(distance) ->
-          distance < Map.get(w, "poincare_distance_threshold", 2.0)
-        _ -> false
-      end
-    else
-      false
+  # The distance between the entity type and the intent in the world's Poincare
+  # embeddings. Either one having no embedding is not close; a world with no
+  # copy of the embeddings raises.
+  defp poincare_close?(etype, intent, w, world_id) do
+    case Brain.ML.Poincare.Embeddings.entity_distance(world_id, etype, intent) do
+      {:ok, distance} -> distance < Map.get(w, "poincare_distance_threshold", 2.0)
+      {:error, :not_found} -> false
     end
-  rescue
-    _ -> false
   end
 
-  defp vector_similar?(etype, expected_types, w) do
+  # Cosine similarity of the world's cached type vectors; a type whose vector
+  # the world has not computed is not similar.
+  defp vector_similar?(etype, expected_types, w, world_id) do
     alias Brain.ML.KnowledgeGraph.EntityVectorCache
 
-    if Code.ensure_loaded?(EntityVectorCache) and
-         function_exported?(EntityVectorCache, :get_or_compute_type, 1) do
-      case EntityVectorCache.get_or_compute_type(etype) do
-        {:ok, etype_vec} ->
-          threshold = Map.get(w, "vector_similarity_threshold", 0.6)
+    case EntityVectorCache.get_cached_type(world_id, etype) do
+      {:ok, etype_vec} ->
+        threshold = Map.get(w, "vector_similarity_threshold", 0.6)
+        etype_flat = Nx.to_flat_list(etype_vec)
 
-          Enum.any?(expected_types, fn expected ->
-            case EntityVectorCache.get_or_compute_type(expected) do
-              {:ok, exp_vec} ->
-                sim = FourthWall.Math.cosine_similarity(
-                  Nx.to_flat_list(etype_vec),
-                  Nx.to_flat_list(exp_vec)
-                )
-                sim > threshold
-              _ -> false
-            end
-          end)
+        Enum.any?(expected_types, fn expected ->
+          case EntityVectorCache.get_cached_type(world_id, expected) do
+            {:ok, exp_vec} ->
+              FourthWall.Math.cosine_similarity(etype_flat, Nx.to_flat_list(exp_vec)) > threshold
 
-        _ -> false
-      end
-    else
-      false
+            :miss ->
+              false
+          end
+        end)
+
+      :miss ->
+        false
     end
-  rescue
-    _ -> false
   end
 
-  defp emit_entity_layer_telemetry(intent, etype, layer, available) do
-    :telemetry.execute(
-      [:brain, :intent_scoring, :entity_layer],
-      %{score: 1},
-      %{intent: intent, entity_type: etype, layer: layer, layer_available: available}
-    )
+  defp emit_entity_layer_telemetry(_intent, _etype, layer, available) do
+    key = {:entity_layer_counts, layer, available}
+    Process.put(key, (Process.get(key) || 0) + 1)
+  end
+
+  defp flush_entity_layer_telemetry do
+    counts =
+      Process.get()
+      |> Enum.filter(fn {k, _} -> match?({:entity_layer_counts, _, _}, k) end)
+
+    if counts != [] do
+      measurements =
+        Enum.reduce(counts, %{}, fn {{:entity_layer_counts, layer, available}, count}, acc ->
+          Process.delete({:entity_layer_counts, layer, available})
+          suffix = if available, do: layer, else: :"#{layer}_unavailable"
+          Map.put(acc, suffix, count)
+        end)
+
+      :telemetry.execute([:brain, :intent_scoring, :entity_layers_batch], measurements, %{})
+    end
   end
 
   defp entity_scoring_weights do
@@ -1604,62 +2023,126 @@ defmodule Brain.Analysis.Pipeline do
 
   defp entity_type_set(_), do: MapSet.new()
 
+  # The registered intent `speech_act_intent_map.json` gives the speech act's
+  # sub-type, else its category. nil when it gives neither: no intent was
+  # determined, and none is made up.
   defp speech_act_map_fallback(speech_act) do
-    sub_type_str = to_string(Map.get(speech_act, :sub_type, ""))
-    category_str = to_string(Map.get(speech_act, :category, ""))
-    is_question = Map.get(speech_act, :is_question, false)
+    sub_type = to_string(Map.get(speech_act, :sub_type, ""))
+    category = to_string(Map.get(speech_act, :category, ""))
 
-    cond do
-      is_binary(canonical = Map.get(@speech_act_intent_map, sub_type_str)) ->
-        canonical
-
-      is_question ->
-        Map.get(@speech_act_intent_map, "question", "question.factual")
-
-      Map.has_key?(@speech_act_intent_map, category_str) ->
-        Map.get(@speech_act_intent_map, category_str)
-
-      true ->
-        Map.get(@speech_act_intent_map, "default", "unknown")
-    end
+    Map.get(@speech_act_intent_map, sub_type) || Map.get(@speech_act_intent_map, category)
   end
 
+  # The events of every analyzed text read as things the user said, so a caller
+  # analyzing a corpus passes `side_effects: false`; otherwise each utterance
+  # would be stored as a belief about the user.
+  #
+  # Every belief an event yields is about the user who said it, so a run with
+  # no user (`:user_id` absent or nil) extracts none: there is no one to hold
+  # them about, and no stand-in user is made up.
+  #
+  # Nothing here is rescued. A failure in the synchronous mode reaches the
+  # caller, and one in the supervised child is reported by its supervisor.
   defp maybe_extract_beliefs_from_events([], _opts), do: :ok
 
   defp maybe_extract_beliefs_from_events(events, opts) do
-    user_id = Keyword.get(opts, :user_id) || "anonymous"
+    user_id = turn_user_id!(opts)
 
-    if Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
+    if side_effects?(opts) and user_id != nil and Brain.Epistemic.Types.Config.auto_extraction_enabled?() do
+      world_id = world_id!(opts)
+
       if Application.get_env(:brain, :pipeline_belief_extraction_sync, false) do
-        try do
-          Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
-        rescue
-          e ->
-            require Logger
-            Logger.debug("Belief extraction from events failed: #{Exception.message(e)}")
-        end
+        Brain.Epistemic.BeliefStore.extract_beliefs_from_events(world_id, events, user_id)
       else
         Task.Supervisor.start_child(
           Brain.Knowledge.AgentSupervisor,
-          fn ->
-            try do
-              Brain.Epistemic.BeliefStore.extract_beliefs_from_events(events, user_id)
-            rescue
-              e ->
-                require Logger
-                Logger.debug("Belief extraction from events failed: #{Exception.message(e)}")
-            end
-          end
+          fn -> Brain.Epistemic.BeliefStore.extract_beliefs_from_events(world_id, events, user_id) end
         )
       end
     end
 
     :ok
-  rescue
-    _ -> :ok
   end
 
-  defp calculate_confidence(analysis) do
+  # The user the text was said by: nil when the run has none, otherwise their id.
+  defp turn_user_id!(opts) do
+    case Keyword.get(opts, :user_id) do
+      nil ->
+        nil
+
+      user_id when is_binary(user_id) and user_id != "" ->
+        user_id
+
+      other ->
+        raise ArgumentError, "Pipeline option :user_id must be a user id or nil, got: #{inspect(other)}"
+    end
+  end
+
+  # Whether this run may write what it learned. On unless the caller passed
+  # `side_effects: false`, as evaluation, training-data generation and
+  # measurement callers do.
+  # The world the text is analyzed in. Brain passes its conversation's world;
+  # every other caller names the world it analyzes for. There is no default.
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "Pipeline option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError,
+              "Pipeline needs :world_id, the world the text is analyzed in; Brain passes its conversation's world"
+    end
+  end
+
+  defp side_effects?(opts) do
+    case Keyword.get(opts, :side_effects, true) do
+      value when is_boolean(value) ->
+        value
+
+      other ->
+        raise ArgumentError,
+              "Pipeline option :side_effects must be true or false, got: #{inspect(other)}"
+    end
+  end
+
+  # The contexts the turn continues from: given explicitly (training and
+  # evaluation pass a gold row's follow-up context), or derived from the
+  # conversation's earlier turns.
+  defp active_contexts!(opts) do
+    tables = ActiveContexts.loaded!()
+
+    case Keyword.fetch(opts, :active_contexts) do
+      {:ok, names} -> ActiveContexts.validate!(names, tables)
+      :error -> opts |> Keyword.get(:conversation_history, []) |> ActiveContexts.from_history(tables)
+    end
+  end
+
+  # What the pass-1 speech-act classifier reads: the world whose memory its
+  # memory voter reads, the language whose speech-act evidence its lexical voter
+  # reads, and the out-of-fold evidence training passes in its place.
+  defp speech_act_opts(opts) do
+    [world_id: world_id!(opts), language: language!(opts)] ++ Keyword.take(opts, [:speech_act_evidence])
+  end
+
+  # The language the turn is analyzed in: the code `Brain.evaluate` resolved from
+  # the browser, or English when the caller names none.
+  defp language!(opts) do
+    case Keyword.fetch(opts, :language) do
+      {:ok, code} -> Brain.Language.validate!(code)
+      :error -> Brain.Language.resolve!(nil)
+    end
+  end
+
+  # Refines the turn's accumulator with this chunk's own measurements. The base
+  # carries the turn's memory context (episodes, semantics, topics, interlocutor
+  # adaptations) and its cross-chunk signals; each per-chunk measurement
+  # replaces the turn-level signal from the same source, so no source counts
+  # twice. This used to start from an empty accumulator, which discarded the
+  # memory context on every turn.
+  defp calculate_confidence(analysis, %ContextAccumulator{} = base_acc) do
     discourse_conf =
       case analysis.discourse do
         %{confidence: c} when is_number(c) -> c
@@ -1698,20 +2181,24 @@ defmodule Brain.Analysis.Pipeline do
 
     entity_fam = EntityGraphEnricher.familiarity_score(analysis.entities)
 
+    # nil, not 0.5: an intent whose confidence is unknown is a different state
+    # from one measured at the middle, and a consumer calibrating against this
+    # number cannot tell them apart once they are the same value. Measured over
+    # the held-out split when it held 1000 rows, this was absent on 1 of them.
     intent_conf =
       case analysis.speech_act do
         %{intent_confidence: c} when is_number(c) and c > 0 -> c
-        _ -> 0.5
+        _ -> nil
       end
 
     acc =
-      %ContextAccumulator{}
-      |> ContextAccumulator.add_signal(:discourse, Map.get(analysis.discourse, :addressee), discourse_conf)
-      |> ContextAccumulator.add_signal(:speech_act, Map.get(analysis.speech_act, :category), speech_act_conf)
-      |> ContextAccumulator.add_signal(:slot_fill, Map.get(analysis.slots || %{}, :all_required_filled, false), slot_conf)
-      |> ContextAccumulator.add_signal(:sentiment, Map.get(analysis.sentiment || %{}, :label, :neutral), sentiment_conf)
-      |> ContextAccumulator.add_signal(:entity_familiarity, entity_fam > 0.5, entity_fam)
-      |> ContextAccumulator.add_signal(:intent, analysis.intent, intent_conf)
+      base_acc
+      |> ContextAccumulator.put_signal(:discourse, Map.get(analysis.discourse, :addressee), discourse_conf)
+      |> ContextAccumulator.put_signal(:speech_act, Map.get(analysis.speech_act, :category), speech_act_conf)
+      |> ContextAccumulator.put_signal(:slot_fill, Map.get(analysis.slots || %{}, :all_required_filled, false), slot_conf)
+      |> ContextAccumulator.put_signal(:sentiment, Map.get(analysis.sentiment || %{}, :label, :neutral), sentiment_conf)
+      |> ContextAccumulator.put_signal(:entity_familiarity, entity_fam > 0.5, entity_fam)
+      |> put_intent_signal(analysis.intent, intent_conf)
       |> ContextAccumulator.accumulate()
 
     confidence = ContextAccumulator.effective_confidence(acc) |> Float.round(3)
@@ -1720,6 +2207,11 @@ defmodule Brain.Analysis.Pipeline do
     |> Map.put(:confidence, confidence)
     |> Map.put(:accumulated_context, acc)
   end
+
+  defp put_intent_signal(acc, _intent, nil), do: acc
+
+  defp put_intent_signal(acc, intent, confidence),
+    do: ContextAccumulator.put_signal(acc, :intent, intent, confidence)
 
   defp record_pipeline_result(%InternalModel{} = model) do
     feedback_type =
@@ -1738,61 +2230,35 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
+  # A failure to resolve is not caught: it reaches the caller.
   defp resolve_anaphora(text, history, chunk_index, opts) do
-    case AnaphoraResolver.resolve_and_substitute(text, history) do
-      {:ok, resolved_text, resolved_entities} ->
-        if resolved_entities != [] do
-          Progress.report(opts, :anaphora_resolved, %{
-            chunk_index: chunk_index,
-            resolved_count: length(resolved_entities),
-            entities:
-              Enum.map(resolved_entities, fn e ->
-                %{
-                  entity_type: e[:entity_type],
-                  value: e[:value]
-                }
-              end)
-          })
-        end
+    {:ok, resolved_text, referents} = AnaphoraResolver.resolve_and_substitute(text, history)
 
-        {resolved_text, resolved_entities}
-
-      _ ->
-        {text, []}
+    if referents != [] do
+      Progress.report(opts, :anaphora_resolved, %{
+        chunk_index: chunk_index,
+        resolved_count: length(referents),
+        entities:
+          Enum.map(referents, fn referent ->
+            %{entity_type: referent.entity_type, value: referent.value, confidence: referent.confidence}
+          end)
+      })
     end
-  rescue
-    e ->
-      Logger.warning("Anaphora resolution failed", %{error: Exception.message(e)})
-      {text, []}
+
+    {resolved_text, referents}
   end
 
-  defp merge_anaphora_entities(entities, anaphora_entities) when is_list(anaphora_entities) do
-    converted =
-      Enum.map(anaphora_entities, fn e ->
-        %{
-          entity_type: e[:entity_type],
-          value: e[:value],
-          confidence: 0.75,
-          source: :anaphora_resolution
-        }
-      end)
+  # The referents resolution gives (`AnaphoraResolver`), each with the
+  # confidence its resolution derived, join the extracted entities -- except
+  # one of a type extraction already found in the text.
+  defp merge_anaphora_entities(entities, referents) when is_list(referents) do
+    extracted_types = MapSet.new(entities, & &1.entity_type)
 
-    extracted_types =
-      entities
-      |> Enum.map(& &1[:entity_type])
-      |> MapSet.new()
-
-    unique_anaphora =
-      Enum.reject(converted, fn e ->
-        MapSet.member?(extracted_types, e[:entity_type])
-      end)
-
-    entities ++ unique_anaphora
+    entities ++ Enum.reject(referents, &MapSet.member?(extracted_types, &1.entity_type))
   end
 
-  defp merge_anaphora_entities(entities, _) do
-    entities
-  end
+  # A chunk no intent was determined for has no slot schema to filter by.
+  defp filter_entities_by_intent(entities, nil) when is_list(entities), do: entities
 
   @doc false
   defp filter_entities_by_intent(entities, intent) when is_list(entities) do
@@ -1874,9 +2340,8 @@ defmodule Brain.Analysis.Pipeline do
          opts
        ) do
     enabled = Application.get_env(:brain, :intent_promotion_enabled, false)
-    side_effects = Keyword.get(opts, :side_effects, true)
 
-    if enabled and side_effects do
+    if enabled and side_effects?(opts) do
       best_score = confidence || 0.0
       margin = Map.get(details, :margin, 0.0)
 
@@ -1952,7 +2417,7 @@ defmodule Brain.Analysis.Pipeline do
         top_k: Map.get(details, :top_k, []),
         extracted_entities: entities,
         slot_fill_summary: slot_result || %{},
-        world_id: Keyword.get(opts, :world_id),
+        world_id: world_id!(opts),
         conversation_id: Keyword.get(opts, :conversation_id),
         annotation: %{
           tags: [:novel_input],
@@ -1985,62 +2450,95 @@ defmodule Brain.Analysis.Pipeline do
   # Epistemic Fact Verification
   # ============================================================================
 
-  # Verifies factual claims in a chunk against existing beliefs.
-  # Only runs for assertive statements (observations, claims). Returns
-  # epistemic context that can influence response generation.
-  # Returns: %{verification: result, beliefs: list, status: atom}
-  defp verify_facts_in_chunk(text, entities, speech_act, _opts) do
-    if speech_act.category == :assertive do
-      subject = extract_subject_from_entities(entities, text)
+  # What is known that bears on a chunk, by what the chunk does:
+  #
+  #   * an assertive chunk's claim is verified against the world's beliefs
+  #     about its subject (`FactIntegration.verify_fact/3`), and its epistemic
+  #     status says how it stands;
+  #   * a chunk that asks -- a directive that is a question or requests
+  #     information, as `ChunkFeatures` reads a question -- is answered from
+  #     what is known: the world's beliefs about its subject and the facts
+  #     about what it names (`Brain.Response.FactRetriever.facts_named_in/1`). A
+  #     question makes no claim, so its status stays :unchecked, and how the
+  #     known statements answer a polar question is its fact alignment
+  #     (`FactIntegration.polar_alignment/3`). Asking writes nothing.
+  #
+  # Returns: %{verification:, beliefs:, facts:, fact_alignment:, status:}
+  defp verify_facts_in_chunk(text, pos_tags, entities, speech_act, opts) do
+    cond do
+      speech_act.category == :assertive -> verify_claim(text, entities, opts)
+      asks?(speech_act) -> answer_from_knowledge(text, pos_tags, entities, opts)
+      true -> nothing_known()
+    end
+  end
 
-      case subject do
-        nil ->
-          record_verification_miss(:no_subject)
-          %{verification: nil, beliefs: [], status: :unchecked}
+  defp nothing_known, do: %{verification: nil, beliefs: [], facts: [], fact_alignment: nil, status: :unchecked}
 
-        subject_text ->
-          start_time = System.monotonic_time(:millisecond)
+  defp asks?(%{category: :directive} = speech_act),
+    do: Map.get(speech_act, :is_question) == true or Map.get(speech_act, :sub_type) == :request_information
 
-          beliefs = query_related_beliefs(subject_text)
-          verification = safe_verify_fact(subject_text, text)
+  defp asks?(_speech_act), do: false
 
-          status =
-            case verification do
-              {:verified, _} -> :verified
-              {:contradicted, _} -> :contradicted
-              {:uncertain, _} -> :uncertain
-              _ -> :unchecked
-            end
-
-          miss_reason =
-            cond do
-              status in [:verified, :contradicted] -> nil
-              beliefs == [] -> :no_beliefs
-              status == :uncertain -> :no_facts
-              true -> nil
-            end
-
-          if miss_reason, do: record_verification_miss(miss_reason)
-
-          duration_ms = System.monotonic_time(:millisecond) - start_time
-
-          Telemetry.emit_fact_verification(status, subject_text, duration_ms, %{
-            beliefs_count: length(beliefs),
-            verification_result: verification,
-            miss_reason: miss_reason
-          })
-
-          %{verification: verification, beliefs: beliefs, status: status}
+  defp answer_from_knowledge(text, pos_tags, entities, opts) do
+    beliefs =
+      case extract_subject_from_entities(entities, text) do
+        nil -> []
+        subject_text -> query_related_beliefs(world_id!(opts), subject_text)
       end
-    else
-      %{verification: nil, beliefs: [], status: :unchecked}
+
+    facts = Brain.Response.FactRetriever.facts_named_in(text)
+    alignment = FactIntegration.polar_alignment(text, pos_tags, ChunkAnalysis.statements(facts, beliefs))
+
+    %{nothing_known() | beliefs: beliefs, facts: facts, fact_alignment: alignment}
+  end
+
+  defp verify_claim(text, entities, opts) do
+    world_id = world_id!(opts)
+    subject = extract_subject_from_entities(entities, text)
+
+    case subject do
+      nil ->
+        record_verification_miss(:no_subject)
+        nothing_known()
+
+      subject_text ->
+        start_time = System.monotonic_time(:millisecond)
+
+        beliefs = query_related_beliefs(world_id, subject_text)
+        verification = safe_verify_fact(world_id, subject_text, text)
+
+        status =
+          case verification do
+            {:verified, _} -> :verified
+            {:contradicted, _} -> :contradicted
+            {:uncertain, _} -> :uncertain
+            _ -> :unchecked
+          end
+
+        miss_reason =
+          cond do
+            status in [:verified, :contradicted] -> nil
+            beliefs == [] -> :no_beliefs
+            status == :uncertain -> :no_facts
+            true -> nil
+          end
+
+        if miss_reason, do: record_verification_miss(miss_reason)
+
+        duration_ms = System.monotonic_time(:millisecond) - start_time
+
+        Telemetry.emit_fact_verification(status, subject_text, duration_ms, %{
+          beliefs_count: length(beliefs),
+          verification_result: verification,
+          miss_reason: miss_reason
+        })
+
+        %{nothing_known() | verification: verification, beliefs: beliefs, status: status}
     end
   end
 
   defp record_verification_miss(reason) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(Brain.Metrics.Aggregator, {:record_verification_miss_reason, reason})
-    end
+    :ok = Brain.Metrics.Aggregator.record_verification_miss_reason(reason)
   end
 
   defp extract_subject_from_entities(entities, text) do
@@ -2082,28 +2580,22 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  defp query_related_beliefs(subject_text) do
-    predicate = normalize_predicate(subject_text)
+  # The world's beliefs about the subject, keyed as `FactIntegration` keys a
+  # fact's belief (`FactIntegration.belief_predicate/1`). A subject no belief's
+  # predicate names has none.
+  defp query_related_beliefs(world_id, subject_text) do
+    case FactIntegration.belief_predicate(subject_text) do
+      {:ok, predicate} ->
+        {:ok, beliefs} = BeliefStore.query_beliefs(world_id, subject: :world, predicate: predicate, min_confidence: 0.5)
+        beliefs
 
-    case BeliefStore.query_beliefs(subject: :world, predicate: predicate, min_confidence: 0.5) do
-      {:ok, beliefs} -> beliefs
-      _ -> []
+      :none ->
+        []
     end
-  rescue
-    _ -> []
   end
 
-  defp normalize_predicate(text) when is_binary(text) do
-    normalized = text |> String.downcase() |> String.trim()
-    String.to_existing_atom(normalized)
-  rescue
-    ArgumentError -> :unknown
-  end
-
-  defp normalize_predicate(_), do: :unknown
-
-  defp safe_verify_fact(subject, text) do
-    FactIntegration.verify_fact(subject, text)
+  defp safe_verify_fact(world_id, subject, text) do
+    FactIntegration.verify_fact(world_id, subject, text)
   rescue
     error ->
       Logger.warning("Fact verification failed", error: inspect(error))
@@ -2134,20 +2626,5 @@ defmodule Brain.Analysis.Pipeline do
         _ -> nil
       end
     end)
-  end
-
-  @doc false
-  def expected_entity_types_from_domain(domain) do
-    case domain do
-      :weather -> ["location", "date", "time"]
-      :music -> ["artist", "song", "genre", "album"]
-      :smarthome -> ["device", "room", "setting"]
-      :reminder -> ["date", "time", "description"]
-      :navigation -> ["location", "address"]
-      :search -> ["query", "topic"]
-      :meta -> []
-      :smalltalk -> ["person", "name"]
-      _ -> []
-    end
   end
 end

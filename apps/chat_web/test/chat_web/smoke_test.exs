@@ -56,6 +56,13 @@ defmodule ChatWeb.SmokeTest do
       assert html =~ "Settings" or html =~ "settings"
     end
 
+    test "GET /worlds renders the worlds page", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/worlds")
+
+      assert html =~ ~s(id="web-user-id")
+      assert html =~ ~s(id="world-default")
+    end
+
     test "GET /knowledge-review renders knowledge review page", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/knowledge-review")
 
@@ -77,11 +84,6 @@ defmodule ChatWeb.SmokeTest do
     test "GET /admin redirects to /settings", %{conn: conn} do
       conn = get(conn, "/admin")
       assert redirected_to(conn) == "/settings"
-    end
-
-    test "GET /worlds redirects to /explorer", %{conn: conn} do
-      conn = get(conn, "/worlds")
-      assert redirected_to(conn) == "/explorer"
     end
 
     test "GET /ops/dashboard redirects to /dashboard", %{conn: conn} do

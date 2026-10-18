@@ -13,6 +13,28 @@ defmodule Brain.Response.DiscoursePlanner do
      insert hedging, correction invites, or override the backbone.
   3. **Sentiment/discourse adjustment**: Emotional signals and discourse role
      prepend attunement or suppress response.
+
+  ## A service's error
+
+  When the service the turn's intent was dispatched to returned an error
+  (the unified context's enrichment has `enrichment_status: :failed`), the
+  turn's plan is the one primitive that answers that error, in place of every
+  chunk's plan: what the user asked for was not carried out, and the reply
+  says why or asks what is needed. The error's reason is switched on as the
+  structured term the service returned (`enrichment_error_primitive/2`); a
+  reason with no planned response raises, and so does a failed enrichment
+  that carries no reason. A service that succeeded but returned no data is
+  answered the same way, with the one primitive that says so
+  (`empty_result_primitive/1`).
+
+  ## What is known
+
+  A chunk that asks is answered from what is known about it
+  (`Brain.Analysis.ChunkAnalysis.known_statements/1`): `has_facts` is whether
+  anything is, and `fact_alignment` how it answers a polar question
+  (`:confirming` or `:disconfirming`, nil when it does not), which the
+  patterns `polar_question_confirmed` and `polar_question_disconfirmed`
+  match.
   """
 
   alias Brain.Response.Primitive
@@ -24,16 +46,10 @@ defmodule Brain.Response.DiscoursePlanner do
   @patterns_path Path.join(@brain_priv, "response/discourse_patterns.json")
   @external_resource @patterns_path
 
-  @patterns (case File.read(@patterns_path) do
-               {:ok, content} ->
-                 case Jason.decode(content) do
-                   {:ok, %{"patterns" => patterns}} -> patterns
-                   _ -> %{}
-                 end
-
-               _ ->
-                 %{}
-             end)
+  # discourse_patterns.json drives every response plan. An unreadable or
+  # malformed file used to compile to %{}, leaving the planner with nothing but
+  # its default single-primitive backbone.
+  @patterns @patterns_path |> File.read!() |> Jason.decode!() |> Map.fetch!("patterns")
 
   @doc """
   Plans a discourse structure for the given analysis model.
@@ -44,18 +60,235 @@ defmodule Brain.Response.DiscoursePlanner do
   def plan(model, opts \\ [])
 
   def plan(%InternalModel{} = model, opts) do
-    model.analyses
-    |> Enum.flat_map(&plan_chunk(&1, model, opts))
-    |> insert_transitions(model.analyses)
+    case enrichment_outcome(opts) do
+      {:failed, reason, enrichment} ->
+        [enrichment_error_primitive(reason, origin(enrichment))]
+
+      {:empty, enrichment} ->
+        [empty_result_primitive(origin(enrichment))]
+
+      :planned_by_chunks ->
+        model.analyses
+        |> Enum.flat_map(&plan_chunk(&1, model, opts))
+        |> insert_transitions(model.analyses)
+    end
   end
 
   def plan(_, _opts), do: [Primitive.new(:acknowledgment, :general), Primitive.new(:follow_up, :continuation)]
+
+  @doc """
+  The primitive a service's error is answered with. Its content names the
+  reply (`reply`, the key of its wording in primitives.json's
+  `service_replies`), keeps the error's reason as `enrichment_error`, and
+  carries `origin`'s `intent` and `service` (the service's name) with the
+  service's display name as `service_name`.
+
+  A reply that asks the user something is a `:follow_up` `:clarification`
+  (its `ambiguity_type` is the reply); one that reports what was not done is
+  a `:content` `:action_result` (its `result` is the reply); one that says
+  what cannot be done here is a `:framing` `:boundary` (its `capability` is
+  the reply). A clarification that a named slot answers carries
+  `missing_slots`, which the user's reply fills
+  (`Brain.Analysis.FollowupDetector`).
+
+  | Reason | Returned by | Primitive | Reply |
+  | --- | --- | --- | --- |
+  | `{:ambiguous, kind, items}` (two or more) | LocalScheduler `handle_call/3` (`:cancel_matching`) | clarification | `:ambiguous_item`, with `item_kind`, `candidates` |
+  | `{:event_not_identified, events}` (one or more) | LocalScheduler `cancel_matching/4` | clarification | `:ambiguous_item`, with `item_kind: :calendar`, `candidates` |
+  | `:missing_location` | Weather `enrich/4` | clarification | `:missing_slots`, `missing_slots: ["location"]` |
+  | `:location_not_found` | Weather `geocode/2` | clarification | `:location_not_found`, `missing_slots: ["location"]` |
+  | `{:no_matching_items, kind, %{}}` | LocalScheduler `handle_call/3` | action result | `:no_items` |
+  | `{:no_matching_items, kind, criteria}` | LocalScheduler `handle_call/3` | action result | `:no_matching_items`, with `criteria` |
+  | `:no_ringing_alarm` | LocalScheduler `snooze_alarm/3` | action result | `:no_ringing_alarm` |
+  | `:missing_duration` | LocalScheduler `snooze_alarm/3` | clarification | `:missing_slots`, `missing_slots: ["duration"]` |
+  | `:side_effects_off` | Dispatcher `dispatch/3` | action result | `:side_effects_off` |
+  | `:rate_limited` | Weather `geocode/2`, `fetch_current/2`, `fetch_forecast/2` | action result | `:rate_limited` |
+  | `:service_unavailable` | Weather, the same three | action result | `:unavailable` |
+  | `{:connection_error, reason}` | HomeAssistant `http_get/2`, `http_post/3` | action result | `:unavailable` |
+  | `:service_error` | Dispatcher `dispatch_to_service/4` (the service raised) | action result | `:service_failed` |
+  | `{:api_error, status}` | Weather, the same three | action result | `:service_failed` |
+  | `{:http_error, status, body}`, status not 401 or 403 | HomeAssistant `http_get/2`, `http_post/3` | action result | `:service_failed` |
+  | `:unexpected_response` | HomeAssistant `get_domain_states/3` | action result | `:service_failed` |
+  | `%Jason.DecodeError{}` | HomeAssistant `http_get/2` (an unparseable body) | action result | `:service_failed` |
+  | `:entity_not_found` | HomeAssistant `handle_query/5` | action result | `:device_not_found` |
+  | `:missing_credentials` | Dispatcher `dispatch_to_service/4`; `Enricher.prepare_context/3` | boundary | `:not_configured` |
+  | `:missing_api_key` | Weather `get_current_weather/2`, `get_forecast/2` | boundary | `:not_configured` |
+  | `:invalid_api_key` | Weather, the same three as `:rate_limited` | boundary | `:invalid_credentials` |
+  | `{:http_error, 401 or 403, body}` | HomeAssistant `http_get/2`, `http_post/3` | boundary | `:invalid_credentials` |
+  | `:service_disabled` | Dispatcher `dispatch_to_service/4` | boundary | `:disabled` |
+  | `{:unsupported_intent, intent}` | HomeAssistant `enrich/4` | boundary | `:unsupported` |
+  | `:unsupported_intent` | LocalScheduler `enrich/4` | boundary | `:unsupported` |
+
+  `Brain.Services.SystemStatus.enrich/4` returns no error. Any reason not in
+  this table raises `ArgumentError`: it has no planned response.
+  """
+  @spec enrichment_error_primitive(term(), %{optional(:service) => atom() | nil, optional(:intent) => String.t() | nil}) ::
+          Primitive.t()
+  def enrichment_error_primitive(reason, origin) when is_map(origin) do
+    {type, variant, content} = planned_reply!(reason)
+    service = Map.get(origin, :service)
+
+    Primitive.new(
+      type,
+      variant,
+      Map.merge(content, %{
+        enrichment_error: reason,
+        intent: Map.get(origin, :intent),
+        service: service,
+        service_name: service_display_name!(service)
+      })
+    )
+  end
+
+  defp planned_reply!({:ambiguous, kind, [_, _ | _] = items}) when is_atom(kind),
+    do: question(:ambiguous_item, %{item_kind: kind, candidates: items})
+
+  defp planned_reply!({:event_not_identified, [_ | _] = events}),
+    do: question(:ambiguous_item, %{item_kind: :calendar, candidates: events})
+
+  defp planned_reply!(:missing_location), do: question(:missing_slots, %{missing_slots: ["location"]})
+  defp planned_reply!(:location_not_found), do: question(:location_not_found, %{missing_slots: ["location"]})
+
+  defp planned_reply!({:no_matching_items, kind, criteria}) when is_atom(kind) and criteria == %{},
+    do: report(:no_items, %{item_kind: kind})
+
+  defp planned_reply!({:no_matching_items, kind, criteria}) when is_atom(kind) and is_map(criteria),
+    do: report(:no_matching_items, %{item_kind: kind, criteria: criteria})
+
+  defp planned_reply!(:no_ringing_alarm), do: report(:no_ringing_alarm, %{item_kind: :alarm})
+  defp planned_reply!(:missing_duration), do: question(:missing_slots, %{missing_slots: ["duration"]})
+  defp planned_reply!(:side_effects_off), do: report(:side_effects_off)
+  defp planned_reply!(:rate_limited), do: report(:rate_limited)
+  defp planned_reply!(:service_unavailable), do: report(:unavailable)
+  defp planned_reply!({:connection_error, _reason}), do: report(:unavailable)
+  defp planned_reply!(:service_error), do: report(:service_failed)
+  defp planned_reply!({:api_error, status}) when is_integer(status), do: report(:service_failed)
+
+  defp planned_reply!({:http_error, status, _body}) when status in [401, 403],
+    do: boundary(:invalid_credentials)
+
+  defp planned_reply!({:http_error, status, _body}) when is_integer(status), do: report(:service_failed)
+  defp planned_reply!(:unexpected_response), do: report(:service_failed)
+  defp planned_reply!(%Jason.DecodeError{}), do: report(:service_failed)
+  defp planned_reply!(:entity_not_found), do: report(:device_not_found)
+  defp planned_reply!(:missing_credentials), do: boundary(:not_configured)
+  defp planned_reply!(:missing_api_key), do: boundary(:not_configured)
+  defp planned_reply!(:invalid_api_key), do: boundary(:invalid_credentials)
+  defp planned_reply!(:service_disabled), do: boundary(:disabled)
+  defp planned_reply!({:unsupported_intent, intent}) when is_binary(intent), do: boundary(:unsupported)
+  defp planned_reply!(:unsupported_intent), do: boundary(:unsupported)
+
+  defp planned_reply!(reason) do
+    raise ArgumentError,
+          "DiscoursePlanner has no planned response for the service error #{inspect(reason)}; " <>
+            "a service error the turn's response cannot answer is not passed over"
+  end
+
+  defp question(reply, content), do: {:follow_up, :clarification, Map.merge(content, %{reply: reply, ambiguity_type: reply})}
+  defp report(reply, content \\ %{}), do: {:content, :action_result, Map.merge(content, %{reply: reply, result: reply})}
+  defp boundary(reply), do: {:framing, :boundary, %{reply: reply, capability: reply}}
+
+  defp service_display_name!(nil), do: nil
+
+  defp service_display_name!(name) when is_atom(name) do
+    case Brain.Services.Dispatcher.find_service_by_name(name) do
+      nil -> raise ArgumentError, "DiscoursePlanner: no registered service is named #{inspect(name)}"
+      service -> service.display_name()
+    end
+  end
+
+  @doc """
+  The primitive a service's successful result that carries no data is
+  answered with: a `:content` `:action_result` whose `reply` (its wording in
+  primitives.json's `service_replies`) says what the result is, keeping
+  `enrichment_result: :empty`, with `origin`'s `intent` and `service` and the
+  service's display name as `service_name`.
+
+  No registered service returns such a result today: every operation of
+  `Brain.Services.LocalScheduler` returns the fields of the item it set,
+  cancelled or found; `Brain.Services.Weather` the conditions it fetched;
+  `Brain.Services.HomeAssistant` the device and action it carried out or the
+  state it read (`StateFormatter`); `Brain.Services.SystemStatus` its ten
+  health fields. A service that returned one would have done or found
+  nothing it reports, and the reply says only that:
+
+  | The intent | Reply |
+  | --- | --- |
+  | one the service `writes?/1` (a set, a cancel, a device action) | `:carried_out`: the service did it |
+  | one it only reads (a check, a query, a report) | `:nothing_reported`: the service returned nothing |
+
+  Raises for a service no registered service is named, and for an origin
+  with no intent.
+  """
+  @spec empty_result_primitive(%{service: atom(), intent: String.t()}) :: Primitive.t()
+  def empty_result_primitive(%{service: name, intent: intent}) when is_atom(name) and is_binary(intent) do
+    service =
+      case Brain.Services.Dispatcher.find_service_by_name(name) do
+        nil -> raise ArgumentError, "DiscoursePlanner: no registered service is named #{inspect(name)}"
+        service -> service
+      end
+
+    reply = if service.writes?(intent), do: :carried_out, else: :nothing_reported
+
+    Primitive.new(:content, :action_result, %{
+      reply: reply,
+      result: reply,
+      enrichment_result: :empty,
+      intent: intent,
+      service: name,
+      service_name: service.display_name()
+    })
+  end
+
+  def empty_result_primitive(origin) do
+    raise ArgumentError,
+          "DiscoursePlanner: a service's empty result is answered for the service and intent it came from; got #{inspect(origin)}"
+  end
+
+  defp origin(enrichment) do
+    %{service: Map.get(enrichment, :enrichment_service), intent: Map.get(enrichment, :intent)}
+  end
+
+  # What the service the turn's intent was dispatched to returned
+  # (`Brain.Response.Enricher.prepare_context/3`), when it decides the reply:
+  # an error, or a success with no data. Anything else is planned chunk by
+  # chunk.
+  defp enrichment_outcome(opts) do
+    enrichment =
+      case Keyword.get(opts, :unified_context, %{}) do
+        %{enrichment: enrichment} when is_map(enrichment) -> enrichment
+        _ -> %{}
+      end
+
+    case Map.get(enrichment, :enrichment_status) do
+      :failed ->
+        case Map.fetch(enrichment, :enrichment_error) do
+          {:ok, reason} when not is_nil(reason) ->
+            {:failed, reason, enrichment}
+
+          _ ->
+            raise ArgumentError,
+                  "DiscoursePlanner: the enrichment failed but carries no :enrichment_error, " <>
+                    "so there is nothing to answer the failure with; got #{inspect(enrichment)}"
+        end
+
+      :success ->
+        if Map.get(enrichment, :enriched_data) == %{}, do: {:empty, enrichment}, else: :planned_by_chunks
+
+      _ ->
+        :planned_by_chunks
+    end
+  end
 
   @doc """
   Plans primitives for a single chunk analysis.
   """
   def plan_chunk(analysis, model, opts \\ [])
 
+  # Every primitive of a chunk's plan carries the chunk's index, so the turn's
+  # plan says which chunk each part answers: transitions go between chunks
+  # (`insert_transitions/2`), and each part is worded for its own chunk
+  # (`Brain.Response.PhraseLatticeRealizer`).
   def plan_chunk(%ChunkAnalysis{} = analysis, %InternalModel{} = _model, opts) do
     signals = extract_signals(analysis, opts)
 
@@ -64,6 +297,7 @@ defmodule Brain.Response.DiscoursePlanner do
     |> apply_epistemic_modifications(signals)
     |> apply_sentiment_adjustment(signals)
     |> seed_content(analysis)
+    |> Enum.map(&Primitive.merge_content(&1, %{chunk_index: analysis.chunk_index}))
   end
 
   def plan_chunk(_, _, _opts), do: [Primitive.new(:acknowledgment, :general)]
@@ -102,9 +336,13 @@ defmodule Brain.Response.DiscoursePlanner do
       related_beliefs: a.related_beliefs || [],
       accumulated_context: a.accumulated_context,
       has_enrichment: enrichment_status == :success and enriched_data != %{},
-      has_facts: (a.related_beliefs || []) != []
+      has_facts: ChunkAnalysis.known_statements(a) != [],
+      fact_alignment: alignment_of(a.fact_alignment)
     }
   end
+
+  defp alignment_of(nil), do: nil
+  defp alignment_of(%{alignment: alignment}) when alignment in [:confirming, :disconfirming], do: alignment
 
   defp select_backbone(signals) do
     pattern = find_matching_pattern(signals)

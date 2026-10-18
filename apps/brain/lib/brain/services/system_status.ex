@@ -84,8 +84,8 @@ defmodule Brain.Services.SystemStatus do
   end
 
   @impl true
-  def enrich(_intent, _slots, _credentials) do
-    health = safe_get_health_indicators()
+  def enrich(_intent, _slots, _credentials, world_id) do
+    health = safe_get_health_indicators(world_id)
     memory = safe_get_memory_status()
     models = safe_get_ml_summary()
 
@@ -99,10 +99,13 @@ defmodule Brain.Services.SystemStatus do
        uptime: format_uptime(health.uptime_seconds),
        ml_models_summary: models,
        memory_summary: memory,
-       services_summary: safe_get_services_summary(),
-       categories_summary: safe_get_categories_summary()
+       services_summary: safe_get_services_summary(world_id),
+       categories_summary: safe_get_categories_summary(world_id)
      }}
   end
+
+  @impl true
+  def writes?(_intent), do: false
 
   @impl true
   def health_check(_credentials) do
@@ -114,8 +117,8 @@ defmodule Brain.Services.SystemStatus do
   # Data Fetchers (with graceful fallbacks)
   # ============================================================================
 
-  defp safe_get_health_indicators do
-    Brain.SystemStatus.get_health_indicators()
+  defp safe_get_health_indicators(world_id) do
+    Brain.SystemStatus.get_health_indicators(world_id)
   rescue
     _ ->
       %{
@@ -155,8 +158,8 @@ defmodule Brain.Services.SystemStatus do
     _ -> "unavailable"
   end
 
-  defp safe_get_services_summary do
-    services_status = Brain.SystemStatus.get_services_status()
+  defp safe_get_services_summary(world_id) do
+    services_status = Brain.SystemStatus.get_services_status(world_id)
     services = Map.get(services_status, :services, [])
     configured = Enum.count(services, & &1.configured)
     total = length(services)
@@ -170,8 +173,8 @@ defmodule Brain.Services.SystemStatus do
     _ -> "unavailable"
   end
 
-  defp safe_get_categories_summary do
-    genservers = Brain.SystemStatus.get_all_genservers_status()
+  defp safe_get_categories_summary(world_id) do
+    genservers = Brain.SystemStatus.get_all_genservers_status(world_id)
     categories = Map.get(genservers, :categories, %{})
 
     categories

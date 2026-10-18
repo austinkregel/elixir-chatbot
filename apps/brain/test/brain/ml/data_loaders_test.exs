@@ -18,6 +18,24 @@ defmodule Brain.ML.DataLoadersTest do
     end
   end
 
+  describe "require_source!/2" do
+    test "returns the records of a source that loaded" do
+      assert DataLoaders.require_source!({:ok, [:a, :b]}, :cities) == [:a, :b]
+    end
+
+    test "raises naming the source when it failed to load" do
+      assert_raise RuntimeError, ~r/required source :entities could not be loaded/, fn ->
+        DataLoaders.require_source!({:error, :enoent}, :entities)
+      end
+    end
+
+    test "a missing entities directory is a failed source, not an empty one" do
+      missing = Path.join(System.tmp_dir!(), "no_entities_#{System.unique_integer([:positive])}")
+
+      assert {:error, :enoent} = DataLoaders.load_all_entities(missing)
+    end
+  end
+
   describe "load_all_intents/0" do
     test "loads intent examples from JSON files" do
       result = DataLoaders.load_all_intents()
@@ -150,6 +168,32 @@ defmodule Brain.ML.DataLoadersTest do
       assert Map.has_key?(lookup, "valid")
       assert Map.has_key?(lookup, "ok")
     end
+
+    test "indexes a record once when its value is repeated among its synonyms" do
+      # Dialogflow exports list every value among its own synonyms.
+      entities = %{
+        "room" => [%{value: "kitchen", synonyms: ["kitchen", "Kitchen"], entity_type: "room"}]
+      }
+
+      lookup = DataLoaders.build_entity_lookup(entities)
+
+      assert %{value: "kitchen", entity_type: "room"} = Map.fetch!(lookup, "kitchen")
+    end
+
+    test "keeps separate records that share a surface form" do
+      entities = %{
+        "person" => [%{value: "Madison", synonyms: ["Madison"], entity_type: "person"}],
+        "location" => [%{value: "Madison", synonyms: ["Madison"], entity_type: "location"}]
+      }
+
+      candidates = lookup_types(DataLoaders.build_entity_lookup(entities), "madison")
+
+      assert Enum.sort(candidates) == ["location", "person"]
+    end
+  end
+
+  defp lookup_types(lookup, key) do
+    lookup |> Map.fetch!(key) |> List.wrap() |> Enum.map(& &1.entity_type)
   end
 
   describe "build_city_lookup/1" do
@@ -172,6 +216,45 @@ defmodule Brain.ML.DataLoadersTest do
     end
   end
 
+  describe "build_us_city_lookup/2" do
+    defp us_city(name, code, state), do: %{city: name, state_code: code, state_name: state, county: "", id: "1"}
+
+    # "in" and "or" are ordinary words here; "tx" and "wv" are not.
+    defp word?(word), do: word in ["in", "or"]
+
+    test "a city whose name is also an ordinary word is a reading of its name like any other" do
+      lookup = DataLoaders.build_us_city_lookup([us_city("Points", "WV", "West Virginia"), us_city("Ada", "OK", "Oklahoma")], &word?/1)
+
+      assert %{entity_type: "location", value: "Points", state_code: "WV"} = lookup["points"]
+      assert %{entity_type: "location", value: "Ada"} = lookup["ada"]
+    end
+
+    test "a city followed by its bare state code is a key only when the code is no ordinary word" do
+      lookup =
+        DataLoaders.build_us_city_lookup(
+          [us_city("Rome", "IN", "Indiana"), us_city("Salem", "OR", "Oregon"), us_city("Austin", "TX", "Texas")],
+          &word?/1
+        )
+
+      refute Map.has_key?(lookup, "rome in")
+      refute Map.has_key?(lookup, "salem or")
+      assert lookup["austin tx"].value == "Austin"
+
+      # The state's name, and the code after a comma, say what the code is.
+      for key <- ["rome indiana", "rome, indiana", "rome, in", "salem oregon", "salem, or"], do: assert(Map.has_key?(lookup, key), key)
+    end
+
+    test "each code is asked once, as the lowercase code" do
+      parent = self()
+      ask = fn code -> send(parent, {:asked, code}) && false end
+
+      DataLoaders.build_us_city_lookup([us_city("Austin", "TX", "Texas"), us_city("Dallas", "TX", "Texas")], ask)
+
+      assert_received {:asked, "tx"}
+      refute_received {:asked, _}
+    end
+  end
+
   describe "build_artist_lookup/1" do
     test "builds artist lookup from artist data" do
       artists = [
@@ -186,7 +269,7 @@ defmodule Brain.ML.DataLoadersTest do
       assert Map.has_key?(lookup, "madonna")
 
       beatles = Map.get(lookup, "the beatles")
-      assert beatles.entity_type == "music-artist"
+      assert beatles.entity_type == "music_artist"
       assert beatles.value == "The Beatles"
       assert beatles.genre == "Rock"
     end

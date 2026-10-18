@@ -1,0 +1,194 @@
+[
+  {
+    "text": "can you my laptop screen is way too dark",
+    "tokens": [
+      "can",
+      "you",
+      "my",
+      "laptop",
+      "screen",
+      "is",
+      "way",
+      "too",
+      "dark"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "PRON",
+      "ADJ",
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-f8a1383b",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "all of our TV screens brightness level is not",
+    "tokens": [
+      "all",
+      "of",
+      "our",
+      "TV",
+      "screens",
+      "brightness",
+      "level",
+      "is",
+      "not"
+    ],
+    "pos_tags": [
+      "DET",
+      "ADP",
+      "PRON",
+      "NOUN",
+      "NOUN",
+      "ADJ",
+      "NOUN",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-dbbbf850",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "my laptop screen is way too",
+    "tokens": [
+      "my",
+      "laptop",
+      "screen",
+      "is",
+      "way",
+      "too"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADJ",
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-4fc33b2d",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "I want to my laptop screen is way too dark",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "my",
+      "laptop",
+      "screen",
+      "is",
+      "way",
+      "too",
+      "dark"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON",
+      "ADJ",
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-482d2fc4",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "I want to the kitchen tv brightness level is too low",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "the",
+      "kitchen",
+      "tv",
+      "brightness",
+      "level",
+      "is",
+      "too",
+      "low"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "DET",
+      "PROPN",
+      "NOUN",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-a4bdb3de",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "the kitchen TV brightness level is too",
+    "tokens": [
+      "the",
+      "kitchen",
+      "TV",
+      "brightness",
+      "level",
+      "is",
+      "too"
+    ],
+    "pos_tags": [
+      "DET",
+      "PROPN",
+      "PROPN",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-8b8d3b99",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  },
+  {
+    "text": "I'd like to it's dark in here",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "it",
+      "'s",
+      "dark",
+      "in",
+      "here"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "ADP",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-b38d052e",
+    "intent": "smarthome.lights.brightness.up.implicit"
+  }
+]

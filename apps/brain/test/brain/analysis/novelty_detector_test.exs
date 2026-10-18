@@ -1,7 +1,59 @@
 defmodule Brain.Analysis.NoveltyDetectorTest do
   use ExUnit.Case, async: false
+  import Brain.TestHelpers
 
   alias Brain.Analysis.NoveltyDetector
+
+  describe "maybe_kg_downweight/4" do
+    setup do
+      # Creating a world and adding a belief write to Atlas, in this process
+      # and in the allowed workers.
+      owner = Brain.Test.AtlasSandbox.checkout_allowed!()
+      on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(owner) end)
+
+      setup_world_sandbox()
+
+      {:ok, with_belief} = create_test_world("novelty_with_belief")
+      {:ok, without_belief} = create_test_world("novelty_without_belief")
+
+      # Both worlds embed with a vocabulary that knows the belief's words, so the
+      # utterance and the belief's text embed identically.
+      for world <- [with_belief, without_belief] do
+        :ok =
+          Brain.Worlds.Embedder.load_model(world.id, %{
+            vocabulary: %{"dogs" => 0, "animals" => 1},
+            idf_weights: %{"dogs" => 1.0, "animals" => 1.0}
+          })
+      end
+
+      {:ok, _belief_id} = Brain.Epistemic.BeliefStore.add_belief(with_belief.id, "dogs", :are, "animals")
+
+      {:ok, with_belief: with_belief.id, without_belief: without_belief.id}
+    end
+
+    test "downweights against the beliefs held in the named world, and only those",
+         %{with_belief: with_belief, without_belief: without_belief} do
+      # Identical embeddings: similarity 1.0, so the score is halved.
+      assert_in_delta NoveltyDetector.maybe_kg_downweight(0.8, "dogs are animals", nil, with_belief), 0.4, 1.0e-9
+      assert NoveltyDetector.maybe_kg_downweight(0.8, "dogs are animals", nil, without_belief) == 0.8
+    end
+
+    test "is_novel?/3 passes its :world_id to the downweight", %{with_belief: with_belief} do
+      assert {:novel, downweighted} = NoveltyDetector.is_novel?(0.3, 0.1, text: "dogs are animals", world_id: with_belief)
+      assert {:novel, raw} = NoveltyDetector.is_novel?(0.3, 0.1)
+      assert_in_delta downweighted, raw * 0.5, 1.0e-9
+    end
+
+    test "a text without a world raises" do
+      assert_raise ArgumentError, ~r/NoveltyDetector needs a :world_id/, fn ->
+        NoveltyDetector.is_novel?(0.3, 0.1, text: "dogs are animals")
+      end
+    end
+
+    test "no text needs no world" do
+      assert NoveltyDetector.maybe_kg_downweight(0.8, "", nil, nil) == 0.8
+    end
+  end
 
   describe "is_novel?/3" do
     test "returns novel for low confidence" do

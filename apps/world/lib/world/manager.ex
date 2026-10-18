@@ -1,8 +1,12 @@
 defmodule World.Manager do
-  @moduledoc "Manages training world lifecycle - creation, destruction, checkpointing.\n\nThis GenServer maintains the registry of active training worlds and\ncoordinates their data isolation while sharing computational processes.\n"
+  @moduledoc "Manages training world lifecycle - creation, destruction, checkpointing.\n\nThis GenServer maintains the registry of active training worlds and\ncoordinates their data isolation while sharing computational processes.\n\nEach world it holds runs in brain as one process tree (`Brain.Worlds`), which\nthis server drives: a world it creates is created there and seeded by copy\n(`Brain.Worlds.create!/2`), one it loads is started there\n(`Brain.Worlds.start!/2`), and one it destroys or purges is stopped there\n(`Brain.Worlds.stop!/1`). What a world's turns learn for this server to record\n(entity candidates and world events) arrives as brain's reports\n(`Brain.Worlds.subscribe_reports/0`).\n"
 
+  alias Brain.Epistemic.{BeliefStore, JTMS}
   alias Brain.ML.Gazetteer
   alias Brain.Memory.Store, as: MemoryStore
+  alias Brain.Services.{Dispatcher, LocalScheduler}
+  alias Brain.Worlds
+  alias Brain.Worlds.EntityCandidate
   use GenServer
   require Logger
 
@@ -19,19 +23,103 @@ defmodule World.Manager do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc "Creates a new training world.\n\n## Options\n  - `:mode` - :ephemeral (default) or :persistent\n  - `:base` - ID of parent world to inherit from (nil = empty)\n  - `:config` - Custom configuration map\n  - `:metadata` - Additional metadata\n"
+  @doc "Creates a new training world.\n\nA new world schedules its alarms, timers, reminders and calendar items with\nthe local scheduler: `Brain.Services.LocalScheduler` is stored as its\nscheduling driver (`Brain.Services.Dispatcher.assign_scheduling_driver/2`),\nreplacing any driver stored before under the same id.\n\n## Options\n  - `:mode` - :ephemeral (default) or :persistent\n  - `:base` - ID of the world this one was seeded from, recorded as metadata;\n    nothing is read through it at runtime (nil = none)\n  - `:config` - Custom configuration map\n  - `:metadata` - Additional metadata\n"
   def create(name, opts \\ []) when is_binary(name) do
-    GenServer.call(__MODULE__, {:create_world, name, opts}, 30_000)
+    refuse_unscoped_graphs_in_caller!()
+
+    with {:ok, world} <- GenServer.call(__MODULE__, {:create_world, name, opts}, 30_000) do
+      assign_local_scheduling!(world.id)
+      {:ok, world}
+    end
   end
 
-  @doc "Destroys a training world from memory while preserving persisted data.\n\nFor persistent worlds, this removes runtime ETS/Gazetteer state but leaves\ndisk checkpoints intact so the world can be loaded again via `load_world/1`.\n"
+  # Written in the caller, after the server has created the world: a failure
+  # raises here rather than crashing this server, whose restart would drop
+  # every other world it holds.
+  defp assign_local_scheduling!(world_id) do
+    case Dispatcher.assign_scheduling_driver(world_id, LocalScheduler) do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        raise "World.Manager: world #{inspect(world_id)} was created, but the local scheduler could not " <>
+                "be stored as its scheduling driver: #{inspect(reason)}"
+    end
+  end
+
+  # A world's graphs, created in this server when its tree starts in brain
+  # (`Brain.Worlds.start!/2`), are refused while unscoped graphs exist
+  # (`Atlas.Graph.ensure_world_graphs!/1`). The refusal is raised here, in the
+  # caller, before the call: raised inside this server it would crash it, and
+  # its restart would drop every world it holds, then fail again in `init/1`
+  # while loading the persisted worlds.
+  defp refuse_unscoped_graphs_in_caller! do
+    :ok = Atlas.Graph.refuse_unscoped_graphs!()
+  end
+
+  @doc "Destroys a training world from memory while preserving persisted data.\n\nFor persistent worlds, this removes runtime ETS/Gazetteer state but leaves\ndisk checkpoints, and everything the world holds in Atlas (its rows and its\ngraphs), intact so the world can be loaded again via `load_world/1`.\n"
   def destroy(world_id) when is_binary(world_id) do
     GenServer.call(__MODULE__, {:destroy_world, world_id}, 30_000)
   end
 
-  @doc "Permanently deletes a training world from memory and disk.\n\nFor persistent worlds, this removes both runtime state and persisted files.\n"
+  @doc """
+  Permanently deletes a training world from memory, Atlas and disk.
+
+  This removes every row the world holds in a world-scoped Atlas table and its
+  graphs (`Atlas.Worlds.purge!/1`), with what the running stores hold of it;
+  then, for a persistent world, its persisted files; then its runtime state.
+  Every step can be repeated, so a purge that fails part way leaves a world
+  that is still listed and can be purged again: a failure purging Atlas
+  raises, and a persisted world whose files cannot be deleted is
+  `{:error, {:disk_delete_failed, reason}}`, with its runtime state kept.
+  An unknown world is `{:error, :not_found}`.
+  """
   def purge(world_id) when is_binary(world_id) do
-    GenServer.call(__MODULE__, {:purge_world, world_id}, 30_000)
+    case get(world_id) do
+      {:ok, _world} ->
+        purge_world_atlas_data!(world_id)
+        GenServer.call(__MODULE__, {:purge_world, world_id}, 30_000)
+
+      error ->
+        error
+    end
+  end
+
+  # What a purged world held in Atlas, and what the running processes hold of
+  # it: the memory store's index of its episodes and facts, the beliefs and
+  # JTMS network held for it, and the scheduler's items (each owner deletes
+  # the rows it caches along with its cache); then, once the Atlas writes
+  # already queued (a belief is persisted asynchronously) have run, so none
+  # lands after the purge, every row of every world-scoped table that is left,
+  # and the world's graphs (`Atlas.Worlds.purge!/1`). A destroyed world keeps
+  # all of it.
+  #
+  # It runs in the caller, before this server drops the world: a failure
+  # raises there, rather than crashing this server, whose restart would drop
+  # every other world it holds.
+  defp purge_world_atlas_data!(world_id) do
+    :ok = MemoryStore.clear(world_id: world_id)
+    :ok = BeliefStore.clear(world_id)
+    :ok = JTMS.clear(world_id)
+    :ok = LocalScheduler.clear_world(world_id)
+
+    case Brain.AtlasIntegration.drain() do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        raise "World.Manager: purging #{inspect(world_id)}: the queued Atlas writes did not finish " <>
+                "(#{inspect(reason)}), so a write could land after the purge; the world's rows and " <>
+                "graphs were not purged from Atlas"
+    end
+
+    purged = Atlas.Worlds.purge!(world_id)
+
+    Logger.info("Purged world data from Atlas", %{
+      id: world_id,
+      rows: Map.new(purged.rows, fn {schema, count} -> {inspect(schema), count} end),
+      graphs: purged.graphs
+    })
   end
 
   @doc "Gets a training world by ID.\n"
@@ -73,6 +161,17 @@ defmodule World.Manager do
 
   defp is_test_world?(_) do
     false
+  end
+
+  @test_world_prefix "test_"
+
+  @doc """
+  Whether a world id is a test world's: it starts with `test_`. Cleanup only
+  ever deletes worlds whose id passes this; every other world is a real world.
+  """
+  @spec test_world_id?(String.t()) :: boolean()
+  def test_world_id?(world_id) when is_binary(world_id) do
+    String.starts_with?(world_id, @test_world_prefix)
   end
 
   @doc "Gets the metrics for a training world.\n"
@@ -123,9 +222,23 @@ defmodule World.Manager do
     end
   end
 
-  @doc "Adds an entity candidate to a world's candidate pool.\n"
+  @doc """
+  Adds an entity candidate to a world's candidate pool.
+
+  The attributes are validated into a `Brain.Worlds.EntityCandidate` here, in
+  the caller's process, before the cast. That placement is deliberate: this is
+  a cast, so raising inside the handler would take the Manager down with it.
+  The producers in `:brain` cannot call this app, which depends on them; they
+  report their candidates instead (`Brain.Worlds.report_candidate!/2`), built
+  the same way in their own process, and this server records a reported
+  candidate as it records one added here.
+
+  Raises `ArgumentError` on an incomplete candidate rather than storing one. A
+  candidate with no `:context` used to reach `EntityPromoter` and kill it with a
+  `KeyError` on the next scan.
+  """
   def add_candidate(world_id, candidate) when is_binary(world_id) and is_map(candidate) do
-    GenServer.cast(__MODULE__, {:add_candidate, world_id, candidate})
+    GenServer.cast(__MODULE__, {:add_candidate, world_id, EntityCandidate.new!(candidate)})
   end
 
   @doc "Gets all entity candidates for a world.\n"
@@ -157,6 +270,7 @@ defmodule World.Manager do
 
   @doc "Loads a persistent world from disk.\n"
   def load_world(world_id) when is_binary(world_id) do
+    refuse_unscoped_graphs_in_caller!()
     GenServer.call(__MODULE__, {:load_world, world_id}, 60_000)
   end
 
@@ -188,12 +302,72 @@ defmodule World.Manager do
     end
   end
 
+  @doc "Returns training worlds status: the worlds held, their metrics and candidates, and how many are persisted.\n"
+  def training_worlds_status do
+    if Process.whereis(__MODULE__) do
+      try do
+        worlds = list_worlds()
+
+        world_summaries =
+          Enum.map(worlds, fn world ->
+            metrics =
+              case get_metrics(world.id) do
+                {:ok, m} -> WorldMetrics.summary(m)
+                _ -> nil
+              end
+
+            candidates_count = length(get_candidates(world.id, limit: 1000))
+
+            %{
+              id: world.id,
+              name: world.name,
+              mode: world.mode,
+              created_at: world.created_at,
+              metrics: metrics,
+              candidates_count: candidates_count
+            }
+          end)
+
+        persisted_count =
+          try do
+            WorldPersistence.list_persisted_worlds() |> length()
+          catch
+            _, _ -> 0
+          end
+
+        %{
+          manager_ready: ready?(),
+          active_worlds: length(worlds),
+          persisted_worlds: persisted_count,
+          worlds: world_summaries,
+          checked_at: DateTime.utc_now()
+        }
+      catch
+        :exit, _ ->
+          default_training_worlds_status()
+      end
+    else
+      default_training_worlds_status()
+    end
+  end
+
+  defp default_training_worlds_status do
+    %{
+      manager_ready: false,
+      active_worlds: 0,
+      persisted_worlds: 0,
+      worlds: [],
+      checked_at: DateTime.utc_now()
+    }
+  end
+
   @doc "Reloads persisted worlds from disk.\n\nUseful when worlds have been saved by another process (e.g., mix task)\nand you want the running server to pick them up.\n"
   def reload_persisted_worlds do
+    refuse_unscoped_graphs_in_caller!()
     GenServer.call(__MODULE__, :reload_persisted_worlds, 60_000)
   end
 
-  @doc "Cleans up orphaned world directories from disk.\n\nAn orphaned directory is one that exists on disk but:\n- Is not currently loaded in memory (ETS)\n- Has no valid config.json file\n\n## Options\n  - `:dry_run` - If true (default), only reports what would be deleted\n  - `:max_age_hours` - Only delete directories older than this (default: 24)\n  - `:exclude` - List of world IDs to never delete (default: [\"default\"])\n\nReturns `{:ok, deleted_count}` or `{:ok, {would_delete, directories}}` for dry run.\n"
+  @doc "Cleans up orphaned test world directories from disk.\n\nOnly a test world's directory (its id starts with `test_`, see\n`test_world_id?/1`) is ever deleted; a real world's never is. A test world's\ndirectory is orphaned when it exists on disk and:\n- Is not currently loaded in memory (ETS)\n- Has no valid config.json file, or is older than `:max_age_hours`\n\n## Options\n  - `:dry_run` - If true (default), only reports what would be deleted\n  - `:max_age_hours` - Only delete directories older than this (default: 24)\n  - `:exclude` - List of world IDs to never delete (default: [\"default\"])\n\nReturns `{:ok, deleted_count}` or `{:ok, {would_delete, directories}}` for dry run.\n"
   def cleanup_orphaned_worlds(opts \\ []) do
     GenServer.call(__MODULE__, {:cleanup_orphaned_worlds, opts}, 120_000)
   end
@@ -201,9 +375,22 @@ defmodule World.Manager do
   @impl true
   def init(_opts) do
     create_tables()
+    :ok = Worlds.subscribe_reports()
     do_load_persisted_worlds()
+    stop_unheld_world_trees()
     Logger.info("WorldManager started")
     {:ok, %{initialized: true}}
+  end
+
+  # A world's tree in brain outlives a restart of this server, which forgets
+  # every world it does not load again from disk (an ephemeral one). Such a
+  # world's tree is stopped, so brain runs exactly the worlds held here.
+  defp stop_unheld_world_trees do
+    for world_id <- Worlds.list(), :ets.lookup(@ets_worlds, world_id) == [] do
+      :ok = Worlds.stop!(world_id)
+    end
+
+    :ok
   end
 
   defp do_load_persisted_worlds do
@@ -220,6 +407,7 @@ defmodule World.Manager do
           [] ->
             case WorldPersistence.load(world_id) do
               {:ok, data} ->
+                :ok = Worlds.start!(world_id, data.world.mode)
                 :ets.insert(@ets_worlds, {world_id, data.world})
                 :ets.insert(@ets_worlds, {{:metrics, world_id}, data.metrics})
                 :ets.insert(@ets_candidates, {world_id, data.candidates})
@@ -298,6 +486,11 @@ defmodule World.Manager do
       end
     end
 
+    # The world's tree in brain, with its graphs and its own copy of each
+    # trained world-scoped model; an ephemeral world has no directory, so its
+    # copies are held in memory.
+    :ok = Worlds.create!(world.id, world.mode)
+
     Logger.info("Created training world", %{id: world.id, name: name, mode: world.mode})
     {:reply, {:ok, world}, state}
   end
@@ -306,6 +499,7 @@ defmodule World.Manager do
   def handle_call({:destroy_world, world_id}, _from, state) do
     case :ets.lookup(@ets_worlds, world_id) do
       [{^world_id, world}] ->
+        emit_world_destroyed(world)
         drop_world_runtime_state(world_id)
         Logger.info("Destroyed training world runtime state", %{id: world_id, name: world.name})
         {:reply, :ok, state}
@@ -319,23 +513,20 @@ defmodule World.Manager do
   def handle_call({:purge_world, world_id}, _from, state) do
     case :ets.lookup(@ets_worlds, world_id) do
       [{^world_id, world}] ->
-        drop_world_runtime_state(world_id)
+        # What the world holds in Atlas was purged by `purge/1`, in the
+        # caller, before this call. The files go before the runtime state, so
+        # a world whose files cannot be deleted is still listed and can be
+        # purged again.
+        case delete_persisted_files(world) do
+          :ok ->
+            emit_world_destroyed(world)
+            drop_world_runtime_state(world_id)
+            Logger.info("Purged training world", %{id: world_id, name: world.name})
+            {:reply, :ok, state}
 
-        if world.mode == :persistent do
-          case WorldPersistence.delete(world_id) do
-            :ok ->
-              Logger.info("Purged persisted world data from disk", %{id: world_id})
-
-            {:error, reason} ->
-              Logger.warning("Failed to purge persisted world data", %{
-                id: world_id,
-                reason: reason
-              })
-          end
+          {:error, reason} ->
+            {:reply, {:error, {:disk_delete_failed, reason}}, state}
         end
-
-        Logger.info("Purged training world", %{id: world_id, name: world.name})
-        {:reply, :ok, state}
 
       [] ->
         {:reply, {:error, :not_found}, state}
@@ -421,6 +612,7 @@ defmodule World.Manager do
   def handle_call({:load_world, world_id}, _from, state) do
     case WorldPersistence.load(world_id) do
       {:ok, data} ->
+        :ok = Worlds.start!(world_id, data.world.mode)
         :ets.insert(@ets_worlds, {world_id, data.world})
         :ets.insert(@ets_worlds, {{:metrics, world_id}, data.metrics})
         :ets.insert(@ets_candidates, {world_id, data.candidates})
@@ -488,14 +680,37 @@ defmodule World.Manager do
 
   @impl true
   def handle_cast({:record_event, world_id, event_type, data, opts}, state) do
-    event = WorldEvents.new(world_id, event_type, data, opts)
-    append_event(world_id, event)
-    maybe_emit_telemetry(world_id, event)
+    record_world_event(world_id, event_type, data, opts)
     {:noreply, state}
   end
 
   @impl true
   def handle_cast({:add_candidate, world_id, candidate}, state) do
+    record_candidate(world_id, candidate)
+    {:noreply, state}
+  end
+
+  # Brain's reports (`Brain.Worlds.report_candidate!/2`, `report_event/3`),
+  # recorded as the casts above record theirs.
+  @impl true
+  def handle_info({:world_entity_candidate, world_id, %EntityCandidate{} = candidate}, state) do
+    record_candidate(world_id, candidate)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:world_event, world_id, event_type, data}, state) do
+    record_world_event(world_id, event_type, data, [])
+    {:noreply, state}
+  end
+
+  defp record_world_event(world_id, event_type, data, opts) do
+    event = WorldEvents.new(world_id, event_type, data, opts)
+    append_event(world_id, event)
+    maybe_emit_telemetry(world_id, event)
+  end
+
+  defp record_candidate(world_id, candidate) do
     case :ets.lookup(@ets_candidates, world_id) do
       [{^world_id, candidates}] ->
         candidate_value = Map.get(candidate, :value)
@@ -528,7 +743,7 @@ defmodule World.Manager do
         :ok
     end
 
-    {:noreply, state}
+    :ok
   end
 
   defp create_tables do
@@ -604,6 +819,16 @@ defmodule World.Manager do
     end
   end
 
+  # Emitted while the world is still held, before its runtime state goes;
+  # its events go with it, so the event is not appended to them.
+  defp emit_world_destroyed(world) do
+    if world.config[:emit_telemetry] do
+      world.id
+      |> WorldEvents.new(:world_destroyed, %{name: world.name, mode: world.mode})
+      |> WorldEvents.emit_telemetry()
+    end
+  end
+
   defp maybe_emit_telemetry(world_id, event) do
     case :ets.lookup(@ets_worlds, world_id) do
       [{^world_id, world}] ->
@@ -621,7 +846,7 @@ defmodule World.Manager do
     max_age_hours = Keyword.get(opts, :max_age_hours, 24)
     exclude = Keyword.get(opts, :exclude, ["default"])
 
-    base_path = WorldPersistence.base_path()
+    base_path = Worlds.base_path()
 
     if File.exists?(base_path) do
       case File.ls(base_path) do
@@ -643,6 +868,7 @@ defmodule World.Manager do
 
           orphaned =
             entries
+            |> Enum.filter(&test_world_id?/1)
             |> Enum.filter(&File.dir?(Path.join(base_path, &1)))
             |> Enum.reject(&(&1 in exclude))
             |> Enum.reject(&MapSet.member?(loaded_world_ids, &1))
@@ -699,11 +925,23 @@ defmodule World.Manager do
     end
   end
 
+  # An ephemeral world has no files.
+  defp delete_persisted_files(%TrainingWorld{mode: :persistent, id: world_id}) do
+    with :ok <- WorldPersistence.delete(world_id) do
+      Logger.info("Purged persisted world data from disk", %{id: world_id})
+      :ok
+    end
+  end
+
+  defp delete_persisted_files(%TrainingWorld{}), do: :ok
+
   defp drop_world_runtime_state(world_id) do
     :ets.delete(@ets_worlds, world_id)
     :ets.delete(@ets_worlds, {:metrics, world_id})
     :ets.delete(@ets_candidates, world_id)
     :ets.delete(@ets_events, world_id)
     Gazetteer.destroy_world_overlay(world_id)
+    # The world's tree in brain, and what is loaded for it there.
+    :ok = Worlds.stop!(world_id)
   end
 end

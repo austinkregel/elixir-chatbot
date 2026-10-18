@@ -6,6 +6,9 @@ defmodule Brain.Knowledge.ResearchAgentTest do
   alias Brain.Knowledge.ResearchAgent
   alias Types.{ResearchGoal, Finding}
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup_all do
     Brain.TestHelpers.require_services!([
       Brain.Knowledge.SourceReliability,
@@ -30,7 +33,7 @@ defmodule Brain.Knowledge.ResearchAgentTest do
     test "returns findings for a goal with mock mode" do
       goal = ResearchGoal.new("France", questions: ["What is the capital?"])
 
-      {:ok, findings} = ResearchAgent.research(goal, mock: true)
+      {:ok, findings} = ResearchAgent.research(goal, world_id: @world_id, mock: true)
 
       assert is_list(findings)
       assert length(findings) >= 0
@@ -39,7 +42,7 @@ defmodule Brain.Knowledge.ResearchAgentTest do
     test "handles empty topic gracefully" do
       goal = ResearchGoal.new("", questions: [])
 
-      {:ok, findings} = ResearchAgent.research(goal, mock: true)
+      {:ok, findings} = ResearchAgent.research(goal, world_id: @world_id, mock: true)
 
       assert is_list(findings)
     end
@@ -47,17 +50,18 @@ defmodule Brain.Knowledge.ResearchAgentTest do
     test "respects max_pages option" do
       goal = ResearchGoal.new("Test topic")
 
-      {:ok, findings} = ResearchAgent.research(goal, mock: true, max_pages: 1)
+      {:ok, findings} = ResearchAgent.research(goal, world_id: @world_id, mock: true, max_pages: 1)
       assert is_list(findings)
     end
 
     test "findings have required fields" do
       goal = ResearchGoal.new("European capitals", questions: ["What is the capital of France?"])
 
-      {:ok, findings} = ResearchAgent.research(goal, mock: true, max_pages: 2)
+      {:ok, findings} = ResearchAgent.research(goal, world_id: @world_id, mock: true, max_pages: 2)
 
       for finding <- findings do
         assert %Finding{} = finding
+        assert finding.world_id == @world_id
         assert is_binary(finding.id)
         assert is_binary(finding.claim)
         assert finding.source != nil
@@ -100,7 +104,7 @@ defmodule Brain.Knowledge.ResearchAgentTest do
       goal =
         ResearchGoal.new("Paris", questions: ["What is the population?", "When was it founded?"])
 
-      {:ok, _findings} = ResearchAgent.research(goal, mock: true)
+      {:ok, _findings} = ResearchAgent.research(goal, world_id: @world_id, mock: true)
       assert true
     end
 
@@ -108,7 +112,7 @@ defmodule Brain.Knowledge.ResearchAgentTest do
       goal =
         ResearchGoal.new("Test", constraints: %{min_sources: 3, max_age_days: 7})
 
-      {:ok, findings} = ResearchAgent.research(goal, mock: true)
+      {:ok, findings} = ResearchAgent.research(goal, world_id: @world_id, mock: true)
 
       assert is_list(findings)
     end
@@ -119,7 +123,7 @@ defmodule Brain.Knowledge.ResearchAgentTest do
       ensure_started(Brain.Knowledge.SourceReliability)
 
       goal = ResearchGoal.new("Test topic")
-      {:ok, findings} = ResearchAgent.research(goal, mock: true)
+      {:ok, findings} = ResearchAgent.research(goal, world_id: @world_id, mock: true)
 
       for finding <- findings do
         assert finding.source.reliability_score != nil

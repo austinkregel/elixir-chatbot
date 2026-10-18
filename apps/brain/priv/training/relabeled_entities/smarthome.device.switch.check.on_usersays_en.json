@@ -1,0 +1,170 @@
+[
+  {
+    "data": [
+      {
+        "text": "are kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " on"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "are "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " on in all the rooms"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "are the green "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in bedroom on"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "are the green "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " on"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "check if I forgot to turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " on in bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "check if "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " are on in the bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "did I turn on the red "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "status of bedroom "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "status of my bedroom "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "status of the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what is the status of kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what is the status of the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the kitchen"
+      }
+    ]
+  }
+]

@@ -1,0 +1,64 @@
+[
+  {
+    "text": "could you what do you do for fun",
+    "tokens": [
+      "could",
+      "you",
+      "what",
+      "do",
+      "you",
+      "do",
+      "for",
+      "fun"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-e9c55f5b",
+    "intent": "smalltalk.agent.hobby"
+  },
+  {
+    "text": "what your hobby",
+    "tokens": [
+      "what",
+      "your",
+      "hobby"
+    ],
+    "pos_tags": [
+      "PRON",
+      "PRON",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-647334bf",
+    "intent": "smalltalk.agent.hobby"
+  },
+  {
+    "text": "tell me about hobby your",
+    "tokens": [
+      "tell",
+      "me",
+      "about",
+      "hobby",
+      "your"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADP",
+      "NOUN",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-65eb5503",
+    "intent": "smalltalk.agent.hobby"
+  }
+]

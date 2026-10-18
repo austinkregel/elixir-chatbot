@@ -164,8 +164,13 @@ defmodule Brain.Analysis.ProcessingTrace do
     }
   end
 
-  @doc "Runs a full trace of processing for a given input.\n\nThis is the main entry point for the UI to get processing details.\nUses semantic chunking to split multi-part messages.\n"
-  def trace_processing(text, opts \\ []) do
+  @doc "Runs a full trace of processing for a given input.\n\nThis is the main entry point for the UI to get processing details.\nUses semantic chunking to split multi-part messages.\n\n`opts` must carry `:world_id`, the world the text is traced in. Absent raises.\n"
+  def trace_processing(text, opts) do
+    unless is_binary(opts[:world_id]) and opts[:world_id] != "" do
+      raise ArgumentError,
+            "ProcessingTrace.trace_processing needs :world_id, the world the text is traced in, got: #{inspect(opts[:world_id])}"
+    end
+
     start_time = System.monotonic_time(:millisecond)
     chunks = SemanticChunker.chunk(text)
 
@@ -230,7 +235,7 @@ defmodule Brain.Analysis.ProcessingTrace do
 
     speech_act_result =
       try do
-        SpeechActClassifier.classify(chunk_text)
+        SpeechActClassifier.classify(chunk_text, world_id: opts[:world_id])
       rescue
         _ -> nil
       catch
@@ -241,14 +246,7 @@ defmodule Brain.Analysis.ProcessingTrace do
       opts ++
         [discourse: discourse_result, speech_act: speech_act_result]
 
-    entities =
-      try do
-        EntityExtractor.extract_entities(chunk_text, entity_opts)
-      rescue
-        _ -> []
-      catch
-        _ -> []
-      end
+    entities = EntityExtractor.extract_entities(chunk_text, entity_opts)
 
     interpretation = Interpretation.with_entities(interpretation, entities)
 

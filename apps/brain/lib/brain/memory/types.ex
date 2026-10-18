@@ -33,7 +33,8 @@ defmodule Brain.Memory.Types do
             outcome: String.t(),
             tags: [String.t()],
             embedding: [float()],
-            semantic_id: String.t() | nil
+            semantic_id: String.t() | nil,
+            entity_names: [String.t()]
           }
 
     defstruct [
@@ -44,7 +45,8 @@ defmodule Brain.Memory.Types do
       :outcome,
       tags: [],
       embedding: [],
-      semantic_id: nil
+      semantic_id: nil,
+      entity_names: []
     ]
 
     @doc """
@@ -59,7 +61,8 @@ defmodule Brain.Memory.Types do
         outcome: outcome,
         tags: tags,
         embedding: embedding,
-        semantic_id: nil
+        semantic_id: nil,
+        entity_names: []
       }
     end
 
@@ -74,15 +77,24 @@ defmodule Brain.Memory.Types do
     capture distilled information and provide a bridge between episodic
     experiences and higher-level reasoning.
 
-    Each semantic fact stores an embedding for similarity search,
-    a representation (aggregated text from episodes), and links back
-    to the evidence episodes it summarizes.
+    Each semantic fact stores an embedding for similarity search, its
+    representation (the fact's own text), the action it records, and links
+    back to the evidence episodes it summarizes.
+
+    A fact consolidated from episodes (`Brain.Memory.Consolidation`) has the
+    examples of what the user said as its representation, the action those
+    episodes most often had as its action, and the episodes as its evidence;
+    its embedding is their center, the mean of their embeddings. A fact with no
+    evidence episodes has no action unless one is given, and its embedding is
+    its representation embedded by the world's embedder
+    (`Brain.Memory.Store.add_semantic/2`).
     """
 
     @type t :: %__MODULE__{
             id: String.t(),
             timestamp: integer(),
             representation: String.t(),
+            action: String.t() | nil,
             embedding: [float()],
             evidence_ids: [String.t()],
             tags: [String.t()]
@@ -92,6 +104,7 @@ defmodule Brain.Memory.Types do
       :id,
       :timestamp,
       :representation,
+      action: nil,
       embedding: [],
       evidence_ids: [],
       tags: []
@@ -99,12 +112,16 @@ defmodule Brain.Memory.Types do
 
     @doc """
     Create a new semantic fact with auto-generated ID and timestamp.
+
+    ## Options
+      - `:action` - the action the fact records (default: none)
     """
-    def new(representation, embedding, evidence_ids, tags) do
+    def new(representation, embedding, evidence_ids, tags, opts \\ []) do
       %__MODULE__{
         id: generate_id(),
         timestamp: System.system_time(:second),
         representation: representation,
+        action: Keyword.get(opts, :action),
         embedding: embedding,
         evidence_ids: evidence_ids,
         tags: tags

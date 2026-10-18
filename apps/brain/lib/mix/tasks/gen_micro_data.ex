@@ -31,16 +31,26 @@ defmodule Mix.Tasks.GenMicroData do
       %{"text" => string, "label" => string}
 
   Feature-vector generation requires booting the Brain app and running
-  `Brain.Analysis.Pipeline.process/1` on every gold_standard entry to
-  compute the dense feature vector. This is slow but is a one-time cost
-  per regen.
+  `Brain.Analysis.Pipeline.analyze_chunk/2` on every gold_standard entry. Each
+  record's vector is the one the pipeline classified the intent from, so every
+  classifier trains on what it is shown at runtime. This is slow but is a
+  one-time cost per regen.
+
+  Before the app boots, the same training rows fit
+  `Brain.Analysis.LexicalEvidence` (written to `lexical_evidence.en.term`) and
+  `Brain.Analysis.SpeechActTable` (`speech_act_table.en.term`), both directly
+  under the models directory, since boot loads them. A row's lexical evidence
+  dimensions, and the speech-act evidence its pass-1 speech act is voted with
+  (the table's `evidence`), come from the fold models that did not see it.
+  `--stats` writes neither and uses the stored ones.
 
   ## Usage
 
-      mix gen_micro_data [options]
+      mix gen_micro_data --world <id> [options]
 
   ## Options
 
+      --world ID     Required. The world the gold standard is analyzed in.
       --only NAME    Generate a single classifier file (e.g. `intent_domain`)
       --stats        Print label histograms without writing files
   """
@@ -48,43 +58,18 @@ defmodule Mix.Tasks.GenMicroData do
   use Mix.Task
   require Logger
 
-  alias Brain.Analysis.FeatureExtractor
-  alias Brain.Analysis.Pipeline
+  alias Brain.Analysis.{ActiveContexts, LexicalEvidence, Pipeline, SlotDetector, SpeechActTable}
+  alias Brain.Lexicon.IntentDomains
 
   @shortdoc "Generate training data for new micro-classifiers from gold_standard.json"
+
+  # The intent gold standard is English text; its rows carry no language of
+  # their own. The lexical evidence model and speech-act table are fitted for it.
+  @gold_language "en"
 
   @feature_vector_classifiers ~w(intent_full intent_domain tense_class aspect_class urgency certainty_level)
   @text_classifiers ~w(coarse_semantic_class)
   @new_classifiers @feature_vector_classifiers ++ @text_classifiers
-
-  @domain_consolidation %{
-    "account" => "account",
-    "alarm" => "reminder",
-    "analysis" => "knowledge",
-    "calendar" => "calendar",
-    "code" => "code",
-    "communication" => "communication",
-    "date" => "time",
-    "dialog" => "smalltalk",
-    "display" => "smarthome",
-    "knowledge" => "knowledge",
-    "meta" => "meta",
-    "music" => "music",
-    "navigation" => "navigation",
-    "news" => "knowledge",
-    "payment" => "account",
-    "reminder" => "reminder",
-    "search" => "knowledge",
-    "smalltalk" => "smalltalk",
-    "smarthome" => "smarthome",
-    "statement" => "smalltalk",
-    "status" => "meta",
-    "time" => "time",
-    "timer" => "reminder",
-    "todo" => "calendar",
-    "weather" => "weather",
-    "web" => "knowledge"
-  }
 
   @modal_urgency_words MapSet.new(~w(
     urgent immediately now asap emergency hurry quick quickly rush
@@ -107,9 +92,13 @@ defmodule Mix.Tasks.GenMicroData do
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
-        switches: [only: :string, stats: :boolean],
+        strict: [only: :string, stats: :boolean, world: :string],
         aliases: [o: :only, s: :stats]
       )
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix gen_micro_data needs --world <id>, the world the gold standard is analyzed in")
 
     gold_standard = load_gold_standard()
     Mix.shell().info("Loaded #{length(gold_standard)} examples from gold_standard.json")
@@ -124,10 +113,19 @@ defmodule Mix.Tasks.GenMicroData do
       check_lexicon_data()
     end
 
-    enriched = maybe_enrich_with_feature_vectors(gold_standard, names)
+    fold_models =
+      if trains_language_artifacts?(names, opts) do
+        train_language_artifacts!(gold_standard)
+      end
+
+    enriched = maybe_enrich_with_feature_vectors(gold_standard, names, fold_models, world_id)
 
     Enum.each(names, fn name ->
       data = generate_data(name, enriched)
+
+      if name == "intent_full" do
+        validate_intent_labels(data)
+      end
 
       if opts[:stats] do
         show_stats(name, data)
@@ -138,11 +136,80 @@ defmodule Mix.Tasks.GenMicroData do
     end)
   end
 
+  @doc false
+  # Whether a run fits the lexical evidence model and the speech-act table: it
+  # generates a feature-vector classifier's data and writes it. `--stats` is a
+  # boolean switch (`strict: [stats: :boolean]`), absent when not given, and
+  # then the run writes.
+  def trains_language_artifacts?(names, opts) when is_list(names) and is_list(opts) do
+    Enum.any?(names, &(&1 in @feature_vector_classifiers)) and not Keyword.get(opts, :stats, false)
+  end
+
+  # The lexical evidence model and the speech-act table, fitted on the training
+  # rows and written to the models directory before the app starts, because boot
+  # loads both. Returns `{folds, models}`: each row's fold, as
+  # `LexicalEvidence.fold_models/2` folds the rows, and for each fold its
+  # out-of-fold intent evidence (`:lexical`) and speech-act evidence
+  # (`:speech_act`, `SpeechActTable.fold_evidence/3`), so no training row's
+  # evidence of either kind is computed by a model that saw its label.
+  #
+  # `--stats` writes nothing, so it trains neither and computes vectors with the
+  # stored ones.
+  defp train_language_artifacts!(entries) do
+    Mix.Task.run("app.config")
+
+    rows =
+      Enum.map(entries, fn
+        %{"text" => text, "intent" => intent} when is_binary(text) and text != "" and is_binary(intent) and intent != "" ->
+          {text, intent}
+
+        entry ->
+          Mix.raise("gen_micro_data: training row has no text or intent: #{inspect(entry, limit: 5)}")
+      end)
+
+    {model, report} = LexicalEvidence.select(rows, language: @gold_language)
+    LexicalEvidence.save!(model)
+    rule = report.one_standard_error
+
+    Mix.shell().info(
+      "Lexical evidence (#{@gold_language}): cross-validated accuracy by prior strength " <>
+        Enum.map_join(Enum.sort(report.accuracy), "  ", fn {strength, accuracy} -> "#{strength}:#{Float.round(accuracy * 100, 2)}%" end) <>
+        "; one-standard-error rule: best #{rule.best} at fold mean #{Float.round(rule.mean * 100, 2)}% +- " <>
+        "#{Float.round(rule.standard_error * 100, 2)}%, threshold #{Float.round(rule.threshold * 100, 2)}%"
+    )
+
+    Mix.shell().info(
+      "Lexical evidence (#{@gold_language}): #{length(model.intents)} intents, #{map_size(model.scores)} n-grams, " <>
+        "prior strength #{model.prior_strength} (cross-validated accuracy #{Float.round(report.accuracy[model.prior_strength] * 100, 1)}%) " <>
+        "-> #{LexicalEvidence.path(@gold_language)}"
+    )
+
+    registry = SlotDetector.registry()
+    table = SpeechActTable.build(rows, registry, @gold_language)
+    SpeechActTable.save!(table)
+    learned = Enum.count(table.entries, fn {_intent, entry} -> entry.sub_type_source == :learned end)
+
+    Mix.shell().info(
+      "Speech-act table (#{@gold_language}): #{map_size(table.entries)} intents, #{learned} sub-types learned; " <>
+        "evidence over #{length(table.evidence.intents)} speech acts from #{table.evidence.fitted_rows} rows, " <>
+        "prior strength #{table.evidence.prior_strength} -> #{SpeechActTable.path(@gold_language)}"
+    )
+
+    {folds, lexical} = LexicalEvidence.fold_models(rows, model)
+    {^folds, speech_act} = SpeechActTable.fold_evidence(rows, registry, table)
+
+    {folds, Map.new(lexical, fn {k, lexical_model} -> {k, %{lexical: lexical_model, speech_act: Map.fetch!(speech_act, k)}} end)}
+  end
+
   # Boots the Brain app (if not already started) and computes a dense feature
   # vector for every gold_standard entry by running the full analysis
   # pipeline. This is the per-example cost of having feature-vector axis
   # classifiers instead of token-bag TF-IDF ones; it runs once per regen.
-  defp maybe_enrich_with_feature_vectors(entries, names) do
+  #
+  # `fold_models` holds the entries' out-of-fold intent and speech-act evidence
+  # models, or is nil when none were trained (`--stats`), which uses the loaded
+  # ones.
+  defp maybe_enrich_with_feature_vectors(entries, names, fold_models, world_id) do
     needs_vectors? = Enum.any?(names, &(&1 in @feature_vector_classifiers))
 
     if needs_vectors? do
@@ -155,10 +222,22 @@ defmodule Mix.Tasks.GenMicroData do
 
       started_at = System.monotonic_time(:millisecond)
 
+      # Each fold model is put in :persistent_term once and read by the task that
+      # needs it, rather than copied into every task with the entry.
+      jobs =
+        case fold_models do
+          nil ->
+            Enum.map(entries, &{&1, nil})
+
+          {folds, models} ->
+            Enum.each(models, fn {k, fold_models} -> :persistent_term.put({__MODULE__, :fold_models, k}, fold_models) end)
+            Enum.zip(entries, Enum.map(folds, &{__MODULE__, :fold_models, &1}))
+        end
+
       enriched =
-        entries
+        jobs
         |> Task.async_stream(
-          &enrich_entry/1,
+          &enrich_entry(&1, world_id),
           max_concurrency: System.schedulers_online(),
           timeout: 60_000,
           on_timeout: :kill_task,
@@ -177,19 +256,82 @@ defmodule Mix.Tasks.GenMicroData do
           "successful in #{elapsed_ms} ms"
       )
 
+      fail_on_missing_vectors!(enriched)
+
       enriched
     else
       entries
     end
   end
 
-  # Uses Pipeline.analyze_chunk/2 (single-chunk, no graph/memory side effects)
-  # rather than Pipeline.process/1 (full pipeline with persistence). Each
-  # gold-standard entry already corresponds to a single chunk.
-  defp enrich_entry(%{"text" => text} = entry) when is_binary(text) do
+  # A row whose pipeline run failed carries no feature vector, and every
+  # feature-vector classifier silently omits it from training. Raising here keeps
+  # the corpus and the training set the same size, so a model's row count can be
+  # traced back to the gold standard.
+  defp fail_on_missing_vectors!(entries) do
+    failed = Enum.reject(entries, &has_feature_vector?/1)
+
+    if failed != [] do
+      sample =
+        failed
+        |> Enum.take(5)
+        |> Enum.map_join("\n", fn entry ->
+          text = entry["text"] || "(no text)"
+          reason = entry["__pipeline_error"] || "no feature vector and no recorded error"
+          "  #{inspect(String.slice(to_string(text), 0, 60))}\n    #{reason}"
+        end)
+
+      Mix.raise("""
+      #{length(failed)} of #{length(entries)} entries produced no feature vector.
+
+      #{sample}
+
+      Training on the remainder would silently shrink the corpus. Fix the
+      failures, or remove the entries from the gold standard if they are not
+      valid input.
+      """)
+    end
+
+    :ok
+  end
+
+  # Uses Pipeline.analyze_chunk/2 (single chunk) rather than Pipeline.process/2.
+  # Each gold-standard entry already corresponds to a single chunk.
+  # `side_effects: false` keeps the corpus out of the belief store, the graph
+  # and the feedback statistics.
+  #
+  # The training vector is the one the pipeline classified the intent from
+  # (`analysis.feature_vector`), which the profile's axes are computed from too.
+  # Re-extracting from the finished analysis gave a different vector: by then
+  # the speech act had been refined by the previous model's intent, slots and
+  # entities filtered by it, and the confidence accumulator replaced, so the
+  # models trained on vectors they never saw at runtime.
+  #
+  # `fold_key` names the entry's out-of-fold intent and speech-act evidence
+  # models in :persistent_term; nil uses the ones loaded at boot. A follow-up row
+  # is analyzed with the context it continues from active, as it would be at
+  # runtime after the turn that set it.
+  defp enrich_entry({%{"text" => text} = entry, fold_key}, world_id) when is_binary(text) do
     try do
-      analysis = Pipeline.analyze_chunk(text)
-      {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+      base_opts = [side_effects: false, world_id: world_id, active_contexts: ActiveContexts.for_row(entry)]
+
+      pipeline_opts =
+        case fold_key do
+          nil ->
+            base_opts
+
+          key ->
+            %{lexical: lexical, speech_act: speech_act} = :persistent_term.get(key)
+            Keyword.merge(base_opts, lexical_evidence: lexical, speech_act_evidence: speech_act)
+        end
+
+      analysis = Pipeline.analyze_chunk(text, pipeline_opts)
+
+      feature_vector =
+        case analysis.feature_vector do
+          [_ | _] = vector -> vector
+          other -> raise "the pipeline kept no classified feature vector (#{inspect(other)})"
+        end
 
       tokens = extract_tokens(analysis)
       pos_tags = Map.get(analysis, :pos_tags, [])
@@ -215,7 +357,7 @@ defmodule Mix.Tasks.GenMicroData do
     end
   end
 
-  defp enrich_entry(entry) do
+  defp enrich_entry({entry, _fold_key}, _world_id) do
     entry
     |> Map.put("feature_vector", nil)
     |> Map.put("tokens", nil)
@@ -239,6 +381,44 @@ defmodule Mix.Tasks.GenMicroData do
   defp has_feature_vector?(%{"feature_vector" => v}) when is_list(v) and length(v) > 0, do: true
   defp has_feature_vector?(_), do: false
 
+  defp validate_intent_labels(data) do
+    registry_path =
+      Application.app_dir(:brain)
+      |> Path.join("priv/analysis/intent_registry.json")
+
+    case File.read(registry_path) do
+      {:ok, content} ->
+        registry_intents =
+          content
+          |> Jason.decode!()
+          |> Map.keys()
+          |> MapSet.new()
+
+        unregistered =
+          data
+          |> Enum.map(& &1["label"])
+          |> Enum.reject(&MapSet.member?(registry_intents, &1))
+          |> Enum.frequencies()
+          |> Enum.sort_by(fn {_, count} -> -count end)
+
+        if unregistered != [] do
+          total = Enum.reduce(unregistered, 0, fn {_, c}, acc -> acc + c end)
+
+          Mix.shell().error(
+            "[gen_micro_data] WARNING: #{length(unregistered)} intent_full labels (#{total} examples) " <>
+              "are NOT in intent_registry.json — run `mix cleanup_gold_standard` first:"
+          )
+
+          Enum.each(unregistered, fn {label, count} ->
+            Mix.shell().error("  #{count} examples: #{label}")
+          end)
+        end
+
+      {:error, _} ->
+        Mix.shell().error("[gen_micro_data] Could not read intent_registry.json for validation")
+    end
+  end
+
   defp generate_data("intent_full", entries) do
     entries
     |> Enum.filter(&has_feature_vector?/1)
@@ -252,9 +432,10 @@ defmodule Mix.Tasks.GenMicroData do
     entries
     |> Enum.filter(&has_feature_vector?/1)
     |> Enum.map(fn entry ->
-      raw_domain = entry["intent"] |> String.split(".") |> List.first()
-      label = Map.get(@domain_consolidation, raw_domain, "other")
-      %{"feature_vector" => entry["feature_vector"], "label" => label}
+      %{
+        "feature_vector" => entry["feature_vector"],
+        "label" => IntentDomains.consolidate(entry["intent"])
+      }
     end)
   end
 
@@ -483,6 +664,25 @@ defmodule Mix.Tasks.GenMicroData do
     json = Jason.encode!(data, pretty: true)
     File.write!(path, json)
     Mix.shell().info("Wrote #{length(data)} examples to #{path}")
+    write_environment(name)
+  end
+
+  # The vectors above were computed against the POS tagger, the speech-act voter,
+  # the lexicon, the gazetteer and the AGE graph as they are right now. That state
+  # is recorded beside the data rather than at training time, because it describes
+  # the vectors and not the fitting: a model stamped with the environment in force
+  # when `mix train_micro` ran would be asserting something about data it did not
+  # compute.
+  #
+  # A sidecar rather than a key in the data file, which is a plain JSON array that
+  # several readers index into positionally. The data file's own SHA-256 keeps the
+  # pair together: regenerate the data without its sidecar and
+  # `MicroProvenance.check_inputs!/3` fires on the changed hash.
+  defp write_environment(name) do
+    path = Brain.ML.MicroProvenance.training_environment_path(name)
+    env = Brain.Analysis.RunProvenance.vector_environment!()
+    File.write!(path, Jason.encode!(env, pretty: true) <> "\n")
+    Mix.shell().info("  environment #{env.digest} -> #{Path.basename(path)}")
   end
 
   defp show_stats(name, data) do
@@ -496,46 +696,16 @@ defmodule Mix.Tasks.GenMicroData do
     end)
   end
 
+  # Training rows only, so the classifiers are not fitted to the rows
+  # `mix evaluate.intent` scores them on. Raises if the held-out split has not
+  # been carved.
   defp load_gold_standard do
-    path =
-      case :code.priv_dir(:brain) do
-        {:error, _} -> "apps/brain/priv/evaluation/intent/gold_standard.json"
-        priv -> Path.join(priv, "evaluation/intent/gold_standard.json")
-      end
-
-    case File.read(path) do
-      {:ok, json} ->
-        case Jason.decode(json) do
-          {:ok, data} -> data
-          {:error, reason} ->
-            Mix.raise("Failed to parse gold_standard.json: #{inspect(reason)}")
-        end
-
-      {:error, reason} ->
-        Mix.raise("Failed to read #{path}: #{inspect(reason)}")
-    end
+    Brain.ML.EvaluationStore.load_gold_standard("intent", :train)
   end
 
-  defp output_dir do
-    priv_dir =
-      case :code.priv_dir(:brain) do
-        {:error, _} -> "apps/brain/priv"
-        dir -> to_string(dir)
-      end
-
-    umbrella_root =
-      case File.read_link(priv_dir) do
-        {:ok, link_target} ->
-          parent = Path.dirname(priv_dir)
-          real_priv = Path.join(parent, link_target) |> Path.expand()
-          Path.join(real_priv, "../../..") |> Path.expand()
-
-        {:error, _} ->
-          Path.join(priv_dir, "../../../../..") |> Path.expand()
-      end
-
-    Path.join(umbrella_root, "data/classifiers")
-  end
+  # Must match the path Brain.ML.MicroProvenance hashes, or a model is stamped
+  # with provenance for a file it did not train on.
+  defp output_dir, do: Brain.data_path("classifiers")
 
   defp check_lexicon_data do
     priv_dir =

@@ -6,12 +6,21 @@ defmodule Brain.Response.GenerativeResponseTest do
 
   alias Response.{Synthesizer, Generator}
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @opts [world_id: "default"]
+
+  # An acknowledgment that continues a reply's sentence asks the POS tagger
+  # whether the reply's first word is a proper noun (`Synthesizer.join_after/2`).
+  setup_all do
+    Brain.TestHelpers.start_pos_tagger!()
+  end
+
   describe "Synthesizer.synthesize/3" do
     test "generates response for weather intent with location" do
       entities = [%{entity_type: "location", value: "New York"}]
 
       case Synthesizer.synthesize("weather.query", entities, confidence: 0.8) do
-        {:ok, response} ->
+        {:ok, response, nil} ->
           assert is_binary(response)
           assert String.length(response) > 0
           assert String.contains?(response, "New York")
@@ -25,7 +34,7 @@ defmodule Brain.Response.GenerativeResponseTest do
       entities = []
 
       case Synthesizer.synthesize("weather.query", entities, confidence: 0.8) do
-        {:ok, response} ->
+        {:ok, response, nil} ->
           assert is_binary(response)
           response_lower = String.downcase(response)
 
@@ -42,10 +51,10 @@ defmodule Brain.Response.GenerativeResponseTest do
     end
 
     test "generates response for music intent with artist" do
-      entities = [%{entity_type: "music-artist", value: "The Beatles"}]
+      entities = [%{entity_type: "music_artist", value: "The Beatles"}]
 
       case Synthesizer.synthesize("music.play", entities, confidence: 0.8) do
-        {:ok, response} ->
+        {:ok, response, nil} ->
           assert is_binary(response)
           assert String.contains?(response, "Beatles")
 
@@ -61,7 +70,7 @@ defmodule Brain.Response.GenerativeResponseTest do
       ]
 
       case Synthesizer.synthesize("smarthome.lights.switch.on", entities, confidence: 0.9) do
-        {:ok, response} ->
+        {:ok, response, nil} ->
           assert is_binary(response)
 
           assert String.contains?(String.downcase(response), "light") or
@@ -72,6 +81,21 @@ defmodule Brain.Response.GenerativeResponseTest do
       end
     end
 
+    test "a device and a room reach the domain's own device,room frame, each in its own place" do
+      # The room comes first: smarthome aliases "room" to $device, and filling
+      # aliases before exact types used to put the room in both places.
+      entities = [
+        %{entity_type: "room", value: "kitchen"},
+        %{entity_type: "device", value: "lights"}
+      ]
+
+      assert {:ok, response, nil} = Synthesizer.synthesize("smarthome.device.switch", entities, confidence: 0.5)
+      assert response =~ "lights"
+      assert response =~ "kitchen"
+      refute response =~ "kitchen in the kitchen"
+      refute response =~ "$"
+    end
+
     test "generates different responses for different entity values" do
       entities1 = [%{entity_type: "location", value: "Paris"}]
       entities2 = [%{entity_type: "location", value: "Tokyo"}]
@@ -80,7 +104,7 @@ defmodule Brain.Response.GenerativeResponseTest do
       result2 = Synthesizer.synthesize("weather.query", entities2, confidence: 0.8)
 
       case {result1, result2} do
-        {{:ok, response1}, {:ok, response2}} ->
+        {{:ok, response1, nil}, {:ok, response2, nil}} ->
           assert String.contains?(response1, "Paris")
           assert String.contains?(response2, "Tokyo")
           assert response1 != response2
@@ -183,29 +207,29 @@ defmodule Brain.Response.GenerativeResponseTest do
     end
   end
 
-  describe "Generator.generate/3 integration" do
+  describe "Generator.generate/4 integration" do
     test "generates response for valid intent with entities" do
       {:ok, response, type} =
         Generator.generate(
           "weather.query",
           [%{entity_type: "location", value: "Seattle"}],
-          "What's the weather in Seattle?"
+          "What's the weather in Seattle?",
+          @opts
         )
 
       assert is_binary(response)
       assert String.length(response) > 0
 
-      assert type in [
-               :synthesized,
-               :memory_adapted,
-               :template,
-               :special_handler,
-               :fallback
-             ]
+      # The suite's world has no Weather credentials, so the weather intent is
+      # answered with the reply planned for the service's error
+      # (`{:service_reply, enrichment}`, generate/4's contract), asked with the
+      # entity's location.
+      assert {:service_reply,
+              %{enrichment_service: :weather, enrichment_error: :missing_credentials, slots: %{location: "Seattle"}}} = type
     end
 
     test "handles unknown intent gracefully" do
-      {:ok, response, type} = Generator.generate("unknown.intent", [], "Some random query")
+      {:ok, response, type} = Generator.generate("unknown.intent", [], "Some random query", @opts)
 
       assert is_binary(response)
 
@@ -220,14 +244,14 @@ defmodule Brain.Response.GenerativeResponseTest do
     end
 
     test "handles nil intent gracefully" do
-      {:ok, response, _type} = Generator.generate(nil, [], "Random text")
+      {:ok, response, _type} = Generator.generate(nil, [], "Random text", @opts)
 
       assert is_binary(response)
       assert String.length(response) > 0
     end
 
     test "handles empty entities gracefully" do
-      {:ok, response, _type} = Generator.generate("weather.query", [], nil)
+      {:ok, response, _type} = Generator.generate("weather.query", [], nil, @opts)
 
       assert is_binary(response)
       assert String.length(response) > 0
@@ -238,13 +262,16 @@ defmodule Brain.Response.GenerativeResponseTest do
     test "handles unusual location names" do
       entities = [%{entity_type: "location", value: "Timbuktu"}]
 
-      {:ok, response, _type} =
-        Generator.generate("weather.query", entities, "Weather in Timbuktu")
+      {:ok, response, type} =
+        Generator.generate("weather.query", entities, "Weather in Timbuktu", @opts)
 
       assert is_binary(response)
 
-      assert String.contains?(response, "Timbuktu") or
-               String.contains?(String.downcase(response), "location")
+      # The suite's world has no Weather credentials: the unusual location is
+      # what the service was asked about, and the reply says the service is not
+      # set up (`{:service_reply, enrichment}`, generate/4's contract).
+      assert {:service_reply, %{enrichment_error: :missing_credentials, slots: %{location: "Timbuktu"}}} = type
+      assert response =~ "Weather"
     end
 
     test "handles multiple entities together" do
@@ -255,7 +282,7 @@ defmodule Brain.Response.GenerativeResponseTest do
       ]
 
       {:ok, response, _type} =
-        Generator.generate("weather.query", entities, "Weather in Chicago next Tuesday afternoon")
+        Generator.generate("weather.query", entities, "Weather in Chicago next Tuesday afternoon", @opts)
 
       assert is_binary(response)
       assert String.length(response) > 0
@@ -265,8 +292,8 @@ defmodule Brain.Response.GenerativeResponseTest do
       entities1 = [%{entity_type: "location", value: "Boston"}]
       entities2 = [%{entity_type: "location", value: "Denver"}]
 
-      {:ok, response1, _} = Generator.generate("weather.query", entities1, "Weather in Boston")
-      {:ok, response2, _} = Generator.generate("weather.query", entities2, "Weather in Denver")
+      {:ok, response1, _} = Generator.generate("weather.query", entities1, "Weather in Boston", @opts)
+      {:ok, response2, _} = Generator.generate("weather.query", entities2, "Weather in Denver", @opts)
       assert is_binary(response1)
       assert is_binary(response2)
 

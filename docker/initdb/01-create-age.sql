@@ -6,6 +6,11 @@
 -- the default POSTGRES_DB; other databases (such as the *_test database
 -- created by Ecto for the test suite) must run `mix atlas.bootstrap_age`
 -- explicitly.
+--
+-- Creates the same graphs as `mix atlas.bootstrap_age`: the shared
+-- `pos_graph`, and the "default" world's graph of each per-world kind, named
+-- `<kind>__<world id>` by `Atlas.Graph.world_graph/2`. Every other world's
+-- graphs are created when the world is.
 
 CREATE EXTENSION IF NOT EXISTS age;
 LOAD 'age';
@@ -16,12 +21,12 @@ DECLARE
   graph_name text;
 BEGIN
   FOREACH graph_name IN ARRAY ARRAY[
-    'knowledge_graph',
-    'user_graph',
-    'semantic_graph',
-    'conversation_graph',
-    'epistemic_graph',
-    'pos_graph'
+    'pos_graph',
+    'knowledge_graph__default',
+    'user_graph__default',
+    'semantic_graph__default',
+    'conversation_graph__default',
+    'epistemic_graph__default'
   ] LOOP
     IF NOT EXISTS (SELECT 1 FROM ag_catalog.ag_graph WHERE name = graph_name) THEN
       PERFORM ag_catalog.create_graph(graph_name);

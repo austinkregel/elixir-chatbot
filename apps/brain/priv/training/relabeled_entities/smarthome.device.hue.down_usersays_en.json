@@ -1,0 +1,137 @@
+[
+  {
+    "data": [
+      {
+        "text": "all "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue down"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue down by 50 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue down for 15 percents in the living room"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue down in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue down till 23"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue down to 50"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "red "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue down till 23"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue by 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue till 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn red "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " down by 50 percents"
+      }
+    ]
+  }
+]

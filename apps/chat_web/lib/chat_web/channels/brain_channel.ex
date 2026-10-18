@@ -2,9 +2,13 @@ defmodule ChatWeb.BrainChannel do
   @moduledoc """
   Phoenix Channel for real-time brain communication.
   Handles WebSocket connections for the chat bot brain.
+
+  Turns are evaluated as the socket's web user (`ChatWeb.UserSocket`), and new
+  conversations run in the world that user has selected.
   """
 
   use ChatWeb, :channel
+  alias Atlas.WebUsers
   alias Phoenix.PubSub
   require Logger
 
@@ -41,7 +45,7 @@ defmodule ChatWeb.BrainChannel do
 
   @impl true
   def handle_in("evaluate", %{"conversation_id" => conversation_id, "input" => input} = payload, socket) do
-    user_id = Map.get(payload, "user_id") || "ws_#{conversation_id}"
+    user_id = socket.assigns.user_id
     message_id = :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
 
     Logger.info("Received evaluation request", %{
@@ -49,8 +53,18 @@ defmodule ChatWeb.BrainChannel do
       input: String.slice(input, 0, 100)
     })
 
+    # A channel socket is not given the browser's Accept-Language header, so the
+    # client sends it as "accept_language". No value names no language, which is
+    # English; an unsupported one raises.
+    #
+    # The client sends the browser's time zone as "time_zone", the map
+    # `Brain.Temporal.Zone.from_browser!/1` reads (the chat page's
+    # browserZone in assets/js/app.js builds it); the turn's dates and times
+    # are read in it. A turn without it raises: no zone is assumed.
     eval_opts = [
       user_id: user_id,
+      language: Brain.Language.resolve!(Map.get(payload, "accept_language")),
+      time_zone: Brain.Temporal.Zone.from_browser!(Map.get(payload, "time_zone")),
       progress: %{conversation_id: conversation_id, message_id: message_id}
     ]
 
@@ -89,8 +103,9 @@ defmodule ChatWeb.BrainChannel do
     end
   end
 
-  def handle_in("create_conversation", payload, socket) do
-    world_id = Map.get(payload || %{}, "world_id", "default")
+  # The conversation runs in the world the web user has selected.
+  def handle_in("create_conversation", _payload, socket) do
+    world_id = WebUsers.get!(socket.assigns.user_id).selected_world_id
 
     Logger.info("Received create conversation request", %{
       client_id: socket.id,

@@ -1,0 +1,46 @@
+[
+  {
+    "text": "please you are chatbot",
+    "tokens": [
+      "please",
+      "you",
+      "are",
+      "chatbot"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-32eb621a",
+    "intent": "smalltalk.agent.chatbot"
+  },
+  {
+    "text": "I'd like to are you a bot",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "are",
+      "you",
+      "a",
+      "bot"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-66c30549",
+    "intent": "smalltalk.agent.chatbot"
+  }
+]

@@ -1,0 +1,107 @@
+defmodule Brain.Response.RealizationPacketTest do
+  use ExUnit.Case, async: false
+
+  alias Brain.Analysis.ChunkAnalysis
+  alias Brain.Memory.RecurringPattern
+  alias Brain.Memory.Types.{Episode, SemanticFact}
+  alias Brain.Response.RealizationPacket
+
+  describe "build/3 with the turn's memory" do
+    setup do
+      test_pid = self()
+      handler = "realization-packet-test-#{System.unique_integer([:positive])}"
+
+      :ok =
+        :telemetry.attach(
+          handler,
+          [:chat_bot, :memory, :semantic_fact, :used],
+          fn _event, _measurements, metadata, _config -> send(test_pid, {:used, metadata}) end,
+          nil
+        )
+
+      on_exit(fn -> :telemetry.detach(handler) end)
+
+      pattern = %RecurringPattern{
+        world_id: "test_realization_packet",
+        fact: SemanticFact.new("is it sunny in paris | is it sunny in london", [], ["ep1", "ep2", "ep3"], []),
+        similarity: 0.8,
+        reply: "It's usually sunny there.",
+        reply_count: 2,
+        evidence_count: 3
+      }
+
+      episode = Episode.new("is it sunny in lyon", "conversation", "Bring a coat.", [], [])
+
+      {:ok, pattern: pattern, episode: {episode, 0.9}}
+    end
+
+    defp user_message(unified_context) do
+      [_system, %{role: "user", content: content}] =
+        RealizationPacket.build([], %ChunkAnalysis{text: "is it sunny in paris"}, unified_context: unified_context)
+
+      content
+    end
+
+    test "names the recurring pattern ahead of the similar past interactions, without reporting it",
+         %{pattern: pattern, episode: episode} do
+      unified_context = %{memory: %{recurring_pattern: pattern, similar_episodes: [episode]}}
+      content = user_message(unified_context)
+
+      assert content =~
+               "A recurring pattern from past conversations (3 similar messages, similarity 0.8): " <>
+                 "the user says things like \"is it sunny in paris | is it sunny in london\", " <>
+                 "and the reply 2 of them got was \"It's usually sunny there.\"."
+
+      {pattern_at, _} = :binary.match(content, "A recurring pattern")
+      {episodes_at, _} = :binary.match(content, "Similar past interactions")
+      assert pattern_at < episodes_at
+
+      # The pattern the packet names is handed back for the realizer whose
+      # response the turn settles on to report; a packet is built on each pass.
+      assert RealizationPacket.recurring_pattern(unified_context) == pattern
+      refute_receive {:used, _}, 50
+    end
+
+    test "names no pattern for a turn that has none", %{episode: episode} do
+      unified_context = %{memory: %{recurring_pattern: nil, similar_episodes: [episode]}}
+      content = user_message(unified_context)
+
+      refute content =~ "recurring pattern"
+      assert content =~ "Similar past interactions"
+      assert RealizationPacket.recurring_pattern(unified_context) == nil
+      assert RealizationPacket.recurring_pattern(%{}) == nil
+      assert RealizationPacket.recurring_pattern(nil) == nil
+      refute_receive {:used, _}, 50
+    end
+  end
+
+  describe "build/3 with the turn's entities" do
+    defp content(analysis, unified_context) do
+      [_system, %{role: "user", content: content}] = RealizationPacket.build([], analysis, unified_context: unified_context)
+      content
+    end
+
+    test "names each entity by its :entity_type" do
+      analysis = %ChunkAnalysis{text: "dim the lamp", entities: [%{entity_type: "device", value: "lamp", confidence: 0.9}]}
+
+      assert content(analysis, %{}) =~ "Entities: lamp (device, confidence 0.9)."
+
+      chunks = [
+        %ChunkAnalysis{chunk_index: 0, text: "hi", entities: []},
+        %ChunkAnalysis{analysis | chunk_index: 1}
+      ]
+
+      assert content(analysis, %{all_analyses: chunks}) =~ "entities: lamp (device)"
+    end
+
+    test "an entity without :entity_type raises" do
+      untyped = %{entity: "device", value: "lamp", confidence: 0.9}
+      analysis = %ChunkAnalysis{text: "dim the lamp", entities: [untyped]}
+
+      assert_raise ArgumentError, ~r/entity has no :entity_type/, fn -> content(analysis, %{}) end
+
+      chunks = [%ChunkAnalysis{chunk_index: 0, text: "hi", entities: []}, %ChunkAnalysis{analysis | chunk_index: 1}]
+      assert_raise ArgumentError, ~r/entity has no :entity_type/, fn -> content(analysis, %{all_analyses: chunks}) end
+    end
+  end
+end

@@ -1,0 +1,80 @@
+[
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "could you check the status of all the lights",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-0a9be3a8",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "lights kitchen status",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-a9044ad9",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "I want to kitchen lights status",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-2ed6d9f5",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "hey check the status of all the lights",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-ea22c8ad",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "I'd like to the blue lights status",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-23711b89",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "can you the blue lights status",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-461e26ec",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  }
+]

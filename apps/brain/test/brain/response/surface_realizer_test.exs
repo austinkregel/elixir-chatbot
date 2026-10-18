@@ -1,19 +1,28 @@
 defmodule Brain.Response.SurfaceRealizerTest do
   use ExUnit.Case, async: false
 
+  # Asserts on real Ouro-rendered primitives; excluded when the sidecar is
+  # disabled (OURO_ENABLED=false, e.g. CI).
+  @moduletag :requires_ouro
+
   alias Brain.Response.{Primitive, SurfaceRealizer}
+
+  # The world the test suite runs in, seeded by `mix test.models`. A realization
+  # with side effects records its pairs as training data in that world.
+  @world_id "default"
 
   describe "realize/2 with empty list" do
     test "returns error with :empty_primitive_list reason" do
-      assert {:error, :empty_primitive_list} = SurfaceRealizer.realize([])
+      assert {:error, :empty_primitive_list} = SurfaceRealizer.realize([], world_id: @world_id)
     end
   end
 
   describe "realize/2 success path" do
-    test "single primitive returns {:ok, rendered_list, response_text}" do
+    test "single primitive returns {:ok, rendered_list, response_text, recurring_pattern_use}" do
       p = Primitive.new(:acknowledgment, :social, %{speech_act_sub_type: :greeting})
 
-      {:ok, rendered, response} = SurfaceRealizer.realize([p])
+      # No unified context, so no recurring pattern to draw on.
+      {:ok, rendered, response, nil} = SurfaceRealizer.realize([p], world_id: @world_id)
 
       assert is_binary(response), "Expected response to be a string, got: #{inspect(response)}"
       assert response != "", "Response should not be empty"
@@ -22,7 +31,10 @@ defmodule Brain.Response.SurfaceRealizerTest do
       assert length(rendered) == 1, "Should return one rendered primitive per input"
 
       [r] = rendered
-      assert r.source == :ouro, "Rendered primitive should have source :ouro, got: #{inspect(r.source)}"
+
+      assert r.source == :ouro,
+             "Rendered primitive should have source :ouro, got: #{inspect(r.source)}"
+
       assert Primitive.rendered?(r), "Primitive should be marked as rendered"
       assert r.rendered == response, "Rendered text should match the full response"
     end
@@ -34,13 +46,13 @@ defmodule Brain.Response.SurfaceRealizerTest do
         Primitive.new(:follow_up, :elaboration, %{topic: "feelings"})
       ]
 
-      {:ok, rendered, response} = SurfaceRealizer.realize(primitives)
+      {:ok, rendered, response, nil} = SurfaceRealizer.realize(primitives, world_id: @world_id)
 
       assert is_binary(response)
       assert response != ""
 
       assert length(rendered) == length(primitives),
-        "Should return one rendered primitive per input (expected #{length(primitives)}, got #{length(rendered)})"
+             "Should return one rendered primitive per input (expected #{length(primitives)}, got #{length(rendered)})"
 
       for r <- rendered do
         assert r.source == :ouro, "Each rendered primitive should have source :ouro"
@@ -51,27 +63,30 @@ defmodule Brain.Response.SurfaceRealizerTest do
     test "preserves primitive type and variant through realization" do
       p = Primitive.new(:hedging, :epistemic, %{confidence_level: 0.3})
 
-      {:ok, [rendered], _response} = SurfaceRealizer.realize([p])
+      {:ok, [rendered], _response, nil} = SurfaceRealizer.realize([p], world_id: @world_id)
 
       assert rendered.type == :hedging, "Type should be preserved, got: #{inspect(rendered.type)}"
-      assert rendered.variant == :epistemic, "Variant should be preserved, got: #{inspect(rendered.variant)}"
+
+      assert rendered.variant == :epistemic,
+             "Variant should be preserved, got: #{inspect(rendered.variant)}"
     end
   end
 
   describe "realize/2 opts forwarding" do
     test "passes analysis from opts through to OuroRealizer" do
-      p = Primitive.new(:follow_up, :clarification, %{
-        missing_slots: ["location"],
-        ambiguity_type: :missing_slots,
-        intent: "weather.query"
-      })
+      p =
+        Primitive.new(:follow_up, :clarification, %{
+          missing_slots: ["location"],
+          ambiguity_type: :missing_slots,
+          intent: "weather.query"
+        })
 
       analysis = %Brain.Analysis.ChunkAnalysis{
         text: "What's the weather?",
         intent: "weather.query"
       }
 
-      {:ok, rendered, response} = SurfaceRealizer.realize([p], analysis: analysis)
+      {:ok, rendered, response, nil} = SurfaceRealizer.realize([p], world_id: @world_id, analysis: analysis)
 
       assert is_binary(response)
       assert response != ""
@@ -79,10 +94,10 @@ defmodule Brain.Response.SurfaceRealizerTest do
       assert hd(rendered).source == :ouro
     end
 
-    test "works with empty opts" do
+    test "works with no option but the world" do
       p = Primitive.new(:content, :reflective, %{understood_meaning: "testing"})
 
-      {:ok, rendered, response} = SurfaceRealizer.realize([p], [])
+      {:ok, rendered, response, nil} = SurfaceRealizer.realize([p], world_id: @world_id)
 
       assert is_binary(response)
       assert response != ""

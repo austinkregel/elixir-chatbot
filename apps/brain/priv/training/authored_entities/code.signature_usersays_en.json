@@ -1,0 +1,263 @@
+[
+  {
+    "data": [
+      {
+        "text": "API for "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@class",
+        "text": "Cache"
+      },
+      {
+        "text": " class"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "function definition for "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "init"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "function signature for "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "authenticate_user"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "how do I call "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "create_user"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "how many arguments does "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "connect"
+      },
+      {
+        "text": " take"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "how to use "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "HttpClient"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "method signature of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@method",
+        "text": "save_to_database"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "return type of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "fetch_data"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "show me the signature of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "process_order"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "show the definition of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "parse_json"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "show the prototype of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "handle_error"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "signature of the method "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@method",
+        "text": "render"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what are the parameters for "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "format_date"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what arguments does "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "send_email"
+      },
+      {
+        "text": " accept"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what does "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "validate_input"
+      },
+      {
+        "text": " return"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what inputs does "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "calculate_discount"
+      },
+      {
+        "text": " need"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what parameters does "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "calculate_tax"
+      },
+      {
+        "text": " take"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what type does "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@method",
+        "text": "get_user_by_id"
+      },
+      {
+        "text": " return"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's the arity of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "process_items"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's the interface for "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Logger"
+      }
+    ]
+  }
+]

@@ -1,6 +1,8 @@
 defmodule Brain.TelemetryCompletionTest do
   @moduledoc "Tests for telemetry completion: response generation, fact database, template lookup, readiness tracking."
-  use ExUnit.Case, async: false
+  # Durations are counted by Brain.Metrics.Aggregator, in Atlas, inside each
+  # test's sandbox transaction.
+  use Brain.MetricsCase, async: false
 
   describe "response generation telemetry" do
     test "Generator.generate emits response generate stop event" do
@@ -18,7 +20,7 @@ defmodule Brain.TelemetryCompletionTest do
       )
 
       try do
-        _ = Brain.Response.Generator.generate("smalltalk.greet", [], nil)
+        _ = Brain.Response.Generator.generate("smalltalk.greet", [], nil, world_id: "default")
         assert_receive {:telemetry, %{duration: _duration}}, 2_000
       after
         :telemetry.detach(handler_id)
@@ -36,7 +38,7 @@ defmodule Brain.TelemetryCompletionTest do
   describe "record_readiness" do
     test "stores readiness state retrievable via get_metrics" do
       Brain.Metrics.Aggregator.record_readiness(:test_system, true)
-      Process.sleep(50)
+      :ok = counted()
 
       metrics = Brain.Metrics.Aggregator.get_metrics()
       readiness = Map.get(metrics, :readiness, %{})
@@ -52,13 +54,10 @@ defmodule Brain.TelemetryCompletionTest do
     test "knowledge_research and other metrics appear in get_metrics after recording" do
       Brain.Metrics.Aggregator.record_duration(:knowledge_research, 100, %{})
       Brain.Metrics.Aggregator.record_duration(:jtms_justify, 50, %{})
-      Process.sleep(100)
+      :ok = counted()
 
-      # Aggregator runs on interval - metrics may need time to aggregate
-      metric = Brain.Metrics.Aggregator.get_metric(:knowledge_research)
-      assert metric != nil
-      assert (metric[:count] || metric["count"] || 0) >= 0
-      assert (metric[:avg_ms] || metric["avg_ms"] || 0) >= 0 or metric == %{}
+      assert %{count: 1, avg_ms: 100.0} = Brain.Metrics.Aggregator.get_metric(:knowledge_research)
+      assert %{count: 1, avg_ms: 50.0} = Brain.Metrics.Aggregator.get_metric(:jtms_justify)
     end
   end
 end

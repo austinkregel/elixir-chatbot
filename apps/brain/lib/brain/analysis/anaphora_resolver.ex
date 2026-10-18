@@ -1,178 +1,206 @@
 defmodule Brain.Analysis.AnaphoraResolver do
-  @moduledoc "Resolves anaphoric references (pronouns, demonstratives) using\nGazetteer-based lookup and conversation history.\n\nThis module uses tokenization (no regex) and Gazetteer entity lookup\nto identify anaphoric terms, then resolves them to referents from\nconversation history based on recency and entity type compatibility.\n"
+  @moduledoc """
+  Resolves anaphoric references -- third-person personal pronouns and
+  demonstratives -- to the entities of the conversation's earlier turns.
 
-  alias Brain.ML.Tokenizer
-  alias Brain.ML.Gazetteer
+  A reference is a word the part-of-speech tagger (`Brain.ML.POSTagger`) tags
+  `PRON` and whose closed-class declaration (`Brain.Lexicon.ClosedClass`)
+  gives it the Universal Dependencies features of one: a personal pronoun of
+  the third person (`PronType=Prs`, `Person=3`) that is not reflexive, or a
+  demonstrative (`PronType=Dem`). First- and second-person pronouns name the
+  speakers, and a reflexive's antecedent is in its own clause, so neither
+  refers back to an earlier turn. The tag decides how the word is used:
+  "that" tagged `SCONJ` ("I think that it works") is no reference.
 
-  require Logger
+  The history is chronological, the most recent turn last, and each turn's
+  `:entities` is a list of entities with `:entity_type`, `:value` and
+  `:confidence`. A reference resolves to the earlier entity that scores
+  highest on how recent its turn is and on whether its type agrees with the
+  reference. The referent is that entity, with the score of the resolution
+  times the entity's own confidence as its confidence, and
+  `source: :anaphora_resolution`. It has no position in the text it resolves
+  a reference in.
+  """
 
+  alias Brain.Analysis.TypeHierarchy
+  alias Brain.Lexicon.ClosedClass
+  alias Brain.ML.{POSTagger, Tokenizer}
+
+  # The entity types a reference agrees with, by the reference's UD Gender
+  # when it has one, else its PronType. They are the types the anaphora
+  # entries of `data/training/entities/anaphora.json` gave the same words:
+  # Masc and Fem take those of the subject pronouns "he" and "she", Neut those
+  # of the object pronoun "it", Dem those of the demonstratives, and Prs --
+  # "they", "them" and "their", which have no gender -- those of the subject
+  # and object pronouns together.
   @entity_type_compatibility %{
-    "pronoun_object" => ~w(device song music-artist topic location item),
-    "pronoun_subject" => ~w(person music-artist),
-    "demonstrative" => ~w(device song topic item location action),
-    "location_reference" => ~w(location room city place-name geo-location),
-    "indefinite" => ~w(device song topic item),
-    "identity_reference" => ~w(device song topic item action),
-    "possessive" => ~w(person device)
+    "Masc" => ~w(person music_artist),
+    "Fem" => ~w(person music_artist),
+    "Neut" => ~w(device song music_artist topic location item),
+    "Dem" => ~w(device song topic item location action),
+    "Prs" => ~w(person music_artist device song topic location item)
   }
   @recency_decay 0.15
 
-  @doc "Resolves anaphoric references in text using conversation history.\n\nReturns:\n- {:resolved, resolutions} - List of {token_index, original_term, resolved_entity}\n- {:no_anaphora, []} - No anaphoric terms found\n"
-  def resolve(text, conversation_history) when is_binary(text) do
-    tokens = Tokenizer.tokenize_normalized(text, expand_contractions: true)
-    anaphora_spans = lookup_anaphora_spans(tokens)
+  @type referent :: %{
+          entity_type: String.t(),
+          value: term(),
+          confidence: float(),
+          source: :anaphora_resolution
+        }
 
-    if anaphora_spans != [] do
-      candidates = extract_candidate_entities(conversation_history)
-
-      resolutions =
-        Enum.map(anaphora_spans, fn {idx, anaphora_type, term} ->
-          best_match = score_and_rank_candidates(candidates, anaphora_type)
-          {idx, term, best_match}
-        end)
-        |> Enum.filter(fn {_, _, match} -> match != nil end)
-
-      if resolutions != [] do
-        {:resolved, resolutions}
-      else
-        {:no_anaphora, []}
+  @doc """
+  The references in `text`, each as `{token_index, token, kind}`: the index
+  of the token in `Brain.ML.Tokenizer.tokenize/1`'s tokens of `text`, the
+  token, and the UD feature value that selects the entity types it agrees
+  with (its Gender, else its PronType).
+  """
+  @spec references(String.t()) :: [{non_neg_integer(), String.t(), String.t()}]
+  def references(text) when is_binary(text) do
+    text
+    |> Tokenizer.tokenize_words()
+    |> POSTagger.predict(pos_model!())
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {{token, tag}, idx} ->
+      case reference_kind(tag, ClosedClass.features(token)) do
+        nil -> []
+        kind -> [{idx, token, kind}]
       end
-    else
-      {:no_anaphora, []}
-    end
+    end)
   end
 
-  @doc "Resolves references and returns substituted text with entities.\n\nThis is useful when you want to expand pronouns before intent classification.\n"
-  def resolve_and_substitute(text, conversation_history) do
-    case resolve(text, conversation_history) do
+  defp reference_kind("PRON", %{"PronType" => "Dem"}), do: "Dem"
+
+  defp reference_kind("PRON", %{"PronType" => "Prs", "Person" => "3"} = features) do
+    if Map.get(features, "Reflex") == "Yes", do: nil, else: Map.get(features, "Gender", "Prs")
+  end
+
+  defp reference_kind(_tag, _features), do: nil
+
+  @doc """
+  Resolves the references in `text` to the entities of `history`.
+
+  Returns `{:resolved, [{token_index, token, referent}]}` for the references
+  that resolve, or `{:no_anaphora, []}` when none does.
+  """
+  @spec resolve(String.t(), [map()]) ::
+          {:resolved, [{non_neg_integer(), String.t(), referent()}]} | {:no_anaphora, []}
+  def resolve(text, history) when is_binary(text) and is_list(history) do
+    candidates = candidates(history)
+
+    resolutions =
+      text
+      |> references()
+      |> Enum.flat_map(fn {idx, token, kind} ->
+        case best_referent(candidates, kind) do
+          nil -> []
+          referent -> [{idx, token, referent}]
+        end
+      end)
+
+    if resolutions == [], do: {:no_anaphora, []}, else: {:resolved, resolutions}
+  end
+
+  @doc """
+  Resolves the references in `text` and returns `{:ok, substituted, referents}`:
+  `text` with each resolved reference replaced by its referent's value, and
+  the referents. The rest of `text` is left as it is.
+  """
+  @spec resolve_and_substitute(String.t(), [map()]) :: {:ok, String.t(), [referent()]}
+  def resolve_and_substitute(text, history) do
+    case resolve(text, history) do
       {:resolved, resolutions} ->
-        tokens = Tokenizer.tokenize_words(text)
+        tokens = Tokenizer.tokenize(text)
+        graphemes = String.graphemes(text)
 
-        substituted_tokens =
-          tokens
-          |> Enum.with_index()
-          |> Enum.map(fn {token, idx} ->
-            case Enum.find(resolutions, fn {res_idx, _, _} -> res_idx == idx end) do
-              {_, _, entity} when not is_nil(entity) ->
-                entity[:value] || entity["value"] || token
-
-              _ ->
-                token
-            end
+        substituted =
+          resolutions
+          |> Enum.sort_by(fn {idx, _, _} -> idx end, :desc)
+          |> Enum.reduce(graphemes, fn {idx, _token, referent}, acc ->
+            %{start_pos: start_pos, end_pos: end_pos} = Enum.at(tokens, idx)
+            Enum.take(acc, start_pos) ++ [to_string(referent.value)] ++ Enum.drop(acc, end_pos + 1)
           end)
+          |> Enum.join()
 
-        substituted_text = Enum.join(substituted_tokens, " ")
-
-        resolved_entities =
-          Enum.map(resolutions, fn {_, _, entity} -> entity end)
-          |> Enum.filter(&(&1 != nil))
-
-        {:ok, substituted_text, resolved_entities}
+        {:ok, substituted, Enum.map(resolutions, fn {_, _, referent} -> referent end)}
 
       {:no_anaphora, []} ->
         {:ok, text, []}
     end
   end
 
-  defp lookup_anaphora_spans(tokens) do
-    tokens
-    |> Enum.with_index()
-    |> Enum.flat_map(fn {token, idx} ->
-      normalized = Tokenizer.normalize(token)
-
-      case Gazetteer.lookup(normalized) do
-        {:ok, %{entity_type: "anaphora", metadata: meta}} ->
-          anaphora_type = meta["anaphora_type"] || meta[:anaphora_type]
-          [{idx, anaphora_type, token}]
-
-        _ ->
-          []
-      end
-    end)
-  end
-
-  defp extract_candidate_entities(history) when is_list(history) do
+  @doc """
+  The entities of `history` a reference can resolve to, each as
+  `{entity, recency_score, turns_ago}`. The history is chronological: its
+  last turn is 1 turn ago and scores a recency of 1.0. Every turn's
+  `:entities` must be a list of entities with a string `:entity_type`, a
+  `:value` and a numeric `:confidence`; anything else raises.
+  """
+  @spec candidates([map()]) :: [{map(), float(), pos_integer()}]
+  def candidates(history) when is_list(history) do
     history
+    |> Enum.reverse()
     |> Enum.with_index(1)
-    |> Enum.flat_map(fn {context, turns_ago} ->
-      entities = extract_entities_from_context(context)
-
-      Enum.map(entities, fn entity ->
-        recency_score = calculate_recency_score(turns_ago)
-        {entity, recency_score, turns_ago}
-      end)
+    |> Enum.flat_map(fn {turn, turns_ago} ->
+      recency = :math.exp(-@recency_decay * (turns_ago - 1))
+      turn |> turn_entities!() |> Enum.map(&{&1, recency, turns_ago})
     end)
   end
 
-  defp extract_candidate_entities(_) do
-    []
+  defp turn_entities!(%{entities: entities}) when is_list(entities), do: Enum.map(entities, &candidate!/1)
+
+  defp turn_entities!(turn) do
+    raise ArgumentError,
+          "AnaphoraResolver: a history turn's :entities must be a list of entities, got: #{inspect(turn)}"
   end
 
-  defp extract_entities_from_context(context) when is_map(context) do
-    entities = Map.get(context, :entities) || Map.get(context, "entities") || %{}
+  defp candidate!(%{entity_type: type, value: _value, confidence: confidence} = entity)
+       when is_binary(type) and is_number(confidence),
+       do: entity
 
-    case entities do
-      list when is_list(list) ->
-        list
-
-      map when is_map(map) ->
-        Enum.map(map, fn {type, value} ->
-          %{entity: type, value: value}
-        end)
-
-      _ ->
-        []
-    end
+  defp candidate!(entity) do
+    raise ArgumentError,
+          "AnaphoraResolver: a history entity needs a string :entity_type, a :value and a numeric " <>
+            ":confidence, got: #{inspect(entity)}"
   end
 
-  defp extract_entities_from_context(_) do
-    []
-  end
-
-  defp calculate_recency_score(turns_ago) do
-    :math.exp(-@recency_decay * (turns_ago - 1))
-  end
-
-  defp score_and_rank_candidates(candidates, anaphora_type) when is_list(candidates) do
-    static_compatible = Map.get(@entity_type_compatibility, anaphora_type, [])
+  defp best_referent(candidates, kind) do
+    compatible = Map.fetch!(@entity_type_compatibility, kind)
 
     candidates
     |> Enum.map(fn {entity, recency_score, _turns_ago} ->
-      entity_type = to_string(entity[:entity_type] || "")
-
       type_score =
         cond do
-          entity_type in static_compatible ->
-            1.0
-
-          type_compatible_via_hierarchy?(entity_type, static_compatible) ->
-            0.85
-
-          true ->
-            0.3
+          entity.entity_type in compatible -> 1.0
+          Enum.any?(compatible, &TypeHierarchy.compatible?(entity.entity_type, &1)) -> 0.85
+          true -> 0.3
         end
 
-      combined_score = recency_score * 0.4 + type_score * 0.6
-
-      {entity, combined_score}
+      {entity, recency_score * 0.4 + type_score * 0.6}
     end)
     |> Enum.filter(fn {_, score} -> score > 0.3 end)
     |> Enum.max_by(fn {_, score} -> score end, fn -> nil end)
     |> case do
-      {entity, _score} -> entity
-      nil -> nil
+      {entity, score} ->
+        %{
+          entity_type: entity.entity_type,
+          value: entity.value,
+          confidence: score * entity.confidence,
+          source: :anaphora_resolution
+        }
+
+      nil ->
+        nil
     end
   end
 
-  defp score_and_rank_candidates(_, _) do
-    nil
-  end
+  defp pos_model! do
+    case POSTagger.get_model() do
+      {:ok, model} ->
+        model
 
-  defp type_compatible_via_hierarchy?(entity_type, compatible_types) do
-    alias Brain.Analysis.TypeHierarchy
-
-    Enum.any?(compatible_types, fn expected ->
-      TypeHierarchy.compatible?(entity_type, expected)
-    end)
+      {:error, reason} ->
+        raise "AnaphoraResolver: no usable part-of-speech model at #{POSTagger.model_path()}: #{inspect(reason)}"
+    end
   end
 end

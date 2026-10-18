@@ -1,0 +1,737 @@
+[
+  {
+    "data": [
+      {
+        "text": "can you please make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the room darker till 40 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "darken "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " till 40 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "darken "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " till 40 percents please"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "darken "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " to 40 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "dim all the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "dim the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "dim the living room "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " to 20"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "down all the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " down"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "kitchen yellow "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " down"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness down by 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness down by 50 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness down for 15 percents in the bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness down till 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness down till 23"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness up to 15 percents in the bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " down by 50 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " down till 23"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level down till 23"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level down till 23 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "lower brightness for green "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "lower "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " saturation to 25 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "lower the brightness of all "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " level lower by 5 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " level lower by 5 points in the kitchen"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " darker for 20 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " darker till 40 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " darker to 40 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " darker until 40 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the kitchen 10 less"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "make "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " lower for 20 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn all "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " down"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down all "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness by 15 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness till 15 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " for 20"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " for 20 percent"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " for 20 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " for 20 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " until 40"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " until 40 percent"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " until 40 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn down "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " until 40 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness down by 50 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " darker till 40 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " darker to 40 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " darker until 40 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " down by 50 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " down for 20 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " lower for 20 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level down till 5 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " level down till 5 points in the kitchen"
+      }
+    ]
+  }
+]

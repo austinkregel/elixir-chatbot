@@ -33,6 +33,18 @@ defmodule Brain.ML.ModelStore do
   # ---------------------------------------------------------------------------
 
   @doc """
+  Encodes a model for writing to a `.term` file.
+
+  Every model file is written through this. The encoding is deterministic, so
+  the same model always produces the same bytes and comparing file hashes
+  compares models. Plain `:erlang.term_to_binary/1` makes no such promise:
+  equal terms can encode differently. Extra options such as `:compressed`
+  pass through.
+  """
+  @spec serialize(term(), list()) :: binary()
+  def serialize(model, opts \\ []), do: :erlang.term_to_binary(model, [:deterministic | opts])
+
+  @doc """
   Uploads a local `.term` file to the model store under a versioned key.
 
   Returns `{:ok, remote_key}` on success, `{:error, reason}` on failure,
@@ -138,8 +150,14 @@ defmodule Brain.ML.ModelStore do
   call this before `File.read!` to transparently pull from MinIO when
   running in a container that starts without local model files.
 
-  When the store is disabled or unreachable, this is a silent no-op so
-  existing local-file loading continues to work.
+  A no-op when the store is disabled: local files are then the intended source.
+  When it is enabled and the file is missing, a failed fetch raises rather than
+  leaving the caller to discover the absence later.
+
+  A file that already exists locally is not re-verified. `fetch/3` performs no
+  ETag or size check, so there is nothing to compare against; a stale local model
+  is caught instead by `Brain.ML.MicroProvenance.check_current!/3` and
+  `Brain.Training.POS.check_current!/2`.
   """
   @spec ensure_local(String.t(), String.t(), keyword()) :: :ok
   def ensure_local(remote_key, local_path, opts \\ []) do
@@ -152,8 +170,19 @@ defmodule Brain.ML.ModelStore do
 
         _ ->
           case fetch(remote_key, local_path, opts) do
-            :ok -> :ok
-            {:error, _} -> :ok
+            :ok ->
+              :ok
+
+            {:error, reason} ->
+              raise """
+              ModelStore is enabled but could not fetch #{remote_key} to #{local_path}: \
+              #{inspect(reason)}
+
+              Both the versioned prefix and the bare key failed. Either the store is \
+              unreachable, the object is missing, or `latest` names a prefix that does \
+              not hold it -- fetch_latest/2 assumes a prefix holds *every* model, so a \
+              partial publish orphans the rest.
+              """
           end
       end
     else

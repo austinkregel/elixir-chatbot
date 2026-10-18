@@ -4,17 +4,17 @@
       "index": 0,
       "text": "Play some music",
       "entities": [],
-      "response_strategy": "can_respond",
-      "slots_filled": [],
-      "slots_missing": [],
-      "detected_intent": "music.play",
+      "response_strategy": "hedged_response",
       "speech_act_category": "directive",
+      "speech_act_confidence": 0.97,
+      "detected_intent": "music.play",
       "speech_act_type": "command",
-      "speech_act_confidence": 0.73,
       "discourse_addressee": "bot",
-      "discourse_self_referential": "false"
+      "discourse_self_referential": "false",
+      "slots_filled": [],
+      "slots_missing": []
     }
   ],
-  "overall_strategy": "can_respond",
+  "overall_strategy": "hedged_response",
   "chunk_count": 1
 }

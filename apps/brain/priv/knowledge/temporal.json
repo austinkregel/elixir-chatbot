@@ -1,0 +1,39 @@
+{
+  "description": "What the words dates, times and durations are said with mean, read by Brain.Temporal.Vocabulary. The surface forms of days, periods and times of day, and the canonical value each stands for, are the gazetteer's own entries (data/entities/sys_date_entries_en.json and sys_time_entries_en.json); this file says what each canonical date value means, and declares the closed sets those entries leave out: the units a length is counted in, the meridiems, the ordinal suffixes of a day of the month, and the words that relate a date or time to the turn. Weekday and month names are not declared here: they are the calendar's own (Calendar.strftime/2). Every canonical date value of the entries must have a meaning here, and every meaning here must name a canonical value of the entries; either missing raises when the vocabulary loads.",
+  "week_starts_on": "monday",
+  "units": {
+    "second": {"forms": ["second", "seconds", "sec", "secs"], "say": ["second", "seconds"]},
+    "minute": {"forms": ["minute", "minutes", "min", "mins"], "say": ["minute", "minutes"]},
+    "hour": {"forms": ["hour", "hours", "hr", "hrs"], "say": ["hour", "hours"]},
+    "day": {"forms": ["day", "days"], "say": ["day", "days"]},
+    "week": {"forms": ["week", "weeks"], "say": ["week", "weeks"]},
+    "month": {"forms": ["month", "months"], "say": ["month", "months"]},
+    "year": {"forms": ["year", "years"], "say": ["year", "years"]}
+  },
+  "meridiems": {"am": 0, "pm": 12},
+  "ordinal_suffixes": ["st", "nd", "rd", "th"],
+  "relations": {
+    "offset": ["in", "after"],
+    "point": ["at", "on", "in", "the"],
+    "range_start": ["from"],
+    "range_end": ["till", "until", "to"],
+    "shift": {"this": 0, "next": 1, "last": -1}
+  },
+  "date_meanings": {
+    "today": {"day_offset": 0},
+    "yesterday": {"day_offset": -1},
+    "tomorrow": {"day_offset": 1},
+    "tonight": {"day_offset": 0, "time_of_day": "evening"},
+    "this week": {"period": "week", "offset": 0},
+    "next week": {"period": "week", "offset": 1},
+    "last week": {"period": "week", "offset": -1},
+    "this month": {"period": "month", "offset": 0},
+    "next month": {"period": "month", "offset": 1},
+    "last month": {"period": "month", "offset": -1},
+    "this year": {"period": "year", "offset": 0},
+    "next year": {"period": "year", "offset": 1},
+    "last year": {"period": "year", "offset": -1},
+    "weekend": {"weekdays": ["saturday", "sunday"]},
+    "later": {"after_turn": true}
+  }
+}

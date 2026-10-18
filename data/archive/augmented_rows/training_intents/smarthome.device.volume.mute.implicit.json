@@ -1,0 +1,198 @@
+[
+  {
+    "text": "TV sound is disturbing me everywhere the house",
+    "tokens": [
+      "TV",
+      "sound",
+      "is",
+      "disturbing",
+      "me",
+      "everywhere",
+      "the",
+      "house"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "VERB",
+      "PRON",
+      "ADV",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-a548d1aa",
+    "intent": "smarthome.device.volume.mute.implicit"
+  },
+  {
+    "text": "I want to i don't like hearing tv sound from kitchen",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "i",
+      "do",
+      "n't",
+      "like",
+      "hearing",
+      "tv",
+      "sound",
+      "from",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "ADV",
+      "VERB",
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-45a41ad6",
+    "intent": "smarthome.device.volume.mute.implicit"
+  },
+  {
+    "text": "TV is sound disturbing me",
+    "tokens": [
+      "TV",
+      "is",
+      "sound",
+      "disturbing",
+      "me"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "ADJ",
+      "VERB",
+      "PRON"
+    ],
+    "entities": [],
+    "id": "augmented-183cfca6",
+    "intent": "smarthome.device.volume.mute.implicit"
+  },
+  {
+    "text": "please tv sound is disturbing me everywhere in the house",
+    "tokens": [
+      "please",
+      "tv",
+      "sound",
+      "is",
+      "disturbing",
+      "me",
+      "everywhere",
+      "in",
+      "the",
+      "house"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "VERB",
+      "PRON",
+      "ADV",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-5333d045",
+    "intent": "smarthome.device.volume.mute.implicit"
+  },
+  {
+    "text": "I do n't like hearing TV sound kitchen",
+    "tokens": [
+      "I",
+      "do",
+      "n't",
+      "like",
+      "hearing",
+      "TV",
+      "sound",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB",
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-e7cec514",
+    "intent": "smarthome.device.volume.mute.implicit"
+  },
+  {
+    "text": "I do n't like hearing TV sound from kitchen",
+    "tokens": [
+      "I",
+      "do",
+      "n't",
+      "like",
+      "hearing",
+      "TV",
+      "sound",
+      "from",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "VERB",
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-a84ce48f",
+    "intent": "smarthome.device.volume.mute.implicit"
+  },
+  {
+    "text": "can you tv sound is disturbing me everywhere in the house",
+    "tokens": [
+      "can",
+      "you",
+      "tv",
+      "sound",
+      "is",
+      "disturbing",
+      "me",
+      "everywhere",
+      "in",
+      "the",
+      "house"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "VERB",
+      "PRON",
+      "ADV",
+      "ADP",
+      "DET",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-fd2a82df",
+    "intent": "smarthome.device.volume.mute.implicit"
+  }
+]

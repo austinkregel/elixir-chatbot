@@ -1,0 +1,178 @@
+[
+  {
+    "text": "can you tv is so loud in kitchen",
+    "tokens": [
+      "can",
+      "you",
+      "tv",
+      "is",
+      "so",
+      "loud",
+      "in",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-8cd20929",
+    "intent": "smarthome.device.volume.down.implicit"
+  },
+  {
+    "text": "I'd like to tv is so loud in kitchen",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "tv",
+      "is",
+      "so",
+      "loud",
+      "in",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-343ca590",
+    "intent": "smarthome.device.volume.down.implicit"
+  },
+  {
+    "text": "please tv volume is too loud everywhere",
+    "tokens": [
+      "please",
+      "tv",
+      "volume",
+      "is",
+      "too",
+      "loud",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-b8613efe",
+    "intent": "smarthome.device.volume.down.implicit"
+  },
+  {
+    "text": "I want to tv volume is too loud everywhere",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "tv",
+      "volume",
+      "is",
+      "too",
+      "loud",
+      "everywhere"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-9372435a",
+    "intent": "smarthome.device.volume.down.implicit"
+  },
+  {
+    "text": "please the speakers volume is too loud",
+    "tokens": [
+      "please",
+      "the",
+      "speakers",
+      "volume",
+      "is",
+      "too",
+      "loud"
+    ],
+    "pos_tags": [
+      "VERB",
+      "DET",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-e6b050a0",
+    "intent": "smarthome.device.volume.down.implicit"
+  },
+  {
+    "text": "please tv is so loud in kitchen",
+    "tokens": [
+      "please",
+      "tv",
+      "is",
+      "so",
+      "loud",
+      "in",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-ee698b51",
+    "intent": "smarthome.device.volume.down.implicit"
+  },
+  {
+    "text": "TV is so loud kitchen",
+    "tokens": [
+      "TV",
+      "is",
+      "so",
+      "loud",
+      "kitchen"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-a7108c5c",
+    "intent": "smarthome.device.volume.down.implicit"
+  }
+]

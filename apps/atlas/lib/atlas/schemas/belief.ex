@@ -4,7 +4,8 @@ defmodule Atlas.Schemas.Belief do
 
   Replaces the file-based BeliefStore `.term` persistence.
   Stores beliefs with subject-predicate-object triples, confidence scores,
-  source tracking, and JTMS integration metadata.
+  source tracking, and JTMS integration metadata. Every belief is held in
+  one world, `world_id`, which it must name.
   """
 
   use Ecto.Schema
@@ -14,6 +15,7 @@ defmodule Atlas.Schemas.Belief do
   @primary_key {:id, :binary_id, autogenerate: true}
 
   schema "atlas_beliefs" do
+    field :world_id, :string
     field :subject, :string
     field :predicate, :string
     field :object, :string
@@ -30,7 +32,7 @@ defmodule Atlas.Schemas.Belief do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @required_fields ~w(subject predicate object confidence source)a
+  @required_fields ~w(world_id subject predicate object confidence source)a
   @optional_fields ~w(source_authority user_id node_id retracted last_confirmed provenance metadata)a
 
   def changeset(belief, attrs) do
@@ -43,6 +45,11 @@ defmodule Atlas.Schemas.Belief do
   @doc "Query active (non-retracted) beliefs."
   def active(query \\ __MODULE__) do
     from(b in query, where: b.retracted == false)
+  end
+
+  @doc "Query the beliefs held in a world."
+  def in_world(query \\ __MODULE__, world_id) when is_binary(world_id) do
+    from(b in query, where: b.world_id == ^world_id)
   end
 
   @doc "Query beliefs by subject."

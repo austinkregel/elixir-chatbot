@@ -6,13 +6,16 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
 
   ## Usage
 
-      mix evaluate.memory_retrieval              # Default (current config)
-      mix evaluate.memory_retrieval --no-rerank  # TF-IDF only baseline
-      mix evaluate.memory_retrieval --wider-only # TF-IDF k*4 pool, no KG blend
-      mix evaluate.memory_retrieval --rerank     # Full KG re-rank
-      mix evaluate.memory_retrieval --blend-weight 0.4  # Custom blend weight
-      mix evaluate.memory_retrieval --save       # Save results to file
-      mix evaluate.memory_retrieval --verbose    # Per-query detail
+      mix evaluate.memory_retrieval --world <id>              # Default (current config)
+      mix evaluate.memory_retrieval --world <id> --no-rerank  # TF-IDF only baseline
+      mix evaluate.memory_retrieval --world <id> --wider-only # TF-IDF k*4 pool, no KG blend
+      mix evaluate.memory_retrieval --world <id> --rerank     # Full KG re-rank
+      mix evaluate.memory_retrieval --world <id> --blend-weight 0.4  # Custom blend weight
+      mix evaluate.memory_retrieval --world <id> --save       # Save results to file
+      mix evaluate.memory_retrieval --world <id> --verbose    # Per-query detail
+
+  `--world <id>` is required: the world whose episodes are retrieved and whose
+  entities and entity vectors are used for the KG re-rank.
 
   ## Ablation modes
 
@@ -37,10 +40,15 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
           rerank: :boolean,
           blend_weight: :float,
           save: :boolean,
-          verbose: :boolean
+          verbose: :boolean,
+          world: :string
         ],
         aliases: [v: :verbose, s: :save]
       )
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix evaluate.memory_retrieval needs --world <id>, the world whose entities are extracted")
 
     Mix.Task.run("app.start")
 
@@ -64,7 +72,7 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
         query = entry["query"]
         expected_tags = entry["expected_tags"] || []
 
-        retrieved = retrieve(query, mode, blend_weight)
+        retrieved = retrieve(query, mode, blend_weight, world_id)
 
         relevance_scores =
           Enum.map(retrieved, fn {episode, _sim} ->
@@ -110,7 +118,7 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
     end
   end
 
-  defp retrieve(query, mode, blend_weight) do
+  defp retrieve(query, mode, blend_weight, world_id) do
     pool_multiplier =
       case mode do
         :no_rerank -> 2
@@ -118,12 +126,12 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
         :rerank -> 4
       end
 
-    case Brain.Memory.Store.query_similar(query, @k * pool_multiplier) do
+    case Brain.Memory.Store.query_similar(query, @k * pool_multiplier, world_id: world_id) do
       {:ok, episodes} when is_list(episodes) ->
         results =
           case mode do
             :rerank ->
-              rerank_with_kg(query, episodes, blend_weight)
+              rerank_with_kg(query, episodes, blend_weight, world_id)
 
             _ ->
               episodes
@@ -134,26 +142,24 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
       _ ->
         []
     end
-  rescue
-    _ -> []
   end
 
-  defp rerank_with_kg(query, episodes, kg_weight) do
+  defp rerank_with_kg(query, episodes, kg_weight, world_id) do
     tfidf_weight = 1.0 - kg_weight
 
-    query_entities = extract_entity_names(query)
+    query_entities = extract_entity_names(query, world_id)
 
     if query_entities == [] do
       episodes
     else
       Enum.map(episodes, fn {episode, tfidf_score} ->
-        episode_entities = extract_episode_entities(episode)
+        episode_entities = extract_episode_entities(episode, world_id)
 
         kg_score =
           if episode_entities == [] do
             0.0
           else
-            compute_max_entity_cosine(query_entities, episode_entities)
+            compute_max_entity_cosine(query_entities, episode_entities, world_id)
           end
 
         blended = tfidf_score * tfidf_weight + kg_score * kg_weight
@@ -163,8 +169,8 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
     end
   end
 
-  defp extract_entity_names(text) do
-    case Brain.ML.EntityExtractor.extract_entities(text) do
+  defp extract_entity_names(text, world_id) do
+    case Brain.ML.EntityExtractor.extract_entities(text, world_id: world_id) do
       entities when is_list(entities) ->
         Enum.map(entities, fn e ->
           Map.get(e, :value) || Map.get(e, :text, "")
@@ -174,24 +180,22 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
       _ ->
         []
     end
-  rescue
-    _ -> []
   end
 
-  defp extract_episode_entities(episode) do
+  defp extract_episode_entities(episode, world_id) do
     tags = Map.get(episode, :tags, [])
     state = Map.get(episode, :state, "")
-    entity_names = extract_entity_names(state)
+    entity_names = extract_entity_names(state, world_id)
     Enum.uniq(tags ++ entity_names)
   end
 
-  defp compute_max_entity_cosine(query_entities, episode_entities) do
+  defp compute_max_entity_cosine(query_entities, episode_entities, world_id) do
     cache_mod = Brain.ML.KnowledgeGraph.EntityVectorCache
 
     if Code.ensure_loaded?(cache_mod) and function_exported?(cache_mod, :get_or_compute, 2) do
       query_vecs =
         Enum.flat_map(query_entities, fn name ->
-          case cache_mod.get_or_compute("default", name) do
+          case cache_mod.get_or_compute(world_id, name) do
             {:ok, vec} -> [vec]
             _ -> []
           end
@@ -199,7 +203,7 @@ defmodule Mix.Tasks.Evaluate.MemoryRetrieval do
 
       episode_vecs =
         Enum.flat_map(episode_entities, fn name ->
-          case cache_mod.get_or_compute("default", name) do
+          case cache_mod.get_or_compute(world_id, name) do
             {:ok, vec} -> [vec]
             _ -> []
           end

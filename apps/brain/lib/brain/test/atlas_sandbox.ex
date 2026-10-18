@@ -17,7 +17,12 @@ defmodule Brain.Test.AtlasSandbox do
     Brain.ML.Gazetteer,
     Brain,
     Brain.Epistemic.JTMS,
-    Brain.Analysis.ComprehensionAssessor
+    Brain.Analysis.ComprehensionAssessor,
+    Brain.Lexicon.UserDefined,
+    Brain.Knowledge.LearningTriggers,
+    Brain.Services.LocalScheduler,
+    # Writes each world's semantic-fact metric counts.
+    Brain.Metrics.Aggregator
   ]
 
   @task_supervisors [
@@ -30,10 +35,11 @@ defmodule Brain.Test.AtlasSandbox do
 
   @doc """
   Allow persistent Brain/Atlas workers and task supervisors to use the test
-  sandbox connection checked out by `owner_pid`.
+  sandbox connection checked out by `owner_pid`. An app whose own processes
+  query Atlas on a test's behalf passes their registered names as `also_allow`.
   """
-  def allow_for_test_owner!(owner_pid) when is_pid(owner_pid) do
-    for name <- @atlas_genservers do
+  def allow_for_test_owner!(owner_pid, also_allow \\ []) when is_pid(owner_pid) and is_list(also_allow) do
+    for name <- @atlas_genservers ++ also_allow do
       if pid = Process.whereis(name) do
         Ecto.Adapters.SQL.Sandbox.allow(Atlas.Repo, owner_pid, pid)
       end
@@ -64,10 +70,11 @@ defmodule Brain.Test.AtlasSandbox do
   end
 
   @doc """
-  Checkout sandbox, enable AGE + `atlas_test` search_path, allow workers.
+  Checkout sandbox, enable AGE + `atlas_test` search_path, allow workers, and
+  the registered names in `also_allow` (`allow_for_test_owner!/2`).
   Returns the owner PID (use in `on_exit` with `drain_and_stop_owner/1`).
   """
-  def checkout_and_configure!(tags) when is_map(tags) do
+  def checkout_and_configure!(tags, also_allow \\ []) when is_map(tags) and is_list(also_allow) do
     try do
       Ecto.Adapters.SQL.Sandbox.mode(Atlas.Repo, :manual)
     rescue
@@ -86,6 +93,28 @@ defmodule Brain.Test.AtlasSandbox do
           Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: not tags[:async])
       end
 
+    configure_age!()
+    allow_for_test_owner!(pid, also_allow)
+    pid
+  end
+
+  @doc """
+  Checks out a sandbox connection for the calling test without sharing it:
+  the pool stays in `:manual` mode, and the connection is used by the test
+  process, the tasks it starts (through `$callers`), and the workers and task
+  supervisors `allow_for_test_owner!/1` allows. Any other process raises
+  `DBConnection.OwnershipError`. Enables AGE and the `atlas_test`
+  search_path. Returns the owner PID (use in `on_exit` with
+  `drain_and_stop_owner/1`).
+  """
+  def checkout_allowed! do
+    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Atlas.Repo, shared: false)
+    configure_age!()
+    allow_for_test_owner!(pid)
+    pid
+  end
+
+  defp configure_age! do
     Ecto.Adapters.SQL.query!(Atlas.Repo, "LOAD 'age'", [])
 
     Ecto.Adapters.SQL.query!(
@@ -93,8 +122,5 @@ defmodule Brain.Test.AtlasSandbox do
       ~s(SET search_path = atlas_test, ag_catalog, "$user", public),
       []
     )
-
-    allow_for_test_owner!(pid)
-    pid
   end
 end

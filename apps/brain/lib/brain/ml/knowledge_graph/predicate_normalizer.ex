@@ -27,6 +27,13 @@ defmodule Brain.ML.KnowledgeGraph.PredicateNormalizer do
   - `{:ok, canonical, :lemma_passthrough}` — verb lemma found in trained relation coverage
   - `{:error, :oov}` — out of vocabulary, consumers must not score this predicate
   - `{:error, :empty}` — empty or nil input
+
+  ## Relation coverage
+
+  The lemma passthrough accepts a verb lemma that a triple scorer was trained
+  on, so `normalize/2` takes that scorer's relation coverage: a world's
+  (`TripleScorer.relation_coverage/1`) when the predicate will be scored in the
+  world. The alias table is the same for every world.
   """
 
   require Logger
@@ -35,24 +42,25 @@ defmodule Brain.ML.KnowledgeGraph.PredicateNormalizer do
 
   @type match_kind :: :exact | :mapped | :synonym | :lemma_passthrough
   @type normalize_result :: {:ok, String.t(), match_kind} | {:error, :oov | :empty}
+  @type relation_coverage :: %{String.t() => non_neg_integer()}
 
   @doc """
   Normalize a predicate string or atom to the canonical relation name
-  used by the TripleScorer.
+  used by the TripleScorer whose `relation_coverage` is given.
 
   Returns `{:ok, canonical, kind}` on success, `{:error, reason}` otherwise.
   """
-  @spec normalize(String.t() | atom() | nil) :: normalize_result
-  def normalize(nil), do: {:error, :empty}
-  def normalize(""), do: {:error, :empty}
+  @spec normalize(String.t() | atom() | nil, relation_coverage) :: normalize_result
+  def normalize(nil, coverage) when is_map(coverage), do: {:error, :empty}
+  def normalize("", coverage) when is_map(coverage), do: {:error, :empty}
 
-  def normalize(predicate) when is_atom(predicate) do
-    normalize(Atom.to_string(predicate))
+  def normalize(predicate, coverage) when is_atom(predicate) and is_map(coverage) do
+    normalize(Atom.to_string(predicate), coverage)
   end
 
-  def normalize(predicate) when is_binary(predicate) do
+  def normalize(predicate, coverage) when is_binary(predicate) and is_map(coverage) do
     trimmed = String.trim(predicate)
-    if trimmed == "", do: {:error, :empty}, else: do_normalize(trimmed)
+    if trimmed == "", do: {:error, :empty}, else: do_normalize(trimmed, coverage)
   end
 
   @doc """
@@ -92,7 +100,7 @@ defmodule Brain.ML.KnowledgeGraph.PredicateNormalizer do
     :ok
   end
 
-  defp do_normalize(predicate) do
+  defp do_normalize(predicate, coverage) do
     table = alias_table()
     reverse = reverse_index()
 
@@ -107,7 +115,7 @@ defmodule Brain.ML.KnowledgeGraph.PredicateNormalizer do
         {:ok, canonical, :synonym}
 
       true ->
-        try_lemma_passthrough(predicate)
+        try_lemma_passthrough(predicate, coverage)
     end
   end
 
@@ -140,8 +148,8 @@ defmodule Brain.ML.KnowledgeGraph.PredicateNormalizer do
     end)
   end
 
-  defp try_lemma_passthrough(predicate) do
-    lemma = Brain.ML.Lexicon.lemma(predicate)
+  defp try_lemma_passthrough(predicate, coverage) do
+    lemma = Brain.Lexicon.lemma(predicate)
     capitalized = String.capitalize(lemma)
 
     table = alias_table()
@@ -150,23 +158,11 @@ defmodule Brain.ML.KnowledgeGraph.PredicateNormalizer do
       Map.has_key?(table, capitalized) ->
         {:ok, capitalized, :lemma_passthrough}
 
-      relation_in_trained_coverage?(lemma) ->
+      Map.get(coverage, capitalized, 0) >= 5 ->
         {:ok, capitalized, :lemma_passthrough}
 
       true ->
         {:error, :oov}
-    end
-  end
-
-  defp relation_in_trained_coverage?(lemma) do
-    case Brain.ML.KnowledgeGraph.TripleScorer.relation_coverage() do
-      {:ok, coverage} when is_map(coverage) ->
-        capitalized = String.capitalize(lemma)
-        count = Map.get(coverage, capitalized, 0)
-        count >= 5
-
-      _ ->
-        false
     end
   end
 

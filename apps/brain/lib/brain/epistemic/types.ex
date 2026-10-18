@@ -106,8 +106,15 @@ defmodule Brain.Epistemic.Types do
       value |> max(min) |> min(max)
     end
 
+    # A UUID, because this id is the primary key of `atlas_beliefs`, which is
+    # a `:binary_id`. 32 bare hex characters cannot be cast to one, so every
+    # `Atlas.Repo.get/2` in `AtlasIntegration.persist_belief/1` raised
+    # `Ecto.Query.CastError`, `async/1` logged it at debug, and no belief was
+    # ever written. Episodes and semantic facts already generate UUIDs for the
+    # same reason (`Brain.Memory.Types.generate_uuid/0`). `Node` and
+    # `Justification` below keep the hex form: their ids go to string columns.
     defp generate_id do
-      :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+      Ecto.UUID.generate()
     end
   end
 

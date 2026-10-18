@@ -30,7 +30,7 @@ defmodule Brain.Services.Service do
         def provides_fields, do: [:temperature, :conditions, :humidity, :forecast]
 
         @impl true
-        def enrich(intent, slots, credentials) do
+        def enrich(intent, slots, credentials, world_id) do
           # Fetch weather data and return enriched fields
           {:ok, %{temperature: "72°F", conditions: "sunny"}}
         end
@@ -40,6 +40,9 @@ defmodule Brain.Services.Service do
           # Validate API key works
           :ok
         end
+
+        @impl true
+        def writes?(_intent), do: false
       end
 
   ## Enrichment Fields
@@ -132,13 +135,15 @@ defmodule Brain.Services.Service do
   ## Parameters
     - intent: The classified intent name
     - slots: Map of slot names to values (e.g., %{location: "NYC"})
-    - credentials: Map of credential keys to values
+    - credentials: Map of credential keys to values, read from the world
+    - world_id: The world the request runs in; the credentials belong to it
+      and any world-scoped data the service reads is that world's
 
   ## Returns
     - {:ok, enrichment_data} on success
     - {:error, reason} on failure
   """
-  @callback enrich(intent :: String.t(), slots(), credentials()) ::
+  @callback enrich(intent :: String.t(), slots(), credentials(), world_id :: String.t()) ::
               {:ok, enrichment_data()} | {:error, error_reason()}
 
   @doc """
@@ -151,6 +156,15 @@ defmodule Brain.Services.Service do
     - {:error, reason} if validation fails
   """
   @callback health_check(credentials()) :: :ok | {:error, term()}
+
+  @doc """
+  Whether enriching this intent changes state outside the response, such as
+  actuating a device or storing an alarm, rather than only reading data.
+
+  The dispatcher refuses such a call for a conversation created with
+  `side_effects: false`.
+  """
+  @callback writes?(intent :: String.t()) :: boolean()
 
   # ============================================================================
   # Optional Callbacks with Defaults
@@ -193,7 +207,20 @@ defmodule Brain.Services.Service do
   """
   @callback slot_schema() :: map()
 
-  @optional_callbacks enabled?: 0, slot_schema: 0
+  @doc """
+  List of intent domain prefixes this service handles.
+
+  Services that declare domains will receive ALL intents matching those
+  prefixes (e.g., `["smarthome", "music"]` handles `smarthome.switch`,
+  `music.play`, etc.) without needing to enumerate every specific intent.
+
+  This is the preferred routing mechanism for services that handle
+  broad categories of intents. Services that only handle a few specific
+  intents can use `supported_intents/0` instead.
+  """
+  @callback supported_domains() :: [String.t()]
+
+  @optional_callbacks enabled?: 0, slot_schema: 0, supported_domains: 0
 
   # ============================================================================
   # Helper Functions

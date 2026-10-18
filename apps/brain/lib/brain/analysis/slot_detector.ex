@@ -1,15 +1,46 @@
 defmodule Brain.Analysis.SlotDetector do
   @moduledoc "Detects required and optional slots for a given intent and fills them from entities.\n\nThis module:\n- Loads slot schemas from JSON configuration\n- Maps extracted entities to slots\n- Identifies missing required slots\n- Applies default values where configured\n- Provides clarification prompts for missing slots\n"
 
-  alias Brain.Analysis.{SlotResult, TypeHierarchy}
+  alias Brain.Analysis.{FreeTextCapture, SlotResult, TypeHierarchy}
 
   require Logger
 
-  @schemas_path "priv/analysis/intent_registry.json"
+  @schemas_path "analysis/intent_registry.json"
 
-  @doc "Detects slots for the given intent and fills them from entities.\n\nReturns a SlotResult struct indicating which slots are filled and which are missing.\n"
-  def detect(intent, entities) when is_binary(intent) and is_list(entities) do
+  @doc """
+  Detects slots for the given intent and fills them from entities, and its
+  free-text slots from the utterance.
+
+  Returns a SlotResult struct indicating which slots are filled and which are missing.
+
+  A free-text slot (a reminder's text) is one `Brain.Analysis.FreeTextCapture`
+  captures: no entity type names its value, so it is a span of the utterance.
+  Each slot of the intent's schema that the capture model captures and no
+  entity filled is filled with the span it captures, its source `:captured`
+  and its confidence the capture's. The span holds no token of an entity that
+  filled another slot, nor a date, time or length. When the model abstains the
+  slot stays unfilled, among the missing slots.
+
+  Options:
+  - `:side_effects` - when a slot is filled through a compatible (not exact)
+    entity type, the match is recorded as a Gazetteer type preference. `false`
+    skips that write. Defaults to `true`.
+  - `:text` - the utterance the entities' `:start_pos` and `:end_pos` index.
+    Free-text slots are captured only from it: without it, none is filled.
+  - `:language` - the language of `:text`, whose loaded capture model
+    (`Brain.Analysis.FreeTextCapture.loaded!/1`) is used. Required with `:text`
+    unless `:free_text_capture` is given.
+  - `:free_text_capture` - a `Brain.Analysis.FreeTextCapture` model used in
+    place of the loaded one.
+
+  With `:text`, every entity that fills a slot must carry its `:start_pos` and
+  `:end_pos`, or this raises: a captured span could not be kept off it.
+  """
+  def detect(intent, entities, opts \\ []) when is_binary(intent) and is_list(entities) do
     schemas = load_schemas()
+    record? = Keyword.get(opts, :side_effects, true)
+    entities = slot_fillers!(entities)
+    utterance = utterance!(opts)
 
     case Map.get(schemas, intent) do
       nil ->
@@ -19,15 +50,45 @@ defmodule Brain.Analysis.SlotDetector do
           nil ->
             case find_domain_prefix_schema(intent, entities, schemas) do
               nil -> build_unknown_result(entities)
-              {schema, matched_intent} -> process_schema(schema, matched_intent, entities)
+              {schema, matched_intent} -> process_schema(schema, matched_intent, entities, record?, utterance)
             end
 
           schema ->
-            process_schema(schema, intent, entities)
+            process_schema(schema, intent, entities, record?, utterance)
         end
 
       schema ->
-        process_schema(schema, intent, entities)
+        process_schema(schema, intent, entities, record?, utterance)
+    end
+  end
+
+  # The utterance free-text slots are captured from, with the capture model,
+  # or nil when no `:text` was given.
+  defp utterance!(opts) do
+    case Keyword.fetch(opts, :text) do
+      :error ->
+        nil
+
+      {:ok, text} when is_binary(text) ->
+        model =
+          case {Keyword.fetch(opts, :free_text_capture), Keyword.fetch(opts, :language)} do
+            {{:ok, %FreeTextCapture{} = model}, _} ->
+              model
+
+            {{:ok, other}, _} ->
+              raise ArgumentError, "SlotDetector: :free_text_capture must be a FreeTextCapture model, got #{inspect(other, limit: 3)}"
+
+            {:error, {:ok, language}} ->
+              FreeTextCapture.loaded!(language)
+
+            {:error, :error} ->
+              raise ArgumentError, "SlotDetector: :text needs :language, whose free-text capture model reads it"
+          end
+
+        %{text: text, model: model}
+
+      {:ok, other} ->
+        raise ArgumentError, "SlotDetector: :text must be the utterance's text, got #{inspect(other, limit: 3)}"
     end
   end
 
@@ -35,6 +96,31 @@ defmodule Brain.Analysis.SlotDetector do
   def get_schema(intent) do
     schemas = load_schemas()
     Map.get(schemas, intent) || Map.get(schemas, get_parent_intent(intent))
+  end
+
+  @doc "The intent registry as stored, without the service schemas `detect/3` merges in. Raises when it cannot be read.\n"
+  def registry, do: load_registry()
+
+  @doc """
+  The entity types that fill `slot` of an intent's `schema`, as `detect/3`
+  fills it: the types the schema's `entity_mappings` lists for the slot, or,
+  for a slot the schema declares (`required` or `optional`) and the mappings
+  do not list, the type named as the slot. Raises for a slot the schema
+  neither declares nor maps.
+  """
+  @spec slot_entity_types!(map(), String.t()) :: [String.t()]
+  def slot_entity_types!(schema, slot) when is_map(schema) and is_binary(slot) do
+    case schema |> Map.get("entity_mappings", %{}) |> Map.fetch(slot) do
+      {:ok, types} ->
+        types
+
+      :error ->
+        if slot in Map.get(schema, "required", []) ++ Map.get(schema, "optional", []) do
+          [slot]
+        else
+          raise ArgumentError, "SlotDetector: #{inspect(slot)} is neither declared nor mapped by the schema #{inspect(schema, limit: 4)}"
+        end
+    end
   end
 
   @doc "Returns the set of entity types that can fill slots for a given intent.\n\nThis is useful for filtering entities to only those relevant to the intent.\n"
@@ -53,14 +139,34 @@ defmodule Brain.Analysis.SlotDetector do
     end
   end
 
+  @doc """
+  The entity types that can fill a slot of any registry intent in `domain`, a
+  consolidated domain as `:intent_domain` and `ChunkProfile.domain` give it
+  (`:music`, `:reminder`, ...).
+
+  Intents belong to a domain through `Brain.Lexicon.IntentDomains.consolidate/1`,
+  so `alarm.*` and `timer.*` both count toward `:reminder`. Only the registry is
+  read, not the service schemas merged into it, because a service's bare-domain
+  entries (Home Assistant declares `"music"`) are not intents of that domain.
+  """
+  def entity_types_for_domain(domain) when is_atom(domain) do
+    domain_name = Atom.to_string(domain)
+
+    load_registry()
+    |> Enum.filter(fn {intent, _schema} -> Brain.Lexicon.IntentDomains.consolidate(intent) == domain_name end)
+    |> Enum.flat_map(fn {_intent, schema} -> schema |> Map.get("entity_mappings", %{}) |> Map.values() end)
+    |> List.flatten()
+    |> MapSet.new()
+  end
+
   @doc "Lists all available slot schemas.\n"
   def list_schemas do
     load_schemas()
   end
 
-  @doc "Suggests an intent based on entities present.\n\nThis can be used when intent classification has low confidence.\n\nScoring algorithm:\n1. Primary: Count unique entity types that can fill ANY slot (not slots per type)\n2. Tiebreaker: Ratio of required slots that can be filled\n\nThis prevents intents with multiple slots accepting the same type from\nscoring higher (e.g., navigation.directions with destination+origin both\naccepting location should not beat weather.query for a single location entity).\n"
+  @doc "Suggests an intent based on entities present.\n\nThis can be used when intent classification has low confidence.\n\nScoring algorithm:\n1. Primary: Count unique entity types that can fill ANY slot (not slots per type)\n2. Tiebreaker: Ratio of required slots that can be filled\n\nThis prevents intents with multiple slots accepting the same type from\nscoring higher (e.g., navigation.directions with destination+origin both\naccepting location should not beat weather.query for a single location entity).\n\nOnly the intents of the registry are suggested. A service's schema answers for\na domain (\"device\", \"smarthome\") through `get_parent_intent/1` and merges into\nthe registry's intents; it is no intent of its own.\n"
   def suggest_intent_from_entities(entities) when is_list(entities) do
-    schemas = load_schemas()
+    schemas = Map.take(load_schemas(), Map.keys(load_registry()))
     entity_types = Enum.map(entities, fn e -> e[:entity_type] end) |> Enum.uniq()
 
     scored_schemas =
@@ -159,26 +265,25 @@ defmodule Brain.Analysis.SlotDetector do
     "Could you please specify the #{readable}?"
   end
 
-  defp load_schemas do
-    base =
-      case Application.get_env(:brain, :analysis_schemas_path, @schemas_path) do
-        path when is_binary(path) ->
-          case File.read(path) do
-            {:ok, content} ->
-              case Jason.decode(content) do
-                {:ok, schemas} -> schemas
-                {:error, _} -> default_schemas()
-              end
+  # The registry is resolved from the app's priv directory, not the working
+  # directory, and is required: without it every intent would get only the
+  # service schemas, which is how music.play lost its artist slot whenever the
+  # app ran from the umbrella root.
+  defp load_schemas, do: merge_service_schemas(load_registry())
 
-            {:error, _} ->
-              default_schemas()
-          end
+  defp load_registry do
+    path = Brain.priv_path(@schemas_path)
 
-        _ ->
-          default_schemas()
-      end
+    case File.read(path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, schemas} -> schemas
+          {:error, reason} -> raise "SlotDetector: cannot parse #{path}: #{inspect(reason)}"
+        end
 
-    merge_service_schemas(base)
+      {:error, reason} ->
+        raise "SlotDetector: cannot read intent registry at #{path}: #{inspect(reason)}"
+    end
   end
 
   defp merge_service_schemas(base) do
@@ -235,18 +340,6 @@ defmodule Brain.Analysis.SlotDetector do
     Map.put(base, "defaults", Map.merge(base_defaults, overlay_defaults))
   end
 
-  defp default_schemas do
-    %{
-      "unknown" => %{
-        "required" => [],
-        "optional" => [],
-        "defaults" => %{},
-        "entity_mappings" => %{},
-        "clarification_templates" => %{}
-      }
-    }
-  end
-
   defp expected_entity_types_from_schema(_intent, schema) do
     mappings = Map.get(schema, "entity_mappings", %{})
     mappings |> Map.values() |> List.flatten() |> Enum.uniq()
@@ -261,13 +354,28 @@ defmodule Brain.Analysis.SlotDetector do
     end
   end
 
-  defp process_schema(schema, intent, entities) do
+  # The entities that can fill a slot. Entities are decided spans only: the
+  # spans entity extraction could not decide travel apart from them
+  # (`Brain.ML.EntityExtractor.extract/2`), so none reaches a slot. Every
+  # entity must carry a type: one without raises rather than filling a slot
+  # named nil or matching as "".
+  defp slot_fillers!(entities) do
+    Enum.map(entities, fn
+      %{entity_type: type} = entity when is_binary(type) or (is_atom(type) and not is_nil(type)) ->
+        entity
+
+      entity ->
+        raise ArgumentError, "SlotDetector: an entity with no type cannot fill a slot: #{inspect(entity, limit: 8)}"
+    end)
+  end
+
+  defp process_schema(schema, intent, entities, record?, utterance) do
     required = Map.get(schema, "required", [])
     optional = Map.get(schema, "optional", [])
     defaults = Map.get(schema, "defaults", %{})
-    mappings = Map.get(schema, "entity_mappings", %{})
     result = SlotResult.new(intent)
-    result = fill_slots_from_entities(result, required ++ optional, entities, mappings)
+    {result, fillers} = fill_slots_from_entities(result, required ++ optional, entities, schema, record?)
+    result = capture_free_text(result, required ++ optional, fillers, utterance)
     result = apply_defaults(result, defaults)
     filled_slot_names = Map.keys(result.filled_slots)
     missing_required = Enum.reject(required, &(&1 in filled_slot_names))
@@ -281,9 +389,11 @@ defmodule Brain.Analysis.SlotDetector do
     }
   end
 
-  defp fill_slots_from_entities(result, slots, entities, mappings) do
-    Enum.reduce(slots, result, fn slot_name, acc ->
-      mapped_entity_types = Map.get(mappings, slot_name, [slot_name])
+  # The result with each slot an entity fills filled, and the entities that
+  # filled one.
+  defp fill_slots_from_entities(result, slots, entities, schema, record?) do
+    Enum.map_reduce(slots, result, fn slot_name, acc ->
+      mapped_entity_types = slot_entity_types!(schema, slot_name)
 
       exact_match =
         Enum.find(entities, fn entity ->
@@ -303,23 +413,63 @@ defmodule Brain.Analysis.SlotDetector do
 
       case matching_entity do
         nil ->
-          acc
+          {nil, acc}
 
         entity ->
-          if via_compatibility do
+          if via_compatibility and record? do
             record_learned_type_preference(entity, slot_name, result.schema_name)
           end
 
           value = entity[:value] || entity["value"]
           confidence = entity[:confidence] || entity["confidence"] || 1.0
-          SlotResult.fill_slot(acc, slot_name, value, :explicit, confidence)
+
+          # A fill through type compatibility (a "person" in a music_artist
+          # slot) is recorded as such, so a narrowing step can still refine
+          # the entity's type to what the slot asks for.
+          source = if via_compatibility, do: :type_compatible, else: :explicit
+          {entity, SlotResult.fill_slot(acc, slot_name, value, source, confidence)}
       end
     end)
+    |> then(fn {fillers, filled} -> {filled, Enum.reject(fillers, &is_nil/1)} end)
+  end
+
+  # Each slot of `slots` the capture model captures and no entity filled,
+  # filled with the span it captures from the utterance, kept off the
+  # entities that filled the other slots. Nothing is captured without an
+  # utterance.
+  defp capture_free_text(result, _slots, _fillers, nil), do: result
+
+  defp capture_free_text(result, slots, fillers, %{text: text, model: model}) do
+    captured = FreeTextCapture.slots(model)
+
+    case Enum.filter(slots, &(&1 in captured and not Map.has_key?(result.filled_slots, &1))) do
+      [] ->
+        result
+
+      free ->
+        excluded = Enum.map(fillers, &filler_range!/1)
+
+        Enum.reduce(free, result, fn slot, acc ->
+          case FreeTextCapture.capture(model, slot, text, excluded) do
+            {:ok, %{value: value, confidence: confidence}} -> SlotResult.fill_slot(acc, slot, value, :captured, confidence)
+            :abstain -> acc
+          end
+        end)
+    end
+  end
+
+  defp filler_range!(%{start_pos: start_pos, end_pos: end_pos}) when is_integer(start_pos) and is_integer(end_pos),
+    do: {start_pos, end_pos}
+
+  defp filler_range!(entity) do
+    raise ArgumentError,
+          "SlotDetector: an entity that fills a slot carries no :start_pos and :end_pos, so a captured free-text " <>
+            "span cannot be kept off it: #{inspect(entity, limit: 8)}"
   end
 
   defp find_compatible_entity(entities, mapped_entity_types) do
     Enum.find(entities, fn entity ->
-      entity_type = entity[:entity_type] || ""
+      entity_type = to_string(entity.entity_type)
 
       Enum.any?(mapped_entity_types, fn mapped ->
         TypeHierarchy.compatible?(entity_type, mapped)

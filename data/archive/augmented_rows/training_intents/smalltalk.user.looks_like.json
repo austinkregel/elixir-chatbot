@@ -1,0 +1,102 @@
+[
+  {
+    "text": "I want to do you know what i look like",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "do",
+      "you",
+      "know",
+      "what",
+      "i",
+      "look",
+      "like"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "ADJ",
+      "VERB",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "augmented-b7e58009",
+    "intent": "smalltalk.user.looks_like"
+  },
+  {
+    "text": "what do you think I look",
+    "tokens": [
+      "what",
+      "do",
+      "you",
+      "think",
+      "I",
+      "look"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-113f661d",
+    "intent": "smalltalk.user.looks_like"
+  },
+  {
+    "text": "I want to what do you think i look like",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "what",
+      "do",
+      "you",
+      "think",
+      "i",
+      "look",
+      "like"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "PRON",
+      "VERB",
+      "PRON",
+      "VERB",
+      "ADJ",
+      "VERB",
+      "ADP"
+    ],
+    "entities": [],
+    "id": "augmented-4e47f6be",
+    "intent": "smalltalk.user.looks_like"
+  },
+  {
+    "text": "do I good look",
+    "tokens": [
+      "do",
+      "I",
+      "good",
+      "look"
+    ],
+    "pos_tags": [
+      "VERB",
+      "PRON",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-50fb67c1",
+    "intent": "smalltalk.user.looks_like"
+  }
+]

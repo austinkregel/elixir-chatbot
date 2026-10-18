@@ -1,0 +1,44 @@
+[
+  {
+    "data": [
+      {
+        "text": "check the status of all the "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " status"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "the blue "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " status"
+      }
+    ]
+  }
+]

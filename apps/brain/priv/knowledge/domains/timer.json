@@ -1,0 +1,114 @@
+{
+  "domain": "timer",
+  "description": "Timer management",
+  "response_frames": {
+    "set": [
+      "Timer set for $duration.",
+      "I've started a $duration timer."
+    ],
+    "cancel": [
+      "Timer cancelled.",
+      "I've stopped the timer."
+    ],
+    "check": [
+      "Let me check the timer."
+    ],
+    "general": [
+      "Timer is running."
+    ]
+  },
+  "operation_frames": {
+    "cancel_timer": "cancel",
+    "set_timer": "set"
+  },
+  "enriched_response_frames": {
+    "running_with_time_left": {
+      "when": {"timer_status": "running"},
+      "requires_enrichment": ["duration", "time_left"],
+      "templates": [
+        "There's a timer running, set for $duration, with $time_left left.",
+        "A timer set for $duration is running: $time_left left."
+      ]
+    },
+    "finished_with_duration": {
+      "when": {"timer_status": "finished"},
+      "requires_enrichment": ["duration"],
+      "templates": [
+        "The timer set for $duration has run out.",
+        "Your timer for $duration has run out."
+      ]
+    },
+    "running_with_duration": {
+      "when": {"timer_status": "running"},
+      "requires_enrichment": ["duration"],
+      "templates": [
+        "There's a timer running, set for $duration.",
+        "A timer is running, set for $duration."
+      ]
+    },
+    "running": {
+      "when": {"timer_status": "running"},
+      "requires_enrichment": [],
+      "templates": [
+        "There's a timer running.",
+        "A timer is running."
+      ]
+    },
+    "none_found": {
+      "when": {"timer_status": "none"},
+      "requires_enrichment": [],
+      "templates": [
+        "There's no timer running.",
+        "No timer is running."
+      ]
+    },
+    "cancelled_one_with_duration": {
+      "when": {"cancelled_count": 1, "timer_status": "cancelled"},
+      "requires_enrichment": ["timer_durations"],
+      "templates": [
+        "Cancelled the timer set for $timer_durations.",
+        "The timer set for $timer_durations is cancelled."
+      ]
+    },
+    "cancelled_one": {
+      "when": {"cancelled_count": 1, "timer_status": "cancelled"},
+      "requires_enrichment": [],
+      "templates": [
+        "Cancelled the timer.",
+        "The timer is cancelled."
+      ]
+    },
+    "cancelled_several_with_durations": {
+      "when": {"cancelled_count": {"min": 2}, "timer_status": "cancelled"},
+      "requires_enrichment": ["cancelled_count", "timer_durations"],
+      "templates": [
+        "Cancelled $cancelled_count timers, set for $timer_durations.",
+        "The $cancelled_count timers set for $timer_durations are cancelled."
+      ]
+    },
+    "cancelled_several": {
+      "when": {"cancelled_count": {"min": 2}, "timer_status": "cancelled"},
+      "requires_enrichment": ["cancelled_count"],
+      "templates": [
+        "Cancelled $cancelled_count timers.",
+        "The $cancelled_count timers are cancelled."
+      ]
+    }
+  },
+  "entity_verbalizations": {
+    "duration": ["for $value"]
+  },
+  "acknowledgment_prefixes": ["Sure,", "Done.", "Got it."],
+  "slot_requirements": {
+    "required": [],
+    "optional": ["duration"]
+  },
+  "enrichment_service": "scheduling",
+  "enrichment_fields": {
+    "timer_status": {"description": "\"running\" for a timer set, or the timer a check found while time is left on it or no end is known; \"finished\" when a check finds its duration has passed; \"none\" when a check finds none; \"cancelled\" after a cancel", "source": "scheduling"},
+    "duration": {"description": "The duration the timer was set with, as given; \"\" when none was given or a check finds none", "source": "scheduling"},
+    "time_left": {"description": "How much of the timer a check found is left at the turn, one part per unit, largest first (\"4 minutes\", \"59 seconds\"); empty when it has finished, has no known end (set with no duration, or stored before durations were resolved), or a check finds none", "source": "scheduling"},
+    "timer_durations": {"description": "The duration of each timer a cancel removed, oldest first", "source": "scheduling"},
+    "cancelled_count": {"description": "How many timers a cancel removed", "source": "scheduling"}
+  }
+}

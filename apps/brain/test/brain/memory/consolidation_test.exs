@@ -6,9 +6,16 @@ defmodule Brain.Memory.ConsolidationTest do
   alias Memory.{Consolidation, Store, Embedder, VectorIndex}
   alias Brain.Memory.Types.Episode
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup do
     ensure_pubsub_started()
     ensure_started(Embedder)
+
+    # The vocabulary below replaces the global one; put the suite's back
+    # afterwards, or every later test embeds to a zero vector.
+    Brain.Test.Singletons.preserve_embedder!()
 
     texts = [
       "hello world friend",
@@ -26,6 +33,11 @@ defmodule Brain.Memory.ConsolidationTest do
     )
 
     Store.clear()
+
+    # The facts consolidated here outlive the test's rolled-back episodes in
+    # the store's index; cleared so no later turn recalls one whose evidence
+    # is gone (`Brain.Memory.RecurringPattern.find/2` raises on it).
+    on_exit(fn -> Store.clear() end)
 
     :ok
   end
@@ -73,47 +85,61 @@ defmodule Brain.Memory.ConsolidationTest do
 
   describe "create_semantic_from_cluster" do
     test "creates a semantic fact from episode cluster" do
-      {:ok, id1} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi", ["smalltalk.greetings.hello"])
-      {:ok, id2} = Store.add_episode("hello there", "smalltalk.greetings.hello", "hey", ["smalltalk.greetings.hello"])
+      {:ok, id1} = Store.add_episode("hello world", "smalltalk.greetings.hello", "hi", ["smalltalk.greetings.hello"], world_id: @world_id)
+      {:ok, id2} = Store.add_episode("hello there", "smalltalk.greetings.hello", "hey", ["smalltalk.greetings.hello"], world_id: @world_id)
 
-      {:ok, ep1} = Store.get_episode(id1)
-      {:ok, ep2} = Store.get_episode(id2)
+      {:ok, ep1} = Store.get_episode(id1, world_id: @world_id)
+      {:ok, ep2} = Store.get_episode(id2, world_id: @world_id)
 
       cluster = [ep1, ep2]
 
-      {:ok, semantic_id} = Consolidation.create_semantic_from_cluster(cluster)
+      {:ok, semantic_id} = Consolidation.create_semantic_from_cluster(cluster, @world_id)
 
       assert is_binary(semantic_id)
-      {:ok, semantic} = Store.get_semantic(semantic_id)
+      {:ok, semantic} = Store.get_semantic(semantic_id, world_id: @world_id)
       assert "smalltalk.greetings.hello" in semantic.tags
       assert length(semantic.evidence_ids) == 2
-      {:ok, updated_ep1} = Store.get_episode(id1)
+      assert semantic.representation == "hello world | hello there"
+      assert semantic.action == "smalltalk.greetings.hello"
+      {:ok, updated_ep1} = Store.get_episode(id1, world_id: @world_id)
       assert updated_ep1.semantic_id == semantic_id
     end
 
     test "returns error for empty cluster" do
-      assert {:error, :empty_cluster} = Consolidation.create_semantic_from_cluster([])
+      assert {:error, :empty_cluster} = Consolidation.create_semantic_from_cluster([], @world_id)
     end
   end
 
   describe "consolidate" do
     test "creates semantic facts from similar episodes" do
-      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
-      {:ok, _} = Store.add_episode("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
-      {:ok, _} = Store.add_episode("hi friend", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"])
-      {:ok, new_count} = Consolidation.consolidate(threshold: 0.3, min_cluster_size: 2)
+      {:ok, _} = Store.add_episode("hello world", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], world_id: @world_id)
+      {:ok, _} = Store.add_episode("hello there", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], world_id: @world_id)
+      {:ok, _} = Store.add_episode("hi friend", "smalltalk.greetings.hello", "", ["smalltalk.greetings.hello"], world_id: @world_id)
+      {:ok, new_count} = Consolidation.consolidate(world_id: @world_id, threshold: 0.3, min_cluster_size: 2)
       assert new_count >= 0
 
-      {:ok, semantics} = Store.all_semantics()
+      {:ok, semantics} = Store.all_semantics(world_id: @world_id)
       assert is_list(semantics)
     end
 
     test "returns 0 when not enough episodes" do
-      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", [])
+      {:ok, _} = Store.add_episode("hello", "smalltalk.greetings.hello", "", [], world_id: @world_id)
 
-      {:ok, count} = Consolidation.consolidate(min_cluster_size: 5)
+      {:ok, count} = Consolidation.consolidate(world_id: @world_id, min_cluster_size: 5)
 
       assert count == 0
+    end
+
+    test "raises without :world_id" do
+      assert_raise ArgumentError, ~r/consolidate requires a :world_id option/, fn ->
+        Consolidation.consolidate([])
+      end
+    end
+
+    test "raises on an empty :world_id" do
+      assert_raise ArgumentError, ~r/consolidate requires a :world_id option/, fn ->
+        Consolidation.consolidate(world_id: "", min_cluster_size: 2)
+      end
     end
   end
 

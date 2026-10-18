@@ -8,45 +8,50 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
   alias Brain.Knowledge.Corroborator
   alias Brain.Knowledge.Types.{Finding, SourceInfo}
 
-  describe "corroborate/2 with KG-LSTM unavailable" do
-    test "still produces candidates without KG scoring" do
+  # "default" is the world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
+  describe "corroborate/2 with the world's triple scorer" do
+    test "produces candidates" do
       source1 = SourceInfo.new("http://source1.com", title: "Source 1")
       source2 = SourceInfo.new("http://source2.com", title: "Source 2")
 
       findings = [
-        Finding.new("Paris is the capital of France", "Paris", source1, confidence: 0.9),
-        Finding.new("The capital of France is Paris", "Paris", source2, confidence: 0.85)
+        Finding.new("Paris is the capital of France", "Paris", source1, confidence: 0.9, world_id: @world_id),
+        Finding.new("The capital of France is Paris", "Paris", source2, confidence: 0.85, world_id: @world_id)
       ]
 
-      {:ok, candidates} = Corroborator.corroborate(findings)
+      {:ok, candidates} = Corroborator.corroborate(findings, world_id: @world_id)
       assert is_list(candidates)
     end
 
     test "handles empty findings" do
-      {:ok, candidates} = Corroborator.corroborate([])
+      {:ok, candidates} = Corroborator.corroborate([], world_id: @world_id)
       assert candidates == []
     end
 
     test "single finding below min_sources returns empty" do
       source = SourceInfo.new("http://source.com", title: "Source")
-      findings = [Finding.new("Some fact", "entity", source, confidence: 0.9)]
+      findings = [Finding.new("Some fact", "entity", source, confidence: 0.9, world_id: @world_id)]
 
-      {:ok, candidates} = Corroborator.corroborate(findings)
+      {:ok, candidates} = Corroborator.corroborate(findings, world_id: @world_id)
       assert candidates == []
     end
 
     test "include_uncorroborated returns single-source findings" do
       source = SourceInfo.new("http://source.com", title: "Source")
-      findings = [Finding.new("Some fact", "entity", source, confidence: 0.9)]
+      findings = [Finding.new("Some fact", "entity", source, confidence: 0.9, world_id: @world_id)]
 
-      {:ok, candidates} = Corroborator.corroborate(findings, include_uncorroborated: true)
+      {:ok, candidates} =
+        Corroborator.corroborate(findings, world_id: @world_id, include_uncorroborated: true)
       assert length(candidates) >= 1
     end
   end
 
-  describe "compare_claims/2" do
+  describe "compare_claims/3" do
     test "identical claims have high similarity" do
       {:ok, similarity} = Corroborator.compare_claims(
+        @world_id,
         "Paris is the capital of France",
         "Paris is the capital of France"
       )
@@ -56,6 +61,7 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
 
     test "different claims have lower similarity" do
       {:ok, similarity} = Corroborator.compare_claims(
+        @world_id,
         "Paris is the capital of France",
         "Tokyo is the capital of Japan"
       )
@@ -64,7 +70,7 @@ defmodule Brain.Knowledge.CorroboratorTier3Test do
     end
 
     test "empty strings" do
-      {:ok, similarity} = Corroborator.compare_claims("", "")
+      {:ok, similarity} = Corroborator.compare_claims(@world_id, "", "")
       assert is_number(similarity)
     end
   end

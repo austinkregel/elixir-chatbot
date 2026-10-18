@@ -28,8 +28,9 @@ defmodule Atlas.Schemas.ResearchGoal do
   @valid_priorities ~w(low normal high)
   @valid_statuses ~w(pending in_progress completed failed)
 
+  # The id is cast so a goal created with the id the brain gave it is updated by that id.
   @required_fields ~w(session_id topic)a
-  @optional_fields ~w(questions constraints priority status)a
+  @optional_fields ~w(id questions constraints priority status)a
 
   def changeset(goal, attrs) do
     goal

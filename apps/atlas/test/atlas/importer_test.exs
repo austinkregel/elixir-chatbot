@@ -64,6 +64,7 @@ defmodule Atlas.ImporterTest do
       assert {:ok, summary} = Importer.import_all(only: ["beliefs"])
       assert {:ok, 2} = summary["beliefs"]
       assert Repo.aggregate(Belief, :count) == 2
+      assert Repo.all(Belief) |> Enum.map(& &1.world_id) |> Enum.uniq() == ["default"]
     end
 
     test "skips retracted beliefs" do
@@ -88,18 +89,34 @@ defmodule Atlas.ImporterTest do
   describe "semantic_facts import" do
     test "imports semantic facts from .term fixture" do
       assert {:ok, summary} = Importer.import_all(only: ["semantic_facts"])
-      assert {:ok, 1} = summary["semantic_facts"]
-      assert Repo.aggregate(SemanticFact, :count) == 1
+      assert {:ok, 2} = summary["semantic_facts"]
+      assert Repo.aggregate(SemanticFact, :count) == 2
+    end
+
+    test "splits a consolidated fact into its action and its examples; a plain fact keeps its text" do
+      assert {:ok, _summary} = Importer.import_all(only: ["semantic_facts"])
+
+      facts = SemanticFact |> Repo.all() |> Map.new(&{&1.content, &1.action})
+
+      assert facts == %{
+               "Weather queries are common in the afternoon" => nil,
+               "is it raining | will it rain today" => "weather.query"
+             }
     end
   end
 
   # ── Review Candidates ───────────────────────────────────────────────────────
 
   describe "review_candidates import" do
-    test "imports review candidates from .term fixture" do
+    test "imports review candidates from .term fixture, each in its finding's world" do
       assert {:ok, summary} = Importer.import_all(only: ["review_candidates"])
-      assert {:ok, 1} = summary["review_candidates"]
-      assert Repo.aggregate(ReviewCandidate, :count) == 1
+      assert {:ok, 2} = summary["review_candidates"]
+      assert Repo.aggregate(ReviewCandidate, :count) == 2
+
+      # A finding that names no world predates candidates being held per world
+      # and is imported into the "default" world.
+      assert Repo.get!(ReviewCandidate, "rev1").world_id == "default"
+      assert Repo.get!(ReviewCandidate, "rev2").world_id == "star_trek"
     end
   end
 
@@ -144,13 +161,28 @@ defmodule Atlas.ImporterTest do
   # ── User Models ─────────────────────────────────────────────────────────────
 
   describe "user_models import" do
-    test "imports user models from .term fixture" do
+    test "imports user models from .term fixture", %{data_dir: data_dir} do
+      user = Atlas.WebUsers.create!("default")
+
+      write_term(data_dir, "user_models.term", %{
+        user.id => %{
+          user_id: user.id,
+          facts: %{name: "Alice"},
+          interaction_patterns: %{},
+          epistemic_bounds: %{name: 0.9},
+          provenance_map: %{name: :explicit},
+          disclosure_history: [],
+          created_at: ~U[2026-01-01 00:00:00Z],
+          updated_at: ~U[2026-02-01 00:00:00Z]
+        }
+      })
+
       assert {:ok, summary} = Importer.import_all(only: ["user_models"])
       assert {:ok, 1} = summary["user_models"]
       assert Repo.aggregate(UserModel, :count) == 1
 
       [um] = Repo.all(UserModel)
-      assert um.user_id == "user_1"
+      assert um.user_id == user.id
     end
   end
 
@@ -193,7 +225,13 @@ defmodule Atlas.ImporterTest do
 
     test "skips store when table has data and force is false" do
       %KnowledgeEntry{}
-      |> KnowledgeEntry.changeset(%{persona_name: "pre", category: "people", key: "pre", data: %{}})
+      |> KnowledgeEntry.changeset(%{
+        world_id: "test_atlas_importer",
+        persona_name: "pre",
+        category: "people",
+        key: "pre",
+        data: %{}
+      })
       |> Repo.insert!()
 
       assert {:ok, summary} = Importer.import_all(only: ["knowledge"])
@@ -203,7 +241,13 @@ defmodule Atlas.ImporterTest do
 
     test "force overrides table-has-data skip" do
       %KnowledgeEntry{}
-      |> KnowledgeEntry.changeset(%{persona_name: "pre", category: "people", key: "pre", data: %{}})
+      |> KnowledgeEntry.changeset(%{
+        world_id: "test_atlas_importer",
+        persona_name: "pre",
+        category: "people",
+        key: "pre",
+        data: %{}
+      })
       |> Repo.insert!()
 
       assert {:ok, summary} = Importer.import_all(only: ["knowledge"], force: true)
@@ -312,9 +356,19 @@ defmodule Atlas.ImporterTest do
       tags: ["patterns"]
     }
 
+    # Consolidated in the single string consolidation once wrote.
+    consolidated = %{
+      id: "sem2",
+      timestamp: 1_000_002,
+      representation: "Action: weather.query | Examples: is it raining | will it rain today",
+      embedding: [0.5, 0.6],
+      evidence_ids: ["ep1"],
+      tags: ["weather"]
+    }
+
     memory_data = %{
       episodes: %{"default" => %{"ep1" => episode}},
-      semantics: %{"default" => %{"sem1" => semantic}}
+      semantics: %{"default" => %{"sem1" => semantic, "sem2" => consolidated}}
     }
 
     write_term(data_dir, "memory_store.term", memory_data)
@@ -326,6 +380,16 @@ defmodule Atlas.ImporterTest do
           status: :pending,
           finding: %{topic: "Elixir", claim: "is functional"},
           aggregate_confidence: 0.88,
+          corroborating_sources: [],
+          conflicting_findings: [],
+          existing_contradictions: [],
+          reviewer_notes: nil,
+          reviewed_at: nil
+        }},
+        {"rev2", %{
+          status: :pending,
+          finding: %{topic: "Vulcan", claim: "is a planet", world_id: "star_trek"},
+          aggregate_confidence: 0.7,
           corroborating_sources: [],
           conflicting_findings: [],
           existing_contradictions: [],
@@ -372,21 +436,8 @@ defmodule Atlas.ImporterTest do
 
     write_term(data_dir, "source_authority_learned.term", sa_data)
 
-    # -- User models --
-    um_data = %{
-      "user_1" => %{
-        user_id: "user_1",
-        facts: %{name: "Alice"},
-        interaction_patterns: %{},
-        epistemic_bounds: %{name: 0.9},
-        provenance_map: %{name: :explicit},
-        disclosure_history: [],
-        created_at: ~U[2026-01-01 00:00:00Z],
-        updated_at: ~U[2026-02-01 00:00:00Z]
-      }
-    }
-
-    write_term(data_dir, "user_models.term", um_data)
+    # User models are written by their test: each names a web user, which
+    # exists only inside that test's transaction.
 
     # -- Learned facts JSON --
     facts_json = %{

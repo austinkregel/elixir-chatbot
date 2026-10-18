@@ -21,7 +21,7 @@ defmodule ChatWeb.ConnCase do
   setup tags do
     # Checkout sandbox so Brain GenServers can access Atlas during tests
     if Process.whereis(Atlas.Repo) do
-      pid = Brain.Test.AtlasSandbox.checkout_and_configure!(tags)
+      pid = Brain.Test.AtlasSandbox.checkout_and_configure!(tags, [World.Manager])
 
       on_exit(fn -> Brain.Test.AtlasSandbox.drain_and_stop_owner(pid) end)
     end

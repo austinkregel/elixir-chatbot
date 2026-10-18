@@ -1,35 +1,23 @@
 defmodule World.Persistence do
-  @moduledoc "Persistence layer for training worlds.\n\nHandles saving and loading world data:\n- Persistent worlds: Saved to JSON files in priv/training_worlds/\n- Ephemeral worlds: In-memory only (ETS), no disk persistence\n\nDirectory structure:\n  priv/training_worlds/{world_id}/\n    config.json          - World configuration\n    gazetteer_overlay.json - Entities added in this world\n    discovered_entities.json - Candidates pending promotion\n    events.jsonl         - Append-only event log\n    metrics.json         - Aggregated metrics\n    type_inferrer.json   - Learned type inference data\n    episodes.json        - Episodic memories (NEW)\n    semantics.json       - Semantic facts (NEW)\n    knowledge.json       - Learned knowledge (NEW)\n    intents/             - World-specific intent data (NEW)\n    models/              - World-specific trained models (NEW)\n"
+  @moduledoc "Persistence layer for training worlds.\n\nHandles saving and loading world data:\n- Persistent worlds: Saved to JSON files in the world's directory (`Brain.Worlds.world_path/1`)\n- Ephemeral worlds: In-memory only (ETS), no disk persistence\n\nDirectory structure, under `Brain.Worlds.base_path/0`:\n  {world_id}/\n    config.json          - World configuration\n    gazetteer_overlay.json - Entities added in this world\n    discovered_entities.json - Candidates pending promotion\n    events.jsonl         - Append-only event log\n    metrics.json         - Aggregated metrics\n    type_inferrer.json   - Learned type inference data\n    episodes.json        - Episodic memories (NEW)\n    semantics.json       - Semantic facts (NEW)\n    knowledge.json       - Learned knowledge (NEW)\n    intents/             - World-specific intent data (NEW)\n    models/              - World-specific trained models (NEW)\n"
 
   alias Brain.Memory.Store
   alias Brain.Memory.Types
+  alias Brain.Worlds
+  alias Brain.Worlds.{EntityCandidate, TypeInferrer}
   require Logger
 
-  alias World.{TrainingWorld, TypeInferrer}
+  alias World.TrainingWorld
   alias World.Metrics, as: WorldMetrics
   alias World.Events, as: WorldEvents
   alias Types.{Episode, SemanticFact}
-
-  @doc "Returns the base path for training world storage.\n\nIn test mode (when `:test_world_sandbox` is enabled), returns a temp directory\nto ensure test worlds are completely isolated from production worlds.\n"
-  def base_path do
-    if Application.get_env(:world, :test_world_sandbox) do
-      Path.join(System.tmp_dir!(), "chat_bot_test_worlds")
-    else
-      Application.get_env(:world, :training_worlds_path) || World.priv_path("training_worlds")
-    end
-  end
-
-  @doc "Returns the path for a specific world's data.\n"
-  def world_path(world_id) do
-    Path.join(base_path(), world_id)
-  end
 
   @doc "Saves all world data to disk.\n\nOnly works for persistent worlds.\n"
   def save(world_id, data) when is_binary(world_id) and is_map(data) do
     world = Map.get(data, :world)
 
     if world && world.mode == :persistent do
-      path = world_path(world_id)
+      path = Worlds.world_path(world_id)
 
       with :ok <- ensure_directory(path),
            :ok <- save_config(path, world),
@@ -55,7 +43,7 @@ defmodule World.Persistence do
 
   @doc "Loads a world from disk.\n"
   def load(world_id) when is_binary(world_id) do
-    path = world_path(world_id)
+    path = Worlds.world_path(world_id)
 
     if File.exists?(path) do
       with {:ok, world} <- load_config(path),
@@ -91,7 +79,7 @@ defmodule World.Persistence do
 
   @doc "Deletes all persisted data for a world.\n"
   def delete(world_id) when is_binary(world_id) do
-    path = world_path(world_id)
+    path = Worlds.world_path(world_id)
 
     if File.exists?(path) do
       case File.rm_rf(path) do
@@ -109,7 +97,7 @@ defmodule World.Persistence do
 
   @doc "Lists all persisted worlds.\n"
   def list_persisted_worlds do
-    path = base_path()
+    path = Worlds.base_path()
 
     if File.exists?(path) do
       case File.ls(path) do
@@ -140,7 +128,7 @@ defmodule World.Persistence do
 
   @doc "Saves world-specific memory (episodes and semantics) to disk.\n"
   def save_memory(world_id) when is_binary(world_id) do
-    path = world_path(world_id)
+    path = Worlds.world_path(world_id)
 
     if File.exists?(path) do
       case Store.all_episodes(world_id: world_id) do
@@ -172,7 +160,7 @@ defmodule World.Persistence do
 
   @doc "Loads world-specific memory (episodes and semantics) into the Memory.Store.\n"
   def load_memory(world_id) when is_binary(world_id) do
-    path = world_path(world_id)
+    path = Worlds.world_path(world_id)
 
     if File.exists?(path) do
       with {:ok, episodes} <- load_episodes(path),
@@ -200,7 +188,7 @@ defmodule World.Persistence do
 
   @doc "Appends an event to the event log file.\n\nMore efficient than rewriting the entire events file.\n"
   def append_event(world_id, %WorldEvents{} = event) do
-    path = world_path(world_id)
+    path = Worlds.world_path(world_id)
     events_path = Path.join(path, "events.jsonl")
 
     if File.exists?(path) do
@@ -350,6 +338,7 @@ defmodule World.Persistence do
         %{
           id: semantic.id,
           representation: semantic.representation,
+          action: semantic.action,
           evidence_ids: semantic.evidence_ids,
           tags: semantic.tags,
           timestamp: semantic.timestamp,
@@ -430,16 +419,35 @@ defmodule World.Persistence do
     end
   end
 
+  # A persisted row that is not a valid candidate is corrupt data, not something
+  # to route around. Left as a bare map it would flow into
+  # World.EntityPromoter and fail there instead -- which is the crash the
+  # enforced shape exists to prevent, just moved somewhere harder to read.
+  defp load_candidate!(attrs, path) do
+    EntityCandidate.new!(attrs)
+  rescue
+    e in ArgumentError ->
+      raise ArgumentError, """
+      #{path} holds a row that is not a valid entity candidate.
+
+      #{Exception.message(e)}
+
+      Delete the file to discard this world's stale candidates; they are
+      regenerated from observation.
+      """
+  end
+
   defp load_candidates(path) do
     candidates_path = Path.join(path, "discovered_entities.json")
 
     case read_json(candidates_path) do
       {:ok, data} when is_list(data) ->
         candidates =
-          Enum.map(data, fn candidate ->
-            candidate
+          Enum.map(data, fn row ->
+            row
             |> atomize_keys()
             |> Map.update(:discovered_at, nil, &parse_datetime/1)
+            |> load_candidate!(candidates_path)
           end)
 
         {:ok, candidates}
@@ -556,9 +564,12 @@ defmodule World.Persistence do
       {:ok, data} when is_list(data) ->
         semantics =
           Enum.map(data, fn sem ->
+            {action, representation} = semantic_text(sem)
+
             %SemanticFact{
               id: Map.get(sem, "id"),
-              representation: Map.get(sem, "representation", ""),
+              representation: representation,
+              action: action,
               evidence_ids: Map.get(sem, "evidence_ids", []),
               tags: Map.get(sem, "tags", []),
               timestamp: Map.get(sem, "timestamp", 0),
@@ -574,6 +585,15 @@ defmodule World.Persistence do
       error ->
         error
     end
+  end
+
+  # A fact saved with its action has its text as its representation. One saved
+  # before facts had an action holds both in the single string consolidation
+  # wrote, "Action: <action> | Examples: <examples>", and is split.
+  defp semantic_text(%{"action" => action} = sem), do: {action, Map.get(sem, "representation", "")}
+
+  defp semantic_text(sem) do
+    Atlas.Schemas.SemanticFact.split_legacy_content(Map.get(sem, "representation", ""))
   end
 
   defp load_knowledge(path) do

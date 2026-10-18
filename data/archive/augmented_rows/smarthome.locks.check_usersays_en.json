@@ -1,0 +1,54 @@
+[
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "hey check all doors status",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-8c53f3b3",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "could you front door status",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-9691b76c",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "status front door",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-c9038061",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  },
+  {
+    "count": 0,
+    "data": [
+      {
+        "text": "can you check all doors status",
+        "userDefined": false
+      }
+    ],
+    "id": "augmented-066ef6d6",
+    "isTemplate": false,
+    "lang": "en",
+    "updated": 1776720892
+  }
+]

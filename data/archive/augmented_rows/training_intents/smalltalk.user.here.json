@@ -1,0 +1,94 @@
+[
+  {
+    "text": "I 'm here right",
+    "tokens": [
+      "I",
+      "'m",
+      "here",
+      "right"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADV",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-387cccb5",
+    "intent": "smalltalk.user.here"
+  },
+  {
+    "text": "could you i am here",
+    "tokens": [
+      "could",
+      "you",
+      "i",
+      "am",
+      "here"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-7825024d",
+    "intent": "smalltalk.user.here"
+  },
+  {
+    "text": "could you i'm right here",
+    "tokens": [
+      "could",
+      "you",
+      "i",
+      "'m",
+      "right",
+      "here"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADJ",
+      "ADV"
+    ],
+    "entities": [],
+    "id": "augmented-abec5ffc",
+    "intent": "smalltalk.user.here"
+  },
+  {
+    "text": "I here am",
+    "tokens": [
+      "I",
+      "here",
+      "am"
+    ],
+    "pos_tags": [
+      "PRON",
+      "ADV",
+      "VERB"
+    ],
+    "entities": [],
+    "id": "augmented-a8851aaa",
+    "intent": "smalltalk.user.here"
+  },
+  {
+    "text": "I 'm right",
+    "tokens": [
+      "I",
+      "'m",
+      "right"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-af2b2c79",
+    "intent": "smalltalk.user.here"
+  }
+]

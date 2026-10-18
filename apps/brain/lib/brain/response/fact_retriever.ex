@@ -19,19 +19,12 @@ defmodule Brain.Response.FactRetriever do
   - `:category` - Filter by category (geography, science, history, general)
   - `:search` - Search term to find in fact text
   - `:limit` - Maximum number of facts to return (default: 3)
+
+  The FactDatabase is a supervised process of the application; a query it
+  cannot answer raises, rather than reading as "no facts are known".
   """
   def get_relevant_facts(opts \\ []) do
-    try do
-      FactDatabase.query(opts)
-    rescue
-      e ->
-        Logger.warning("Failed to query FactDatabase", %{error: Exception.message(e)})
-        []
-    catch
-      :exit, _ ->
-        Logger.debug("FactDatabase not available")
-        []
-    end
+    FactDatabase.query(opts)
   end
 
   @doc """
@@ -84,10 +77,23 @@ defmodule Brain.Response.FactRetriever do
     results
   end
 
+  @doc """
+  The facts about what `text` names: every fact whose entity the text names
+  as whole words (`Brain.FactDatabase.query/1`'s `:named_in`). A question is
+  answered from these (`Brain.Analysis.Pipeline`): a fact is about its entity,
+  so one is retrieved for a question only when the question names it, and a
+  word that is part of an entity's name ("time" in "time zones") retrieves
+  nothing.
+  """
+  @spec facts_named_in(String.t()) :: [Brain.FactDatabase.Fact.t()]
+  def facts_named_in(text) when is_binary(text) do
+    results = FactDatabase.query(named_in: text, limit: :all)
+    record_fact_retrieval(length(results))
+    results
+  end
+
   defp record_fact_retrieval(result_count) do
-    if Process.whereis(Brain.Metrics.Aggregator) do
-      GenServer.cast(Brain.Metrics.Aggregator, {:record_fact_retrieval, result_count})
-    end
+    :ok = Brain.Metrics.Aggregator.record_fact_retrieval(result_count)
   end
 
   @doc """

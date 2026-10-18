@@ -1,5 +1,10 @@
 {:ok, _} = Application.ensure_all_started(:atlas)
 
+# The run has the test database to itself, or raises naming the run that has
+# it: two runs on one database hold up each other's writes, and this helper
+# migrates it.
+:ok = Atlas.Repo.claim_test_database!("atlas")
+
 # Bootstrap Apache AGE in the test database. The Docker initdb script only
 # initializes the default POSTGRES_DB, so the *_test database needs explicit
 # bootstrap. Idempotent (CREATE EXTENSION IF NOT EXISTS, conditional graphs).

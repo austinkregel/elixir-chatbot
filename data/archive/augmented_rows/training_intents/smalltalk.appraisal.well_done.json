@@ -1,0 +1,22 @@
+[
+  {
+    "text": "I want to great work",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "great",
+      "work"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-ffa4a4d9",
+    "intent": "smalltalk.appraisal.well_done"
+  }
+]

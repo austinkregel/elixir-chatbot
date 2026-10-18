@@ -15,6 +15,9 @@ defmodule Brain.ML.NovelEntityExtractionTest do
 
   @moduletag :requires_models
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   # ============================================================================
   # Layer 1: POS Tagger — capitalized words in non-initial position → PROPN
   # ============================================================================
@@ -82,14 +85,9 @@ defmodule Brain.ML.NovelEntityExtractionTest do
   # ============================================================================
 
   describe "EntityExtractor multi-word proper noun merging" do
-    setup do
-      ensure_started(EntityExtractor)
-      :ok
-    end
-
     test "consecutive novel PROPN tokens merge into a single entity" do
       # "Korvo Mitski" — neither word is in the training data or Gazetteer
-      entities = EntityExtractor.extract_entities("Play some Korvo Mitski")
+      entities = EntityExtractor.extract_entities("Play some Korvo Mitski", world_id: @world_id)
 
       merged = Enum.find(entities, fn e ->
         value = e[:value] || e[:match] || ""
@@ -105,7 +103,7 @@ defmodule Brain.ML.NovelEntityExtractionTest do
     end
 
     test "single novel PROPN token stays as single entity" do
-      entities = EntityExtractor.extract_entities("Hello Xiomara")
+      entities = EntityExtractor.extract_entities("Hello Xiomara", world_id: @world_id)
 
       xiomara = Enum.find(entities, fn e ->
         value = e[:value] || e[:match] || ""
@@ -120,7 +118,7 @@ defmodule Brain.ML.NovelEntityExtractionTest do
     end
 
     test "three consecutive novel PROPNs merge into one entity" do
-      entities = EntityExtractor.extract_entities("Play some Korvo Xiomara Mitski")
+      entities = EntityExtractor.extract_entities("Play some Korvo Xiomara Mitski", world_id: @world_id)
 
       merged = Enum.find(entities, fn e ->
         value = e[:value] || e[:match] || ""
@@ -133,7 +131,7 @@ defmodule Brain.ML.NovelEntityExtractionTest do
     end
 
     test "PROPN separated by non-PROPN are separate entities" do
-      entities = EntityExtractor.extract_entities("Korvo loves Xiomara")
+      entities = EntityExtractor.extract_entities("Korvo loves Xiomara", world_id: @world_id)
 
       merged = Enum.find(entities, fn e ->
         value = e[:value] || e[:match] || ""
@@ -159,7 +157,7 @@ defmodule Brain.ML.NovelEntityExtractionTest do
       alias Brain.Analysis.Pipeline
 
       # "Korvo Mitski" — completely absent from training data and Gazetteer
-      analysis = Pipeline.analyze_chunk("Play some Korvo Mitski")
+      analysis = Pipeline.analyze_chunk("Play some Korvo Mitski", world_id: @world_id)
 
       entity = Enum.find(analysis.entities, fn e ->
         value = e[:value] || e[:match] || ""
@@ -170,8 +168,8 @@ defmodule Brain.ML.NovelEntityExtractionTest do
         "Expected 'Korvo Mitski' entity to be extracted from analysis. " <>
         "Entities: #{inspect(Enum.map(analysis.entities, &{&1[:value], &1[:entity_type]}))}"
 
-      assert entity[:entity_type] in ["artist", "music-artist", "person"],
-        "Expected entity type artist/music-artist/person, got: #{entity[:entity_type]}"
+      assert entity[:entity_type] in ["artist", "music_artist", "person"],
+        "Expected entity type artist/music_artist/person, got: #{entity[:entity_type]}"
 
       assert analysis.intent =~ "music",
         "Expected music intent, got: #{analysis.intent}"
@@ -181,7 +179,7 @@ defmodule Brain.ML.NovelEntityExtractionTest do
       alias Brain.Analysis.Pipeline
 
       # "Xiomara" — not in training data or Gazetteer
-      analysis = Pipeline.analyze_chunk("My name is Xiomara")
+      analysis = Pipeline.analyze_chunk("My name is Xiomara", world_id: @world_id)
 
       entity = Enum.find(analysis.entities, fn e ->
         value = e[:value] || e[:match] || ""
@@ -194,18 +192,6 @@ defmodule Brain.ML.NovelEntityExtractionTest do
 
       assert entity[:entity_type] in ["person", "name"],
         "Expected person/name type, got: #{entity[:entity_type]}"
-    end
-  end
-
-  # ============================================================================
-  # Helpers
-  # ============================================================================
-
-  defp ensure_started(child_spec) do
-    case start_supervised(child_spec) do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-      {:error, _reason} -> :ok
     end
   end
 end

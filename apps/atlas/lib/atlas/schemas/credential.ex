@@ -12,7 +12,7 @@ defmodule Atlas.Schemas.Credential do
   import Ecto.Query
 
   schema "atlas_credentials" do
-    field :world, :string, default: "default"
+    field :world, :string
     field :service, :string
     field :key, :string
     field :encrypted_value, :binary
@@ -20,12 +20,12 @@ defmodule Atlas.Schemas.Credential do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @required_fields ~w(service key encrypted_value)a
-  @optional_fields ~w(world)a
+  # A credential belongs to the world it was stored for; the caller names it.
+  @required_fields ~w(world service key encrypted_value)a
 
   def changeset(credential, attrs) do
     credential
-    |> cast(attrs, @required_fields ++ @optional_fields)
+    |> cast(attrs, @required_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:world, :service, :key])
   end

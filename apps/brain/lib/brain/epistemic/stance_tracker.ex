@@ -55,9 +55,24 @@ defmodule Brain.Epistemic.StanceTracker do
     - `position` - A float in [-1.0, 1.0] representing the stance
       (-1 = strongly against, 0 = neutral, 1 = strongly for)
     - `source` - `:system` or `:user`
+    - `opts` - `:world_id` (required): the world whose entity vectors
+      canonicalize the topic; `:name` (default `#{inspect(__MODULE__)}`): the
+      tracker process
   """
-  def record_stance(conversation_id, topic, position, source, name \\ __MODULE__) do
-    GenServer.cast(name, {:record_stance, conversation_id, topic, position, source})
+  def record_stance(conversation_id, topic, position, source, opts) do
+    world_id =
+      case Keyword.get(opts, :world_id) do
+        world_id when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        other ->
+          raise ArgumentError,
+                "StanceTracker.record_stance requires a :world_id option, the world whose entity " <>
+                  "vectors canonicalize the topic; got #{inspect(other)}"
+      end
+
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.cast(name, {:record_stance, conversation_id, topic, position, source, world_id})
   end
 
   @doc """
@@ -165,9 +180,9 @@ defmodule Brain.Epistemic.StanceTracker do
   end
 
   @impl true
-  def handle_cast({:record_stance, conversation_id, topic, position, source}, state) do
+  def handle_cast({:record_stance, conversation_id, topic, position, source, world_id}, state) do
     clamped_position = clamp(position, -1.0, 1.0)
-    canonical_topic = canonicalize_topic(topic)
+    canonical_topic = canonicalize_topic(topic, world_id)
 
     observation = %{
       position: clamped_position,
@@ -180,7 +195,7 @@ defmodule Brain.Epistemic.StanceTracker do
       Map.update(conv, canonical_topic, [observation], &(&1 ++ [observation]))
     end)
 
-    persist_stance_to_belief_store(conversation_id, topic, clamped_position, source)
+    persist_stance_to_belief_store(world_id, conversation_id, topic, clamped_position, source)
 
     new_stats = %{state.stats |
       total_observations: state.stats.total_observations + 1,
@@ -224,11 +239,14 @@ defmodule Brain.Epistemic.StanceTracker do
     end
   end
 
-  defp persist_stance_to_belief_store(conversation_id, topic, position, source) do
+  # The stance is a belief held in the world it was recorded in; the world was
+  # checked in `record_stance/5`.
+  defp persist_stance_to_belief_store(world_id, conversation_id, topic, position, source) do
     if BeliefStore.ready?() do
       subject = if source == :system, do: :self, else: :user
 
       BeliefStore.add_belief(
+        world_id,
         subject,
         :stance_on,
         topic,
@@ -253,13 +271,13 @@ defmodule Brain.Epistemic.StanceTracker do
     |> min(max_val)
   end
 
-  defp canonicalize_topic(topic) when is_binary(topic) do
+  defp canonicalize_topic(topic, world_id) when is_binary(topic) do
     config = Application.get_env(:brain, :kg_signals, [])
 
     if Keyword.get(config, :enabled, true) do
       normalized = String.downcase(String.trim(topic))
 
-      case entity_centroid_key(normalized) do
+      case entity_centroid_key(normalized, world_id) do
         {:ok, key} -> key
         _ -> normalized
       end
@@ -270,16 +288,16 @@ defmodule Brain.Epistemic.StanceTracker do
     _ -> String.downcase(String.trim(topic))
   end
 
-  defp canonicalize_topic(topic), do: to_string(topic)
+  defp canonicalize_topic(topic, _world_id), do: to_string(topic)
 
-  defp entity_centroid_key(topic) do
+  defp entity_centroid_key(topic, world_id) do
     alias Brain.ML.KnowledgeGraph.EntityVectorCache
 
     tokens = Brain.ML.Tokenizer.tokenize_words(topic)
 
     vecs =
       Enum.flat_map(tokens, fn token ->
-        case EntityVectorCache.get_or_compute("default", token) do
+        case EntityVectorCache.get_or_compute(world_id, token) do
           {:ok, vec} -> [vec]
           _ -> []
         end

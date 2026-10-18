@@ -1,0 +1,208 @@
+[
+  {
+    "text": "TV is volume too low in bedroom",
+    "tokens": [
+      "TV",
+      "is",
+      "volume",
+      "too",
+      "low",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "VERB",
+      "NOUN",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-b17e18d4",
+    "intent": "smarthome.device.volume.up.implicit"
+  },
+  {
+    "text": "hey tv volume is too low in bedroom",
+    "tokens": [
+      "hey",
+      "tv",
+      "volume",
+      "is",
+      "too",
+      "low",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "ADJ",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-1b995d16",
+    "intent": "smarthome.device.volume.up.implicit"
+  },
+  {
+    "text": "TV volume too is low",
+    "tokens": [
+      "TV",
+      "volume",
+      "too",
+      "is",
+      "low"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "ADV",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-dc2d5771",
+    "intent": "smarthome.device.volume.up.implicit"
+  },
+  {
+    "text": "I'd like to tv volume is too low in bedroom",
+    "tokens": [
+      "I",
+      "'d",
+      "like",
+      "to",
+      "tv",
+      "volume",
+      "is",
+      "too",
+      "low",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "PRON",
+      "AUX",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-4c571588",
+    "intent": "smarthome.device.volume.up.implicit"
+  },
+  {
+    "text": "could you tv volume is too low",
+    "tokens": [
+      "could",
+      "you",
+      "tv",
+      "volume",
+      "is",
+      "too",
+      "low"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-1bb80c81",
+    "intent": "smarthome.device.volume.up.implicit"
+  },
+  {
+    "text": "please tv volume is too low in bedroom",
+    "tokens": [
+      "please",
+      "tv",
+      "volume",
+      "is",
+      "too",
+      "low",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "VERB",
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-07923650",
+    "intent": "smarthome.device.volume.up.implicit"
+  },
+  {
+    "text": "I want to tv volume is too low in bedroom",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "tv",
+      "volume",
+      "is",
+      "too",
+      "low",
+      "in",
+      "bedroom"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ",
+      "ADP",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-82e0abca",
+    "intent": "smarthome.device.volume.up.implicit"
+  },
+  {
+    "text": "can you tv volume is too low",
+    "tokens": [
+      "can",
+      "you",
+      "tv",
+      "volume",
+      "is",
+      "too",
+      "low"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "NOUN",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-9b12859d",
+    "intent": "smarthome.device.volume.up.implicit"
+  }
+]

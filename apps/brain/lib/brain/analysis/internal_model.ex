@@ -150,6 +150,8 @@ defmodule Brain.Analysis.ChunkAnalysis do
 
   @type epistemic_status :: :unchecked | :verified | :contradicted | :uncertain
 
+  @type fact_alignment :: %{alignment: :confirming | :disconfirming, statement: String.t()} | nil
+
   @type pass :: 1 | 2
 
   @type t :: %__MODULE__{
@@ -161,6 +163,7 @@ defmodule Brain.Analysis.ChunkAnalysis do
           profile: ChunkProfile.t() | nil,
           feature_vector: list(float()),
           entities: list(map()),
+          unresolved_spans: list(map()),
           slots: SlotResult.t(),
           missing_context: list(atom()),
           response_strategy: InternalModel.response_strategy(),
@@ -170,19 +173,48 @@ defmodule Brain.Analysis.ChunkAnalysis do
           sentiment: sentiment(),
           fact_verification: fact_verification(),
           related_beliefs: list(map()),
+          related_facts: list(Brain.FactDatabase.Fact.t()),
+          fact_alignment: fact_alignment(),
           epistemic_status: epistemic_status(),
-          pass: pass()
+          pass: pass(),
+          language: String.t() | nil,
+          active_contexts: [String.t()] | nil,
+          intent_arbitration: map() | nil
         }
 
+  # `language` is the code (`Brain.Language`) the chunk was analyzed in, and
+  # `active_contexts` the conversational contexts the turn continues from
+  # (`Brain.Analysis.ActiveContexts`). The pipeline sets both; feature
+  # extraction requires both.
+  #
+  # `entities` holds only the spans entity extraction decided;
+  # `unresolved_spans` the spans it could not decide
+  # (`Brain.ML.EntityExtractor.extract/2`), each with its readings, candidates
+  # and reason. An unresolved span is no entity, and only what reads
+  # `unresolved_spans` sees it.
+  #
+  # `intent_arbitration` is nil unless the `:intent_full` and `:intent_domain`
+  # classifiers disagreed on the chunk; then it records how the disagreement
+  # was resolved (`Brain.Analysis.IntentArbitration`): the two domains, each
+  # route's intent and the decision.
+  #
+  # `related_beliefs` are the world's beliefs about the chunk's subject, and
+  # `related_facts` the facts of `Brain.FactDatabase` found for a chunk that
+  # asks (`Brain.Analysis.Pipeline`); `fact_alignment` is how they answer a
+  # polar question (`Brain.FactDatabase.Integration.polar_alignment/3`), nil
+  # when they do not or the chunk is no polar question.
   defstruct [
     :chunk_index,
     :text,
     :discourse,
     :speech_act,
+    :language,
+    :active_contexts,
     intent: nil,
     profile: nil,
     feature_vector: [],
     entities: [],
+    unresolved_spans: [],
     slots: nil,
     missing_context: [],
     response_strategy: :can_respond,
@@ -192,11 +224,14 @@ defmodule Brain.Analysis.ChunkAnalysis do
     sentiment: nil,
     fact_verification: nil,
     related_beliefs: [],
+    related_facts: [],
+    fact_alignment: nil,
     epistemic_status: :unchecked,
     event_frames: [],
     srl_frames: [],
     pos_tags: [],
     intent_domain: nil,
+    intent_arbitration: nil,
     accumulated_context: nil,
     pass: 1
   ]
@@ -207,6 +242,52 @@ defmodule Brain.Analysis.ChunkAnalysis do
       chunk_index: chunk_index,
       text: text
     }
+  end
+
+  @doc """
+  The texts `facts` and `beliefs` state, each once, facts first: a fact of
+  `Brain.FactDatabase` states its `fact`, and a belief its object, the
+  statement it holds about the world (`Brain.FactDatabase.Integration` keeps a
+  fact's text as its belief's object). A belief whose object is not text
+  states nothing a reply can say, and raises.
+  """
+  @spec statements([Brain.FactDatabase.Fact.t()], [map()]) :: [String.t()]
+  def statements(facts, beliefs) when is_list(facts) and is_list(beliefs) do
+    fact_texts =
+      Enum.map(facts, fn
+        %Brain.FactDatabase.Fact{fact: text} when is_binary(text) ->
+          text
+
+        other ->
+          raise ArgumentError, "ChunkAnalysis: a related fact is a Brain.FactDatabase.Fact, got: #{inspect(other, limit: 8)}"
+      end)
+
+    belief_texts =
+      Enum.map(beliefs, fn
+        %{object: text} when is_binary(text) ->
+          text
+
+        other ->
+          raise ArgumentError,
+                "ChunkAnalysis: a belief known about a chunk's subject holds no statement to say: #{inspect(other, limit: 8)}"
+      end)
+
+    Enum.uniq(fact_texts ++ belief_texts)
+  end
+
+  @doc """
+  What is known about the chunk, as the statements a reply can say
+  (`statements/2` of its `related_facts` and `related_beliefs`), the one that
+  answers its polar question (`fact_alignment`) first.
+  """
+  @spec known_statements(map()) :: [String.t()]
+  def known_statements(analysis) when is_map(analysis) do
+    known = statements(Map.get(analysis, :related_facts) || [], Map.get(analysis, :related_beliefs) || [])
+
+    case Map.get(analysis, :fact_alignment) do
+      %{statement: statement} -> [statement | List.delete(known, statement)]
+      nil -> known
+    end
   end
 
   @doc "Adds extracted events to the chunk analysis.\n\n## Examples\n\n    analysis = ChunkAnalysis.new(0, \"I want coffee\")\n    events = [%Event{action: %{verb: \"want\", ...}, ...}]\n    analysis = ChunkAnalysis.with_events(analysis, events)\n"
@@ -413,7 +494,7 @@ defmodule Brain.Analysis.SlotResult do
 
   @type slot_value :: %{
           value: any(),
-          source: :explicit | :conversation | :user_profile | :default | :inferred,
+          source: :explicit | :type_compatible | :captured | :conversation | :user_profile | :default | :inferred,
           confidence: float()
         }
 

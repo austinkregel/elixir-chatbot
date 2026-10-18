@@ -2,10 +2,13 @@ defmodule Brain.Analysis.TypeHierarchy do
   @moduledoc """
   Entity type hierarchy with IS-A relationships.
 
-  Provides a unified view of entity type relationships from two sources:
+  The hierarchy is the static one in `priv/analysis/entity_types.json`,
+  loaded at startup and shared by every world.
 
-  1. **Static hierarchy** from `priv/analysis/entity_types.json` (loaded at startup)
-  2. **Learned hierarchy** from Atlas knowledge_graph IS_A edges (enriched at runtime)
+  It is not read back from Atlas. Knowledge graphs are per world, and this
+  hierarchy is not; the only IS_A edges between EntityType nodes in any
+  knowledge graph are the ones `sync_to_atlas/2` copies there from the same
+  static file, so reading them back would add nothing.
 
   This enables type narrowing: a "person" entity can be narrowed to "artist"
   when the intent context expects an artist, because artist IS-A person.
@@ -13,13 +16,14 @@ defmodule Brain.Analysis.TypeHierarchy do
   ## API
 
       TypeHierarchy.is_a?("artist", "person")  # => true
-      TypeHierarchy.specializations("person")   # => ["artist", "music-artist", "name"]
+      TypeHierarchy.specializations("person")   # => ["artist", "name", "given_name", "last_name"]
       TypeHierarchy.compatible?("person", "artist")  # => true
       TypeHierarchy.narrowing_candidates("person", ["artist", "song"]) # => ["artist"]
   """
 
   use GenServer
   alias Atlas.Graph.EdgeLabels
+  alias Brain.Provenance
   require Logger
 
   @ets_table :type_hierarchy
@@ -37,8 +41,10 @@ defmodule Brain.Analysis.TypeHierarchy do
   @doc """
   Check if `child_type` IS-A `parent_type`.
 
-  Returns true if there is a direct IS-A relationship in the hierarchy.
-  Falls back to WordNet hypernym chains when no static or Atlas edge exists.
+  Returns true if `child_type` sits under `parent_type`, directly or through
+  intermediate types, in the hierarchy of `entity_types.json`. Nothing else
+  relates two types: a type the file does not declare is related to nothing
+  but itself.
 
   ## Examples
 
@@ -50,9 +56,7 @@ defmodule Brain.Analysis.TypeHierarchy do
   def is_a?(child_type, parent_type) when is_binary(child_type) and is_binary(parent_type) do
     children = specializations(parent_type)
 
-    child_type in children or
-      Enum.any?(children, &is_a?(child_type, &1)) or
-      wordnet_is_a?(child_type, parent_type)
+    child_type in children or Enum.any?(children, &is_a?(child_type, &1))
   end
 
   @doc """
@@ -63,7 +67,7 @@ defmodule Brain.Analysis.TypeHierarchy do
   ## Examples
 
       iex> TypeHierarchy.specializations("person")
-      ["artist", "music-artist", "name"]
+      ["artist", "name", "given_name", "last_name"]
   """
   def specializations(parent_type) when is_binary(parent_type) do
     case safe_ets_lookup(parent_type) do
@@ -118,34 +122,34 @@ defmodule Brain.Analysis.TypeHierarchy do
   end
 
   @doc """
-  Get the parent type for a given child type, if any.
+  Every parent type of a child type, sorted; `[]` for a type with none.
+
+  A type can sit under several parents (`color` is both `information` and a
+  property of a `device`), and each is kept: choosing one would drop the others.
 
   ## Examples
 
-      iex> TypeHierarchy.parent_of("artist")
-      "person"
-      iex> TypeHierarchy.parent_of("person")
-      nil
+      iex> TypeHierarchy.parents_of("artist")
+      ["person"]
+      iex> TypeHierarchy.parents_of("person")
+      []
   """
-  def parent_of(child_type) when is_binary(child_type) do
+  def parents_of(child_type) when is_binary(child_type) do
     case safe_ets_lookup(:_all_parents) do
-      [{:_all_parents, parent_map}] -> Map.get(parent_map, child_type)
-      _ -> nil
+      [{:_all_parents, parent_map}] -> Map.get(parent_map, child_type, [])
+      _ -> []
     end
   end
 
   @doc """
-  Returns all known entity type names (both parent and child types).
+  Every entity type `entity_types.json` declares, sorted: each type its
+  hierarchy lists as a parent, including a root listed with no kinds under it
+  (`"event": []`), and each type listed under one.
   """
   def all_types do
-    case safe_ets_lookup(:_all_parents) do
-      [{:_all_parents, parent_map}] ->
-        children = Map.keys(parent_map)
-        parents = Map.values(parent_map) |> Enum.uniq()
-        Enum.uniq(children ++ parents) |> Enum.sort()
-
-      _ ->
-        []
+    case safe_ets_lookup(:_all_types) do
+      [{:_all_types, types}] -> types
+      _ -> []
     end
   end
 
@@ -157,7 +161,7 @@ defmodule Brain.Analysis.TypeHierarchy do
   def parent_types do
     case safe_ets_lookup(:_all_parents) do
       [{:_all_parents, parent_map}] ->
-        Map.values(parent_map) |> Enum.uniq() |> Enum.sort()
+        parent_map |> Map.values() |> List.flatten() |> Enum.uniq() |> Enum.sort()
 
       _ ->
         []
@@ -181,20 +185,59 @@ defmodule Brain.Analysis.TypeHierarchy do
       iex> TypeHierarchy.config("nonexistent", "fallback")
       "fallback"
   """
+  # Three outcomes that used to be one. A key the file declares, a key it does
+  # not, and a table that could not be read at all are different facts: the last
+  # means the store is down, which is not the same as a value being unset, and
+  # returning the caller's fallback for both is how a dead lookup table reads as
+  # a configuration choice. `Brain.Provenance` separates them for whoever is
+  # looking; the returned value is unchanged either way.
   def config(key, default \\ nil)
 
   def config(key, default) when is_binary(key) do
     case safe_ets_lookup(:_config) do
-      [{:_config, config_map}] -> Map.get(config_map, key, default)
-      _ -> default
+      [{:_config, config_map}] ->
+        case Map.fetch(config_map, key) do
+          {:ok, value} -> declared(key, value)
+          :error -> defaulted(key, default)
+        end
+
+      _ ->
+        unavailable(key, default)
     end
   end
 
   def config(keys, default) when is_list(keys) do
     case safe_ets_lookup(:_config) do
-      [{:_config, config_map}] -> get_in(config_map, keys) || default
-      _ -> default
+      [{:_config, config_map}] ->
+        case get_in(config_map, keys) do
+          nil -> defaulted(Enum.join(keys, "."), default)
+          value -> declared(Enum.join(keys, "."), value)
+        end
+
+      _ ->
+        unavailable(Enum.join(keys, "."), default)
     end
+  end
+
+  defp declared(key, value) do
+    Provenance.record(["config", key], value, :declared,
+      source: "TypeHierarchy.config/2",
+      meta: %{"file" => "priv/analysis/entity_types.json"}
+    )
+  end
+
+  defp defaulted(key, default) do
+    Provenance.record(["config", key], default, :default,
+      source: "TypeHierarchy.config/2",
+      meta: %{"reason" => "entity_types.json declares no #{key}"}
+    )
+  end
+
+  defp unavailable(key, default) do
+    Provenance.record(["config", key], default, :unavailable,
+      source: "TypeHierarchy.config/2",
+      meta: %{"reason" => "the TypeHierarchy ETS table could not be read"}
+    )
   end
 
   @doc "Check if the GenServer is ready."
@@ -206,19 +249,22 @@ defmodule Brain.Analysis.TypeHierarchy do
     end
   end
 
-  @doc "Reload hierarchy from file and Atlas."
+  @doc "Reload the hierarchy from its file."
   def reload(name \\ __MODULE__) do
     GenServer.call(name, :reload, 5_000)
   end
 
   @doc """
-  Seed the Atlas knowledge_graph with IS_A edges for the static hierarchy.
+  Seed the world's Atlas knowledge_graph with IS_A edges for the static
+  hierarchy.
 
   Creates EntityType nodes and IS_A relationships so the hierarchy
-  is queryable via Cypher and can be extended with learned relationships.
+  is queryable via Cypher in that world's graph. Raises for a missing or
+  malformed world.
   """
-  def sync_to_atlas(name \\ __MODULE__) do
-    GenServer.cast(name, :sync_to_atlas)
+  def sync_to_atlas(world_id, name \\ __MODULE__) do
+    graph = Atlas.Graph.world_graph("knowledge_graph", world_id)
+    GenServer.cast(name, {:sync_to_atlas, graph})
   end
 
   # ============================================================================
@@ -244,8 +290,8 @@ defmodule Brain.Analysis.TypeHierarchy do
   end
 
   @impl true
-  def handle_cast(:sync_to_atlas, state) do
-    do_sync_to_atlas()
+  def handle_cast({:sync_to_atlas, graph}, state) do
+    do_sync_to_atlas(graph)
     {:noreply, state}
   end
 
@@ -260,10 +306,7 @@ defmodule Brain.Analysis.TypeHierarchy do
   end
 
   defp load_hierarchy do
-    {static, config} = load_static_hierarchy_and_config()
-    atlas = load_atlas_hierarchy()
-
-    merged = merge_hierarchies(static, atlas)
+    {merged, config} = load_static_hierarchy_and_config()
 
     parent_map = build_parent_map(merged)
 
@@ -272,6 +315,7 @@ defmodule Brain.Analysis.TypeHierarchy do
     end)
 
     :ets.insert(@ets_table, {:_all_parents, parent_map})
+    :ets.insert(@ets_table, {:_all_types, (Map.keys(merged) ++ Map.keys(parent_map)) |> Enum.uniq() |> Enum.sort()})
     :ets.insert(@ets_table, {:_config, config})
 
     total_types = Enum.reduce(merged, 0, fn {_p, children}, acc -> acc + length(children) end)
@@ -298,65 +342,38 @@ defmodule Brain.Analysis.TypeHierarchy do
     end
   end
 
-  defp load_atlas_hierarchy do
-    if Brain.AtlasIntegration.available?() do
-      case Brain.AtlasIntegration.sync(fn ->
-        Atlas.Graph.cypher("knowledge_graph",
-          "MATCH (child:EntityType)-[:#{EdgeLabels.is_a()}]->(parent:EntityType) RETURN parent.name, child.name"
-        )
-      end) do
-        {:ok, {:ok, rows}} ->
-          Enum.reduce(rows, %{}, fn [parent_name, child_name], acc ->
-            parent = to_string(parent_name)
-            child = to_string(child_name)
-            Map.update(acc, parent, [child], fn children ->
-              if child in children, do: children, else: [child | children]
-            end)
-          end)
-
-        _ ->
-          %{}
-      end
-    else
-      %{}
-    end
-  end
-
-  defp merge_hierarchies(static, atlas) do
-    Map.merge(static, atlas, fn _parent, static_children, atlas_children ->
-      Enum.uniq(static_children ++ atlas_children)
-    end)
-  end
-
+  # child => every parent it is listed under, sorted.
   defp build_parent_map(hierarchy) do
-    Enum.reduce(hierarchy, %{}, fn {parent, children}, acc ->
+    hierarchy
+    |> Enum.reduce(%{}, fn {parent, children}, acc ->
       Enum.reduce(children, acc, fn child, inner_acc ->
-        Map.put(inner_acc, child, parent)
+        Map.update(inner_acc, child, [parent], &[parent | &1])
       end)
     end)
+    |> Map.new(fn {child, parents} -> {child, parents |> Enum.uniq() |> Enum.sort()} end)
   end
 
-  defp do_sync_to_atlas do
+  defp do_sync_to_atlas(graph) do
     if Brain.AtlasIntegration.available?() do
       {static, _config} = load_static_hierarchy_and_config()
 
       Enum.each(static, fn {parent, children} ->
         Brain.AtlasIntegration.sync(fn ->
           {:ok, parent_node} =
-            Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityType", %{name: parent})
+            Brain.AtlasIntegration.ensure_node(graph, "EntityType", %{name: parent})
 
-          Brain.AtlasIntegration.enrich_existing_node("knowledge_graph", parent_node.id, parent)
+          Brain.AtlasIntegration.enrich_existing_node(graph, parent_node.id, parent)
 
           Enum.each(children, fn child ->
             {:ok, child_node} =
-              Brain.AtlasIntegration.ensure_node("knowledge_graph", "EntityType", %{name: child})
+              Brain.AtlasIntegration.ensure_node(graph, "EntityType", %{name: child})
 
-            Brain.AtlasIntegration.enrich_existing_node("knowledge_graph", child_node.id, child)
+            Brain.AtlasIntegration.enrich_existing_node(graph, child_node.id, child)
 
             parent_id = parent_node.id
             child_id = child_node.id
 
-            Atlas.Graph.cypher("knowledge_graph",
+            Atlas.Graph.cypher(graph,
               "MATCH (c:EntityType), (p:EntityType) WHERE id(c) = #{child_id} AND id(p) = #{parent_id} " <>
               "MERGE (c)-[:#{EdgeLabels.is_a()}]->(p) RETURN c, p"
             )
@@ -364,37 +381,11 @@ defmodule Brain.Analysis.TypeHierarchy do
         end)
       end)
 
-      Logger.info("TypeHierarchy: synced #{map_size(static)} parent types to Atlas knowledge_graph")
+      Logger.info("TypeHierarchy: synced #{map_size(static)} parent types to Atlas #{graph}")
     end
   rescue
     e ->
       Logger.warning("TypeHierarchy: Atlas sync failed: #{Exception.message(e)}")
-  end
-
-  @wordnet_type_roots %{
-    "person" => ~w(person individual someone somebody mortal human),
-    "location" => ~w(location place area region),
-    "organization" => ~w(organization institution establishment),
-    "artifact" => ~w(artifact artefact),
-    "event" => ~w(event happening occurrence),
-    "concept" => ~w(concept conception idea abstraction),
-    "animal" => ~w(animal animate_being beast brute creature fauna),
-    "plant" => ~w(plant flora plant_life),
-    "food" => ~w(food nutrient),
-    "substance" => ~w(substance matter)
-  }
-
-  defp wordnet_is_a?(child_type, parent_type) do
-    if Process.whereis(Brain.ML.Lexicon) do
-      chain = Brain.ML.Lexicon.hypernym_chain(child_type, :noun, max_depth: 10)
-      root_words = Map.get(@wordnet_type_roots, parent_type, [parent_type])
-
-      Enum.any?(chain, fn word ->
-        word in root_words or word == parent_type
-      end)
-    else
-      false
-    end
   end
 
   defp safe_ets_lookup(key) do

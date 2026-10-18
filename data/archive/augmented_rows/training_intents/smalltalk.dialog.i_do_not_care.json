@@ -1,0 +1,24 @@
+[
+  {
+    "text": "could you not care at all",
+    "tokens": [
+      "could",
+      "you",
+      "not",
+      "care",
+      "at",
+      "all"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "ADV",
+      "VERB",
+      "ADP",
+      "DET"
+    ],
+    "entities": [],
+    "id": "augmented-62245201",
+    "intent": "smalltalk.dialog.i_do_not_care"
+  }
+]

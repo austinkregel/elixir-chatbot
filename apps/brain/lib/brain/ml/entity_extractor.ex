@@ -1,259 +1,402 @@
 defmodule Brain.ML.EntityExtractor do
-  @moduledoc "Entity extraction using gazetteer lookups and classical NLP techniques.\n\nThis module extracts entities from user input text using:\n- Gazetteer lookups for known entities (cities, artists, devices, etc.)\n- BIO-tagged sequence model for unknown entity detection\n- Token-based pattern matching for system entities (dates, numbers)\n\nAvoids regex in favor of tokenizer-based approaches.\n\n## Process Lifecycle\n\nThis module runs as a GenServer that starts with the application,\nensuring the entity maps are always loaded and the process is always\nregistered. This allows the ops dashboard to correctly report the\nloaded status.\n"
+  @moduledoc "Entity extraction using gazetteer lookups and classical NLP techniques.\n\nThis module extracts entities from user input text using:\n- Gazetteer lookups for known entities (cities, artists, devices, etc.)\n- the world's BIO entity model (`Brain.ML.EntityModel`), run on the same tokens\n- Token-based pattern matching for system entities (dates, numbers)\n- the lengths `Brain.Temporal.Resolver` reads (\"5 minutes\"), as durations\n- the names of the world's analyzed code (`Brain.Code.EntityReadings`)\n\nAvoids regex in favor of tokenizer-based approaches.\n\nKnown entities come from `Brain.ML.Gazetteer`, which loads its sources before\nthe application finishes starting. There is no second copy of the gazetteer\nhere.\n\nEvery source's spans are kept as readings (`readings/2`). Overlapping readings\nform one span, decided by `Brain.ML.SpanReliability` from how reliable each\nsource has been for each type on the NER gold standard's training split. A\ndecided span (`resolved: true`) is an entity; a span the data cannot decide\n(`resolved: false`) is no entity of any type, and travels apart from the\nentities (`extract/2`'s `:unresolved_spans`), carrying its readings, its\ncandidates and why it was left undecided. Nothing that consumes entities is\ngiven one.\n"
 
   alias Brain.Analysis
   alias Brain.ML
-  use GenServer
   require Logger
 
-  alias ML.{Gazetteer, Tokenizer, EntityTrainer, POSTagger}
-  alias Analysis.{EntityDisambiguator, TypeHierarchy}
+  alias ML.{EntityModel, EntityTrainer, Gazetteer, SpanReliability, Tokenizer, POSTagger}
+  alias Analysis.{EntityDisambiguator, EntityTypeScorer, SlotTypePreferences, TypeHierarchy}
   alias Brain.Telemetry
 
   @type_mappings_path "evaluation/ner/type_mappings.json"
 
+  # A decided entity: the reading `Brain.ML.SpanReliability.decide/3` trusted
+  # most for the span, with the keys of the other readings of its hypothesis
+  # (a gazetteer reading's `:types`, `:metadata`, `:tag`, ...). Disambiguation
+  # and type scoring add their own keys beside these.
   @type entity_match :: %{
-          entity: String.t(),
-          value: String.t(),
-          match: String.t(),
-          start_pos: integer(),
-          end_pos: integer(),
-          confidence: float()
+          required(:entity_type) => String.t(),
+          required(:value) => String.t(),
+          required(:match) => String.t(),
+          required(:start_pos) => non_neg_integer(),
+          required(:end_pos) => non_neg_integer(),
+          required(:confidence) => float(),
+          required(:source) => atom(),
+          required(:resolved) => true,
+          required(:readings) => [map()],
+          required(:candidates) => Brain.Lattice.t(),
+          required(:decision) => map(),
+          optional(atom()) => term()
         }
 
   @type entity_map :: %{String.t() => %{entity_type: String.t(), value: String.t()}}
 
-  defp is_location_preposition?(text) do
-    prep_tag = TypeHierarchy.config(["pos_tag_roles", "preposition_tag"], "ADP")
+  @doc "Returns true when the gazetteer extraction reads from has loaded.\n"
+  def is_loaded?, do: Gazetteer.loaded?()
 
-    case POSTagger.load_model() do
-      {:ok, model} ->
-        predictions = POSTagger.predict([text], model)
-
-        case predictions do
-          [{_word, tag}] -> tag == prep_tag
-          _ -> false
-        end
-
-      {:error, _} ->
-        false
-    end
-  end
-
-  defp common_word?(text) do
-    lower = String.downcase(text)
-    function_tags = TypeHierarchy.config(["pos_tag_roles", "function_word_tags"], [])
-
-    case POSTagger.load_model() do
-      {:ok, model} ->
-        predictions = POSTagger.predict([lower], model)
-
-        case predictions do
-          [{_word, tag}] -> tag in function_tags
-          _ -> false
-        end
-
-      {:error, _} ->
-        false
-    end
-  end
-
-  @doc """
-  Starts the entity extractor GenServer.
-
-  ## Options
-    - `:name` - The name to register the GenServer under (default: `#{__MODULE__}`)
-  """
-  def start_link(opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
-  end
-
-  @impl true
-  def init(_opts) do
-    send(self(), :load_entity_maps)
-
-    {:ok, %{entity_maps: %{}, loaded: false, loading: true}}
-  end
-
-  @impl true
-  def handle_info(:load_entity_maps, state) do
-    entity_maps = do_load_entity_maps()
-
-    Logger.info("EntityExtractor: Entity maps loaded", %{
-      entities_count: map_size(entity_maps)
-    })
-
-    {:noreply, %{state | entity_maps: entity_maps, loaded: true, loading: false}}
-  end
-
-  @impl true
-  def handle_call(:get_entity_maps, _from, state) do
-    {:reply, state.entity_maps, state}
-  end
-
-  @impl true
-  def handle_call(:is_loaded?, _from, state) do
-    {:reply, state.loaded, state}
-  end
-
-  @impl true
-  def handle_call(:get_status, _from, state) do
-    status = %{
-      loaded: state.loaded,
-      loading: state.loading,
-      entities_count: map_size(state.entity_maps)
-    }
-
-    {:reply, status, state}
-  end
-
-  @impl true
-  def handle_call({:reload}, _from, state) do
-    entity_maps = do_load_entity_maps()
-
-    Logger.info("EntityExtractor: Entity maps reloaded", %{
-      entities_count: map_size(entity_maps)
-    })
-
-    {:reply, {:ok, entity_maps},
-     %{state | entity_maps: entity_maps, loaded: true, loading: false}}
-  end
-
-  @doc "Returns true if entity maps are loaded.\n"
-  def is_loaded?(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-
-    try do
-      GenServer.call(server, :is_loaded?, 100)
-    catch
-      :exit, _ -> false
-    end
-  end
-
-  @doc "Returns the current status of the entity extractor.\n"
-  def get_status(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-
-    try do
-      GenServer.call(server, :get_status, 100)
-    catch
-      :exit, _ -> %{loaded: false, loading: false, entities_count: 0}
-    end
-  end
-
-  @doc "Load entity maps from saved gazetteer or build fresh.\nReturns {:ok, maps} or {:error, reason}.\n\nNote: With the GenServer implementation, entity maps are loaded automatically\non startup. This function now reloads the maps if called explicitly.\n"
-  def load_entity_maps(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-
-    try do
-      GenServer.call(server, {:reload}, 30_000)
-    catch
-      :exit, _ ->
-        {:ok, do_load_entity_maps()}
-    end
-  end
-
-  defp do_load_entity_maps do
-    models_path = Application.get_env(:brain, :ml)[:models_path]
-    gazetteer_path = Path.join(models_path || Brain.priv_path("ml_models"), "gazetteer.term")
-    Brain.ML.ModelStore.ensure_local("gazetteer.term", gazetteer_path)
-
-    unless File.exists?(gazetteer_path) do
-      raise """
-      EntityExtractor: missing gazetteer at #{gazetteer_path}.
-      Run `mix train` (gazetteer stage) or, in test, `Brain.Test.ModelFactory.ensure_gazetteer_on_disk!/0`
-      before starting the Brain application.
-      """
-    end
-
-    case File.read(gazetteer_path) do
-      {:ok, binary} ->
-        try do
-          :erlang.binary_to_term(binary)
-        rescue
-          e ->
-            reraise """
-            EntityExtractor: corrupt gazetteer at #{gazetteer_path}: #{Exception.message(e)}
-            Retrain with `mix train` or delete the file and regenerate.
-            """,
-                    __STACKTRACE__
-        end
-
-      {:error, reason} ->
-        raise "EntityExtractor: cannot read gazetteer at #{gazetteer_path}: #{inspect(reason)}"
-    end
-  end
-
-  @doc "Get entity maps from GenServer.\n"
-  def get_entity_maps(opts \\ []) do
-    server = Keyword.get(opts, :server, __MODULE__)
-
-    try do
-      GenServer.call(server, :get_entity_maps, 100)
-    rescue
-      _e ->
-        load_entity_maps_fallback()
-    catch
-      :exit, _ ->
-        load_entity_maps_fallback()
-    end
-  end
-
-  defp load_entity_maps_fallback do
-    do_load_entity_maps()
-  end
-
-  @doc "Extract entities from text using gazetteer lookups and pattern matching.\nReturns a list of entity matches with positions and confidence scores.\n\n## Options\n\n- `:entity_maps` - Pre-loaded entity maps (optional)\n- `:discourse` - Discourse analysis result for disambiguation context\n- `:speech_act` - Speech act classification result for disambiguation context\n- `:skip_disambiguation` - If true, skip the disambiguation step (default: false)\n- `:world_id` - World ID for world-scoped type inference (required for disambiguation)\n"
-  def extract_entities(text, opts \\ [])
-
-  def extract_entities(text, opts) when is_list(opts) do
+  @doc "Extract entities from text using gazetteer lookups and pattern matching.\n\nReturns `%{entities: entities, unresolved_spans: spans, candidates: candidates}`,\nthe first two in text order. `entities` holds only the spans the data decided\n(`resolved: true`), with their positions, combined confidence and `:readings`.\n`unresolved_spans` holds the spans it could not decide (`resolved: false`): each\nkeeps its `:readings` (every source's reading, with the source's reliability),\nits `:candidates` (the `Brain.Lattice` of hypotheses its measured readings\nsupported), its `:unresolved_reason`, and as `:entity_type` the type its readings\nshare, or nil. An unresolved span is no entity, so it never appears among the\nentities. `candidates` is `extract_candidates/2`'s result, which `disambiguate/3`\ncan disambiguate again in a context known later.\n\nExtraction is `extract_candidates/2`, then `disambiguate/3` with the\n`:discourse` and `:speech_act` given, then the confidence floor.\n\n## Options\n\n- `:discourse` - Discourse analysis result for disambiguation context\n- `:speech_act` - Speech act classification result for disambiguation context\n- `:skip_disambiguation` - If true, skip the disambiguation step (default: false)\n- `:world_id` - required: the world whose entities are extracted. Absent raises.\n- `:language` - the `Brain.Language` code whose span reliabilities decide the spans.\n  Absent means English; an unsupported code raises.\n- `:min_confidence` - a decided span whose combined confidence is below it is\n  withheld: returned among the unresolved spans, with\n  `unresolved_reason: :below_confidence_floor` (default: the configured entity\n  confidence threshold).\n"
+  @spec extract(String.t(), keyword()) :: %{entities: [map()], unresolved_spans: [map()], candidates: map()}
+  def extract(text, opts) when is_list(opts) do
     Telemetry.span(:entity_extract, %{text_length: String.length(text || "")}, fn ->
-      do_extract_entities(text, opts)
+      candidates = extract_candidates(text, opts)
+
+      disambiguated =
+        disambiguate(candidates, %{discourse: Keyword.get(opts, :discourse), speech_act: Keyword.get(opts, :speech_act)}, opts)
+
+      {kept, withheld} = apply_confidence_floor(disambiguated, min_confidence(opts), text)
+
+      %{
+        entities: kept,
+        unresolved_spans: Enum.sort_by(candidates.unresolved_spans ++ withheld, &{&1.start_pos, &1.end_pos}),
+        candidates: candidates
+      }
     end)
   end
 
-  def extract_entities(text, entity_maps) when is_map(entity_maps) do
-    extract_entities(text, entity_maps: entity_maps)
+  @doc "The decided entities of `text`: `extract/2`'s `:entities`, with its options.\n"
+  def extract_entities(text, opts \\ [])
+
+  def extract_entities(text, opts) when is_list(opts) do
+    extract(text, opts).entities
   end
 
   def extract_entities(text, nil) do
     extract_entities(text, [])
   end
 
-  defp do_extract_entities(text, opts) do
-    entity_maps = Keyword.get(opts, :entity_maps) || get_entity_maps()
-    discourse = Keyword.get(opts, :discourse)
-    speech_act = Keyword.get(opts, :speech_act)
-    skip_disambiguation = Keyword.get(opts, :skip_disambiguation, false)
-    world_id = Keyword.get(opts, :world_id)
+  @doc """
+  The spans of `text` the data decided, before disambiguation and before the
+  confidence floor: `%{text: text, tokens: tokens, world_id: world_id, entities:
+  decided, unresolved_spans: undecided}`. `entities` are the decided spans
+  (adjacent ones of compatible types merged) and `unresolved_spans` the spans
+  `Brain.ML.SpanReliability.decide/3` could not decide. Takes `extract/2`'s
+  `:world_id` and `:language`.
+  """
+  @spec extract_candidates(String.t(), keyword()) :: map()
+  def extract_candidates(text, opts) when is_binary(text) and is_list(opts) do
+    debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
+    t0 = if debug?, do: System.monotonic_time(:millisecond)
+
+    world_id = world_id!(opts)
+    reliability = SpanReliability.loaded!(language!(opts))
     tokens = Tokenizer.tokenize(text)
-    gaz_context = Keyword.take(opts, [:domain, :intent, :world_id])
-    gazetteer_entities = extract_gazetteer_entities(tokens, entity_maps, gaz_context)
-    system_entities = extract_system_entities(tokens, text)
-    location_entities = extract_location_hints(tokens, entity_maps)
-    proper_noun_entities = extract_proper_noun_hints(tokens, entity_maps)
 
-    all_entities =
-      gazetteer_entities ++ system_entities ++ location_entities ++ proper_noun_entities
+    if debug?, do: Logger.info("    extractor:tokenize=#{System.monotonic_time(:millisecond) - t0}ms")
 
-    resolved_entities =
-      all_entities
-      |> resolve_entity_conflicts()
-      |> merge_adjacent_entities(tokens)
+    readings = collect_readings(text, tokens, opts, world_id)
 
-    disambiguated_entities =
-      if skip_disambiguation or (is_nil(discourse) and is_nil(speech_act)) do
-        resolved_entities
+    if debug?, do: Logger.info("    extractor:readings=#{System.monotonic_time(:millisecond) - t0}ms (#{length(readings)} found)")
+
+    # The spans the data decided are entities; the rest leave here and never
+    # reach a stage that acts on entities.
+    {decided, unresolved} =
+      readings
+      |> SpanReliability.decide(reliability, text: text, canonical: load_type_mappings(), hierarchy: TypeHierarchy)
+      |> Enum.split_with(&match?(%{resolved: true}, &1))
+
+    entities = merge_adjacent_entities(decided, tokens)
+
+    if debug?, do: Logger.info("    extractor:decide+merge=#{System.monotonic_time(:millisecond) - t0}ms (#{length(entities)} decided, #{length(unresolved)} unresolved)")
+
+    %{text: text, tokens: tokens, world_id: world_id, entities: entities, unresolved_spans: unresolved}
+  end
+
+  @doc """
+  Disambiguates the decided spans of `extract_candidates/2`'s result in
+  `context`, a map that may hold `:discourse`, `:speech_act` and `:profile`
+  (the chunk's `Brain.Analysis.ChunkProfile`, whose domain ranks the slot types
+  an ambiguous entity is weighed against). Returns every decided span,
+  disambiguated, before the confidence floor. With none of the three, or with
+  `skip_disambiguation: true` in `opts`, the spans are returned as decided.
+  """
+  @spec disambiguate(map(), map(), keyword()) :: [map()]
+  def disambiguate(%{text: text, tokens: tokens, world_id: world_id, entities: entities}, context, opts)
+      when is_map(context) and is_list(opts) do
+    debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
+    t0 = if debug?, do: System.monotonic_time(:millisecond)
+
+    case Map.keys(context) -- [:discourse, :speech_act, :profile] do
+      [] -> :ok
+      other -> raise ArgumentError, "EntityExtractor.disambiguate/3: unknown context keys #{inspect(other)}"
+    end
+
+    discourse = Map.get(context, :discourse)
+    speech_act = Map.get(context, :speech_act)
+    profile = Map.get(context, :profile)
+
+    disambiguated =
+      if Keyword.get(opts, :skip_disambiguation, false) or (is_nil(discourse) and is_nil(speech_act) and is_nil(profile)) do
+        entities
       else
-        disambiguate_entities(resolved_entities, tokens, discourse, speech_act, text, world_id)
+        disambiguate_entities(entities, tokens, %{discourse: discourse, speech_act: speech_act, profile: profile}, text, world_id)
       end
 
-    min_confidence = Keyword.get(opts, :min_confidence) || get_min_confidence_threshold()
+    if debug?, do: Logger.info("    extractor:disambiguate=#{System.monotonic_time(:millisecond) - t0}ms")
 
-    disambiguated_entities
-    |> filter_by_confidence(min_confidence)
-    |> normalize_entity_types()
+    disambiguated
+  end
+
+  # The type an entity holds, and the record of how it was chosen: what
+  # `put_types/2` carries from one disambiguation onto another's entities.
+  # `:types` are scored again once the intent is known
+  # (`EntityTypeScorer.rescore/3`), with the position context they were
+  # scored with first, so that context travels with them.
+  @type_fields [
+    :entity_type,
+    :types,
+    :type_posteriors,
+    :p_ordinary,
+    :disambiguation_source,
+    :disambiguation_reason,
+    :disambiguation_confidence,
+    :tag,
+    :preceding_tag,
+    :sentence_initial
+  ]
+
+  @doc """
+  Gives each of `entities` the type fields of the entity of `retyped` with the
+  same `:start_pos` and `:end_pos` -- its `:entity_type` and the record of how
+  disambiguation chose it (#{Enum.map_join(@type_fields, ", ", &"`#{inspect(&1)}`")}),
+  each set as `retyped` has it or removed when it has none -- and nothing else:
+  values, confidences and every other key stay as they are. An entity without
+  a position (one anaphora resolution supplied) is left as it is. A positioned
+  entity with no entity, or more than one, at its offsets in `retyped` raises.
+  """
+  @spec put_types([map()], [map()]) :: [map()]
+  def put_types(entities, retyped) when is_list(entities) and is_list(retyped) do
+    Enum.map(entities, fn
+      %{start_pos: start_pos, end_pos: end_pos} = entity when is_integer(start_pos) and is_integer(end_pos) ->
+        case Enum.filter(retyped, &(Map.get(&1, :start_pos) == start_pos and Map.get(&1, :end_pos) == end_pos)) do
+          [source] ->
+            entity
+            |> Map.drop(@type_fields)
+            |> Map.merge(Map.take(source, @type_fields))
+
+          found ->
+            raise ArgumentError,
+                  "EntityExtractor.put_types/2: #{length(found)} retyped entities at #{start_pos}..#{end_pos} " <>
+                    "for #{inspect(Map.get(entity, :value))}; exactly one was expected"
+        end
+
+      entity ->
+        entity
+    end)
+  end
+
+  @doc """
+  Decides again, now that the turn's intent is known, the spans `extract/2`
+  left unresolved. A span left for `:insufficient_evidence` is decided again
+  by `Brain.ML.SpanReliability.redecide/4`: its extent first, by how far its
+  readings' extents can be trusted, then its type among the hypotheses at
+  that extent, with what the intent says about each of its hypothesis labels
+  (`Brain.Analysis.SlotTypePreferences.intent_evidence/3`) as one more piece
+  of evidence, under thresholds learned for deciding again. Nothing else
+  decides it: no span is resolved because a source or the intent always wins.
+
+  Returns `%{entities: entities, unresolved_spans: spans, outcomes: outcomes}`:
+  the spans the intent's evidence decided, as decided entities whose
+  `:decision` records `resolved_by: {:intent, intent}` and the evidence; every
+  other span, unchanged; and one outcome per given span, in text order, saying
+  what became of it and why:
+
+  - `%{outcome: :resolved, entity_type, score, margin, evidence}`;
+  - `%{outcome: :undecided, best_type, score, margin, evidence}` -- the
+    evidence did not lift the span over the thresholds;
+  - `%{outcome: :below_confidence_floor, entity_type, score, margin, evidence}`
+    -- decided, but with a confidence below the floor `extract/2` applies, so
+    the span stays unresolved as it was;
+  - `%{outcome: :not_redecided, reason}` -- `:no_measured_reading` (no
+    hypothesis to weigh), `:below_confidence_floor` (decided before, withheld
+    by the floor), `:no_intent`, `:intent_without_domain` (an intent whose
+    prefix `Brain.Lexicon.IntentDomains` does not declare, for which the slot
+    type preferences hold no distribution), `:extent_undecided` (the readings'
+    extents decide no extent, so the evidence is not weighed), or
+    `:no_hypothesis_at_extent` (no measured reading gives a type at the
+    extent decided).
+
+  Each outcome also carries the span's `:value`, `:start_pos` and `:end_pos`.
+
+  A decided entity carries `put_position_context/4`'s context from its own
+  offsets, as every entity `extract/2` decides does.
+
+  Options: `:text`, required, the text the spans' positions index;
+  `:language`, `:min_confidence` as for `extract/2`;
+  `:span_reliability` and `:preferences`, models used in place of the ones
+  loaded for the language.
+  """
+  @spec resolve_with_intent([map()], String.t() | atom() | nil, keyword()) :: %{
+          entities: [map()],
+          unresolved_spans: [map()],
+          outcomes: [map()]
+        }
+  def resolve_with_intent(spans, intent, opts) when is_list(spans) and is_list(opts) do
+    language = language!(opts)
+    intent = if is_nil(intent), do: nil, else: to_string(intent)
+    text = resolve_text!(opts)
+
+    # A decided span is an entity, scored again once the intent is known
+    # (`EntityTypeScorer.rescore/3`), so it carries the context every entity
+    # extraction decides carries, from its own offsets. The text is tagged
+    # only when a span is decided.
+    position_context = fn entity ->
+      tokens = Tokenizer.tokenize(text)
+      put_position_context(entity, tokens, required_pos_tags(tokens), text)
+    end
+
+    results =
+      spans
+      |> Enum.sort_by(&{&1.start_pos, &1.end_pos})
+      |> Enum.map(&resolve_span(&1, intent, language, Keyword.put(opts, :position_context, position_context)))
+
+    %{
+      entities: for({:entity, entity, _outcome} <- results, do: entity),
+      unresolved_spans: for({:span, span, _outcome} <- results, do: span),
+      outcomes: Enum.map(results, &elem(&1, 2))
+    }
+  end
+
+  defp resolve_span(%{unresolved_reason: :insufficient_evidence} = span, intent, language, opts) do
+    cond do
+      intent in [nil, ""] ->
+        {:span, span, outcome(span, %{outcome: :not_redecided, reason: :no_intent})}
+
+      not Brain.Lexicon.IntentDomains.declared?(intent |> String.split(".") |> hd()) ->
+        {:span, span, outcome(span, %{outcome: :not_redecided, reason: :intent_without_domain})}
+
+      true ->
+        redecide_span(span, intent, language, opts)
+    end
+  end
+
+  defp resolve_span(%{unresolved_reason: reason} = span, _intent, _language, _opts)
+       when reason in [:no_measured_reading, :below_confidence_floor] do
+    {:span, span, outcome(span, %{outcome: :not_redecided, reason: reason})}
+  end
+
+  defp resolve_span(span, _intent, _language, _opts) do
+    raise ArgumentError, "EntityExtractor.resolve_with_intent/3: not an unresolved span: #{inspect(span, limit: 8)}"
+  end
+
+  defp redecide_span(span, intent, language, opts) do
+    reliability =
+      case Keyword.fetch(opts, :span_reliability) do
+        {:ok, %SpanReliability{} = model} -> model
+        {:ok, other} -> raise ArgumentError, "EntityExtractor: :span_reliability must be a SpanReliability model, got #{inspect(other, limit: 3)}"
+        :error -> SpanReliability.loaded!(language)
+      end
+
+    preferences = preferences!(opts, language)
+
+    labels = span.readings |> Enum.filter(& &1.measured) |> Enum.map(& &1.canonical) |> Enum.uniq()
+    evidence = SlotTypePreferences.intent_evidence(preferences, intent, labels)
+
+    case SpanReliability.redecide(span, evidence, reliability, TypeHierarchy) do
+      {:decided, entity} ->
+        entity =
+          %{entity | decision: Map.put(entity.decision, :resolved_by, {:intent, intent})}
+          |> Keyword.fetch!(opts, :position_context).()
+        decided = %{entity_type: entity.entity_type, score: entity.decision.score, margin: entity.decision.margin, evidence: evidence}
+
+        # The floor `extract/2` applies to every entity applies here too; a
+        # decision under it is not acted on, and the span stays as it was.
+        if entity.confidence >= min_confidence(opts) do
+          {:entity, entity, outcome(span, Map.put(decided, :outcome, :resolved))}
+        else
+          {:span, span, outcome(span, Map.put(decided, :outcome, :below_confidence_floor))}
+        end
+
+      {:undecided, %Brain.Lattice{best: %{label: {_s, _e, best}} = top} = lattice} ->
+        margin = if lattice.second, do: top.score - lattice.second.score, else: :infinity
+
+        {:span, span,
+         outcome(span, %{outcome: :undecided, best_type: best, score: top.score, margin: margin, evidence: evidence})}
+
+      # The extent the readings' extent reliabilities decided carries no
+      # measured reading, so there is no type there to weigh the evidence for.
+      {:undecided, %Brain.Lattice{best: nil}} ->
+        {:span, span, outcome(span, %{outcome: :not_redecided, reason: :no_hypothesis_at_extent})}
+
+      # Evidence about types cannot say where the span starts and ends.
+      {:extent_undecided, %Brain.Lattice{}} ->
+        {:span, span, outcome(span, %{outcome: :not_redecided, reason: :extent_undecided})}
+    end
+  end
+
+  defp resolve_text!(opts) do
+    case Keyword.fetch(opts, :text) do
+      {:ok, text} when is_binary(text) -> text
+      {:ok, other} -> raise ArgumentError, "EntityExtractor.resolve_with_intent/3: :text must be a string, got #{inspect(other)}"
+      :error -> raise ArgumentError, "EntityExtractor.resolve_with_intent/3 needs :text, the text the spans' positions index"
+    end
+  end
+
+  defp outcome(span, fields), do: Map.merge(%{value: span.value, start_pos: span.start_pos, end_pos: span.end_pos}, fields)
+
+  defp min_confidence(opts), do: Keyword.get(opts, :min_confidence) || get_min_confidence_threshold()
+
+  @doc """
+  Every source's reading of `text`, before any span is decided: the gazetteer,
+  the system parsers (numbers, dates), the lengths `Brain.Temporal.Resolver`
+  reads, the location and proper-noun hints, the world's entity model, and the
+  names of the world's analyzed code
+  (`Brain.Code.EntityReadings`). Each is an entity map with its `:source`, its
+  `:entity_type`, its extent and, from a source that has one, the source's own
+  `:confidence`, as `Brain.ML.SpanReliability` takes them.
+
+  Takes `extract_entities/2`'s `:world_id`, `:domain` and `:intent`, and
+  `:entity_model`, a model of `Brain.ML.EntityTrainer`'s shape used in place of
+  the world's loaded one. Training passes each row's out-of-fold model.
+  """
+  @spec readings(String.t(), keyword()) :: [map()]
+  def readings(text, opts) when is_binary(text) and is_list(opts) do
+    collect_readings(text, Tokenizer.tokenize(text), opts, world_id!(opts))
+  end
+
+  defp collect_readings(text, tokens, opts, world_id) do
+    gaz_context = Keyword.take(opts, [:domain, :intent, :world_id])
+    tags = required_pos_tags(tokens)
+
+    extract_gazetteer_entities(tokens, tags, text, gaz_context, language!(opts)) ++
+      extract_system_entities(tokens, text) ++
+      length_readings(text) ++
+      extract_location_hints(tokens, tags) ++
+      extract_proper_noun_hints(tokens, tags) ++
+      extract_model_entities(text, tokens, entity_model!(opts, world_id)) ++
+      Brain.Code.EntityReadings.readings(text, tokens, world_id, &ML.DataLoaders.ordinary_word?/1)
+  end
+
+  defp entity_model!(opts, world_id) do
+    case Keyword.fetch(opts, :entity_model) do
+      {:ok, %{tag_vocabulary: _} = model} -> model
+      {:ok, other} -> raise ArgumentError, "EntityExtractor option :entity_model must be an entity model, got: #{inspect(other, limit: 3)}"
+      :error -> EntityModel.loaded!(world_id)
+    end
+  end
+
+  # The language whose span reliabilities decide the spans. Absent means the
+  # caller named no language, which is English; an unsupported code raises.
+  defp language!(opts) do
+    case Keyword.fetch(opts, :language) do
+      {:ok, code} -> Brain.Language.validate!(code)
+      :error -> Brain.Language.resolve!(nil)
+    end
+  end
+
+  # Entities are nomens, so extraction always runs in a world: the caller names
+  # it, and there is no default.
+  defp world_id!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "EntityExtractor option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "EntityExtractor needs :world_id, the world whose entities are extracted"
+    end
   end
 
   @doc """
@@ -283,73 +426,150 @@ defmodule Brain.ML.EntityExtractor do
           {:ok, %{"system_to_canonical" => mappings}} when is_map(mappings) ->
             mappings
 
-          _ ->
-            Logger.warning("Invalid type_mappings.json format, using empty mappings")
-            %{}
+          other ->
+            raise "EntityExtractor: #{path} has no \"system_to_canonical\" object: #{inspect(other, limit: 5)}"
         end
 
-      {:error, _} ->
-        Logger.debug("No type_mappings.json found at #{path}, using empty mappings")
-        %{}
+      {:error, reason} ->
+        raise "EntityExtractor: cannot read #{path}: #{inspect(reason)}"
     end
   end
 
   @doc """
-  Refines entity types based on intent context and slot schemas.
+  Refines entity types once the intent is known: a number takes the slot of
+  the intent's schema the data says it fills, and a proper-noun person is
+  split into given_name/last_name.
 
-  After intent classification, numeric entities can be refined to specific
-  slot types (final-value, change-value, etc.) based on what the intent's
-  slot schema expects. Person entities can be split into given-name/last-name.
+  A number (`entity_type: "number"`) is weighed against every slot of the
+  intent's schema whose name is a gold label of the slot type preferences
+  (`Brain.Analysis.SlotTypePreferences.label_posteriors/4`): how often the
+  intent's utterances name that label, how often a span of it is a number,
+  and how often the tag and the word before the number come before a span of
+  it ("to 40" is a final value, "by 40" a change, "from 2014" a start year,
+  "top 10" an amount). It takes the most probable slot name as its type. It
+  keeps "number" when no slot name is a gold label, when the intent's prefix
+  has no domain the preferences can weigh it in
+  (`Brain.Lexicon.IntentDomains`), or when two slots are equally probable.
+
+  A number anaphora resolution supplied (`source: :anaphora_resolution`)
+  stands nowhere in the text: it is weighed by the intent and by whether its
+  value is a number alone. Any other number without a position in `:text`
+  raises.
 
   ## Options
-    - `:intent` - The classified intent string (e.g., "smarthome.heating.set")
+
+    - `:text` - required: the text the entities' positions index.
+    - `:language` - the `Brain.Language` code whose slot type preferences
+      weigh the numbers. Absent means English; an unsupported code raises.
+    - `:preferences` - a `Brain.Analysis.SlotTypePreferences` model used in
+      place of the one loaded for the language.
   """
-  def refine_entity_types(entities, intent, _opts \\ []) when is_list(entities) and is_binary(intent) do
+  @spec refine_entity_types([map()], String.t(), keyword()) :: [map()]
+  def refine_entity_types(entities, intent, opts) when is_list(entities) and is_binary(intent) and is_list(opts) do
     schema = Analysis.SlotDetector.get_schema(intent)
+    text = refine_text!(opts)
 
     entities
-    |> refine_numeric_types(schema)
+    |> refine_numeric_types(schema, intent, text, opts)
     |> refine_person_subtypes()
     |> refine_temporal_subtypes()
   end
 
-  defp refine_numeric_types(entities, nil), do: entities
+  defp refine_numeric_types(entities, nil, _intent, _text, _opts), do: entities
 
-  defp refine_numeric_types(entities, schema) do
-    mappings = Map.get(schema, "entity_mappings", %{})
+  defp refine_numeric_types(entities, schema, intent, text, opts) do
+    if Enum.any?(entities, &number?/1) do
+      preferences = preferences!(opts, language!(opts))
 
-    numeric_slots =
-      mappings
-      |> Enum.filter(fn {_slot, types} ->
-        Enum.any?(types, fn t -> t in ["sys.number", "number"] end)
-      end)
-      |> Enum.map(fn {slot, _types} -> slot end)
+      slots =
+        schema
+        |> Map.get("entity_mappings", %{})
+        |> Map.keys()
+        |> Enum.filter(&SlotTypePreferences.label?(preferences, &1))
+        |> Enum.sort()
 
-    number_entities = Enum.filter(entities, fn e -> e[:entity_type] == "number" end)
-    non_number_entities = Enum.reject(entities, fn e -> e[:entity_type] == "number" end)
+      if slots == [] or not Brain.Lexicon.IntentDomains.declared?(intent |> String.split(".") |> hd()) do
+        entities
+      else
+        tokens = Tokenizer.tokenize(text)
+        context = %{tokens: List.to_tuple(tokens), tags: tokens |> required_pos_tags() |> List.to_tuple()}
 
-    refined_numbers =
-      case {numeric_slots, number_entities} do
-        {[], _} -> number_entities
-        {_, []} -> []
-        {[single_slot], _} ->
-          Enum.map(number_entities, fn e -> Map.put(e, :entity_type, single_slot) end)
-        {slots, nums} ->
-          assign_numbers_to_slots(nums, slots)
+        Enum.map(entities, fn entity ->
+          if number?(entity), do: refine_number(entity, slots, intent, preferences, context, text), else: entity
+        end)
       end
-
-    non_number_entities ++ refined_numbers
+    else
+      entities
+    end
   end
 
-  defp assign_numbers_to_slots(numbers, slots) do
-    sorted_numbers = Enum.sort_by(numbers, & &1.start_pos)
+  defp number?(entity), do: Map.get(entity, :entity_type) == "number"
 
-    sorted_numbers
-    |> Enum.with_index()
-    |> Enum.map(fn {entity, idx} ->
-      slot = Enum.at(slots, idx) || List.last(slots)
-      Map.put(entity, :entity_type, slot)
-    end)
+  defp refine_text!(opts) do
+    case Keyword.fetch(opts, :text) do
+      {:ok, text} when is_binary(text) -> text
+      {:ok, other} -> raise ArgumentError, "EntityExtractor.refine_entity_types/3: :text must be a string, got #{inspect(other)}"
+      :error -> raise ArgumentError, "EntityExtractor.refine_entity_types/3 needs :text, the text the entities' positions index"
+    end
+  end
+
+  defp refine_number(entity, slots, intent, preferences, context, text) do
+    span =
+      case entity do
+        %{start_pos: start_pos, end_pos: end_pos} when is_integer(start_pos) and is_integer(end_pos) ->
+          number_context(entity, context, text)
+
+        %{source: :anaphora_resolution, value: value} ->
+          %{numeric: value |> to_string() |> Tokenizer.tokenize() |> numeric_tokens?()}
+
+        _ ->
+          raise ArgumentError,
+                "EntityExtractor.refine_entity_types/3: a number with no position in the text that anaphora resolution " <>
+                  "did not supply cannot be weighed: #{inspect(entity, limit: 8)}"
+      end
+
+    posteriors = SlotTypePreferences.label_posteriors(preferences, intent, slots, span)
+
+    case Enum.sort_by(posteriors, fn {slot, p} -> {-p, slot} end) do
+      [{_best, p}, {_second, p} | _] -> entity
+      [{best, _p} | _] -> Map.put(entity, :entity_type, best)
+    end
+  end
+
+  defp numeric_tokens?([]), do: false
+  defp numeric_tokens?(tokens), do: SlotTypePreferences.numeric_span?(tokens)
+
+  # Whether the number's tokens are a number alone, and the tag and the word
+  # before it, as the slot type preferences learned them.
+  defp number_context(%{start_pos: start_pos, end_pos: end_pos} = entity, %{tokens: tokens, tags: tags}, text) do
+    indexed = tokens |> Tuple.to_list() |> Enum.with_index()
+    first = Enum.find_value(indexed, fn {token, i} -> if token.start_pos == start_pos, do: i end)
+    last = Enum.find_value(indexed, fn {token, i} -> if token.end_pos == end_pos, do: i end)
+
+    unless is_integer(first) and is_integer(last) and first <= last do
+      raise ArgumentError,
+            "EntityExtractor.refine_entity_types/3: the number #{inspect(Map.get(entity, :value))} at #{start_pos}..#{end_pos} " <>
+              "does not start and end at tokens of #{inspect(text)}"
+    end
+
+    {preceding_tag, preceding_word} =
+      if first == 0,
+        do: {SlotTypePreferences.sentence_start(), SlotTypePreferences.sentence_start()},
+        else: {elem(tags, first - 1), SlotTypePreferences.word_key(elem(tokens, first - 1).text)}
+
+    %{
+      numeric: tokens |> Tuple.to_list() |> Enum.slice(first..last) |> numeric_tokens?(),
+      preceding_tag: preceding_tag,
+      preceding_word: preceding_word
+    }
+  end
+
+  defp preferences!(opts, language) do
+    case Keyword.fetch(opts, :preferences) do
+      {:ok, %SlotTypePreferences{} = model} -> model
+      {:ok, other} -> raise ArgumentError, "EntityExtractor: :preferences must be a SlotTypePreferences model, got #{inspect(other, limit: 3)}"
+      :error -> SlotTypePreferences.loaded!(language)
+    end
   end
 
   defp refine_person_subtypes(entities) do
@@ -360,13 +580,13 @@ defmodule Brain.ML.EntityExtractor do
 
         case tokens do
           [single] ->
-            [Map.put(entity, :entity_type, "given-name") |> Map.put(:value, single)]
+            [Map.put(entity, :entity_type, "given_name") |> Map.put(:value, single)]
 
           [first | rest] ->
             last = List.last(rest)
-            given = %{entity | entity_type: "given-name", value: first,
+            given = %{entity | entity_type: "given_name", value: first,
                        match: first, confidence: entity[:confidence]}
-            family = %{entity | entity_type: "last-name", value: last,
+            family = %{entity | entity_type: "last_name", value: last,
                         match: last, confidence: entity[:confidence] * 0.95}
             [given, family]
 
@@ -379,29 +599,32 @@ defmodule Brain.ML.EntityExtractor do
     end)
   end
 
+  # A date or time a gazetteer span was read as keeps the entry's canonical
+  # value as `:canonical_value`, as a system reading of one token does
+  # (`extract_dates_from_tokens/1`): the span's candidate readings (`:types`)
+  # carry it. A span no gazetteer entry gave its type has no canonical value.
+  # (A reading summary's `:canonical` is its gold-standard type label, not this.)
   defp refine_temporal_subtypes(entities) do
+    temporal_types = TypeHierarchy.config("temporal_types", [])
+
     Enum.map(entities, fn entity ->
       entity_type = entity[:entity_type] || ""
       value = to_string(entity[:value] || "")
 
       cond do
-        entity_type == "number" and is_year_value?(value) ->
+        entity_type in ["date_time", "date", "sys_date", "relative_date"] and is_year_only?(value) ->
           Map.put(entity, :entity_type, "year")
 
-        entity_type in ["date-time", "date", "sys-date", "relative_date"] and is_year_only?(value) ->
-          Map.put(entity, :entity_type, "year")
+        entity_type in temporal_types and not Map.has_key?(entity, :canonical_value) ->
+          case Enum.find(Map.get(entity, :types) || [], &(&1[:entity_type] == entity_type and is_binary(&1[:value]))) do
+            nil -> entity
+            reading -> Map.put(entity, :canonical_value, reading[:value])
+          end
 
         true ->
           entity
       end
     end)
-  end
-
-  defp is_year_value?(value) do
-    case Integer.parse(value) do
-      {n, ""} -> n >= 1900 and n <= 2100
-      _ -> false
-    end
   end
 
   defp is_year_only?(value) do
@@ -413,10 +636,12 @@ defmodule Brain.ML.EntityExtractor do
   end
 
   @doc """
-  Normalizes entity types using the data-driven type mappings.
+  Maps entity types onto the NER gold standard's labels, for evaluation only.
 
-  Converts system-specific types (e.g., "heating", "music-artist") to
-  canonical gold-standard types (e.g., "device", "artist").
+  Converts system types (e.g., "heating", "music_artist") to the labels the
+  gold standard uses (e.g., "device", "artist"). The runtime keeps system
+  types, which the intent registry and slot mappings are written in; only the
+  NER evaluators call this, when comparing against the gold standard.
   """
   def normalize_entity_types(entities) when is_list(entities) do
     mappings = load_type_mappings()
@@ -442,210 +667,179 @@ defmodule Brain.ML.EntityExtractor do
       0.51
   end
 
-  defp filter_by_confidence(entities, min_confidence) when is_float(min_confidence) do
-    Enum.filter(entities, fn entity ->
-      confidence = Map.get(entity, :confidence) || Map.get(entity, "confidence", 0.0)
-      confidence >= min_confidence
-    end)
+  # `{kept, withheld}`: a decided entity below the caller's floor is withheld
+  # -- turned back into an unresolved span with its readings -- rather than
+  # dropped.
+  defp apply_confidence_floor(entities, min_confidence, text) when is_float(min_confidence) do
+    {kept, below} = Enum.split_with(entities, &(&1.confidence >= min_confidence))
+    {kept, Enum.map(below, &SpanReliability.withhold(&1, :below_confidence_floor, text, TypeHierarchy))}
   end
 
-  defp filter_by_confidence(entities, _) do
-    entities
+  defp apply_confidence_floor(entities, _min_confidence, _text) do
+    {entities, []}
   end
 
-  @doc "Extract entities using the BIO-tagged model (if available).\nFalls back to gazetteer if model not loaded.\n"
-  def extract_entities_with_model(text, opts \\ []) do
-    entity_maps = Keyword.get(opts, :entity_maps) || get_entity_maps()
-    gazetteer_entities = extract_entities(text, entity_maps)
+  # Every candidate reading of a span is kept in :types and scored by
+  # EntityTypeScorer; the entity takes the most probable reading. The intent,
+  # when the caller knows it, supplies the types the context expects.
+  # One UD tag per token, from the POS model. Entity scoring weighs a word by
+  # its part of speech in the sentence, so a missing model is an error, not
+  # a sentence of "X" tags.
+  defp required_pos_tags([]), do: []
 
-    model_entities =
-      case EntityTrainer.load_model() do
-        {:ok, model} ->
-          tokens = Tokenizer.tokenize_words(text)
-          predictions = EntityTrainer.predict(tokens, model)
+  defp required_pos_tags(tokens) do
+    case POSTagger.load_model() do
+      {:ok, model} ->
+        tagged = POSTagger.predict(Enum.map(tokens, & &1.text), model)
 
-          EntityTrainer.extract_entities_from_bio(predictions)
-          |> Enum.map(fn entity ->
-            %{
-              entity_type: entity.entity_type,
-              value: entity.value,
-              match: entity.value,
-              start_pos: 0,
-              end_pos: String.length(entity.value) - 1,
-              confidence: entity.confidence
-            }
-          end)
+        unless length(tagged) == length(tokens) do
+          raise "EntityExtractor: POS tagger returned #{length(tagged)} tags for #{length(tokens)} tokens"
+        end
 
-        {:error, _} ->
-          []
-      end
+        Enum.map(tagged, fn {_text, tag} -> tag end)
 
-    all_entities = gazetteer_entities ++ model_entities
-
-    all_entities
-    |> Enum.uniq_by(fn e -> {String.downcase(e.value), e.entity_type} end)
-    |> resolve_entity_conflicts()
-  end
-
-  defp extract_gazetteer_entities(tokens, entity_maps, gaz_context) do
-    if Gazetteer.loaded?() do
-      extract_with_gazetteer_server(tokens, gaz_context)
-    else
-      extract_with_local_maps(tokens, entity_maps)
+      {:error, reason} ->
+        raise "EntityExtractor: the POS model is required to score entities: #{inspect(reason)}"
     end
   end
 
-  defp extract_with_gazetteer_server(tokens, gaz_context) do
-    token_texts =
-      Enum.map(tokens, fn t ->
-        t.text
-        |> String.downcase()
-        |> strip_non_word_chars()
-        |> String.trim()
-      end)
+  @doc """
+  Sets on `entity` the context `Brain.Analysis.EntityTypeScorer` weighs its
+  readings with, from the entity's own offsets in `text`: `:tag`, the UD tag of
+  its head word (the last word of an English noun phrase); `:preceding_tag`,
+  the tag of the word before it as the slot type preferences were learned
+  from it (`SlotTypePreferences.sentence_start/0` at the start of the text);
+  and `:sentence_initial`. `tokens` are `Brain.ML.Tokenizer.tokenize/1`'s
+  tokens of `text` and `tags` their tags, one each. An entity whose offsets
+  do not begin and end on token boundaries raises. Any context the entity
+  carried is replaced.
+  """
+  @spec put_position_context(map(), [map()], [String.t()], String.t()) :: map()
+  def put_position_context(%{start_pos: start_pos, end_pos: end_pos} = entity, tokens, tags, text)
+      when is_list(tokens) and is_list(tags) and is_binary(text) do
+    unless length(tags) == length(tokens) do
+      raise ArgumentError, "EntityExtractor.put_position_context/4: #{length(tags)} tags for #{length(tokens)} tokens"
+    end
+
+    {first, last} = Tokenizer.token_range!(tokens, start_pos, end_pos)
+
+    Map.merge(entity, %{
+      tag: Enum.at(tags, last),
+      preceding_tag: if(first == 0, do: SlotTypePreferences.sentence_start(), else: Enum.at(tags, first - 1)),
+      sentence_initial: EntityTypeScorer.sentence_initial?(text, start_pos)
+    })
+  end
+
+  @doc """
+  The key a token is looked up in the gazetteer by: its text lowercased, with
+  every character but letters, digits, spaces and hyphens removed, and trimmed.
+  `Brain.ML.Gazetteer.lookup_spans/2` takes one key per token.
+  """
+  @spec gazetteer_key(String.t()) :: String.t()
+  def gazetteer_key(token_text) when is_binary(token_text) do
+    token_text
+    |> String.downcase()
+    |> String.graphemes()
+    |> Enum.filter(&word_or_space_or_hyphen?/1)
+    |> Enum.join()
+    |> String.trim()
+  end
+
+  defp extract_gazetteer_entities(tokens, tags, text, gaz_context, language) do
+    token_texts = Enum.map(tokens, &gazetteer_key(&1.text))
+
+    scoring = [language: language]
+    expected_types = EntityTypeScorer.expected_types(gaz_context[:intent], scoring)
 
     Gazetteer.lookup_spans(token_texts, gaz_context)
-    |> Enum.map(fn {start_idx, end_idx, entity_info} ->
+    |> Enum.sort_by(fn {start_idx, _end_idx, _info} -> start_idx end)
+    |> attach_quantifiers(tokens)
+    |> Enum.map(fn {start_idx, end_idx, entity_info, quantifier} ->
       start_token = Enum.at(tokens, start_idx)
       end_token = Enum.at(tokens, end_idx)
 
       matched_tokens = Enum.slice(tokens, start_idx..end_idx)
       match_text = Enum.map_join(matched_tokens, " ", & &1.text)
 
-      case entity_info do
-        infos when is_list(infos) and length(infos) > 1 ->
-          primary_info = score_and_pick_primary(infos)
-          primary_type = Map.get(primary_info, :entity_type, "unknown")
-          entity_value = Map.get(primary_info, :value, match_text)
+      candidates =
+        case entity_info do
+          [_ | _] = infos -> infos
+          info when is_map(info) -> [info]
+        end
 
-          %{
-            entity_type: primary_type,
-            value: entity_value,
-            match: match_text,
-            start_pos: start_token.start_pos,
-            end_pos: end_token.end_pos,
-            confidence: calculate_confidence(match_text, primary_type, entity_value),
-            types: infos,
-            source: :gazetteer
-          }
+      scored =
+        %{
+          entity_type: nil,
+          value: match_text,
+          match: match_text,
+          start_pos: start_token.start_pos,
+          end_pos: end_token.end_pos,
+          confidence: nil,
+          types: candidates,
+          source: :gazetteer
+        }
+        |> put_position_context(tokens, tags, text)
+        |> EntityTypeScorer.apply_to(expected_types, scoring)
 
-        [single_info] ->
-          entity_type = Map.get(single_info, :entity_type, "unknown")
-          entity_value = Map.get(single_info, :value, match_text)
+      selected =
+        Enum.find(candidates, &(&1[:entity_type] == scored.entity_type and &1[:value] == scored.value)) ||
+          Enum.find(candidates, &(&1[:entity_type] == scored.entity_type))
 
-          %{
-            entity_type: entity_type,
-            value: entity_value,
-            match: match_text,
-            start_pos: start_token.start_pos,
-            end_pos: end_token.end_pos,
-            confidence: calculate_confidence(match_text, entity_type, entity_value),
-            source: :gazetteer
-          }
+      # The span's grammatical number, read from its last word -- the head
+      # of an English noun phrase ("office lights"): :plural, :singular, or
+      # nil when WordNet knows no noun it could be.
+      number = end_token.text |> String.downcase() |> Brain.Lexicon.grammatical_number()
 
-        single_info when is_map(single_info) ->
-          entity_type = Map.get(single_info, :entity_type, "unknown")
-          entity_value = Map.get(single_info, :value, match_text)
-
-          %{
-            entity_type: entity_type,
-            value: entity_value,
-            match: match_text,
-            start_pos: start_token.start_pos,
-            end_pos: end_token.end_pos,
-            confidence: calculate_confidence(match_text, entity_type, entity_value),
-            source: :gazetteer
-          }
-
-        _ ->
-          %{
-            entity_type: "unknown",
-            value: match_text,
-            match: match_text,
-            start_pos: start_token.start_pos,
-            end_pos: end_token.end_pos,
-            confidence: 0.5,
-            source: :gazetteer
-          }
-      end
+      scored
+      |> Map.put(:number, number)
+      |> Map.put(:quantifier, quantifier)
+      |> extract_gazetteer_metadata(selected)
     end)
   end
 
-  defp extract_with_local_maps(tokens, entity_maps) do
-    max_span = 5
-    token_count = length(tokens)
-
-    find_all_local_spans(tokens, entity_maps, 0, token_count, max_span, [])
-  end
-
-  defp find_all_local_spans(_tokens, _entity_maps, start_idx, token_count, _max_span, acc)
-       when start_idx >= token_count do
-    resolve_entity_conflicts(Enum.reverse(acc))
-  end
-
-  defp find_all_local_spans(tokens, entity_maps, start_idx, token_count, max_span, acc) do
-    match = find_longest_local_match(tokens, entity_maps, start_idx, max_span)
-
-    case match do
-      {:ok, end_idx, entity_infos, match_text} ->
-        start_token = Enum.at(tokens, start_idx)
-        end_token = Enum.at(tokens, end_idx)
-
-        new_entities =
-          Enum.map(entity_infos, fn entity_info ->
-            entity_type = Map.get(entity_info, :entity_type, "unknown")
-            entity_value = Map.get(entity_info, :value, match_text)
-
-            %{
-              entity_type: entity_type,
-              value: entity_value,
-              match: match_text,
-              start_pos: start_token.start_pos,
-              end_pos: end_token.end_pos,
-              confidence: calculate_confidence(match_text, entity_type, entity_value),
-              source: :gazetteer
-            }
-          end)
-
-        find_all_local_spans(
-          tokens,
-          entity_maps,
-          start_idx + 1,
-          token_count,
-          max_span,
-          new_entities ++ acc
-        )
-
-      :not_found ->
-        find_all_local_spans(tokens, entity_maps, start_idx + 1, token_count, max_span, acc)
-    end
-  end
-
-  defp find_longest_local_match(tokens, entity_maps, start_idx, max_span) do
-    token_count = length(tokens)
-    actual_max = min(max_span, token_count - start_idx)
-
-    if actual_max < 1 do
-      :not_found
-    else
-      actual_max..1//-1
-      |> Enum.reduce_while(:not_found, fn span_len, _acc ->
-        span_tokens = Enum.slice(tokens, start_idx, span_len)
-        phrase = Enum.map_join(span_tokens, " ", & &1.text)
-        normalized = String.downcase(phrase)
-
-        case Map.get(entity_maps, normalized) do
-          nil ->
-            {:cont, :not_found}
-
-          entity_info when is_list(entity_info) ->
-            {:halt, {:ok, start_idx + span_len - 1, entity_info, phrase}}
-
-          entity_info when is_map(entity_info) ->
-            {:halt, {:ok, start_idx + span_len - 1, [entity_info], phrase}}
+  # Gives each span its quantifier: :total when a total quantifier ("all",
+  # "every", "each") quantifies it -- "all the lights", "every room", "all of
+  # the lights" -- so the action applies to each of them; nil otherwise.
+  #
+  # A quantifier stands among the function words before its noun phrase and
+  # quantifies the phrase's head, which in English comes last. Spans that
+  # directly follow one another form one phrase ("kitchen lights"), so in
+  # "all the kitchen lights" the lights are quantified, not the kitchen.
+  defp attach_quantifiers(spans, tokens) do
+    spans
+    |> Enum.chunk_while(
+      [],
+      fn {start_idx, _e, _i} = span, run ->
+        case run do
+          [{_s, prev_end, _} | _] when start_idx == prev_end + 1 -> {:cont, [span | run]}
+          [] -> {:cont, [span]}
+          _ -> {:cont, Enum.reverse(run), [span]}
         end
-      end)
-    end
+      end,
+      fn
+        [] -> {:cont, []}
+        run -> {:cont, Enum.reverse(run), []}
+      end
+    )
+    |> Enum.flat_map(fn [{first_start, _, _} | _] = run ->
+      quantifier = quantifier_before(tokens, first_start)
+      head = length(run) - 1
+
+      run
+      |> Enum.with_index()
+      |> Enum.map(fn {{s, e, info}, i} -> {s, e, info, if(i == head, do: quantifier)} end)
+    end)
+  end
+
+  # :total when a total quantifier stands among the function words directly
+  # before token `start_idx`; the run stops at the first open-class word.
+  defp quantifier_before(tokens, start_idx) do
+    tokens
+    |> Enum.take(start_idx)
+    |> Enum.reverse()
+    |> Enum.take_while(&Brain.Lexicon.ClosedClass.member?(&1.text))
+    |> Enum.any?(&Brain.Lexicon.ClosedClass.total_quantifier?(&1.text))
+    |> if(do: :total, else: nil)
   end
 
   defp extract_system_entities(tokens, _text) do
@@ -735,9 +929,10 @@ defmodule Brain.ML.EntityExtractor do
 
             match ->
               entity_type = match[:entity_type] || match["entity_type"]
+              canonical = temporal_canonical!(match, token.text)
 
               if entity_type in month_types do
-                maybe_date = check_for_date_pattern(tokens, idx)
+                maybe_date = check_for_date_pattern(tokens, idx, canonical)
 
                 case maybe_date do
                   nil ->
@@ -745,6 +940,7 @@ defmodule Brain.ML.EntityExtractor do
                       %{
                         entity_type: entity_type,
                         value: token.text,
+                        canonical_value: canonical,
                         match: token.text,
                         start_pos: token.start_pos,
                         end_pos: token.end_pos,
@@ -761,6 +957,7 @@ defmodule Brain.ML.EntityExtractor do
                   %{
                     entity_type: entity_type,
                     value: token.text,
+                    canonical_value: canonical,
                     match: token.text,
                     start_pos: token.start_pos,
                     end_pos: token.end_pos,
@@ -777,7 +974,64 @@ defmodule Brain.ML.EntityExtractor do
     end)
   end
 
-  defp check_for_date_pattern(tokens, month_idx) do
+  @doc """
+  The readings of the lengths said in `text`, one source among those
+  `readings/2` gathers: every length `Brain.Temporal.Resolver.lengths/2` reads
+  ("5 minutes" in "set a timer for 5 minutes"; nothing in "in 2 hours", a
+  point in time, nor in "10", a number alone), read as the type
+  `priv/analysis/entity_types.json`'s config names `duration_type`, from the
+  source `:temporal_resolver`. Its `:value` is the words said and its
+  `:canonical_value` the length said in the temporal vocabulary's units
+  (`Brain.Temporal.Resolver.say_length/2`), which the resolver reads back as
+  the same length. Raises when the config names no `duration_type`.
+  """
+  @spec length_readings(String.t()) :: [map()]
+  def length_readings(text) when is_binary(text) do
+    type = duration_type!()
+    vocabulary = Brain.Temporal.Vocabulary.loaded!()
+
+    for %{start_pos: start_pos, end_pos: end_pos, said: said, length: length} <-
+          Brain.Temporal.Resolver.lengths(text, vocabulary: vocabulary) do
+      %{
+        entity_type: type,
+        value: said,
+        match: said,
+        canonical_value: Brain.Temporal.Resolver.say_length(length, vocabulary),
+        start_pos: start_pos,
+        end_pos: end_pos,
+        source: :temporal_resolver
+      }
+    end
+  end
+
+  defp duration_type! do
+    case TypeHierarchy.config("duration_type") do
+      type when is_binary(type) and type != "" ->
+        type
+
+      other ->
+        raise "EntityExtractor: priv/analysis/entity_types.json's config names no duration_type, the type a length " <>
+                "is read as; got #{inspect(other)}"
+    end
+  end
+
+  # A temporal entry's canonical value: what the gazetteer maps the synonym
+  # said onto ("next day" is "tomorrow", "noon" is "12:00"). An entity keeps
+  # it as `:canonical_value` beside the `:value` that was said.
+  defp temporal_canonical!(match, said) do
+    case match[:value] || match["value"] do
+      canonical when is_binary(canonical) and canonical != "" ->
+        canonical
+
+      other ->
+        raise "EntityExtractor: the gazetteer's temporal entry for #{inspect(said)} carries no canonical value, got: " <>
+                inspect(other)
+    end
+  end
+
+  # The month's canonical value, with the day and year said after it, is the
+  # date's canonical form ("mar 5" is "march 5").
+  defp check_for_date_pattern(tokens, month_idx, month_canonical) do
     next_token = Enum.at(tokens, month_idx + 1)
     month_token = Enum.at(tokens, month_idx)
 
@@ -791,6 +1045,7 @@ defmodule Brain.ML.EntityExtractor do
         %{
           entity_type: "date",
           value: match_text,
+          canonical_value: "#{month_canonical} #{day_num} #{year_token.text}",
           match: match_text,
           start_pos: month_token.start_pos,
           end_pos: year_token.end_pos,
@@ -802,6 +1057,7 @@ defmodule Brain.ML.EntityExtractor do
         %{
           entity_type: "date",
           value: match_text,
+          canonical_value: "#{month_canonical} #{day_num}",
           match: match_text,
           start_pos: month_token.start_pos,
           end_pos: next_token.end_pos,
@@ -813,32 +1069,41 @@ defmodule Brain.ML.EntityExtractor do
     end
   end
 
-  defp extract_location_hints(tokens, entity_maps) do
-    tokens
+  # Reads the tags the sentence was already tagged with. Asking the tagger
+  # about one word at a time cost 85-92% of extraction: a single-token call is
+  # padded to the same batch as a 32-sentence one, so N words cost N times a
+  # full sentence.
+  defp extract_location_hints(tokens, tags) do
+    prep_tag = TypeHierarchy.config(["pos_tag_roles", "preposition_tag"], "ADP")
+
+    tags
     |> Enum.with_index()
-    |> Enum.flat_map(fn {token, idx} ->
-      if is_location_preposition?(token.text) do
-        extract_following_location(tokens, idx + 1, entity_maps)
+    |> Enum.flat_map(fn {tag, idx} ->
+      if tag == prep_tag do
+        extract_following_location(tokens, tags, idx + 1)
       else
         []
       end
     end)
   end
 
-  defp extract_following_location(tokens, start_idx, entity_maps) do
+  defp extract_following_location(tokens, tags, start_idx) do
     remaining = Enum.drop(tokens, start_idx)
+    function_tags = TypeHierarchy.config(["pos_tag_roles", "function_word_tags"], [])
 
     location_tokens =
       remaining
-      |> Enum.take_while(fn token ->
-        capitalized?(token.text) and not common_word?(token.text)
+      |> Enum.zip(Enum.drop(tags, start_idx))
+      |> Enum.take_while(fn {token, tag} ->
+        capitalized?(token.text) and tag not in function_tags
       end)
+      |> Enum.map(&elem(&1, 0))
 
     if location_tokens != [] do
       location_text = Enum.map_join(location_tokens, " ", & &1.text)
       normalized = String.downcase(location_text)
 
-      unless Map.has_key?(entity_maps, normalized) do
+      unless in_gazetteer?(normalized) do
         first_token = List.first(location_tokens)
         last_token = List.last(location_tokens)
         loc_type = classify_location_type(location_text, remaining)
@@ -850,7 +1115,8 @@ defmodule Brain.ML.EntityExtractor do
             match: location_text,
             start_pos: first_token.start_pos,
             end_pos: last_token.end_pos,
-            confidence: 0.7
+            confidence: 0.7,
+            source: :location_hint
           }
         ]
       else
@@ -883,127 +1149,130 @@ defmodule Brain.ML.EntityExtractor do
     if has_number and has_street_word do
       "address"
     else
-      TypeHierarchy.parent_of("city") || "location"
+      # A place name that is not a street address is typed as what a city is.
+      case TypeHierarchy.parents_of("city") do
+        [parent] -> parent
+        parents -> raise "EntityExtractor: a place name needs the one parent type of city; the hierarchy gives #{inspect(parents)}"
+      end
     end
   end
 
-  defp extract_proper_noun_hints(tokens, entity_maps) do
-    extract_with_pos_tagger(tokens, entity_maps)
+  defp extract_proper_noun_hints(tokens, tags) do
+    extract_with_pos_tagger(tokens, tags)
   end
 
-  defp extract_with_pos_tagger(tokens, entity_maps) do
+  # The world's BIO tagger over the same tokens. It was trained on
+  # `Tokenizer.tokenize/1` tokens (`Brain.ML.NerGold`), so its token indexes map
+  # straight back to positions in the text, and its confidence is the mean
+  # posterior of the entity's tags. Every entity the decode gives opens at a
+  # `B-` tag and is followed by `O`, a `B-` tag or the sentence's end
+  # (`EntityTrainer.extract_entities_from_bio/1` raises on any other `I-`), so
+  # how it was delimited says nothing about how far to trust its extent.
+  #
+  # The punctuation that ends a sentence is not tagged: of the NER gold
+  # standard's rows (2,846 with the held-out split, 2026-10-18) 7 end with it
+  # and no span ends at a punctuation token, so the model has hardly seen a span
+  # followed by it -- after "My name is Sarah" the period, unseen there, read
+  # the name as a code symbol continued by "." -- and no span can end there.
+  defp extract_model_entities(text, tokens, model) do
+    tagged =
+      tokens
+      |> Enum.reverse()
+      |> Enum.drop_while(&(&1.type == :punctuation))
+      |> Enum.reverse()
+      |> Enum.map(& &1.text)
+      |> EntityTrainer.tag(model)
+
+    tagged
+    |> EntityTrainer.extract_entities_from_bio()
+    |> Enum.map(fn entity ->
+      start_pos = Enum.at(tokens, entity.start_index).start_pos
+      end_pos = Enum.at(tokens, entity.end_index).end_pos
+      surface = String.slice(text, start_pos, end_pos - start_pos + 1)
+
+      %{
+        entity_type: entity.entity_type,
+        value: surface,
+        match: surface,
+        start_pos: start_pos,
+        end_pos: end_pos,
+        confidence: entity.confidence,
+        source: :entity_model
+      }
+    end)
+  end
+
+  # Takes the sentence's tags rather than tagging it a second time: this and
+  # `required_pos_tags/1` were tagging the identical token list on every call.
+  defp extract_with_pos_tagger(tokens, tags) do
     propn_tag = TypeHierarchy.config(["pos_tag_roles", "proper_noun"], "PROPN")
     default_type = TypeHierarchy.config("default_propn_type", "person")
 
-    case POSTagger.load_model() do
-      {:ok, model} ->
-        token_texts = Enum.map(tokens, & &1.text)
-        predictions = POSTagger.predict(token_texts, model)
+    tokens
+    |> Enum.map(& &1.text)
+    |> Enum.zip(tags)
+    |> Enum.with_index()
+    |> Enum.reduce([], fn {{word, tag}, idx}, acc ->
+      if tag == propn_tag and capitalized?(word) and not in_gazetteer?(word) do
+        token = Enum.at(tokens, idx)
 
-        predictions
-        |> Enum.with_index()
-        |> Enum.reduce([], fn {{word, tag}, idx}, acc ->
-          if tag == propn_tag and capitalized?(word) and not in_gazetteer?(word, entity_maps) do
-            token = Enum.at(tokens, idx)
+        case acc do
+          [%{source: :pos_tagger_propn, _merge_end_idx: prev_idx} = prev | rest]
+          when prev_idx == idx - 1 ->
+            merged = %{
+              prev
+              | value: prev.value <> " " <> word,
+                match: prev.match <> " " <> word,
+                end_pos: token.end_pos,
+                confidence: min(0.8, prev.confidence + 0.05),
+                _merge_end_idx: idx
+            }
 
-            case acc do
-              [%{source: :pos_tagger_propn, _merge_end_idx: prev_idx} = prev | rest]
-                when prev_idx == idx - 1 ->
-                merged = %{prev |
-                  value: prev.value <> " " <> word,
-                  match: prev.match <> " " <> word,
-                  end_pos: token.end_pos,
-                  confidence: min(0.8, prev.confidence + 0.05),
-                  _merge_end_idx: idx
-                }
-                [merged | rest]
+            [merged | rest]
 
-              _ ->
-                entity = %{
-                  entity_type: default_type,
-                  value: word,
-                  match: word,
-                  start_pos: token.start_pos,
-                  end_pos: token.end_pos,
-                  confidence: 0.65,
-                  source: :pos_tagger_propn,
-                  _merge_end_idx: idx
-                }
-                [entity | acc]
-            end
-          else
-            acc
-          end
-        end)
-        |> Enum.map(&Map.delete(&1, :_merge_end_idx))
-        |> Enum.reverse()
+          _ ->
+            entity = %{
+              entity_type: default_type,
+              value: word,
+              match: word,
+              start_pos: token.start_pos,
+              end_pos: token.end_pos,
+              confidence: 0.65,
+              source: :pos_tagger_propn,
+              _merge_end_idx: idx
+            }
 
-      {:error, _} ->
-        []
-    end
-  end
-
-  defp in_gazetteer?(word, entity_maps) when is_binary(word) do
-    normalized = String.downcase(word)
-    Map.has_key?(entity_maps, normalized) or Gazetteer.lookup(normalized) != :not_found
-  end
-
-  defp in_gazetteer?(%{text: text}, entity_maps) when is_binary(text),
-    do: in_gazetteer?(text, entity_maps)
-
-  defp in_gazetteer?(%{"text" => text}, entity_maps) when is_binary(text),
-    do: in_gazetteer?(text, entity_maps)
-
-  defp in_gazetteer?(_, _), do: false
-
-  defp score_and_pick_primary(infos) when is_list(infos) do
-    adjustments = TypeHierarchy.config("confidence_adjustments", %{})
-    source_priority = TypeHierarchy.config("source_priority", %{})
-
-    infos
-    |> Enum.sort_by(fn info ->
-      entity_type = Map.get(info, :entity_type, "unknown")
-      source = Map.get(info, :source, :unknown) |> to_string()
-
-      type_score = Map.get(adjustments, entity_type, 0.0)
-      source_score = Map.get(source_priority, source, 0)
-
-      {-source_score, -type_score}
-    end)
-    |> hd()
-  end
-
-  defp calculate_confidence(match_text, entity_type, entity_value) do
-    base = min(0.9, 0.5 + String.length(match_text) * 0.03)
-    adjustments = TypeHierarchy.config("confidence_adjustments", %{})
-
-    type_bonus = Map.get(adjustments, entity_type, 0.0)
-
-    casing_penalty =
-      if entity_value && match_text != entity_value do
-        match_lower = String.downcase(match_text)
-        value_lower = String.downcase(entity_value)
-
-        if match_lower == value_lower && match_text != entity_value do
-          value_is_capitalized = capitalized?(entity_value)
-          match_is_lowercase = match_text == match_lower
-
-          penalty =
-            if value_is_capitalized && match_is_lowercase do
-              0.3
-            else
-              0.15
-            end
-
-          -penalty
-        else
-          0.0
+            [entity | acc]
         end
       else
-        0.0
+        acc
       end
+    end)
+    |> Enum.map(&Map.delete(&1, :_merge_end_idx))
+    |> Enum.reverse()
+  end
 
-    min(0.95, max(0.1, base + type_bonus + casing_penalty))
+  defp in_gazetteer?(word) when is_binary(word) do
+    Gazetteer.lookup(String.downcase(word)) != :not_found
+  end
+
+  defp extract_gazetteer_metadata(base, info) when is_map(info) do
+    metadata_keys = [:ha_entity_id, :ha_domain, :state_code, :state_name, :region, :country, :county]
+
+    metadata =
+      metadata_keys
+      |> Enum.reduce(%{}, fn key, acc ->
+        case Map.get(info, key) do
+          nil -> acc
+          val -> Map.put(acc, key, val)
+        end
+      end)
+
+    if map_size(metadata) > 0 do
+      Map.put(base, :metadata, metadata)
+    else
+      base
+    end
   end
 
   defp capitalized?(text) do
@@ -1011,11 +1280,8 @@ defmodule Brain.ML.EntityExtractor do
     first != nil and first == String.upcase(first) and first != String.downcase(first)
   end
 
-  defp resolve_entity_conflicts(matches) do
-    sorted = Enum.sort_by(matches, fn m -> {m.start_pos, -String.length(m.match)} end)
-    resolve_overlaps(sorted, [])
-  end
-
+  # Adjacent decided spans of compatible types become one entity carrying both
+  # spans' readings.
   defp merge_adjacent_entities(entities, tokens) do
     sorted = Enum.sort_by(entities, & &1.start_pos)
 
@@ -1030,7 +1296,8 @@ defmodule Brain.ML.EntityExtractor do
             match: prev.match <> " " <> entity.match,
             end_pos: entity.end_pos,
             entity_type: merged_type,
-            confidence: min(0.85, max(prev.confidence, entity.confidence) + 0.05)
+            confidence: min(0.85, max(prev.confidence, entity.confidence) + 0.05),
+            readings: prev.readings ++ entity.readings
           }
           |> Map.delete(:types)
           {List.replace_at(acc, -1, combined), combined}
@@ -1096,35 +1363,6 @@ defmodule Brain.ML.EntityExtractor do
     Enum.empty?(between) or Enum.all?(between, &(&1.type == :punctuation))
   end
 
-  defp resolve_overlaps([], resolved) do
-    Enum.reverse(resolved)
-  end
-
-  defp resolve_overlaps([current | rest], resolved) do
-    case resolved do
-      [] ->
-        resolve_overlaps(rest, [current])
-
-      [last | _] = resolved_list ->
-        if current.start_pos <= last.end_pos do
-          if String.length(current.match) > String.length(last.match) do
-            resolve_overlaps(rest, [current | tl(resolved_list)])
-          else
-            resolve_overlaps(rest, resolved_list)
-          end
-        else
-          resolve_overlaps(rest, [current | resolved_list])
-        end
-    end
-  end
-
-  defp strip_non_word_chars(text) do
-    text
-    |> String.graphemes()
-    |> Enum.filter(&word_or_space_or_hyphen?/1)
-    |> Enum.join()
-  end
-
   defp word_or_space_or_hyphen?(grapheme) do
     case grapheme do
       "-" -> true
@@ -1144,12 +1382,18 @@ defmodule Brain.ML.EntityExtractor do
       (codepoint >= 7680 and codepoint <= 7935)
   end
 
-  defp disambiguate_entities(entities, tokens, discourse, speech_act, original_text, world_id) do
+  # The profile, when one is known, is the chunk's: the disambiguator ranks the
+  # slot types of its domain, and `context_type/1` reads its domain.
+  defp disambiguate_entities(entities, tokens, %{discourse: discourse, speech_act: speech_act, profile: profile}, original_text, world_id) do
+    debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
+    t0 = if debug?, do: System.monotonic_time(:millisecond)
+
     classified_intent = extract_intent_from_speech_act(speech_act)
 
     context = %{
       discourse: discourse,
       speech_act: speech_act,
+      profile: profile,
       intent: classified_intent,
       original_text: original_text,
       world_id: world_id
@@ -1157,9 +1401,12 @@ defmodule Brain.ML.EntityExtractor do
 
     pos_tagged = get_pos_tags(tokens)
 
+    if debug?, do: Logger.info("      disambig:pos_tags=#{System.monotonic_time(:millisecond) - t0}ms (#{length(entities)} entities, intent=#{classified_intent})")
+
     disambiguated =
       entities
-      |> Enum.map(fn entity ->
+      |> Enum.with_index()
+      |> Enum.map(fn {entity, idx} ->
         types = get_entity_types(entity)
         entity_type = entity[:entity_type] || ""
 
@@ -1167,9 +1414,17 @@ defmodule Brain.ML.EntityExtractor do
           length(types) > 1 or EntityDisambiguator.requires_inference?(entity_type)
 
         if needs_disambiguation do
+          et0 = if debug?, do: System.monotonic_time(:millisecond)
+
           result = EntityDisambiguator.disambiguate_single(entity, pos_tagged, context)
 
+          if debug?, do: Logger.info("      disambig:entity[#{idx}] disambiguate_single=#{System.monotonic_time(:millisecond) - et0}ms val=#{entity[:value]} type=#{entity_type} types=#{length(types)}")
+
+          pt0 = if debug?, do: System.monotonic_time(:millisecond)
+
           result = refine_with_poincare(result, types, context)
+
+          if debug?, do: Logger.info("      disambig:entity[#{idx}] poincare=#{System.monotonic_time(:millisecond) - pt0}ms types=#{length(types)}")
 
           :telemetry.execute(
             [:chat_bot, :analysis, :disambiguation, :entity],
@@ -1187,9 +1442,12 @@ defmodule Brain.ML.EntityExtractor do
 
           result
         else
+          if debug?, do: Logger.info("      disambig:entity[#{idx}] skip (no ambiguity) val=#{entity[:value]} type=#{entity_type}")
           entity
         end
       end)
+
+    if debug?, do: Logger.info("      disambig:total=#{System.monotonic_time(:millisecond) - t0}ms")
 
     ambiguous_count =
       Enum.count(entities, fn e ->
@@ -1215,69 +1473,60 @@ defmodule Brain.ML.EntityExtractor do
     disambiguated
   end
 
-  defp refine_with_poincare(result, candidate_types, context) when length(candidate_types) > 1 do
-    if Brain.ML.Poincare.Embeddings.ready?() do
-      intent = context[:intent] || ""
-      current_type = to_string(result[:entity_type] || "")
+  # Refines the type with the world's Poincare embeddings. A world with no copy
+  # of the embeddings raises.
+  defp refine_with_poincare(result, candidate_types, %{world_id: world_id} = context)
+       when length(candidate_types) > 1 do
+    debug? = Application.get_env(:brain, :debug_pipeline_timing, false)
 
-      scored =
-        candidate_types
-        |> Enum.map(fn candidate ->
-          type_str = to_string(candidate[:entity_type] || candidate[:type] || "")
-          dist = poincare_distance(type_str, intent)
-          {type_str, dist, candidate}
-        end)
-        |> Enum.filter(fn {_t, d, _c} -> d != nil end)
-        |> Enum.sort_by(fn {_t, d, _c} -> d end)
+    intent = context[:intent] || ""
+    current_type = to_string(result[:entity_type] || "")
+    pt0 = if debug?, do: System.monotonic_time(:millisecond)
 
-      case scored do
-        [{best_type, best_dist, _best_candidate} | _] when best_type != current_type ->
-          current_dist = poincare_distance(current_type, intent)
+    scored =
+      candidate_types
+      |> Enum.map(fn candidate ->
+        type_str = to_string(candidate[:entity_type] || candidate[:type] || "")
+        dist = poincare_distance(world_id, type_str, intent)
+        {type_str, dist, candidate}
+      end)
+      |> Enum.filter(fn {_t, d, _c} -> d != nil end)
+      |> Enum.sort_by(fn {_t, d, _c} -> d end)
 
-          if current_dist != nil and best_dist < current_dist * 0.8 do
-            Logger.debug("Poincare refinement: #{current_type} -> #{best_type}",
-              current_dist: current_dist, best_dist: best_dist)
+    if debug?, do: Logger.info("        poincare:scored #{length(candidate_types)} candidates in #{System.monotonic_time(:millisecond) - pt0}ms")
 
-            :telemetry.execute(
-              [:chat_bot, :analysis, :poincare_refinement],
-              %{distance_ratio: best_dist / max(current_dist, 1.0e-7)},
-              %{from_type: current_type, to_type: best_type}
-            )
+    case scored do
+      [{best_type, best_dist, _best_candidate} | _] when best_type != current_type ->
+        current_dist = poincare_distance(world_id, current_type, intent)
 
-            Map.put(result, :entity_type, best_type)
-          else
-            result
-          end
+        if current_dist != nil and best_dist < current_dist * 0.8 do
+          Logger.debug("Poincare refinement: #{current_type} -> #{best_type}",
+            current_dist: current_dist, best_dist: best_dist)
 
-        _ ->
+          :telemetry.execute(
+            [:chat_bot, :analysis, :poincare_refinement],
+            %{distance_ratio: best_dist / max(current_dist, 1.0e-7)},
+            %{from_type: current_type, to_type: best_type}
+          )
+
+          Map.put(result, :entity_type, best_type)
+        else
           result
-      end
-    else
-      log_once(:poincare_not_ready, "Poincare embeddings not ready; skipping type refinement")
+        end
 
-      :telemetry.execute(
-        [:chat_bot, :ml, :poincare, :unavailable],
-        %{count: 1},
-        %{stage: :entity_disambiguation}
-      )
-
-      result
+      _ ->
+        result
     end
-  rescue
-    e ->
-      Logger.warning("Poincare refinement failed: #{Exception.message(e)}")
-      result
   end
 
   defp refine_with_poincare(result, _types, _context), do: result
 
-  defp poincare_distance(type1, type2) do
-    case Brain.ML.Poincare.Embeddings.entity_distance(type1, type2) do
+  # nil when either type has no embedding in the world's copy.
+  defp poincare_distance(world_id, type1, type2) do
+    case Brain.ML.Poincare.Embeddings.entity_distance(world_id, type1, type2) do
       {:ok, dist} -> dist
-      _ -> nil
+      {:error, :not_found} -> nil
     end
-  rescue
-    _ -> nil
   end
 
   defp context_type(context) do
@@ -1371,14 +1620,6 @@ defmodule Brain.ML.EntityExtractor do
 
       true ->
         []
-    end
-  end
-
-  defp log_once(key, message) do
-    pt_key = {__MODULE__, :logged, key}
-    unless :persistent_term.get(pt_key, false) do
-      Logger.info(message)
-      :persistent_term.put(pt_key, true)
     end
   end
 end

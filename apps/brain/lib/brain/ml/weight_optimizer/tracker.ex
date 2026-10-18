@@ -24,7 +24,9 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
   ## Persisted runs
 
   Completed runs are written to
-  `priv/weight_optimizer/runs/<run_id>.json`. On startup, the most
+  `priv/weight_optimizer/runs/<run_id>.json`, or to the directory set by
+  `config :brain, :weight_optimizer_runs_dir` (the test environment sets one per
+  run). On startup, the most
   recent `recent_limit` runs are loaded back into memory so the UI is
   populated immediately after a restart.
   """
@@ -590,25 +592,9 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
 
   defp extract_feature_vector_pairs(_), do: {:error, :invalid_training_payload}
 
-  # Mirrors Mix.Tasks.TrainMicro.data_file_path/1 — the brain `priv/`
-  # directory is a build-time symlink, so we have to walk back to the
-  # umbrella root to reach `data/classifiers/`.
-  defp data_file_path(name) do
-    priv_dir = :code.priv_dir(:brain) |> to_string()
-
-    umbrella_root =
-      case File.read_link(priv_dir) do
-        {:ok, link_target} ->
-          parent = Path.dirname(priv_dir)
-          real_priv = Path.join(parent, link_target) |> Path.expand()
-          Path.join(real_priv, "../../..") |> Path.expand()
-
-        {:error, _} ->
-          Path.join(priv_dir, "../../../../..") |> Path.expand()
-      end
-
-    Path.join(umbrella_root, "data/classifiers/#{name}.json")
-  end
+  # The file `mix train_micro` trains `name` from (`Brain.ML.MicroProvenance`),
+  # under the configured training data directory.
+  defp data_file_path(name), do: Brain.ML.MicroProvenance.training_data_path(name)
 
   ## Persistence ───────────────────────────────────────────────────
 
@@ -726,7 +712,12 @@ defmodule Brain.ML.WeightOptimizer.Tracker do
   defp encode_value(list) when is_list(list), do: Enum.map(list, &encode_value/1)
   defp encode_value(value), do: value
 
+  # `:weight_optimizer_runs_dir` overrides the location; the test environment
+  # sets it so test runs stay out of priv.
   defp runs_dir do
-    Path.join(Brain.priv_path("weight_optimizer"), "runs")
+    case Application.get_env(:brain, :weight_optimizer_runs_dir) do
+      nil -> Path.join(Brain.priv_path("weight_optimizer"), "runs")
+      dir -> dir
+    end
   end
 end

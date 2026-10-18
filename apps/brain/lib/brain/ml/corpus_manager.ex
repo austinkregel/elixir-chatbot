@@ -73,14 +73,7 @@ defmodule Brain.ML.CorpusManager do
     Path.join(Application.app_dir(:brain), "../../data") |> Path.expand()
   end
 
-  defp worlds_path do
-    case Application.get_env(:world, :training_worlds_path) do
-      nil -> Path.join(Application.app_dir(:world, "priv"), "training_worlds")
-      path -> path
-    end
-  rescue
-    _ -> ""
-  end
+  defp worlds_path, do: Brain.Worlds.base_path()
 
   defp dir_size(path) when is_binary(path) do
     if File.dir?(path) do

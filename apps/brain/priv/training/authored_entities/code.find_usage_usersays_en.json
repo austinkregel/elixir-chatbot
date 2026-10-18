@@ -1,0 +1,263 @@
+[
+  {
+    "data": [
+      {
+        "text": "find all imports of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "utils"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "find all usages of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "UserService"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "find references to "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "DatabaseConnection"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "find usages of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@class",
+        "text": "Config"
+      },
+      {
+        "text": " class"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "find where "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "format_date"
+      },
+      {
+        "text": " is invoked"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "list all callers of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "get_user"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "show all references to "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "create_user"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "show callers of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "authenticate"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "show me where "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "validate_email"
+      },
+      {
+        "text": " is called"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "trace usage of "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Session"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what calls "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "process_order"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what depends on "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "HttpClient"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what files use "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "Logger"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what uses the "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@class",
+        "text": "PaymentProcessor"
+      },
+      {
+        "text": " class"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "where is "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "calculate_tax"
+      },
+      {
+        "text": " used"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "where is "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@symbol",
+        "text": "MAX_RETRIES"
+      },
+      {
+        "text": " referenced"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "where is the function "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "parse_json"
+      },
+      {
+        "text": " referenced"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "which functions call "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@method",
+        "text": "save_to_database"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "who calls "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "send_notification"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "who uses "
+      },
+      {
+        "alias": "symbol",
+        "meta": "@function",
+        "text": "fetch_api_data"
+      }
+    ]
+  }
+]

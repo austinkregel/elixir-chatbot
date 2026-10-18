@@ -13,7 +13,15 @@ defmodule Brain.Epistemic.SourceAuthorityTest do
 
   setup _context do
     ensure_started(SourceAuthority)
-    SourceAuthority.clear()
+
+    # These tests drive credibility with `record_outcome/2` (up to 50 outcomes
+    # per test) and never put the counts back. `tracking` is GenServer state
+    # the Sandbox does not roll back, so every later reader of
+    # `effective_confidence/1` or `get_credibility/1` saw this file's counts.
+    # Clearing on exit is the restore: `tracking` loads from
+    # `atlas_source_authority`, which holds 0 rows, so the boot state is empty.
+    Brain.Test.Singletons.reset_epistemic_stores!([:source_authority])
+
     :ok
   end
 

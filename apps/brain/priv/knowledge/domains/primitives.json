@@ -1,0 +1,401 @@
+{
+  "description": "Shared response composition primitives. Each section provides phrasing pools for a primitive type+variant. The Surface Realizer selects from these pools based on content.",
+  "hedges": {
+    "high_confidence": [
+      "",
+      "Definitely,",
+      "Certainly,",
+      "Absolutely,"
+    ],
+    "medium_confidence": [
+      "I believe",
+      "I think",
+      "From what I understand,",
+      "It seems like"
+    ],
+    "low_confidence": [
+      "I'm not sure, but",
+      "Possibly,",
+      "I think, though I'm uncertain,",
+      "If I recall correctly,"
+    ]
+  },
+  "acknowledgments": {
+    "affirmative": [
+      "Sure,",
+      "Of course,",
+      "Absolutely,",
+      "You got it,"
+    ],
+    "neutral": [
+      "Okay,",
+      "Alright,",
+      "Got it,"
+    ]
+  },
+  "clarification_requests": {
+    "missing_required": [
+      "I need a bit more information.",
+      "Could you provide more details?",
+      "I'd like to help, but I need to know:"
+    ],
+    "ambiguous": [
+      "Just to clarify,",
+      "Did you mean",
+      "I want to make sure I understand:"
+    ],
+    "generic": [
+      "I'm not sure I understand. Could you provide more details?",
+      "Could you tell me more about what you need?",
+      "I'd like to help - what specifically are you looking for?"
+    ]
+  },
+  "service_replies": {
+    "ambiguous_item": [
+      "Which one: $candidates?",
+      "Which $item_noun do you mean: $candidates?"
+    ],
+    "location_not_found": [
+      "I couldn't find that location. Which place did you mean?",
+      "I don't know that place. Could you name the location another way?"
+    ],
+    "no_matching_items": [
+      "Nothing matched $description.",
+      "I couldn't find any $item_plural matching $description."
+    ],
+    "no_items": [
+      "You don't have any $item_plural.",
+      "There aren't any $item_plural to cancel."
+    ],
+    "no_ringing_alarm": [
+      "No alarm is ringing right now, so there's nothing to snooze.",
+      "There's no ringing alarm to snooze."
+    ],
+    "side_effects_off": [
+      "I didn't carry that out: this conversation runs with side effects turned off, so nothing gets changed.",
+      "That would change something, and side effects are turned off for this conversation, so I left it alone."
+    ],
+    "rate_limited": [
+      "$service is limiting requests right now. Try again in a little while.",
+      "I've asked $service too often just now. Give it a moment and try again."
+    ],
+    "unavailable": [
+      "I couldn't reach $service right now.",
+      "$service isn't responding at the moment. Try again shortly."
+    ],
+    "service_failed": [
+      "$service ran into a problem, so I couldn't do that.",
+      "Something went wrong on $service's side, so that didn't happen."
+    ],
+    "device_not_found": [
+      "$service couldn't find that device.",
+      "I couldn't find that device in $service."
+    ],
+    "not_configured": [
+      "$service isn't set up yet, so I couldn't do that. You can set it up in Settings.",
+      "I'd need $service to be set up for that. It can be configured in Settings."
+    ],
+    "invalid_credentials": [
+      "$service didn't accept its credentials, so I couldn't do that. They may need updating in Settings.",
+      "The credentials for $service were rejected; check them in Settings."
+    ],
+    "disabled": [
+      "$service is turned off, so I couldn't do that.",
+      "That needs $service, which is disabled right now."
+    ],
+    "unsupported": [
+      "$service can't do that.",
+      "That isn't something $service can handle."
+    ],
+    "carried_out": [
+      "$service carried that out.",
+      "$service took care of that."
+    ],
+    "nothing_reported": [
+      "$service returned nothing for that.",
+      "I asked $service, but it had nothing to report."
+    ]
+  },
+  "service_items": {
+    "candidate_separator": ", ",
+    "candidate_conjunction": " or ",
+    "kinds": {
+      "calendar": {
+        "singular": "event",
+        "plural": "events",
+        "description": [
+          {"field": "event", "text": "$value"},
+          {"field": "date", "text": "on $value"},
+          {"field": "time", "text": "at $value"}
+        ]
+      },
+      "reminder": {
+        "singular": "reminder",
+        "plural": "reminders",
+        "description": [
+          {"field": "text", "text": "$value"},
+          {"field": "date", "text": "on $value"},
+          {"field": "time", "text": "at $value"}
+        ]
+      },
+      "alarm": {
+        "singular": "alarm",
+        "plural": "alarms",
+        "description": [
+          {"field": "time", "text": "$value"},
+          {"field": "date", "text": "on $value"}
+        ]
+      },
+      "timer": {
+        "singular": "timer",
+        "plural": "timers",
+        "description": [
+          {"field": "duration", "text": "$value"}
+        ]
+      }
+    }
+  },
+  "transition_phrases": {
+    "additional_info": [
+      "Also,",
+      "Additionally,",
+      "By the way,"
+    ],
+    "contrast": [
+      "However,",
+      "On the other hand,",
+      "That said,"
+    ],
+    "conclusion": [
+      "So,",
+      "In summary,",
+      "To wrap up,"
+    ]
+  },
+  "uncertainty_markers": [
+    "but I could be wrong",
+    "though I'm not entirely sure",
+    "but that's just my understanding"
+  ],
+  "correction_invites": [
+    "Feel free to correct me if I'm wrong.",
+    "Let me know if that's not quite right.",
+    "Please tell me if I misunderstood."
+  ],
+  "fallback_responses": [
+    "I'm not sure how to help with that. Could you rephrase?",
+    "I don't quite understand. Could you try saying that differently?",
+    "I'm having trouble understanding. What would you like me to do?"
+  ],
+  "defer_responses": [
+    "I'm here if you need me!",
+    "Just let me know if you need anything.",
+    "Feel free to ask if you have a question!"
+  ],
+  "cannot_respond": [
+    "I'm not sure what to make of that. Could you try rephrasing?",
+    "I didn't quite catch that. Can you say it another way?",
+    "I'm having trouble understanding. What would you like help with?"
+  ],
+  "empty_knowledge": [
+    "I don't have much information about you yet. We're just getting to know each other.",
+    "I haven't learned much about you so far. Is there anything you'd like to share?",
+    "We haven't really talked much yet, so I don't have much to go on.",
+    "I'm still getting to know you. We haven't shared much yet."
+  ],
+  "quality_fallback": [
+    "I'm here to help. Could you tell me more about what you're looking for?",
+    "What would you like me to help you with?",
+    "How can I assist you today?"
+  ],
+
+  "attunement": {
+    "empathy": {
+      "negative": [
+        "I understand that can be frustrating.",
+        "That sounds tough.",
+        "I hear you.",
+        "I can see that's frustrating."
+      ],
+      "general": [
+        "I hear you.",
+        "I understand.",
+        "I can see where you're coming from."
+      ]
+    },
+    "validation": [
+      "That makes sense.",
+      "I can see why you'd feel that way.",
+      "That's completely understandable."
+    ],
+    "interest": [
+      "That's interesting!",
+      "Oh, that's cool!",
+      "I'd love to hear more about that.",
+      "That sounds great!"
+    ],
+    "concern": [
+      "I'm sorry about that. Let me try to do better.",
+      "I apologize for the confusion.",
+      "You're right, let me try a different approach.",
+      "I understand your frustration. Let me help."
+    ]
+  },
+
+  "reflective_patterns": [
+    "It sounds like $understood_meaning.",
+    "So you're saying $understood_meaning.",
+    "If I understand correctly, $understood_meaning.",
+    "It seems like $understood_meaning."
+  ],
+
+  "action_responses": {
+    "success": [
+      "Done!",
+      "All set!",
+      "I've taken care of that.",
+      "That's done for you."
+    ],
+    "in_progress": [
+      "Working on it.",
+      "I'm on it.",
+      "Let me take care of that."
+    ],
+    "incapable": [
+      "I'm not able to do that right now.",
+      "That's not something I can help with at the moment.",
+      "I don't have the ability to do that yet."
+    ],
+    "failed": [
+      "I ran into a problem with that.",
+      "Something went wrong. Could you try again?",
+      "I wasn't able to complete that."
+    ]
+  },
+
+  "learning_acknowledgments": [
+    "Got it, I'll remember that.",
+    "Thanks for letting me know!",
+    "Noted!",
+    "I'll keep that in mind."
+  ],
+
+  "learning_update_acknowledgments": [
+    "Got it, updated!",
+    "Thanks for the correction.",
+    "Noted, I've updated that.",
+    "Understood, I'll remember the change."
+  ],
+
+  "repair_acknowledgments": [
+    "You're right, let me try again.",
+    "Sorry about that. Let me reconsider.",
+    "I misunderstood. Let me try a different approach.",
+    "Fair point. Let me rethink that."
+  ],
+
+  "boundary_frames": {
+    "general": [
+      "I don't have the ability to $capability right now.",
+      "That's outside what I can do at the moment.",
+      "I'm not equipped to handle that yet."
+    ],
+    "with_alternative": [
+      "I can't $capability, but I can $alternative.",
+      "That's not something I can do, but perhaps I can help by $alternative.",
+      "While I can't $capability, I might be able to $alternative."
+    ]
+  },
+
+  "informative_frames": {
+    "with_result": [
+      "Here's the latest.",
+      "Here's an update.",
+      "Here's where that stands.",
+      "Here's the result."
+    ],
+    "no_answer": [
+      "I don't have any information on that.",
+      "I don't have anything I can tell you about that.",
+      "Nothing I know covers that.",
+      "I have nothing on that to share."
+    ],
+    "with_facts": [
+      "Here's what I know.",
+      "Here's what I have on that."
+    ]
+  },
+
+  "polar_answers": {
+    "affirmative": [
+      "Yes,",
+      "That's right,"
+    ],
+    "negative": [
+      "No,",
+      "No, that's not right."
+    ]
+  },
+
+  "fact_statements": [
+    "$fact."
+  ],
+
+  "explanations": [
+    "$explanation."
+  ],
+
+  "self_knowledge_narratives": [
+    "$narrative"
+  ],
+
+  "reframe_patterns": [
+    "I don't really have opinions, but I can help you think through it.",
+    "That's a personal decision, but I can share some relevant information.",
+    "I can't tell you what to do, but I can help you explore the question.",
+    "Rather than giving advice, let me share what I know that might help."
+  ],
+
+  "contradiction_responses": [
+    "That's interesting - I had something different recorded. Did something change?",
+    "Hmm, that doesn't match what I know. Could you tell me more?",
+    "That's different from what I have. Has that changed?",
+    "That's surprising - my records show something different. Could you help me understand?"
+  ],
+
+  "creative_engagement": [
+    "That's a fun thought!",
+    "What an interesting idea!",
+    "I like where you're going with that.",
+    "That's a creative question!"
+  ],
+
+  "elaboration_prompts": [
+    "Tell me more about that.",
+    "What happened next?",
+    "How did that go?",
+    "What was that like?",
+    "Could you elaborate on that?"
+  ],
+
+  "context_probes": [
+    "Could you give me a bit more context?",
+    "What are you referring to?",
+    "I want to make sure I follow - could you say more?",
+    "Can you help me understand what you mean?"
+  ],
+
+  "novelty_responses": [
+    "That's new to me.",
+    "I haven't encountered that before.",
+    "That's something I don't know much about yet.",
+    "I'm not familiar with that, but I'm curious."
+  ],
+
+  "continuation_prompts": [
+    "Is there anything else I can help with?",
+    "What else would you like to know?",
+    "Anything else on your mind?",
+    "How else can I help?"
+  ]
+}

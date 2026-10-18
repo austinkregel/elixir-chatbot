@@ -23,8 +23,8 @@ defmodule Brain.Analysis.TypeHierarchyTest do
       assert TypeHierarchy.is_a?("artist", "person")
     end
 
-    test "music-artist is a person" do
-      assert TypeHierarchy.is_a?("music-artist", "person")
+    test "music_artist is a person" do
+      assert TypeHierarchy.is_a?("music_artist", "person")
     end
 
     test "city is a location" do
@@ -59,9 +59,9 @@ defmodule Brain.Analysis.TypeHierarchyTest do
       assert "name" in specs
     end
 
-    test "artist has music-artist as child" do
+    test "artist has music_artist as child" do
       specs = TypeHierarchy.specializations("artist")
-      assert "music-artist" in specs
+      assert "music_artist" in specs
     end
 
     test "location has city, room, etc." do
@@ -96,8 +96,8 @@ defmodule Brain.Analysis.TypeHierarchyTest do
       refute TypeHierarchy.compatible?("person", "song")
     end
 
-    test "person is compatible with music-artist" do
-      assert TypeHierarchy.compatible?("person", "music-artist")
+    test "person is compatible with music_artist" do
+      assert TypeHierarchy.compatible?("person", "music_artist")
     end
   end
 
@@ -108,13 +108,13 @@ defmodule Brain.Analysis.TypeHierarchyTest do
     end
 
     test "person can narrow to artist" do
-      candidates = TypeHierarchy.narrowing_candidates("person", ["artist", "music-artist"])
+      candidates = TypeHierarchy.narrowing_candidates("person", ["artist", "music_artist"])
       assert "artist" in candidates
     end
 
-    test "artist can narrow to music-artist" do
-      candidates = TypeHierarchy.narrowing_candidates("artist", ["music-artist", "song"])
-      assert "music-artist" in candidates
+    test "artist can narrow to music_artist" do
+      candidates = TypeHierarchy.narrowing_candidates("artist", ["music_artist", "song"])
+      assert "music_artist" in candidates
     end
 
     test "location can narrow to city" do
@@ -142,30 +142,105 @@ defmodule Brain.Analysis.TypeHierarchyTest do
       assert TypeHierarchy.parent_type?("location")
     end
 
-    test "artist is a parent type (has music-artist)" do
+    test "artist is a parent type (has music_artist)" do
       assert TypeHierarchy.parent_type?("artist")
     end
 
-    test "music-artist is not a parent type" do
-      refute TypeHierarchy.parent_type?("music-artist")
+    test "music_artist is not a parent type" do
+      refute TypeHierarchy.parent_type?("music_artist")
     end
   end
 
-  describe "parent_of/1" do
+  describe "parents_of/1" do
     test "artist's parent is person" do
-      assert TypeHierarchy.parent_of("artist") == "person"
+      assert TypeHierarchy.parents_of("artist") == ["person"]
     end
 
     test "city's parent is location" do
-      assert TypeHierarchy.parent_of("city") == "location"
+      assert TypeHierarchy.parents_of("city") == ["location"]
+    end
+
+    test "a type listed under two parents keeps both" do
+      assert TypeHierarchy.parents_of("color") == ["device", "information"]
+      assert TypeHierarchy.is_a?("color", "device")
+      assert TypeHierarchy.is_a?("color", "information")
+    end
+
+    test "source and sort are parents of their medium-specific kinds" do
+      assert TypeHierarchy.parents_of("news_source") == ["source"]
+      assert TypeHierarchy.parents_of("source") == ["information"]
+      assert TypeHierarchy.parents_of("music_sort") == ["sort"]
+      assert TypeHierarchy.parents_of("sort") == ["selection"]
+      assert TypeHierarchy.parents_of("all") == ["selection"]
     end
 
     test "person has no parent" do
-      assert TypeHierarchy.parent_of("person") == nil
+      assert TypeHierarchy.parents_of("person") == []
     end
 
     test "unknown type has no parent" do
-      assert TypeHierarchy.parent_of("xyzzy") == nil
+      assert TypeHierarchy.parents_of("xyzzy") == []
+    end
+  end
+
+  describe "all_types/0" do
+    test "is every type entity_types.json declares: each parent, a root with no kinds among them, and each kind" do
+      hierarchy =
+        Path.join(:code.priv_dir(:brain), "analysis/entity_types.json") |> File.read!() |> Jason.decode!() |> Map.fetch!("type_hierarchy")
+
+      declared = (Map.keys(hierarchy) ++ List.flatten(Map.values(hierarchy))) |> Enum.uniq() |> Enum.sort()
+
+      assert Enum.any?(hierarchy, fn {_root, kinds} -> kinds == [] end), "entity_types.json declares no root without kinds"
+      assert TypeHierarchy.all_types() == declared
+    end
+  end
+
+  # Relations come only from priv/analysis/entity_types.json. These are types
+  # registry slots list that the file declares as roots with no kinds, each an
+  # English noun whose WordNet hypernyms reach another declared type's name
+  # ("duration" reaches "amount", "event" reaches "activity"): the file, not
+  # WordNet, relates them, and it relates them to nothing.
+  describe "a root entity_types.json declares with no kinds" do
+    @childless_roots ~w(duration event)
+
+    test "is declared, and related to itself and to nothing else" do
+      declared = TypeHierarchy.all_types()
+      assert declared != []
+
+      for type <- @childless_roots do
+        assert type in declared, "#{type} is not declared in entity_types.json"
+        assert TypeHierarchy.compatible?(type, type)
+        assert TypeHierarchy.parents_of(type) == []
+        assert TypeHierarchy.specializations(type) == []
+
+        for other <- declared, other != type do
+          refute TypeHierarchy.is_a?(type, other), "#{type} is_a? #{other}"
+          refute TypeHierarchy.is_a?(other, type), "#{other} is_a? #{type}"
+          refute TypeHierarchy.compatible?(type, other), "#{type} compatible? #{other}"
+          refute TypeHierarchy.compatible?(other, type), "#{other} compatible? #{type}"
+        end
+
+        assert TypeHierarchy.narrowing_candidates(type, declared) == []
+        assert TypeHierarchy.narrowing_candidates("amount", [type]) == []
+      end
+    end
+
+    test "is not filled by an entity of a declared type through SlotDetector" do
+      alias Brain.Analysis.{SlotDetector, SlotResult}
+
+      cases = [
+        {"timer.set", "duration", "number", "10"},
+        {"alarm.snooze", "duration", "number", "10"},
+        {"timer.set", "duration", "amount", "10"},
+        {"calendar.schedule", "event", "recurrence", "every monday"},
+        {"calendar.schedule", "event", "activity", "running"}
+      ]
+
+      for {intent, slot, type, value} <- cases do
+        entities = [%{entity_type: type, value: value, confidence: 0.9}]
+        result = SlotDetector.detect(intent, entities, side_effects: false)
+        refute SlotResult.get_slot_value(result, slot), "#{intent}.#{slot} filled by #{type} #{inspect(value)}"
+      end
     end
   end
 end

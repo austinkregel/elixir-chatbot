@@ -1,11 +1,13 @@
 defmodule World.TrainingWorldTest do
-  use ExUnit.Case, async: false
-  import Brain.TestHelpers
+  use World.AtlasCase, async: false
+  import Brain.TestHelpers, except: [create_test_world: 1, create_test_world: 2, start_world_test_services: 0]
+  import World.TestWorlds
+
+  alias Brain.Worlds.TypeInferrer
 
   alias World.{
     TrainingWorld,
     EntityDiscoverer,
-    TypeInferrer,
     DocumentIngestor
   }
 
@@ -179,7 +181,8 @@ defmodule World.TrainingWorldTest do
       candidate = %{
         value: "TestEntity",
         inferred_type: "person",
-        confidence: 0.75
+        confidence: 0.75,
+        context: "TestEntity was mentioned in this sentence"
       }
 
       WorldManager.add_candidate(world.id, candidate)
@@ -351,10 +354,15 @@ defmodule World.TrainingWorldTest do
     @tag :requires_file_system
     test "saves and loads persistent world" do
       {:ok, world} = create_test_world("persistence_test", mode: :persistent)
-      WorldManager.add_candidate(world.id, %{value: "TestEntity", inferred_type: "person"})
+      WorldManager.add_candidate(world.id, %{
+        value: "TestEntity",
+        inferred_type: "person",
+        confidence: 0.75,
+        context: "TestEntity was mentioned in this sentence"
+      })
       Process.sleep(50)
       :ok = WorldManager.checkpoint(world.id)
-      world_path = WorldPersistence.world_path(world.id)
+      world_path = Brain.Worlds.world_path(world.id)
       assert File.exists?(world_path)
       WorldManager.destroy(world.id)
       assert {:error, :not_found} = WorldManager.get(world.id)
@@ -366,7 +374,7 @@ defmodule World.TrainingWorldTest do
     test "purge removes persisted world data from disk" do
       {:ok, world} = create_test_world("persistence_purge_test", mode: :persistent)
       :ok = WorldManager.checkpoint(world.id)
-      world_path = WorldPersistence.world_path(world.id)
+      world_path = Brain.Worlds.world_path(world.id)
       assert File.exists?(world_path)
 
       :ok = WorldManager.purge(world.id)

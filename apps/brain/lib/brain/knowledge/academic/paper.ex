@@ -62,17 +62,17 @@ defmodule Brain.Knowledge.Academic.Paper do
     }
   end
 
-  @doc "Converts a Paper to a Finding struct for the knowledge system.\n\nUses the paper's abstract as the primary claim, with full metadata\npreserved in the source info.\n"
-  @spec to_finding(t()) :: Finding.t() | nil
-  def to_finding(%__MODULE__{abstract: nil}) do
+  @doc "Converts a Paper to a Finding struct for the knowledge system, found for\nthe world `world_id`.\n\nUses the paper's abstract as the primary claim, with full metadata\npreserved in the source info.\n"
+  @spec to_finding(t(), String.t()) :: Finding.t() | nil
+  def to_finding(%__MODULE__{abstract: nil}, _world_id) do
     nil
   end
 
-  def to_finding(%__MODULE__{abstract: abstract}) when byte_size(abstract) < 50 do
+  def to_finding(%__MODULE__{abstract: abstract}, _world_id) when byte_size(abstract) < 50 do
     nil
   end
 
-  def to_finding(%__MODULE__{} = paper) do
+  def to_finding(%__MODULE__{} = paper, world_id) do
     source = to_source_info(paper)
     entity = paper.title || "unknown"
 
@@ -82,7 +82,8 @@ defmodule Brain.Knowledge.Academic.Paper do
       source,
       entity_type: "academic_paper",
       raw_context: build_context(paper),
-      confidence: citation_to_confidence(paper.citation_count)
+      confidence: citation_to_confidence(paper.citation_count),
+      world_id: world_id
     )
   end
 

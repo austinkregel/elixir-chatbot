@@ -1,0 +1,170 @@
+[
+  {
+    "data": [
+      {
+        "text": "Add a reminder"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Can you remind me to "
+      },
+      {
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "text": "call John"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Create a reminder"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Remind me about "
+      },
+      {
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "text": "the meeting"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Remind me "
+      },
+      {
+        "alias": "time",
+        "meta": "@time",
+        "text": "at 5pm"
+      },
+      {
+        "text": " to "
+      },
+      {
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "text": "leave"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Remind me later"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Remind me "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "next week"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Remind me to "
+      },
+      {
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "text": "call mom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Remind me to "
+      },
+      {
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "text": "pick up groceries"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Remind me to "
+      },
+      {
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "text": "send the email"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Remind me to "
+      },
+      {
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "text": "water the plants"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Set a reminder for "
+      },
+      {
+        "alias": "time",
+        "meta": "@time",
+        "text": "9am"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Set a reminder for "
+      },
+      {
+        "alias": "date",
+        "meta": "@date",
+        "text": "tomorrow"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Set a reminder to "
+      },
+      {
+        "alias": "reminder_text",
+        "meta": "@sys.any",
+        "text": "take medicine"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "Set up a reminder"
+      }
+    ]
+  }
+]

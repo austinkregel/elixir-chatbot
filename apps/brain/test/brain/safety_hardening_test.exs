@@ -31,7 +31,7 @@ defmodule Brain.SafetyHardeningTest do
     test "does not raise on sentiment classification failure" do
       # Process with minimal setup - pipeline should not raise
       # We test that the sentiment_task returns neutral on error (code path exists)
-      result = Brain.Analysis.Pipeline.process("")
+      result = Brain.Analysis.Pipeline.process("", world_id: "default")
       assert result != nil
       assert is_list(result.chunks) or result.chunks == []
     end

@@ -4,15 +4,15 @@ defmodule Mix.Tasks.Train do
 
   Primary runtime “understanding” for utterances uses `ChunkProfile` (engineered
   features + micro-classifiers), not the old registry/TF-IDF intent GenServer.
-  This pipeline trains entity model, gazetteer, embedder vocabulary, speech-act
-  TF-IDF, and **all** micro-classifiers including axis models
+  This pipeline trains entity model, embedder vocabulary, speech-act TF-IDF,
+  and **all** micro-classifiers including axis models
   (`intent_domain`, `tense_class`, …).
 
   Use `--list` to print stages. Hyperparameters live in the per-stage trainers below.
 
   ## Usage
 
-      mix train [options]
+      mix train --world <id> [options]
 
   ## Micro-classifier data (axis models)
 
@@ -21,56 +21,80 @@ defmodule Mix.Tasks.Train do
   (after you change gold data or heuristics), run **before** `mix train` or
   `mix train_micro`:
 
-      mix gen_micro_data
+      mix gen_micro_data --world <id>
 
   Then train micro models (or let stage 5 of `mix train` run `mix train_micro`).
 
   ## Options
 
     --quick            Skip slow/optional models
-    --skip-tfidf       Skip TF-IDF bundle (entity model, gazetteer, embedder, speech-act TF-IDF)
+    --skip-tfidf       Skip TF-IDF bundle (entity model, embedder, speech-act TF-IDF)
     --skip-pos         Skip POS tagger training
     --skip-seq2seq     Skip seq2seq generation model
     --skip-poincare    Skip Poincare embeddings
     --skip-kg-lstm     Skip KG triple scorer
     --skip-micro       Skip TF-IDF micro-classifiers (including ChunkProfile axis models)
     --skip-framing     Skip framing classifier (GVFC corpus)
+    --skip-lattice     Skip lattice phrase inventory generation
     --include-graph    Run graph-to-training integration after training
-    --world ID         Train world-specific models
+    --world ID         Required. The world the stages that analyze text or read
+                       world data run in (KG triple scorer beliefs, micro data,
+                       framing data, lattice data, entity type ingestion,
+                       type vector warm-up). It
+                       names no output location: models are written to the
+                       trained models directory, not into the world
     --publish          Publish trained models to S3/MinIO
     --list             List all available training tasks
 
-  ## Training order (6 stages)
+  ## Trained models and worlds
 
-  1. **TF-IDF bundle** — `Trainer.train_and_save/1`: entity model, gazetteer,
-     embedder vocabulary, plus speech-act TF-IDF (~1 minute).
+  The TF-IDF bundle is written to the trained models directory
+  (`:brain, :ml, :models_path`, or priv/ml_models/), where
+  `Brain.ML.EntityModel.trained_path/0` and `Brain.Worlds.Embedder.trained_path/0`
+  read the files worlds are seeded from. The Poincare embeddings and the KG
+  triple scorer are written there too (`Brain.ML.Poincare.Embeddings.trained_path/0`,
+  `Brain.ML.KnowledgeGraph.TripleScorer.trained_path/0`); the triple scorer is
+  also trained on the `--world` world's beliefs, so its trained copy reflects
+  that world's beliefs (`mix train_kg_lstm`). Training does not seed:
+  a world receives the retrained models through `mix world.seed_model`, or from
+  `Brain.Worlds.create!/2` when the world is created.
+
+  ## Training order (9 stages)
+
+  1. **TF-IDF bundle** — `Trainer.train_and_save/1`: entity model, embedder
+     vocabulary, plus speech-act TF-IDF (~1 minute).
   2. **POS tagger** — `pos_model.term` (~1 second).
-  3. **Poincare embeddings** — `poincare/embeddings.term` (~1 min).
-  4. **KG triple scorer** — `kg_lstm/triple_scorer.term` (~1 min GPU).
+  3. **Poincare embeddings** — `poincare_embeddings.term` (~1 min).
+  4. **KG triple scorer** — `triple_scorer.term` (~1 min GPU).
   5. **MicroClassifiers** — runs `mix train_micro`: trains every name in
      `Mix.Tasks.TrainMicro` (pragmatic classifiers + six axis models). Writes
-     `priv/ml_models/micro/*.term`. Regenerate JSON with `mix gen_micro_data` when needed.
-  6. **Framing Classifier** — runs `mix gen_framing_data` (if JSON missing) then
-     `mix train_framing`. Requires GVFC corpus at `data/framing/`. Run
+     `priv/ml_models/micro/*.term`. Regenerate JSON with `mix gen_micro_data --world <id>`
+     when needed. Then `mix train_intent_arbitration --world <id>`, which learns
+     from the same JSON how a disagreement between `:intent_full` and
+     `:intent_domain` is resolved.
+  6. **Framing Classifier** — runs `mix gen_framing_data --world <id>` (if JSON missing)
+     then `mix train_framing`. Requires GVFC corpus at `data/framing/`. Run
      `mix ingest_framing_corpus` if the CSV is not yet extracted.
+  7. **Lattice Phrase Inventory** — runs `mix gen_lattice_data --world <id>` to generate
+     phrase inventory fragments with prototype vectors for the lattice realizer.
+     Use `mix train --world <id> --skip-vectorize` to skip the slow vectorization step.
+  8. **Entity Type Ingestion** — ingests entity types from Atlas into the
+     training world.
+  9. **Type Vector Warm-up** — warms up the world's entity type vectors in the
+     KG cache, from the world's own triple scorer.
 
   ## Examples
 
-      mix train                    # Full pipeline
-      mix gen_micro_data && mix train   # Refresh axis micro data, then full train
-      mix train --quick            # Skip slow models
-      mix train --skip-tfidf       # Skip TF-IDF bundle stage
-      mix train --skip-micro       # Skip micro-classifiers only
-      mix train --world star_trek  # Train for a specific world
-      mix train --list             # List stages
+      mix train --world <id>                # Full pipeline
+      mix gen_micro_data --world <id> && mix train --world <id>
+                                            # Refresh axis micro data, then full train
+      mix train --world <id> --quick        # Skip slow models
+      mix train --world <id> --skip-tfidf   # Skip TF-IDF bundle stage
+      mix train --world <id> --skip-micro   # Skip micro-classifiers only
+      mix train --world star_trek           # Run the world-reading stages in star_trek
+      mix train --list                      # List stages
   """
 
-  # World.Persistence is in a sibling umbrella app that depends on :brain.
-  # It's available at runtime but not at compile time.
-  @compile {:no_warn_undefined, World.Persistence}
-
-  alias World.Persistence
-  alias Brain.ML.POSTagger
   alias Brain.ML.Trainer
   alias Brain.ML.ModelStore
   use Mix.Task
@@ -82,12 +106,11 @@ defmodule Mix.Tasks.Train do
     %{
       name: "TF-IDF bundle",
       description:
-        "Entity model, gazetteer, embedder vocabulary, speech-act TF-IDF",
+        "Entity model, embedder vocabulary, speech-act TF-IDF",
       task: :tfidf,
       duration: "~1 minute",
       outputs: [
         "entity_model.term",
-        "gazetteer.term",
         "embedder.term",
         "speech_act_classifier.term"
       ]
@@ -104,19 +127,19 @@ defmodule Mix.Tasks.Train do
       description: "Hyperbolic embeddings for entity type hierarchy",
       task: :poincare,
       duration: "~1 minute",
-      outputs: ["poincare/embeddings.term"]
+      outputs: ["poincare_embeddings.term"]
     },
     %{
       name: "KG Triple Scorer",
       description: "Knowledge graph triple validity scoring via BiLSTM",
       task: :kg_lstm,
       duration: "~1 minute (GPU)",
-      outputs: ["kg_lstm/triple_scorer.term"]
+      outputs: ["triple_scorer.term"]
     },
     %{
       name: "MicroClassifiers",
       description:
-        "Micro-classifiers (pragmatic + ChunkProfile axes: intent_domain, tense_class, etc.); run `mix gen_micro_data` to refresh JSON",
+        "Micro-classifiers (pragmatic + ChunkProfile axes: intent_domain, tense_class, etc.); run `mix gen_micro_data --world <id>` to refresh JSON",
       task: :micro,
       duration: "~30-90 seconds (depends on JSON size)",
       outputs: ["micro/*.term"]
@@ -124,10 +147,22 @@ defmodule Mix.Tasks.Train do
     %{
       name: "Framing Classifier",
       description:
-        "Document-level framing classifier (GVFC corpus); run `mix ingest_framing_corpus` then `mix gen_framing_data` to prepare data",
+        "Document-level framing classifier (GVFC corpus); run `mix ingest_framing_corpus` then `mix gen_framing_data --world <id>` to prepare data",
       task: :framing,
       duration: "~2-5 minutes",
       outputs: ["micro/framing_class.term", "micro/framing_neutral_centroid.term"]
+    },
+    %{
+      name: "Lattice Phrase Inventory",
+      description:
+        "Generates phrase inventory + prototype vectors for lattice realizer (`mix gen_lattice_data --world <id>`)",
+      task: :lattice,
+      duration: "~2-10 minutes (vectorization)",
+      outputs: [
+        "lattice/phrase_inventory.json",
+        "lattice/transition_scores.json",
+        "lattice/scorer_weights.json"
+      ]
     }
   ]
 
@@ -143,6 +178,8 @@ defmodule Mix.Tasks.Train do
           skip_kg_lstm: :boolean,
           skip_micro: :boolean,
           skip_framing: :boolean,
+          skip_lattice: :boolean,
+          skip_vectorize: :boolean,
           skip_entity_ingest: :boolean,
           skip_type_vectors: :boolean,
           include_graph: :boolean,
@@ -156,6 +193,9 @@ defmodule Mix.Tasks.Train do
       display_training_tasks()
       return_ok()
     else
+      Keyword.get(opts, :world) ||
+        Mix.raise("mix train needs --world <id>, the world the models are trained for")
+
       run_training(opts)
     end
   end
@@ -202,10 +242,9 @@ defmodule Mix.Tasks.Train do
     total_duration = System.monotonic_time(:second) - start_time
 
     if opts[:publish] || ModelStore.enabled?() do
-      publish_models(get_models_path(opts[:world]))
+      publish_models(trained_models_path())
     end
 
-    write_model_manifest(opts[:world])
     display_summary(results, total_duration)
   end
 
@@ -266,6 +305,13 @@ defmodule Mix.Tasks.Train do
     skip_list =
       if opts[:skip_framing] do
         [:framing | skip_list]
+      else
+        skip_list
+      end
+
+    skip_list =
+      if opts[:skip_lattice] do
+        [:lattice | skip_list]
       else
         skip_list
       end
@@ -372,7 +418,7 @@ defmodule Mix.Tasks.Train do
         [{:poincare, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_poincare_embeddings(opts)
+        result = train_poincare_embeddings()
         duration = System.monotonic_time(:second) - start
         [{:poincare, result, duration} | results]
       end
@@ -396,7 +442,7 @@ defmodule Mix.Tasks.Train do
         [{:micro, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_micro_classifiers()
+        result = train_micro_classifiers(opts)
         duration = System.monotonic_time(:second) - start
         [{:micro, result, duration} | results]
       end
@@ -408,9 +454,19 @@ defmodule Mix.Tasks.Train do
         [{:framing, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_framing_classifier()
+        result = train_framing_classifier(opts)
         duration = System.monotonic_time(:second) - start
         [{:framing, result, duration} | results]
+      end
+
+    results =
+      if :lattice in skip_list do
+        [{:lattice, :skipped, 0} | results]
+      else
+        start = System.monotonic_time(:second)
+        result = train_lattice(opts)
+        duration = System.monotonic_time(:second) - start
+        [{:lattice, result, duration} | results]
       end
 
     results =
@@ -428,7 +484,7 @@ defmodule Mix.Tasks.Train do
         [{:type_vectors, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = warm_up_type_vectors()
+        result = warm_up_type_vectors(opts)
         duration = System.monotonic_time(:second) - start
         [{:type_vectors, result, duration} | results]
       end
@@ -438,13 +494,13 @@ defmodule Mix.Tasks.Train do
 
   defp stage_timestamp, do: Calendar.strftime(DateTime.utc_now(), "%H:%M:%S")
 
-  defp train_tfidf_models(opts) do
+  defp train_tfidf_models(_opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 1/6: TF-IDF Models  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 1/9: TF-IDF Models  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    models_path = get_models_path(opts[:world])
+    models_path = trained_models_path()
 
     case Trainer.train_and_save(models_path: models_path) do
       {:ok, stats} ->
@@ -475,7 +531,7 @@ defmodule Mix.Tasks.Train do
       model = Brain.ML.SimpleClassifier.train(training_data)
       save_path = Path.join(models_path, "speech_act_classifier.term")
       File.mkdir_p!(Path.dirname(save_path))
-      binary = :erlang.term_to_binary(model, [:compressed])
+      binary = Brain.ML.ModelStore.serialize(model, [:compressed])
       File.write!(save_path, binary)
       Mix.shell().info("  Speech act TF-IDF classifier saved to #{save_path}")
     else
@@ -483,60 +539,38 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_pos_model(opts) do
+  defp train_pos_model(_opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 2/6: POS Tagger  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 2/9: POS Tagger  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    models_path = get_models_path(opts[:world])
-    gold_standard_path = Brain.priv_path("evaluation/intent/gold_standard.json")
+    # Trains on the committed EWT fixtures (Brain.Training.POS). An invalid
+    # fixture or a model that cannot beat the lookup baseline raises: this
+    # stage never reports success without a model. POS tagging is shared by
+    # every world, so the model goes to the shared tagger's path.
+    save_path = Brain.ML.POSTagger.model_path()
+    Mix.shell().info("  Training the POS tagger on the EWT fixtures...")
 
-    sequences = load_pos_from_gold_standard(gold_standard_path)
+    {path, model} = Brain.Training.POS.train_and_save!(out: save_path)
+    e = model.evaluation
 
-    sequences =
-      if sequences != [] do
-        Mix.shell().info("  Found #{length(sequences)} pre-annotated POS sequences")
-        sequences
-      else
-        Mix.shell().info("  No POS-annotated data in gold standard. Auto-enriching with WordNet + rules...")
-        auto_enrich_pos(gold_standard_path)
-      end
+    Mix.shell().info(
+      "  POS model saved to #{path}: test accuracy #{Float.round(e.accuracy * 100, 2)}% " <>
+        "(lookup baseline #{Float.round(e.lookup_baseline * 100, 2)}%)"
+    )
 
-    if sequences != [] do
-      Mix.shell().info("  Training POS model on #{length(sequences)} sequences...")
-
-      case POSTagger.train(sequences) do
-        {:ok, model} ->
-          save_path = Path.join(models_path, "pos_model.term")
-          File.mkdir_p!(Path.dirname(save_path))
-
-          case POSTagger.save_model(model, save_path) do
-            {:ok, path} ->
-              Mix.shell().info("  POS model saved to #{path}")
-              {:ok, %{pos_trained: true, tag_count: map_size(model.tag_vocabulary)}}
-
-            {:error, reason} ->
-              {:error, reason}
-          end
-
-        {:error, reason} ->
-          {:error, reason}
-      end
-    else
-      Mix.shell().info("  No training data available for POS model.")
-      {:ok, %{pos_trained: false}}
-    end
+    {:ok, %{pos_trained: true, accuracy: e.accuracy, lookup_baseline: e.lookup_baseline}}
   end
 
-  defp train_poincare_embeddings(opts) do
+  # Trained from shared hierarchy data, which no world owns.
+  defp train_poincare_embeddings do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 3/6: Poincare Embeddings  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 3/9: Poincare Embeddings  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    world = if opts[:world], do: ["--world", opts[:world]], else: []
-    args = world ++ ["--verbose"]
+    args = ["--verbose"]
 
     try do
       Mix.Tasks.TrainPoincare.run(args)
@@ -548,14 +582,15 @@ defmodule Mix.Tasks.Train do
     end
   end
 
+  # Trained from the shared triple sources and the --world world's beliefs
+  # (`mix train_kg_lstm`).
   defp train_kg_triple_scorer(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 4/6: KG Triple Scorer  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 4/9: KG Triple Scorer  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    world = if opts[:world], do: ["--world", opts[:world]], else: []
-    args = world ++ ["--verbose"]
+    args = ["--world", opts[:world], "--verbose"]
 
     try do
       Mix.Tasks.TrainKgLstm.run(args)
@@ -567,14 +602,15 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_micro_classifiers do
+  defp train_micro_classifiers(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 5/6: MicroClassifiers  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 5/9: MicroClassifiers  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     try do
       Mix.Tasks.TrainMicro.run([])
+      Mix.Tasks.TrainIntentArbitration.run(["--world", opts[:world]])
       {:ok, %{micro_trained: true}}
     rescue
       e -> {:error, Exception.message(e)}
@@ -583,13 +619,13 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_framing_classifier do
+  defp train_framing_classifier(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 6/6: Framing Classifier  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 6/9: Framing Classifier  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    data_path = "data/classifiers/framing_class.json"
+    data_path = Brain.data_path("classifiers/framing_class.json")
 
     gen_result =
       if File.exists?(data_path) do
@@ -598,7 +634,7 @@ defmodule Mix.Tasks.Train do
         Mix.shell().info("  Generating framing training data from GVFC corpus...")
 
         try do
-          Mix.Tasks.GenFramingData.run(["--corpus", "gvfc"])
+          Mix.Tasks.GenFramingData.run(["--world", opts[:world], "--corpus", "gvfc"])
           :ok
         rescue
           e -> {:error, Exception.message(e)}
@@ -621,10 +657,34 @@ defmodule Mix.Tasks.Train do
     end
   end
 
+  defp train_lattice(opts) do
+    Mix.shell().info("")
+    Mix.shell().info("=" |> String.duplicate(70))
+    Mix.shell().info("  Stage 7/9: Lattice Phrase Inventory  [#{stage_timestamp()}]")
+    Mix.shell().info("=" |> String.duplicate(70))
+
+    lattice_args =
+      if opts[:skip_vectorize] do
+        Mix.shell().info("  --skip-vectorize: fragment templates only (no prototype vectors)")
+        ["--world", opts[:world], "--skip-vectorize"]
+      else
+        ["--world", opts[:world]]
+      end
+
+    try do
+      Mix.Tasks.GenLatticeData.run(lattice_args)
+      {:ok, %{lattice_generated: true}}
+    rescue
+      e -> {:error, Exception.message(e)}
+    catch
+      :exit, {:shutdown, 1} -> {:error, "lattice data generation failed"}
+    end
+  end
+
   defp run_entity_type_ingestion(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 7/8: Entity Type Ingestion  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 8/9: Entity Type Ingestion  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     if not Brain.AtlasIntegration.available?() do
@@ -633,8 +693,7 @@ defmodule Mix.Tasks.Train do
       {:error, "Atlas not available"}
     else
       try do
-        args = if opts[:world], do: ["--world", opts[:world]], else: []
-        Mix.Tasks.IngestEntityTypes.run(args)
+        Mix.Tasks.IngestEntityTypes.run(["--world", opts[:world]])
         {:ok, %{entity_types_ingested: true}}
       rescue
         e -> {:error, Exception.message(e)}
@@ -642,87 +701,20 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp warm_up_type_vectors do
+  # Raises, reported as this stage's failure, when the world holds no copy of
+  # the triple scorer.
+  defp warm_up_type_vectors(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
-    Mix.shell().info("  Stage 8/8: Type Vector Warm-up  [#{stage_timestamp()}]")
+    Mix.shell().info("  Stage 9/9: Type Vector Warm-up  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
     try do
-      if Brain.ML.KnowledgeGraph.TripleScorer.ready?() do
-        Brain.ML.KnowledgeGraph.EntityVectorCache.warm_up_entity_types()
-        {:ok, %{type_vectors_warmed: true}}
-      else
-        Mix.shell().info("  TripleScorer not loaded. Skipping type vector warm-up.")
-        {:error, "TripleScorer not ready"}
-      end
+      Brain.ML.KnowledgeGraph.EntityVectorCache.warm_up_entity_types(opts[:world])
+      {:ok, %{type_vectors_warmed: true}}
     rescue
       e -> {:error, Exception.message(e)}
     end
-  end
-
-  defp write_model_manifest(world_id) do
-    models_path = get_models_path(world_id)
-    data_path = Path.join(File.cwd!(), "data/classifiers")
-
-    gold_path =
-      case :code.priv_dir(:brain) do
-        {:error, _} -> "apps/brain/priv/evaluation/intent/gold_standard.json"
-        priv -> Path.join(priv, "evaluation/intent/gold_standard.json")
-      end
-
-    model_hashes =
-      Path.wildcard(Path.join(models_path, "**/*.term"))
-      |> Enum.sort()
-      |> Enum.map(fn path ->
-        hash = sha256_file(path)
-        rel = Path.relative_to(path, models_path)
-        {rel, hash}
-      end)
-      |> Map.new()
-
-    data_hashes =
-      if File.dir?(data_path) do
-        Path.wildcard(Path.join(data_path, "*.json"))
-        |> Enum.sort()
-        |> Enum.map(fn path ->
-          hash = sha256_file(path)
-          {Path.basename(path), hash}
-        end)
-        |> Map.new()
-      else
-        %{}
-      end
-
-    gold_hash = if File.exists?(gold_path), do: sha256_file(gold_path), else: nil
-
-    git_sha =
-      case System.cmd("git", ["rev-parse", "--short", "HEAD"], stderr_to_stdout: true) do
-        {sha, 0} -> String.trim(sha)
-        _ -> nil
-      end
-
-    manifest = %{
-      timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
-      git_sha: git_sha,
-      gold_standard_sha256: gold_hash,
-      models: model_hashes,
-      training_data: data_hashes
-    }
-
-    manifest_path = Path.join(models_path, "manifest.json")
-    File.write!(manifest_path, Jason.encode!(manifest, pretty: true) <> "\n")
-    Mix.shell().info("\nModel manifest written to: #{manifest_path}")
-  rescue
-    e ->
-      Mix.shell().error("Failed to write manifest: #{Exception.message(e)}")
-  end
-
-  defp sha256_file(path) do
-    File.stream!(path, 65_536)
-    |> Enum.reduce(:crypto.hash_init(:sha256), &:crypto.hash_update(&2, &1))
-    |> :crypto.hash_final()
-    |> Base.encode16(case: :lower)
   end
 
   defp display_summary(results, total_duration) do
@@ -739,6 +731,7 @@ defmodule Mix.Tasks.Train do
       kg_lstm: "KG Triple Scorer",
       micro: "MicroClassifiers",
       framing: "Framing Classifier",
+      lattice: "Lattice Phrase Inventory",
       entity_ingest: "Entity Type Ingestion",
       type_vectors: "Type Vector Warm-up"
     }
@@ -827,140 +820,21 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp get_models_path(nil) do
-    Application.get_env(:brain, :ml)[:models_path] || Brain.priv_path("ml_models")
-  end
+  # The directory training writes to: the one holding the trained entity model
+  # and embedder vocabulary that worlds are seeded from. Training writes into no
+  # world; seeding copies the trained files into one.
+  defp trained_models_path do
+    entity_dir = Path.dirname(Brain.ML.EntityModel.trained_path())
+    embedder_dir = Path.dirname(Brain.Worlds.Embedder.trained_path())
 
-  defp get_models_path(world_id) do
-    world_path = Persistence.world_path(world_id)
-    Path.join(world_path, "models")
-  end
-
-  defp load_pos_from_gold_standard(gold_standard_path) do
-    case File.read(gold_standard_path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, examples} when is_list(examples) ->
-            examples
-            |> Enum.filter(fn ex ->
-              tokens = ex["tokens"] || []
-              tags = ex["pos_tags"] || []
-              tokens != [] and length(tokens) == length(tags)
-            end)
-            |> Enum.map(fn ex ->
-              %{
-                tokens: ex["tokens"],
-                tags: ex["pos_tags"],
-                source: ex["intent"]
-              }
-            end)
-
-          _ ->
-            Mix.shell().info("  Warning: Could not parse #{gold_standard_path}")
-            []
-        end
-
-      {:error, reason} ->
-        Mix.shell().info("  Warning: Could not read #{gold_standard_path}: #{inspect(reason)}")
-        []
+    unless entity_dir == embedder_dir do
+      Mix.raise(
+        "mix train writes the TF-IDF bundle to one directory, but the trained entity model " <>
+          "is at #{entity_dir} and the trained embedder vocabulary at #{embedder_dir}"
+      )
     end
-  end
 
-  # Auto-enriches gold standard examples with tokens + POS tags using the
-  # Elixir tokenizer and a WordNet-backed rule-based tagger. Replaces the
-  # old Python/NLTK dependency (scripts/enrich_gold_standard_pos.py).
-  defp auto_enrich_pos(gold_standard_path) do
-    case File.read(gold_standard_path) do
-      {:ok, content} ->
-        case Jason.decode(content) do
-          {:ok, examples} when is_list(examples) ->
-            sequences =
-              examples
-              |> Enum.filter(fn ex -> is_binary(ex["text"]) and ex["text"] != "" end)
-              |> Enum.map(fn ex ->
-                tokens = Brain.ML.Tokenizer.tokenize_words(ex["text"])
-                tags = Enum.map(tokens, &rule_based_pos/1)
-                %{tokens: tokens, tags: tags, source: ex["intent"]}
-              end)
-              |> Enum.filter(fn seq -> seq.tokens != [] end)
-
-            Mix.shell().info("  Auto-enriched #{length(sequences)} examples with rule-based POS tags")
-            sequences
-
-          _ ->
-            []
-        end
-
-      {:error, _} ->
-        []
-    end
-  end
-
-  @determiners ~w(a an the this that these those my your his her its our their some any no every each all both few many much several)
-  @prepositions ~w(in on at to for from by with of into onto upon about above below between through during before after since until)
-  @conjunctions ~w(and or but nor yet so for because although though while if when unless)
-  @pronouns ~w(i me my mine myself you your yours yourself he him his himself she her hers herself it its itself we us our ours ourselves they them their theirs themselves who whom whose which what)
-  @auxiliaries ~w(am is are was were be been being have has had do does did will would shall should can could may might must)
-  @particles ~w(not to up down out off away back)
-  @interjections ~w(oh hey wow oops ah uh um hmm hello hi bye yes no ok okay please thanks)
-
-  defp rule_based_pos(token) do
-    lower = String.downcase(token)
-
-    cond do
-      String.match?(token, ~r/^\d+(\.\d+)?$/) -> "NUM"
-      String.match?(token, ~r/^[[:punct:]]+$/) -> "PUNCT"
-      lower in @determiners -> "DET"
-      lower in @prepositions -> "ADP"
-      lower in @conjunctions -> "CONJ"
-      lower in @pronouns -> "PRON"
-      lower in @auxiliaries -> "AUX"
-      lower in @particles -> "PART"
-      lower in @interjections -> "INTJ"
-      true -> wordnet_pos_lookup(lower, token)
-    end
-  end
-
-  defp wordnet_pos_lookup(lower, original) do
-    alias Brain.ML.Lexicon, as: WordNet
-
-    case WordNet.senses(lower) do
-      [_ | _] = senses ->
-        best =
-          senses
-          |> Enum.group_by(& &1.pos)
-          |> Enum.max_by(fn {_pos, group} -> Enum.sum(Enum.map(group, & &1.tag_count)) end)
-          |> elem(0)
-
-        wordnet_to_universal(best)
-
-      [] ->
-        guess_pos_from_shape(lower, original)
-    end
-  rescue
-    _ -> guess_pos_from_shape(lower, original)
-  end
-
-  defp wordnet_to_universal(:n), do: "NOUN"
-  defp wordnet_to_universal(:v), do: "VERB"
-  defp wordnet_to_universal(:a), do: "ADJ"
-  defp wordnet_to_universal(:s), do: "ADJ"
-  defp wordnet_to_universal(:r), do: "ADV"
-  defp wordnet_to_universal(_), do: "NOUN"
-
-  defp guess_pos_from_shape(lower, original) do
-    cond do
-      original == String.upcase(original) and String.length(original) > 1 -> "PROPN"
-      String.match?(original, ~r/^[A-Z]/) -> "PROPN"
-      String.ends_with?(lower, "ly") -> "ADV"
-      String.ends_with?(lower, "ing") -> "VERB"
-      String.ends_with?(lower, "ed") -> "VERB"
-      String.ends_with?(lower, "tion") or String.ends_with?(lower, "ness") -> "NOUN"
-      String.ends_with?(lower, "able") or String.ends_with?(lower, "ible") -> "ADJ"
-      String.ends_with?(lower, "ous") or String.ends_with?(lower, "ful") -> "ADJ"
-      String.ends_with?(lower, "er") or String.ends_with?(lower, "est") -> "ADJ"
-      true -> "NOUN"
-    end
+    entity_dir
   end
 
   defp format_duration(seconds) when seconds < 60 do

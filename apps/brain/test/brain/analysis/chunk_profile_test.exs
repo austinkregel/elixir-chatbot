@@ -12,7 +12,7 @@ defmodule Brain.Analysis.ChunkProfileTest do
       assert profile.speech_act_subtype == :unknown
       assert profile.target == :ambiguous
       assert profile.modality == :declarative
-      assert profile.polarity == :affirmative
+      assert profile.polarity == 0.0
       assert profile.tense == :present
       assert profile.aspect == :simple
       assert profile.addressee == :unknown
@@ -79,8 +79,7 @@ defmodule Brain.Analysis.ChunkProfileTest do
       analysis = %ChunkAnalysis{
         chunk_index: 0,
         text: "what is the weather",
-        speech_act:
-          SpeechActResult.new(:directive, :question_factual, 0.8, is_question: true),
+        speech_act: SpeechActResult.new(:directive, :question_factual, 0.8, is_question: true),
         discourse: DiscourseResult.new(:bot, 0.7),
         confidence: 0.7,
         pos_tags: [{"what", "PRON"}, {"is", "AUX"}, {"the", "DET"}, {"weather", "NOUN"}]
@@ -96,8 +95,7 @@ defmodule Brain.Analysis.ChunkProfileTest do
       question_analysis = %ChunkAnalysis{
         chunk_index: 0,
         text: "what time is it",
-        speech_act:
-          SpeechActResult.new(:directive, :question_factual, 0.9, is_question: true),
+        speech_act: SpeechActResult.new(:directive, :question_factual, 0.9, is_question: true),
         discourse: DiscourseResult.new(:bot, 0.8),
         confidence: 0.8,
         pos_tags: []
@@ -128,6 +126,410 @@ defmodule Brain.Analysis.ChunkProfileTest do
       }
 
       assert ChunkProfile.derived_label(profile) == "smarthome.command"
+    end
+  end
+
+  describe "axis_manifest/0" do
+    test "declares exactly the 18 axes, and every one is a real struct field" do
+      axes = ChunkProfile.axes()
+
+      assert length(axes) == 18
+      assert axes == Enum.uniq(axes)
+
+      struct_fields = %ChunkProfile{} |> Map.from_struct() |> Map.keys()
+
+      Enum.each(axes, fn axis ->
+        assert axis in struct_fields,
+               "axis #{inspect(axis)} is declared in the manifest but is not a " <>
+                 "%ChunkProfile{} field — the manifest would describe a value " <>
+                 "that is never set"
+      end)
+    end
+
+    test "every axis declares a kind and a source we know how to fill" do
+      Enum.each(ChunkProfile.axis_manifest(), fn {axis, kind, _domain, source} ->
+        assert kind in [:categorical, :continuous], "#{axis} has kind #{inspect(kind)}"
+
+        assert source in [:analysis, :micro_classifier, :composed, :derived],
+               "#{axis} has source #{inspect(source)}"
+      end)
+    end
+
+    test "axis_default/1 agrees with the struct, so defaults have one definition" do
+      defaults = Map.from_struct(%ChunkProfile{})
+
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        assert ChunkProfile.axis_default(axis) == Map.fetch!(defaults, axis)
+      end)
+    end
+
+    test "axis_domain/1 resolves every axis to a usable domain" do
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        case ChunkProfile.axis_domain(axis) do
+          {:enum, values} ->
+            assert values != [], "#{axis} resolved to an empty value set"
+            assert Enum.all?(values, &is_atom/1)
+
+          {:range, lo, hi} ->
+            assert lo < hi
+
+          {:open, _reason} ->
+            :ok
+
+          {:error, reason} ->
+            flunk(
+              "#{axis} has no resolvable value domain (#{inspect(reason)}). A " <>
+                "model-backed axis whose classifier is not loaded cannot be " <>
+                "validated — every value would appear to pass."
+            )
+        end
+      end)
+    end
+
+    test "a categorical axis's declared default is inside its own domain, or is a defaulted marker" do
+      # Two axes intentionally default to a value their classifier cannot emit:
+      # `domain` defaults to :unknown and intent_domain has no "unknown" label.
+      # That is deliberate and useful — observing :unknown then *proves* the
+      # axis was defaulted — but it has to be declared, not discovered.
+      known_out_of_domain_defaults = [:domain]
+
+      Enum.each(ChunkProfile.axis_manifest(), fn {axis, kind, _d, _s} ->
+        with :categorical <- kind,
+             {:enum, permitted} <- ChunkProfile.axis_domain(axis) do
+          default = ChunkProfile.axis_default(axis)
+
+          if axis in known_out_of_domain_defaults do
+            refute default in permitted,
+                   "#{axis} is listed as having an out-of-domain default but " <>
+                     "#{inspect(default)} is now inside #{inspect(permitted)} — " <>
+                     "remove it from known_out_of_domain_defaults"
+          else
+            assert default in permitted,
+                   "#{axis} defaults to #{inspect(default)}, which is not in its " <>
+                     "domain #{inspect(permitted)}. Either the domain is wrong or " <>
+                     "the default is unreachable."
+          end
+        end
+      end)
+    end
+  end
+
+  describe "feature_provenance" do
+    setup do
+      analysis = %ChunkAnalysis{
+        chunk_index: 0,
+        text: "turn off the kitchen lights",
+        speech_act: SpeechActResult.new(:directive, :command, 0.9, is_imperative: true),
+        discourse: DiscourseResult.new(:bot, 0.8),
+        confidence: 0.8,
+        pos_tags: [
+          {"turn", "VERB"},
+          {"off", "ADP"},
+          {"the", "DET"},
+          {"kitchen", "NOUN"},
+          {"lights", "NOUN"}
+        ]
+      }
+
+      %{profile: ChunkProfile.materialize(analysis, [])}
+    end
+
+    test "records an entry for every declared axis", %{profile: profile} do
+      missing = Enum.reject(ChunkProfile.axes(), &Map.has_key?(profile.feature_provenance, &1))
+
+      assert missing == [],
+             "no provenance recorded for #{inspect(missing)}. An axis with no " <>
+               "provenance cannot be told apart from one that was defaulted."
+    end
+
+    test "provenance/2 returns the same entry as reaching into the map", %{profile: profile} do
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        assert ChunkProfile.provenance(profile, axis) ==
+                 Map.get(profile.feature_provenance, axis)
+      end)
+    end
+
+    test "provenance/2 is nil for an axis with no entry", %{profile: profile} do
+      refute ChunkProfile.provenance(profile, :not_an_axis)
+    end
+
+    test "computed?/2 agrees with the recorded status for every axis", %{profile: profile} do
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        expected = match?(%{status: :computed}, Map.get(profile.feature_provenance, axis))
+
+        assert ChunkProfile.computed?(profile, axis) == expected,
+               "computed?/2 disagreed with the recorded status for #{axis}"
+      end)
+    end
+
+    test "computed?/2 is false for an unrecorded axis, not an error", %{profile: profile} do
+      # Absent provenance is not evidence that an axis was computed.
+      refute ChunkProfile.computed?(profile, :not_an_axis)
+    end
+
+    test "default_reason/2 gives a reason exactly for defaulted axes", %{profile: profile} do
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        case Map.get(profile.feature_provenance, axis) do
+          %{status: :defaulted, reason: reason} ->
+            assert ChunkProfile.default_reason(profile, axis) == reason
+
+          %{status: :computed} ->
+            refute ChunkProfile.default_reason(profile, axis),
+                   "#{axis} was computed but default_reason/2 returned something"
+
+          _ ->
+            :ok
+        end
+      end)
+    end
+
+    test "a defaulted axis holds its declared default, and says why", %{profile: profile} do
+      # The pairing that makes the two readable together: without the reason,
+      # an axis sitting on its default cannot be told apart from an axis
+      # determined to be that value.
+      defaulted =
+        ChunkProfile.axes()
+        |> Enum.filter(&match?(%{status: :defaulted}, ChunkProfile.provenance(profile, &1)))
+
+      Enum.each(defaulted, fn axis ->
+        assert Map.get(profile, axis) == ChunkProfile.axis_default(axis),
+               "#{axis} is defaulted but does not hold its declared default"
+
+        assert ChunkProfile.default_reason(profile, axis),
+               "#{axis} is defaulted with no reason recorded"
+      end)
+    end
+
+    test "every entry carries a source and a status", %{profile: profile} do
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        entry = Map.fetch!(profile.feature_provenance, axis)
+
+        assert is_map(entry), "#{axis} provenance is #{inspect(entry)}, expected a map"
+
+        assert entry[:status] in [:computed, :defaulted],
+               "#{axis} has status #{inspect(entry[:status])}"
+
+        assert entry[:source] in [:analysis, :micro_classifier, :composed, :derived],
+               "#{axis} has source #{inspect(entry[:source])}"
+      end)
+    end
+
+    test "a defaulted axis holds exactly its declared default", %{profile: profile} do
+      # This is the invariant task 083's corpus-selection rule rests on: "keep
+      # the sentence if at least one axis is off its default AND computed". If a
+      # defaulted axis could hold a non-default value the rule would silently
+      # admit placeholder values as demonstrators.
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        case Map.fetch!(profile.feature_provenance, axis) do
+          %{status: :defaulted} ->
+            assert Map.get(profile, axis) == ChunkProfile.axis_default(axis),
+                   "#{axis} is marked :defaulted but holds " <>
+                     "#{inspect(Map.get(profile, axis))} rather than its default " <>
+                     "#{inspect(ChunkProfile.axis_default(axis))}"
+
+          _ ->
+            :ok
+        end
+      end)
+    end
+
+    test "a defaulted entry says why", %{profile: profile} do
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        case Map.fetch!(profile.feature_provenance, axis) do
+          %{status: :defaulted} = entry ->
+            assert entry[:reason] != nil,
+                   "#{axis} is defaulted with no :reason — the point of recording " <>
+                     "the default is knowing what to fix"
+
+          _ ->
+            :ok
+        end
+      end)
+    end
+
+    test "derived axes name their parents and which of them were defaulted", %{profile: profile} do
+      derived =
+        ChunkProfile.axis_manifest()
+        |> Enum.filter(fn {_a, _k, _d, source} -> source == :derived end)
+        |> Enum.map(&elem(&1, 0))
+
+      assert length(derived) == 4
+
+      Enum.each(derived, fn axis ->
+        entry = Map.fetch!(profile.feature_provenance, axis)
+
+        assert is_list(entry[:depends_on]) and entry[:depends_on] != [],
+               "#{axis} is derived but names no parents"
+
+        assert is_list(entry[:parents_defaulted])
+
+        assert Enum.all?(entry[:parents_defaulted], &(&1 in entry[:depends_on])),
+               "#{axis} lists a defaulted parent it does not depend on"
+      end)
+    end
+
+    test "materialized values stay inside their declared domains", %{profile: profile} do
+      # A computed value must be in the axis's domain. A defaulted value is
+      # allowed to sit outside it — `domain` deliberately defaults to :unknown,
+      # which intent_domain cannot emit, and that is what makes :unknown a
+      # reliable marker of a defaulted domain rather than a 14th class.
+      Enum.each(ChunkProfile.axes(), fn axis ->
+        value = Map.get(profile, axis)
+        defaulted? = Map.fetch!(profile.feature_provenance, axis)[:status] == :defaulted
+
+        case ChunkProfile.axis_domain(axis) do
+          {:enum, permitted} ->
+            assert value in permitted or (defaulted? and value == ChunkProfile.axis_default(axis)),
+                   "#{axis} produced #{inspect(value)}, outside its declared domain " <>
+                     "#{inspect(permitted)}, and it is not a defaulted value " <>
+                     "(status #{inspect(Map.fetch!(profile.feature_provenance, axis)[:status])})"
+
+          {:range, lo, hi} ->
+            assert is_number(value) and value >= lo and value <= hi,
+                   "#{axis} produced #{inspect(value)}, outside #{lo}..#{hi}"
+
+          _ ->
+            :ok
+        end
+      end)
+    end
+
+    test "polarity records both tag spellings so tasks 074/081 stay separable", %{
+      profile: profile
+    } do
+      entry = Map.fetch!(profile.feature_provenance, :polarity)
+      evidence = entry[:evidence]
+
+      assert evidence[:pos_tag_count] == 5
+      assert Map.has_key?(evidence, :atom_part)
+      assert Map.has_key?(evidence, :string_part)
+    end
+  end
+
+  describe "polarity detection" do
+    # Polarity used to count PART tags. English does not put negation only on
+    # PART: measured over 206 negated sentences, 108 carry it on PART ("not",
+    # "n't") and the other 98 on ADV ("never"), DET ("no", "neither") or PRON
+    # ("nothing", "nobody"). A PART count is blind to 47.1% of negated input
+    # even with a correct tagger.
+    defp profile_for(text, pos_tags \\ []) do
+      ChunkProfile.materialize(
+        %ChunkAnalysis{
+          chunk_index: 0,
+          text: text,
+          speech_act: SpeechActResult.new(:assertive, :statement, 0.9, is_question: false),
+          discourse: DiscourseResult.new(:bot, 0.8),
+          confidence: 0.8,
+          pos_tags: pos_tags
+        },
+        []
+      )
+    end
+
+    for {text, tag} <- [
+          {"I do not like rain", "PART"},
+          {"I never do anything right", "ADV"},
+          {"There is no point in trying", "DET"},
+          {"Nothing will change that", "PRON"},
+          {"Nobody loves me", "PRON"},
+          {"Neither option works", "DET"}
+        ] do
+      @text text
+      @tag_class tag
+
+      test "negation on #{tag} is detected: #{text}" do
+        assert profile_for(@text).polarity == 1.0,
+               "#{@tag_class} negation in #{inspect(@text)} scopes over the clause and must " <>
+                 "score full sentential negation"
+      end
+    end
+
+    for text <- [
+          "I don't like rain",
+          "She didn't come",
+          "It won't work",
+          "That wasn't flawless",
+          "My boss isn't thrilled"
+        ] do
+      @text text
+
+      test "contracted negation is detected: #{text}" do
+        assert profile_for(@text).polarity == 1.0,
+               "the pipeline tokeniser splits #{inspect(@text)} into stem/'/t, so detection " <>
+                 "must not rely on the token list alone"
+      end
+    end
+
+    test "affirmative text is a determination, not a default" do
+      profile = profile_for("I like rain", [{"I", "PRON"}, {"like", "VERB"}, {"rain", "NOUN"}])
+
+      assert profile.polarity == 0.0
+      assert Map.fetch!(profile.feature_provenance, :polarity)[:status] == :computed
+    end
+
+    test "only genuinely empty input defaults" do
+      entry = Map.fetch!(profile_for("", []).feature_provenance, :polarity)
+
+      assert entry[:status] == :defaulted
+      assert entry[:reason] == :no_tokens
+      assert ChunkProfile.new().polarity == 0.0
+    end
+
+    test "negation does not fire on substrings" do
+      assert profile_for("She tied a knot in the rope").polarity == 0.0
+      assert profile_for("The cannon fired").polarity == 0.0
+    end
+
+    # Polarity is a strength, not a flag. Negation inside a noun phrase leaves
+    # the clause asserting something positively, so it must not score the same
+    # as negation that scopes over the predicate.
+    test "constituent negation scores lower than sentential negation" do
+      sentential = profile_for("I am not competent").polarity
+      constituent = profile_for("the unhealthy meals I cook made my partner gain weight").polarity
+      none = profile_for("I finished the whole report").polarity
+
+      assert sentential == 1.0
+      assert constituent > none and constituent < sentential
+      assert none == 0.0
+    end
+
+    test "constituent negators accumulate" do
+      one = profile_for("I am unable to finish this").polarity
+      two = profile_for("I feel useless, so I am useless").polarity
+
+      assert two > one
+      assert two <= 1.0
+    end
+
+    test "morphological negation comes from WordNet, not a word list" do
+      # "unable" is absent from the closed-class vocabulary; it is recognised
+      # because WordNet makes it the antonym of "able" plus a negative prefix.
+      refute "unable" in Brain.LinguisticData.negation_words()
+      assert Brain.LinguisticData.morphological_negator?("unable")
+      assert profile_for("I am unable to finish this").polarity > 0.0
+    end
+
+    # Regression: @sentential_negation was defined below its use in
+    # derive_temporal_framing/1. Elixir evaluates an undefined attribute as nil,
+    # and `1.0 >= nil` is false under term ordering, so :negated_past silently
+    # became unreachable. Every polarity test still passed, because none of them
+    # exercised the axis that consumes polarity.
+    test "past tense plus sentential negation reaches :negated_past" do
+      profile = profile_for("I did not finish the report yesterday")
+
+      assert profile.polarity == 1.0
+
+      if profile.tense == :past do
+        assert profile.temporal_framing == :negated_past,
+               "past + full negation must reach :negated_past; got " <>
+                 inspect(profile.temporal_framing)
+      end
+    end
+
+    test "plain opposition is not negation" do
+      # "cold" is the antonym of "hot" but is not derived from it by an affix.
+      refute Brain.LinguisticData.morphological_negator?("cold")
+      assert profile_for("The coffee is cold").polarity == 0.0
     end
   end
 end

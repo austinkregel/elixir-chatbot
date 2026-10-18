@@ -31,7 +31,7 @@ defmodule Brain.ML.FramingClassifierAccuracyTest do
 
   Prerequisites:
 
-    - `mix gen_framing_data --corpus gvfc` has been run (writes
+    - `mix gen_framing_data --world default --corpus gvfc` has been run (writes
       `data/classifiers/framing_class.json`).
     - `mix train_framing` has been run (writes
       `priv/ml_models/micro/framing_class.term`).
@@ -57,7 +57,7 @@ defmodule Brain.ML.FramingClassifierAccuracyTest do
       assert File.exists?(data_path),
              """
              Framing training data not found at #{data_path}.
-             Run `mix gen_framing_data --corpus gvfc` to (re)generate it.
+             Run `mix gen_framing_data --world default --corpus gvfc` to (re)generate it.
              """
 
       assert File.exists?(model_path),
@@ -85,7 +85,7 @@ defmodule Brain.ML.FramingClassifierAccuracyTest do
 
       assert length(data) >= 100,
              "Refusing to evaluate on tiny corpus (#{length(data)} examples). " <>
-               "Re-run `mix gen_framing_data --corpus gvfc`."
+               "Re-run `mix gen_framing_data --world default --corpus gvfc`."
 
       :rand.seed(:exsplus, @split_seed)
       {_train, test_set} = data |> Enum.shuffle() |> split_at(0.8)
@@ -198,9 +198,18 @@ defmodule Brain.ML.FramingClassifierAccuracyTest do
     # (apps/brain/test/ml_models) holds throw-away artifacts re-trained on
     # fixture data each run; the real GA-optimized framing_class lives in
     # apps/brain/priv/ml_models/micro/.
+    # The test-env models_path used to head this list, which contradicted the
+    # comment above: it exists during a test run, so Enum.find/3 always chose
+    # it and the test evaluated the throw-away model rather than the GA-trained
+    # one. That went unnoticed while the throw-away artifact happened to be an
+    # old copy carrying weights; regenerating it from fixture data produced a
+    # model with `weights: nil` and the test failed on its own first assertion.
+    #
+    # Measured 2026-09-25: apps/brain/priv/ml_models/micro/framing_class.term
+    # carries 326 GA weights, apps/brain/test/ml_models/micro/framing_class.term
+    # carries none.
     candidates =
       [
-        Application.get_env(:brain, :ml, [])[:models_path],
         Brain.priv_path("ml_models"),
         Path.join(umbrella_root(), "apps/brain/priv/ml_models")
       ]

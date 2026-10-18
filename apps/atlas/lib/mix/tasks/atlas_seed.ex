@@ -4,16 +4,20 @@ defmodule Mix.Tasks.Atlas.Seed do
 
   Seeds curated facts into Atlas, syncs them to the epistemic system as
   beliefs with JTMS premises, ensures source authority profiles exist,
-  and creates default training worlds.
+  seeds the brain's own lexicon from the corpora it is built on, and
+  creates default training worlds.
 
   Safe to run on every deploy — all operations use conflict-ignore or
   existence checks.
 
   ## Usage
 
-      mix atlas.seed              # Seed all baseline data
-      mix atlas.seed --verbose    # Show detailed progress
-      mix atlas.seed --dry-run    # Show what would be seeded without writing
+      mix atlas.seed --world default              # Seed all baseline data
+      mix atlas.seed --world default --verbose    # Show detailed progress
+      mix atlas.seed --world default --dry-run    # Show what would be seeded without writing
+
+  Beliefs and JTMS networks are held per world, so the curated facts are
+  synced into the world named by `--world`, which is required.
   """
 
   use Mix.Task
@@ -23,7 +27,8 @@ defmodule Mix.Tasks.Atlas.Seed do
     World.Manager,
     Brain.FactDatabase,
     Brain.FactDatabase.Integration,
-    Brain.Epistemic.SourceAuthority
+    Brain.Epistemic.SourceAuthority,
+    Brain.Lexicon.Seeder
   ]}
 
   @shortdoc "Seed baseline facts, beliefs, authority profiles, and worlds"
@@ -31,10 +36,14 @@ defmodule Mix.Tasks.Atlas.Seed do
   @impl Mix.Task
   def run(args) do
     {opts, _, _} =
-      OptionParser.parse(args, strict: [verbose: :boolean, dry_run: :boolean])
+      OptionParser.parse(args, strict: [verbose: :boolean, dry_run: :boolean, world: :string])
 
     verbose? = Keyword.get(opts, :verbose, false)
     dry_run? = Keyword.get(opts, :dry_run, false)
+
+    world_id =
+      Keyword.get(opts, :world) ||
+        Mix.raise("atlas.seed needs --world <id>, the world the curated facts' beliefs are held in")
 
     Mix.Task.run("app.start")
 
@@ -44,8 +53,9 @@ defmodule Mix.Tasks.Atlas.Seed do
 
     results = [
       {"Curated facts", seed_curated_facts(verbose?, dry_run?)},
-      {"Facts → Beliefs sync", seed_beliefs(verbose?, dry_run?)},
+      {"Facts → Beliefs sync", seed_beliefs(world_id, dry_run?)},
       {"Source authority", seed_source_authority(verbose?, dry_run?)},
+      {"Lexicon facts", seed_lexicon(verbose?, dry_run?)},
       {"Training worlds", seed_training_worlds(verbose?, dry_run?)}
     ]
 
@@ -91,29 +101,39 @@ defmodule Mix.Tasks.Atlas.Seed do
       if dry_run? do
         {:ok, "would upsert #{length(all_facts)} facts"}
       else
-        inserted =
-          Enum.count(all_facts, fn f ->
-            attrs = %{
-              id: f["id"] || "fact_#{System.unique_integer([:positive])}",
-              entity: f["entity"] || "unknown",
-              entity_type: f["entity_type"],
-              fact: f["fact"] || "",
-              category: f["category"] || "learned",
-              confidence: f["confidence"] || 1.0,
-              verification_source: f["verification_source"]
-            }
+        # Counted from the table, not from insert/2's reply. With
+        # `on_conflict: :nothing` Postgres writes nothing on a conflict but
+        # Ecto still replies `{:ok, struct}`, so counting replies reported every
+        # fact as newly inserted on every run.
+        before_count = Atlas.Repo.aggregate(Atlas.Schemas.LearnedFact, :count)
 
-            changeset =
-              Atlas.Schemas.LearnedFact.changeset(
-                struct(Atlas.Schemas.LearnedFact),
-                attrs
-              )
+        Enum.each(all_facts, fn f ->
+          attrs = %{
+            id: f["id"] || "fact_#{System.unique_integer([:positive])}",
+            entity: f["entity"] || "unknown",
+            entity_type: f["entity_type"],
+            fact: f["fact"] || "",
+            category: f["category"] || "learned",
+            confidence: f["confidence"] || 1.0,
+            verification_source: f["verification_source"]
+          }
 
-            case Atlas.Repo.insert(changeset, on_conflict: :nothing) do
-              {:ok, _} -> true
-              _ -> false
-            end
-          end)
+          changeset =
+            Atlas.Schemas.LearnedFact.changeset(
+              struct(Atlas.Schemas.LearnedFact),
+              attrs
+            )
+
+          case Atlas.Repo.insert(changeset, on_conflict: :nothing) do
+            {:ok, _} ->
+              :ok
+
+            {:error, failed} ->
+              raise "seed: fact #{inspect(attrs.id)} is invalid: #{inspect(failed.errors)}"
+          end
+        end)
+
+        inserted = Atlas.Repo.aggregate(Atlas.Schemas.LearnedFact, :count) - before_count
 
         # Reload FactDatabase so it picks up newly inserted facts
         if inserted > 0 do
@@ -134,12 +154,12 @@ defmodule Mix.Tasks.Atlas.Seed do
   # ---------------------------------------------------------------------------
   # Sync facts to beliefs + JTMS premises via the existing integration module
   # ---------------------------------------------------------------------------
-  defp seed_beliefs(_verbose?, dry_run?) do
+  defp seed_beliefs(world_id, dry_run?) do
     if dry_run? do
-      {:ok, "would sync facts to beliefs"}
+      {:ok, "would sync facts to beliefs in world #{world_id}"}
     else
-      case Brain.FactDatabase.Integration.sync_facts_to_beliefs() do
-        {:ok, count} -> {:ok, "#{count} facts synced to beliefs"}
+      case Brain.FactDatabase.Integration.sync_facts_to_beliefs(world_id) do
+        {:ok, count} -> {:ok, "#{count} facts synced to beliefs in world #{world_id}"}
         {:error, reason} -> {:error, inspect(reason)}
       end
     end
@@ -173,6 +193,29 @@ defmodule Mix.Tasks.Atlas.Seed do
     end
   rescue
     e -> {:error, Exception.message(e)}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Seed the brain's own lexicon from the corpora it is built on
+  # ---------------------------------------------------------------------------
+  defp seed_lexicon(verbose?, dry_run?) do
+    if dry_run? do
+      negation = length(Brain.Lexicon.Seeder.derive_negation())
+      usage_words = length(Brain.Lexicon.Seeder.derive_sense_usage())
+      {:ok, "would seed #{negation} negation facts and SemCor usage for #{usage_words} words"}
+    else
+      {:ok, counts} = Brain.Lexicon.Seeder.seed_all()
+
+      if verbose? do
+        Mix.shell().info("  Negation facts written: #{counts.negation}")
+        Mix.shell().info("  SemCor usage facts written: #{counts.sense_usage}")
+        Mix.shell().info("  Closed-class usage facts written: #{counts.closed_class}")
+      end
+
+      {:ok,
+       "#{counts.negation} negation facts, #{counts.sense_usage} SemCor usage facts, " <>
+         "#{counts.closed_class} closed-class usage facts"}
+    end
   end
 
   # ---------------------------------------------------------------------------

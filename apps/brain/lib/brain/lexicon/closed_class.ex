@@ -1,0 +1,124 @@
+defmodule Brain.Lexicon.ClosedClass do
+  @moduledoc """
+  English closed-class (function) words, declared in
+  `priv/knowledge/closed_class.json` by Universal Dependencies part of
+  speech.
+
+  A closed class is finite by definition, so it is declared rather than
+  learned; WordNet holds none of these words. A word may belong to several
+  classes ("to" is ADP and PART). UD morphological features are declared
+  alongside: `PronType=Tot` marks the total quantifiers ("all", "every",
+  "each"), which apply what is said to every member of what they quantify.
+  `PronType=Prs` and `PronType=Dem` mark the personal pronouns and the
+  demonstratives, and the personal pronouns carry `Person`, `Gender` and
+  `Reflex=Yes` (the reflexives) as the UD English Web Treebank annotates
+  them; `Brain.Analysis.AnaphoraResolver` reads these to tell which pronouns
+  refer back to an earlier turn. `Definite=Def` marks the definite article
+  ("the") and `Definite=Ind` the indefinite ones ("a", "an"):
+  `Brain.FactDatabase.Integration.polar_alignment/3` reads whether a noun
+  phrase is definite, and so names one thing.
+
+  The words written with a capital wherever they stand in a sentence, not
+  only at its start, are declared as `capitalized` ("i", the pronoun "I",
+  read from the UD English Web Treebank; see the file's description).
+
+  The file is read at compile time and validated: every word must be
+  lowercase and trimmed, every word given a feature or declared capitalized
+  must belong to a class, and a word may take only one value of a feature. A
+  file that breaks any of these fails the build.
+  """
+
+  @path Path.join(:code.priv_dir(:brain), "knowledge/closed_class.json")
+  @external_resource @path
+
+  @data @path |> File.read!() |> Jason.decode!()
+
+  @classes (case @data do
+              %{"classes" => classes} when is_map(classes) and map_size(classes) > 0 -> classes
+              _ -> raise "ClosedClass: #{@path} has no \"classes\" object"
+            end)
+
+  @features Map.get(@data, "features", %{})
+
+  @class_of (for {upos, words} <- @classes, word <- words, reduce: %{} do
+               acc ->
+                 unless is_binary(word) and word == word |> String.trim() |> String.downcase() and
+                          word != "" do
+                   raise "ClosedClass: #{inspect(word)} in #{upos} must be lowercase and trimmed"
+                 end
+
+                 Map.update(acc, word, [upos], &Enum.uniq(&1 ++ [upos]))
+             end)
+
+  @features_of (for {feature, words} <- @features, word <- words, reduce: %{} do
+                  acc ->
+                    unless Map.has_key?(@class_of, word) do
+                      raise "ClosedClass: #{inspect(word)} has #{feature} but belongs to no class"
+                    end
+
+                    [name, value] = String.split(feature, "=", parts: 2)
+
+                    case get_in(acc, [word, name]) do
+                      nil ->
+                        Map.update(acc, word, %{name => value}, &Map.put(&1, name, value))
+
+                      other ->
+                        raise "ClosedClass: #{inspect(word)} is declared both #{name}=#{other} and #{feature}; a word takes one value of a feature"
+                    end
+                end)
+
+  @capitalized (case Map.get(@data, "capitalized") do
+                  words when is_list(words) ->
+                    for word <- words, into: MapSet.new() do
+                      unless Map.has_key?(@class_of, word) do
+                        raise "ClosedClass: #{inspect(word)} is declared capitalized but belongs to no class"
+                      end
+
+                      word
+                    end
+
+                  other ->
+                    raise "ClosedClass: #{@path} has no \"capitalized\" list of words, got: #{inspect(other)}"
+                end)
+
+  @doc "True when `word` belongs to any closed class. Case-insensitive."
+  @spec member?(String.t()) :: boolean()
+  def member?(word) when is_binary(word), do: Map.has_key?(@class_of, String.downcase(word))
+
+  @doc "The UD parts of speech `word` takes, in file order; `[]` for an open-class word."
+  @spec classes(String.t()) :: [String.t()]
+  def classes(word) when is_binary(word), do: Map.get(@class_of, String.downcase(word), [])
+
+  @doc """
+  Every UD part of speech the declaration file assigns words to, sorted.
+
+  A consumer encoding closed-class membership as a fixed-width vector takes its
+  width from here, so adding a class to the file widens the vector instead of
+  being silently dropped.
+  """
+  @spec all_classes() :: [String.t()]
+  def all_classes, do: Enum.sort(Map.keys(@classes))
+
+  @doc "The UD features declared for `word`, e.g. `%{\"PronType\" => \"Tot\"}`."
+  @spec features(String.t()) :: %{String.t() => String.t()}
+  def features(word) when is_binary(word), do: Map.get(@features_of, String.downcase(word), %{})
+
+  @doc "True when `word` is a total quantifier (UD `PronType=Tot`): all, every, each..."
+  @spec total_quantifier?(String.t()) :: boolean()
+  def total_quantifier?(word) when is_binary(word), do: features(word)["PronType"] == "Tot"
+
+  @doc "True when `word` is the definite article (UD `Definite=Def`): \"the\". Case-insensitive."
+  @spec definite_article?(String.t()) :: boolean()
+  def definite_article?(word) when is_binary(word), do: features(word)["Definite"] == "Def"
+
+  @doc """
+  True when `word` is written with a capital wherever it stands in a
+  sentence, not only at its start: the pronoun "I". Case-insensitive.
+  """
+  @spec capitalized?(String.t()) :: boolean()
+  def capitalized?(word) when is_binary(word), do: MapSet.member?(@capitalized, String.downcase(word))
+
+  @doc "Every closed-class word, sorted."
+  @spec words() :: [String.t()]
+  def words, do: @class_of |> Map.keys() |> Enum.sort()
+end

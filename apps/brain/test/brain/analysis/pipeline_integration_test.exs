@@ -16,6 +16,9 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
 
   alias Brain.Analysis.Pipeline
 
+  # The world the test suite runs in, seeded by `mix test.models`.
+  @world_id "default"
+
   setup _context do
     start_test_services()
     :ok
@@ -23,7 +26,7 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
 
   describe "greeting flow" do
     test "simple greeting: intent starts with smalltalk.greet" do
-      model = Pipeline.process("Hello there!")
+      model = Pipeline.process("Hello there!", world_id: @world_id)
       first = List.first(model.analyses || [])
       intent = first && first.intent
       assert is_binary(intent)
@@ -31,7 +34,7 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
     end
 
     test "greeting with followup question" do
-      model = Pipeline.process("Hi! How are you doing today?")
+      model = Pipeline.process("Hi! How are you doing today?", world_id: @world_id)
       assert length(model.chunks) >= 2
       assert length(model.analyses) >= 2
 
@@ -41,7 +44,7 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
     end
 
     test "farewell recognized" do
-      model = Pipeline.process("Goodbye, see you later!")
+      model = Pipeline.process("Goodbye, see you later!", world_id: @world_id)
       first = List.first(model.analyses || [])
       assert first != nil
       assert first.intent != nil
@@ -50,14 +53,14 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
 
   describe "weather + slot detection" do
     test "weather question processes and may extract location entities" do
-      model = Pipeline.process("What is the weather in NYC?")
+      model = Pipeline.process("What is the weather in NYC?", world_id: @world_id)
       first = List.first(model.analyses || [])
       assert first != nil
       assert first.intent != nil
     end
 
     test "weather question with missing location triggers slot detection" do
-      model = Pipeline.process("What's the weather?")
+      model = Pipeline.process("What's the weather?", world_id: @world_id)
       first = List.first(model.analyses || [])
       assert first != nil
 
@@ -69,7 +72,7 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
     end
 
     test "weather question with explicit location" do
-      model = Pipeline.process("Tell me the forecast for San Francisco tomorrow")
+      model = Pipeline.process("Tell me the forecast for San Francisco tomorrow", world_id: @world_id)
       first = List.first(model.analyses || [])
       assert first != nil
       assert first.intent != nil
@@ -81,21 +84,21 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
 
   describe "ambiguous input" do
     test "short ambiguous input doesn't crash" do
-      model = Pipeline.process("it")
+      model = Pipeline.process("it", world_id: @world_id)
       assert model != nil
       first = List.first(model.analyses || [])
       assert first != nil
     end
 
     test "vague question gets processed" do
-      model = Pipeline.process("can you help")
+      model = Pipeline.process("can you help", world_id: @world_id)
       first = List.first(model.analyses || [])
       assert first != nil
       assert first.intent != nil
     end
 
     test "ambiguous entity mention" do
-      model = Pipeline.process("Tell me about Mercury")
+      model = Pipeline.process("Tell me about Mercury", world_id: @world_id)
       # Mercury could be a planet, element, or mythological figure
       first = List.first(model.analyses || [])
       assert first != nil
@@ -104,7 +107,7 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
     end
 
     test "mixed intent input" do
-      model = Pipeline.process("Play some jazz and what's the weather like?")
+      model = Pipeline.process("Play some jazz and what's the weather like?", world_id: @world_id)
       analyses = model.analyses || []
       # Should produce multiple analyses for the compound request
       assert length(analyses) >= 1
@@ -113,7 +116,7 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
 
   describe "multi-turn conversation simulation" do
     test "context carries through user_id option" do
-      opts = [user_id: "test_user_123"]
+      opts = [world_id: @world_id, user_id: "test_user_123"]
 
       # Turn 1: greeting
       model1 = Pipeline.process("Hello!", opts)
@@ -136,7 +139,9 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
     end
 
     test "multiple sentences are chunked correctly" do
-      model = Pipeline.process("I love Paris. Can you tell me about the Eiffel Tower? It's amazing!")
+      model =
+        Pipeline.process("I love Paris. Can you tell me about the Eiffel Tower? It's amazing!", world_id: @world_id)
+
       assert length(model.chunks) >= 3
       assert length(model.analyses) >= 3
     end
@@ -144,21 +149,21 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
 
   describe "core analysis signals are populated" do
     test "intent is produced for an information-seeking question" do
-      model = Pipeline.process("What is machine learning?")
+      model = Pipeline.process("What is machine learning?", world_id: @world_id)
       first = List.first(model.analyses || [])
       assert first != nil
       assert first.intent != nil
     end
 
     test "sentiment or intent is populated for a positive utterance" do
-      model = Pipeline.process("I absolutely love this!")
+      model = Pipeline.process("I absolutely love this!", world_id: @world_id)
       first = List.first(model.analyses || [])
       assert first != nil
       assert first.sentiment != nil or first.intent != nil
     end
 
     test "speech act is classified for a polite request" do
-      model = Pipeline.process("Could you please help me?")
+      model = Pipeline.process("Could you please help me?", world_id: @world_id)
       first = List.first(model.analyses || [])
       assert first != nil
       assert first.speech_act != nil
@@ -167,43 +172,43 @@ defmodule Brain.Analysis.PipelineIntegrationTest do
 
   describe "edge cases" do
     test "empty input: graceful handling" do
-      model = Pipeline.process("")
+      model = Pipeline.process("", world_id: @world_id)
       assert model != nil
     end
 
     test "whitespace input: graceful handling" do
-      model = Pipeline.process("   \n\t  ")
+      model = Pipeline.process("   \n\t  ", world_id: @world_id)
       assert model != nil
     end
 
     test "very long input: no crash, reasonable processing" do
       long_input = String.duplicate("Hello world. ", 100)
       start = System.monotonic_time(:millisecond)
-      model = Pipeline.process(long_input)
+      model = Pipeline.process(long_input, world_id: @world_id)
       elapsed = System.monotonic_time(:millisecond) - start
       assert model != nil
       assert elapsed < 30_000
     end
 
     test "special characters don't crash" do
-      model = Pipeline.process("Hello!!! @#$%^& ???")
+      model = Pipeline.process("Hello!!! @#$%^& ???", world_id: @world_id)
       assert model != nil
     end
 
     test "unicode text processes correctly" do
-      model = Pipeline.process("Bonjour, comment allez-vous?")
+      model = Pipeline.process("Bonjour, comment allez-vous?", world_id: @world_id)
       assert model != nil
       first = List.first(model.analyses || [])
       assert first != nil
     end
 
     test "numeric input handled" do
-      model = Pipeline.process("42")
+      model = Pipeline.process("42", world_id: @world_id)
       assert model != nil
     end
 
     test "command input: speech act has command or directive category" do
-      model = Pipeline.process("Turn off the lights")
+      model = Pipeline.process("Turn off the lights", world_id: @world_id)
       analyses = model.analyses || []
 
       categories =

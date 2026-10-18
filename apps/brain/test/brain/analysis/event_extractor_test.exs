@@ -262,6 +262,78 @@ defmodule Brain.Analysis.EventExtractorTest do
     end
   end
 
+  describe "token_entities/2" do
+    # A decided entity as Brain.ML.EntityExtractor.extract_entities/2 returns
+    # it: grapheme positions, the type under :entity_type.
+    @decided %{
+      entity_type: "music_artist",
+      value: "The Beatles",
+      match: "The Beatles",
+      start_pos: 5,
+      end_pos: 15,
+      confidence: 0.82,
+      source: :gazetteer,
+      resolved: true
+    }
+
+    test "locates an extracted entity by the tokens it spans and types it by :entity_type" do
+      tokens = Brain.ML.Tokenizer.tokenize("play The Beatles now")
+
+      assert EventExtractor.token_entities([@decided], tokens) == [%{type: "music_artist", start: 1, end: 2}]
+    end
+
+    test "the extracted entity's type reaches the event role it fills" do
+      text = "play Beatles"
+      tokens = Brain.ML.Tokenizer.tokenize(text)
+      entity = %{@decided | value: "Beatles", match: "Beatles", start_pos: 5, end_pos: 11}
+
+      analysis = %{
+        pos_tags: [{"play", "VERB"}, {"Beatles", "PROPN"}],
+        entities: EventExtractor.token_entities([entity], tokens),
+        tokens: Enum.map(tokens, & &1.text)
+      }
+
+      {:ok, [event | _]} = EventExtractor.extract(analysis)
+
+      assert event.object.text == "Beatles"
+      assert event.object.entity_type == "music_artist"
+    end
+
+    test "leaves out an entity anaphora resolution supplied, which has no position" do
+      tokens = Brain.ML.Tokenizer.tokenize("play it")
+      anaphora = %{entity_type: "music_artist", value: "The Beatles", confidence: 0.75, source: :anaphora_resolution}
+
+      assert EventExtractor.token_entities([anaphora], tokens) == []
+    end
+
+    test "an extracted entity without a position or a type raises" do
+      tokens = Brain.ML.Tokenizer.tokenize("play The Beatles now")
+
+      for entity <- [
+            Map.delete(@decided, :start_pos),
+            Map.delete(@decided, :end_pos),
+            Map.delete(@decided, :entity_type),
+            @decided |> Map.delete(:entity_type) |> Map.put(:entity, "music_artist")
+          ] do
+        assert_raise ArgumentError, ~r/carries :entity_type, :start_pos and :end_pos/, fn ->
+          EventExtractor.token_entities([entity], tokens)
+        end
+      end
+    end
+
+    test "an entity extract/2 is given without token indexes raises" do
+      analysis = %{
+        pos_tags: [{"play", "VERB"}, {"Beatles", "PROPN"}],
+        entities: [%{type: "music_artist", start_pos: 5, end_pos: 11}],
+        tokens: ["play", "Beatles"]
+      }
+
+      assert_raise ArgumentError, ~r/located by :start and :end/, fn ->
+        EventExtractor.extract(analysis)
+      end
+    end
+  end
+
   describe "backend verification" do
     test "backend_info returns current backend" do
       info = EventExtractor.backend_info()

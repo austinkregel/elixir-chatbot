@@ -1,0 +1,28 @@
+{
+  "description": "English closed-class (function) words, by Universal Dependencies part of speech. A closed class is finite by definition, so it is declared here rather than learned; WordNet holds none of these words. A word may belong to several classes: 'to' is a preposition and the infinitive marker, 'that' a determiner, pronoun and conjunction. 'features' marks UD morphological features: PronType=Tot is UD's total (collective) quantifier -- 'all', 'every', 'each', 'everything' -- which applies what is said to every member of what it quantifies. PronType=Prs marks the personal pronouns and PronType=Dem the demonstratives; Person, Gender and Reflex=Yes (the reflexives) are declared for the personal pronouns, as the UD English Web Treebank annotates them. Definite=Def marks the definite article 'the' and Definite=Ind the indefinite articles 'a' and 'an', as the treebank annotates them: a noun phrase that 'the' opens names one thing, so 'the capital of France' and 'Paris' can name the same thing, while 'a city' names any of several. A word takes one value of a feature: 'that', a demonstrative and a relative pronoun, is declared PronType=Dem, although the treebank's train split annotates the pronoun 'that' PronType=Rel 556 times and PronType=Dem 295 times. 'capitalized' lists the closed-class words written with a capital wherever they stand in a sentence, not only at its start: in the UD English Web Treebank r2.18 (train, dev and test), 'i' is the only closed-class word written capitalized in most of its occurrences after a sentence's first word (2090 of 2413). Loaded by Brain.Lexicon.ClosedClass.",
+  "classes": {
+    "DET": ["a", "an", "the", "this", "that", "these", "those", "some", "any", "no", "every", "each", "all", "both", "either", "neither", "another", "such", "what", "which", "whatever", "whichever", "few", "many", "much", "several"],
+    "PRON": ["i", "me", "my", "mine", "myself", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "we", "us", "our", "ours", "ourselves", "they", "them", "their", "theirs", "themselves", "who", "whom", "whose", "which", "what", "that", "this", "these", "those", "someone", "somebody", "something", "anyone", "anybody", "anything", "everyone", "everybody", "everything", "nobody", "nothing", "none", "all", "each", "both"],
+    "ADP": ["of", "in", "on", "at", "to", "for", "from", "by", "with", "into", "onto", "upon", "about", "above", "below", "between", "through", "during", "before", "after", "since", "until", "under", "over", "among", "across", "against", "along", "around", "behind", "beside", "beyond", "despite", "except", "inside", "outside", "near", "off", "toward", "towards", "via", "within", "without", "per"],
+    "CCONJ": ["and", "or", "but", "nor", "yet", "so"],
+    "SCONJ": ["because", "although", "though", "while", "if", "when", "unless", "whether", "since", "until", "as", "than", "that", "once", "whereas"],
+    "AUX": ["am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would", "shall", "should", "can", "could", "may", "might", "must"],
+    "PART": ["not", "to"],
+    "ADV": ["everywhere", "somewhere", "anywhere", "nowhere"]
+  },
+  "features": {
+    "PronType=Tot": ["all", "every", "each", "everyone", "everybody", "everything", "everywhere"],
+    "PronType=Prs": ["i", "me", "my", "mine", "myself", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "we", "us", "our", "ours", "ourselves", "they", "them", "their", "theirs", "themselves"],
+    "PronType=Dem": ["this", "that", "these", "those"],
+    "Person=1": ["i", "me", "my", "mine", "myself", "we", "us", "our", "ours", "ourselves"],
+    "Person=2": ["you", "your", "yours", "yourself", "yourselves"],
+    "Person=3": ["he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves"],
+    "Gender=Masc": ["he", "him", "his", "himself"],
+    "Gender=Fem": ["she", "her", "hers", "herself"],
+    "Gender=Neut": ["it", "its", "itself"],
+    "Reflex=Yes": ["myself", "yourself", "yourselves", "himself", "herself", "itself", "ourselves", "themselves"],
+    "Definite=Def": ["the"],
+    "Definite=Ind": ["a", "an"]
+  },
+  "capitalized": ["i"]
+}

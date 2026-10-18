@@ -5,25 +5,25 @@
       "text": "What's the weather in Austin?",
       "entities": [
         {
-          "type": "location",
+          "type": "address",
           "value": "Austin",
-          "confidence": 0.79
+          "confidence": 0.93
         }
       ],
-      "response_strategy": "can_respond",
+      "response_strategy": "hedged_response",
+      "speech_act_category": "directive",
+      "speech_act_confidence": 1.0,
+      "detected_intent": "weather.query",
+      "speech_act_type": "request_information",
+      "discourse_addressee": "bot",
+      "discourse_self_referential": "false",
       "slots_filled": [
         "date",
         "location"
       ],
-      "slots_missing": [],
-      "detected_intent": "weather",
-      "speech_act_category": "directive",
-      "speech_act_type": "request_information",
-      "speech_act_confidence": 0.87,
-      "discourse_addressee": "bot",
-      "discourse_self_referential": "false"
+      "slots_missing": []
     }
   ],
-  "overall_strategy": "can_respond",
+  "overall_strategy": "hedged_response",
   "chunk_count": 1
 }

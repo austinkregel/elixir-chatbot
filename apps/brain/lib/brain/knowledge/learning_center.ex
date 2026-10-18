@@ -1,7 +1,7 @@
 defmodule Brain.Knowledge.LearningCenter do
   # Tasks.Source lives in the tasks app and may be unavailable at compile time
   @compile {:no_warn_undefined, Tasks.Source}
-  @moduledoc "Central orchestrator for the Knowledge Expansion System.\n\nThe Learning Center:\n- Manages learning sessions (triggered or scheduled)\n- Maintains a goal queue with research objectives\n- Dispatches Research Agents as supervised Tasks\n- Collects and synthesizes agent findings\n- Routes vetted findings to the Admin review queue\n\n## Example\n\n    # Start a learning session\n    {:ok, session} = LearningCenter.start_session(\"European capitals\")\n\n    # Check session status\n    {:ok, session} = LearningCenter.get_session(session.id)\n\n    # List active sessions\n    sessions = LearningCenter.list_sessions()\n"
+  @moduledoc "Central orchestrator for the Knowledge Expansion System.\n\nThe Learning Center:\n- Manages learning sessions (triggered or scheduled)\n- Maintains a goal queue with research objectives\n- Dispatches Research Agents as supervised Tasks\n- Collects and synthesizes agent findings\n- Routes vetted findings to the Admin review queue\n\n## Example\n\n    # Start a learning session\n    {:ok, session} = LearningCenter.start_session(\"European capitals\", world_id: world_id)\n\n    # Check session status\n    {:ok, session} = LearningCenter.get_session(session.id)\n\n    # List active sessions\n    sessions = LearningCenter.list_sessions()\n"
 
   alias Brain.ML
   alias Brain.Knowledge.Types
@@ -21,15 +21,30 @@ defmodule Brain.Knowledge.LearningCenter do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @doc "Starts a new learning session for a topic.\n\n## Options\n  - :questions - List of specific questions to research\n  - :max_goals - Maximum number of goals to generate\n  - :priority - :low | :normal | :high\n  - :mock - If true, uses mock data for testing\n"
+  @doc "Starts a new learning session for a topic.\n\n## Options\n  - :world_id - required: the world the session researches for; its research\n    agents analyze what they fetch in it. Absent raises.\n  - :questions - List of specific questions to research\n  - :max_goals - Maximum number of goals to generate\n  - :priority - :low | :normal | :high\n  - :mock - If true, uses mock data for testing\n"
   @spec start_session(String.t(), keyword()) :: {:ok, LearningSession.t()} | {:error, term()}
-  def start_session(topic, opts \\ []) when is_binary(topic) do
+  def start_session(topic, opts) when is_binary(topic) do
+    session_world!(opts)
     GenServer.call(__MODULE__, {:start_session, topic, opts})
   end
 
-  @doc "Starts a training session using domain-specific NLP tasks.\n\nThis uses curated benchmark tasks (Question Answering, Commonsense, etc.)\ninstead of web sources, providing high-quality training data for child agents.\n\n## Options\n  - :capability - Training capability (:question_answering, :commonsense, :sentiment, :all)\n  - :max_tasks - Maximum task files to use (default: 5)\n  - :max_instances - Maximum instances per task (default: 20)\n\n## Example\n\n    {:ok, session} = LearningCenter.start_task_training(:commonsense)\n    {:ok, session} = LearningCenter.start_task_training(:question_answering, max_tasks: 10)\n"
+  # Checked in the caller's process, so a missing world raises there.
+  defp session_world!(opts) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "LearningCenter option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "LearningCenter.start_session needs :world_id, the world the session researches for"
+    end
+  end
+
+  @doc "Starts a training session using domain-specific NLP tasks.\n\nThis uses curated benchmark tasks (Question Answering, Commonsense, etc.)\ninstead of web sources, providing high-quality training data for child agents.\n\n## Options\n  - :world_id - required, as for `start_session/2`\n  - :capability - Training capability (:question_answering, :commonsense, :sentiment, :all)\n  - :max_tasks - Maximum task files to use (default: 5)\n  - :max_instances - Maximum instances per task (default: 20)\n\n## Example\n\n    {:ok, session} = LearningCenter.start_task_training(:commonsense, world_id: world_id)\n    {:ok, session} = LearningCenter.start_task_training(:question_answering, world_id: world_id, max_tasks: 10)\n"
   @spec start_task_training(atom(), keyword()) :: {:ok, LearningSession.t()} | {:error, term()}
-  def start_task_training(capability \\ :all, opts \\ []) do
+  def start_task_training(capability, opts) do
     topic = "task_training:#{capability}"
     task_opts = Keyword.merge(opts, sources: [:task], capability: capability)
     start_session(topic, task_opts)
@@ -82,14 +97,16 @@ defmodule Brain.Knowledge.LearningCenter do
   end
 
   @doc """
-  Evaluates structured predictions on hypotheses using `BeliefStore` (when ready).
+  Evaluates structured predictions on hypotheses against the beliefs held in
+  `world_id` (`BeliefStore`, when ready).
 
   Returns `{:error, :not_ready}` if `BeliefStore.ready?/0` is false.
   """
-  @spec test_predictions(Investigation.t()) ::
+  @spec test_predictions(String.t(), Investigation.t()) ::
           {:ok, Investigation.t()} | {:error, :not_ready}
-  def test_predictions(%Investigation{} = investigation) do
-    GenServer.call(__MODULE__, {:test_predictions, investigation}, 60_000)
+  def test_predictions(world_id, %Investigation{} = investigation)
+      when is_binary(world_id) and world_id != "" do
+    GenServer.call(__MODULE__, {:test_predictions, world_id, investigation}, 60_000)
   end
 
   @impl true
@@ -115,7 +132,7 @@ defmodule Brain.Knowledge.LearningCenter do
 
   @impl true
   def handle_call({:start_session, topic, opts}, _from, state) do
-    session = LearningSession.new(topic: topic)
+    session = LearningSession.new(topic: topic, world_id: Keyword.fetch!(opts, :world_id))
 
     goals =
       if Keyword.get(opts, :sources) == [:task] do
@@ -162,9 +179,9 @@ defmodule Brain.Knowledge.LearningCenter do
   end
 
   @impl true
-  def handle_call({:test_predictions, %Investigation{} = inv}, _from, state) do
+  def handle_call({:test_predictions, world_id, %Investigation{} = inv}, _from, state) do
     if BeliefStore.ready?() do
-      {:reply, {:ok, do_test_predictions(inv)}, state}
+      {:reply, {:ok, do_test_predictions(world_id, inv)}, state}
     else
       {:reply, {:error, :not_ready}, state}
     end
@@ -179,7 +196,7 @@ defmodule Brain.Knowledge.LearningCenter do
       session ->
         updated_session = LearningSession.add_goal(session, goal)
         new_sessions = Map.put(state.sessions, session_id, updated_session)
-        {agent_refs, updated_state} = dispatch_agents([goal], session_id, [], state)
+        {agent_refs, updated_state} = dispatch_agents([goal], session_id, [world_id: session.world_id], state)
 
         new_state = %{
           updated_state
@@ -410,10 +427,11 @@ defmodule Brain.Knowledge.LearningCenter do
         evidence: length(findings)
       )
 
-      {:ok, concluded} = Corroborator.test_hypotheses(investigation, findings)
+      {:ok, concluded} = Corroborator.test_hypotheses(session.world_id, investigation, findings)
       log_investigation_results(concluded)
-      candidates = Corroborator.hypotheses_to_candidates(concluded, session_id: session_id)
-      candidates = check_contradictions(candidates)
+      candidates =
+        Corroborator.hypotheses_to_candidates(concluded, session_id: session_id, world_id: session.world_id)
+      candidates = check_contradictions(candidates, session.world_id)
 
       Enum.each(candidates, fn candidate ->
         ReviewQueue.add(%{candidate | session_id: session_id})
@@ -512,8 +530,20 @@ defmodule Brain.Knowledge.LearningCenter do
   end
 
   defp process_findings_traditional(state, session_id, goal_id, findings, remaining_tasks) do
-    {:ok, candidates} = Corroborator.corroborate(findings, include_uncorroborated: true)
-    candidates = check_contradictions(candidates)
+    world_id =
+      case Map.get(state.sessions, session_id) do
+        %{world_id: world_id} when is_binary(world_id) and world_id != "" ->
+          world_id
+
+        session ->
+          raise ArgumentError,
+                "LearningCenter cannot corroborate findings for session #{inspect(session_id)}: " <>
+                  "it has no world (session: #{inspect(session && Map.get(session, :world_id))})"
+      end
+
+    {:ok, candidates} =
+      Corroborator.corroborate(findings, include_uncorroborated: true, world_id: world_id)
+    candidates = check_contradictions(candidates, world_id)
 
     Enum.each(candidates, fn candidate ->
       ReviewQueue.add(%{candidate | session_id: session_id})
@@ -558,7 +588,7 @@ defmodule Brain.Knowledge.LearningCenter do
 
     additional_goals =
       if questions == [] do
-        generate_default_questions(topic)
+        generate_default_questions(topic, Keyword.fetch!(opts, :world_id))
         |> Enum.take(max_goals - 1)
         |> Enum.map(fn q ->
           ResearchGoal.new(topic, questions: [q], priority: priority)
@@ -571,8 +601,8 @@ defmodule Brain.Knowledge.LearningCenter do
     |> Enum.take(max_goals)
   end
 
-  defp generate_default_questions(topic) do
-    memory_questions = extract_questions_from_memory(topic)
+  defp generate_default_questions(topic, world_id) do
+    memory_questions = extract_questions_from_memory(topic, world_id)
     pos_questions = generate_questions_with_pos(topic)
     combined = (memory_questions ++ pos_questions) |> Enum.uniq()
 
@@ -583,10 +613,10 @@ defmodule Brain.Knowledge.LearningCenter do
     end
   end
 
-  defp extract_questions_from_memory(topic) do
+  defp extract_questions_from_memory(topic, world_id) do
     alias Brain.Memory.Store
 
-    case Store.query_similar(topic, 10) do
+    case Store.query_similar(topic, 10, world_id: world_id) do
       {:ok, episodes} ->
         episodes
         |> Enum.flat_map(fn {episode, _similarity} ->
@@ -678,6 +708,7 @@ defmodule Brain.Knowledge.LearningCenter do
     mock_default = http_client != Req
 
     research_opts = [
+      world_id: Keyword.fetch!(opts, :world_id),
       mock: Keyword.get(opts, :mock, mock_default),
       sources: Keyword.get(opts, :sources, [:web]),
       max_pages: Keyword.get(opts, :max_tasks, 5),
@@ -707,13 +738,14 @@ defmodule Brain.Knowledge.LearningCenter do
     {agent_refs, %{state | stats: new_stats}}
   end
 
-  defp check_contradictions(candidates) do
+  # The candidates' contradictions with the beliefs held in the session's world.
+  defp check_contradictions(candidates, world_id) do
     if BeliefStore.ready?() do
       Enum.map(candidates, fn candidate ->
         entity = candidate.finding.entity
         predicate = normalize_predicate(entity)
 
-        case BeliefStore.query_beliefs(predicate: predicate) do
+        case BeliefStore.query_beliefs(world_id, predicate: predicate) do
           {:ok, existing} ->
             conflicts = find_conflicting_beliefs(candidate.finding.claim, existing)
             %{candidate | existing_contradictions: conflicts}
@@ -895,6 +927,7 @@ defmodule Brain.Knowledge.LearningCenter do
       Brain.AtlasIntegration.async(fn ->
         Atlas.Learning.create_session(%{
           id: session.id,
+          world_id: session.world_id,
           topic: session.topic,
           status: to_string(session.status),
           started_at: session.started_at,
@@ -1016,11 +1049,11 @@ defmodule Brain.Knowledge.LearningCenter do
   defp encode_hypothesis_prediction_for_atlas(pred) when is_binary(pred), do: pred
   defp encode_hypothesis_prediction_for_atlas(nil), do: nil
 
-  defp do_test_predictions(%Investigation{hypotheses: hs} = inv) when is_list(hs) do
+  defp do_test_predictions(world_id, %Investigation{hypotheses: hs} = inv) when is_list(hs) do
     evaluated =
       hs
       |> Task.async_stream(
-        &apply_prediction_evaluation/1,
+        &apply_prediction_evaluation(world_id, &1),
         max_concurrency: 4,
         timeout: 5_000,
         on_timeout: :kill_task
@@ -1034,7 +1067,7 @@ defmodule Brain.Knowledge.LearningCenter do
     %{inv | hypotheses: evaluated}
   end
 
-  defp apply_prediction_evaluation(%Hypothesis{} = h) do
+  defp apply_prediction_evaluation(world_id, %Hypothesis{} = h) do
     case h.prediction do
       %{type: :unstructured} ->
         h
@@ -1045,7 +1078,7 @@ defmodule Brain.Knowledge.LearningCenter do
       %{type: :belief_query, params: params} when is_map(params) ->
         opts = Map.to_list(params)
 
-        case BeliefStore.query_beliefs(opts) do
+        case BeliefStore.query_beliefs(world_id, opts) do
           {:ok, beliefs} when beliefs == [] -> Hypothesis.evaluate(h)
           {:ok, _} -> Hypothesis.evaluate(h)
           _ -> h

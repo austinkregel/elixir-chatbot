@@ -2,7 +2,6 @@ defmodule Brain.Analysis.EventIntegrationTest do
   @moduledoc "Integration tests for the event extraction system.\n\nTests end-to-end flow from Pipeline through EventExtractor to Memory and Epistemic systems.\n"
 
   alias Brain.Analysis.EventPatterns
-  alias Brain.ML.EntityExtractor
   alias Brain.Analysis
   use Brain.Test.GraphCase, async: false
 
@@ -15,7 +14,6 @@ defmodule Brain.Analysis.EventIntegrationTest do
 
   setup do
     start_test_services()
-    EntityExtractor.load_entity_maps()
 
     if Process.whereis(MemoryStore) do
       :ok
@@ -26,7 +24,7 @@ defmodule Brain.Analysis.EventIntegrationTest do
 
   describe "Pipeline integration" do
     test "pipeline extracts events from input" do
-      result = Pipeline.process("I want to play some jazz music")
+      result = Pipeline.process("I want to play some jazz music", world_id: "default")
 
       assert %Brain.Analysis.InternalModel{} = result
       assert result.analyses != []
@@ -44,7 +42,7 @@ defmodule Brain.Analysis.EventIntegrationTest do
     end
 
     test "events contain expected structure" do
-      result = Pipeline.process("Play some music for me")
+      result = Pipeline.process("Play some music for me", world_id: "default")
 
       Enum.each(result.analyses, fn analysis ->
         Enum.each(analysis.events, fn event ->
@@ -78,8 +76,15 @@ defmodule Brain.Analysis.EventIntegrationTest do
   end
 
   describe "Memory integration" do
+    # Episodes are written to a test world of their own, removed afterwards.
+    setup do
+      setup_world_sandbox()
+      {:ok, world} = create_test_world("events")
+      %{world_id: world.id}
+    end
+
     @tag :memory
-    test "events can be stored as episodes" do
+    test "events can be stored as episodes", %{world_id: world_id} do
       event =
         Event.new(%{verb: "play", lemma: "play", tense: :imperative},
           actor: nil,
@@ -92,17 +97,15 @@ defmodule Brain.Analysis.EventIntegrationTest do
         user_input: "Play some jazz"
       }
 
-      if Process.whereis(MemoryStore) do
-        {:ok, episode_id} = MemoryStore.add_event_episode(event, context, world_id: "test_events")
+      {:ok, episode_id} = MemoryStore.add_event_episode(event, context, world_id: world_id)
 
-        assert is_binary(episode_id)
-        {:ok, episodes} = MemoryStore.query_events_by_action("play", 5, world_id: "test_events")
-        assert length(episodes) >= 0
-      end
+      assert is_binary(episode_id)
+      {:ok, episodes} = MemoryStore.query_events_by_action("play", 5, world_id: world_id)
+      assert Enum.any?(episodes, &(&1.id == episode_id))
     end
 
     @tag :memory
-    test "event episodes have correct tags" do
+    test "event episodes have correct tags", %{world_id: world_id} do
       event =
         Event.new(%{verb: "want", lemma: "want", tense: :present},
           actor: %{text: "I", type: "pronoun", token_index: 0},
@@ -112,17 +115,15 @@ defmodule Brain.Analysis.EventIntegrationTest do
 
       context = %{response: "I'd be happy to help with coffee"}
 
-      if Process.whereis(MemoryStore) do
-        {:ok, _} = MemoryStore.add_event_episode(event, context, world_id: "test_events")
-        {:ok, episodes} = MemoryStore.query_events_by_object("coffee", 5, world_id: "test_events")
-        assert is_list(episodes)
-      end
+      {:ok, episode_id} = MemoryStore.add_event_episode(event, context, world_id: world_id)
+      {:ok, episodes} = MemoryStore.query_events_by_object("coffee", 5, world_id: world_id)
+      assert Enum.any?(episodes, &(&1.id == episode_id))
     end
   end
 
   describe "Epistemic integration" do
     @tag :epistemic
-    test "beliefs can be extracted from events" do
+    test "beliefs can be extracted from events", %{graph_world_id: world} do
       event =
         Event.new(%{verb: "want", lemma: "want", tense: :present},
           actor: %{text: "I", type: "pronoun", token_index: 0},
@@ -131,11 +132,11 @@ defmodule Brain.Analysis.EventIntegrationTest do
         )
 
       if Process.whereis(BeliefStore) do
-        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_event(event, "test_user")
+        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_event(world, event, "test_user")
         assert is_list(belief_ids)
 
         if belief_ids != [] do
-          {:ok, belief} = BeliefStore.get_belief(hd(belief_ids))
+          {:ok, belief} = BeliefStore.get_belief(world, hd(belief_ids))
           assert belief.predicate == :wants
           assert belief.object == "coffee"
         end
@@ -143,7 +144,7 @@ defmodule Brain.Analysis.EventIntegrationTest do
     end
 
     @tag :epistemic
-    test "low confidence events don't create beliefs" do
+    test "low confidence events don't create beliefs", %{graph_world_id: world} do
       event =
         Event.new(%{verb: "want", lemma: "want", tense: :present},
           actor: %{text: "I", type: "pronoun", token_index: 0},
@@ -152,13 +153,13 @@ defmodule Brain.Analysis.EventIntegrationTest do
         )
 
       if Process.whereis(BeliefStore) do
-        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_event(event, "test_user")
+        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_event(world, event, "test_user")
         assert belief_ids == []
       end
     end
 
     @tag :epistemic
-    test "extract_beliefs_from_events handles multiple events" do
+    test "extract_beliefs_from_events handles multiple events", %{graph_world_id: world} do
       events = [
         Event.new(%{verb: "want", lemma: "want", tense: :present},
           actor: %{text: "I", type: "pronoun", token_index: 0},
@@ -173,7 +174,7 @@ defmodule Brain.Analysis.EventIntegrationTest do
       ]
 
       if Process.whereis(BeliefStore) do
-        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_events(events, "test_user")
+        {:ok, belief_ids} = BeliefStore.extract_beliefs_from_events(world, events, "test_user")
 
         assert is_list(belief_ids)
       end

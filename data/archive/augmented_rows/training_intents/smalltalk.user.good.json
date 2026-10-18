@@ -1,0 +1,88 @@
+[
+  {
+    "text": "I 'm doing just great",
+    "tokens": [
+      "I",
+      "'m",
+      "doing",
+      "just",
+      "great"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-e74cb77b",
+    "intent": "smalltalk.user.good"
+  },
+  {
+    "text": "hey i'm good",
+    "tokens": [
+      "hey",
+      "i",
+      "'m",
+      "good"
+    ],
+    "pos_tags": [
+      "NOUN",
+      "NOUN",
+      "VERB",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-187f0d83",
+    "intent": "smalltalk.user.good"
+  },
+  {
+    "text": "can you i'm great thanks",
+    "tokens": [
+      "can",
+      "you",
+      "i",
+      "'m",
+      "great",
+      "thanks"
+    ],
+    "pos_tags": [
+      "AUX",
+      "PRON",
+      "VERB",
+      "VERB",
+      "ADJ",
+      "NOUN"
+    ],
+    "entities": [],
+    "id": "augmented-edab719c",
+    "intent": "smalltalk.user.good"
+  },
+  {
+    "text": "I want to i'm doing just great",
+    "tokens": [
+      "I",
+      "want",
+      "to",
+      "i",
+      "'m",
+      "doing",
+      "just",
+      "great"
+    ],
+    "pos_tags": [
+      "PRON",
+      "VERB",
+      "PART",
+      "VERB",
+      "VERB",
+      "VERB",
+      "ADV",
+      "ADJ"
+    ],
+    "entities": [],
+    "id": "augmented-321e4229",
+    "intent": "smalltalk.user.good"
+  }
+]

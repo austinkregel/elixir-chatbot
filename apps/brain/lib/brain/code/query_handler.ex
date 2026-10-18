@@ -4,17 +4,16 @@ defmodule Brain.Code.QueryHandler do
   require Logger
 
   alias Brain.Code.CodeGazetteer
-  @default_world_id "default"
 
-  @doc "Handles a code query based on intent and entities.\n\n## Parameters\n  - `intent` - The classified intent (e.g., \"code.explain\", \"code.find_usage\")\n  - `entities` - Extracted entities from the query\n  - `opts` - Options including `:world_id` and `:query_text`\n\n## Returns\n  `{:ok, response}` or `:not_handled`\n"
+  @doc "Handles a code query based on intent and entities.\n\n## Parameters\n  - `intent` - The classified intent (e.g., \"code.explain\", \"code.find_usage\")\n  - `entities` - Extracted entities from the query. The query is about the first\n    entity of a type the code subsystem reads a symbol's or a file's mention as\n    (`Brain.Code.EntityReadings`); with none, an intent that needs a symbol asks\n    for one.\n  - `opts` - Options including `:world_id` and `:query_text`\n\n## Returns\n  `{:ok, response}` or `:not_handled`\n"
   @spec handle(String.t(), list(), keyword()) :: {:ok, String.t()} | :not_handled
-  def handle(intent, entities, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def handle(intent, entities, opts) do
+    world_id = world_id!(opts, "handle")
     query_text = Keyword.get(opts, :query_text)
 
     case intent do
       "code.explain" ->
-        handle_explain(entities, world_id, query_text)
+        handle_explain(entities, world_id)
 
       "code.find_usage" ->
         handle_find_usage(entities, world_id)
@@ -38,8 +37,8 @@ defmodule Brain.Code.QueryHandler do
 
   @doc "Explains a code symbol (function, class, module, etc.).\n"
   @spec explain(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def explain(symbol_name, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def explain(symbol_name, opts) do
+    world_id = world_id!(opts, "explain")
 
     case find_symbol(world_id, symbol_name) do
       {:ok, symbol} ->
@@ -48,14 +47,14 @@ defmodule Brain.Code.QueryHandler do
       :not_found ->
         {:ok,
          "I couldn't find `#{symbol_name}` in the analyzed code. " <>
-           "Make sure the codebase has been analyzed with `World.DocumentIngestor.ingest_codebase/2`."}
+           "Make sure the codebase has been ingested into this world first."}
     end
   end
 
   @doc "Finds all usages/callers of a symbol.\n"
   @spec find_usages(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def find_usages(symbol_name, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def find_usages(symbol_name, opts) do
+    world_id = world_id!(opts, "find_usages")
 
     case find_symbol(world_id, symbol_name) do
       {:ok, symbol} ->
@@ -75,8 +74,8 @@ defmodule Brain.Code.QueryHandler do
 
   @doc "Gets the signature/definition of a symbol.\n"
   @spec signature(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def signature(symbol_name, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def signature(symbol_name, opts) do
+    world_id = world_id!(opts, "signature")
 
     case find_symbol(world_id, symbol_name) do
       {:ok, symbol} ->
@@ -89,8 +88,8 @@ defmodule Brain.Code.QueryHandler do
 
   @doc "Lists symbols matching a pattern or in a module/namespace.\n"
   @spec list_symbols(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def list_symbols(pattern, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def list_symbols(pattern, opts) do
+    world_id = world_id!(opts, "list_symbols")
     limit = Keyword.get(opts, :limit, 20)
 
     symbols = CodeGazetteer.search(world_id, pattern, limit: limit)
@@ -104,8 +103,8 @@ defmodule Brain.Code.QueryHandler do
 
   @doc "Searches for symbols by name or description.\n"
   @spec search(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def search(query, opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def search(query, opts) do
+    world_id = world_id!(opts, "search")
     limit = Keyword.get(opts, :limit, 10)
 
     symbols = CodeGazetteer.search(world_id, query, limit: limit)
@@ -119,8 +118,8 @@ defmodule Brain.Code.QueryHandler do
 
   @doc "Gets statistics about the analyzed codebase.\n"
   @spec stats(keyword()) :: {:ok, String.t()} | {:error, term()}
-  def stats(opts \\ []) do
-    world_id = Keyword.get(opts, :world_id, @default_world_id)
+  def stats(opts) do
+    world_id = world_id!(opts, "stats")
     stats = CodeGazetteer.stats(world_id)
 
     response = """
@@ -134,8 +133,23 @@ defmodule Brain.Code.QueryHandler do
     {:ok, String.trim(response)}
   end
 
-  defp handle_explain(entities, world_id, query_text) do
-    case extract_symbol_name(entities, query_text) do
+  # Code symbols are indexed per world, so the caller names the world; there is
+  # no default.
+  defp world_id!(opts, function) do
+    case Keyword.fetch(opts, :world_id) do
+      {:ok, world_id} when is_binary(world_id) and world_id != "" ->
+        world_id
+
+      {:ok, other} ->
+        raise ArgumentError, "QueryHandler.#{function} option :world_id must be a world id, got: #{inspect(other)}"
+
+      :error ->
+        raise ArgumentError, "QueryHandler.#{function} needs :world_id, the world whose code is queried"
+    end
+  end
+
+  defp handle_explain(entities, world_id) do
+    case subject(entities) do
       nil ->
         {:ok,
          "What code would you like me to explain? Please specify a function, class, or module name."}
@@ -146,7 +160,7 @@ defmodule Brain.Code.QueryHandler do
   end
 
   defp handle_find_usage(entities, world_id) do
-    case extract_symbol_name(entities, nil) do
+    case subject(entities) do
       nil ->
         {:ok, "What symbol would you like me to find usages for?"}
 
@@ -156,7 +170,7 @@ defmodule Brain.Code.QueryHandler do
   end
 
   defp handle_signature(entities, world_id) do
-    case extract_symbol_name(entities, nil) do
+    case subject(entities) do
       nil ->
         {:ok, "What function or method would you like me to describe?"}
 
@@ -166,7 +180,7 @@ defmodule Brain.Code.QueryHandler do
   end
 
   defp handle_list(entities, world_id) do
-    case extract_symbol_name(entities, nil) do
+    case subject(entities) do
       nil ->
         stats(world_id: world_id)
 
@@ -176,12 +190,12 @@ defmodule Brain.Code.QueryHandler do
   end
 
   defp handle_search(entities, world_id, query_text) do
-    query = extract_symbol_name(entities, nil) || query_text || ""
+    query = subject(entities) || query_text || ""
     search(query, world_id: world_id)
   end
 
   defp handle_generic_code_query(entities, world_id, query_text) do
-    symbol_name = extract_symbol_name(entities, query_text)
+    symbol_name = subject(entities)
 
     cond do
       symbol_name ->
@@ -217,41 +231,17 @@ defmodule Brain.Code.QueryHandler do
     end
   end
 
-  defp extract_symbol_name(entities, query_text) do
-    symbol =
-      Enum.find(entities, fn e ->
-        entity_type = e[:entity_type] || e["entity_type"]
-        entity_type in ["code.symbol", "symbol", "code.file"]
-      end)
+  # What the query is about: the value of the first entity of a type the code
+  # subsystem reads a symbol's or a file's mention as
+  # (`Brain.Code.EntityReadings.types!/0`), or nil when no entity is one. An
+  # entity of any other type -- a natural language, a search query -- is not
+  # code, so it is never taken for the subject.
+  defp subject(entities) do
+    types = Brain.Code.EntityReadings.types!()
+    subject_types = (types.kinds |> Map.values() |> Enum.reject(&is_nil/1)) ++ [types.file]
 
-    cond do
-      symbol ->
-        symbol[:value] || symbol["value"]
-
-      entities != [] ->
-        entity = List.first(entities)
-        entity[:value] || entity["value"]
-
-      query_text ->
-        extract_code_pattern(query_text)
-
-      true ->
-        nil
-    end
-  end
-
-  defp extract_code_pattern(text) do
-    patterns = [
-      ~r/\b([A-Z][a-zA-Z0-9]*(?:\.[A-Z][a-zA-Z0-9]*)*(?:\.[a-z_][a-z0-9_]*)?)\b/,
-      ~r/\b([a-z_][a-z0-9_]+)\b(?:\s+function|\s+method)?/,
-      ~r/\b([A-Z][a-zA-Z0-9]+)\b(?:\s+class|\s+module)?/
-    ]
-
-    Enum.find_value(patterns, fn pattern ->
-      case Regex.run(pattern, text) do
-        [_, match] when byte_size(match) > 2 -> match
-        _ -> nil
-      end
+    Enum.find_value(entities, fn entity ->
+      if (entity[:entity_type] || entity["entity_type"]) in subject_types, do: entity[:value] || entity["value"]
     end)
   end
 

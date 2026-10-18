@@ -1,0 +1,71 @@
+[
+  {
+    "data": [
+      {
+        "text": "check blue "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "is the "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "light"
+      },
+      {
+        "text": " hue 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's the hue of kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's the hue of "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " in bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's the hue of red "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      }
+    ]
+  }
+]

@@ -5,7 +5,6 @@ defmodule Brain.JsonConfigTest do
   use ExUnit.Case, async: false
 
   @config_files [
-    {"analysis/context_preferences.json", :brain},
     {"analysis/related_slot_mappings.json", :brain},
     {"analysis/speech_act_intent_map.json", :brain},
     {"knowledge/entity_slot_mappings.json", :brain},
@@ -25,16 +24,6 @@ defmodule Brain.JsonConfigTest do
     end
   end
 
-  describe "context_preferences.json" do
-    test "contains expected context keys" do
-      path = Path.join(:code.priv_dir(:brain), "analysis/context_preferences.json")
-      {:ok, data} = path |> File.read!() |> Jason.decode()
-
-      assert Map.has_key?(data, "default"), "Expected 'default' key in context_preferences"
-      assert is_map(data["default"]), "Expected 'default' to be a map"
-    end
-  end
-
   describe "related_slot_mappings.json" do
     test "maps slot names to lists of related types" do
       path = Path.join(:code.priv_dir(:brain), "analysis/related_slot_mappings.json")
@@ -47,12 +36,23 @@ defmodule Brain.JsonConfigTest do
   end
 
   describe "speech_act_intent_map.json" do
-    test "contains default key" do
+    # A speech act the map does not name determines no intent
+    # (`Brain.Analysis.Pipeline`): there is no "default" entry standing in a
+    # label for "no intent", and every intent it names is a registered one.
+    test "maps speech acts only to registered intents, with no default" do
       path = Path.join(:code.priv_dir(:brain), "analysis/speech_act_intent_map.json")
       {:ok, data} = path |> File.read!() |> Jason.decode()
 
-      assert Map.has_key?(data, "default")
-      assert is_binary(data["default"])
+      {:ok, registry} =
+        Path.join(:code.priv_dir(:brain), "analysis/intent_registry.json") |> File.read!() |> Jason.decode()
+
+      assert map_size(data) > 0
+      refute Map.has_key?(data, "default")
+
+      for {speech_act, intent} <- data do
+        assert is_binary(intent)
+        assert Map.has_key?(registry, intent), "#{speech_act} maps to #{intent}, which is not registered"
+      end
     end
   end
 

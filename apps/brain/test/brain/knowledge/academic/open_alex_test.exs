@@ -3,9 +3,10 @@ defmodule Brain.Knowledge.Academic.OpenAlexTest do
 
   describe "search/2 (with snapshot)" do
     setup do
-      # Load the snapshot for this test (server is started globally in test_helper.exs)
-      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("open_alex/search_transformer")
-      :ok
+      # Loaded for this test only: the snapshot server is global and its
+      # matcher is a substring match, so a snapshot left loaded would answer a
+      # later test's request with a stale body.
+      Brain.Test.Singletons.use_http_snapshots!(["open_alex/search_transformer"])
     end
 
     test "returns papers for a valid query" do
@@ -26,9 +27,10 @@ defmodule Brain.Knowledge.Academic.OpenAlexTest do
 
   describe "search_cs/2 (with snapshot)" do
     setup do
-      # Use the CS-filtered snapshot (server is started globally in test_helper.exs)
-      {:ok, _} = Brain.Test.HTTPSnapshot.use_snapshot("open_alex/search_cs")
-      :ok
+      # The CS-filtered snapshot, loaded for this test only. Without the
+      # restore it stayed loaded alongside `open_alex/search_transformer`,
+      # and both match `/works`.
+      Brain.Test.Singletons.use_http_snapshots!(["open_alex/search_cs"])
     end
 
     test "applies CS concept filter" do

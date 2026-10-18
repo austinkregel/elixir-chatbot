@@ -12,9 +12,24 @@ defmodule ChatWeb.ChatLiveProgressTest do
   test "shows live analysis progress steps while evaluating", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/chat")
 
+    # The time zone the form's BrowserTimeZone hook sends with a message, as a
+    # browser in UTC sends it. The hook writes it into the form's hidden
+    # time_zone input as the form is submitted, so it is given to
+    # render_submit/2 as the hook's value; form/3 takes only what is typed.
+    browser_zone =
+      Jason.encode!(%{
+        "name" => "Etc/UTC",
+        "at" => DateTime.to_unix(~U[2026-10-14 12:00:00Z], :millisecond),
+        "offset" => 0,
+        "from" => DateTime.to_unix(~U[2000-01-01 00:00:00Z], :millisecond),
+        "until" => DateTime.to_unix(~U[2100-01-01 00:00:00Z], :millisecond),
+        "offset_at_from" => 0,
+        "transitions" => []
+      })
+
     view
     |> form("#message-form", %{input: "Hello there"})
-    |> render_submit()
+    |> render_submit(%{time_zone: browser_zone})
 
     # Wait for the processing summary pill to appear (shown inline with user messages)
     html =

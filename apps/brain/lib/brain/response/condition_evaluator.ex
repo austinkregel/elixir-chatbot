@@ -18,9 +18,15 @@ defmodule Brain.Response.ConditionEvaluator do
   - `enrichment_failed` - Enrichment was attempted but failed
   - `enrichment_success` - Enrichment succeeded
 
+  ## Knowledge Conditions
+
+  - `facts_known` - something is known about the chunk that asks: the
+    context's `:facts_known` is true (`Brain.Response.PhraseLatticeRealizer`
+    sets it from `Brain.Analysis.ChunkAnalysis.known_statements/1`)
+
   Compound expressions with AND / OR / NOT:
   - `has_entity:person AND confidence:high`
-  - `slot_missing:address OR slot_missing:date-time`
+  - `slot_missing:address OR slot_missing:date_time`
   - `slot_filled:location AND enriched:temperature`
   - `slot_filled:location AND NOT service_available:weather`
 
@@ -85,6 +91,78 @@ defmodule Brain.Response.ConditionEvaluator do
     e ->
       Logger.warning("Failed to evaluate condition '#{condition}': #{Exception.message(e)}")
       false
+  end
+
+  # Each condition type `eval_condition/3` handles: the value it takes after
+  # the colon (`:named`, any non-blank name; a list, one of those words), or
+  # `:none` for a type that takes none.
+  @condition_values %{
+    "has_entity" => :named,
+    "missing_entity" => :named,
+    "slot_filled" => :named,
+    "slot_missing" => :named,
+    "confidence" => ["high", "medium", "low"],
+    "speech_act" => :named,
+    "enriched" => :named,
+    "service_available" => :named,
+    "enrichment_failed" => :none,
+    "enrichment_success" => :none,
+    "service_missing" => :none,
+    "service_error" => :none,
+    "facts_known" => :none
+  }
+
+  @doc """
+  Checks that `condition` is one this module evaluates: nil, blank, or every
+  simple condition in it (joined by AND / OR, under NOT) a type
+  `evaluate/2` handles, with the value that type takes. Raises
+  `ArgumentError` naming the part that is not; returns `:ok`.
+
+  `evaluate/2` reads an unknown type as false, so a condition that is never
+  checked here is never true and its template never said; whatever builds
+  templates for it checks them with this.
+  """
+  @spec validate!(String.t() | nil) :: :ok
+  def validate!(nil), do: :ok
+
+  def validate!(condition) when is_binary(condition) do
+    condition |> parse() |> validate_ast!(condition)
+  end
+
+  def validate!(other), do: raise(ArgumentError, "a condition is a string or nil, got: #{inspect(other)}")
+
+  defp validate_ast!({:always, true}, _condition), do: :ok
+  defp validate_ast!({:not, inner}, condition), do: validate_ast!(inner, condition)
+
+  defp validate_ast!({op, left, right}, condition) when op in [:and, :or] do
+    validate_ast!(left, condition)
+    validate_ast!(right, condition)
+  end
+
+  defp validate_ast!({:condition, type, value}, condition) do
+    case {Map.fetch(@condition_values, type), value} do
+      {:error, _} ->
+        raise ArgumentError,
+              "the condition #{inspect(condition)} names #{inspect(type)}, which is no condition type; " <>
+                "the types are #{@condition_values |> Map.keys() |> Enum.sort() |> Enum.join(", ")}"
+
+      {{:ok, :none}, nil} ->
+        :ok
+
+      {{:ok, :named}, value} when is_binary(value) and value != "" ->
+        :ok
+
+      {{:ok, words}, value} when is_list(words) ->
+        if value in words,
+          do: :ok,
+          else: raise(ArgumentError, "the condition #{inspect(condition)} gives #{type} #{inspect(value)}; it takes one of #{Enum.join(words, ", ")}")
+
+      {{:ok, :none}, value} ->
+        raise ArgumentError, "the condition #{inspect(condition)} gives #{type} the value #{inspect(value)}; #{type} takes none"
+
+      {{:ok, :named}, _} ->
+        raise ArgumentError, "the condition #{inspect(condition)} gives #{type} no name after the colon"
+    end
   end
 
   @doc """
@@ -259,21 +337,43 @@ defmodule Brain.Response.ConditionEvaluator do
     else
       # Fall back to checking dispatcher
       alias Brain.Services.Dispatcher
-      world = Map.get(context, :world_id) || Map.get(context, :world, "default")
+      world =
+        case Map.get(context, :world_id) || Map.get(context, :world) do
+          world when is_binary(world) and world != "" ->
+            world
+
+          other ->
+            raise ArgumentError,
+                  "ConditionEvaluator: service_available:#{service_name} needs :world_id (or :world) " <>
+                    "in the context, the world whose service credentials are checked; got #{inspect(other)}"
+        end
+
       Dispatcher.service_available?(safe_atom(service_name), world: world)
     end
   end
 
   defp eval_condition("enrichment_failed", _value, context) do
-    # Check if enrichment was attempted but failed
     enrichment_status = Map.get(context, :enrichment_status)
     enrichment_status == :failed
   end
 
   defp eval_condition("enrichment_success", _value, context) do
-    # Check if enrichment succeeded
     enrichment_status = Map.get(context, :enrichment_status)
     enrichment_status == :success
+  end
+
+  defp eval_condition("service_missing", _value, context) do
+    enrichment_status = Map.get(context, :enrichment_status)
+    enrichment_status == :not_configured
+  end
+
+  defp eval_condition("service_error", _value, context) do
+    enrichment_status = Map.get(context, :enrichment_status)
+    enrichment_status == :failed
+  end
+
+  defp eval_condition("facts_known", _value, context) do
+    Map.get(context, :facts_known) == true
   end
 
   defp eval_condition(unknown_type, _value, _context) do

@@ -73,8 +73,7 @@ defmodule Mix.Tasks.GenerateCountriesCapitals do
     Mix.shell().info("  - #{length(capital_entries)} capitals")
     Mix.shell().info("")
     Mix.shell().info("Next steps:")
-    Mix.shell().info("  1. Run `mix train_models --gazetteer-only`")
-    Mix.shell().info("  2. Restart the app")
+    Mix.shell().info("  1. Restart the app; the gazetteer is rebuilt from data/entities at startup")
   end
 
   defp load_countries(cache_path, force_download) do

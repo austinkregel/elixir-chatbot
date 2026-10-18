@@ -4,6 +4,8 @@ defmodule ChatWeb.Router do
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
+    plug ChatWeb.Plugs.CurrentUser
+    plug ChatWeb.Plugs.AcceptLanguage
     plug :fetch_live_flash
     plug :put_root_layout, html: {ChatWeb.Layouts, :root}
     plug :protect_from_forgery
@@ -30,16 +32,29 @@ defmodule ChatWeb.Router do
       live "/dashboard", DashboardLive
       live "/settings", SettingsLive
       live "/code", CodeAnalysisLive
+      # This browser's web user, the worlds, and which one the user has selected.
+      live "/worlds", WorldsLive
       live "/sessions", SessionsLive
       live "/sessions/:session_id", SessionsLive
       live "/knowledge-review", Admin.KnowledgeReviewLive
       live "/accuracy", AccuracyLive
+      live "/lexicon", LexiconLive
       live "/training-studio", TrainingStudioLive
+      live "/training/pos", POSTrainingLive
+
+      # The verification harness index. The per-subsystem pages register their
+      # own routes here as they land.
+      live "/verify", VerifyLive
+
+      # Times read in the browser's zone, and the scheduler's items firing.
+      live "/scheduler", SchedulerLive
+
+      # Every design token and shared component state, in light and dark.
+      live "/design", DesignLive
     end
 
     # Legacy route redirects
     get "/admin", PageController, :redirect_to_settings
-    get "/worlds", PageController, :redirect_to_explorer
     get "/worlds/:world_id/entities", PageController, :redirect_to_explorer
     get "/memories", PageController, :redirect_to_explorer
   end
