@@ -26,10 +26,18 @@ defmodule Brain.ML.SpanReliabilityTest do
   @canonical %{"music_artist" => "artist"}
   @opts [language: "en", canonical: @canonical, hierarchy: Hierarchy]
 
+  # fit/2's options at one confidence bin, where a reading's reliability is its
+  # pair's: the tallies below are worked out by hand at that level.
+  defp fit_opts(strength), do: Keyword.merge(@opts, prior_strength: strength, confidence_bins: 1)
+
   defp reading(source, type, s, e, extra \\ %{}),
     do: Map.merge(%{source: source, entity_type: type, start_pos: s, end_pos: e, confidence: 0.9}, extra)
 
   defp gold(type, s, e), do: %{type: type, start_pos: s, end_pos: e}
+
+  # Cross-validation assigns folds by group; these rows come from no template,
+  # so each is a group of its own.
+  defp grouped(examples), do: Enum.map(examples, &Map.put(&1, :group, &1.key))
 
   # Expected tallies are worked out by hand in the tests below.
   defp examples, do: [
@@ -53,7 +61,7 @@ defmodule Brain.ML.SpanReliabilityTest do
 
   describe "fit/2" do
     setup do
-      {:ok, model: SpanReliability.fit(examples(), Keyword.put(@opts, :prior_strength, 1))}
+      {:ok, model: SpanReliability.fit(examples(), fit_opts(1))}
     end
 
     test "a reading the gold type refines agrees at its own level", %{model: model} do
@@ -88,7 +96,7 @@ defmodule Brain.ML.SpanReliabilityTest do
     end
 
     test "a larger prior strength pulls further toward the source" do
-      strong = SpanReliability.fit(examples(), Keyword.put(@opts, :prior_strength, 100))
+      strong = SpanReliability.fit(examples(), fit_opts(100))
       prior = strong.sources[:entity_model].reliability
       p = strong.pairs[{:entity_model, "artist"}].reliability
       assert abs(p - prior) < abs(23 / 45 - 8 / 15)
@@ -98,21 +106,27 @@ defmodule Brain.ML.SpanReliabilityTest do
       all_right = [%{key: 1, gold: [gold("artist", 0, 3)], readings: [reading(:gazetteer, "music_artist", 0, 3)]}]
 
       assert_raise ArgumentError, ~r/1 of 1 measured readings agree/, fn ->
-        SpanReliability.fit(all_right, Keyword.put(@opts, :prior_strength, 1))
+        SpanReliability.fit(all_right, fit_opts(1))
       end
     end
 
-    test "a non-positive prior strength and a reading without a source raise" do
-      assert_raise ArgumentError, ~r/positive number/, fn -> SpanReliability.fit(examples(), Keyword.put(@opts, :prior_strength, 0)) end
+    test "a non-positive prior strength, a bin count that is no positive integer and a reading without a source raise" do
+      assert_raise ArgumentError, ~r/positive number/, fn -> SpanReliability.fit(examples(), fit_opts(0)) end
+
+      for bins <- [0, 2.5] do
+        assert_raise ArgumentError, ~r/:confidence_bins must be a positive integer/, fn ->
+          SpanReliability.fit(examples(), Keyword.put(fit_opts(1), :confidence_bins, bins))
+        end
+      end
 
       no_source = [%{key: 1, gold: [], readings: [%{entity_type: "artist", start_pos: 0, end_pos: 1}]}]
-      assert_raise ArgumentError, ~r/needs a :source/, fn -> SpanReliability.fit(no_source, Keyword.put(@opts, :prior_strength, 1)) end
+      assert_raise ArgumentError, ~r/needs a :source/, fn -> SpanReliability.fit(no_source, fit_opts(1)) end
     end
   end
 
   describe "decide/3" do
     setup do
-      model = SpanReliability.fit(examples(), Keyword.put(@opts, :prior_strength, 1))
+      model = SpanReliability.fit(examples(), fit_opts(1))
       {:ok, model: %{model | min_score: 0.0, min_margin: 0.0}}
     end
 
@@ -181,9 +195,12 @@ defmodule Brain.ML.SpanReliabilityTest do
 
     test "equal evidence for different readings never decides" do
       model = %SpanReliability{
-        language: "en", prior_strength: 1, gold_types: ["artist", "final_value"], fitted_rows: 1,
+        language: "en", prior_strength: 1, confidence_bins: 1, reports_confidence: %{a: true, b: true},
+        gold_types: ["artist", "final_value"], fitted_rows: 1,
         overall: %{n: 2, agree: 1, rate: 0.5}, sources: %{}, unmeasurable: %{},
         pairs: %{{:a, "artist"} => %{n: 5, reliability: 0.8}, {:b, "final_value"} => %{n: 5, reliability: 0.8}},
+        source_bins: %{{:a, 0} => %{n: 5, reliability: 0.8}, {:b, 0} => %{n: 5, reliability: 0.8}},
+        bins: %{{:a, "artist", 0} => %{n: 5, reliability: 0.8}, {:b, "final_value", 0} => %{n: 5, reliability: 0.8}},
         min_score: -10.0, min_margin: 0.0
       }
 
@@ -201,7 +218,7 @@ defmodule Brain.ML.SpanReliabilityTest do
     end
 
     test "a model without thresholds cannot decide" do
-      model = SpanReliability.fit(examples(), Keyword.put(@opts, :prior_strength, 1))
+      model = SpanReliability.fit(examples(), fit_opts(1))
       assert_raise ArgumentError, ~r/no decision thresholds/, fn -> decide([], model, "") end
     end
 
@@ -237,7 +254,7 @@ defmodule Brain.ML.SpanReliabilityTest do
         readings: [reading(:gazetteer, "locks_status", 0, 3), reading(:gazetteer, "lock", 9, 18), reading(:gazetteer, "room", 30, 32)]
       }
 
-      model = SpanReliability.fit([example], language: "en", canonical: canonical, hierarchy: hierarchy, prior_strength: 1)
+      model = SpanReliability.fit([example], language: "en", canonical: canonical, hierarchy: hierarchy, prior_strength: 1, confidence_bins: 1)
 
       assert model.unmeasurable == %{{:gazetteer, "locks_status"} => %{n: 1}}
       assert %{exact: 1} = model.pairs[{:gazetteer, "lock"}]
@@ -259,7 +276,7 @@ defmodule Brain.ML.SpanReliabilityTest do
 
       model =
         examples
-        |> SpanReliability.fit(language: "en", canonical: canonical, hierarchy: hierarchy, prior_strength: 1)
+        |> SpanReliability.fit(language: "en", canonical: canonical, hierarchy: hierarchy, prior_strength: 1, confidence_bins: 1)
         |> Map.merge(%{min_score: 0.0, min_margin: 0.0})
 
       assert %{exact: exact, reliability: reliability} = model.pairs[{:temporal_resolver, "duration"}]
@@ -331,7 +348,7 @@ defmodule Brain.ML.SpanReliabilityTest do
 
   describe "redecide/4" do
     setup do
-      model = SpanReliability.fit(examples(), Keyword.put(@opts, :prior_strength, 1))
+      model = SpanReliability.fit(examples(), fit_opts(1))
       # Extent thresholds every span with one extent passes, shared by every span.
       extent =
         examples()
@@ -462,7 +479,12 @@ defmodule Brain.ML.SpanReliabilityTest do
         | pairs: %{{:a, "artist"} => %{n: 5, reliability: 0.8}, {:b, "artist"} => %{n: 5, reliability: 0.8}}
       }
 
-      model = %{model | pairs: Map.merge(model.pairs, %{{:a, "artist"} => %{n: 5, reliability: 0.5}, {:b, "artist"} => %{n: 5, reliability: 0.5}})}
+      model = %{
+        model
+        | pairs: Map.merge(model.pairs, %{{:a, "artist"} => %{n: 5, reliability: 0.5}, {:b, "artist"} => %{n: 5, reliability: 0.5}}),
+          reports_confidence: Map.merge(model.reports_confidence, %{a: true, b: true}),
+          bins: Map.merge(model.bins, %{{:a, "artist", 0} => %{n: 5, reliability: 0.5}, {:b, "artist", 0} => %{n: 5, reliability: 0.5}})
+      }
       [span] = SpanReliability.decide([reading(:a, "artist", 0, 9), reading(:b, "artist", 5, 9)], model, text: "Lady Gaga", canonical: @canonical, hierarchy: Hierarchy)
       assert span.unresolved_reason == :insufficient_evidence
 
@@ -554,17 +576,20 @@ defmodule Brain.ML.SpanReliabilityTest do
           %{key: {:artist, i}, gold: [gold("artist", 0, 1)], readings: [reading(:bad, "artist", 0, 1)]}
         end
 
-      conflicts ++ bad_right
+      grouped(conflicts ++ bad_right)
     end
 
-    test "chooses a prior strength and thresholds by cross-validation and decides for the reliable source" do
+    test "chooses a prior strength, confidence bins and thresholds by cross-validation and decides for the reliable source" do
       {model, report} = SpanReliability.select(synthetic(), @opts)
 
       assert Map.keys(report) |> Enum.sort() == Enum.sort(Map.keys(model.cross_validation))
-      assert model.prior_strength in Map.keys(report)
+      assert {model.prior_strength, model.confidence_bins} in Map.keys(report)
       assert is_number(model.min_score)
       assert is_number(model.min_margin) or model.min_margin == :infinity
-      assert report[model.prior_strength].f1 == report |> Map.values() |> Enum.map(& &1.f1) |> Enum.max()
+      assert report[{model.prior_strength, model.confidence_bins}].f1 == report |> Map.values() |> Enum.map(& &1.f1) |> Enum.max()
+      # Every reading here carries the same confidence, so more bins tell
+      # nothing apart, and the tie goes to one.
+      assert model.confidence_bins == 1
 
       [span] =
         SpanReliability.decide([reading(:good, "final_value", 0, 1), reading(:bad, "artist", 0, 1)], model,
@@ -595,7 +620,7 @@ defmodule Brain.ML.SpanReliabilityTest do
           %{key: {:partial, i}, gold: [gold("artist", 0, 7)], readings: [reading(:a, "artist", 4, 7)]}
         end
 
-      examples = tied ++ partial
+      examples = grouped(tied ++ partial)
 
       evidence = fn _training ->
         fn
@@ -608,7 +633,7 @@ defmodule Brain.ML.SpanReliabilityTest do
         end
       end
 
-      model = examples |> SpanReliability.fit(Keyword.put(@opts, :prior_strength, 1)) |> Map.merge(%{min_score: 5.0, min_margin: 0.0})
+      model = examples |> SpanReliability.fit(fit_opts(1)) |> Map.merge(%{min_score: 5.0, min_margin: 0.0})
       model = SpanReliability.select_redecision(model, examples, canonical: @canonical, hierarchy: Hierarchy, evidence: evidence)
 
       %{min_score: min_score, min_margin: min_margin, extent: extent, cross_validation: cv} = model.redecision
@@ -645,7 +670,7 @@ defmodule Brain.ML.SpanReliabilityTest do
       reliable = for i <- 1..20, do: %{key: {:reliable, i}, gold: [gold("final_value", 0, 3)], readings: [reading(:reliable, "final_value", 0, 3)], said: :other}
       named = for i <- 1..4, do: %{key: {:named, i}, gold: [gold("artist", 0, 3)], readings: [reading(:word, "artist", 0, 3)], said: :about_artists}
       word = for i <- 1..16, do: %{key: {:word, i}, gold: [], readings: [reading(:word, "artist", 0, 3)], said: :other}
-      examples = reliable ++ named ++ word
+      examples = grouped(reliable ++ named ++ word)
 
       {model, _report} = SpanReliability.select(examples, @opts)
 
@@ -670,9 +695,9 @@ defmodule Brain.ML.SpanReliabilityTest do
     # of reach), so every row is weighed again with its evidence.
     defp redecided(examples, evidence) do
       examples
-      |> SpanReliability.fit(Keyword.put(@opts, :prior_strength, 1))
+      |> SpanReliability.fit(fit_opts(1))
       |> Map.merge(%{min_score: 50.0, min_margin: 0.0})
-      |> SpanReliability.select_redecision(examples, canonical: @canonical, hierarchy: Hierarchy, evidence: fn _training -> evidence end)
+      |> SpanReliability.select_redecision(grouped(examples), canonical: @canonical, hierarchy: Hierarchy, evidence: fn _training -> evidence end)
     end
 
     test "select_redecision/3 gives each source extent thresholds of its own where that decides held-out folds better" do
@@ -727,7 +752,7 @@ defmodule Brain.ML.SpanReliabilityTest do
 
       model =
         examples()
-        |> SpanReliability.fit(Keyword.put(@opts, :prior_strength, 1))
+        |> SpanReliability.fit(fit_opts(1))
         |> Map.merge(%{min_score: 1.0, min_margin: 0.0, redecision: %{min_score: 1.0, min_margin: 0.0, extent: keyed_by_cue}})
 
       [span] = SpanReliability.decide([reading(:entity_model, "artist", 0, 3)], model, text: "Mike", canonical: @canonical, hierarchy: Hierarchy)
@@ -737,9 +762,183 @@ defmodule Brain.ML.SpanReliabilityTest do
       end
     end
 
-    test "the prior strength is not the caller's to pass" do
-      assert_raise ArgumentError, ~r/chooses the prior strength/, fn ->
-        SpanReliability.select(synthetic(), Keyword.put(@opts, :prior_strength, 1))
+    test "keeps the examples of one group in one fold" do
+      # Groups of 10, 20 and 40 rows, one gold span each: a fold holding whole
+      # groups holds a multiple of ten gold spans.
+      examples =
+        for {group, size} <- [{"play <artist>", 10}, {"turn off the <device>", 20}, {"weather in <address>", 40}], i <- 1..size do
+          %{key: {group, i}, group: group, gold: [gold("artist", 0, 3)], readings: [reading(:good, "artist", 0, 3), reading(:bad, "artist", 5, 6)]}
+        end
+
+      {_model, report} = SpanReliability.select(examples, @opts)
+
+      for {candidate, %{folds: folds}} <- report do
+        golds = Enum.map(folds, & &1.gold)
+        assert Enum.sum(golds) == 70
+        assert Enum.all?(golds, &(rem(&1, 10) == 0)), "#{inspect(candidate)}: fold gold counts #{inspect(golds)}"
+        assert Enum.count(golds, &(&1 > 0)) > 1
+      end
+    end
+
+    test "an example without a group is refused" do
+      assert_raise ArgumentError, ~r/assigns folds by an example's :group.*keyed \{:conflict, 1\}/, fn ->
+        SpanReliability.select(Enum.map(synthetic(), &Map.delete(&1, :group)), @opts)
+      end
+    end
+
+    test "the prior strength and the confidence bins are not the caller's to pass" do
+      for chosen <- [prior_strength: 1, confidence_bins: 10] do
+        assert_raise ArgumentError, ~r/chooses the prior strength and the confidence bins; do not pass/, fn ->
+          SpanReliability.select(synthetic(), [chosen | @opts])
+        end
+      end
+    end
+
+    test "chooses the number of confidence bins by cross-validation: more where they decide held-out folds better" do
+      # One source reads 40 spans the gold names at a high confidence of its
+      # own and 40 the gold does not at a low one: its pair agrees half the
+      # time, so at one bin every span scores the same.
+      right = for i <- 1..40, do: %{key: {:right, i}, gold: [gold("artist", 0, 3)], readings: [reading(:gaz, "artist", 0, 3, %{confidence: 0.85})]}
+      wrong = for i <- 1..40, do: %{key: {:wrong, i}, gold: [], readings: [reading(:gaz, "artist", 0, 3, %{confidence: 0.05})]}
+
+      {model, report} = SpanReliability.select(grouped(right ++ wrong), @opts)
+
+      assert model.confidence_bins > 1
+      assert report[{model.prior_strength, model.confidence_bins}].f1 > report[{model.prior_strength, 1}].f1
+
+      decide = fn confidence ->
+        [span] = SpanReliability.decide([reading(:gaz, "artist", 0, 3, %{confidence: confidence})], model, text: "Rush", canonical: @canonical, hierarchy: Hierarchy)
+        span
+      end
+
+      assert %{resolved: true, entity_type: "artist"} = decide.(0.85)
+      assert %{resolved: false, unresolved_reason: :insufficient_evidence} = decide.(0.05)
+    end
+  end
+
+  describe "confidence bins" do
+    # A source reading spans the gold names at a high confidence of its own and
+    # spans it does not at a low one, six of each.
+    defp binned_examples do
+      high = for i <- 1..6, do: %{key: {:high, i}, gold: [gold("artist", 0, 3)], readings: [reading(:gaz, "artist", 0, 3, %{confidence: 0.85})]}
+      low = for i <- 1..6, do: %{key: {:low, i}, gold: [], readings: [reading(:gaz, "artist", 0, 3, %{confidence: 0.05})]}
+      high ++ low
+    end
+
+    defp binned_fit(examples, bins), do: SpanReliability.fit(examples, Keyword.merge(@opts, prior_strength: 1, confidence_bins: bins))
+
+    defp reliability_of(model, reading) do
+      [span] = SpanReliability.decide([reading], %{model | min_score: -10.0, min_margin: 0.0}, text: "Rush", canonical: @canonical, hierarchy: Hierarchy)
+      span.readings |> hd() |> Map.fetch!(:reliability)
+    end
+
+    test "a source's readings are counted per bin of the confidence they carry, each bin pulled toward its source's" do
+      model = binned_fit(binned_examples(), 10)
+
+      # 12 readings, 6 agree: the source's rate is (6 + 1 * 0.5) / 13 = 0.5.
+      assert_in_delta model.sources[:gaz].reliability, 0.5, 1.0e-12
+      # Its bin 0 (0.05): 0 of 6 -> (0 + 0.5) / 7; its bin 8 (0.85): 6 of 6 -> (6 + 0.5) / 7.
+      assert %{n: 6, agree: 0} = model.source_bins[{:gaz, 0}]
+      assert_in_delta model.source_bins[{:gaz, 0}].reliability, 0.5 / 7, 1.0e-12
+      assert_in_delta model.source_bins[{:gaz, 8}].reliability, 6.5 / 7, 1.0e-12
+      # The artist readings of each bin, toward their source bin.
+      assert_in_delta model.bins[{:gaz, "artist", 0}].reliability, 0.5 / 7 / 7, 1.0e-12
+      assert_in_delta model.bins[{:gaz, "artist", 8}].reliability, (6 + 6.5 / 7) / 7, 1.0e-12
+      # The pair is counted as ever.
+      assert_in_delta model.pairs[{:gaz, "artist"}].reliability, 0.5, 1.0e-12
+      assert model.reports_confidence == %{gaz: true}
+
+      model = %{model | min_score: 0.0, min_margin: 0.0}
+
+      [high] = SpanReliability.decide([reading(:gaz, "artist", 0, 3, %{confidence: 0.85})], model, text: "Rush", canonical: @canonical, hierarchy: Hierarchy)
+      [low] = SpanReliability.decide([reading(:gaz, "artist", 0, 3, %{confidence: 0.05})], model, text: "Rush", canonical: @canonical, hierarchy: Hierarchy)
+
+      assert %{resolved: true} = high
+      assert_in_delta high.decision.score, logit((6 + 6.5 / 7) / 7), 1.0e-6
+      assert %{resolved: false, unresolved_reason: :insufficient_evidence} = low
+    end
+
+    test "with one bin a reading's reliability is its pair's, whatever its confidence" do
+      model = binned_fit(binned_examples(), 1)
+
+      for confidence <- [0.05, 0.85, 1.0] do
+        assert reliability_of(model, reading(:gaz, "artist", 0, 3, %{confidence: confidence})) == model.pairs[{:gaz, "artist"}].reliability
+      end
+    end
+
+    test "a bin its pair never showed is its source bin's, and a bin its source never showed is its source's" do
+      # Two more readings of the source, of another type, at 0.55.
+      other = for i <- 1..2, do: %{key: {:other, i}, gold: [gold("final_value", 7, 7)], readings: [reading(:gaz, "final_value", 7, 7, %{confidence: 0.55})]}
+      model = binned_fit(binned_examples() ++ other, 10)
+
+      refute Map.has_key?(model.bins, {:gaz, "artist", 5})
+      assert reliability_of(model, reading(:gaz, "artist", 0, 3, %{confidence: 0.55})) == model.source_bins[{:gaz, 5}].reliability
+
+      refute Map.has_key?(model.source_bins, {:gaz, 3})
+      assert reliability_of(model, reading(:gaz, "artist", 0, 3, %{confidence: 0.35})) == model.sources[:gaz].reliability
+    end
+
+    test "a source that reports no confidence has one bin, so its readings' reliability is its pair's" do
+      # A second source, :rules, gives no confidence on any of its readings.
+      rules = for i <- 1..4, do: %{key: {:rules, i}, gold: [gold("artist", 0, 3)], readings: [reading(:rules, "artist", 0, 3, %{confidence: nil})]}
+      model = binned_fit(binned_examples() ++ rules, 10)
+
+      assert model.reports_confidence == %{gaz: true, rules: false}
+      assert Map.keys(model.source_bins) |> Enum.filter(&(elem(&1, 0) == :rules)) == [{:rules, 0}]
+      assert model.source_bins[{:rules, 0}].reliability == model.sources[:rules].reliability
+      assert reliability_of(model, reading(:rules, "artist", 0, 3, %{confidence: nil})) == model.pairs[{:rules, "artist"}].reliability
+    end
+
+    test "a reading without a confidence, from a source that reports one, raises" do
+      model = binned_fit(binned_examples(), 10)
+
+      for missing <- [%{confidence: nil}, :no_key] do
+        reading =
+          case missing do
+            :no_key -> :gaz |> reading("artist", 0, 3) |> Map.delete(:confidence)
+            extra -> reading(:gaz, "artist", 0, 3, extra)
+          end
+
+        assert_raise ArgumentError, ~r/a reading of :gaz as "artist" carries no confidence, and :gaz gave one on every training reading/, fn ->
+          reliability_of(model, reading)
+        end
+      end
+    end
+
+    test "a reading with a confidence, from a source that reports none, raises naming the retrain" do
+      rules = for i <- 1..4, do: %{key: {:rules, i}, gold: [gold("artist", 0, 3)], readings: [reading(:rules, "artist", 0, 3, %{confidence: nil})]}
+      model = binned_fit(binned_examples() ++ rules, 10)
+
+      assert_raise ArgumentError, ~r/:rules gave none on any training reading; retrain it with `mix train_span_reliability/, fn ->
+        reliability_of(model, reading(:rules, "artist", 0, 3, %{confidence: 0.7}))
+      end
+    end
+
+    test "a source that gives a confidence on some training readings and not on others raises when fitted" do
+      mixed = [%{key: :mixed, gold: [], readings: [reading(:gaz, "artist", 0, 3, %{confidence: nil})]} | binned_examples()]
+
+      assert_raise ArgumentError, ~r/12 of 13 training readings of :gaz carry a confidence; a source reports a confidence on every reading or on none/, fn ->
+        binned_fit(mixed, 10)
+      end
+    end
+
+    test "a confidence outside [0, 1] raises" do
+      for confidence <- [-0.1, 1.5] do
+        assert_raise ArgumentError, ~r/a reading's confidence is a probability, got #{confidence}/, fn ->
+          binned_fit([%{key: :bad, gold: [], readings: [reading(:gaz, "artist", 0, 3, %{confidence: confidence})]} | binned_examples()], 10)
+        end
+      end
+    end
+
+    test "a model that counts no readings by their confidence is refused, naming the retrain" do
+      model =
+        binned_examples()
+        |> binned_fit(1)
+        |> Map.merge(%{min_score: 0.0, min_margin: 0.0})
+        |> Map.drop([:confidence_bins, :reports_confidence, :source_bins, :bins])
+
+      assert_raise ArgumentError, ~r/counts no readings by their confidence.*mix train_span_reliability/, fn ->
+        SpanReliability.decide([reading(:gaz, "artist", 0, 3)], model, text: "Rush", canonical: @canonical, hierarchy: Hierarchy)
       end
     end
   end
