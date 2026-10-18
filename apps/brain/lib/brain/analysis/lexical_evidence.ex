@@ -283,7 +283,19 @@ defmodule Brain.Analysis.LexicalEvidence do
     |> elem(1)
   end
 
-  # Deterministic: the fold of a row depends only on its text and intent.
+  @doc """
+  The fold of each row, in order, in `0..fold_count() - 1`. Deterministic: a
+  row's fold depends only on the row, so a model fitted alongside this one on
+  the same rows (`Brain.Analysis.SpeechActTable.fold_evidence/3`) folds them
+  the same way.
+  """
+  @spec folds([{String.t(), String.t()}]) :: [non_neg_integer()]
+  def folds(rows), do: fold_assignment(rows)
+
+  @doc "How many folds the rows are split into."
+  @spec fold_count() :: pos_integer()
+  def fold_count, do: @folds
+
   defp fold_assignment(rows), do: Enum.map(rows, fn row -> :erlang.phash2(row, @folds) end)
 
   defp split_fold(rows, folds, k) do
