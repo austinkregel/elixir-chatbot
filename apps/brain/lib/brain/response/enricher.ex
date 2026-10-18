@@ -35,6 +35,9 @@ defmodule Brain.Response.Enricher do
     reason with no planned response raises there
   - `:enrichment_service` - Name of the service that provided the data, or
     that failed
+  - `:enrichment_operation` - when `:success`, the operation the world's
+    scheduling driver performed (`Brain.Services.SchedulingDriver.operation/1`,
+    such as `:cancel_timer`); nil for any other service
   - `:available_services` - List of configured services for this intent
   """
 
@@ -90,6 +93,7 @@ defmodule Brain.Response.Enricher do
               |> Map.put(:enriched_data, enrichment_data)
               |> Map.put(:enrichment_status, :success)
               |> Map.put(:enrichment_service, service.name())
+              |> Map.put(:enrichment_operation, operation(intent))
               |> Map.put(:available_services, available_services)
 
             {:error, reason} ->
@@ -109,6 +113,16 @@ defmodule Brain.Response.Enricher do
       end
 
     enrich_from_graph(enriched)
+  end
+
+  # The operation a scheduling driver performed for the intent
+  # (`Brain.Services.SchedulingDriver.operation/1`); nil for an intent served
+  # by any other service, whose `enrich/4` has no operations.
+  defp operation(intent) do
+    case Brain.Services.SchedulingDriver.operation(intent) do
+      {:ok, operation} -> operation
+      :error -> nil
+    end
   end
 
   defp failed(context, reason, service, available_services) do
