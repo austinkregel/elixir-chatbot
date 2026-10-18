@@ -61,6 +61,47 @@ defmodule Brain.ML.EntityTrainerTest do
     test "no rows raises" do
       assert_raise ArgumentError, ~r/no NER rows/, fn -> EntityTrainer.train([]) end
     end
+
+    test "keeps the cross-validation it chose the strengths by, every pair's counts per fold", %{model: model} do
+      cv = model.cross_validation
+
+      assert cv.folds == 5
+      assert cv.templates == @rows |> Enum.map(&Brain.ML.NerGold.template!/1) |> Enum.uniq() |> length()
+      assert cv.chosen == {model.smoothing, model.transition_smoothing}
+
+      for {_strengths, result} <- cv.by_strengths, do: assert(length(result.folds) == 5)
+
+      best = cv.by_strengths |> Map.values() |> Enum.map(& &1.f1) |> Enum.max()
+      assert cv.by_strengths[cv.chosen].f1 == best
+    end
+
+    # Eight templates, "frob the <device> <closer>", each naming devices of its
+    # own (a prefix of its own, "qa", "qb", ...) twice each, and for every
+    # template a sentence of no entity that says one of its devices as a plain
+    # word. A validation row whose template-mates are in training has seen its
+    # device as a device, and the smallest smoothing reads it best. Held out with
+    # its template, the device was seen only as the plain word, and the smallest
+    # smoothing lets those few sightings veto the device that "the" announces in
+    # every other template.
+    test "chooses its smoothing on held-out templates, not on rows whose template-mates it was trained on" do
+      prefixes = ~w(qa qb qc qd qe qf qg qh)
+      closers = ~w(alpha bravo charlie delta echo foxtrot golf hotel)
+
+      templated =
+        for {prefix, closer} <- Enum.zip(prefixes, closers), device <- [prefix <> "lamp", prefix <> "fan"], _twice <- 1..2 do
+          %{"text" => "frob the #{device} #{closer}", "expected" => [%{"type" => "device", "value" => device}]}
+        end
+
+      plain = for prefix <- prefixes, do: %{"text" => "say #{prefix}lamp now", "expected" => []}
+
+      {:ok, model} = EntityTrainer.train(templated ++ plain)
+      cv = model.cross_validation
+      smallest = cv.by_strengths |> Map.keys() |> Enum.map(&elem(&1, 0)) |> Enum.min()
+
+      at_smallest = for {{^smallest, _transition}, result} <- cv.by_strengths, do: result.f1
+      assert model.smoothing > smallest
+      assert Enum.max(at_smallest) < cv.by_strengths[cv.chosen].f1
+    end
   end
 
   describe "fold_models/2" do
@@ -80,6 +121,24 @@ defmodule Brain.ML.EntityTrainerTest do
       dim_row = Enum.find_index(@rows, &(&1["text"] == "dim the lights in the bathroom"))
       assert Map.has_key?(model.feature_weights, "token:dim")
       refute Map.has_key?(Map.fetch!(models, Enum.at(folds, dim_row)).feature_weights, "token:dim")
+    end
+
+    test "puts the rows of one template in one fold, so a row's fold model saw none of them", %{model: model} do
+      # Two rows of one template, "toggle the <device> in the <room>"; "toggle"
+      # is in no other row.
+      toggle = [
+        %{"text" => "toggle the heater in the bedroom", "expected" => [%{"type" => "device", "value" => "heater"}, %{"type" => "room", "value" => "bedroom"}]},
+        %{"text" => "toggle the radio in the hall", "expected" => [%{"type" => "device", "value" => "radio"}, %{"type" => "room", "value" => "hall"}]}
+      ]
+
+      rows = @rows ++ toggle
+      {folds, models} = EntityTrainer.fold_models(rows, model)
+
+      by_template = rows |> Enum.zip(folds) |> Enum.group_by(fn {row, _fold} -> Brain.ML.NerGold.template!(row) end, &elem(&1, 1))
+      assert Enum.all?(by_template, fn {_template, row_folds} -> length(Enum.uniq(row_folds)) == 1 end)
+
+      [toggle_fold, toggle_fold] = Map.fetch!(by_template, "toggle the <device> in the <room>")
+      refute Map.has_key?(Map.fetch!(models, toggle_fold).feature_weights, "token:toggle")
     end
 
     test "a model without a smoothing strength raises" do
