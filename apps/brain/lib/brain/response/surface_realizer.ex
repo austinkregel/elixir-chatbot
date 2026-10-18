@@ -83,19 +83,19 @@ defmodule Brain.Response.SurfaceRealizer do
       :lattice ->
         case try_lattice_realization(primitives, analysis, domain_config, opts) do
           {:ok, rendered, text} -> {:ok, rendered, text, nil}
-          _ -> try_synthesizer_fallback(primitives, analysis, opts)
+          {:error, lattice_reason} -> try_synthesizer_fallback(primitives, analysis, opts, {:lattice, lattice_reason})
         end
 
       :ouro ->
         try_ouro_or_fallback(primitives, analysis, opts)
 
       :synthesizer ->
-        try_synthesizer_fallback(primitives, analysis, opts)
+        try_synthesizer_fallback(primitives, analysis, opts, :synthesizer_configured)
 
       :template ->
         case try_enriched_fallback(primitives, :template_configured, opts) do
           {:ok, _, _, _} = result -> result
-          {:error, _} -> try_synthesizer_fallback(primitives, analysis, opts)
+          {:error, reason} -> try_synthesizer_fallback(primitives, analysis, opts, {:template, reason})
         end
     end
   end
@@ -243,7 +243,9 @@ defmodule Brain.Response.SurfaceRealizer do
     ]
   end
 
-  defp try_synthesizer_fallback(primitives, analysis, opts) do
+  # `prior` is why the domain's own system did not realize the plan, kept in
+  # the error when the synthesizer cannot either.
+  defp try_synthesizer_fallback(primitives, analysis, opts, prior) do
     intent = if analysis, do: Map.get(analysis, :intent), else: nil
     entities = if analysis, do: Map.get(analysis, :entities, []), else: []
 
@@ -258,8 +260,8 @@ defmodule Brain.Response.SurfaceRealizer do
 
         {:ok, rendered, text, recurring_pattern_use(recurring_pattern, :synthesizer)}
 
-      _ ->
-        {:error, :synthesizer_fallback_failed}
+      :not_synthesized ->
+        {:error, {:synthesizer_fallback_failed, prior}}
     end
   end
 
