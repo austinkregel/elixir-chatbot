@@ -67,7 +67,6 @@ defmodule Brain.Response.ContextBuilderMemoryTest do
     context =
       ContextBuilder.build(%InternalModel{raw_input: "is it sunny in paris. sunny paris", analyses: analyses},
         world_id: world_id,
-        skip_per_chunk_facts: true,
         side_effects: false,
         progress: progress
       )
@@ -91,7 +90,6 @@ defmodule Brain.Response.ContextBuilderMemoryTest do
       ContextBuilder.build(
         %InternalModel{raw_input: "is it sunny", analyses: [analysis(0, "is it sunny", [{stated, 0.3}], [])]},
         world_id: world_id,
-        skip_per_chunk_facts: true,
         side_effects: false
       )
 
