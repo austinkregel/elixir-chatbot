@@ -43,7 +43,7 @@ defmodule World.ManagerEntityModelTest do
     end
 
     test "destroying it drops its loaded model" do
-      {:ok, world} = create_test_world("entity_model_persistent_destroy", mode: :persistent)
+      {:ok, world} = create_test_world("entity_persistent_destroy", mode: :persistent)
       on_exit(fn -> File.rm_rf!(Brain.Worlds.world_path(world.id)) end)
 
       assert %{tag_vocabulary: _} = EntityModel.loaded!(world.id)
@@ -67,7 +67,7 @@ defmodule World.ManagerEntityModelTest do
     end
 
     test "destroying it drops its loaded model" do
-      {:ok, world} = create_test_world("entity_model_ephemeral_destroy")
+      {:ok, world} = create_test_world("entity_ephemeral_destroy")
       assert %{tag_vocabulary: _} = EntityModel.loaded!(world.id)
 
       :ok = WorldManager.destroy(world.id)
