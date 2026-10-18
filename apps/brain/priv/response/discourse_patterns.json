@@ -120,6 +120,22 @@
         }
       ]
     },
+    "introduction": {
+      "match": {
+        "speech_act_category": "expressive",
+        "intent": "smalltalk.user.introduction"
+      },
+      "backbone": [
+        {
+          "type": "acknowledgment",
+          "variant": "social"
+        },
+        {
+          "type": "follow_up",
+          "variant": "continuation"
+        }
+      ]
+    },
     "farewell": {
       "match": {
         "speech_act_category": "expressive",
@@ -414,6 +430,22 @@
         {
           "type": "content",
           "variant": "reflective"
+        }
+      ]
+    },
+    "enriched_directive": {
+      "match": {
+        "speech_act_category": "directive",
+        "has_enrichment": true
+      },
+      "backbone": [
+        {
+          "type": "framing",
+          "variant": "informative"
+        },
+        {
+          "type": "content",
+          "variant": "enriched"
         }
       ]
     },
