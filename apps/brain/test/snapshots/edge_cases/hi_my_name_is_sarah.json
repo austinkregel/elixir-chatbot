@@ -3,15 +3,23 @@
     {
       "index": 0,
       "text": "Hi, my name is Sarah",
-      "entities": [],
+      "entities": [
+        {
+          "type": "person",
+          "value": "Sarah",
+          "confidence": 0.75
+        }
+      ],
       "response_strategy": "hedged_response",
-      "detected_intent": "knowledge.translate",
       "speech_act_category": "expressive",
-      "speech_act_type": "greeting",
       "speech_act_confidence": 1.0,
+      "detected_intent": "smalltalk.user.introduction",
+      "speech_act_type": "statement",
       "discourse_addressee": "ambiguous",
       "discourse_self_referential": "false",
-      "slots_filled": [],
+      "slots_filled": [
+        "person"
+      ],
       "slots_missing": []
     }
   ],
