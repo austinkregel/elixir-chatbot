@@ -167,14 +167,14 @@ defmodule Brain.Response.Synthesizer do
         {:ok, response}
 
       :continue ->
-        enriched_data = Map.get(context, :enriched_data) || %{}
+        enrichment = frame_enrichment(context)
 
-        case choose_frame(domain_config, entities, enriched_data) do
+        case choose_frame(domain_config, entities, enrichment) do
           {:enriched, frame_key} ->
             frame_config = get_in(domain_config, ["enriched_response_frames", frame_key])
 
             {:ok, response} =
-              select_and_fill_enriched_frame(frame_key, frame_config, entities, enriched_data, domain_config, confidence)
+              select_and_fill_enriched_frame(frame_key, frame_config, entities, enrichment.enriched_data, domain_config, confidence)
 
             {:ok, maybe_add_graph_context(response, context)}
 
@@ -194,18 +194,40 @@ defmodule Brain.Response.Synthesizer do
     end
   end
 
+  # The turn's enrichment as `chosen_frame/3` reads it, from the unified
+  # context (`Brain.Response.ContextBuilder`), which keeps it under
+  # `:enrichment`. A context that holds none, such as the generator's own,
+  # brought no data and no operation.
+  defp frame_enrichment(%{enrichment: %{} = enrichment}) do
+    %{
+      enriched_data: Map.get(enrichment, :enriched_data) || %{},
+      operation: Map.get(enrichment, :enrichment_operation)
+    }
+  end
+
+  defp frame_enrichment(context) when is_map(context), do: %{enriched_data: %{}, operation: nil}
+
   @doc """
   The frame of `domain`'s knowledge (`priv/knowledge/domains/<domain>.json`)
-  a reply is worded from, for the turn's entities and its enrichment's data:
+  a reply is worded from, for the turn's entities and its enrichment:
+  `enriched_data`, what the service returned, and `operation`, the operation
+  it performed (`Brain.Services.SchedulingDriver.operation/1`), nil when
+  none was:
 
     * `{:enriched, key}`, the enriched response frame `enriched_frame/3`
       chooses, when the enrichment carries data and one of the domain's
       enriched frames fires for it;
-    * otherwise `{:response, key}`, the response frame the entities' filled
-      slots key (`determine_frame_key/2`), when the domain has frames under
-      that key;
-    * nil when neither: no frame of the domain is said for the turn, and so is
-      it for a domain with no knowledge file.
+    * otherwise, when an operation was performed, `{:response, key}`, the
+      response frame the domain's `operation_frames` names for it, when every
+      `$placeholder` its templates name is filled by an entity: the frame
+      that says the operation was done, for data no enriched frame words. A
+      frame keyed by filled slots was worded before anything was done, so
+      none says what an operation did;
+    * otherwise, when no operation was performed, `{:response, key}`, the
+      response frame the entities' filled slots key (`determine_frame_key/2`),
+      when the domain has frames under that key;
+    * nil when none of these: no frame of the domain is said for the turn,
+      and so is it for a domain with no knowledge file.
 
   This is the one rule a domain frame is chosen by: `synthesize_from_domain/5`
   words the reply from the frame it names, and
@@ -213,24 +235,25 @@ defmodule Brain.Response.Synthesizer do
   only for a turn this names that frame for. Raises when two enriched frames
   fire at the top specificity (`enriched_frame/3`).
   """
-  @spec chosen_frame(String.t(), list(), map()) :: {:enriched | :response, String.t()} | nil
-  def chosen_frame(domain, entities, enriched_data)
-      when is_binary(domain) and is_list(entities) and is_map(enriched_data) do
-    choose_frame(Map.get(@domain_knowledge, domain, %{}), entities, enriched_data)
+  @spec chosen_frame(String.t(), list(), %{enriched_data: map(), operation: atom() | nil}) ::
+          {:enriched | :response, String.t()} | nil
+  def chosen_frame(domain, entities, %{enriched_data: enriched_data, operation: operation} = enrichment)
+      when is_binary(domain) and is_list(entities) and is_map(enriched_data) and is_atom(operation) do
+    choose_frame(Map.get(@domain_knowledge, domain, %{}), entities, enrichment)
   end
 
-  defp choose_frame(domain_config, entities, enriched_data) do
+  defp choose_frame(domain_config, entities, %{enriched_data: enriched_data, operation: operation}) do
     enriched_frames = Map.get(domain_config, "enriched_response_frames", %{})
 
     enriched =
       if enriched_data != %{} and map_size(enriched_frames) > 0,
         do: enriched_frame(enriched_frames, entities, enriched_data)
 
-    case enriched do
-      {frame_key, _config} ->
+    case {enriched, operation} do
+      {{frame_key, _config}, _operation} ->
         {:enriched, frame_key}
 
-      nil ->
+      {nil, nil} ->
         case determine_frame_key(domain_config, entities) do
           nil ->
             nil
@@ -240,6 +263,49 @@ defmodule Brain.Response.Synthesizer do
               do: nil,
               else: {:response, frame_key}
         end
+
+      {nil, operation} ->
+        case operation_frame(domain_config, entities, operation) do
+          nil -> nil
+          frame_key -> {:response, frame_key}
+        end
+    end
+  end
+
+  # The response frame the domain names for `operation` (its
+  # `"operation_frames"`), when every placeholder its templates name is filled
+  # by an entity (the type itself or one of the slot's aliases); nil
+  # otherwise.
+  defp operation_frame(domain_config, entities, operation) do
+    aliases = get_in(domain_config, ["slot_requirements", "slot_type_aliases"]) || %{}
+
+    case Map.fetch(Map.get(domain_config, "operation_frames", %{}), Atom.to_string(operation)) do
+      {:ok, frame_key} ->
+        filled? =
+          domain_config
+          |> get_in(["response_frames", frame_key])
+          |> Enum.all?(fn template ->
+            Enum.all?(template_placeholders(template), fn slot ->
+              find_entity_value_by_types(entities, Map.get(aliases, slot, [slot])) != nil
+            end)
+          end)
+
+        if filled?, do: frame_key
+
+      :error ->
+        nil
+    end
+  end
+
+  # Every domain's `"operation_frames"` maps an operation a scheduling driver
+  # performs (`Brain.Services.SchedulingDriver`) to one of the domain's
+  # response frames; a file that names anything else fails the build.
+  for {domain, config} <- @domain_knowledge, {operation, frame_key} <- Map.get(config, "operation_frames", %{}) do
+    Brain.Services.SchedulingDriver.intent!(String.to_atom(operation))
+
+    unless match?([_ | _], get_in(config, ["response_frames", frame_key])) do
+      raise "Synthesizer: #{domain}'s operation_frames names #{inspect(frame_key)} for #{operation}, " <>
+              "which is none of its response frames"
     end
   end
 
@@ -455,25 +521,15 @@ defmodule Brain.Response.Synthesizer do
               "the enriched frame #{inspect(frame_key)} requires #{field}, which holds the boolean #{value}; " <>
                 "a boolean is never said as text: test it under \"when\" and word it in the templates"
 
+      # A value worth saying is one `Brain.Response.Formatting.sayable/1`
+      # gives words for, the rule the lattice fills a placeholder by too.
       {:ok, value} ->
-        sayable?(value)
+        Brain.Response.Formatting.sayable(value) != nil
 
       :error ->
         false
     end
   end
-
-  # A value worth saying: a non-blank string, a number, an atom other than
-  # nil and the booleans, or a non-empty list of those. `nil`, `""`, `[]`, a
-  # map, and a list holding any of them are not.
-  defp sayable?(value) when is_list(value), do: value != [] and Enum.all?(value, &sayable_item?/1)
-  defp sayable?(value), do: sayable_item?(value)
-
-  defp sayable_item?(value) when is_binary(value), do: String.trim(value) != ""
-  defp sayable_item?(value) when is_number(value), do: true
-  defp sayable_item?(value) when is_boolean(value) or is_nil(value), do: false
-  defp sayable_item?(value) when is_atom(value), do: true
-  defp sayable_item?(_value), do: false
 
   defp condition_holds?(_frame_key, _field, :error, nil), do: true
   defp condition_holds?(_frame_key, _field, :error, _expected), do: false
@@ -549,7 +605,7 @@ defmodule Brain.Response.Synthesizer do
         cond do
           name in required ->
             {:ok, value} = fetch_enriched(enriched_data, name)
-            format_value(value)
+            Brain.Response.Formatting.sayable(value)
 
           fetch_enriched(enriched_data, name) != :error ->
             raise ArgumentError,
