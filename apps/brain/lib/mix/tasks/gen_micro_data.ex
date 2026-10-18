@@ -40,8 +40,9 @@ defmodule Mix.Tasks.GenMicroData do
   `Brain.Analysis.LexicalEvidence` (written to `lexical_evidence.en.term`) and
   `Brain.Analysis.SpeechActTable` (`speech_act_table.en.term`), both directly
   under the models directory, since boot loads them. A row's lexical evidence
-  dimensions come from the fold model that did not see it. `--stats` writes
-  neither and uses the stored ones.
+  dimensions, and the speech-act evidence its pass-1 speech act is voted with
+  (the table's `evidence`), come from the fold models that did not see it.
+  `--stats` writes neither and uses the stored ones.
 
   ## Usage
 
@@ -146,9 +147,11 @@ defmodule Mix.Tasks.GenMicroData do
 
   # The lexical evidence model and the speech-act table, fitted on the training
   # rows and written to the models directory before the app starts, because boot
-  # loads both. Returns the out-of-fold models as `LexicalEvidence.fold_models/2`
-  # gives them, so no training row's evidence is computed by a model that saw
-  # its label.
+  # loads both. Returns `{folds, models}`: each row's fold, as
+  # `LexicalEvidence.fold_models/2` folds the rows, and for each fold its
+  # out-of-fold intent evidence (`:lexical`) and speech-act evidence
+  # (`:speech_act`, `SpeechActTable.fold_evidence/3`), so no training row's
+  # evidence of either kind is computed by a model that saw its label.
   #
   # `--stats` writes nothing, so it trains neither and computes vectors with the
   # stored ones.
@@ -181,16 +184,21 @@ defmodule Mix.Tasks.GenMicroData do
         "-> #{LexicalEvidence.path(@gold_language)}"
     )
 
-    table = SpeechActTable.build(rows, SlotDetector.registry(), @gold_language)
+    registry = SlotDetector.registry()
+    table = SpeechActTable.build(rows, registry, @gold_language)
     SpeechActTable.save!(table)
     learned = Enum.count(table.entries, fn {_intent, entry} -> entry.sub_type_source == :learned end)
 
     Mix.shell().info(
-      "Speech-act table (#{@gold_language}): #{map_size(table.entries)} intents, #{learned} sub-types learned " <>
-        "-> #{SpeechActTable.path(@gold_language)}"
+      "Speech-act table (#{@gold_language}): #{map_size(table.entries)} intents, #{learned} sub-types learned; " <>
+        "evidence over #{length(table.evidence.intents)} speech acts from #{table.evidence.fitted_rows} rows, " <>
+        "prior strength #{table.evidence.prior_strength} -> #{SpeechActTable.path(@gold_language)}"
     )
 
-    LexicalEvidence.fold_models(rows, model)
+    {folds, lexical} = LexicalEvidence.fold_models(rows, model)
+    {^folds, speech_act} = SpeechActTable.fold_evidence(rows, registry, table)
+
+    {folds, Map.new(lexical, fn {k, lexical_model} -> {k, %{lexical: lexical_model, speech_act: Map.fetch!(speech_act, k)}} end)}
   end
 
   # Boots the Brain app (if not already started) and computes a dense feature
@@ -198,8 +206,9 @@ defmodule Mix.Tasks.GenMicroData do
   # pipeline. This is the per-example cost of having feature-vector axis
   # classifiers instead of token-bag TF-IDF ones; it runs once per regen.
   #
-  # `fold_models` holds the entries' out-of-fold lexical evidence models, or is
-  # nil when none were trained (`--stats`), which uses the loaded model.
+  # `fold_models` holds the entries' out-of-fold intent and speech-act evidence
+  # models, or is nil when none were trained (`--stats`), which uses the loaded
+  # ones.
   defp maybe_enrich_with_feature_vectors(entries, names, fold_models, world_id) do
     needs_vectors? = Enum.any?(names, &(&1 in @feature_vector_classifiers))
 
@@ -221,8 +230,8 @@ defmodule Mix.Tasks.GenMicroData do
             Enum.map(entries, &{&1, nil})
 
           {folds, models} ->
-            Enum.each(models, fn {k, model} -> :persistent_term.put({__MODULE__, :fold_model, k}, model) end)
-            Enum.zip(entries, Enum.map(folds, &{__MODULE__, :fold_model, &1}))
+            Enum.each(models, fn {k, fold_models} -> :persistent_term.put({__MODULE__, :fold_models, k}, fold_models) end)
+            Enum.zip(entries, Enum.map(folds, &{__MODULE__, :fold_models, &1}))
         end
 
       enriched =
@@ -298,9 +307,9 @@ defmodule Mix.Tasks.GenMicroData do
   # entities filtered by it, and the confidence accumulator replaced, so the
   # models trained on vectors they never saw at runtime.
   #
-  # `fold_key` names the entry's out-of-fold lexical evidence model in
-  # :persistent_term; nil uses the model loaded at boot. A follow-up row is
-  # analyzed with the context it continues from active, as it would be at
+  # `fold_key` names the entry's out-of-fold intent and speech-act evidence
+  # models in :persistent_term; nil uses the ones loaded at boot. A follow-up row
+  # is analyzed with the context it continues from active, as it would be at
   # runtime after the turn that set it.
   defp enrich_entry({%{"text" => text} = entry, fold_key}, world_id) when is_binary(text) do
     try do
@@ -308,8 +317,12 @@ defmodule Mix.Tasks.GenMicroData do
 
       pipeline_opts =
         case fold_key do
-          nil -> base_opts
-          key -> Keyword.put(base_opts, :lexical_evidence, :persistent_term.get(key))
+          nil ->
+            base_opts
+
+          key ->
+            %{lexical: lexical, speech_act: speech_act} = :persistent_term.get(key)
+            Keyword.merge(base_opts, lexical_evidence: lexical, speech_act_evidence: speech_act)
         end
 
       analysis = Pipeline.analyze_chunk(text, pipeline_opts)
