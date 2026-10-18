@@ -15,17 +15,26 @@ defmodule Brain.Response.PhraseLatticeRealizer do
 
     * it is a reply the turn can be given: a fragment of an intent's response
       template (origin `"response_templates"`) is that intent's reply, so it is
-      said only for a turn of that intent; one of a domain's response frames
-      (origin `"domain_knowledge"`) only for a turn whose intent is of that
-      domain; a primitive's phrase (origin `"primitives"`) for any turn;
+      said only for a turn of that intent, and only when the synthesizer would
+      word the turn from no frame of the intent's domain
+      (`Synthesizer.chosen_frame/3`): a domain frame is the reply ahead of an
+      intent's template, as the synthesizer is tried ahead of the templates
+      (`Brain.Response.Generator`), so a check's own "Let me check the timer."
+      never stands in for the frame that says what the check found; one of a
+      domain's response frames (origin `"domain_knowledge"`) only for a turn
+      whose intent is of that domain, and only when that rule names its
+      frame; a primitive's phrase (origin `"primitives"`) for any turn;
     * its condition (`Brain.Response.ConditionEvaluator`, such as
       `has_entity:person`) holds for the turn: its entities, slots,
-      confidence, speech act and enrichment;
-    * every `$placeholder` it names is filled with words: a non-blank string
-      or a number from the primitive's content, the enrichment's data, or an
-      entity of that type. An atom is a label, never words, so content such as
+      confidence, speech act, enrichment, and whether anything is known
+      about the chunk (`facts_known`);
+    * every `$placeholder` it names is filled with words
+      (`Brain.Response.Formatting.sayable/1`, the rule the synthesizer fills
+      by): a non-blank string, a number, or a non-empty list of those, from
+      the primitive's content, the enrichment's data, or an entity of that
+      type. An atom is a label, never words, so content such as
       `capability: :unknown` fills nothing;
-    * it either ends a sentence (terminal punctuation) or leads into the next
+    * it either ends a sentence (terminal punctuation, as it reads filled) or leads into the next
       fragment: it ends with a comma ("Okay,"), or it is a hedge or a
       transition ("I think", "Also,"), which qualify or join what follows. A
       fragment that leads in is joined to the next as
@@ -38,8 +47,18 @@ defmodule Brain.Response.PhraseLatticeRealizer do
   positions.
   """
 
+  alias Brain.Analysis.ChunkAnalysis
   alias Brain.ML.Tokenizer
-  alias Brain.Response.{ConditionEvaluator, PhraseInventory, LatticeScorer, TransitionModel, Primitive, Synthesizer}
+
+  alias Brain.Response.{
+    ConditionEvaluator,
+    Formatting,
+    PhraseInventory,
+    LatticeScorer,
+    TransitionModel,
+    Primitive,
+    Synthesizer
+  }
 
   require Logger
 
@@ -141,6 +160,8 @@ defmodule Brain.Response.PhraseLatticeRealizer do
       speech_act: Map.get(analysis, :speech_act) || %{},
       enriched_data: Map.get(enrichment, :enriched_data) || %{},
       enrichment_status: Map.get(enrichment, :enrichment_status),
+      enrichment_operation: Map.get(enrichment, :enrichment_operation),
+      facts_known: ChunkAnalysis.known_statements(analysis) != [],
       world_id: Keyword.get(opts, :world_id)
     }
   end
@@ -174,15 +195,16 @@ defmodule Brain.Response.PhraseLatticeRealizer do
   end
 
   defp sayable_here?(frag, prim, turn, intent, last?) do
-    replies_to?(frag, intent) and
+    replies_to?(frag, intent, turn) and
       frame_chosen?(frag, turn) and
       ConditionEvaluator.evaluate(frag.condition, turn) and
       Enum.all?(placeholders(frag.text), &(fill_value(&1, prim, turn) != nil)) and
-      placeable?(frag, prim, last?)
+      placeable?(frag, prim, turn, last?)
   end
 
-  defp placeable?(frag, prim, last?) do
-    Tokenizer.ends_with_terminal_punctuation?(frag.text) or (not last? and leads_in?(frag.text, prim))
+  defp placeable?(frag, prim, turn, last?) do
+    Tokenizer.ends_with_terminal_punctuation?(fill(frag.text, prim, turn)) or
+      (not last? and leads_in?(frag.text, prim))
   end
 
   defp leads_in?(text, %Primitive{type: type}) do
@@ -194,7 +216,7 @@ defmodule Brain.Response.PhraseLatticeRealizer do
   defp frame_chosen?(%{frame: nil}, _turn), do: true
 
   defp frame_chosen?(%{frame: %{"domain" => domain, "kind" => kind, "key" => key}}, turn) do
-    case Synthesizer.chosen_frame(domain, turn.entities, turn.enriched_data) do
+    case chosen_frame(domain, turn) do
       {chosen_kind, ^key} -> Atom.to_string(chosen_kind) == kind
       _ -> false
     end
@@ -206,12 +228,20 @@ defmodule Brain.Response.PhraseLatticeRealizer do
             "not %{\"domain\", \"kind\", \"key\"}; the inventory needs rebuilding (mix gen_lattice_data)"
   end
 
-  defp replies_to?(%{origin: "response_templates", source_intent: source}, intent), do: source == intent
+  defp chosen_frame(domain, turn) do
+    Synthesizer.chosen_frame(domain, turn.entities, %{
+      enriched_data: turn.enriched_data,
+      operation: turn.enrichment_operation
+    })
+  end
 
-  defp replies_to?(%{origin: "domain_knowledge", source_intent: source}, intent),
+  defp replies_to?(%{origin: "response_templates", source_intent: source}, intent, turn),
+    do: source == intent and chosen_frame(domain(intent), turn) == nil
+
+  defp replies_to?(%{origin: "domain_knowledge", source_intent: source}, intent, _turn),
     do: is_binary(intent) and domain(source) == domain(intent)
 
-  defp replies_to?(_frag, _intent), do: true
+  defp replies_to?(_frag, _intent, _turn), do: true
 
   defp domain(label), do: label |> String.split(".", parts: 2) |> hd()
 
@@ -242,9 +272,7 @@ defmodule Brain.Response.PhraseLatticeRealizer do
     end)
   end
 
-  defp words(value) when is_binary(value), do: if(String.trim(value) == "", do: nil, else: value)
-  defp words(value) when is_number(value), do: to_string(value)
-  defp words(_value), do: nil
+  defp words(value), do: Formatting.sayable(value)
 
   defp fill(text, prim, turn) do
     Regex.replace(@placeholder, text, fn _placeholder, name -> fill_value(name, prim, turn) end)
