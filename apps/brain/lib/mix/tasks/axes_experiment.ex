@@ -45,7 +45,7 @@ defmodule Mix.Tasks.Axes.Experiment do
 
   use Mix.Task
 
-  alias Brain.Analysis.{FeatureExtractor, Pipeline}
+  alias Brain.Analysis.Pipeline
   alias Brain.ML.{EvaluationStore, FeatureVectorClassifier}
 
   @requirements ["app.start"]
@@ -153,8 +153,12 @@ defmodule Mix.Tasks.Axes.Experiment do
               active_contexts: Brain.Analysis.ActiveContexts.for_row(entry)
             )
 
-          {vector, _word_feats} = FeatureExtractor.extract(analysis)
-          %{vector: vector, label: entry["intent"]}
+          # The vector the pipeline classified the intent from, the kind the
+          # classifiers are trained on.
+          case analysis.feature_vector do
+            [_ | _] = vector -> %{vector: vector, label: entry["intent"]}
+            other -> Mix.raise("axes.experiment: the pipeline kept no classified feature vector for #{inspect(entry["text"])}: #{inspect(other)}")
+          end
         end,
         # Deliberately below System.schedulers_online(). analyze_chunk/2 reaches
         # Brain.Memory.Store.query_semantic through ContextAccumulator, and that
