@@ -69,7 +69,9 @@ defmodule Mix.Tasks.Train do
   5. **MicroClassifiers** — runs `mix train_micro`: trains every name in
      `Mix.Tasks.TrainMicro` (pragmatic classifiers + six axis models). Writes
      `priv/ml_models/micro/*.term`. Regenerate JSON with `mix gen_micro_data --world <id>`
-     when needed.
+     when needed. Then `mix train_intent_arbitration --world <id>`, which learns
+     from the same JSON how a disagreement between `:intent_full` and
+     `:intent_domain` is resolved.
   6. **Framing Classifier** — runs `mix gen_framing_data --world <id>` (if JSON missing)
      then `mix train_framing`. Requires GVFC corpus at `data/framing/`. Run
      `mix ingest_framing_corpus` if the CSV is not yet extracted.
@@ -440,7 +442,7 @@ defmodule Mix.Tasks.Train do
         [{:micro, :skipped, 0} | results]
       else
         start = System.monotonic_time(:second)
-        result = train_micro_classifiers()
+        result = train_micro_classifiers(opts)
         duration = System.monotonic_time(:second) - start
         [{:micro, result, duration} | results]
       end
@@ -600,7 +602,7 @@ defmodule Mix.Tasks.Train do
     end
   end
 
-  defp train_micro_classifiers do
+  defp train_micro_classifiers(opts) do
     Mix.shell().info("")
     Mix.shell().info("=" |> String.duplicate(70))
     Mix.shell().info("  Stage 5/9: MicroClassifiers  [#{stage_timestamp()}]")
@@ -608,6 +610,7 @@ defmodule Mix.Tasks.Train do
 
     try do
       Mix.Tasks.TrainMicro.run([])
+      Mix.Tasks.TrainIntentArbitration.run(["--world", opts[:world]])
       {:ok, %{micro_trained: true}}
     rescue
       e -> {:error, Exception.message(e)}
@@ -622,7 +625,7 @@ defmodule Mix.Tasks.Train do
     Mix.shell().info("  Stage 6/9: Framing Classifier  [#{stage_timestamp()}]")
     Mix.shell().info("=" |> String.duplicate(70))
 
-    data_path = "data/classifiers/framing_class.json"
+    data_path = Brain.data_path("classifiers/framing_class.json")
 
     gen_result =
       if File.exists?(data_path) do
