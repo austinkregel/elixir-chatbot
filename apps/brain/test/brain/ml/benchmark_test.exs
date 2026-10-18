@@ -178,8 +178,11 @@ defmodule Brain.ML.BenchmarkTest do
               entity_value = Map.get(entity, :value) || Map.get(entity, "value", "")
               entity_type = Map.get(entity, :entity_type) || Map.get(entity, "entity_type", "")
 
+              # A location as the type hierarchy has it: `location` or a type
+              # under it, `address` among them, which is how the NER gold
+              # standard labels a city.
               String.downcase(to_string(entity_value)) == String.downcase(expected_location) and
-                to_string(entity_type) in ["location", "city", "country"]
+                (to_string(entity_type) == "location" or Brain.Analysis.TypeHierarchy.is_a?(to_string(entity_type), "location"))
             end)
 
           {text, expected_location, location_found}
