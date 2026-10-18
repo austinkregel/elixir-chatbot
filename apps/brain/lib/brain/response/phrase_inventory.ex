@@ -14,6 +14,14 @@ defmodule Brain.Response.PhraseInventory do
   @inventory_path "priv/ml_models/lattice/phrase_inventory.json"
   @config_path "priv/response/system_config.json"
 
+  # Version 2 fragments of a domain frame name it (`"frame"`), which the
+  # realizer offers them by; an inventory of another version raises on load.
+  @inventory_version 2
+
+  @doc "The version of the inventory file this module reads, which `mix gen_lattice_data` writes."
+  @spec inventory_version() :: pos_integer()
+  def inventory_version, do: @inventory_version
+
   defmodule Fragment do
     @moduledoc false
     defstruct [
@@ -29,6 +37,10 @@ defmodule Brain.Response.PhraseInventory do
       # The condition its template is said under (`Brain.Response.ConditionEvaluator`
       # syntax), nil for a fragment said under any.
       :condition,
+      # The domain frame it is a sentence of, `%{"domain", "kind", "key"}`
+      # (`Brain.Response.Synthesizer.chosen_frame/3`), nil for a fragment of
+      # no domain frame.
+      :frame,
       slots: [],
       enrichment_fields: [],
       conditions: %{},
@@ -49,19 +61,35 @@ defmodule Brain.Response.PhraseInventory do
     end
   end
 
+  # Each lookup raises, in the caller, for an inventory of a version other than
+  # the one this module reads: its fragments do not say what the realizer
+  # offers them by. It loads whatever version is on disk, so the application
+  # (and `mix gen_lattice_data`, which rebuilds it) still starts.
   def lookup_by_chunk_type(chunk_type, name \\ __MODULE__) do
-    GenServer.call(name, {:lookup_chunk, chunk_type}, 5_000)
+    name |> GenServer.call({:lookup_chunk, chunk_type}, 5_000) |> current!()
   end
 
   def lookup_by_primitive(primitive_type, variant, name \\ __MODULE__) do
     key = primitive_key(primitive_type, variant)
-    GenServer.call(name, {:lookup_primitive, key}, 5_000)
+    name |> GenServer.call({:lookup_primitive, key}, 5_000) |> current!()
   end
 
   def lookup_by_primitive_with_tone(primitive_type, variant, desired_tone_vector, name \\ __MODULE__) do
     key = primitive_key(primitive_type, variant)
-    GenServer.call(name, {:lookup_primitive_tone, key, desired_tone_vector}, 5_000)
+    name |> GenServer.call({:lookup_primitive_tone, key, desired_tone_vector}, 5_000) |> current!()
   end
+
+  defp current!({:ok, result}), do: result
+
+  defp current!({:stale, path, version}) do
+    raise """
+    PhraseInventory: #{path} is version #{inspect(version)}, and the realizer reads version #{@inventory_version}.
+    Rebuild it with `mix gen_lattice_data --world <id>`.
+    """
+  end
+
+  defp current(%{version: @inventory_version}, lookup), do: {:ok, lookup.()}
+  defp current(%{version: version, path: path}, _lookup), do: {:stale, path, version}
 
   def stats(name \\ __MODULE__) do
     try do
@@ -98,27 +126,25 @@ defmodule Brain.Response.PhraseInventory do
 
   def handle_call({:lookup_chunk, chunk_type}, _from, state) do
     key = to_string(chunk_type)
-    fragments = Map.get(state.by_chunk_type, key, [])
-    {:reply, fragments, state}
+    {:reply, current(state, fn -> Map.get(state.by_chunk_type, key, []) end), state}
   end
 
   def handle_call({:lookup_primitive, key}, _from, state) do
-    fragments = Map.get(state.by_primitive, key, [])
-    {:reply, fragments, state}
+    {:reply, current(state, fn -> Map.get(state.by_primitive, key, []) end), state}
   end
 
   def handle_call({:lookup_primitive_tone, key, desired_tone_vector}, _from, state) do
-    fragments = Map.get(state.by_primitive, key, [])
-
-    sorted =
-      fragments
+    sorted = fn ->
+      state.by_primitive
+      |> Map.get(key, [])
       |> Enum.map(fn frag ->
         compat = tone_compatibility(desired_tone_vector, frag.tone_vector)
         {frag, compat}
       end)
       |> Enum.sort_by(fn {_f, compat} -> compat end, :desc)
+    end
 
-    {:reply, sorted, state}
+    {:reply, current(state, sorted), state}
   end
 
   def handle_call(:stats, _from, state) do
@@ -181,7 +207,7 @@ defmodule Brain.Response.PhraseInventory do
     config_path = brain_priv(@config_path)
 
     tone_config = load_tone_config(config_path)
-    fragments = load_fragments_file(inventory_path)
+    {version, fragments} = load_fragments_file(inventory_path)
 
     if fragments == [] do
       raise """
@@ -195,6 +221,8 @@ defmodule Brain.Response.PhraseInventory do
 
     %{
       loaded: true,
+      version: version,
+      path: inventory_path,
       all_fragments: fragments,
       by_chunk_type: index_by_chunk_type(fragments),
       by_primitive: index_by_primitive(fragments),
@@ -206,14 +234,16 @@ defmodule Brain.Response.PhraseInventory do
     case File.read(path) do
       {:ok, content} ->
         case Jason.decode(content) do
-          {:ok, %{"fragments" => fragments_map}} when is_map(fragments_map) ->
-            fragments_map
-            |> Enum.flat_map(fn {_chunk_type, frags} ->
-              Enum.map(frags, &parse_fragment/1)
-            end)
+          {:ok, %{"version" => version, "fragments" => fragments_map}} when is_map(fragments_map) ->
+            fragments =
+              Enum.flat_map(fragments_map, fn {_chunk_type, frags} ->
+                Enum.map(frags, &parse_fragment/1)
+              end)
+
+            {version, fragments}
 
           {:ok, _} ->
-            raise "Invalid phrase inventory at #{path}: expected a JSON object with a \"fragments\" map"
+            raise "Invalid phrase inventory at #{path}: expected a JSON object with a \"version\" and a \"fragments\" map"
 
           {:error, reason} ->
             raise "Invalid phrase inventory at #{path}: #{inspect(reason)}"
@@ -258,6 +288,7 @@ defmodule Brain.Response.PhraseInventory do
       prototype_vector: Map.get(map, "prototype_vector", []),
       source_intent: Map.get(map, "source_intent"),
       condition: Map.get(map, "condition"),
+      frame: Map.get(map, "frame"),
       slots: Map.get(map, "slots", []),
       enrichment_fields: Map.get(map, "enrichment_fields", []),
       conditions: Map.get(map, "conditions", %{}),
