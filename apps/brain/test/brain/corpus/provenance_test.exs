@@ -122,12 +122,111 @@ defmodule Brain.Corpus.ProvenanceTest do
             entry <- file |> File.read!() |> Jason.decode!(),
             do: %{intent: intent, entry: entry, text: Export.phrase_text(entry)}
 
-      %{path: path, content: File.read!(path), authored: RebuildNerGold.authored_rows!(), annotations: annotations}
+      %{path: path, content: File.read!(path), authored: RebuildNerGold.authored_rows!(), relabels: RebuildNerGold.relabels!(), annotations: annotations}
     end
 
-    test "the committed NER gold standard is what the annotations rebuild to, byte for byte", %{path: path, content: content, authored: authored} do
+    test "the committed NER gold standard and its held-out split are what the annotations rebuild to, byte for byte",
+         %{path: path, content: content, authored: authored, relabels: relabels} do
       assert authored != []
-      assert RebuildNerGold.rebuild!(content, path, authored) == content
+      assert relabels != %{}
+      assert RebuildNerGold.rebuild!(content, path, authored, relabels) == content
+
+      held_path = EvaluationStore.held_out_path("ner")
+      held = File.read!(held_path)
+      assert RebuildNerGold.rebuild_held_out!(held, held_path, content, path, relabels) == held
+    end
+
+    test "every relabeled row holds its annotation's entities, is labeled relabeled, and its held-out copy is the same row",
+         %{relabels: relabels} do
+      gold = "ner" |> EvaluationStore.load_gold_standard(:all) |> Map.new(&{&1["text"], &1})
+      held = "ner" |> EvaluationStore.load_gold_standard(:held_out) |> Enum.filter(&Map.has_key?(relabels, &1["text"]))
+
+      for {text, relabel} <- relabels do
+        row = Map.fetch!(gold, text)
+        assert row["labeled_by"] == Provenance.relabeled()
+        spans = NerGold.spans!(row)
+
+        for added <- relabel.added do
+          assert Enum.any?(spans, &({&1.type, &1.start_pos, &1.end_pos} == {added["type"], added.start_pos, added.end_pos})),
+                 "#{inspect(text)} lacks the #{added["type"]} #{inspect(added["value"])} its annotation adds"
+        end
+      end
+
+      for row <- held, do: assert(row == Map.fetch!(gold, row["text"]))
+    end
+
+    # One existing row of a smart-home intent gold text, and its relabel adding
+    # the device; "lights" is a type of its own that the NER type mappings
+    # write as device.
+    @relabel_row %{"expected" => [%{"type" => "room", "value" => "kitchen"}], "text" => "turn on the kitchen light"}
+
+    defp write_relabel(dir, intent, data), do: File.write!(Path.join(dir, "#{intent}_usersays_en.json"), Jason.encode!([%{"data" => data}]))
+
+    @tag :tmp_dir
+    test "a relabel adds its entities to the row in place, labels it relabeled, and rebuilding the result changes nothing",
+         %{tmp_dir: dir} do
+      write_relabel(dir, "smarthome.device.switch.on", [%{"text" => "turn on the kitchen "}, %{"alias" => "device", "meta" => "@device", "text" => "light"}])
+      relabels = RebuildNerGold.relabels!(dir, %{"lights" => "device"})
+
+      other = %{"expected" => [], "text" => "hello there"}
+      content = RebuildNerGold.encode!([other, @relabel_row])
+      rebuilt = RebuildNerGold.rebuild!(content, "gold.json", [], relabels)
+
+      assert [^other, relabeled] = Jason.decode!(rebuilt)
+
+      assert relabeled == %{
+               "expected" => [%{"type" => "room", "value" => "kitchen"}, %{"type" => "device", "value" => "light"}],
+               "labeled_by" => "relabeled",
+               "text" => "turn on the kitchen light"
+             }
+
+      assert RebuildNerGold.rebuild!(rebuilt, "gold.json", [], relabels) == rebuilt
+
+      # The held-out copy of the row is relabeled with it; a held-out row of the
+      # text that is not the gold standard's row raises.
+      held = RebuildNerGold.encode!([@relabel_row])
+      assert Jason.decode!(RebuildNerGold.rebuild_held_out!(held, "held.json", content, "gold.json", relabels)) == [relabeled]
+
+      stale = RebuildNerGold.encode!([%{@relabel_row | "expected" => []}])
+
+      assert_raise Mix.Error, ~r/held.json holds .* which is not the row gold.json holds/, fn ->
+        RebuildNerGold.rebuild_held_out!(stale, "held.json", content, "gold.json", relabels)
+      end
+    end
+
+    @tag :tmp_dir
+    test "a relabel's type is checked against its intent's slot, and written as its gold label", %{tmp_dir: dir} do
+      # hue.check fills its device slot with the type lights.
+      write_relabel(dir, "smarthome.device.hue.check", [%{"text" => "check blue "}, %{"alias" => "device", "meta" => "@device", "text" => "lights"}, %{"text" => " hue"}])
+      assert_raise Mix.Error, ~r/slot "device" of smarthome.device.hue.check lists \["lights"\], not "device"/, fn -> RebuildNerGold.relabels!(dir, %{"lights" => "device"}) end
+
+      write_relabel(dir, "smarthome.device.hue.check", [%{"text" => "check blue "}, %{"alias" => "device", "meta" => "@lights", "text" => "lights"}, %{"text" => " hue"}])
+      assert %{"check blue lights hue" => %{added: [%{"type" => "device", "value" => "lights", start_pos: 11, end_pos: 16}]}} = RebuildNerGold.relabels!(dir, %{"lights" => "device"})
+    end
+
+    @tag :tmp_dir
+    test "a relabel of no row, one adding nothing, one overlapping an entity, and a relabeled row with no relabel raise", %{tmp_dir: dir} do
+      content = RebuildNerGold.encode!([@relabel_row])
+
+      write_relabel(dir, "smarthome.device.switch.on", [%{"text" => "turn on the kitchen light"}])
+      assert_raise Mix.Error, ~r/must add an entity/, fn -> RebuildNerGold.relabels!(dir, %{}) end
+
+      write_relabel(dir, "smarthome.device.switch.on", [%{"text" => "turn on the "}, %{"alias" => "device", "meta" => "@device", "text" => "kitchen light"}])
+      relabels = RebuildNerGold.relabels!(dir, %{})
+      assert_raise Mix.Error, ~r/overlaps the row's room "kitchen"/, fn -> RebuildNerGold.rebuild!(content, "gold.json", [], relabels) end
+
+      write_relabel(dir, "smarthome.device.switch.on", [%{"text" => "turn on the kitchen "}, %{"alias" => "device", "meta" => "@device", "text" => "light"}])
+      relabels = RebuildNerGold.relabels!(dir, %{})
+
+      assert_raise Mix.Error, ~r/no row of gold.json outside the authored ones has that text/, fn ->
+        RebuildNerGold.rebuild!(RebuildNerGold.encode!([%{"expected" => [], "text" => "hello there"}]), "gold.json", [], relabels)
+      end
+
+      relabeled = Map.put(@relabel_row, "labeled_by", "relabeled")
+
+      assert_raise Mix.Error, ~r/labeled relabeled, which no relabeled entity annotation names/, fn ->
+        RebuildNerGold.rebuild!(RebuildNerGold.encode!([relabeled]), "gold.json", [], %{})
+      end
     end
 
     test "every annotation's entities are placed in its text, each of a type that fills its slot of the annotation's intent, " <>
