@@ -2408,24 +2408,35 @@ defmodule Brain do
     %{analysis_model | analyses: updated_analyses}
   end
 
+  # The profile's derived label ("<domain>.<speech act sub-type>") stands in
+  # for the chunk's intent only when it is an intent of the registry: a label
+  # no classifier was trained on and no schema describes ("reminder.statement")
+  # names nothing, and the dispatcher routed such a label by its prefix, so an
+  # introduction misread as a reminder was dispatched to the scheduler. The
+  # intent's domain and the profile's are compared consolidated
+  # (`Brain.Lexicon.IntentDomains`), as `Pipeline` compares them: the profile's
+  # domain is the consolidated vocabulary, and a raw prefix ("alarm",
+  # "smalltalk") disagreed with it on every turn. The intent is trusted from
+  # `Pipeline.disambiguation_threshold/0` up, as the pipeline trusts it.
   defp reconcile_intent_with_profile(analysis) do
     profile = analysis.profile
     derived = if profile, do: profile.derived_label, else: nil
     domain = if profile, do: profile.domain, else: :unknown
+    registered? = is_binary(derived) and Brain.Analysis.Pipeline.registered_intent?(derived)
 
     case {analysis.intent, derived, domain} do
-      {nil, d, _} when is_binary(d) and d != "" ->
+      {nil, d, _} when registered? ->
         %{analysis | intent: d}
 
-      {"", d, _} when is_binary(d) and d != "" ->
+      {"", d, _} when registered? ->
         %{analysis | intent: d}
 
-      {existing, d, dom} when is_binary(existing) and is_binary(d) and d != "" and dom != :unknown ->
+      {existing, d, dom} when is_binary(existing) and registered? and dom != :unknown ->
         intent_domain = extract_intent_domain(existing)
         profile_domain = to_string(dom)
         intent_conf = get_speech_act_intent_confidence(analysis)
 
-        if domains_disagree?(intent_domain, profile_domain) or intent_conf <= 0.5 do
+        if domains_disagree?(intent_domain, profile_domain) or intent_conf < Brain.Analysis.Pipeline.disambiguation_threshold() do
           Logger.debug("Intent override: #{existing} -> #{d}",
             reason: if(domains_disagree?(intent_domain, profile_domain), do: :domain_mismatch, else: :low_confidence),
             intent_confidence: intent_conf,
@@ -2442,15 +2453,10 @@ defmodule Brain do
     end
   end
 
-  defp extract_intent_domain(intent) when is_binary(intent) do
-    case String.split(intent, ".", parts: 2) do
-      [domain, _] -> domain
-      _ -> intent
-    end
-  end
+  defp extract_intent_domain(intent) when is_binary(intent), do: Brain.Lexicon.IntentDomains.consolidate(intent)
 
   defp domains_disagree?(intent_domain, profile_domain) do
-    intent_domain != profile_domain and profile_domain != "unknown"
+    intent_domain != Brain.Lexicon.IntentDomains.consolidate(profile_domain) and profile_domain != "unknown"
   end
 
   defp get_speech_act_intent_confidence(%{speech_act: %{intent_confidence: c}}) when is_number(c), do: c
