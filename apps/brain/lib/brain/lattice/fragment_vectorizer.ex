@@ -27,7 +27,8 @@ defmodule Brain.Lattice.FragmentVectorizer do
       {:error, :empty_text}
     else
       try do
-        analysis = Pipeline.analyze_chunk(trimmed, world_id: world_id)
+        # A fragment is vectorized, not said: its analysis writes nothing to the world.
+        analysis = Pipeline.analyze_chunk(trimmed, world_id: world_id, side_effects: false)
         {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
 
         if is_list(feature_vector) and feature_vector != [] and
