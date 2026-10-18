@@ -1,0 +1,104 @@
+[
+  {
+    "data": [
+      {
+        "text": "all "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " saturation up"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " saturation up by 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " saturation up by 15 percents in the bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " saturation up by 50 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " saturation up till 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " saturation up till 50"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " saturation up to 15 percents in the bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn up "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " saturation by 10 points"
+      }
+    ]
+  }
+]
