@@ -70,9 +70,25 @@ defmodule Brain.ML.EntityTrainerTest do
       assert cv.chosen == {model.smoothing, model.transition_smoothing}
 
       for {_strengths, result} <- cv.by_strengths, do: assert(length(result.folds) == 5)
+    end
 
-      best = cv.by_strengths |> Map.values() |> Enum.map(& &1.f1) |> Enum.max()
-      assert cv.by_strengths[cv.chosen].f1 == best
+    test "chooses the most regularized pair whose mean fold F1 is within one standard error of the best", %{model: model} do
+      %{one_standard_error: rule, by_strengths: by_strengths, chosen: chosen} = model.cross_validation
+
+      # The scored folds are those holding a gold span, and each pair's mean is
+      # over their F1.
+      gold_folds = for {{tp, _fp, fn_}, k} <- Enum.with_index(by_strengths[chosen].folds), tp + fn_ > 0, do: k
+      assert rule.scored_folds == gold_folds
+      assert length(gold_folds) >= 2
+
+      best_mean = by_strengths |> Map.values() |> Enum.map(& &1.mean_f1) |> Enum.max()
+      assert rule.mean == best_mean
+      assert by_strengths[rule.best].mean_f1 == best_mean
+      assert rule.standard_error == by_strengths[rule.best].standard_error
+      assert rule.threshold == best_mean - rule.standard_error
+
+      within = for {strengths, result} <- by_strengths, result.mean_f1 >= rule.threshold, do: strengths
+      assert chosen == Enum.max(within)
     end
 
     # Eight templates, "frob the <device> <closer>", each naming devices of its
