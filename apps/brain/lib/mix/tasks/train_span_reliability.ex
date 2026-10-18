@@ -13,16 +13,22 @@ defmodule Mix.Tasks.TrainSpanReliability do
   (`Brain.ML.NerGold.spans!/1`). The entity model's readings of a row come from
   its out-of-fold model (`Brain.ML.EntityTrainer.fold_models/2`, with the
   trained model's smoothing), so the model is measured on sentences it was not
-  trained on, as it meets them at runtime. The prior strength and the decision
-  thresholds are chosen by cross-validation on the same rows, and so are what
+  trained on, as it meets them at runtime: a row's fold model saw no row of its
+  template (`Brain.ML.NerGold.template!/1`). The prior strength and the decision
+  thresholds are chosen by cross-validation on the same rows, folds assigned
+  by template as the entity model's are, and so are what
   a span left unresolved is decided again with once the turn's intent is
   known (`Brain.ML.SpanReliability.select_redecision/3`) -- the extent
   reliabilities, their prior strength and thresholds, and the thresholds the
   type at the decided extent is decided under -- on the training rows joined
-  to an intent training row. The held-out splits are never read.
+  to an intent training row. The number of bins a source's own confidences
+  are counted in is chosen with the prior strength. The held-out splits are
+  never read.
 
-  Printed: the cross-validated F1 per prior strength and the thresholds
-  chosen, every measured `{source, type}` pair with its counts and
+  Printed: the cross-validated F1 per prior strength and number of confidence
+  bins and the ones chosen with their thresholds, with each fold's counts at
+  them, which sources report a confidence, each source's readings per
+  confidence bin, every measured `{source, type}` pair with its counts and
   reliability, every pair the gold standard cannot measure, with how many
   training readings it had, the cross-validated F1 of deciding unresolved
   spans again -- with no span, with the whole span's hypotheses under the
@@ -90,6 +96,7 @@ defmodule Mix.Tasks.TrainSpanReliability do
       |> Enum.map(fn {row, fold} ->
         %{
           key: row,
+          group: NerGold.template!(row),
           readings:
             EntityExtractor.readings(row["text"], world_id: world_id, entity_model: Map.fetch!(fold_models, fold)),
           gold: NerGold.spans!(row)
@@ -225,25 +232,39 @@ defmodule Mix.Tasks.TrainSpanReliability do
   end
 
   defp print_report(model, report) do
-    Mix.shell().info("\nCross-validated span F1 by prior strength:")
+    Mix.shell().info("\nCross-validated span F1 by prior strength and confidence bins:")
 
     report
     |> Enum.sort_by(&elem(&1, 0))
-    |> Enum.each(fn {strength, r} ->
+    |> Enum.each(fn {{strength, bins}, r} ->
       Mix.shell().info(
-        "  #{pad(strength, 6)} F1 #{pct(r.f1)}  min_score #{fmt(r.min_score)}  min_margin #{fmt(r.min_margin)}  " <>
+        "  #{pad(strength, 6)} bins #{pad(bins, 3)} F1 #{pct(r.f1)}  min_score #{fmt(r.min_score)}  min_margin #{fmt(r.min_margin)}  " <>
           "decided #{r.decided}, correct #{r.correct}, gold spans #{r.gold}"
       )
     end)
 
     Mix.shell().info(
-      "Chosen: prior strength #{model.prior_strength}, min_score #{fmt(model.min_score)}, " <>
-        "min_margin #{fmt(model.min_margin)}"
+      "Chosen: prior strength #{model.prior_strength}, confidence bins #{model.confidence_bins}, " <>
+        "min_score #{fmt(model.min_score)}, min_margin #{fmt(model.min_margin)}"
+    )
+
+    Mix.shell().info(
+      "  per fold (decided, correct, gold spans): " <>
+        Enum.map_join(Map.fetch!(report, {model.prior_strength, model.confidence_bins}).folds, "; ", &"#{&1.decided}, #{&1.correct}, #{&1.gold}")
     )
 
     Mix.shell().info(
       "\nOverall: #{model.overall.agree} of #{model.overall.n} measured readings agree (#{pct(model.overall.rate)})"
     )
+
+    Mix.shell().info("\nSources reporting a confidence: #{inspect(model.reports_confidence)}")
+    Mix.shell().info("Source confidence bins (n, agree -> reliability):")
+
+    model.source_bins
+    |> Enum.sort_by(fn {{source, bin}, _} -> {Atom.to_string(source), bin} end)
+    |> Enum.each(fn {{source, bin}, b} ->
+      Mix.shell().info("  #{pad(source, 18)} bin #{pad(bin, 3)} n #{pad(b.n, 5)} agree #{pad(b.agree, 5)} -> #{Float.round(b.reliability, 3)}")
+    end)
 
     Mix.shell().info("\nMeasured pairs (n, exact, refined, wrong type, boundary, no entity -> reliability):")
 
