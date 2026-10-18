@@ -26,6 +26,9 @@ defmodule Brain.Response.PhraseInventory do
       :tone_vector,
       :prototype_vector,
       :source_intent,
+      # The condition its template is said under (`Brain.Response.ConditionEvaluator`
+      # syntax), nil for a fragment said under any.
+      :condition,
       slots: [],
       enrichment_fields: [],
       conditions: %{},
@@ -254,6 +257,7 @@ defmodule Brain.Response.PhraseInventory do
       tone_vector: Map.get(map, "tone_vector", List.duplicate(0.0, 10)),
       prototype_vector: Map.get(map, "prototype_vector", []),
       source_intent: Map.get(map, "source_intent"),
+      condition: Map.get(map, "condition"),
       slots: Map.get(map, "slots", []),
       enrichment_fields: Map.get(map, "enrichment_fields", []),
       conditions: Map.get(map, "conditions", %{}),
