@@ -24,7 +24,9 @@ defmodule Mix.Tasks.TrainSlotTypePreferences do
   be weighed.
 
   Printed: how many rows joined, the cross-validated log-likelihood of every
-  smoothing value tried and the values chosen, each domain's most probable
+  smoothing value tried, each stage's one-standard-error rule (the best
+  value, its mean and standard error over the folds, the threshold) and the
+  values chosen, each domain's most probable
   labels, its ordinary-word rate and the rate at which its gold spans agree
   with no type its slot schemas list, and each label's most likely preceding
   tags.
@@ -202,6 +204,17 @@ defmodule Mix.Tasks.TrainSlotTypePreferences do
     for key <- SlotTypePreferences.smoothing_keys() do
       values = Enum.map_join(Map.fetch!(report, key), "  ", fn {value, ll} -> "#{value}:#{Float.round(ll, 4)}" end)
       Mix.shell().info("  #{pad(key, 16)} #{values}")
+    end
+
+    Mix.shell().info("\nOne-standard-error rule per value (mean of the scored folds' log-likelihood per observation):")
+
+    for key <- SlotTypePreferences.smoothing_keys() do
+      rule = Map.fetch!(report.one_standard_error, key)
+
+      Mix.shell().info(
+        "  #{pad(key, 16)} best #{rule.best} at #{Float.round(rule.mean, 5)} +- #{Float.round(rule.standard_error, 5)}, " <>
+          "threshold #{Float.round(rule.threshold, 5)}, chosen #{rule.chosen}, folds scored #{inspect(rule.scored_folds)}"
+      )
     end
 
     Mix.shell().info("Chosen: #{inspect(report.chosen)}")
