@@ -219,6 +219,10 @@ defmodule Brain.Response.DiscoursePlanner do
   """
   def plan_chunk(analysis, model, opts \\ [])
 
+  # Every primitive of a chunk's plan carries the chunk's index, so the turn's
+  # plan says which chunk each part answers: transitions go between chunks
+  # (`insert_transitions/2`), and each part is worded for its own chunk
+  # (`Brain.Response.PhraseLatticeRealizer`).
   def plan_chunk(%ChunkAnalysis{} = analysis, %InternalModel{} = _model, opts) do
     signals = extract_signals(analysis, opts)
 
@@ -227,6 +231,7 @@ defmodule Brain.Response.DiscoursePlanner do
     |> apply_epistemic_modifications(signals)
     |> apply_sentiment_adjustment(signals)
     |> seed_content(analysis)
+    |> Enum.map(&Primitive.merge_content(&1, %{chunk_index: analysis.chunk_index}))
   end
 
   def plan_chunk(_, _, _opts), do: [Primitive.new(:acknowledgment, :general)]
