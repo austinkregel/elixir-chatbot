@@ -299,6 +299,21 @@
     ]
   },
 
+  "informative_frames": {
+    "with_result": [
+      "Here's the latest.",
+      "Here's an update.",
+      "Here's where that stands.",
+      "Here's the result."
+    ],
+    "no_answer": [
+      "I don't have any information on that.",
+      "I don't have anything I can tell you about that.",
+      "Nothing I know covers that.",
+      "I have nothing on that to share."
+    ]
+  },
+
   "reframe_patterns": [
     "I don't really have opinions, but I can help you think through it.",
     "That's a personal decision, but I can share some relevant information.",
