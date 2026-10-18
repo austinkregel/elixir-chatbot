@@ -314,11 +314,9 @@ defmodule Brain.Response.DecompressorCollector do
           chunks = ChunkSegmenter.segment(Map.fetch!(pair, :world_id), text)
 
           Enum.map(chunks, fn chunk ->
-            prototype_vector =
-              case FragmentVectorizer.vectorize_fragment_text(chunk.text, Map.fetch!(pair, :world_id)) do
-                {:ok, fv} -> fv
-                _ -> []
-              end
+            # A fragment that cannot be vectorized raises in the vectorizer:
+            # one fed without a vector would score nothing on its features.
+            {:ok, prototype_vector} = FragmentVectorizer.vectorize_fragment_text(chunk.text, Map.fetch!(pair, :world_id))
 
             %{
               "text" => chunk.text,
@@ -342,8 +340,6 @@ defmodule Brain.Response.DecompressorCollector do
         Logger.debug("DecompressorCollector: fed #{length(fragments)} fragments to PhraseInventory")
       end
     end
-  rescue
-    _ -> :ok
   end
 
   defp extract_feature_vector(nil), do: []
