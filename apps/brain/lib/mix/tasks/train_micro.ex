@@ -292,6 +292,17 @@ defmodule Mix.Tasks.TrainMicro do
     {:ok, pairs, :text}
   end
 
+  @doc """
+  A feature-vector classifier trained on `training_data` (`{vector, label}`
+  pairs) exactly as this task trains `name`'s: GA-tuned per-dimension weights,
+  then the centroids. `mix train_intent_arbitration` trains its out-of-fold
+  models with it.
+  """
+  @spec train_feature_vector_model([{[float()], String.t()}], String.t()) :: map()
+  def train_feature_vector_model([_ | _] = training_data, name) when is_binary(name) do
+    train_model(:feature_vector, training_data, false, name)
+  end
+
   defp train_model(:feature_vector, training_data, skip_optimization?, name) do
     n_classes = training_data |> Enum.map(&elem(&1, 1)) |> Enum.uniq() |> length()
 
