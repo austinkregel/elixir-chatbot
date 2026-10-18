@@ -99,15 +99,22 @@ defmodule Brain.Analysis.SelfKnowledgeAnalyzer do
   end
 
   defp classify_meta(text, pipeline_opts) do
-    alias Brain.Analysis.{FeatureExtractor, Pipeline}
+    alias Brain.Analysis.Pipeline
     alias Brain.ML.MicroClassifiers
 
     unless MicroClassifiers.ready?() do
       raise "SelfKnowledgeAnalyzer: the intent classifier is not ready, so #{inspect(text)} cannot be checked for a meta-cognitive query"
     end
 
-    analysis = Pipeline.analyze_chunk(text, pipeline_opts)
-    {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+    # The vector the pipeline classified the intent from, the kind
+    # `:intent_full` was trained on. One extracted again from the finished
+    # analysis holds what pass 2 added after classifying (its slots, its
+    # refined speech act), which no training vector holds.
+    feature_vector =
+      case Pipeline.analyze_chunk(text, pipeline_opts) do
+        %{feature_vector: [_ | _] = vector} -> vector
+        other -> raise "SelfKnowledgeAnalyzer: the pipeline kept no classified feature vector for #{inspect(text)}: #{inspect(Map.get(other, :feature_vector))}"
+      end
 
     case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
       {:ok, intent, confidence} when is_binary(intent) ->
