@@ -45,11 +45,20 @@ defmodule Brain.Analysis.LexicalEvidenceTest do
   end
 
   test "select picks a prior strength by cross-validation and fits on every row" do
-    {model, accuracies} = LexicalEvidence.select(@rows, language: "en")
+    {model, report} = LexicalEvidence.select(@rows, language: "en")
 
     assert model.fitted_rows == length(@rows)
-    assert Map.has_key?(accuracies, model.prior_strength)
-    assert Enum.all?(Map.values(accuracies), &(&1 >= 0.0 and &1 <= 1.0))
+    assert Map.has_key?(report.accuracy, model.prior_strength)
+    assert Enum.all?(Map.values(report.accuracy), &(&1 >= 0.0 and &1 <= 1.0))
+    assert model.prior_strength == report.one_standard_error.chosen
+  end
+
+  test "select chooses the largest prior strength whose mean fold accuracy is within one standard error of the best" do
+    {model, %{one_standard_error: rule, folds: folds}} = LexicalEvidence.select(@rows, language: "en")
+
+    within = for {strength, accuracies} <- folds, Enum.sum(accuracies) / length(accuracies) >= rule.threshold, do: strength
+    assert model.prior_strength == Enum.max(within)
+    assert rule.threshold == rule.mean - rule.standard_error
   end
 
   test "a row's fold model was fitted without that row", %{model: model} do
