@@ -1,0 +1,89 @@
+[
+  {
+    "data": [
+      {
+        "text": "check red "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " brightness"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "how bright are the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "is the "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "light"
+      },
+      {
+        "text": " brightness 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's the brightness of kitchen "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's the brightness of pink "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in the bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "what's the level of "
+      },
+      {
+        "alias": "device",
+        "meta": "@device",
+        "text": "lights"
+      },
+      {
+        "text": " in bedroom"
+      }
+    ]
+  }
+]
