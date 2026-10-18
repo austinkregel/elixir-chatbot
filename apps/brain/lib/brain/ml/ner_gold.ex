@@ -10,8 +10,22 @@ defmodule Brain.ML.NerGold do
   entities have no such placement, or more than one, raises naming the row:
   choosing between placements would be a guess. Every row in the corpus had
   exactly one placement when this was written (2026-10-08, 2,110 rows).
+
+  ## Templates
+
+  Many rows are one sentence with other values put in its entity slots:
+  "turn off the lights in the kitchen" and "turn off the radio in the
+  bedroom" are both `"turn off the <device> in the <room>"`. A row records no
+  template id, nor does the export entry it came from, so a row's template is
+  read from its own annotation (`template!/1`): its text with every entity
+  replaced by its type. Rows of one template teach a model the same words
+  around the slots, so a cross-validation that puts one in training and
+  another in validation measures how well the model has remembered the
+  sentence, not how it reads a sentence it never saw. Every cross-validation
+  over these rows assigns folds by template.
   """
 
+  alias Brain.Corpus.Export
   alias Brain.ML.Tokenizer
 
   @type span :: %{type: String.t(), value: String.t(), start_pos: non_neg_integer(), end_pos: non_neg_integer()}
@@ -56,6 +70,35 @@ defmodule Brain.ML.NerGold do
 
     %{tokens: Enum.map(tokens, & &1.text), tags: tags}
   end
+
+  @doc """
+  The row's template (see the moduledoc): its text with each entity, placed as
+  `spans!/1` places it, replaced by `<` its type `>`, normalized as
+  `Brain.Corpus.Export.normalise/1`. "Turn off the lights in the Kitchen"
+  (device "lights", room "Kitchen") is `"turn off the <device> in the <room>"`.
+  """
+  @spec template!(map()) :: String.t()
+  def template!(%{"text" => text} = row) do
+    {parts, rest_from} =
+      row
+      |> spans!()
+      |> Enum.reduce({[], 0}, fn span, {parts, from} ->
+        {["<#{span.type}>", String.slice(text, from, span.start_pos - from) | parts], span.end_pos + 1}
+      end)
+
+    [String.slice(text, rest_from..-1//1) | parts]
+    |> Enum.reverse()
+    |> Enum.join()
+    |> Export.normalise()
+  end
+
+  @doc """
+  The fold of each of `rows` among `folds` folds, by template (`template!/1`):
+  rows of one template are always in one fold.
+  """
+  @spec template_folds([map()], pos_integer()) :: [non_neg_integer()]
+  def template_folds(rows, folds) when is_list(rows) and is_integer(folds) and folds > 0,
+    do: Enum.map(rows, &:erlang.phash2(template!(&1), folds))
 
   # Every ordered, non-overlapping placement of `entities` at or after `from`.
   defp placements(_text, _tokens, [], _from), do: [[]]
