@@ -175,6 +175,7 @@ defmodule Brain.Response.PhraseLatticeRealizer do
 
   defp sayable_here?(frag, prim, turn, intent, last?) do
     replies_to?(frag, intent) and
+      frame_chosen?(frag, turn) and
       ConditionEvaluator.evaluate(frag.condition, turn) and
       Enum.all?(placeholders(frag.text), &(fill_value(&1, prim, turn) != nil)) and
       placeable?(frag, prim, last?)
@@ -186,6 +187,23 @@ defmodule Brain.Response.PhraseLatticeRealizer do
 
   defp leads_in?(text, %Primitive{type: type}) do
     String.ends_with?(String.trim_trailing(text), ",") or type in [:hedging, :transition]
+  end
+
+  # A sentence of a domain frame is said only for a turn the synthesizer would
+  # word from that frame (`Synthesizer.chosen_frame/3`, one rule for both).
+  defp frame_chosen?(%{frame: nil}, _turn), do: true
+
+  defp frame_chosen?(%{frame: %{"domain" => domain, "kind" => kind, "key" => key}}, turn) do
+    case Synthesizer.chosen_frame(domain, turn.entities, turn.enriched_data) do
+      {chosen_kind, ^key} -> Atom.to_string(chosen_kind) == kind
+      _ -> false
+    end
+  end
+
+  defp frame_chosen?(%{frame: other} = frag, _turn) do
+    raise ArgumentError,
+          "PhraseLatticeRealizer: the fragment #{inspect(frag.text)} names the frame #{inspect(other)}, " <>
+            "not %{\"domain\", \"kind\", \"key\"}; the inventory needs rebuilding (mix gen_lattice_data)"
   end
 
   defp replies_to?(%{origin: "response_templates", source_intent: source}, intent), do: source == intent
