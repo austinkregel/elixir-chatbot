@@ -25,18 +25,19 @@ defmodule Brain.Response.GeneratorTest do
       end
     end
 
+    # The suite's world has no credentials for Weather or Home Assistant, so an
+    # intent dispatched to either is answered with the reply planned for the
+    # service's error (`{:service_reply, enrichment}`, generate/4's contract),
+    # and the slots the service was asked with carry the turn's entities.
     test "generates weather response with location entity" do
       entities = [%{entity_type: "location", value: "New York"}]
 
       {:ok, response, type} = Generator.generate("weather.query", entities, nil, @opts)
 
-      assert is_binary(response)
+      assert {:service_reply,
+              %{enrichment_service: :weather, enrichment_error: :missing_credentials, slots: %{location: "New York"}}} = type
 
-      assert String.contains?(response, "New York") or
-               String.contains?(response, "weather") or
-               type in [:domain, :synthesized, :template]
-
-      assert type in [:domain, :synthesized, :template, :fallback]
+      assert response =~ "Weather"
     end
 
     test "generates weather clarification without location" do
@@ -44,14 +45,9 @@ defmodule Brain.Response.GeneratorTest do
 
       {:ok, response, type} = Generator.generate("weather.query", entities, nil, @opts)
 
-      assert is_binary(response)
-
-      assert String.contains?(response, "location") or
-               String.contains?(response, "where") or
-               String.contains?(response, "weather") or
-               type in [:domain, :synthesized, :template, :fallback]
-
-      assert type in [:domain, :synthesized, :template, :fallback]
+      assert {:service_reply, %{enrichment_service: :weather, enrichment_error: :missing_credentials, slots: slots}} = type
+      assert slots == %{}
+      assert response =~ "Weather"
     end
 
     test "generates music response with artist entity" do
@@ -59,14 +55,11 @@ defmodule Brain.Response.GeneratorTest do
 
       {:ok, response, type} = Generator.generate("music.play", entities, nil, @opts)
 
-      assert is_binary(response)
+      assert {:service_reply, %{enrichment_service: :home_assistant, enrichment_error: :missing_credentials, slots: slots}} =
+               type
 
-      assert String.contains?(response, "Taylor Swift") or
-               String.contains?(response, "music") or
-               String.contains?(response, "play") or
-               type in [:domain, :synthesized, :template, :fallback]
-
-      assert type in [:domain, :synthesized, :template, :fallback]
+      assert "Taylor Swift" in Map.values(slots)
+      assert response =~ "Home Assistant"
     end
 
     test "generates device control response" do
@@ -77,14 +70,10 @@ defmodule Brain.Response.GeneratorTest do
 
       {:ok, response, type} = Generator.generate("smarthome.lights.switch.on", entities, nil, @opts)
 
-      assert is_binary(response)
+      assert {:service_reply,
+              %{enrichment_service: :home_assistant, enrichment_error: :missing_credentials, slots: %{device: "lights"}}} = type
 
-      assert String.contains?(response, "lights") or
-               String.contains?(response, "device") or
-               String.contains?(response, "turn") or
-               type in [:domain, :synthesized, :template, :fallback]
-
-      assert type in [:domain, :synthesized, :template, :fallback]
+      assert response =~ "Home Assistant"
     end
 
     test "generates fallback for unknown intent" do
