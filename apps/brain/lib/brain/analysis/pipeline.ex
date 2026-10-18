@@ -29,8 +29,9 @@ defmodule Brain.Analysis.Pipeline do
 
   alias Brain.Lattice
   alias Brain.Lattice.Candidate, as: LatticeCandidate
+  alias Brain.Analysis.IntentArbitration
   alias Brain.Lexicon.IntentDomains
-  alias Brain.ML.{EntityExtractor, MicroClassifiers, POSTagger, Tokenizer}
+  alias Brain.ML.{EntityExtractor, FeatureVectorClassifier, MicroClassifiers, POSTagger, Tokenizer}
 
   alias Brain.Worlds.Embedder, as: WorldEmbedder
 
@@ -40,7 +41,7 @@ defmodule Brain.Analysis.Pipeline do
   alias Brain.Telemetry
   require Logger
 
-  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :world_id - required: the world the text is analyzed in. Brain passes its\n  conversation's world; any other caller names the world it analyzes for.\n  Absent raises.\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n- :language - the `Brain.Language` code to analyze in. Absent means the caller\n  named no language, which is English; an unsupported code raises.\n- :lexical_evidence - a `Brain.Analysis.LexicalEvidence` model used in place of\n  the one loaded for the language. Training passes each row's out-of-fold model.\n- :active_contexts - the conversational contexts the turn continues from. Absent\n  means they are derived from `:conversation_history` and the registry's output\n  contexts (`Brain.Analysis.ActiveContexts`); training and evaluation pass a\n  gold row's follow-up context. A name no intent continues from raises.\n\nReturns an InternalModel struct with complete analysis.\n"
+  @doc "Processes user input through the complete analysis pipeline.\n\nOptions:\n- :world_id - required: the world the text is analyzed in. Brain passes its\n  conversation's world; any other caller names the world it analyzes for.\n  Absent raises.\n- :participants - conversation participants (default: [:user, :bot])\n- :bot_names - additional names the bot responds to\n- :conversation_history - list of previous context snapshots for slot resolution\n- :user_profile - map of user preferences (location, timezone, etc.)\n- :skip_entity_extraction - if true, skips entity extraction (for testing)\n- :entities - pre-extracted entities to use instead of extracting\n- :side_effects - whether this run writes what it learned about the turn:\n  beliefs extracted from events, graph nodes and edges, feedback statistics,\n  and novel-intent candidates. Defaults to `true`. Evaluation and\n  training-data callers pass `false`, and the run writes nothing. Any value\n  other than `true` or `false` raises.\n- :language - the `Brain.Language` code to analyze in. Absent means the caller\n  named no language, which is English; an unsupported code raises.\n- :lexical_evidence - a `Brain.Analysis.LexicalEvidence` model used in place of\n  the one loaded for the language. Training passes each row's out-of-fold model.\n- :intent_models - `%{intent_full: model, intent_domain: model}`, the two\n  `Brain.ML.FeatureVectorClassifier` models used in place of the loaded\n  `:intent_full` and `:intent_domain` micro-classifiers. Training passes each\n  row's out-of-fold models (`mix train_intent_arbitration`).\n- :active_contexts - the conversational contexts the turn continues from. Absent\n  means they are derived from `:conversation_history` and the registry's output\n  contexts (`Brain.Analysis.ActiveContexts`); training and evaluation pass a\n  gold row's follow-up context. A name no intent continues from raises.\n\nReturns an InternalModel struct with complete analysis.\n"
   def process(text, opts \\ []) when is_binary(text) do
     world_id!(opts)
     side_effects?(opts)
@@ -526,7 +527,7 @@ defmodule Brain.Analysis.Pipeline do
 
     pass1_with_context = Map.put(pass1, :accumulated_context, cross_context.accumulator)
 
-    {refined_speech_act, intent, _intent_method, _intent_confidence, _intent_details, _profile,
+    {refined_speech_act, intent, _intent_method, _intent_confidence, intent_details, _profile,
      feature_vector} =
       classify_intent_full_and_refine(pass1_with_context, opts)
 
@@ -535,6 +536,7 @@ defmodule Brain.Analysis.Pipeline do
     |> Map.delete(:_entity_candidates)
     |> Map.put(:speech_act, refined_speech_act)
     |> Map.put(:intent, intent)
+    |> Map.put(:intent_arbitration, Map.get(intent_details, :arbitration))
     |> Map.put(:slots, default_empty_slots())
     |> Map.put(:feature_vector, feature_vector)
     |> calculate_confidence(cross_context.accumulator)
@@ -734,6 +736,7 @@ defmodule Brain.Analysis.Pipeline do
       |> Map.delete(:_entity_candidates)
       |> Map.put(:speech_act, refined_speech_act)
       |> Map.put(:intent, intent)
+      |> Map.put(:intent_arbitration, Map.get(intent_details, :arbitration))
       |> Map.put(:entities, relevant_entities)
       |> Map.put(:unresolved_spans, unresolved_spans)
       |> Map.put(:slots, resolved_slots)
@@ -777,7 +780,7 @@ defmodule Brain.Analysis.Pipeline do
         SpeechActTable.loaded!(pass1_with_context.language)
       )
 
-    profile = ChunkProfile.materialize(pass1_with_context, feature_vector)
+    profile = ChunkProfile.materialize(pass1_with_context, feature_vector, profile_models(opts))
     lattice = apply_profile_rerank(lattice, profile)
 
     {intent, intent_method, intent_confidence, intent_details} =
@@ -841,26 +844,60 @@ defmodule Brain.Analysis.Pipeline do
       FeatureExtractor.extract(pass1_with_context, Keyword.take(opts, [:lexical_evidence]))
 
     lattice =
-      if MicroClassifiers.ready?() do
-        case MicroClassifiers.classify_vector_detailed(:intent_full, feature_vector) do
-          {:ok, %Lattice{} = lattice} ->
-            case Lattice.best_label(lattice) do
-              l when l in [nil, "", "unknown"] ->
-                Lattice.empty(:intent_full, error: :unknown_intent)
+      case intent_models!(opts) do
+        %{intent_full: model} ->
+          case FeatureVectorClassifier.classify(feature_vector, model) do
+            {:ok, label, score, details} ->
+              Lattice.from_classifier({:ok, label, score, details}, stage: :intent_full, source: :feature_vector)
 
-              _ ->
-                lattice
-            end
+            :error ->
+              raise ArgumentError, "Pipeline: the :intent_models intent_full model does not take a #{length(feature_vector)}-dimensional vector"
+          end
 
-          {:error, reason} ->
-            Lattice.empty(:intent_full, error: reason)
-        end
-      else
-        Logger.warning("MicroClassifiers not ready — intent_full classification skipped (not_loaded)")
-        Lattice.empty(:intent_full, error: :not_loaded)
+        nil ->
+          loaded_intent_full_lattice(feature_vector)
       end
 
     {lattice, feature_vector}
+  end
+
+  # The `:intent_models` option: both models or neither.
+  defp intent_models!(opts) do
+    case Keyword.fetch(opts, :intent_models) do
+      :error -> nil
+      {:ok, %{intent_full: %{kind: :feature_vector}, intent_domain: %{kind: :feature_vector}} = models} -> models
+      {:ok, other} -> raise ArgumentError, "Pipeline: :intent_models must hold an intent_full and an intent_domain feature-vector model, got #{inspect(other, limit: 3)}"
+    end
+  end
+
+  # The models `ChunkProfile.materialize/3` classifies the profile's axes with
+  # in place of the loaded ones.
+  defp profile_models(opts) do
+    case intent_models!(opts) do
+      %{intent_domain: model} -> [models: %{intent_domain: model}]
+      nil -> []
+    end
+  end
+
+  defp loaded_intent_full_lattice(feature_vector) do
+    if MicroClassifiers.ready?() do
+      case MicroClassifiers.classify_vector_detailed(:intent_full, feature_vector) do
+        {:ok, %Lattice{} = lattice} ->
+          case Lattice.best_label(lattice) do
+            l when l in [nil, "", "unknown"] ->
+              Lattice.empty(:intent_full, error: :unknown_intent)
+
+            _ ->
+              lattice
+          end
+
+        {:error, reason} ->
+          Lattice.empty(:intent_full, error: reason)
+      end
+    else
+      Logger.warning("MicroClassifiers not ready — intent_full classification skipped (not_loaded)")
+      Lattice.empty(:intent_full, error: :not_loaded)
+    end
   end
 
   # The text pass 1's entity positions index: the text extraction read (the
@@ -1338,21 +1375,19 @@ defmodule Brain.Analysis.Pipeline do
     base = intent_details_base_from_lattice(lattice)
 
     classifier_registered? = classifier_intent != nil and registered_intent?(classifier_intent)
-    domain_conflict? = classifier_domain_conflicts_with_profile?(classifier_intent, profile)
+    profile_domain = profile_domain_string(profile)
 
     cond do
-      # Two trained classifiers disagree: `:intent_full` says one thing, but the
-      # `:intent_domain` micro-classifier says the chunk is in a different
-      # domain. Route through the multi-signal scorer rather than blindly
-      # trusting whichever model happened to fire louder.
-      classifier_registered? and domain_conflict? ->
-        inferred = infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
-
-        {inferred, :speech_act_fallback, nil,
-         Map.merge(base, %{
-           original_intent: classifier_intent,
-           original_score: best_score
-         })}
+      # The two trained classifiers disagree: `:intent_full`'s intent lies in
+      # another domain than the one `:intent_domain` gives the chunk. Neither
+      # wins by rule: the route the disagreement is resolved by is the one the
+      # out-of-fold data says is most often right for it (`IntentArbitration`).
+      # Both sides are consolidated (`Brain.Lexicon.IntentDomains`), the
+      # vocabulary `:intent_domain` is trained on: compared by raw prefix,
+      # "alarm" never matched "reminder" and every alarm intent disagreed.
+      classifier_registered? and profile_domain != nil and
+          IntentDomains.consolidate(classifier_intent) != IntentDomains.consolidate(profile_domain) ->
+        arbitrate(classifier_intent, best_score, speech_act, lattice, entities, text, opts, profile, base)
 
       classifier_registered? and best_score >= @disambiguation_threshold ->
         {classifier_intent, :classifier, best_score, base}
@@ -1402,34 +1437,51 @@ defmodule Brain.Analysis.Pipeline do
     end
   end
 
-  # True when the trained `:intent_full` output and the trained `:intent_domain`
-  # micro-classifier output assign the chunk to different domains. This is a
-  # signal we should respect — the domain classifier is a small, focused model
-  # that's far more reliable than the 232-class intent_full centroid.
-  defp classifier_domain_conflicts_with_profile?(nil, _), do: false
+  # Every route's intent (`IntentArbitration.routes/0`), the route the loaded
+  # arbitration takes for the pair of domains, and its record in the details
+  # (`:arbitration`), which training reads back: what each route gave, so the
+  # training rows measure every route whichever one is taken.
+  defp arbitrate(classifier_intent, best_score, speech_act, lattice, entities, text, opts, profile, base) do
+    classifier_domain = IntentDomains.consolidate(classifier_intent)
+    profile_domain = IntentDomains.consolidate(profile_domain_string(profile))
 
-  defp classifier_domain_conflicts_with_profile?(classifier_intent, profile) when is_binary(classifier_intent) do
-    case profile_domain_string(profile) do
-      nil ->
-        false
+    routes = %{
+      classifier: classifier_intent,
+      domain: best_intent_in_domain(lattice, profile_domain),
+      speech_act: infer_intent_from_speech_act(speech_act, text, profile, lattice, entities, world_id!(opts))
+    }
 
-      profile_domain ->
-        # Both sides are consolidated first, because the profile's domain comes
-        # from the :intent_domain classifier and that model is trained on the
-        # consolidated vocabulary (Brain.Lexicon.IntentDomains).
-        #
-        # This used to take the registry's `domain` field, falling back to the
-        # raw label prefix. Neither is a value the classifier can emit: an
-        # `alarm.*` intent compared "alarm" against "reminder", and
-        # `smalltalk.user.introduction` compared the registry's "introduction"
-        # against "smalltalk". Both mismatch on every single request, so 22
-        # intents covering 390 gold examples (8% of the corpus) had every
-        # correct prediction discarded unconditionally. Measured 2026-09-23.
-        IntentDomains.consolidate(classifier_intent) != IntentDomains.consolidate(profile_domain)
+    model = IntentArbitration.loaded!(language!(opts))
+    decision = IntentArbitration.decide(model, classifier_domain, profile_domain)
+
+    record = %{
+      classifier_domain: classifier_domain,
+      profile_domain: profile_domain,
+      routes: routes,
+      decision: decision
+    }
+
+    details = Map.merge(base, %{original_intent: classifier_intent, original_score: best_score, arbitration: record})
+
+    case decision do
+      {:route, :classifier, _p} -> {classifier_intent, :arbitrated_classifier, best_score, details}
+      {:route, :domain, _p} -> {routes.domain, :arbitrated_domain, nil, details}
+      {:route, :speech_act, _p} -> {routes.speech_act, :speech_act_fallback, nil, details}
+      {:abstain, _p} -> {nil, :arbitration_abstained, nil, details}
     end
   end
 
-  defp classifier_domain_conflicts_with_profile?(_, _), do: false
+  @doc """
+  The most probable of `lattice`'s candidates that is a registered intent in
+  `domain`, a consolidated domain (`Brain.Lexicon.IntentDomains`); nil when no
+  candidate is one. `Brain.Analysis.IntentArbitration`'s `:domain` route.
+  """
+  @spec best_intent_in_domain(Lattice.t(), String.t()) :: String.t() | nil
+  def best_intent_in_domain(%Lattice{candidates: candidates}, domain) when is_binary(domain) do
+    candidates
+    |> Enum.map(&to_string(&1.label))
+    |> Enum.find(&(registered_intent?(&1) and IntentDomains.consolidate(&1) == domain))
+  end
 
   defp intent_details_base_from_lattice(%Lattice{} = lattice) do
     if Lattice.empty?(lattice) do
