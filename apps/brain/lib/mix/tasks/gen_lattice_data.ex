@@ -25,7 +25,21 @@ defmodule Mix.Tasks.GenLatticeData do
 
   A template's `condition` (`Brain.Response.ConditionEvaluator` syntax, such
   as `has_entity:person`) is kept on each of its fragments as `"condition"`,
-  and the realizer considers the fragment only where it holds.
+  and the realizer considers the fragment only where it holds. A primitives
+  pool true only in some turns is mapped with its condition
+  (`{type, variant, condition}`), which each of its phrases' fragments keeps.
+  A condition `Brain.Response.ConditionEvaluator.validate!/1` does not accept
+  raises.
+
+  ## Domain frames
+
+  A domain's response frames and enriched response frames are chosen by
+  `Brain.Response.Synthesizer.chosen_frame/3` (an enriched frame's `when`
+  and `requires_enrichment`, a response frame's slot key). Each of their
+  fragments keeps the frame it is a sentence of as `"frame"`
+  (`%{"domain", "kind", "key"}`), and the realizer offers it only for a turn
+  that rule names that frame for. A frame the synthesizer's compiled
+  knowledge does not hold raises.
 
   ## Usage
 
@@ -45,6 +59,7 @@ defmodule Mix.Tasks.GenLatticeData do
   alias Brain.Analysis.FeatureExtractor.ChunkFeatures
   alias Brain.Lattice.FragmentVectorizer
   alias Brain.ML.Tokenizer
+  alias Brain.Response.{ConditionEvaluator, Synthesizer}
 
   @shortdoc "Generate lattice phrase inventory from training data"
 
@@ -82,9 +97,11 @@ defmodule Mix.Tasks.GenLatticeData do
   }
 
   # Each section of primitives.json: the planner's `{type, variant}` its
-  # phrases are fragments of (a nil variant for a type without variants), a
-  # map of its pools to those, or `{:not_lattice, reason}` for a pool the
-  # lattice does not word.
+  # phrases are fragments of (a nil variant for a type without variants), or
+  # `{type, variant, condition}` for a pool whose phrases are true only where
+  # the condition (`Brain.Response.ConditionEvaluator`) holds, a map of its
+  # pools to those, or `{:not_lattice, reason}` for a pool the lattice does
+  # not word.
   @primitive_sections %{
     "description" => {:not_lattice, "the file's description, not a pool"},
     "hedges" => %{
@@ -155,6 +172,17 @@ defmodule Mix.Tasks.GenLatticeData do
       "with_alternative" =>
         {:not_lattice, "its phrases need verb phrases the boundary primitive's content does not hold"}
     },
+    # An informative framing opens what the reply tells the user. It is planned
+    # before a service's result (enrichable_question and enriched_directive in
+    # discourse_patterns.json, which match only a successful enrichment) and
+    # before nothing but a follow-up (question_general and default_directive,
+    # when no service gave a result): a pool that introduces a result is said
+    # only after a successful enrichment, and one that says there is no answer
+    # only where there was none.
+    "informative_frames" => %{
+      "with_result" => {"framing", "informative", "enrichment_success"},
+      "no_answer" => {"framing", "informative", "NOT enrichment_success"}
+    },
     "reframe_patterns" => {"framing", "reframe"},
     "contradiction_responses" => {"contradiction_response", nil},
     "creative_engagement" => {"content", "creative"},
@@ -193,6 +221,7 @@ defmodule Mix.Tasks.GenLatticeData do
     primitive_fragments = process_primitives(verbose)
 
     all_fragments = template_fragments ++ domain_fragments ++ primitive_fragments
+    validate_conditions!(all_fragments)
 
     all_fragments =
       Enum.map(all_fragments, fn frag ->
@@ -322,7 +351,7 @@ defmodule Mix.Tasks.GenLatticeData do
     primitive_index = build_primitive_index(by_chunk_type)
 
     inventory = %{
-      "version" => 1,
+      "version" => Brain.Response.PhraseInventory.inventory_version(),
       "generated_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
       "feature_dimension_count" => feature_dim,
       "tone_dimension_count" => 10,
@@ -528,9 +557,13 @@ defmodule Mix.Tasks.GenLatticeData do
                         {type, variant, condition} = Map.fetch!(social_frames, key)
                         Enum.map(templates, &social_frame_fragment(&1, domain, type, variant, condition, path))
 
-                      {_key, templates} when is_list(templates) ->
+                      {key, templates} when is_list(templates) ->
+                        frame = domain_frame!(domain, :response, key, path)
+
                         Enum.flat_map(templates, fn template ->
-                          segment_template(template, "#{domain}.response", "domain_knowledge")
+                          template
+                          |> segment_template("#{domain}.response", "domain_knowledge")
+                          |> Enum.map(&Map.put(&1, "frame", frame))
                         end)
 
                       {key, other} ->
@@ -539,7 +572,8 @@ defmodule Mix.Tasks.GenLatticeData do
 
                   enriched_fragments =
                     enriched_frames
-                    |> Enum.flat_map(fn {_name, frame_config} ->
+                    |> Enum.flat_map(fn {name, frame_config} ->
+                      frame = domain_frame!(domain, :enriched, name, path)
                       templates = Map.get(frame_config, "templates", [])
                       requires = Map.get(frame_config, "requires_enrichment", [])
 
@@ -548,7 +582,8 @@ defmodule Mix.Tasks.GenLatticeData do
                         Enum.map(frags, fn frag ->
                           Map.merge(frag, %{
                             "enrichment_fields" => requires,
-                            "conditions" => %{"enriched" => requires}
+                            "conditions" => %{"enriched" => requires},
+                            "frame" => frame
                           })
                         end)
                       end)
@@ -572,6 +607,34 @@ defmodule Mix.Tasks.GenLatticeData do
       {:error, reason} ->
         Mix.raise("gen_lattice_data: cannot list #{@domains_dir}: #{inspect(reason)}")
     end
+  end
+
+  # The domain frame a fragment is a sentence of, as
+  # `Brain.Response.Synthesizer.chosen_frame/3` names it: the realizer offers
+  # the fragment only for a turn the synthesizer would word from that frame.
+  # A frame the synthesizer's compiled knowledge does not hold, or holds
+  # malformed, raises.
+  defp domain_frame!(domain, kind, key, path) do
+    try do
+      :ok = Synthesizer.validate_frame!(domain, kind, key)
+    rescue
+      e in ArgumentError -> Mix.raise("gen_lattice_data: #{path}'s #{kind} frame #{key}: #{Exception.message(e)}")
+    end
+
+    %{"domain" => domain, "kind" => Atom.to_string(kind), "key" => key}
+  end
+
+  # Every fragment's condition is one the realizer can evaluate; one that is
+  # not would never hold, and its fragment would never be said.
+  defp validate_conditions!(fragments) do
+    Enum.each(fragments, fn frag ->
+      try do
+        ConditionEvaluator.validate!(frag["condition"])
+      rescue
+        e in ArgumentError ->
+          Mix.raise("gen_lattice_data: the fragment #{inspect(frag["text"])} of #{frag["source_intent"]} has a condition the realizer cannot evaluate: #{Exception.message(e)}")
+      end
+    end)
   end
 
   defp social_frame_fragment(text, domain, type, variant, condition, path) when is_binary(text) do
@@ -626,7 +689,10 @@ defmodule Mix.Tasks.GenLatticeData do
 
   defp primitive_fragments({:not_lattice, _reason}, _pools, _keys, _path), do: []
 
-  defp primitive_fragments({type, variant}, phrases, keys, path) when is_list(phrases) do
+  defp primitive_fragments({type, variant}, phrases, keys, path) when is_list(phrases),
+    do: primitive_fragments({type, variant, nil}, phrases, keys, path)
+
+  defp primitive_fragments({type, variant, condition}, phrases, keys, path) when is_list(phrases) do
     Enum.map(phrases, fn
       phrase when is_binary(phrase) ->
         if String.trim(phrase) == "" do
@@ -643,7 +709,7 @@ defmodule Mix.Tasks.GenLatticeData do
           "prototype_vector" => [],
           "source_intent" => "primitives." <> Enum.join(keys, "."),
           "conditions" => %{},
-          "condition" => nil,
+          "condition" => condition,
           "origin" => "primitives"
         }
 
