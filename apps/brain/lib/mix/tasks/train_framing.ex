@@ -33,7 +33,7 @@ defmodule Mix.Tasks.TrainFraming do
 
   @shortdoc "Train the :framing_class document-level classifier"
 
-  @data_path "data/classifiers/framing_class.json"
+  @data_path "classifiers/framing_class.json"
 
   @impl Mix.Task
   def run(args) do
@@ -316,20 +316,5 @@ defmodule Mix.Tasks.TrainFraming do
     Application.get_env(:brain, :ml, [])[:models_path] || Brain.priv_path("ml_models")
   end
 
-  defp resolve_data_path do
-    priv_dir = :code.priv_dir(:brain) |> to_string()
-
-    umbrella_root =
-      case File.read_link(priv_dir) do
-        {:ok, link_target} ->
-          parent = Path.dirname(priv_dir)
-          real_priv = Path.join(parent, link_target) |> Path.expand()
-          Path.join(real_priv, "../../..") |> Path.expand()
-
-        {:error, _} ->
-          Path.join(priv_dir, "../../../../..") |> Path.expand()
-      end
-
-    Path.join(umbrella_root, @data_path)
-  end
+  defp resolve_data_path, do: Brain.data_path(@data_path)
 end
