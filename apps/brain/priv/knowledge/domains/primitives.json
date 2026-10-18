@@ -106,6 +106,14 @@
     "unsupported": [
       "$service can't do that.",
       "That isn't something $service can handle."
+    ],
+    "carried_out": [
+      "$service carried that out.",
+      "$service took care of that."
+    ],
+    "nothing_reported": [
+      "$service returned nothing for that.",
+      "I asked $service, but it had nothing to report."
     ]
   },
   "service_items": {
@@ -311,8 +319,35 @@
       "I don't have anything I can tell you about that.",
       "Nothing I know covers that.",
       "I have nothing on that to share."
+    ],
+    "with_facts": [
+      "Here's what I know.",
+      "Here's what I have on that."
     ]
   },
+
+  "polar_answers": {
+    "affirmative": [
+      "Yes,",
+      "That's right,"
+    ],
+    "negative": [
+      "No,",
+      "No, that's not right."
+    ]
+  },
+
+  "fact_statements": [
+    "$fact."
+  ],
+
+  "explanations": [
+    "$explanation."
+  ],
+
+  "self_knowledge_narratives": [
+    "$narrative"
+  ],
 
   "reframe_patterns": [
     "I don't really have opinions, but I can help you think through it.",
