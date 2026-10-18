@@ -164,12 +164,20 @@ defmodule Mix.Tasks.GenMicroData do
           Mix.raise("gen_micro_data: training row has no text or intent: #{inspect(entry, limit: 5)}")
       end)
 
-    {model, accuracies} = LexicalEvidence.select(rows, language: @gold_language)
+    {model, report} = LexicalEvidence.select(rows, language: @gold_language)
     LexicalEvidence.save!(model)
+    rule = report.one_standard_error
+
+    Mix.shell().info(
+      "Lexical evidence (#{@gold_language}): cross-validated accuracy by prior strength " <>
+        Enum.map_join(Enum.sort(report.accuracy), "  ", fn {strength, accuracy} -> "#{strength}:#{Float.round(accuracy * 100, 2)}%" end) <>
+        "; one-standard-error rule: best #{rule.best} at fold mean #{Float.round(rule.mean * 100, 2)}% +- " <>
+        "#{Float.round(rule.standard_error * 100, 2)}%, threshold #{Float.round(rule.threshold * 100, 2)}%"
+    )
 
     Mix.shell().info(
       "Lexical evidence (#{@gold_language}): #{length(model.intents)} intents, #{map_size(model.scores)} n-grams, " <>
-        "prior strength #{model.prior_strength} (cross-validated accuracy #{Float.round(accuracies[model.prior_strength] * 100, 1)}%) " <>
+        "prior strength #{model.prior_strength} (cross-validated accuracy #{Float.round(report.accuracy[model.prior_strength] * 100, 1)}%) " <>
         "-> #{LexicalEvidence.path(@gold_language)}"
     )
 
