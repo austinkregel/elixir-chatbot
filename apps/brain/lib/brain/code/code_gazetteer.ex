@@ -311,6 +311,23 @@ defmodule Brain.Code.CodeGazetteer do
     end)
   end
 
+  @doc """
+  The length, in graphemes, of the longest name or qualified name of
+  `world_id`'s symbols, lowercased as names are compared; 0 for a world with
+  none. No longer run of text can name a symbol.
+
+  Raises when the gazetteer's tables do not exist, as `symbols_named/2` does.
+  """
+  @spec longest_name(String.t()) :: non_neg_integer()
+  def longest_name(world_id) when is_binary(world_id) do
+    tables!()
+
+    case :ets.lookup(@ets_stats, world_id) do
+      [{^world_id, stats}] -> Map.get(stats, :longest_name, 0)
+      [] -> 0
+    end
+  end
+
   defp tables! do
     case Enum.filter([@ets_symbols, @ets_qualified, @ets_stats], &(:ets.whereis(&1) == :undefined)) do
       [] ->
@@ -558,6 +575,7 @@ defmodule Brain.Code.CodeGazetteer do
 
       # Update stats
       update_stats(world_id, :add)
+      update_stats(world_id, {:add_names, [normalize_name(name), normalize_name(qualified_name)]})
 
       # Track file if present
       if file_path = Map.get(symbol, :file_path) do
@@ -652,6 +670,9 @@ defmodule Brain.Code.CodeGazetteer do
 
       {:add_language, _} ->
         current
+
+      {:add_names, names} ->
+        Map.put(current, :longest_name, Enum.max([Map.get(current, :longest_name, 0) | Enum.map(names, &String.length/1)]))
     end
 
     :ets.insert(@ets_stats, {world_id, updated})
