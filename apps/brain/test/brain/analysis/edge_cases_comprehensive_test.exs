@@ -21,6 +21,15 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
   # The world the test suite runs in, seeded by `mix test.models`.
   @world_id "default"
 
+  # A world a manager creates schedules with the local scheduler
+  # (`World.Manager.create/2`, `mix world.assign_local_scheduling` for one that
+  # existed before), and a turn the classifier reads as a timer, alarm,
+  # reminder or calendar intent is dispatched to it; the suite's world gets the
+  # same driver, inside the test's transaction.
+  setup do
+    :ok = Brain.Services.Dispatcher.assign_scheduling_driver(@world_id, Brain.Services.LocalScheduler)
+  end
+
   @doc "Extracts a normalized snapshot from a Pipeline analysis result.\nThis captures the key fields we want to assert on.\n"
   def extract_snapshot(result) do
     %{
@@ -901,7 +910,9 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
 
         entity_type = Map.get(entity, :entity_type, Map.get(entity, :type, "unknown"))
 
-        assert entity_type == "location" or entity_type == "city",
+        # Location-like as the type hierarchy has it: the NER gold standard
+        # labels a city `address`, a type under `location`.
+        assert entity_type == "location" or Brain.Analysis.TypeHierarchy.is_a?(entity_type, "location"),
                "Austin in weather context should be location, got: #{entity_type}"
       end
     end
@@ -1011,7 +1022,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
       if austin_entities != [] do
         [austin] = austin_entities
 
-        assert austin.type in ["location", "city"],
+        assert austin.type == "location" or Brain.Analysis.TypeHierarchy.is_a?(austin.type, "location"),
                "Austin in weather context should be location, got: #{austin.type}"
       end
 
@@ -1275,7 +1286,7 @@ defmodule Brain.Analysis.EdgeCasesComprehensiveTest do
         end)
 
       Enum.each(austin_entities, fn e ->
-        refute e.type in ["location", "city"],
+        refute e.type == "location" or Brain.Analysis.TypeHierarchy.is_a?(e.type, "location"),
                "Austin in greeting context must be person, got: #{e.type}"
       end)
 
