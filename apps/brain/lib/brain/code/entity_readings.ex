@@ -3,7 +3,9 @@ defmodule Brain.Code.EntityReadings do
   The code subsystem's readings of a sentence, one of the sources
   `Brain.ML.EntityExtractor` reads every sentence with.
 
-  A span is any run of the sentence's tokens. It is read when its text,
+  A span is any run of the sentence's tokens no longer, in graphemes, than
+  the longest name it could be (`Brain.Code.CodeGazetteer.longest_name/1`,
+  the longest file name, the longest language name). It is read when its text,
   lowercased as `Brain.Code.CodeGazetteer` compares names, is
 
   - the name or qualified name of a symbol of the world's analyzed code
@@ -64,10 +66,18 @@ defmodule Brain.Code.EntityReadings do
   def readings(text, tokens, world_id, ordinary_word?)
       when is_binary(text) and is_list(tokens) and is_binary(world_id) and is_function(ordinary_word?, 1) do
     types = types!()
-    spans = spans(text, tokens)
-    symbols = CodeGazetteer.symbols_named(world_id, Enum.map(spans, &elem(&1, 2)))
     files = CodeGazetteer.file_names(world_id)
     languages = language_names()
+
+    # No span longer than every name the world's code, files and languages
+    # hold can be one of them, so none is cut: a sentence of n tokens has
+    # n(n+1)/2 runs, and cutting and lowercasing each made a long turn's
+    # extraction cubic in its length.
+    longest =
+      Enum.max([CodeGazetteer.longest_name(world_id) | Enum.map(Map.keys(files) ++ Map.keys(languages), &String.length/1)])
+
+    spans = spans(text, tokens, longest)
+    symbols = CodeGazetteer.symbols_named(world_id, Enum.map(spans, &elem(&1, 2)))
 
     read =
       Enum.flat_map(spans, fn {start_pos, end_pos, key, surface} ->
@@ -162,13 +172,14 @@ defmodule Brain.Code.EntityReadings do
         do: {String.downcase(name), language}
   end
 
-  # Every run of tokens as `{start_pos, end_pos, key, surface}`: its extent,
-  # its text lowercased, and its text. A run's text is the text of the run one
-  # token shorter with what follows it up to the next token's end, so each
-  # stretch of the text is cut once.
-  defp spans(_text, []), do: []
+  # Every run of tokens at most `longest` graphemes long, as `{start_pos,
+  # end_pos, key, surface}`: its extent, its text lowercased, and its text. A
+  # run's text is the text of the run one token shorter with what follows it
+  # up to the next token's end, so each stretch of the text is cut once. The
+  # positions index graphemes, so a run's length is read from its extent.
+  defp spans(_text, [], _longest), do: []
 
-  defp spans(text, tokens) do
+  defp spans(text, tokens, longest) do
     graphemes = text |> String.graphemes() |> List.to_tuple()
     cut = fn first, last -> Enum.map_join(first..last//1, &elem(graphemes, &1)) end
     tokens = List.to_tuple(tokens)
@@ -178,18 +189,23 @@ defmodule Brain.Code.EntityReadings do
       first = elem(tokens, i)
 
       i..last
-      |> Enum.map_reduce(nil, fn j, previous ->
+      |> Enum.reduce_while({[], nil}, fn j, {runs, previous} ->
         token = elem(tokens, j)
 
-        surface =
-          case previous do
-            nil -> cut.(first.start_pos, token.end_pos)
-            text_so_far -> text_so_far <> cut.(elem(tokens, j - 1).end_pos + 1, token.end_pos)
-          end
+        if token.end_pos - first.start_pos + 1 > longest do
+          {:halt, {runs, previous}}
+        else
+          surface =
+            case previous do
+              nil -> cut.(first.start_pos, token.end_pos)
+              text_so_far -> text_so_far <> cut.(elem(tokens, j - 1).end_pos + 1, token.end_pos)
+            end
 
-        {{first.start_pos, token.end_pos, String.downcase(surface), surface}, surface}
+          {:cont, {[{first.start_pos, token.end_pos, String.downcase(surface), surface} | runs], surface}}
+        end
       end)
       |> elem(0)
+      |> Enum.reverse()
     end)
   end
 end
