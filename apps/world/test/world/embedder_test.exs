@@ -108,7 +108,7 @@ defmodule World.EmbedderTest do
     end
 
     test "keeps the seeded copy of a world whose vocabulary was never loaded" do
-      {:ok, world} = create_test_world("embedder_empty_rebuild_unloaded", mode: :persistent)
+      {:ok, world} = create_test_world("embedder_rebuild_unloaded", mode: :persistent)
       assert Embedder.get_status(world.id).phase == :not_initialized
       trained = Embedder.read!(Embedder.trained_path(), :trained)
 
