@@ -26,8 +26,13 @@ defmodule Brain.Analysis.LexicalEvidence do
   ## Choosing the prior strength
 
   `select/2` compares candidate prior strengths by k-fold cross-validation on
-  the training rows: each fold is scored by how often the intent with the
-  highest evidence is the row's intent. The held-out split is never read.
+  the training rows: each fold that holds a row is scored by how often the
+  intent with the highest evidence is the row's intent. The strength is
+  chosen by the one-standard-error rule (`Brain.ML.OneStandardError`): of the
+  strengths whose mean fold accuracy is within one standard error of the best
+  mean, the largest. The accuracy is flat across the largest strengths, and
+  the highest mean among them is chosen by fold noise. Fewer than two folds
+  holding a row raise. The held-out split is never read.
 
   ## Language
 
@@ -37,7 +42,7 @@ defmodule Brain.Analysis.LexicalEvidence do
   English implementation, so English is the only language that can be fitted.
   """
 
-  alias Brain.ML.Tokenizer
+  alias Brain.ML.{OneStandardError, Tokenizer}
 
   @enforce_keys [:language, :prior_strength, :intents, :scores]
   defstruct [:language, :prior_strength, :intents, :scores, :fitted_rows]
@@ -52,8 +57,8 @@ defmodule Brain.Analysis.LexicalEvidence do
 
   # Spans weak to effectively unbounded smoothing: on the intent training split
   # (3,655 rows, 2026-10-08) cross-validated accuracy rose from 56% at 1 to 64%
-  # and was flat from 100,000 on, so the grid ends past that plateau. Ties go to
-  # the smaller strength.
+  # and was flat from 100,000 on, so the grid ends past that plateau. The
+  # one-standard-error rule chooses among them.
   @prior_strengths [1, 10, 100, 1000, 3000, 10_000, 30_000, 100_000, 300_000]
   @folds 5
 
@@ -119,30 +124,55 @@ defmodule Brain.Analysis.LexicalEvidence do
   def fit([], _opts), do: raise(ArgumentError, "LexicalEvidence: no rows to fit")
 
   @doc """
-  Picks the prior strength by #{@folds}-fold cross-validation on `rows`, then
-  fits on all of them. Returns `{model, %{prior_strength => cv_accuracy}}`.
+  Picks the prior strength by #{@folds}-fold cross-validation on `rows` and the
+  one-standard-error rule (see the moduledoc), then fits on all of them.
+  Returns `{model, report}`: `accuracy` maps each prior strength to its
+  accuracy over every row, `folds` to its accuracy on each fold that holds a
+  row, and `one_standard_error` is the rule's choice -- the chosen and best
+  strengths, the best's mean and standard error, the threshold, the folds
+  scored and every strength's mean and standard error.
   """
-  @spec select([{String.t(), String.t()}], keyword()) :: {t(), %{number() => float()}}
+  @spec select([{String.t(), String.t()}], keyword()) :: {t(), map()}
   def select(rows, opts) do
     language = Keyword.fetch!(opts, :language)
     folds = fold_assignment(rows)
 
-    accuracies =
-      Map.new(@prior_strengths, fn strength ->
-        correct =
-          Enum.sum(
-            for k <- 0..(@folds - 1) do
-              {held, train} = split_fold(rows, folds, k)
-              model = fit(train, language: language, prior_strength: strength)
-              Enum.count(held, fn {text, intent} -> top_intent(model, text) == intent end)
-            end
-          )
+    splits = for k <- 0..(@folds - 1), {held, train} <- [split_fold(rows, folds, k)], held != [], do: {k, held, train}
 
-        {strength, correct / length(rows)}
+    if length(splits) < 2 do
+      raise ArgumentError,
+            "LexicalEvidence: only #{length(splits)} of #{@folds} folds hold a row; " <>
+              "the one-standard-error rule needs at least two scored folds"
+    end
+
+    # Each strength's correct count per scored fold.
+    correct =
+      Map.new(@prior_strengths, fn strength ->
+        {strength,
+         Enum.map(splits, fn {_k, held, train} ->
+           model = fit(train, language: language, prior_strength: strength)
+           Enum.count(held, fn {text, intent} -> top_intent(model, text) == intent end)
+         end)}
       end)
 
-    {best, _accuracy} = Enum.max_by(accuracies, fn {strength, acc} -> {acc, -strength} end)
-    {fit(rows, language: language, prior_strength: best), accuracies}
+    by_fold =
+      Map.new(correct, fn {strength, counts} ->
+        {strength, counts |> Enum.zip(splits) |> Enum.map(fn {c, {_k, held, _train}} -> c / length(held) end)}
+      end)
+
+    # A larger prior strength is more regularized.
+    rule =
+      @prior_strengths
+      |> Enum.map(&{&1, Map.fetch!(by_fold, &1)})
+      |> OneStandardError.choose(& &1)
+
+    report = %{
+      accuracy: Map.new(correct, fn {strength, counts} -> {strength, Enum.sum(counts) / length(rows)} end),
+      folds: by_fold,
+      one_standard_error: Map.put(rule, :scored_folds, Enum.map(splits, &elem(&1, 0)))
+    }
+
+    {fit(rows, language: language, prior_strength: rule.chosen), report}
   end
 
   @doc """
