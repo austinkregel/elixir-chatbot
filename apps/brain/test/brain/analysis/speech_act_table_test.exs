@@ -40,6 +40,34 @@ defmodule Brain.Analysis.SpeechActTableTest do
     assert table.entries["smalltalk.greetings.whatsup"].sub_type_source == :learned
   end
 
+  test "its evidence reads the speech act from the words, pooled across the intents that declare it",
+       %{table: table} do
+    assert {:ok, {:expressive, :greeting}, value} = SpeechActTable.read(table.evidence, "hello")
+    assert value > 0
+    assert {:ok, {:expressive, :farewell}, _} = SpeechActTable.read(table.evidence, "goodbye")
+    assert {:ok, {:directive, :request_information}, _} = SpeechActTable.read(table.evidence, "the weather")
+  end
+
+  test "words no speech act's rows hold are read as no speech act", %{table: table} do
+    assert SpeechActTable.read(table.evidence, "zyxwv") == :none
+  end
+
+  test "out-of-fold evidence is folded as the intent evidence folds the rows, each fold fitted without its rows",
+       %{table: table} do
+    {folds, models} = SpeechActTable.fold_evidence(@rows, @registry, table)
+
+    assert folds == Brain.Analysis.LexicalEvidence.folds(@rows)
+    assert Map.keys(models) == Enum.to_list(0..(Brain.Analysis.LexicalEvidence.fold_count() - 1))
+
+    for {k, model} <- models do
+      assert model.prior_strength == table.evidence.prior_strength
+      assert model.intents == table.evidence.intents
+
+      held = for {{_text, intent}, ^k} <- Enum.zip(@rows, folds), @registry[intent]["speech_act"] != nil, do: 1
+      assert model.fitted_rows == table.evidence.fitted_rows - length(held)
+    end
+  end
+
   test "an intent the table does not hold raises", %{table: table} do
     assert_raise RuntimeError, ~r/no en speech act for intent "music.play"/, fn ->
       SpeechActTable.lookup!(table, "music.play")
