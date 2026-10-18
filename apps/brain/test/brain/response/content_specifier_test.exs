@@ -19,8 +19,11 @@ defmodule Brain.Response.ContentSpecifierTest do
 
     setup_world_sandbox()
 
-    {:ok, with_belief} = create_test_world("content_specifier_with_belief")
-    {:ok, without_belief} = create_test_world("content_specifier_without_belief")
+    # A world's id names its AGE graphs, which allow 63 bytes with the longest
+    # kind's prefix, so 43 for the id: these names leave room for any unique
+    # integer `create_test_world/2` appends.
+    {:ok, with_belief} = create_test_world("with_belief")
+    {:ok, without_belief} = create_test_world("without_belief")
 
     {:ok, belief_id} = Brain.Epistemic.BeliefStore.add_belief(with_belief.id, "dogs", :are, "animals")
 
