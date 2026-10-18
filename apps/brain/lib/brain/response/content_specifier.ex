@@ -5,8 +5,11 @@ defmodule Brain.Response.ContentSpecifier do
   For each primitive in the discourse plan, the Content Specifier populates
   the `content` map with real data from the appropriate source:
 
-  - **Knowledge-grounded types** query FactDatabase, BeliefStore, or
-    enrichment services for external data.
+  - **Knowledge-grounded types** state what is known: the statements the
+    pipeline retrieved for the chunk that asks (its facts and beliefs,
+    `Brain.Analysis.ChunkAnalysis.known_statements/1`), the world's
+    beliefs, or the enrichment services' data. A fact is stated only when
+    it was retrieved for the turn.
   - **Analysis-grounded types** extract content from the analysis context
     that was already computed (entities, sentiment, speech act).
   - **Context-dependent types** pull from conversation history or
@@ -36,39 +39,50 @@ defmodule Brain.Response.ContentSpecifier do
 
   def specify(primitives, _analysis, _opts) when is_list(primitives), do: primitives
 
-  # A primitive planned for a service's error already says what it answers
-  # (`DiscoursePlanner.enrichment_error_primitive/2`); what the planner set is
+  # A primitive planned for a service's error, or for a service's result that
+  # carried no data, already says what it answers
+  # (`DiscoursePlanner.enrichment_error_primitive/2`,
+  # `DiscoursePlanner.empty_result_primitive/1`); what the planner set is
   # kept, and the analysis only adds what the planner left unset.
-  defp specify_primitive(%Primitive{content: %{enrichment_error: _} = planned} = p, analysis, _opts) do
-    from_analysis = %{
-      intent: analysis.intent,
-      action: analysis.intent,
-      missing_slots: get_missing_slots(analysis.slots),
-      partial_understanding: summarize_partial(analysis)
-    }
+  defp specify_primitive(%Primitive{content: %{enrichment_error: _} = planned} = p, analysis, _opts),
+    do: keep_planned_reply(p, planned, analysis)
 
-    %{p | content: Map.merge(from_analysis, Map.reject(planned, fn {_key, value} -> is_nil(value) end))}
-  end
+  defp specify_primitive(%Primitive{content: %{enrichment_result: _} = planned} = p, analysis, _opts),
+    do: keep_planned_reply(p, planned, analysis)
 
+  # What is known is said as it is stored: `fact` is the statement the reply
+  # states (the one that answers a polar question first), and `facts` every
+  # statement known (`retrieve_statements/2`).
   defp specify_primitive(%Primitive{type: :content, variant: :factual} = p, analysis, opts) do
-    facts = retrieve_facts(analysis, opts)
+    statements = retrieve_statements(analysis, opts)
 
     p
-    |> Primitive.merge_content(%{
-      facts: facts,
-      entity_context: analysis.entities,
-      source: determine_fact_source(facts),
-      confidence: analysis.confidence || 0.5
-    })
-    |> Map.put(:confidence, if(facts != [], do: 0.8, else: 0.3))
+    |> Primitive.merge_content(
+      Map.merge(stated(:fact, statements), %{
+        facts: statements,
+        entity_context: analysis.entities,
+        source: if(statements == [], do: :none, else: :known_statements),
+        confidence: analysis.confidence || 0.5
+      })
+    )
+    |> Map.put(:confidence, if(statements != [], do: 0.8, else: 0.3))
   end
 
+  # A self-knowledge narrative says what the system knows of the person it is
+  # talking with, as the self-knowledge reply words it
+  # (`Brain.Response.Synthesizer.synthesize_self_knowledge_response/2` of the
+  # turn's user's `Brain.Analysis.SelfKnowledgeAnalyzer` assessment; a turn
+  # with no user, or a user nothing is known of, is told that). The world's
+  # beliefs are kept beside it as `beliefs`.
   defp specify_primitive(%Primitive{type: :content, variant: :narrative} = p, analysis, opts) do
     beliefs = retrieve_beliefs(analysis, Keyword.fetch!(opts, :world_id))
     filtered = apply_disclosure_filter(beliefs)
 
+    assessment = Brain.Analysis.SelfKnowledgeAnalyzer.build_self_knowledge_assessment(Keyword.get(opts, :user_id))
+
     p
     |> Primitive.merge_content(%{
+      narrative: Brain.Response.Synthesizer.synthesize_self_knowledge_response(assessment),
       beliefs: filtered,
       belief_count: length(filtered),
       has_high_confidence: Enum.any?(filtered, &(Map.get(&1, :confidence, 0) > 0.7)),
@@ -78,15 +92,17 @@ defmodule Brain.Response.ContentSpecifier do
   end
 
   defp specify_primitive(%Primitive{type: :content, variant: :explanatory} = p, analysis, opts) do
-    facts = retrieve_facts(analysis, opts)
+    statements = retrieve_statements(analysis, opts)
     topic = extract_topic(analysis)
 
     p
-    |> Primitive.merge_content(%{
-      topic: topic,
-      explanation_parts: build_explanation_parts(facts, analysis),
-      knowledge_boundary: if(facts == [], do: :unknown, else: :partial)
-    })
+    |> Primitive.merge_content(
+      Map.merge(stated(:explanation, statements), %{
+        topic: topic,
+        explanation_parts: statements,
+        knowledge_boundary: if(statements == [], do: :unknown, else: :partial)
+      })
+    )
   end
 
   defp specify_primitive(%Primitive{type: :content, variant: :reflective} = p, analysis, _opts) do
@@ -144,22 +160,20 @@ defmodule Brain.Response.ContentSpecifier do
     |> Map.put(:confidence, if(enriched_data != %{}, do: 0.9, else: 0.3))
   end
 
+  # A polar question's answer frames the statement that answers it
+  # (`Brain.FactDatabase.Integration.polar_alignment/3`): the one it
+  # confirms or the one it disconfirms. The planner plans either only for a
+  # chunk whose alignment is that one; any other raises.
   defp specify_primitive(%Primitive{type: :framing, variant: :affirmative} = p, analysis, opts) do
-    facts = retrieve_facts(analysis, opts)
-    confirmed = List.first(facts)
-
     Primitive.merge_content(p, %{
-      confirmed_fact: confirmed,
+      confirmed_fact: aligned_statement!(p, analysis, opts, :confirming),
       topic: extract_topic(analysis)
     })
   end
 
   defp specify_primitive(%Primitive{type: :framing, variant: :negative} = p, analysis, opts) do
-    facts = retrieve_facts(analysis, opts)
-    actual = List.first(facts)
-
     Primitive.merge_content(p, %{
-      actual_fact: actual,
+      actual_fact: aligned_statement!(p, analysis, opts, :disconfirming),
       user_claim: analysis.text,
       topic: extract_topic(analysis)
     })
@@ -337,45 +351,72 @@ defmodule Brain.Response.ContentSpecifier do
     end
   end
 
+  defp keep_planned_reply(p, planned, analysis) do
+    from_analysis = %{
+      intent: analysis.intent,
+      action: analysis.intent,
+      missing_slots: get_missing_slots(analysis.slots),
+      partial_understanding: summarize_partial(analysis)
+    }
+
+    %{p | content: Map.merge(from_analysis, Map.reject(planned, fn {_key, value} -> is_nil(value) end))}
+  end
+
+  # The first statement as the reply says it, under `key`, when one is known:
+  # a sentence ends where the reply's wording puts its full stop, so a full
+  # stop it was stored with is not said twice. Nothing when none is known.
+  defp stated(_key, []), do: %{}
+  defp stated(key, [first | _]), do: %{key => first |> String.trim() |> String.trim_trailing(".")}
+
   # --- Knowledge retrieval helpers ---
 
-  defp retrieve_facts(analysis, opts) do
-    enriched_facts = Keyword.get(opts, :enriched_facts, [])
-    unified_context = Keyword.get(opts, :unified_context, %{})
+  # What is known that the reply can state: the statements known about the
+  # chunk that asks (`ContextBuilder`'s `per_chunk_facts`, from each chunk's
+  # `ChunkAnalysis.known_statements/1`), else those of the analysis being
+  # specified. Nothing is looked up here: the reply states only what the
+  # pipeline retrieved for the turn.
+  defp retrieve_statements(analysis, opts) do
+    case Keyword.get(opts, :unified_context) do
+      %{per_chunk_facts: facts_map} = unified_context when is_map(facts_map) ->
+        lookup_chunk = pick_lookup_chunk(analysis, unified_context)
+        lookup_idx = lookup_chunk && Map.get(lookup_chunk, :chunk_index)
+
+        Map.get(facts_map, lookup_idx) || Map.get(facts_map, Map.get(analysis, :chunk_index)) || []
+
+      _no_unified_context ->
+        ChunkAnalysis.known_statements(analysis)
+    end
+  end
+
+  # The statement that answers the polar question of the primitive's chunk,
+  # aligned as `expected`. A primitive planned for a chunk whose alignment is
+  # anything else raises: the planner plans it only for that alignment.
+  defp aligned_statement!(%Primitive{content: content} = p, analysis, opts, expected) do
+    chunk = primitive_chunk!(p, analysis, opts)
+
+    case Map.get(chunk, :fact_alignment) do
+      %{alignment: ^expected, statement: statement} ->
+        statement
+
+      other ->
+        raise ArgumentError,
+              "ContentSpecifier: a #{p.type}:#{p.variant} primitive answers a polar question its statements " <>
+                "align with as #{expected}, but chunk #{inspect(Map.get(content, :chunk_index))}'s alignment is #{inspect(other)}"
+    end
+  end
+
+  # The analysis of the chunk a primitive answers (its `:chunk_index`): the
+  # analysis being specified, or the turn's question chunk.
+  defp primitive_chunk!(%Primitive{content: content}, analysis, opts) do
+    index = Map.get(content, :chunk_index, Map.get(analysis, :chunk_index))
+    question_chunk = opts |> Keyword.get(:unified_context, %{}) |> Map.get(:question_chunk)
 
     cond do
-      enriched_facts != [] ->
-        enriched_facts
-
-      true ->
-        case prefetched_facts_for(analysis, unified_context) do
-          facts when is_list(facts) and facts != [] ->
-            facts
-
-          _ ->
-            lookup_chunk = pick_lookup_chunk(analysis, unified_context)
-            query = (lookup_chunk && Map.get(lookup_chunk, :text)) || analysis.text || ""
-            entities = (lookup_chunk && Map.get(lookup_chunk, :entities)) || analysis.entities || []
-            do_fact_lookup(query, entities)
-        end
+      Map.get(analysis, :chunk_index) == index -> analysis
+      is_map(question_chunk) and Map.get(question_chunk, :chunk_index) == index -> question_chunk
+      true -> raise ArgumentError, "ContentSpecifier: no analysis given is of chunk #{inspect(index)}"
     end
   end
-
-  defp prefetched_facts_for(analysis, unified_context) when is_map(unified_context) do
-    facts_map = Map.get(unified_context, :per_chunk_facts, %{})
-
-    if is_map(facts_map) do
-      lookup_chunk = pick_lookup_chunk(analysis, unified_context)
-      lookup_idx = lookup_chunk && Map.get(lookup_chunk, :chunk_index)
-      analysis_idx = Map.get(analysis, :chunk_index)
-
-      Map.get(facts_map, lookup_idx) || Map.get(facts_map, analysis_idx) || []
-    else
-      []
-    end
-  end
-
-  defp prefetched_facts_for(_analysis, _unified_context), do: []
 
   defp pick_lookup_chunk(analysis, unified_context) when is_map(unified_context) do
     case Map.get(unified_context, :question_chunk) do
@@ -394,21 +435,6 @@ defmodule Brain.Response.ContentSpecifier do
       a_idx != nil and b_idx != nil -> a_idx == b_idx
       true -> Map.get(a, :text) == Map.get(b, :text)
     end
-  end
-
-  defp do_fact_lookup(query, entities) do
-    if fact_retriever_available?() do
-      case Brain.Response.FactRetriever.get_facts_for_query(query, entities) do
-        facts when is_list(facts) and facts != [] -> facts
-        _ -> []
-      end
-    else
-      []
-    end
-  rescue
-    _ -> []
-  catch
-    :exit, _ -> []
   end
 
   # The beliefs held in the world the response is realized in.
@@ -442,16 +468,6 @@ defmodule Brain.Response.ContentSpecifier do
 
   defp apply_disclosure_filter(beliefs), do: beliefs
 
-  defp fact_retriever_available? do
-    try do
-      Brain.Response.FactRetriever.available?()
-    rescue
-      _ -> false
-    catch
-      :exit, _ -> false
-    end
-  end
-
   defp belief_store_available? do
     try do
       Brain.Epistemic.BeliefStore.ready?()
@@ -461,16 +477,6 @@ defmodule Brain.Response.ContentSpecifier do
       :exit, _ -> false
     end
   end
-
-  defp determine_fact_source([]), do: :none
-  defp determine_fact_source(facts) when is_list(facts) do
-    if Enum.any?(facts, &is_map/1) do
-      :fact_database
-    else
-      :unknown
-    end
-  end
-  defp determine_fact_source(_), do: :unknown
 
   @generic_labels ~w(unknown query define factual general default greeting
     farewell thanks apology good bad hello hi hey)
@@ -612,18 +618,6 @@ defmodule Brain.Response.ContentSpecifier do
   defp summarize_partial(%ChunkAnalysis{entities: entities, intent: intent}) do
     %{entities: entities, intent: intent}
   end
-
-  defp build_explanation_parts(facts, _analysis) when is_list(facts) and facts != [] do
-    Enum.map(facts, fn fact ->
-      cond do
-        is_map(fact) -> Map.get(fact, :fact) || Map.get(fact, "fact") || inspect(fact)
-        is_binary(fact) -> fact
-        true -> inspect(fact)
-      end
-    end)
-  end
-
-  defp build_explanation_parts(_, _), do: []
 
   defp check_action_capability(_intent, _opts), do: :unknown
 
