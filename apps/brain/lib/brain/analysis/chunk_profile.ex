@@ -300,15 +300,20 @@ defmodule Brain.Analysis.ChunkProfile do
 
   Fills all 17 primary axes, derives the 4 interaction axes, records
   provenance metadata, and synthesizes the `derived_label`.
+
+  Option: `:models`, `%{classifier => Brain.ML.FeatureVectorClassifier model}`,
+  models an axis is classified with in place of the loaded micro-classifier of
+  that name (training passes out-of-fold models).
   """
-  @spec materialize(ChunkAnalysis.t() | map(), list(float())) :: t()
-  def materialize(analysis, feature_vector) when is_list(feature_vector) do
+  @spec materialize(ChunkAnalysis.t() | map(), list(float()), keyword()) :: t()
+  def materialize(analysis, feature_vector, opts \\ []) when is_list(feature_vector) and is_list(opts) do
     text = Map.get(analysis, :text, "")
+    models = Keyword.get(opts, :models, %{})
 
     provenance = %{}
 
     {primary, provenance} = project_hard_copies(analysis, provenance)
-    {micro, provenance} = project_micro(feature_vector, text, provenance)
+    {micro, provenance} = project_micro(feature_vector, text, provenance, models)
     {composed, provenance} = project_composed(analysis, provenance)
 
     profile =
@@ -453,10 +458,10 @@ defmodule Brain.Analysis.ChunkProfile do
   # token identity — including proper nouns — cannot influence axis values.
   # See Brain.ML.FeatureVectorClassifier and the noun-invariance regression
   # test in test/brain/analysis/chunk_profile_noun_invariance_test.exs.
-  defp project_micro(feature_vector, _text, provenance) do
+  defp project_micro(feature_vector, _text, provenance, models) do
     {axes, sources} =
       Enum.reduce(@micro_axes, {%{}, %{}}, fn {axis, classifier, default}, {ax, src} ->
-        {value, prov} = classify_vector_with_provenance(classifier, feature_vector, default)
+        {value, prov} = classify_vector_with_provenance(classifier, feature_vector, default, Map.get(models, classifier))
         {Map.put(ax, axis, value), Map.put(src, axis, prov)}
       end)
 
@@ -467,8 +472,8 @@ defmodule Brain.Analysis.ChunkProfile do
   # is kept on a computed value because an axis answered at 0.31 and one
   # answered at 0.95 are not equally trustworthy, and a snapshot that omits it
   # cannot tell them apart later.
-  defp classify_vector_with_provenance(classifier, feature_vector, default) do
-    case classify_vector_result(classifier, feature_vector) do
+  defp classify_vector_with_provenance(classifier, feature_vector, default, model) do
+    case classify_vector_result(classifier, feature_vector, model) do
       {:ok, label, score} ->
         {safe_to_atom(label),
          %{
@@ -493,7 +498,16 @@ defmodule Brain.Analysis.ChunkProfile do
   # was wired into a vector-classified axis, which no input can fix and which
   # would otherwise show up as an axis that is merely always defaulted. It
   # raises rather than being recorded.
-  defp classify_vector_result(classifier, feature_vector) do
+  # A model given in place of the loaded one answers for its classifier; one
+  # that cannot take the vector raises, as no input could make it answer.
+  defp classify_vector_result(classifier, feature_vector, %{kind: :feature_vector} = model) do
+    case Brain.ML.FeatureVectorClassifier.classify(feature_vector, model) do
+      {:ok, label, score, _details} -> {:ok, label, score}
+      :error -> raise ArgumentError, "ChunkProfile: the #{inspect(classifier)} model given does not take a #{length(feature_vector)}-dimensional vector"
+    end
+  end
+
+  defp classify_vector_result(classifier, feature_vector, nil) do
     case MicroClassifiers.classify_vector(classifier, feature_vector) do
       {:ok, label, score} ->
         {:ok, label, score}
