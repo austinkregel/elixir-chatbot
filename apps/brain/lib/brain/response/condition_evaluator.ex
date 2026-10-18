@@ -87,6 +87,77 @@ defmodule Brain.Response.ConditionEvaluator do
       false
   end
 
+  # Each condition type `eval_condition/3` handles: the value it takes after
+  # the colon (`:named`, any non-blank name; a list, one of those words), or
+  # `:none` for a type that takes none.
+  @condition_values %{
+    "has_entity" => :named,
+    "missing_entity" => :named,
+    "slot_filled" => :named,
+    "slot_missing" => :named,
+    "confidence" => ["high", "medium", "low"],
+    "speech_act" => :named,
+    "enriched" => :named,
+    "service_available" => :named,
+    "enrichment_failed" => :none,
+    "enrichment_success" => :none,
+    "service_missing" => :none,
+    "service_error" => :none
+  }
+
+  @doc """
+  Checks that `condition` is one this module evaluates: nil, blank, or every
+  simple condition in it (joined by AND / OR, under NOT) a type
+  `evaluate/2` handles, with the value that type takes. Raises
+  `ArgumentError` naming the part that is not; returns `:ok`.
+
+  `evaluate/2` reads an unknown type as false, so a condition that is never
+  checked here is never true and its template never said; whatever builds
+  templates for it checks them with this.
+  """
+  @spec validate!(String.t() | nil) :: :ok
+  def validate!(nil), do: :ok
+
+  def validate!(condition) when is_binary(condition) do
+    condition |> parse() |> validate_ast!(condition)
+  end
+
+  def validate!(other), do: raise(ArgumentError, "a condition is a string or nil, got: #{inspect(other)}")
+
+  defp validate_ast!({:always, true}, _condition), do: :ok
+  defp validate_ast!({:not, inner}, condition), do: validate_ast!(inner, condition)
+
+  defp validate_ast!({op, left, right}, condition) when op in [:and, :or] do
+    validate_ast!(left, condition)
+    validate_ast!(right, condition)
+  end
+
+  defp validate_ast!({:condition, type, value}, condition) do
+    case {Map.fetch(@condition_values, type), value} do
+      {:error, _} ->
+        raise ArgumentError,
+              "the condition #{inspect(condition)} names #{inspect(type)}, which is no condition type; " <>
+                "the types are #{@condition_values |> Map.keys() |> Enum.sort() |> Enum.join(", ")}"
+
+      {{:ok, :none}, nil} ->
+        :ok
+
+      {{:ok, :named}, value} when is_binary(value) and value != "" ->
+        :ok
+
+      {{:ok, words}, value} when is_list(words) ->
+        if value in words,
+          do: :ok,
+          else: raise(ArgumentError, "the condition #{inspect(condition)} gives #{type} #{inspect(value)}; it takes one of #{Enum.join(words, ", ")}")
+
+      {{:ok, :none}, value} ->
+        raise ArgumentError, "the condition #{inspect(condition)} gives #{type} the value #{inspect(value)}; #{type} takes none"
+
+      {{:ok, :named}, _} ->
+        raise ArgumentError, "the condition #{inspect(condition)} gives #{type} no name after the colon"
+    end
+  end
+
   @doc """
   Parses a condition string into an AST.
 
