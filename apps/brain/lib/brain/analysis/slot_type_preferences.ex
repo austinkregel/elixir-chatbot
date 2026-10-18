@@ -183,16 +183,23 @@ defmodule Brain.Analysis.SlotTypePreferences do
   ## Choosing the smoothing
 
   `select/2` chooses `k0`, `kd`, `ki` and `lambda` in that order, then `kg`
-  and `kt`, then `jg` and `jt`, then `m0` and `mt`, then `q0`, `qd` and `qi`:
-  each is the value of its grid with the highest #{5}-fold cross-validated
-  log-likelihood of the held-out folds' observations (span labels given the
-  intent; preceding tags given the label or the ordinary reading; preceding
-  words given the label; whether a span is a number given the label; whether
-  each gazetteer span is ordinary given the intent), with the earlier choices
-  fixed. Ties go to the smaller value. The held-out splits are never read.
-  Folds are assigned by each example's `group`, the template of its row
-  (`Brain.ML.NerGold.template!/1`), so the rows of one template are held out
-  together.
+  and `kt`, then `jg` and `jt`, then `m0` and `mt`, then `q0`, `qd` and `qi`,
+  each with the earlier choices fixed, by #{5}-fold cross-validation: a
+  value's score on a fold is the mean log-likelihood per observation of that
+  fold's held-out observations (span labels given the intent; preceding tags
+  given the label or the ordinary reading; preceding words given the label;
+  whether a span is a number given the label; whether each gazetteer span is
+  ordinary given the intent), over the folds that hold an observation of the
+  stage's kind. Each value is chosen by the one-standard-error rule
+  (`Brain.ML.OneStandardError`): of the values whose mean fold score is within
+  one standard error of the best mean, the largest -- the largest
+  pseudo-count, or hierarchy weight, pulls furthest toward the level above.
+  The held-out log-likelihood is flat across a wide range of pseudo-counts,
+  and the highest mean on such a plateau is chosen by fold noise. Fewer than
+  two folds holding an observation of a stage's kind raise. The held-out
+  splits are never read. Folds are assigned by each example's `group`, the
+  template of its row (`Brain.ML.NerGold.template!/1`), so the rows of one
+  template are held out together.
 
   ## Language
 
@@ -203,7 +210,7 @@ defmodule Brain.Analysis.SlotTypePreferences do
   """
 
   alias Brain.Lexicon.IntentDomains
-  alias Brain.ML.{NerGold, Tokenizer}
+  alias Brain.ML.{NerGold, OneStandardError, Tokenizer}
 
   @enforce_keys [
     :language,
@@ -254,12 +261,20 @@ defmodule Brain.Analysis.SlotTypePreferences do
   @sentence_start :sentence_start
 
   # Pseudo-counts from far below one observation to far above the training
-  # split's size, and hierarchy weights from none to all. Cross-validation
-  # picks within them. Measured 2026-10-17 (1,828 rows, test environment):
+  # split's size, and hierarchy weights from none to all. The
+  # one-standard-error rule over the cross-validated folds picks within them.
+  # Measured 2026-10-17 (1,828 rows, test environment), when the best mean won:
   # with folds by template, numeric_global and ordinary_domain chose 0.1, then
   # the grid's smallest, so the grid was extended below it; both then chose
   # 0.001, on a plateau whose held-out log-likelihood per observation is the
-  # same to four places from 0.001 to 0.5 (-0.4004 and -0.5899).
+  # same to four places from 0.001 to 0.5 (-0.4004 and -0.5899). Measured
+  # 2026-10-18 (1,898 rows, 1,311 joined to an intent, development
+  # environment) with the rule, every value moved up its grid: global 10 to
+  # 100, domain 1 to 5, intent 2 to 10, hierarchy 0.01 to 0.02, tag_global
+  # 0.001 to 200, tag_type 5 to 50, word_global 200 to 500, word_type 20 to
+  # 100, numeric_global 2 to 200, numeric_type 2 to 10, ordinary_global 2 to
+  # 200, ordinary_domain 0.5 to 100, ordinary_intent 5 to 20 (best mean, then
+  # chosen).
   @strengths [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10_000]
   @hierarchy_weights [0.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
   @folds 5
@@ -430,7 +445,10 @@ defmodule Brain.Analysis.SlotTypePreferences do
   Chooses the smoothing by cross-validation on `examples` (see the moduledoc),
   then fits on all of them. Returns `{model, report}`; the report, also kept
   as the model's `cross_validation`, gives each stage's mean held-out
-  log-likelihood per observation for every value tried.
+  log-likelihood per observation over every fold for every value tried, and
+  in `one_standard_error` each stage's rule: the chosen and best values, the
+  best's mean and standard error, the threshold, the folds scored and every
+  value's mean and standard error.
 
   Takes `fit/2`'s examples, each also with its `group` (`example!/4` sets
   it), and `fit/2`'s options except `:smoothing`.
@@ -467,13 +485,18 @@ defmodule Brain.Analysis.SlotTypePreferences do
         {counted(full, training), held}
       end)
 
-    slot_observations = fold_data |> Enum.map(fn {_m, held} -> length(slot_observations(held)) end) |> Enum.sum()
-    tag_observations = fold_data |> Enum.map(fn {_m, held} -> length(tag_observations(held)) end) |> Enum.sum()
+    # Each kind of observation's count per fold, fold 0 first.
+    fold_observations = %{
+      slots: Enum.map(fold_data, fn {_m, held} -> length(slot_observations(held)) end),
+      tags: Enum.map(fold_data, fn {_m, held} -> length(tag_observations(held)) end),
+      spans: Enum.map(fold_data, fn {_m, held} -> length(span_observations(held)) end),
+      gazetteer_spans: Enum.map(fold_data, fn {_m, held} -> length(ordinary_observations(held)) end)
+    }
 
-    ordinary_observations =
-      fold_data |> Enum.map(fn {_m, held} -> length(ordinary_observations(held)) end) |> Enum.sum()
-
-    span_observations = fold_data |> Enum.map(fn {_m, held} -> length(span_observations(held)) end) |> Enum.sum()
+    slot_observations = Enum.sum(fold_observations.slots)
+    tag_observations = Enum.sum(fold_observations.tags)
+    ordinary_observations = Enum.sum(fold_observations.gazetteer_spans)
+    span_observations = Enum.sum(fold_observations.spans)
 
     if slot_observations == 0 do
       raise ArgumentError, "SlotTypePreferences: no example joins an intent; the slot preferences cannot be cross-validated"
@@ -503,36 +526,50 @@ defmodule Brain.Analysis.SlotTypePreferences do
       {:ordinary_intent, @strengths, &ordinary_loglik(&1, &2, :intent)}
     ]
 
-    {chosen, report} =
-      Enum.reduce(stages, {start, %{}}, fn {key, grid, loglik}, {chosen, report} ->
-        observations =
+    {chosen, report, rules} =
+      Enum.reduce(stages, {start, %{}, %{}}, fn {key, grid, loglik}, {chosen, report, rules} ->
+        per_fold =
           cond do
-            key in [:tag_global, :tag_type] -> tag_observations
-            key in @span_keys -> span_observations
-            key in @ordinary_keys -> ordinary_observations
-            true -> slot_observations
+            key in [:tag_global, :tag_type] -> fold_observations.tags
+            key in @span_keys -> fold_observations.spans
+            key in @ordinary_keys -> fold_observations.gazetteer_spans
+            true -> fold_observations.slots
           end
 
-        scores =
+        # A fold is scored when it holds an observation of the stage's kind.
+        scored_folds = for {n, k} <- Enum.with_index(per_fold), n > 0, do: k
+
+        if length(scored_folds) < 2 do
+          raise ArgumentError,
+                "SlotTypePreferences: only #{length(scored_folds)} of #{@folds} folds hold an observation to choose " <>
+                  "#{inspect(key)} by; the one-standard-error rule needs at least two scored folds"
+        end
+
+        # Each value's held-out log-likelihood per fold.
+        by_fold =
           Enum.map(grid, fn value ->
             smoothing = Map.put(chosen, key, value)
-
-            total =
-              fold_data
-              |> Enum.map(fn {model, held} -> loglik.(%{model | smoothing: smoothing}, held) end)
-              |> Enum.sum()
-
-            {value, total / observations}
+            {value, Enum.map(fold_data, fn {model, held} -> loglik.(%{model | smoothing: smoothing}, held) end)}
           end)
 
-        # The grids ascend, and max_by keeps the first maximum: the smaller value.
-        {best, _score} = Enum.max_by(scores, fn {_value, score} -> score end)
-        {Map.put(chosen, key, best), Map.put(report, key, scores)}
+        observations = Enum.sum(per_fold)
+        scores = Enum.map(by_fold, fn {value, logliks} -> {value, Enum.sum(logliks) / observations} end)
+
+        # Each scored fold's mean log-likelihood per observation; a larger
+        # value is more regularized.
+        rule =
+          by_fold
+          |> Enum.map(fn {value, logliks} -> {value, Enum.map(scored_folds, &(Enum.at(logliks, &1) / Enum.at(per_fold, &1)))} end)
+          |> OneStandardError.choose(& &1)
+
+        {Map.put(chosen, key, rule.chosen), Map.put(report, key, scores),
+         Map.put(rules, key, Map.merge(rule, %{scored_folds: scored_folds}))}
       end)
 
     report =
       Map.merge(report, %{
         chosen: chosen,
+        one_standard_error: rules,
         observations: %{
           slots: slot_observations,
           tags: tag_observations,
