@@ -167,34 +167,145 @@ defmodule Brain.Response.Synthesizer do
         {:ok, response}
 
       :continue ->
-        if map_size(domain_config) == 0 do
-          :not_synthesized
-        else
-          # Check if we have enriched data - if so, prefer enriched templates
-          case try_enriched_response(domain_config, entities, context, confidence) do
-            {:ok, response} ->
-              response = maybe_add_graph_context(response, context)
-              {:ok, response}
+        enriched_data = Map.get(context, :enriched_data) || %{}
 
-            :not_enriched ->
-              # Fall back to standard response frames
-              frame_key = determine_frame_key(domain_config, entities)
-              frames = if frame_key, do: get_in(domain_config, ["response_frames", frame_key]), else: []
+        case choose_frame(domain_config, entities, enriched_data) do
+          {:enriched, frame_key} ->
+            frame_config = get_in(domain_config, ["enriched_response_frames", frame_key])
 
-              if frames == [] do
-                :not_synthesized
-              else
-                slot_type_aliases = get_in(domain_config, ["slot_requirements", "slot_type_aliases"]) || %{}
-                frame = Enum.random(frames)
-                filled_response = fill_entity_slots(frame, entities, slot_type_aliases)
-                final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
-                final_response = maybe_add_graph_context(final_response, context)
+            {:ok, response} =
+              select_and_fill_enriched_frame(frame_key, frame_config, entities, enriched_data, domain_config, confidence)
 
-                {:ok, final_response}
-              end
-          end
+            {:ok, maybe_add_graph_context(response, context)}
+
+          {:response, frame_key} ->
+            frames = get_in(domain_config, ["response_frames", frame_key])
+            slot_type_aliases = get_in(domain_config, ["slot_requirements", "slot_type_aliases"]) || %{}
+            frame = Enum.random(frames)
+            filled_response = fill_entity_slots(frame, entities, slot_type_aliases)
+            final_response = maybe_add_acknowledgment(filled_response, confidence, domain_config)
+            final_response = maybe_add_graph_context(final_response, context)
+
+            {:ok, final_response}
+
+          nil ->
+            :not_synthesized
         end
     end
+  end
+
+  @doc """
+  The frame of `domain`'s knowledge (`priv/knowledge/domains/<domain>.json`)
+  a reply is worded from, for the turn's entities and its enrichment's data:
+
+    * `{:enriched, key}`, the enriched response frame `enriched_frame/3`
+      chooses, when the enrichment carries data and one of the domain's
+      enriched frames fires for it;
+    * otherwise `{:response, key}`, the response frame the entities' filled
+      slots key (`determine_frame_key/2`), when the domain has frames under
+      that key;
+    * nil when neither: no frame of the domain is said for the turn, and so is
+      it for a domain with no knowledge file.
+
+  This is the one rule a domain frame is chosen by: `synthesize_from_domain/5`
+  words the reply from the frame it names, and
+  `Brain.Response.PhraseLatticeRealizer` offers a fragment of a domain frame
+  only for a turn this names that frame for. Raises when two enriched frames
+  fire at the top specificity (`enriched_frame/3`).
+  """
+  @spec chosen_frame(String.t(), list(), map()) :: {:enriched | :response, String.t()} | nil
+  def chosen_frame(domain, entities, enriched_data)
+      when is_binary(domain) and is_list(entities) and is_map(enriched_data) do
+    choose_frame(Map.get(@domain_knowledge, domain, %{}), entities, enriched_data)
+  end
+
+  defp choose_frame(domain_config, entities, enriched_data) do
+    enriched_frames = Map.get(domain_config, "enriched_response_frames", %{})
+
+    enriched =
+      if enriched_data != %{} and map_size(enriched_frames) > 0,
+        do: enriched_frame(enriched_frames, entities, enriched_data)
+
+    case enriched do
+      {frame_key, _config} ->
+        {:enriched, frame_key}
+
+      nil ->
+        case determine_frame_key(domain_config, entities) do
+          nil ->
+            nil
+
+          frame_key ->
+            if Map.get(Map.get(domain_config, "response_frames", %{}), frame_key, []) == [],
+              do: nil,
+              else: {:response, frame_key}
+        end
+    end
+  end
+
+  @doc """
+  Checks that `domain`'s knowledge holds the frame `{kind, key}` names, shaped
+  as `chosen_frame/3` reads it: a response frame is a non-empty list of
+  templates; an enriched frame has templates, its `requires_enrichment` is a
+  list of fields, and each `when` condition is a string, number, boolean or
+  null, or `{"min": n, "max": m}` bounds of numbers. Raises `ArgumentError`
+  naming what is wrong; returns `:ok`.
+  """
+  @spec validate_frame!(String.t(), :enriched | :response, String.t()) :: :ok
+  def validate_frame!(domain, kind, key) when is_binary(domain) and kind in [:enriched, :response] and is_binary(key) do
+    domain_config =
+      case Map.fetch(@domain_knowledge, domain) do
+        {:ok, config} -> config
+        :error -> raise ArgumentError, "Synthesizer: no domain knowledge is compiled for #{inspect(domain)}"
+      end
+
+    section = if kind == :enriched, do: "enriched_response_frames", else: "response_frames"
+
+    case get_in(domain_config, [section, key]) do
+      nil ->
+        raise ArgumentError,
+              "Synthesizer: #{domain}'s #{section} has no frame #{inspect(key)} (the compiled knowledge; " <>
+                "a domain file edited since it was compiled needs a recompile)"
+
+      [_ | _] = templates when kind == :response ->
+        Enum.each(templates, fn
+          template when is_binary(template) -> :ok
+          other -> raise ArgumentError, "Synthesizer: #{domain}'s response frame #{inspect(key)} holds #{inspect(other)}, not a template"
+        end)
+
+      config when kind == :enriched and is_map(config) ->
+        required_enrichment(config)
+        frame_templates(config, key)
+
+        Enum.each(frame_conditions(config), fn {field, expected} -> validate_condition!(key, field, expected) end)
+
+      other ->
+        raise ArgumentError, "Synthesizer: #{domain}'s #{section} frame #{inspect(key)} is shaped #{inspect(other, limit: 3)}"
+    end
+
+    :ok
+  end
+
+  defp validate_condition!(_frame_key, _field, expected)
+       when is_nil(expected) or is_binary(expected) or is_number(expected) or is_boolean(expected),
+       do: :ok
+
+  defp validate_condition!(frame_key, field, %{} = bounds) when bounds != %{} do
+    Enum.each(bounds, fn
+      {bound, value} when bound in ["min", "max"] and is_number(value) ->
+        :ok
+
+      {bound, value} ->
+        raise ArgumentError,
+              "the enriched frame #{inspect(frame_key)} bounds #{field} with #{bound} #{inspect(value)}; bounds are " <>
+                "\"min\" and/or \"max\", each a number"
+    end)
+  end
+
+  defp validate_condition!(frame_key, field, expected) do
+    raise ArgumentError,
+          "the enriched frame #{inspect(frame_key)} tests #{field} against #{inspect(expected)}; " <>
+            "a condition is a string, number, boolean or null, or {\"min\": n, \"max\": m}"
   end
 
   defp maybe_add_graph_context(response, context) do
@@ -237,35 +348,6 @@ defmodule Brain.Response.Synthesizer do
     ]
 
     hedges |> Enum.random() |> String.trim_trailing() |> join_after(response)
-  end
-
-  # Try to build a response using enriched_response_frames if enrichment
-  # succeeded (`enriched_frame/3`). A failed enrichment, a service that is not
-  # set up among them, is answered before synthesis
-  # (`DiscoursePlanner.enrichment_error_primitive/2`).
-  defp try_enriched_response(domain_config, entities, context, confidence) do
-    enriched_data = Map.get(context, :enriched_data, %{})
-
-    enriched_frames = Map.get(domain_config, "enriched_response_frames", %{})
-
-    cond do
-      # No enriched data available
-      enriched_data == %{} or enriched_data == nil ->
-        :not_enriched
-
-      # Try to find a matching enriched frame
-      map_size(enriched_frames) > 0 ->
-        case enriched_frame(enriched_frames, entities, enriched_data) do
-          nil ->
-            :not_enriched
-
-          {frame_key, frame_config} ->
-            select_and_fill_enriched_frame(frame_key, frame_config, entities, enriched_data, domain_config, confidence)
-        end
-
-      true ->
-        :not_enriched
-    end
   end
 
   @doc """
