@@ -64,7 +64,9 @@ defmodule Brain.Response.RefinementLoop do
       primary_analysis = select_primary_analysis(analyses)
       initial_plan = DiscoursePlanner.plan(model, opts)
 
-      result = iterate(initial_plan, primary_analysis, opts, 1, max_iter, nil)
+      # Each primitive is worded for the chunk it answers, so the realizer is
+      # given every chunk's analysis.
+      result = iterate(initial_plan, primary_analysis, Keyword.put(opts, :analyses, analyses), 1, max_iter, nil)
 
       case result do
         {:ok, {:ouro_dry_run, _messages} = response, primitives, _score, iterations, recurring_pattern_use} ->
@@ -117,7 +119,7 @@ defmodule Brain.Response.RefinementLoop do
     primary = select_primary_analysis(analyses)
     primitives = DiscoursePlanner.plan(model, opts)
     specified = ContentSpecifier.specify(primitives, primary, opts)
-    realize_opts = realize_opts_for_analysis(opts, primary)
+    realize_opts = opts |> Keyword.put(:analyses, analyses) |> realize_opts_for_analysis(primary)
 
     case SurfaceRealizer.realize(specified, realize_opts) do
       {:ok, rendered, response, recurring_pattern_use} ->
