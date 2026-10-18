@@ -16,7 +16,7 @@ defmodule Mix.Tasks.Evaluate.Classifiers do
 
   use Mix.Task
 
-  alias Brain.Analysis.{FeatureExtractor, Pipeline}
+  alias Brain.Analysis.Pipeline
   alias Brain.ML.{Evaluation, EvaluationStore, MicroClassifiers}
 
   @impl Mix.Task
@@ -111,16 +111,19 @@ defmodule Mix.Tasks.Evaluate.Classifiers do
 
     pipeline_intent = to_string(analysis.intent || "unknown")
 
-    {fv_intent, fv_confidence} =
-      try do
-        {feature_vector, _word_feats} = FeatureExtractor.extract(analysis)
+    # The classifier's own answer for the vector the pipeline classified the
+    # intent from, the kind it was trained on; a vector extracted again from the
+    # finished analysis holds what pass 2 added after classifying.
+    feature_vector =
+      case analysis.feature_vector do
+        [_ | _] = vector -> vector
+        other -> Mix.raise("evaluate_classifiers: the pipeline kept no classified feature vector for #{inspect(text)}: #{inspect(other)}")
+      end
 
-        case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
-          {:ok, label, confidence} -> {to_string(label), confidence}
-          _ -> {"unknown", 0.0}
-        end
-      rescue
-        _ -> {"unknown", 0.0}
+    {fv_intent, fv_confidence} =
+      case MicroClassifiers.classify_vector(:intent_full, feature_vector) do
+        {:ok, label, confidence} -> {to_string(label), confidence}
+        other -> Mix.raise("evaluate_classifiers: intent classification of #{inspect(text)} failed: #{inspect(other)}")
       end
 
     {fv_intent, fv_confidence, pipeline_intent}
