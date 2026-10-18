@@ -39,7 +39,7 @@ defmodule Mix.Tasks.TrainModels do
     Mix.shell().info("Models will be saved to: #{models_path}")
 
     File.mkdir_p!(models_path)
-    training_data_path = Application.get_env(:brain, :ml)[:training_data_path] || "data"
+    training_data_path = Brain.data_path("")
 
     if not File.exists?(training_data_path) do
       Mix.shell().error("Training data path not found: #{training_data_path}")
