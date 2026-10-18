@@ -1,5 +1,5 @@
 defmodule Brain.Analysis.EntityDisambiguator do
-  @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **Candidate readings**: chosen by `Brain.Analysis.EntityTypeScorer` from how the word is used, how it was typed, the tag of the word before it, and the context's learned likelihood of each reading (`Brain.Analysis.SlotTypePreferences`)\n- **POS tags**: What part of speech precedes/follows the entity (introduction patterns)\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **ChunkProfile**: Domain from feature-vector classification, whose slot types, ranked by their learned weights (`Brain.Analysis.SlotTypePreferences`), widen an ambiguous-type entity's candidates\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
+  @moduledoc "Disambiguates entities when multiple types are possible,\nusing speech act, discourse, and POS-tagged syntactic context.\n\nWhen the gazetteer returns multiple possible entity types for the same\ntext (e.g., \"Austin\" could be a person or a location), this module\nuses contextual features to determine the most likely interpretation.\n\nAlso handles cases where a single-type entity (e.g., \"Nice\" as location)\nis being used as a proper noun/name in context (e.g., \"I'm Nice\"),\nrecognizing proper noun usage and mapping it to the appropriate entity type.\n\n## Features Used\n\n- **Candidate readings**: chosen by `Brain.Analysis.EntityTypeScorer` from how the word is used, how it was typed, the tag of the word before it, and the context's learned likelihood of each reading (`Brain.Analysis.SlotTypePreferences`)\n- **POS tags**: What part of speech precedes/follows the entity (introduction patterns)\n- **Discourse indicators**: Is this a self-referential statement?\n- **Speech act context**: Is this a greeting, question, command?\n- **ChunkProfile**: Domain from feature-vector classification, whose slot types' learned likelihoods (`Brain.Analysis.SlotTypePreferences`) re-weigh the readings an ambiguous-type entity's sources gave; no reading is added that no source gave\n\n## Usage\n\n    # With POS-tagged tokens\n    pos_tagged = [{\"I\", \"PRON\"}, {\"am\", \"VERB\"}, {\"Austin\", \"PROPN\"}]\n    entities = [%{value: \"Austin\", types: [person_info, location_info], ...}]\n    context = %{discourse: discourse_result, speech_act: speech_act_result}\n\n    disambiguated = EntityDisambiguator.disambiguate(entities, pos_tagged, context)\n\n"
 
   alias Brain.Analysis
   require Logger
@@ -120,48 +120,29 @@ defmodule Brain.Analysis.EntityDisambiguator do
     select_type(entity, name_type)
   end
 
-  # The types the context's slots expect, ranked by their learned weights
-  # (`EntityTypeScorer.Expected.weights/1`), offered beside the entity's own
-  # type. A type the slots do not list is offered every listed type. A listed
-  # type is offered the listed types it is compatible with in the hierarchy
-  # -- a room, its parent location -- that the data prefers to it, so a
-  # better-fitting reading is weighed even when the current one is
-  # acceptable. With nothing to offer, the entity keeps its own readings.
-  defp expand_with_domain_candidates(entity, current_type, context) do
-    weights =
-      case slot_preferences(context) do
-        nil -> %{}
-        expected -> EntityTypeScorer.Expected.weights(expected)
+  # The readings the span's sources gave, offered beside the entity's own type:
+  # every reading of the span (`:readings`, a losing hypothesis's among them --
+  # the gazetteer's place beside the entity model's person) and the
+  # candidates of its gazetteer reading (`:types`). Context re-weighs these
+  # (`score_and_select/4`); it never adds a reading no source gave. Offering
+  # every type the context's slots list made one -- "Austin" after "weather
+  # in", read as a person, scored as a temperature unit -- and rescoring picked
+  # it. With one reading there is nothing to weigh, and the entity keeps it.
+  defp expand_with_domain_candidates(entity, current_type, _context) do
+    entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
+
+    original = %{entity_type: current_type, value: entity_value, confidence: Map.get(entity, :confidence, 0.5), source: :original}
+
+    read =
+      for %{entity_type: type} = reading <- Map.get(entity, :readings, []), type != current_type do
+        %{entity_type: type, value: entity_value, source: Map.fetch!(reading, :source)}
       end
 
-    current_weight = Map.get(weights, current_type)
+    gazetteer = entity |> get_entity_types() |> Enum.reject(&(get_type_name(&1) == current_type))
 
-    alternatives =
-      weights
-      |> Enum.filter(fn {type, weight} ->
-        type != current_type and
-          (current_weight == nil or (weight > current_weight and TypeHierarchy.compatible?(current_type, type)))
-      end)
-      |> Enum.sort_by(fn {type, weight} -> {-weight, type} end)
-
-    if alternatives == [] do
-      get_entity_types(entity)
-    else
-      entity_value = Map.get(entity, :value) || Map.get(entity, "value") || ""
-
-      original = %{
-        entity_type: current_type,
-        value: entity_value,
-        confidence: Map.get(entity, :confidence, 0.5),
-        source: :original
-      }
-
-      [
-        original
-        | Enum.map(alternatives, fn {type, weight} ->
-            %{entity_type: type, value: entity_value, preference: weight, source: :domain_expansion}
-          end)
-      ]
+    case Enum.uniq_by([original | read ++ gazetteer], &get_type_name/1) do
+      [_only] -> get_entity_types(entity)
+      candidates -> candidates
     end
   end
 
@@ -292,13 +273,11 @@ defmodule Brain.Analysis.EntityDisambiguator do
         Map.has_key?(expected, original_type) ->
           original_type
 
-        ranked != [] ->
-          compatible = Enum.find(ranked, fn et ->
-            TypeHierarchy.compatible?(inferred_type, et) or
-              TypeHierarchy.compatible?(original_type, et)
-          end)
-
-          compatible || hd(ranked)
+        # A listed type the inferred or the original type is compatible with
+        # in the hierarchy; a listed type neither is would be a reading no
+        # source gave, so none is taken (the clauses below keep a source's).
+        (compatible = Enum.find(ranked, &(TypeHierarchy.compatible?(inferred_type, &1) or TypeHierarchy.compatible?(original_type, &1)))) != nil ->
+          compatible
 
         inferred_type in ["unknown", ""] or inferred_type == nil ->
           if original_type != "" and original_type != "unknown", do: original_type, else: inferred_type
