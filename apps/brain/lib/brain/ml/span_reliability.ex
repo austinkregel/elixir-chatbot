@@ -151,7 +151,11 @@ defmodule Brain.ML.SpanReliability do
   extent with a lead, and the better of the two is kept. Starting from one
   alone misses pairs: spans sharing one extent score, mostly wrong when every
   type hypothesis is decided, are left out before a type threshold that keeps
-  only the right ones is weighed.
+  only the right ones is weighed. The extent prior strength is chosen by the
+  one-standard-error rule, as `select/2` chooses the prior strength, on each
+  strength's F1 per fold -- the fold's first decision and what deciding again
+  decides there at the strength's thresholds -- over the folds that hold a
+  gold span.
 
   How finely the extent thresholds are chosen is chosen the same way, at the
   chosen extent prior strength. A span's extent is decided in the group of
@@ -181,14 +185,26 @@ defmodule Brain.ML.SpanReliability do
 
   `select/2` compares candidate prior strengths, numbers of confidence bins
   and thresholds by #{5}-fold cross-validation on the training rows: each
-  fold's spans are decided with reliabilities fitted on the other folds, and
-  the choice maximizes span-level F1 (on equal F1, fewer bins, then the
-  smaller strength) -- a decision is a true positive when a gold span has
-  its extent and a type that is or refines its label, any other decision is a
-  false positive, and every gold span not decided correctly is a false
-  negative, so abstaining costs recall and a wrong decision costs both. The
-  thresholds tried are the scores and margins the folds produced. The
-  held-out split is never read.
+  fold's spans are decided with reliabilities fitted on the other folds,
+  scored by span-level F1 -- a decision is a true positive when a gold span
+  has its extent and a type that is or refines its label, any other decision
+  is a false positive, and every gold span not decided correctly is a false
+  negative, so abstaining costs recall and a wrong decision costs both. For
+  each pair of a prior strength and a number of bins, the thresholds are
+  the ones with the best F1 over every fold's spans, tried among the scores
+  and margins the folds produced.
+
+  The pair is then chosen by the one-standard-error rule
+  (`Brain.ML.OneStandardError`), on each pair's F1 per fold at its
+  thresholds, over the folds that hold a gold span: of the pairs whose mean
+  is within one standard error of the best mean, the one with the largest
+  prior strength, and of one strength the higher mean, then fewer bins. The
+  F1 barely moves across strengths, and a strength chosen for the highest
+  mean on that plateau says nothing the folds measured. Fewer than two folds
+  holding a gold span raise. The model keeps the rule's choice, best pair,
+  mean, standard error, threshold and scored folds in `selection`, and each
+  pair's result, with the mean and standard error of its fold F1, in
+  `cross_validation`. The held-out split is never read.
 
   Folds are assigned by each example's `group`, the template of its row
   (`Brain.ML.NerGold.template!/1`), so the rows of one template are decided
@@ -206,6 +222,7 @@ defmodule Brain.ML.SpanReliability do
 
   alias Brain.Lattice
   alias Brain.Lattice.Candidate
+  alias Brain.ML.OneStandardError
 
   @enforce_keys [
     :language,
@@ -237,6 +254,7 @@ defmodule Brain.ML.SpanReliability do
     :min_score,
     :min_margin,
     :cross_validation,
+    :selection,
     :redecision
   ]
 
@@ -261,6 +279,16 @@ defmodule Brain.ML.SpanReliability do
           min_score: float() | nil,
           min_margin: float() | :infinity | nil,
           cross_validation: map() | nil,
+          selection:
+            %{
+              chosen: {number(), pos_integer()},
+              best: {number(), pos_integer()},
+              mean: float(),
+              standard_error: float(),
+              threshold: float(),
+              scored_folds: [non_neg_integer()]
+            }
+            | nil,
           redecision:
             %{
               min_score: float() | :infinity,
@@ -291,19 +319,25 @@ defmodule Brain.ML.SpanReliability do
         }
 
   # Pseudo-counts of readings, from barely more than the counts to a prior
-  # that outweighs any pair the training split shows. Cross-validation picks
-  # one; ties go to the smaller strength. On the NER training split (1,688
+  # that outweighs any pair the training split shows. The one-standard-error
+  # rule over the cross-validated folds picks one. On the NER training split (1,688
   # rows, 2026-10-09) cross-validated F1 peaked at 1,000 (0.849) and fell to
   # 0.826 at 100,000, so the grid ends past that peak. Measured 2026-10-17
   # (1,828 rows, test environment) with folds by template and one confidence
   # bin, the choice was 0.5, then the grid's smallest, so the grid was
   # extended below it; with ten bins it is 0.1 (F1 0.8742, against 0.8738 at
-  # 0.05), inside it.
+  # 0.05), inside it. Measured 2026-10-18 (1,898 rows, development
+  # environment) with the one-standard-error rule: the best mean fold F1 is
+  # 86.56 at strength 1 with twenty bins, standard error 0.79, and the rule
+  # chooses strength 20 with twenty bins (85.95). The extent prior strengths
+  # are flat from 0.01 to 100,000 (mean fold F1 86.68 to 86.92, standard error
+  # 0.85 at the best, 10), so the rule chooses 100,000, the grid's largest.
   @prior_strengths [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10_000, 100_000]
   # How many equal-width bins a source's confidences are counted in, from one
   # (the confidence says nothing beyond the pair) to bins a twentieth wide.
   # Measured 2026-10-17 at the chosen strength: F1 0.847 at one bin, 0.852 at
-  # two, 0.863 at five, 0.874 at ten and 0.874 at twenty, ten chosen.
+  # two, 0.863 at five, 0.874 at ten and 0.874 at twenty, ten chosen; on
+  # 2026-10-18 twenty bins led at every strength up to 20.
   @confidence_bins [1, 2, 5, 10, 20]
   @folds 5
 
@@ -429,7 +463,10 @@ defmodule Brain.ML.SpanReliability do
   `report` maps each `{prior_strength, confidence_bins}` to the best
   cross-validated F1 it reached and the thresholds and counts behind it, with
   `folds`, each fold's decided, correct and gold counts at those thresholds,
-  fold 0 first; the same report is kept in the model's `cross_validation`.
+  fold 0 first, and `mean_f1` and `standard_error`, of the F1 of the folds
+  holding a gold span; the same report is kept in the model's
+  `cross_validation`, and the one-standard-error rule's choice in its
+  `selection`.
 
   Takes `fit/2`'s examples, each with its `group`, and `fit/2`'s options
   except `:prior_strength` and `:confidence_bins`.
@@ -469,18 +506,62 @@ defmodule Brain.ML.SpanReliability do
         {candidate, Map.put(result, :folds, fold_counts(points, examples, folds, result))}
       end)
 
-    {{strength, bins}, chosen} =
-      Enum.max_by(report, fn {{strength, bins}, result} -> {result.f1, -bins, -strength} end)
+    # The prior strength by the one-standard-error rule, a larger strength
+    # more regularized; of one strength the higher mean, then fewer bins.
+    rule =
+      candidates
+      |> Enum.map(&{&1, report |> Map.fetch!(&1) |> Map.fetch!(:folds) |> Enum.map(fn f -> {f.correct, f.decided - f.correct, f.gold} end)})
+      |> one_standard_error!(fn {strength, _bins} -> strength end)
+
+    report = with_rule(report, rule)
+    {strength, bins} = rule.chosen
+    chosen = Map.fetch!(report, rule.chosen)
 
     model =
       examples
       |> fit(Keyword.merge(opts, prior_strength: strength, confidence_bins: bins))
-      |> Map.merge(%{min_score: chosen.min_score, min_margin: chosen.min_margin, cross_validation: report})
+      |> Map.merge(%{
+        min_score: chosen.min_score,
+        min_margin: chosen.min_margin,
+        cross_validation: report,
+        selection: Map.take(rule, [:chosen, :best, :mean, :standard_error, :threshold, :scored_folds])
+      })
 
     {model, report}
   end
 
   def select([], _opts), do: raise(ArgumentError, "SpanReliability: no training examples to select from")
+
+  # The one-standard-error rule (`Brain.ML.OneStandardError`) over the span F1
+  # of each fold holding a gold span, from `scored`, `{candidate, [{tp, fp,
+  # gold} per fold]}` -- which folds hold one does not depend on the
+  # candidate. Fewer than two such folds raise. The result also names the
+  # folds scored.
+  defp one_standard_error!([{_candidate, first} | _] = scored, regularization) do
+    scored_folds = for {{_tp, _fp, gold}, k} <- Enum.with_index(first), gold > 0, do: k
+
+    if length(scored_folds) < 2 do
+      raise ArgumentError,
+            "SpanReliability: only #{length(scored_folds)} of #{@folds} folds hold a gold span; " <>
+              "the one-standard-error rule needs at least two scored folds"
+    end
+
+    scored
+    |> Enum.map(fn {candidate, counts} ->
+      {candidate, Enum.map(scored_folds, fn k -> counts |> Enum.at(k) |> then(fn {tp, fp, gold} -> 2 * tp / (tp + fp + gold) end) end)}
+    end)
+    |> OneStandardError.choose(regularization)
+    |> Map.put(:scored_folds, scored_folds)
+  end
+
+  # Each candidate's result with the mean and standard error of its scored
+  # folds' F1.
+  defp with_rule(results, rule) do
+    Map.new(results, fn {candidate, result} ->
+      %{mean: mean, standard_error: se} = Map.fetch!(rule.scores, candidate)
+      {candidate, Map.merge(result, %{mean_f1: mean, standard_error: se})}
+    end)
+  end
 
   @doc """
   Chooses what `redecide/4` decides with (see the moduledoc) and returns
@@ -496,7 +577,11 @@ defmodule Brain.ML.SpanReliability do
   thresholds (`first_thresholds`) and under thresholds chosen for it
   (`without_extent`); and deciding the extent first (`chosen`, with
   `extent_min_score` and `extent_min_margin`). `by_extent_prior_strength`
-  gives the best result for each extent prior strength tried, `points` the
+  gives the best result for each extent prior strength tried, with each
+  fold's counts (`folds`) and the mean and standard error of their F1,
+  `extent_prior_strength` the one-standard-error rule's choice among them
+  (its best strength, mean, standard error, threshold and scored folds),
+  `points` the
   number of spans weighed again without an extent decision, and
   `extent_points` the number with one at the chosen strength.
 
@@ -588,10 +673,20 @@ defmodule Brain.ML.SpanReliability do
 
     by_strength =
       Map.new(points_by_strength, fn {strength, extent_points} ->
-        {strength, extent_points |> joint_thresholds(gold_total, offsets) |> Map.put(:extent_points, length(extent_points))}
+        result = joint_thresholds(extent_points, gold_total, offsets)
+        {strength, Map.merge(result, %{extent_points: length(extent_points), folds: redecision_fold_counts(extent_points, by_fold, result)})}
       end)
 
-    {strength, chosen} = Enum.max_by(by_strength, fn {strength, result} -> {result.f1, -strength} end)
+    # The extent prior strength by the one-standard-error rule, a larger
+    # strength more regularized.
+    extent_rule =
+      @prior_strengths
+      |> Enum.map(&{&1, by_strength |> Map.fetch!(&1) |> Map.fetch!(:folds) |> Enum.map(fn f -> {f.correct, f.decided - f.correct, f.gold} end)})
+      |> one_standard_error!(& &1)
+
+    by_strength = with_rule(by_strength, extent_rule)
+    strength = extent_rule.chosen
+    chosen = Map.fetch!(by_strength, strength)
 
     # How finely the extent thresholds are chosen, at that strength: by the F1
     # of each granularity's thresholds fitted on four folds' spans and applied
@@ -626,8 +721,9 @@ defmodule Brain.ML.SpanReliability do
             none: none,
             first_thresholds: with_first,
             without_extent: without_extent,
-            chosen: Map.drop(chosen, [:extent_points]),
+            chosen: Map.drop(chosen, [:extent_points, :folds, :mean_f1, :standard_error]),
             by_extent_prior_strength: by_strength,
+            extent_prior_strength: Map.take(extent_rule, [:chosen, :best, :mean, :standard_error, :threshold, :scored_folds]),
             granularity: %{chosen: granularity, by_granularity: by_granularity, fitted: Map.drop(fitted, [:groups])},
             points: length(points),
             extent_points: chosen.extent_points
@@ -638,6 +734,25 @@ defmodule Brain.ML.SpanReliability do
 
   def select_redecision(%__MODULE__{}, [], _opts),
     do: raise(ArgumentError, "SpanReliability: no examples to choose the redecision thresholds from")
+
+  # Each fold's decided, correct and gold counts, fold 0 first, when its
+  # first decision is followed by deciding again the extent points of that
+  # fold that pass `thresholds`' extent and type thresholds.
+  defp redecision_fold_counts(points, by_fold, thresholds) do
+    for k <- 0..(@folds - 1) do
+      first = Map.fetch!(by_fold, k)
+
+      passed =
+        Enum.filter(points, fn point ->
+          point.fold == k and score_ok?(point.extent_score, thresholds.extent_min_score) and
+            margin_ok?(point.extent_margin, thresholds.extent_min_margin) and score_ok?(point.score, thresholds.min_score) and
+            margin_ok?(point.margin, thresholds.min_margin)
+        end)
+
+      right = Enum.count(passed, & &1.correct)
+      %{decided: first.tp + first.fp + length(passed), correct: first.tp + right, gold: first.gold}
+    end
+  end
 
   defp sum_of(maps, key), do: maps |> Enum.map(&Map.fetch!(&1, key)) |> Enum.sum()
 
