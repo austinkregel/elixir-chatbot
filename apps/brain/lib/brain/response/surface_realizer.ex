@@ -26,7 +26,9 @@ defmodule Brain.Response.SurfaceRealizer do
     - `:unified_context` - rich context map from ContextBuilder
 
   A plan holding a primitive planned for a service's error
-  (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`) is worded
+  (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`), or for a
+  service's result that carried no data
+  (`Brain.Response.DiscoursePlanner.empty_result_primitive/1`), is worded
   from that reply's templates
   (`Brain.Response.Synthesizer.synthesize_service_reply/1`), whatever system
   the domain is realized by, since the reply states exactly what was not done
@@ -56,10 +58,13 @@ defmodule Brain.Response.SurfaceRealizer do
 
   @doc """
   Whether the primitive answers a service's error
-  (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`).
+  (`Brain.Response.DiscoursePlanner.enrichment_error_primitive/2`) or a
+  service's result that carried no data
+  (`Brain.Response.DiscoursePlanner.empty_result_primitive/1`).
   """
   @spec service_reply?(Primitive.t()) :: boolean()
   def service_reply?(%Primitive{content: %{enrichment_error: _}}), do: true
+  def service_reply?(%Primitive{content: %{enrichment_result: :empty}}), do: true
   def service_reply?(_), do: false
 
   defp realize_service_reply(primitives, %Primitive{content: content}) do
