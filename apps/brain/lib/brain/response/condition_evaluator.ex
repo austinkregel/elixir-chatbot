@@ -18,6 +18,12 @@ defmodule Brain.Response.ConditionEvaluator do
   - `enrichment_failed` - Enrichment was attempted but failed
   - `enrichment_success` - Enrichment succeeded
 
+  ## Knowledge Conditions
+
+  - `facts_known` - something is known about the chunk that asks: the
+    context's `:facts_known` is true (`Brain.Response.PhraseLatticeRealizer`
+    sets it from `Brain.Analysis.ChunkAnalysis.known_statements/1`)
+
   Compound expressions with AND / OR / NOT:
   - `has_entity:person AND confidence:high`
   - `slot_missing:address OR slot_missing:date_time`
@@ -102,7 +108,8 @@ defmodule Brain.Response.ConditionEvaluator do
     "enrichment_failed" => :none,
     "enrichment_success" => :none,
     "service_missing" => :none,
-    "service_error" => :none
+    "service_error" => :none,
+    "facts_known" => :none
   }
 
   @doc """
@@ -363,6 +370,10 @@ defmodule Brain.Response.ConditionEvaluator do
   defp eval_condition("service_error", _value, context) do
     enrichment_status = Map.get(context, :enrichment_status)
     enrichment_status == :failed
+  end
+
+  defp eval_condition("facts_known", _value, context) do
+    Map.get(context, :facts_known) == true
   end
 
   defp eval_condition(unknown_type, _value, _context) do
