@@ -30,6 +30,7 @@ defmodule Brain.Application do
           Brain.ML.SpanReliability.Loader,
           Brain.Analysis.SlotTypePreferences.Loader,
           Brain.Analysis.FreeTextCapture.Loader,
+          Brain.Analysis.IntentArbitration.Loader,
           Brain.Analysis.ActiveContexts,
           Brain.Lexicon.Loader,
           Brain.Lexicon.UserDefined,
