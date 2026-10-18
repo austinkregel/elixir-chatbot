@@ -277,6 +277,52 @@ defmodule Brain.Response.SynthesizerTest do
     end
   end
 
+  describe "chosen_frame/3" do
+    test "an enrichment a frame fires for chooses that enriched frame" do
+      cancelled = %{timer_status: "cancelled", cancelled_count: 1, timer_durations: []}
+      assert Synthesizer.chosen_frame("timer", [], cancelled) == {:enriched, "cancelled_one"}
+
+      none = %{timer_status: "none", duration: "", time_left: []}
+      assert Synthesizer.chosen_frame("timer", [], none) == {:enriched, "none_found"}
+    end
+
+    test "with no enrichment, the response frame the filled slots key" do
+      assert Synthesizer.chosen_frame("timer", [], %{}) == {:response, "general"}
+
+      austin = [%{entity_type: "location", value: "Austin"}]
+      assert Synthesizer.chosen_frame("weather", austin, %{}) == {:response, "has_location"}
+    end
+
+    test "a response frame keyed by no slot, such as an operation, is never chosen by slots" do
+      duration = [%{entity_type: "duration", value: "5 minutes"}]
+
+      for entities <- [[], duration], data <- [%{}, %{timer_status: "running", duration: "5 minutes", time_left: "4 minutes"}] do
+        refute match?({:response, key} when key in ["cancel", "check", "set"], Synthesizer.chosen_frame("timer", entities, data))
+      end
+    end
+
+    test "a domain with no knowledge has no frame" do
+      assert Synthesizer.chosen_frame("no_such_domain", [], %{}) == nil
+    end
+  end
+
+  describe "validate_frame!/3" do
+    test "a frame the domain's knowledge holds is :ok" do
+      assert Synthesizer.validate_frame!("timer", :response, "cancel") == :ok
+      assert Synthesizer.validate_frame!("timer", :enriched, "cancelled_one") == :ok
+    end
+
+    test "a frame or domain the knowledge does not hold raises" do
+      assert_raise ArgumentError, ~r/timer's enriched_response_frames has no frame "cancel"/, fn ->
+        Synthesizer.validate_frame!("timer", :enriched, "cancel")
+      end
+
+      assert_raise ArgumentError, ~r/no domain knowledge is compiled for "no_such_domain"/, fn ->
+        Synthesizer.validate_frame!("no_such_domain", :response, "general")
+      end
+    end
+  end
+
   describe "every domain's enriched frames" do
     # Two frames of the same specificity can fire together unless some field
     # cannot meet both. When they can, a more specific frame must fire
