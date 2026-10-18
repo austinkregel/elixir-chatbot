@@ -226,9 +226,18 @@ defmodule Brain.Analysis.SpeechActClassifierTest do
     end
 
     test "the classified intent's speech act comes from the speech-act table" do
+      # Enough rows for the table's speech-act evidence to choose its prior
+      # strength by cross-validation, which needs rows in two folds.
       table =
         SpeechActTable.build(
-          [{"hello there", "smalltalk.greetings.hello"}, {"what is the weather", "weather.query"}],
+          [
+            {"hello there", "smalltalk.greetings.hello"},
+            {"hi hello", "smalltalk.greetings.hello"},
+            {"hey hello there", "smalltalk.greetings.hello"},
+            {"what is the weather", "weather.query"},
+            {"weather in paris", "weather.query"},
+            {"is it raining", "weather.query"}
+          ],
           %{
             "smalltalk.greetings.hello" => %{"category" => "expressive", "speech_act" => "greeting"},
             "weather.query" => %{"category" => "directive", "speech_act" => "request_information"}
