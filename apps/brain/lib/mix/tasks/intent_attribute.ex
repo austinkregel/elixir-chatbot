@@ -42,7 +42,7 @@ defmodule Mix.Tasks.Intent.Attribute do
 
   use Mix.Task
 
-  alias Brain.Analysis.{FeatureExtractor, Pipeline}
+  alias Brain.Analysis.Pipeline
   alias Brain.ML.{EvaluationStore, FeatureVectorClassifier}
 
   @requirements ["app.start"]
@@ -273,7 +273,14 @@ defmodule Mix.Tasks.Intent.Attribute do
         progress: %{conversation_id: tag, message_id: tag}
       )
 
-    {vector, _word_feats} = FeatureExtractor.extract(analysis)
+    # The vector the pipeline classified the intent from, the kind the model
+    # was trained on; one extracted again from the finished analysis holds what
+    # pass 2 added after classifying.
+    vector =
+      case analysis.feature_vector do
+        [_ | _] = vector -> vector
+        other -> Mix.raise("intent_attribute: the pipeline kept no classified feature vector for #{inspect(text)}: #{inspect(other)}")
+      end
 
     {classifier, confidence} =
       case FeatureVectorClassifier.classify(vector, model) do
