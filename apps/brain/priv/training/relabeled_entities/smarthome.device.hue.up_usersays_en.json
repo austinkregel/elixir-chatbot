@@ -1,0 +1,131 @@
+[
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue up by 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue up by 50 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue up for 15 percents in the bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue up till 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue up till 23 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue up till 5 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue up to 15 percents in the bedroom"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue up by 50 percents"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn up "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue by 10 points"
+      }
+    ]
+  },
+  {
+    "data": [
+      {
+        "text": "turn up "
+      },
+      {
+        "alias": "device",
+        "meta": "@lights",
+        "text": "lights"
+      },
+      {
+        "text": " hue till 10 points"
+      }
+    ]
+  }
+]
