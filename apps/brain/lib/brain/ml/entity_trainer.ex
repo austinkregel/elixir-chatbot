@@ -44,17 +44,30 @@ defmodule Brain.ML.EntityTrainer do
   on the training rows. (An earlier version averaged
   `P(tag | f)` over the features, which let the shape features outvote every
   word, so it tagged every token `O`.)
+
+  ## Cross-validation
+
+  Folds are assigned by template (`Brain.ML.NerGold.template_folds/2`), so
+  the rows of one template are validated together, on a model that saw none
+  of them; assigned row by row, a template's rows were split across folds and
+  a validation row's sentence had been seen in training. The pair of
+  strengths with the best exact span-and-type F1 over the folds' pooled
+  counts is chosen, ties going to the smaller strengths, and the model keeps
+  every pair's counts per fold in `cross_validation`.
   """
 
-  # On the NER training split (1,688 rows, 2026-10-08) cross-validation preferred
-  # ever less smoothing, with held-out exact-span F1 0.831 at 1e-3 and 0.843 at
-  # 1e-6: an unseen (feature, tag) pair becomes close to a veto. Zero is not a
-  # candidate, since it makes such a pair impossible.
-  @smoothing_candidates [1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0]
-  # On the same split (2026-10-13) the transition smoothing chosen from
-  # [0.01 .. 100] was 0.01, the grid's smallest; from this grid it is 1.0e-4,
-  # inside it. Training took 500s with this grid against 259-320s with that one.
-  @transition_smoothing_candidates [1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0, 10.0, 100.0]
+  # Measured 2026-10-17 on the NER training split (1,828 rows, 1,601
+  # templates), trained in the test environment. With folds assigned row by
+  # row, the grid then ending at 1e-6 for both strengths, the choice was
+  # {1e-6, 1e-6} (F1 84.13, against 83.78 at {1e-4, 1e-6}). With folds by
+  # template the choice fell on the smallest strengths of every grid tried, so
+  # each grid was extended below it, until it is {1e-7, 1e-11} (F1 83.33),
+  # inside this grid: 83.32 at {1e-8, 1e-12} and 83.29 at {1e-9, 1e-12}. The
+  # best F1 of every smoothing from 1e-9 to 1e-4 is within 0.26 of it. An unseen
+  # (feature, tag) pair stays close to a veto. Zero is not a candidate, since
+  # it makes such a pair impossible.
+  @smoothing_candidates [1.0e-9, 1.0e-8, 1.0e-7, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0]
+  @transition_smoothing_candidates [1.0e-12, 1.0e-11, 1.0e-10, 1.0e-9, 1.0e-8, 1.0e-7, 1.0e-6, 1.0e-5, 1.0e-4, 1.0e-3, 0.01, 0.1, 1.0, 10.0, 100.0]
   @folds 5
 
   alias Brain.ML.{EvaluationStore, NerGold}
@@ -63,6 +76,7 @@ defmodule Brain.ML.EntityTrainer do
   @type bio_tag :: String.t()
 
   @type entity_model :: %{
+          optional(:cross_validation) => cross_validation(),
           tag_vocabulary: %{bio_tag() => integer()},
           feature_weights: %{String.t() => %{bio_tag() => float()}},
           feature_totals: %{String.t() => pos_integer()},
@@ -70,6 +84,20 @@ defmodule Brain.ML.EntityTrainer do
           transition_weights: %{bio_tag() => %{bio_tag() => float()}},
           transition_smoothing: float(),
           tag_priors: %{bio_tag() => float()}
+        }
+
+  @typedoc """
+  How `train/1` chose the strengths: the number of folds and of templates the
+  rows fell in, the pair chosen, and for every pair tried `{smoothing,
+  transition_smoothing}` the F1 of the folds' pooled counts and each fold's
+  `{tp, fp, fn}` of exact spans, fold 0 first. A fold model
+  (`fold_models/2`) has none.
+  """
+  @type cross_validation :: %{
+          folds: pos_integer(),
+          templates: pos_integer(),
+          chosen: {float(), float()},
+          by_strengths: %{{float(), float()} => %{f1: float(), folds: [{non_neg_integer(), non_neg_integer(), non_neg_integer()}]}}
         }
 
   @doc """
@@ -89,8 +117,12 @@ defmodule Brain.ML.EntityTrainer do
     )
 
     sequences = Enum.map(rows, &NerGold.sequence!/1)
-    {smoothing, transition_smoothing} = select_smoothing(rows, sequences)
-    model = train_sequence_model(sequences, smoothing, transition_smoothing)
+    %{chosen: {smoothing, transition_smoothing}} = cross_validation = select_smoothing(rows, sequences)
+
+    model =
+      sequences
+      |> train_sequence_model(smoothing, transition_smoothing)
+      |> Map.put(:cross_validation, cross_validation)
 
     Logger.info("Entity model trained", %{
       sequence_count: length(sequences),
@@ -120,14 +152,15 @@ defmodule Brain.ML.EntityTrainer do
   transition smoothing on every other fold's rows. Tagging a training row with
   its fold model shows how the model reads a sentence it was not trained on,
   which is what `Brain.ML.SpanReliability` measures. Folds are assigned as
-  `train/1`'s cross-validation assigns them.
+  `train/1`'s cross-validation assigns them, by template, so a row's fold
+  model saw no row of its template.
   """
   @spec fold_models([map()], entity_model()) :: {[non_neg_integer()], %{non_neg_integer() => entity_model()}}
   def fold_models([_ | _] = rows, model) do
     smoothing = trained_strength!(model, :smoothing)
     transition_smoothing = trained_strength!(model, :transition_smoothing)
 
-    folds = Enum.map(rows, &:erlang.phash2(&1, @folds))
+    folds = NerGold.template_folds(rows, @folds)
     sequences = Enum.map(rows, &NerGold.sequence!/1)
 
     models =
@@ -274,37 +307,55 @@ defmodule Brain.ML.EntityTrainer do
     }
   end
 
-  # The emission and transition smoothing strengths, `{smoothing,
-  # transition_smoothing}`, with the best exact span-and-type F1 across the
-  # folds of the training rows, every pair of candidates tried; ties go to the
-  # smaller strengths.
+  # The cross-validation report (`t:cross_validation/0`): the emission and
+  # transition smoothing strengths with the best exact span-and-type F1 over
+  # the folds' pooled counts, every pair of candidates tried, ties going to
+  # the smaller strengths, with every pair's counts per fold. Folds are
+  # assigned by template; every row is validated once, in its template's
+  # fold, and a fold no template fell in validates nothing. A fold holding
+  # every row leaves nothing to train on and raises.
   defp select_smoothing(rows, sequences) do
-    folds = Enum.map(rows, &:erlang.phash2(&1, @folds))
+    folds = NerGold.template_folds(rows, @folds)
     indexed = Enum.zip(sequences, folds)
 
-    totals =
-      Enum.reduce(0..(@folds - 1), %{}, fn k, acc ->
+    per_fold =
+      Enum.map(0..(@folds - 1), fn k ->
         {held, train} = Enum.split_with(indexed, fn {_sequence, fold} -> fold == k end)
+
+        if train == [] do
+          raise ArgumentError,
+                "EntityTrainer: fold #{k} of #{@folds} holds all #{length(rows)} rows, their templates all falling in it; " <>
+                  "too few templates to cross-validate the smoothing"
+        end
+
         counts = train |> Enum.map(&elem(&1, 0)) |> sequence_counts()
         held = Enum.map(held, fn {seq, _fold} -> {seq.tokens, spans_of(Enum.zip(seq.tokens, seq.tags))} end)
         transitions = Map.new(@transition_smoothing_candidates, &{&1, transition_weights(counts, &1)})
 
-        for smoothing <- @smoothing_candidates, reduce: acc do
-          acc ->
-            emission = emission_model(counts, smoothing)
-
-            for {transition_smoothing, weights} <- transitions, reduce: acc do
-              acc ->
-                model = Map.merge(emission, %{transition_weights: weights, transition_smoothing: transition_smoothing})
-                fold_counts = score_fold(held, model)
-                Map.update(acc, {smoothing, transition_smoothing}, fold_counts, &add_counts(&1, fold_counts))
-            end
+        for smoothing <- @smoothing_candidates,
+            emission = emission_model(counts, smoothing),
+            {transition_smoothing, weights} <- transitions,
+            into: %{} do
+          model = Map.merge(emission, %{transition_weights: weights, transition_smoothing: transition_smoothing})
+          {{smoothing, transition_smoothing}, score_fold(held, model)}
         end
       end)
 
-    totals
-    |> Enum.max_by(fn {{smoothing, transition_smoothing}, counts} -> {f1(counts), -smoothing, -transition_smoothing} end)
-    |> elem(0)
+    by_strengths =
+      Map.new(hd(per_fold), fn {strengths, _counts} ->
+        fold_counts = Enum.map(per_fold, &Map.fetch!(&1, strengths))
+        {strengths, %{f1: fold_counts |> Enum.reduce(&add_counts/2) |> f1(), folds: fold_counts}}
+      end)
+
+    {chosen, _result} =
+      Enum.max_by(by_strengths, fn {{smoothing, transition_smoothing}, result} -> {result.f1, -smoothing, -transition_smoothing} end)
+
+    %{
+      folds: @folds,
+      templates: rows |> Enum.map(&NerGold.template!/1) |> Enum.uniq() |> length(),
+      chosen: chosen,
+      by_strengths: by_strengths
+    }
   end
 
   # `{tp, fp, fn}` of the exact spans `model` decodes for the held rows, each
