@@ -332,6 +332,13 @@ defmodule Brain.ML.SpanReliability do
   # chooses strength 20 with twenty bins (85.95). The extent prior strengths
   # are flat from 0.01 to 100,000 (mean fold F1 86.68 to 86.92, standard error
   # 0.85 at the best, 10), so the rule chooses 100,000, the grid's largest.
+  # Measured 2026-10-18 again, after the entity model's emission and its
+  # readings changed (sentence-final punctuation untagged): best {5, 20} at
+  # 87.98 (standard error 0.53), chosen {20, 20}; the extent strengths' best is
+  # 1,000 (88.06, standard error 0.72) and the rule again chooses 100,000.
+  # There every extent reliability is within a hundredth of the rate over
+  # every reading, so an extent leads by the number of readings that give it,
+  # and is decided only past the thresholds learned for that; a tie never is.
   @prior_strengths [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10_000, 100_000]
   # How many equal-width bins a source's confidences are counted in, from one
   # (the confidence says nothing beyond the pair) to bins a twentieth wide.
@@ -1058,7 +1065,10 @@ defmodule Brain.ML.SpanReliability do
   Returns one map per span, in text order. A decided span is the reading of
   its winning hypothesis that the data trusts most (other readings of that
   hypothesis contribute the keys it lacks, such as a gazetteer reading's
-  metadata), with `resolved: true`, `:confidence` the combined probability,
+  metadata), typed at the most specific type every reading of that
+  hypothesis holds -- one reading's type when it is or refines every other's,
+  else the type they share (`common_type/2`) -- with `resolved: true`,
+  `:confidence` the combined probability,
   `:readings`, `:candidates` (the `Brain.Lattice`) and `:decision`. An
   unresolved span is described in the moduledoc and carries
   `:unresolved_reason` (`:no_measured_reading` or `:insufficient_evidence`),
@@ -1088,7 +1098,7 @@ defmodule Brain.ML.SpanReliability do
 
       case judge(lattice, model.min_score, model.min_margin) do
         {:decided, best, margin} ->
-          decided(cluster, summaries, best, margin, lattice)
+          decided(cluster, summaries, best, margin, lattice, hierarchy)
 
         {:undecided, reason} ->
           summaries |> unresolved(lattice, reason, text, hierarchy) |> Map.put(:raw_readings, cluster)
@@ -1169,7 +1179,7 @@ defmodule Brain.ML.SpanReliability do
 
         case judge(lattice, min_score, min_margin) do
           {:decided, best, margin} ->
-            entity = decided(cluster, summaries, best, margin, lattice)
+            entity = decided(cluster, summaries, best, margin, lattice, hierarchy)
 
             decision =
               Map.merge(entity.decision, %{
@@ -1796,8 +1806,9 @@ defmodule Brain.ML.SpanReliability do
       else: {:undecided, :insufficient_evidence}
   end
 
-  defp decided(cluster, summaries, %Candidate{label: {start_pos, end_pos, label}} = best, margin, lattice) do
+  defp decided(cluster, summaries, %Candidate{label: {start_pos, end_pos, label}} = best, margin, lattice, hierarchy) do
     [{base, _summary} | others] =
+      agreeing =
       cluster
       |> Enum.zip(summaries)
       |> Enum.filter(fn {_reading, summary} ->
@@ -1809,12 +1820,39 @@ defmodule Brain.ML.SpanReliability do
     |> Enum.reduce(%{}, fn {reading, _summary}, acc -> Map.merge(reading, acc) end)
     |> Map.merge(base)
     |> Map.merge(%{
+      entity_type: agreeing |> Enum.map(fn {reading, _summary} -> reading.entity_type end) |> agreed_type(hierarchy),
       confidence: best.confidence,
       resolved: true,
       readings: summaries,
       candidates: lattice,
       decision: %{score: best.score, margin: margin}
     })
+  end
+
+  # The runtime type of a decided span, from the types of the readings that
+  # gave its winning hypothesis -- one gold label, which several runtime types
+  # can map to. When one reading's type is or refines every other's (the
+  # gazetteer's `lights` beside the entity model's `device`), every reading
+  # holds that type, and it is the most that is known. When two refine none of
+  # each other (`lights` and `heating`), the readings agree only on what they
+  # share, `common_type/2`, so neither is chosen over the other.
+  defp agreed_type(types, hierarchy) do
+    types = Enum.uniq(types)
+
+    case Enum.filter(types, fn type -> Enum.all?(types, &(&1 == type or hierarchy.is_a?(type, &1))) end) do
+      [type] ->
+        type
+
+      [] ->
+        case common_type(types, hierarchy) do
+          nil ->
+            raise ArgumentError,
+                  "SpanReliability: the readings #{inspect(types)} of one hypothesis share no type in the hierarchy"
+
+          type ->
+            type
+        end
+    end
   end
 
   defp unresolved(summaries, lattice, reason, text, hierarchy) do
